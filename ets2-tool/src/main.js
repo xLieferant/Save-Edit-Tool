@@ -23,11 +23,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
     profileStatus.textContent = `Gefundene Profile: ${profiles.length}`;
 
-    profiles.forEach((p) => {
-      const li = document.createElement("li");
-      li.textContent = p;
-      profileList.appendChild(li);
-    });
+   profiles.forEach((p) => {
+  const li = document.createElement("li");
+  if (p.success) {
+    li.textContent = `Profil: ${p.name} ✅ (${p.path})`;
+  } else {
+    li.textContent = `Fehler bei ${p.path} ❌`;
+  }
+  profileList.appendChild(li);
+});
+
   });
 
   // Geld speichern
