@@ -5,12 +5,25 @@ use std::process::Command;
 use std::fs;
 use serde::Serialize;
 use std::path::PathBuf;
+use regex::Regex;
 
 #[derive(Serialize)]
 struct ProfileInfo {
     path: String,
     name: Option<String>,   // Profilname, falls gefunden
     success: bool,          // true = SII_decrypt hat funktioniert
+    message: Option<String>, // Fehler Statushinweis
+}
+
+fn extract_profile_name(text: &str) -> Option<String> {
+    // Sucht profile_name: "…", tolerant bei Whitespaces, Case-insensitive
+    let re = Regex::new(r#"(?i)^\s*profile_name\s*:\s*"([^"]+)""#).unwrap();
+    for line in text.lines() {
+        if let Some(caps) = re.captures(line) {
+            return Some(caps[1].to_string());
+        }
+    }
+    None
 }
 
 #[command]
@@ -19,7 +32,6 @@ fn find_ets2_profiles() -> Vec<ProfileInfo> {
 
     if let Some(documents) = dirs::document_dir() {
         let base = documents.join("Euro Truck Simulator 2");
-
         let folders = vec![
             base.join("profiles"),
             base.join("profiles.backup"),
@@ -28,49 +40,76 @@ fn find_ets2_profiles() -> Vec<ProfileInfo> {
         ];
 
         for folder in folders {
-            if folder.exists() {
-                if let Ok(entries) = fs::read_dir(&folder) {
-                    for entry in entries.flatten() {
-                        let path = entry.path();
-                        let sii_file = path.join("profile.sii");
+            if !folder.exists() { continue; }
 
-                        if path.is_dir() && sii_file.exists() {
-                            let mut info = ProfileInfo {
-                                path: path.display().to_string(),
-                                name: None,
-                                success: false,
-                            };
+            if let Ok(entries) = fs::read_dir(&folder) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    let sii_file = path.join("profile.sii");
 
-                            // Temporäre Datei im selben Ordner
-                            let tmp_file: PathBuf = path.join("profile_decoded.sii");
+                    if !(path.is_dir() && sii_file.exists()) {
+                        continue;
+                    }
 
-                            // Schritt 1: Tool ausführen -> schreibt in tmp_file
-                            let result = Command::new("src-tauri/tools/SII_decrypt.exe")
-                                .arg(&sii_file)
-                                .arg(&tmp_file) // viele Tools akzeptieren Eingabe + Ausgabe
-                                .status();
+                    let mut info = ProfileInfo {
+                        path: path.display().to_string(),
+                        name: None,
+                        success: false,
+                        message: None,
+                    };
 
-                            if let Ok(status) = result {
-                                if status.success() {
-                                    // Schritt 2: temporäre Datei lesen
-                                    if let Ok(content) = fs::read_to_string(&tmp_file) {
-                                        if let Some(line) = content.lines().find(|l| l.contains("Profile_name")) {
-                                            if let Some(start) = line.find('"') {
-                                                if let Some(end) = line.rfind('"') {
-                                                    info.name = Some(line[start+1..end].to_string());
-                                                    info.success = true;
-                                                }
-                                            }
-                                        }
+                    // Temporäre Ausgabedatei im Temp-Ordner (sicher, keine Savegame-Änderung)
+                    let tmp_out: PathBuf = std::env::temp_dir()
+                        .join("ets2_tool")
+                        .join(format!("{}_profile_decoded.sii",
+                                      path.file_name().unwrap_or_default().to_string_lossy()));
+
+                    // Stelle sicher, dass der Zielordner existiert
+                    if let Err(e) = fs::create_dir_all(tmp_out.parent().unwrap()) {
+                        info.message = Some(format!("Temp-Verzeichnis konnte nicht erstellt werden: {e}"));
+                        found.push(info);
+                        continue;
+                    }
+
+                    // 1) SII_decrypt.exe ausführen
+                    // Falls dein Tool nur Input akzeptiert und Output in dieselbe Datei schreibt,
+                    // dann ersetze den .arg(&tmp_out) unten durch .arg("--output").arg(&tmp_out) o.ä.,
+                    // je nach CLI deines Tools.
+                    let status = Command::new("tools/SII_decrypt.exe")
+                        .arg(&sii_file)    // Eingabe
+                        .arg(&tmp_out)     // Ausgabe (wenn dein Tool das so erwartet)
+                        .status();
+
+                    match status {
+                        Ok(s) if s.success() => {
+                            // 2) Entschlüsselte Datei lesen
+                            match fs::read_to_string(&tmp_out) {
+                                Ok(content) => {
+                                    if let Some(name) = extract_profile_name(&content) {
+                                        info.name = Some(name);
+                                        info.success = true;
+                                        info.message = Some("OK".into());
+                                    } else {
+                                        info.message = Some("profile_name nicht gefunden".into());
                                     }
-                                    // Schritt 3: temporäre Datei wieder löschen
-                                    let _ = fs::remove_file(&tmp_file);
+                                }
+                                Err(e) => {
+                                    info.message = Some(format!("Temp-Datei nicht lesbar: {e}"));
                                 }
                             }
-
-                            found.push(info);
+                        }
+                        Ok(s) => {
+                            info.message = Some(format!("SII_decrypt beendet mit Status {}", s));
+                        }
+                        Err(e) => {
+                            info.message = Some(format!("SII_decrypt nicht ausführbar: {e}"));
                         }
                     }
+
+                    // 3) Temp-Datei aufräumen
+                    let _ = fs::remove_file(&tmp_out);
+
+                    found.push(info);
                 }
             }
         }
