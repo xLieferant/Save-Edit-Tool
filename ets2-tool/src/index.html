@@ -1,17 +1,21 @@
 <!doctype html>
-<html lang="en">
+<html lang="de">
   <head>
     <meta charset="UTF-8" />
     <link rel="stylesheet" href="styles.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tauri App</title>
+    <title>Save Editor</title>
     <script type="module" src="/main.js" defer></script>
   </head>
 
   <body>
-    <main class="container">
-      <h1>Welcome to Tauri</h1>
+    <header class="app-header">
+      <h1>SCS Save Editor</h1>
+      <p class="subtitle">by xLieferant</p>
+    </header>
 
+    <main class="container">
+      
       <div class="row">
         <a href="https://tauri.app" target="_blank">
           <img src="/assets/tauri.svg" class="logo tauri" alt="Tauri logo" />
@@ -28,6 +32,37 @@
         </a>
       </div>
       <p>Click on the Tauri logo to learn more about the framework</p>
++
+      <!--Profile loader-->
+
+      <section class="card">
+        <h2>Savegame laden</h2>
+        <p>Wähle dein Euro Truck Simulator 2 Profil und lade die SII-Dateien.</p>
+
+        <button id="load-profile-btn" class="primary-btn">
+          Profil auswählen
+        </button>
+
+        <p id="profile-status" class="status-text"></p>
+      </section>
+
+      <!-- Card: Editor Overview -->
+
+      <section class="card">
+        <h2>Daten bearbeiten</h2>
+
+        <div class="editor-row">
+          <input id="money-input" placeholder="Geld eingeben…" />
+          <button id="save-money-btn" class="secondary-btn">Speichern</button>
+        </div>
+
+        <div class="editor-row">
+          <input id="level-input" placeholder="Level eingeben…" />
+          <button id="save-level-btn" class="secondary-btn">Speichern</button>
+        </div>
+
+        <p id="edit-status" class="status-text"></p>
+      </section>
 
       <form class="row" id="greet-form">
         <input id="greet-input" placeholder="Enter a name..." />
