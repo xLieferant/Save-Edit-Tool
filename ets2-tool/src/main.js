@@ -1,69 +1,54 @@
 const { invoke } = window.__TAURI__.core;
 
-let greetInputEl;
-let greetMsgEl;
-let profileStatus;
-let editStatus;
+document.addEventListener("DOMContentLoaded", () => {
+  const scanBtn = document.querySelector("#scan-profiles-btn");
+  const profileStatus = document.querySelector("#profile-status");
+  const profileList = document.querySelector("#profile-list");
 
-async function greet() {
-  // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-  greetMsgEl.textContent = await invoke("greet", { name: greetInputEl.value });
-}
+  const moneyBtn = document.querySelector("#save-money-btn");
+  const levelBtn = document.querySelector("#save-level-btn");
+  const editStatus = document.querySelector("#edit-status");
 
-window.addEventListener("DOMContentLoaded", () => {
-  greetInputEl = document.querySelector("#greet-input");
-  greetMsgEl = document.querySelector("#greet-msg");
-  profileStatus = document.querySelector("#profile-status");
-  editStatus = document.querySelector("#edit-status");
+  // Profile suchen
+  scanBtn.addEventListener("click", async () => {
+    profileStatus.textContent = "Suche nach ETS2-Profilen...";
+    profileList.innerHTML = "";
 
-  document.querySelector("#greet-form").addEventListener("submit", (e) => {
-    e.preventDefault();
-    greet();
+    const profiles = await invoke("find_ets2_profiles");
 
-  document.querySelector("#load-profile-btn").addEventListener("click", loadProfile);
-  document.querySelector("#save-money-btn").addEventListener("click", saveMoney);
-  document.querySelector("#save-level-btn").addEventListener("click", saveLevel);
+    if (profiles.length === 0) {
+      profileStatus.textContent = "Keine Profile gefunden.";
+      return;
+    }
+
+    profileStatus.textContent = `Gefundene Profile: ${profiles.length}`;
+
+    profiles.forEach((p) => {
+      const li = document.createElement("li");
+      li.textContent = p;
+      profileList.appendChild(li);
+    });
+  });
+
+  // Geld speichern
+  moneyBtn.addEventListener("click", async () => {
+    const val = Number(document.querySelector("#money-input").value);
+
+    editStatus.textContent = "Speichere...";
+
+    await invoke("edit_money", { amount: val });
+
+    editStatus.textContent = "Geld gespeichert!";
+  });
+
+  // Level speichern
+  levelBtn.addEventListener("click", async () => {
+    const val = Number(document.querySelector("#level-input").value);
+
+    editStatus.textContent = "Speichere...";
+
+    await invoke("edit_level", { level: val });
+
+    editStatus.textContent = "Level gespeichert!";
   });
 });
-
-// Lade Profil
-async function loadProfile() {
-  profileStatus.textContent = "Profil wird geladen…";
-
-  try {
-    const path = await invoke("load_profile");
-    profileStatus.textContent = `Profil geladen: ${path}`;
-  } catch (err) {
-    profileStatus.textContent = "Fehler beim Laden des Profils.";
-  }
-}
-
-// Geld speichern
-async function saveMoney() {
-  const money = document.querySelector("#money-input").value;
-
-  if (!money) return;
-  editStatus.textContent = "Wird gespeichert…";
-
-  try {
-    await invoke("edit_money", { amount: Number(money) });
-    editStatus.textContent = "Geld gespeichert!";
-  } catch {
-    editStatus.textContent = "Fehler beim Speichern.";
-  }
-}
-
-// Level speichern
-async function saveLevel() {
-  const level = document.querySelector("#level-input").value;
-
-  if (!level) return;
-  editStatus.textContent = "Wird gespeichert…";
-
-  try {
-    await invoke("edit_level", { level: Number(level) });
-    editStatus.textContent = "Level gespeichert!";
-  } catch {
-    editStatus.textContent = "Fehler beim Speichern.";
-  }
-}
