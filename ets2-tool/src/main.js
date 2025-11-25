@@ -28,10 +28,11 @@ document.addEventListener("DOMContentLoaded", () => {
   if (p.success) {
     li.textContent = `Profil: ${p.name} ✅ (${p.path})`;
   } else {
-    li.textContent = `Fehler bei ${p.path} ❌`;
+    li.textContent = `❌ ${p.path} — ${p.message ?? "Fehler unbekannt"}`;
   }
   profileList.appendChild(li);
 });
+
 
   });
 
