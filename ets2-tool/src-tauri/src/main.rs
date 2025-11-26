@@ -1,30 +1,31 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use tauri::command;
-use std::process::Command;
 use std::fs;
 use serde::Serialize;
-use std::path::PathBuf;
+use std::process::Command;
+use std::path::{Path, PathBuf};
 use regex::Regex;
 
 #[derive(Serialize)]
 struct ProfileInfo {
     path: String,
-    name: Option<String>,   // Profilname, falls gefunden
-    success: bool,          // true = SII_decrypt hat funktioniert
-    message: Option<String>, // Fehler Statushinweis
+    name: Option<String>,
+    success: bool,
+    message: Option<String>,
 }
 
 fn extract_profile_name(text: &str) -> Option<String> {
-    // Sucht profile_name: "…", tolerant bei Whitespaces, Case-insensitive
     let re = Regex::new(r#"(?i)^\s*profile_name\s*:\s*"([^"]+)""#).unwrap();
-    for line in text.lines() {
-        if let Some(caps) = re.captures(line) {
-            return Some(caps[1].to_string());
+    for l in text.lines() {
+        if let Some(c) = re.captures(l) {
+            return Some(c[1].to_string());
         }
     }
     None
 }
+
+// ---------- PROFILE FINDEN --------------------------------------------------
 
 #[command]
 fn find_ets2_profiles() -> Vec<ProfileInfo> {
@@ -42,7 +43,7 @@ fn find_ets2_profiles() -> Vec<ProfileInfo> {
         for folder in folders {
             if !folder.exists() { continue; }
 
-            if let Ok(entries) = fs::read_dir(&folder) {
+            if let Ok(entries) = fs::read_dir(folder) {
                 for entry in entries.flatten() {
                     let path = entry.path();
                     let sii_file = path.join("profile.sii");
@@ -58,56 +59,38 @@ fn find_ets2_profiles() -> Vec<ProfileInfo> {
                         message: None,
                     };
 
-                    // Temporäre Ausgabedatei im Temp-Ordner (sicher, keine Savegame-Änderung)
-                    let tmp_out: PathBuf = std::env::temp_dir()
+                    let tmp_out = std::env::temp_dir()
                         .join("ets2_tool")
-                        .join(format!("{}_profile_decoded.sii",
-                                      path.file_name().unwrap_or_default().to_string_lossy()));
+                        .join(format!("{}_decoded.sii",
+                            path.file_name().unwrap_or_default().to_string_lossy()
+                        ));
 
-                    // Stelle sicher, dass der Zielordner existiert
-                    if let Err(e) = fs::create_dir_all(tmp_out.parent().unwrap()) {
-                        info.message = Some(format!("Temp-Verzeichnis konnte nicht erstellt werden: {e}"));
-                        found.push(info);
-                        continue;
-                    }
+                    let _ = fs::create_dir_all(tmp_out.parent().unwrap());
 
-                    // 1) SII_decrypt.exe ausführen
-                    // Falls dein Tool nur Input akzeptiert und Output in dieselbe Datei schreibt,
-                    // dann ersetze den .arg(&tmp_out) unten durch .arg("--output").arg(&tmp_out) o.ä.,
-                    // je nach CLI deines Tools.
-                    let status = Command::new("tools/SII_decrypt.exe")
-                        .arg(&sii_file)    // Eingabe
-                        .arg(&tmp_out)     // Ausgabe (wenn dein Tool das so erwartet)
+                    // Versuch 1: decrypt
+                    let decrypt_res = Command::new("tools/SII_decrypt.exe")
+                        .arg(&sii_file)
+                        .arg(&tmp_out)
                         .status();
 
-                    match status {
-                        Ok(s) if s.success() => {
-                            // 2) Entschlüsselte Datei lesen
-                            match fs::read_to_string(&tmp_out) {
-                                Ok(content) => {
-                                    if let Some(name) = extract_profile_name(&content) {
-                                        info.name = Some(name);
-                                        info.success = true;
-                                        info.message = Some("OK".into());
-                                    } else {
-                                        info.message = Some("profile_name nicht gefunden".into());
-                                    }
-                                }
-                                Err(e) => {
-                                    info.message = Some(format!("Temp-Datei nicht lesbar: {e}"));
-                                }
-                            }
+                    let content = match decrypt_res {
+                        Ok(s) if s.success() => fs::read_to_string(&tmp_out).ok(),
+                        _ => fs::read_to_string(&sii_file).ok(),
+                    };
+
+                    if let Some(text) = content {
+                        if let Some(name) = extract_profile_name(&text) {
+                            info.name = Some(name);
+                            info.success = true;
+                            info.message = Some("OK".into());
+                        } else {
+                            info.message = Some("profile_name nicht gefunden".into());
                         }
-                        Ok(s) => {
-                            info.message = Some(format!("SII_decrypt beendet mit Status {}", s));
-                        }
-                        Err(e) => {
-                            info.message = Some(format!("SII_decrypt nicht ausführbar: {e}"));
-                        }
+                    } else {
+                        info.message = Some("Datei nicht lesbar".into());
                     }
 
-                    // 3) Temp-Datei aufräumen
-                    let _ = fs::remove_file(&tmp_out);
+                    let _ = fs::remove_file(tmp_out);
 
                     found.push(info);
                 }
@@ -118,24 +101,101 @@ fn find_ets2_profiles() -> Vec<ProfileInfo> {
     found
 }
 
-#[command]
-fn load_profile(path: String) -> Result<String, String> {
-    if std::path::Path::new(&path).exists() {
-        Ok(format!("Profil geladen: {}", path))
-    } else {
-        Err("Profil konnte nicht geladen werden".into())
+// -----------------------------------------------------------------------------
+// ---------- PROFILE LADEN & AUTOSAVE BEARBEITEN -------------------------------
+// -----------------------------------------------------------------------------
+
+fn autosave_path(profile: &str) -> PathBuf {
+    Path::new(profile)
+        .join("save")
+        .join("autosave")
+        .join("info.sii")
+}
+
+fn decrypt_if_needed(path: &Path) -> Result<String, String> {
+    let out_file = std::env::temp_dir()
+        .join("ets2_tool")
+        .join("autosave_decoded.sii");
+
+    let _ = fs::create_dir_all(out_file.parent().unwrap());
+
+    let status = Command::new("tools/SII_decrypt.exe")
+        .arg(path)
+        .arg(&out_file)
+        .status();
+
+    if let Ok(s) = status {
+        if s.success() {
+            return fs::read_to_string(&out_file)
+                .map_err(|e| e.to_string());
+        }
     }
+
+    // fallback → Klartext lesen
+    fs::read_to_string(path).map_err(|e| e.to_string())
+}
+
+fn write_back(path: &Path, content: &str) -> Result<(), String> {
+    fs::write(path, content).map_err(|e| e.to_string())
 }
 
 #[command]
+fn load_profile(path: String) -> Result<String, String> {
+    let info_path = autosave_path(&path);
+
+    if !info_path.exists() {
+        return Err("autosave/info.sii nicht gefunden!".into());
+    }
+
+    Ok(format!("Profil geladen: {}", info_path.display()))
+}
+
+#[command]
+fn read_money() -> Result<i32, String> {
+    let profile_path = std::env::var("CURRENT_PROFILE")
+        .map_err(|_| "Kein Profil gesetzt".to_string())?;
+
+    let info_path = autosave_path(&profile_path);
+
+    let content = decrypt_if_needed(&info_path)?;
+
+    let re = Regex::new(r#"info_money_account:\s*(\d+)"#).unwrap();
+
+    if let Some(caps) = re.captures(&content) {
+        let value = caps[1].parse::<i32>().unwrap_or(0);
+        println!("Aktueller Geldwert: {}", value);
+        return Ok(value);
+    }
+
+    Err("Kein Geld-Wert gefunden".into())
+}
+
+
+#[command]
 fn edit_money(amount: i32) -> Result<(), String> {
-    println!("Geld setzen: {}", amount);
+    let profile = std::env::var("CURRENT_PROFILE").unwrap_or_default();
+    let path = autosave_path(&profile);
+
+    let content = decrypt_if_needed(&path)?;
+    let re = Regex::new(r#"info_money_account:\s*\d+"#).unwrap();
+
+    let new = re.replace(&content, format!("info_money_account: {}", amount));
+    write_back(&path, &new)?;
+
     Ok(())
 }
 
 #[command]
 fn edit_level(level: i32) -> Result<(), String> {
-    println!("Level setzen: {}", level);
+    let profile = std::env::var("CURRENT_PROFILE").unwrap_or_default();
+    let path = autosave_path(&profile);
+
+    let content = decrypt_if_needed(&path)?;
+    let re = Regex::new(r#"info_players_experience:\s*\d+"#).unwrap();
+
+    let new = re.replace(&content, format!("info_players_experience: {}", level));
+    write_back(&path, &new)?;
+
     Ok(())
 }
 
@@ -148,5 +208,5 @@ fn main() {
             edit_level
         ])
         .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .expect("error while running tauri app");
 }

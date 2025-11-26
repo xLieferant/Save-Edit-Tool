@@ -16,19 +16,23 @@
 
   <main class="container">
 
-    <!-- Profile Scannen -->
+    <!-- Profile -->
     <section class="card">
-      <h2>Savegame / Profil suchen</h2>
+      <h2>Profil auswählen</h2>
 
       <button id="scan-profiles-btn" class="primary-btn">Profile suchen</button>
+
+      <div class="editor-row">
+        <select id="profile-select">
+          <option>Bitte Profil wählen…</option>
+        </select>
+      </div>
+
+      <button id="load-profile-btn" class="secondary-btn">Profil laden</button>
+
       <p id="profile-status"></p>
-      <ul id="profile-list"></ul>
-
-      <h1>Profil Laden</h1>
-      <button id="load-profiles-btn" class="primary-btn">Profile Laden</button>
-      <p id="profile-list"></p>
-
     </section>
+
     <!-- Editor -->
     <section class="card">
       <h2>Daten bearbeiten</h2>
