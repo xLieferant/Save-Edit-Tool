@@ -88,7 +88,6 @@ fn find_ets2_profiles() -> Vec<ProfileInfo> {
         let base = documents.join("Euro Truck Simulator 2");
         let folders = vec![
             base.join("profiles"),
-            base.join("profiles.backup"),
             base.join("steam_profiles"),
             base.clone(),
         ];

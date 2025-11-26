@@ -6,6 +6,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const loadProfileBtn = document.querySelector("#load-profile-btn");
   const profileStatus = document.querySelector("#profile-status");
 
+  const moneyDisplay = document.querySelector("#moneyShow");
+
   const moneyBtn = document.querySelector("#save-money-btn");
   const levelBtn = document.querySelector("#save-level-btn");
   const editStatus = document.querySelector("#edit-status");
@@ -30,6 +32,25 @@ document.addEventListener("DOMContentLoaded", () => {
     profileStatus.textContent = `${profiles.length} Profile gefunden`;
   });
 
+  // Funktion um Geldwert zu laden
+  async function updateMoneyDisplay() {
+    try {
+      const money = await invoke("read_money");
+      moneyDisplay.textContent = `Geld: ${money.toLocaleString()} €`; // formatiert mit Tausendertrennzeichen
+    } catch (error) {
+      moneyDisplay.textContent = `Fehler beim Laden: ${error}`;
+    }
+  }
+
+  // Beispiel: Sobald Profil geladen wird
+  document
+    .querySelector("#load-profile-btn")
+    .addEventListener("click", async () => {
+      // hier solltest du vorher load_profile aufrufen, wie in deinem bisherigen Code
+      // dann Geld aktualisieren
+      await updateMoneyDisplay();
+    });
+
   profileSelect.addEventListener("change", () => {
     selectedProfilePath = profileSelect.value;
   });
@@ -41,7 +62,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     profileStatus.textContent = "Lade autosave/info.sii...";
-    const result = await invoke("load_profile", { profilePath: selectedProfilePath });
+    const result = await invoke("load_profile", {
+      profilePath: selectedProfilePath,
+    });
     profileStatus.textContent = result;
   });
 
