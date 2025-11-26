@@ -224,7 +224,7 @@ fn read_money() -> Result<i64, String> {
     let content = decrypt_if_needed(&path)?;
 
     let re = Regex::new(r"info_money_account:\s*(\d+)").unwrap();
-
+    
     if let Some(c) = re.captures(&content) {
         let money = c[1].parse::<i64>().unwrap_or(0);
         log!("Geld gefunden: {}", money);
@@ -232,6 +232,32 @@ fn read_money() -> Result<i64, String> {
     }
 
     Err("Geldwert nicht gefunden".into())
+}
+
+// ---------------------------------------------------------------
+// 5.1) LevelXP sehen
+// ---------------------------------------------------------------
+
+#[command]
+fn read_xp() -> Result<i64, String> {
+    log!("read_xp gestartet:");
+
+    let profile = std::env::var("CURRENT_PROFILE")
+        .map_err(|_| "Kein Profil geladen. load_profile zuerst aufrufen.".to_string())?;
+
+    let path = autosave_path(&profile);
+
+    let content = decrypt_if_needed(&path)?;
+
+    let re = Regex::new(r"info_players_experience:\s*(\d+)").unwrap();
+
+    if let Some(c) = re.captures(&content) {
+        let xp = c[1].parse::<i64>().unwrap_or(0);
+        log!("Erfahrungspunkte gefunden: {}", xp);
+        return Ok(xp);
+    }
+
+    Err("Erfahrungspunkte nicht gefunden".into())
 }
 
 // ---------------------------------------------------------------
@@ -259,7 +285,7 @@ fn edit_money(amount: i64) -> Result<(), String> {
 }
 
 // ---------------------------------------------------------------
-// 7) Level ändern
+// 7) LevelXP ändern
 // ---------------------------------------------------------------
 
 #[command]
@@ -282,6 +308,7 @@ fn edit_level(xp: i64) -> Result<(), String> {
     Ok(())
 }
 
+
 // ---------------------------------------------------------------
 // Tauri Start
 // ---------------------------------------------------------------
@@ -292,6 +319,7 @@ fn main() {
             find_ets2_profiles,
             load_profile,
             read_money,
+            read_xp,
             edit_money,
             edit_level
         ])
