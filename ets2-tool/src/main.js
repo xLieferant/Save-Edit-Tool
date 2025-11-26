@@ -12,7 +12,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let selectedProfilePath = null;
 
-  // Profile scannen
   scanBtn.addEventListener("click", async () => {
     profileStatus.textContent = "Scanne Profile...";
     profileSelect.innerHTML = `<option>Bitte Profil wählen…</option>`;
@@ -31,12 +30,10 @@ document.addEventListener("DOMContentLoaded", () => {
     profileStatus.textContent = `${profiles.length} Profile gefunden`;
   });
 
-  // Profil auswählen
   profileSelect.addEventListener("change", () => {
     selectedProfilePath = profileSelect.value;
   });
 
-  // Profil laden → autosave öffnen
   loadProfileBtn.addEventListener("click", async () => {
     if (!selectedProfilePath) {
       profileStatus.textContent = "Kein Profil ausgewählt!";
@@ -44,13 +41,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     profileStatus.textContent = "Lade autosave/info.sii...";
-
-    const result = await invoke("load_profile", { path: selectedProfilePath });
-
+    const result = await invoke("load_profile", { profilePath: selectedProfilePath });
     profileStatus.textContent = result;
   });
 
-  // Geld speichern
   moneyBtn.addEventListener("click", async () => {
     const amount = Number(document.querySelector("#money-input").value);
     editStatus.textContent = "Speichere...";
@@ -60,12 +54,11 @@ document.addEventListener("DOMContentLoaded", () => {
     editStatus.textContent = "Geld geändert!";
   });
 
-  // Level speichern
   levelBtn.addEventListener("click", async () => {
-    const level = Number(document.querySelector("#level-input").value);
+    const xp = Number(document.querySelector("#level-input").value);
     editStatus.textContent = "Speichere...";
 
-    await invoke("edit_level", { level });
+    await invoke("edit_level", { xp });
 
     editStatus.textContent = "Level geändert!";
   });
