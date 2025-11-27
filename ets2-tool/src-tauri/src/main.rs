@@ -28,6 +28,17 @@ struct ProfileInfo {
     message: Option<String>,
 }
 
+#[derive(Serialize)]
+struct SaveGameData {
+    money: Option<i64>,
+    xp: Option<i64>,
+    level: Option<i64>,
+    garages: Option<i64>,
+    trucks_owned: Option<i64>,
+    trailers_owned: Option<i64>,
+    kilometers_total: Option<i64>,
+}
+
 // Profilname extrahieren aus profile.sii
 fn extract_profile_name(text: &str) -> Option<String> {
     let re = Regex::new(r#"(?i)^\s*profile_name\s*:\s*"([^"]+)""#).unwrap();
@@ -40,13 +51,12 @@ fn extract_profile_name(text: &str) -> Option<String> {
 }
 
 // ---------------------------------------------------------------
-// 0) SII Datei vorher entschlüsseln (NEU!)
+// 0) SII Datei vorher entschlüsseln
 // ---------------------------------------------------------------
 
 fn ensure_decrypted(path: &PathBuf) -> Result<(), String> {
     let content = fs::read_to_string(path).unwrap_or_default();
 
-    // Bereits Klartext?
     if content.starts_with("SiiNunit") {
         log!("Bereits Klartext: {}", path.display());
         return Ok(());
@@ -106,7 +116,6 @@ fn find_ets2_profiles() -> Vec<ProfileInfo> {
                         continue;
                     }
 
-                    // ERSTER SCHRITT → immer decrypt versuchen
                     let _ = ensure_decrypted(&sii);
 
                     let text = fs::read_to_string(&sii).ok();
@@ -153,7 +162,7 @@ fn autosave_path(profile_path: &str) -> PathBuf {
 }
 
 // ---------------------------------------------------------------
-// 3) SII decrypt + Fallback für autosave
+// 3) SII decrypt
 // ---------------------------------------------------------------
 
 fn decrypt_if_needed(path: &Path) -> Result<String, String> {
@@ -175,9 +184,7 @@ fn decrypt_if_needed(path: &Path) -> Result<String, String> {
             if output.status.success() {
                 log!("Decrypt erfolgreich.");
                 return fs::read_to_string(&out)
-                    .map_err(|e| format!("Fehler beim Lesen entschlüsselter Datei: {}", e));
-            } else {
-                log!("Decrypt fehlgeschlagen, lese Klartext.");
+                    .map_err(|e| format!("Fehler beim Lesen der entschlüsselten Datei: {}", e));
             }
         }
         Err(e) => log!("Decrypt nicht ausführbar: {}", e),
@@ -187,7 +194,7 @@ fn decrypt_if_needed(path: &Path) -> Result<String, String> {
 }
 
 // ---------------------------------------------------------------
-// 4) Profil laden & CURRENT_PROFILE setzen
+// 4) Profil laden
 // ---------------------------------------------------------------
 
 #[command]
@@ -217,7 +224,7 @@ fn read_money() -> Result<i64, String> {
     log!("read_money gestartet");
 
     let profile = std::env::var("CURRENT_PROFILE")
-        .map_err(|_| "Kein Profil geladen. load_profile zuerst aufrufen.".to_string())?;
+        .map_err(|_| "Kein Profil geladen.".to_string())?;
 
     let path = autosave_path(&profile);
 
@@ -235,15 +242,15 @@ fn read_money() -> Result<i64, String> {
 }
 
 // ---------------------------------------------------------------
-// 5.1) LevelXP sehen
+// 5.1) XP lesen
 // ---------------------------------------------------------------
 
 #[command]
 fn read_xp() -> Result<i64, String> {
-    log!("read_xp gestartet:");
+    log!("read_xp gestartet");
 
     let profile = std::env::var("CURRENT_PROFILE")
-        .map_err(|_| "Kein Profil geladen. load_profile zuerst aufrufen.".to_string())?;
+        .map_err(|_| "Kein Profil geladen.".to_string())?;
 
     let path = autosave_path(&profile);
 
@@ -253,11 +260,11 @@ fn read_xp() -> Result<i64, String> {
 
     if let Some(c) = re.captures(&content) {
         let xp = c[1].parse::<i64>().unwrap_or(0);
-        log!("Erfahrungspunkte gefunden: {}", xp);
+        log!("XP gefunden: {}", xp);
         return Ok(xp);
     }
 
-    Err("Erfahrungspunkte nicht gefunden".into())
+    Err("XP nicht gefunden".into())
 }
 
 // ---------------------------------------------------------------
@@ -280,12 +287,12 @@ fn edit_money(amount: i64) -> Result<(), String> {
 
     fs::write(&path, new.as_bytes()).map_err(|e| e.to_string())?;
 
-    log!("Geld erfolgreich geändert.");
+    log!("Geld geändert.");
     Ok(())
 }
 
 // ---------------------------------------------------------------
-// 7) LevelXP ändern
+// 7) XP ändern
 // ---------------------------------------------------------------
 
 #[command]
@@ -304,10 +311,46 @@ fn edit_level(xp: i64) -> Result<(), String> {
 
     fs::write(&path, new.as_bytes()).map_err(|e| e.to_string())?;
 
-    log!("Level erfolgreich geändert.");
+    log!("Level geändert.");
     Ok(())
 }
 
+// ---------------------------------------------------------------
+// 8) ALLE Daten auf einmal auslesen
+// ---------------------------------------------------------------
+
+#[command]
+fn read_all_profile_data() -> Result<SaveGameData, String> {
+    log!("read_all_profile_data gestartet");
+
+    let profile = std::env::var("CURRENT_PROFILE")
+        .map_err(|_| "Kein Profil geladen.").unwrap();
+
+    let path = autosave_path(&profile);
+
+    let content = decrypt_if_needed(&path)?;
+
+    let money_re = Regex::new(r"info_money_account:\s*(\d+)").unwrap();
+    let xp_re = Regex::new(r"info_players_experience:\s*(\d+)").unwrap();
+    let level_re = Regex::new(r"info_player_level:\s*(\d+)").unwrap();
+    let garages_re = Regex::new(r"garages:\s*(\d+)").unwrap();
+    let trucks_re = Regex::new(r"trucks:\s*(\d+)").unwrap();
+    let trailers_re = Regex::new(r"trailers:\s*(\d+)").unwrap();
+    let km_re = Regex::new(r"km_total:\s*(\d+)").unwrap();
+
+    let data = SaveGameData {
+        money: money_re.captures(&content).and_then(|c| c[1].parse().ok()),
+        xp: xp_re.captures(&content).and_then(|c| c[1].parse().ok()),
+        level: level_re.captures(&content).and_then(|c| c[1].parse().ok()),
+        garages: garages_re.captures(&content).and_then(|c| c[1].parse().ok()),
+        trucks_owned: trucks_re.captures(&content).and_then(|c| c[1].parse().ok()),
+        trailers_owned: trailers_re.captures(&content).and_then(|c| c[1].parse().ok()),
+        kilometers_total: km_re.captures(&content).and_then(|c| c[1].parse().ok()),
+    };
+
+    log!("Alle Savegame Daten geladen.");
+    Ok(data)
+}
 
 // ---------------------------------------------------------------
 // Tauri Start
@@ -321,7 +364,8 @@ fn main() {
             read_money,
             read_xp,
             edit_money,
-            edit_level
+            edit_level,
+            read_all_profile_data
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri app");
