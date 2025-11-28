@@ -172,7 +172,7 @@ nav button:hover, nav .link-btn:hover {
     background: #1b1f25; 
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px; 
-    max-height: 200px; 
+    max-height: 250px; 
     overflow-y: scroll; /* Muss 'scroll' oder 'auto' sein, damit es funktioniert */
     box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
     z-index: 10;
