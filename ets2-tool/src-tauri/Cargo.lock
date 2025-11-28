@@ -966,6 +966,7 @@ version = "0.1.0"
 dependencies = [
  "decrypt_truck",
  "dirs 5.0.1",
+ "log",
  "regex",
  "serde",
  "serde_json",

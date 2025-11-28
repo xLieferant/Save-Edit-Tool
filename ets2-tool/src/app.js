@@ -32,16 +32,22 @@ loadTools("truck");
 const modalText = document.querySelector("#modalText");
 const modalTextTitle = document.querySelector("#modalTextTitle");
 const modalTextInput = document.querySelector("#modalTextInput");
+const modalTextCancel = document.querySelector("#modalTextCancel");
+const modalTextApply = document.querySelector("#modalTextApply");
 
 // Number Modal
 const modalNumber = document.querySelector("#modalNumber");
 const modalNumberTitle = document.querySelector("#modalNumberTitle");
 const modalNumberInput = document.querySelector("#modalNumberInput");
+const modalNumberCancel = document.querySelector("#modalNumberCancel");
+const modalNumberApply = document.querySelector("#modalNumberApply");
 
 // Slider Modal
 const modalSlider = document.querySelector("#modalSlider");
 const modalSliderTitle = document.querySelector("#modalSliderTitle");
 const modalSliderInput = document.querySelector("#modalSliderInput");
+const modalSliderCancel = document.querySelector("#modalSliderCancel")
+const modalSliderApply = document.querySelector("#modalSliderApply");
 
 // --- Funktion zum Öffnen ---
 
@@ -66,13 +72,36 @@ function openModalSlider(title, isChecked) {
 // --- Handhabung zur Schliessung der Modale 
 
 // Close Buttons 
-document.querySelector("#modalTextCancel").onclick = () => modal.style.display = "none";
-document.querySelector("#modalTextApply").onclick = () => modal.style.display = "none"
-console.log("Angewendet:", modalTextInput.value);
 
-document.querySelector("#modalNumberCancel").onclick = () => modal.style.display = "none";
-document.querySelectorAll("#modalNumberApply").onclick = () => modal.style.display = "none"
-console.log("Angewendete nummer:", modalNumberInput.value);
+modalTextApply.onclick = () => {
+    modalText.style.display = "none";
+    console.log("Angewendet:", modalTextInput.value);
+}
+
+modalNumberApply.onclick = () => {
+    modalNumber.style.display = "none";
+    console.log("Angewendete Nummer:", modalNumberInput.value);
+}
+
+modalSliderApply.onclick = () => {
+    modalSlider.style.display = "none";
+    console.log("Apply Button used", modalSliderInput.value)
+}
+
+modalTextCancel.onclick = () => {
+    modalText.style.display = "none";
+    console.log("Angewendet -> Close Button", modalTextCancel.value);
+}
+
+modalNumberCancel.onclick = () => {
+    modalNumber.style.display = "none";
+    console.log("Angewendet -> Close Button", modalNumberCancel.value);
+}
+
+modalSliderCancel.onclick = () => {
+    modalSlider.style.display = "none";
+    console.log("Angewendet - Close Button", modalSliderCancel.value);
+}
 
 
 

@@ -417,6 +417,8 @@ fn read_all_profile_data() -> Result<SaveGameData, String> {
     };
 
     log!("Alle Savegame Daten geladen.");
+    log!("Geld gefunden: {}", data.money.unwrap_or(0));
+    log!("XP gefunden: {}", data.xp.unwrap_or(0));
     Ok(data)
 }
 

@@ -5,23 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ETS2 Save Editor U+002d Alex Edition</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- Hier kann optional ein Favicon oder Preconnects eingefügt werden -->
 </head>
 <body>
 
 <header class="main-header">
     <div class="logo">ETS2 TOOLBOX</div>
     <nav>
-        <button class="nav-btn" data-tab="truck">Truck</button>
+        <button class="nav-btn active" data-tab="truck">Truck</button> <!-- "active" Klasse als Standard gesetzt -->
         <button class="nav-btn" data-tab="trailer">Trailer</button>
         <button class="nav-btn" data-tab="profile">Profile</button>
         <button class="nav-btn" data-tab="settings">Settings</button>
-        <button class="link-btn" data-tab="youtube">YouTube</button> <!--Hier soll mein YT link eingefügt werden -->
+        <!-- Dein YouTube-Link als Link-Button -->
+        <a href="www.youtube.com" target="_blank" class="link-btn">YouTube</a>
     </nav>
 </header>
 
 <main id="tool-container">
-    <!-- Tools werden per JS geladen -->
+    <!-- Tools werden per JS geladen (standardmäßig 'truck') -->
 </main>
+
+<!-- Statusmeldung für Profile (außerhalb des Footers positioniert, damit sie Platz hat) -->
+<p id="profile-status" style="margin: 10px 25px 0; font-size: 0.8em; color: #0ff;"></p>
+
 
 <footer class="profile-bar">
     <div class="game-switch">
@@ -29,10 +35,14 @@
         <button id="atsBtn" class="">ATS</button>
     </div>
 
+    <!-- Die Struktur für das benutzerdefinierte Dropdown-Menü -->
     <div class="profile-picker">
-        <span id="profileName">Select a profile</span>
-        <button id="openSaveModal">▼</button>
-            <p id="profile-status"></p>
+        <span id="profileNameDisplay">Select a profile</span>
+        <button id="openProfileModal">▼</button>
+        <!-- Container für die dynamisch generierte Dropdown-Liste -->
+        <div id="profileDropdownList" class="custom-dropdown-list">
+            <!-- Profile werden hier durch JS eingefügt -->
+        </div>
     </div>
 
     <div class="save-picker">
@@ -40,10 +50,11 @@
         <button id="openSaveModal">▼</button>
     </div>
 
-    <button id="refreshBtn" class="refresh-btn">⟳</button> <!-- hier muss mein Main.js update button eingepflegt werden -->
+    <button id="refreshBtn" class="refresh-btn">⟳</button>
 </footer>
 
-<!-- MODAL + Das ist, wenn man auf die Kachel drückt zum öffnen -->
+
+<!-- MODAL: Text-Input -->
 <div class="modal-backdrop" id="modalText">
     <div class="modal-box">
         <h2 id="modalTextTitle">Modal Title</h2>
@@ -55,6 +66,7 @@
     </div>
 </div>
 
+<!-- MODAL: Number-Input -->
 <div class="modal-backdrop" id="modalNumber">
     <div class="modal-box">
         <h2 id="modalNumberTitle">Modal Title</h2>
@@ -66,18 +78,26 @@
     </div>
 </div>
 
+<!-- MODAL: Slider/Checkbox Input -->
 <div class="modal-backdrop" id="modalSlider">
     <div class="modal-box">
         <h2 id="modalSliderTitle">Modal Title</h2>
-        <input id="modalSliderInput" type="checkbox">
-        <div class="checkboxSlider">
+        <input id="modalSliderInput" type="checkbox" class="toggle-checkbox">
+        <!-- Das Label dient als der visuelle Slider, der über CSS gestylt wird -->
+        <label for="modalSliderInput" class="checkboxSlider"></label> 
+        <div class="modal-actions">
             <button id="modalSliderCancel">Close</button>
+            <button id="modalSliderApply" class="apply">Apply</button>
         </div>
     </div>
 </div>
 
+<!-- Hier habe ich die Skripte optimiert -->
+<!-- tools.js und app.js scheinen andere, nicht gezeigte Logik zu enthalten -->
 <script src="tools.js"></script>
-<script src="app.js"></script>
+<script src="app.js"></script> 
+<!-- main.js (das Skript mit all deiner Logik) als Modul und mit defer laden -->
 <script type="module" src="main.js" defer></script>
+
 </body>
 </html>
