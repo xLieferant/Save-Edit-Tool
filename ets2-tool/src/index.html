@@ -1,14 +1,68 @@
-<!doctype html>
-<html lang="de">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SCS Save Editor</title>
-  <link rel="stylesheet" href="styles.css" />
-  <script type="module" src="main.js" defer></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETS2 Save Editor U+002d Alex Edition</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
-
 <body>
+
+<header class="main-header">
+    <div class="logo">ETS2 TOOLBOX</div>
+    <nav>
+        <button class="nav-btn" data-tab="trailer">Trailer</button>
+        <button class="nav-btn" data-tab="truck">Truck</button>
+        <button class="nav-btn" data-tab="profile">Profile</button>
+        <button class="nav-btn" data-tab="settings">Settings</button>
+    </nav>
+</header>
+
+<main id="tool-container">
+    <!-- Tools werden per JS geladen -->
+</main>
+
+<footer class="profile-bar">
+    <div class="game-switch">
+        <button id="ets2Btn" class="active">ETS2</button>
+        <button id="atsBtn">ATS</button>
+    </div>
+
+    <div class="profile-picker">
+        <span id="profileName">Select a profile</span>
+        <button id="openProfileModal">▼</button>
+    </div>
+
+    <div class="save-picker">
+        <span id="saveName">Select a save</span>
+        <button id="openSaveModal">▼</button>
+    </div>
+
+    <button id="refreshBtn" class="refresh-btn">⟳</button>
+</footer>
+
+<!-- MODAL -->
+<div class="modal-backdrop" id="modal">
+    <div class="modal-box">
+        <h2 id="modalTitle">Modal Title</h2>
+        <input id="modalInput" type="text" placeholder="">
+        <div class="modal-actions">
+            <button id="modalCancel">Close</button>
+            <button id="modalApply" class="apply">Apply</button>
+        </div>
+    </div>
+</div>
+
+<script src="tools.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
+
+
+
+
+
+
   <header class="app-header">
     <h1>SCS Save Editor</h1>
     <p class="subtitle">by xLieferant</p>
@@ -60,5 +114,3 @@
     </section>
 
   </main>
-</body>
-</html>
