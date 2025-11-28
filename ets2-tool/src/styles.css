@@ -154,10 +154,10 @@ nav button:hover, nav .link-btn:hover {
     cursor: pointer;
 }
 
-/* Statusmeldung (im HTML nun separat platziert) */
+/* Statusmeldung (im HTML nun separat platziert)
 #profile-status {
-    /* Styles wie im HTML Inline definiert, kann hier überschrieben werden */
-}
+     Styles wie im HTML Inline definiert, kann hier überschrieben werden 
+} */
 
 
 /* --- CUSTOM DROPDOWN LIST STYLES --- */

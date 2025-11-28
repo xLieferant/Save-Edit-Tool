@@ -60,7 +60,7 @@ const tools = {
             title: "Experience Skills",
             desc: "Set your Skill Points",
             img: "images/skillPoint.jpg",
-            action: () => openModal("Set Skill points")
+            action: () => openModalText("Set Skill points")
         }
     ],
     settings: [
@@ -68,7 +68,7 @@ const tools = {
             title: "Color Theme",
             desc: "Change the Style",
             img: "images/styles.jpg",
-            action: () => openModal("","")
+            action: () => openModalSlider("","")
         },
         {
             title: "Convoy 128",
@@ -80,7 +80,7 @@ const tools = {
             title: "Language",
             desc: "change your language",
             img: "images/lang.jpg",
-            action: () => openModal("","")
+            action: () => openModalSlider("","")
         },
         {
             title: "Activate Dev. mode",
@@ -92,7 +92,7 @@ const tools = {
             title: "Save Document folders",
             desc: "Where are your saves?",
             img: "images/Save.jpg",
-            action: () => openModal("","")
+            action: () => openModalText("","")
         }
         
     ],
