@@ -1,8 +1,8 @@
 const { invoke } = window.__TAURI__.core;
 
 document.addEventListener("DOMContentLoaded", () => {
-  const scanBtn = document.querySelector("#scan-profiles-btn");
-  const profileSelect = document.querySelector("#profile-select");
+  const scanBtn = document.querySelector("#refreshBtn");
+  const profileSelect = document.querySelector("#profileName");
   const loadProfileBtn = document.querySelector("#load-profile-btn");
   const profileStatus = document.querySelector("#profile-status");
 
