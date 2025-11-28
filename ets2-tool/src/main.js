@@ -19,7 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // --- PROFILE SCANNEN ---
   scanBtn.addEventListener("click", async () => {
     profileStatus.textContent = "Scanne Profile...";
-    profileSelect.innerHTML = `<option>Bitte Profil wählen…</option>`;
+    profileSelect.innerHTML = `<option>Bitte Profil wählen...</option>`;
 
     const profiles = await invoke("find_ets2_profiles");
 
