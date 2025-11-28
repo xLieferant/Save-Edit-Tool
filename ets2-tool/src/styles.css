@@ -129,8 +129,9 @@ nav button:hover, nav .link-btn:hover {
     border-radius: 10px;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 15px;
     cursor: pointer;
+    width: auto;
 }
 
 /* Der Pfeil-Button im Picker */
@@ -170,7 +171,8 @@ nav button:hover, nav .link-btn:hover {
     background: #1b1f25; /* Hintergrund wie deine Modal-Box */
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 8px 8px 0 0; /* Abgerundete Ecken oben */
-    max-height: 200px; /* Begrenzte Höhe für Scrollbarkeit */
+    max-height: auto; /* Begrenzte Höhe für Scrollbarkeit */
+    min-width: 300px;
     overflow-y: auto;
     box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
     z-index: 10;
