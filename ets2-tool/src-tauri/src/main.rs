@@ -1,11 +1,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use tauri::command;
-use std::fs;
-use serde::Serialize;
-use std::process::Command;
-use std::path::{Path, PathBuf};
 use regex::Regex;
+use serde::Serialize;
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::process::Command;
+use tauri::command;
 
 // ---------------------------------------------------------------
 // TERMINAL LOG (EINFACHER)
@@ -39,55 +39,109 @@ struct SaveGameData {
     kilometers_total: Option<i64>,
 }
 
-// Profilname extrahieren aus profile.sii
+// ---------------------------------------------------------------
+// Flexible Profile-Name Extraktion
+// erkennt:
+//   profile_name: "Name"
+//   profile_name: Name
+//   PROFILE_NAME : "Name"
+// ---------------------------------------------------------------
 fn extract_profile_name(text: &str) -> Option<String> {
-    let re = Regex::new(r#"(?i)^\s*profile_name\s*:\s*"([^"]+)""#).unwrap();
-    for l in text.lines() {
-        if let Some(c) = re.captures(l) {
-            return Some(c[1].to_string());
-        }
+    // flexible regex, erlaubt optional quotes
+    let re = Regex::new(r#"(?i)profile_name\s*:\s*"?(?P<name>[^"\r\n]+)"?"#).unwrap();
+    if let Some(cap) = re.captures(text) {
+        return Some(cap[1].trim().to_string());
     }
     None
 }
 
 // ---------------------------------------------------------------
-// 0) SII Datei vorher entschlüsseln
+// HEX-Ordnername -> UTF-8 dekodieren (ETS2 verwendet hex-codierte ordner)
+// z.B. 547275636B... -> "Truck..." etc.
 // ---------------------------------------------------------------
-
-fn ensure_decrypted(path: &PathBuf) -> Result<(), String> {
-    let content = fs::read_to_string(path).unwrap_or_default();
-
-    if content.starts_with("SiiNunit") {
-        log!("Bereits Klartext: {}", path.display());
-        return Ok(());
+fn decode_hex_folder_name(hex: &str) -> Option<String> {
+    // entferne mögliche nicht-hexzeichen & whitespace
+    let hex_clean: String = hex.chars().filter(|c| c.is_ascii_hexdigit()).collect();
+    if hex_clean.len() % 2 != 0 || hex_clean.is_empty() {
+        return None;
     }
 
-    log!("Decrypting: {}", path.display());
+    let bytes_res: Result<Vec<u8>, _> = (0..hex_clean.len())
+        .step_by(2)
+        .map(|i| u8::from_str_radix(&hex_clean[i..i + 2], 16))
+        .collect();
 
-    let exe = PathBuf::from("tools/SII_Decrypt.exe");
-    if !exe.exists() {
-        return Err("SII_Decrypt.exe nicht gefunden".into());
+    match bytes_res {
+        Ok(bytes) => String::from_utf8(bytes).ok(),
+        Err(_) => None,
     }
-
-    let out = Command::new(exe)
-        .arg(path)
-        .output()
-        .map_err(|e| format!("Fehler beim Ausführen: {}", e))?;
-
-    if !out.status.success() {
-        return Err(format!(
-            "Decrypt-Fehler: {}",
-            String::from_utf8_lossy(&out.stderr)
-        ));
-    }
-
-    Ok(())
 }
 
 // ---------------------------------------------------------------
-// 1) PROFILE FINDEN
+// 0) SII Datei vorher entschlüsseln (prüft, ob SiiNunit oder nicht)
+// decrypt_if_needed versucht, SII_Decrypt.exe (oder decrypt_truck) zu nutzen
+// und liest die temporäre Ausgabedatei. Falls das nicht klappt, liest es die Originaldatei.
 // ---------------------------------------------------------------
+fn decrypt_if_needed(path: &Path) -> Result<String, String> {
+    log!("decrypt_if_needed: {}", path.display());
 
+    // Versuch: lies original kurz, um zu prüfen, ob bereits Klartext
+    if let Ok(orig) = fs::read_to_string(path) {
+        if orig.starts_with("SiiNunit") {
+            // bereits Klartext, gib zurück
+            return Ok(orig);
+        }
+    }
+
+    // ansonsten versuche externes Tool: erst SII_Decrypt.exe im tools/, dann global decrypt_truck
+    let out = std::env::temp_dir()
+        .join("ets2_tool")
+        .join(format!("decoded_{}.sii", path.file_stem().unwrap_or_else(|| std::ffi::OsStr::new("tmp")).to_string_lossy()));
+
+    let _ = fs::create_dir_all(out.parent().unwrap());
+
+    // prefer local tools/SII_Decrypt.exe if exists
+    let try_local = PathBuf::from("tools/SII_Decrypt.exe");
+    let mut did_decrypt = false;
+
+    if try_local.exists() {
+        log!("Versuche tools/SII_Decrypt.exe");
+        if let Ok(output) = Command::new(&try_local).arg(path).arg(&out).output() {
+            if output.status.success() {
+                did_decrypt = true;
+            } else {
+                log!("tools/SII_Decrypt.exe fehlgeschlagen: {}", String::from_utf8_lossy(&output.stderr));
+            }
+        } else {
+            log!("tools/SII_Decrypt.exe konnte nicht ausgeführt werden");
+        }
+    }
+
+    // fallback: global decrypt_truck (wenn im PATH oder in cargo bin installiert)
+    if !did_decrypt {
+        if let Ok(output) = Command::new("decrypt_truck").arg(path).arg(&out).output() {
+            if output.status.success() {
+                did_decrypt = true;
+            } else {
+                log!("decrypt_truck fehlgeschlagen: {}", String::from_utf8_lossy(&output.stderr));
+            }
+        } else {
+            log!("decrypt_truck nicht ausführbar (nicht im PATH?)");
+        }
+    }
+
+    // wenn ein Tool die entschlüsselte Datei geschrieben hat, lese sie
+    if did_decrypt && out.exists() {
+        return fs::read_to_string(&out).map_err(|e| format!("Fehler beim Lesen der entschlüsselten Datei: {}", e));
+    }
+
+    // letzter Fallback: versuche die Originaldatei als Text (kann verschlüsselt sein)
+    fs::read_to_string(path).map_err(|e| format!("Fehler beim Lesen der Originaldatei: {}", e))
+}
+
+// ---------------------------------------------------------------
+// 1) PROFILE FINDEN (mit Decrypt + Fallback-Namen aus profile.bak.sii oder HEX-Ordner)
+// ---------------------------------------------------------------
 #[command]
 fn find_ets2_profiles() -> Vec<ProfileInfo> {
     log!("Starte Profil-Suche…");
@@ -98,7 +152,7 @@ fn find_ets2_profiles() -> Vec<ProfileInfo> {
         let base = documents.join("Euro Truck Simulator 2");
         let folders = vec![
             base.join("profiles"),
-            base.join("steam_profiles"),
+            base.join("profiles.backup"),
             base.clone(),
         ];
 
@@ -110,15 +164,29 @@ fn find_ets2_profiles() -> Vec<ProfileInfo> {
             if let Ok(entries) = fs::read_dir(folder) {
                 for entry in entries.flatten() {
                     let path = entry.path();
-                    let sii = path.join("profile.sii");
 
-                    if !(path.is_dir() && sii.exists()) {
+                    // skip if not directory
+                    if !path.is_dir() {
                         continue;
                     }
 
-                    let _ = ensure_decrypted(&sii);
+                    let sii = path.join("profile.sii");
+                    if !sii.exists() {
+                        continue;
+                    }
 
-                    let text = fs::read_to_string(&sii).ok();
+                    // Versuche zu decrypten UND direkt den Klartext einzulesen.
+                    let text = match decrypt_if_needed(&sii) {
+                        Ok(content) => Some(content),
+                        Err(e) => {
+                            log!(
+                                "Decrypt fehlgeschlagen für {}: {}. Versuche Klartext-Fallback.",
+                                sii.display(),
+                                e
+                            );
+                            fs::read_to_string(&sii).ok()
+                        }
+                    };
 
                     let mut info = ProfileInfo {
                         path: path.display().to_string(),
@@ -127,17 +195,42 @@ fn find_ets2_profiles() -> Vec<ProfileInfo> {
                         message: None,
                     };
 
-                    if let Some(content) = text {
-                        if let Some(name) = extract_profile_name(&content) {
-                            info.name = Some(name);
-                            info.success = true;
-                            info.message = Some("OK".into());
-                            log!("Profil gefunden: {}", info.path);
+                    // 1) profilname aus profile.sii
+                    let from_sii = text.as_ref().and_then(|t| extract_profile_name(t));
+
+                    // 2) falls leer -> versuche profile.bak.sii
+                    let from_bak = if from_sii.is_none() {
+                        let bak = path.join("profile.bak.sii");
+                        if bak.exists() {
+                            match decrypt_if_needed(&bak) {
+                                Ok(bak_content) => extract_profile_name(&bak_content),
+                                Err(_) => fs::read_to_string(&bak).ok().and_then(|t| extract_profile_name(&t)),
+                            }
                         } else {
-                            info.message = Some("profile_name nicht gefunden".into());
+                            None
                         }
                     } else {
-                        info.message = Some("profile.sii nicht lesbar".into());
+                        None
+                    };
+
+                    // 3) falls noch leer -> dekodiere ordnername hex -> text
+                    let from_folder = if from_sii.is_none() && from_bak.is_none() {
+                        path.file_name()
+                            .and_then(|os| os.to_str())
+                            .and_then(|s| decode_hex_folder_name(s))
+                    } else {
+                        None
+                    };
+
+                    // priorität: sii > bak > folder
+                    if let Some(name) = from_sii.or(from_bak).or(from_folder) {
+                        info.name = Some(name);
+                        info.success = true;
+                        info.message = Some("OK".into());
+                        log!("Profil gefunden: {} ({})", info.path, info.name.as_ref().unwrap());
+                    } else {
+                        info.message = Some("profile_name nicht gefunden".into());
+                        log!("profile_name nicht gefunden in {}", info.path);
                     }
 
                     found_profiles.push(info);
@@ -146,14 +239,13 @@ fn find_ets2_profiles() -> Vec<ProfileInfo> {
         }
     }
 
-    log!("Profil-Suche abgeschlossen.");
+    log!("Profil-Suche abgeschlossen. Gefunden: {}", found_profiles.len());
     found_profiles
 }
 
 // ---------------------------------------------------------------
 // 2) Autosave Pfad generieren
 // ---------------------------------------------------------------
-
 fn autosave_path(profile_path: &str) -> PathBuf {
     Path::new(profile_path)
         .join("save")
@@ -162,41 +254,18 @@ fn autosave_path(profile_path: &str) -> PathBuf {
 }
 
 // ---------------------------------------------------------------
-// 3) SII decrypt
+// 3) decrypt_if_needed für autosave (wiederverwendbar)
 // ---------------------------------------------------------------
-
-fn decrypt_if_needed(path: &Path) -> Result<String, String> {
-    log!("decrypt_if_needed: {}", path.display());
-
-    let out = std::env::temp_dir()
-        .join("ets2_tool")
-        .join("decoded_autosave.sii");
-
-    let _ = fs::create_dir_all(out.parent().unwrap());
-
-    let decrypt = Command::new("tools/SII_Decrypt.exe")
-        .arg(path)
-        .arg(&out)
-        .output();
-
-    match decrypt {
-        Ok(output) => {
-            if output.status.success() {
-                log!("Decrypt erfolgreich.");
-                return fs::read_to_string(&out)
-                    .map_err(|e| format!("Fehler beim Lesen der entschlüsselten Datei: {}", e));
-            }
-        }
-        Err(e) => log!("Decrypt nicht ausführbar: {}", e),
-    }
-
-    fs::read_to_string(path).map_err(|e| format!("Fehler beim Lesen: {}", e))
+// Note: diese Funktion wurde oben bereits implementiert (gleiches Verhalten),
+// hier als wrapper nur um Signatur für andere Teile klar zu machen.
+#[allow(dead_code)]
+fn decrypt_if_needed_wrapper(path: &Path) -> Result<String, String> {
+    decrypt_if_needed(path)
 }
 
 // ---------------------------------------------------------------
 // 4) Profil laden
 // ---------------------------------------------------------------
-
 #[command]
 fn load_profile(profile_path: String) -> Result<String, String> {
     log!("load_profile gestartet: {}", &profile_path);
@@ -218,20 +287,19 @@ fn load_profile(profile_path: String) -> Result<String, String> {
 // ---------------------------------------------------------------
 // 5) Geld lesen
 // ---------------------------------------------------------------
-
 #[command]
 fn read_money() -> Result<i64, String> {
     log!("read_money gestartet");
 
-    let profile = std::env::var("CURRENT_PROFILE")
-        .map_err(|_| "Kein Profil geladen.".to_string())?;
+    let profile =
+        std::env::var("CURRENT_PROFILE").map_err(|_| "Kein Profil geladen.".to_string())?;
 
     let path = autosave_path(&profile);
 
     let content = decrypt_if_needed(&path)?;
 
     let re = Regex::new(r"info_money_account:\s*(\d+)").unwrap();
-    
+
     if let Some(c) = re.captures(&content) {
         let money = c[1].parse::<i64>().unwrap_or(0);
         log!("Geld gefunden: {}", money);
@@ -244,13 +312,12 @@ fn read_money() -> Result<i64, String> {
 // ---------------------------------------------------------------
 // 5.1) XP lesen
 // ---------------------------------------------------------------
-
 #[command]
 fn read_xp() -> Result<i64, String> {
     log!("read_xp gestartet");
 
-    let profile = std::env::var("CURRENT_PROFILE")
-        .map_err(|_| "Kein Profil geladen.".to_string())?;
+    let profile =
+        std::env::var("CURRENT_PROFILE").map_err(|_| "Kein Profil geladen.".to_string())?;
 
     let path = autosave_path(&profile);
 
@@ -270,13 +337,12 @@ fn read_xp() -> Result<i64, String> {
 // ---------------------------------------------------------------
 // 6) Geld ändern
 // ---------------------------------------------------------------
-
 #[command]
 fn edit_money(amount: i64) -> Result<(), String> {
     log!("edit_money: {}", amount);
 
-    let profile = std::env::var("CURRENT_PROFILE")
-        .map_err(|_| "Kein Profil geladen.".to_string())?;
+    let profile =
+        std::env::var("CURRENT_PROFILE").map_err(|_| "Kein Profil geladen.".to_string())?;
 
     let path = autosave_path(&profile);
 
@@ -294,13 +360,12 @@ fn edit_money(amount: i64) -> Result<(), String> {
 // ---------------------------------------------------------------
 // 7) XP ändern
 // ---------------------------------------------------------------
-
 #[command]
 fn edit_level(xp: i64) -> Result<(), String> {
     log!("edit_level: {}", xp);
 
-    let profile = std::env::var("CURRENT_PROFILE")
-        .map_err(|_| "Kein Profil geladen.".to_string())?;
+    let profile =
+        std::env::var("CURRENT_PROFILE").map_err(|_| "Kein Profil geladen.".to_string())?;
 
     let path = autosave_path(&profile);
 
@@ -318,13 +383,12 @@ fn edit_level(xp: i64) -> Result<(), String> {
 // ---------------------------------------------------------------
 // 8) ALLE Daten auf einmal auslesen
 // ---------------------------------------------------------------
-
 #[command]
 fn read_all_profile_data() -> Result<SaveGameData, String> {
     log!("read_all_profile_data gestartet");
 
     let profile = std::env::var("CURRENT_PROFILE")
-        .map_err(|_| "Kein Profil geladen.").unwrap();
+        .map_err(|_| "Kein Profil geladen.".to_string())?;
 
     let path = autosave_path(&profile);
 
@@ -342,9 +406,13 @@ fn read_all_profile_data() -> Result<SaveGameData, String> {
         money: money_re.captures(&content).and_then(|c| c[1].parse().ok()),
         xp: xp_re.captures(&content).and_then(|c| c[1].parse().ok()),
         level: level_re.captures(&content).and_then(|c| c[1].parse().ok()),
-        garages: garages_re.captures(&content).and_then(|c| c[1].parse().ok()),
+        garages: garages_re
+            .captures(&content)
+            .and_then(|c| c[1].parse().ok()),
         trucks_owned: trucks_re.captures(&content).and_then(|c| c[1].parse().ok()),
-        trailers_owned: trailers_re.captures(&content).and_then(|c| c[1].parse().ok()),
+        trailers_owned: trailers_re
+            .captures(&content)
+            .and_then(|c| c[1].parse().ok()),
         kilometers_total: km_re.captures(&content).and_then(|c| c[1].parse().ok()),
     };
 
@@ -355,7 +423,6 @@ fn read_all_profile_data() -> Result<SaveGameData, String> {
 // ---------------------------------------------------------------
 // Tauri Start
 // ---------------------------------------------------------------
-
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
