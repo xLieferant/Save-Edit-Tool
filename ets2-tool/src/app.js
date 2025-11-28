@@ -46,6 +46,8 @@ const modalNumberApply = document.querySelector("#modalNumberApply");
 const modalSlider = document.querySelector("#modalSlider");
 const modalSliderTitle = document.querySelector("#modalSliderTitle");
 const modalSliderInput = document.querySelector("#modalSliderInput");
+const modalSliderCancel = document.querySelector("#modalSliderCancel")
+const modalSliderApply = document.querySelector("#modalSliderApply");
 
 // --- Funktion zum Öffnen ---
 
@@ -81,6 +83,11 @@ modalNumberApply.onclick = () => {
     console.log("Angewendete Nummer:", modalNumberInput.value);
 }
 
+modalSliderApply.onclick = () => {
+    modalSlider.style.display = "none";
+    console.log("Apply Button used", modalSliderInput.value)
+}
+
 modalTextCancel.onclick = () => {
     modalText.style.display = "none";
     console.log("Angewendet -> Close Button", modalTextCancel.value);
@@ -91,6 +98,10 @@ modalNumberCancel.onclick = () => {
     console.log("Angewendet -> Close Button", modalNumberCancel.value);
 }
 
+modalSliderCancel.onclick = () => {
+    modalSlider.style.display = "none";
+    console.log("Angewendet - Close Button", modalSliderCancel.value);
+}
 
 
 
