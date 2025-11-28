@@ -1,64 +1,83 @@
-<!doctype html>
-<html lang="de">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SCS Save Editor</title>
-  <link rel="stylesheet" href="styles.css" />
-  <script type="module" src="main.js" defer></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETS2 Save Editor U+002d Alex Edition</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
-
 <body>
-  <header class="app-header">
-    <h1>SCS Save Editor</h1>
-    <p class="subtitle">by xLieferant</p>
-  </header>
 
-  <main class="container">
+<header class="main-header">
+    <div class="logo">ETS2 TOOLBOX</div>
+    <nav>
+        <button class="nav-btn" data-tab="truck">Truck</button>
+        <button class="nav-btn" data-tab="trailer">Trailer</button>
+        <button class="nav-btn" data-tab="profile">Profile</button>
+        <button class="nav-btn" data-tab="settings">Settings</button>
+        <button class="link-btn" data-tab="youtube">YouTube</button> <!--Hier soll mein YT link eingefügt werden -->
+    </nav>
+</header>
 
-    <!-- Profile -->
-    <section class="card">
-      <h2>Profil auswählen</h2>
+<main id="tool-container">
+    <!-- Tools werden per JS geladen -->
+</main>
 
-      <button id="scan-profiles-btn" class="primary-btn">Profile suchen</button>
+<footer class="profile-bar">
+    <div class="game-switch">
+        <button id="ets2Btn" class="active">ETS2</button>
+        <button id="atsBtn" class="">ATS</button>
+    </div>
 
-      <div class="editor-row">
-        <select id="profile-select">
-          <option>Bitte Profil wählen…</option>
-        </select>
-      </div>
+    <div class="profile-picker">
+        <span id="profileName">Select a profile</span>
+        <button id="openSaveModal">▼</button>
+            <p id="profile-status"></p>
+    </div>
 
-      <button id="load-profile-btn" class="secondary-btn">Profil laden</button>
+    <div class="save-picker">
+        <span id="saveName">Select a save</span>
+        <button id="openSaveModal">▼</button>
+    </div>
 
-      <p id="profile-status"></p>
-    </section>
+    <button id="refreshBtn" class="refresh-btn">⟳</button> <!-- hier muss mein Main.js update button eingepflegt werden -->
+</footer>
 
-    <!-- Editor -->
-    <section class="card">
-      <h2>Daten bearbeiten</h2>
+<!-- MODAL + Das ist, wenn man auf die Kachel drückt zum öffnen -->
+<div class="modal-backdrop" id="modalText">
+    <div class="modal-box">
+        <h2 id="modalTextTitle">Modal Title</h2>
+        <input id="modalTextInput" type="text" placeholder="">
+        <div class="modal-actions">
+            <button id="modalTextCancel">Close</button>
+            <button id="modalTextApply" class="apply">Apply</button>
+        </div>
+    </div>
+</div>
 
-      <div class="editor-row">
-        <p id="moneyShow">Geld wird geladen...</p>
-       <!-- <p id="xpShow">Erfahrungspunkte werden geladen...</p> -->
-      </div>
+<div class="modal-backdrop" id="modalNumber">
+    <div class="modal-box">
+        <h2 id="modalNumberTitle">Modal Title</h2>
+        <input id="modalNumberInput" type="number" placeholder="">
+        <div class="modal-actions">
+            <button id="modalNumberCancel">Close</button>
+            <button id="modalNumberApply" class="apply">Apply</button>
+        </div>
+    </div>
+</div>
 
-       <div class="editor-row">
-        <p id="xpShow">Erfahrungspunkte werden geladen...</p>
-      </div>
+<div class="modal-backdrop" id="modalSlider">
+    <div class="modal-box">
+        <h2 id="modalSliderTitle">Modal Title</h2>
+        <input id="modalSliderInput" type="checkbox">
+        <div class="checkboxSlider">
+            <button id="modalSliderCancel">Close</button>
+        </div>
+    </div>
+</div>
 
-      <div class="editor-row">
-        <input id="money-input" placeholder="Geld eingeben …" />
-        <button id="save-money-btn" class="secondary-btn">Speichern</button>
-      </div>
-
-      <div class="editor-row">
-        <input id="level-input" placeholder="Level eingeben …" />
-        <button id="save-level-btn" class="secondary-btn">Speichern</button>
-      </div>
-
-      <p id="edit-status"></p>
-    </section>
-
-  </main>
+<script src="tools.js"></script>
+<script src="app.js"></script>
+<script type="module" src="main.js" defer></script>
 </body>
 </html>

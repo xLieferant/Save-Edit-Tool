@@ -1,0 +1,82 @@
+const container = document.querySelector("#tool-container");
+const navButtons = document.querySelectorAll(".nav-btn");
+const linkButtons = document.querySelectorAll(".link-btn");
+
+function loadTools(tab) {
+    container.innerHTML = "";
+
+    tools[tab].forEach(t => {
+        const card = document.createElement("div");
+        card.classList.add("tool-card");
+
+        card.innerHTML = `
+            <img src="${t.img}">
+            <div class="tool-content">
+                <h3>${t.title}</h3>
+                <p>${t.desc}</p>
+                <button>Open</button>
+            </div>
+        `;
+
+        card.querySelector("button").addEventListener("click", t.action);
+
+        container.appendChild(card);
+    });
+}
+
+// default
+loadTools("truck");
+
+// NEUE SELEKTOREN FÜR JEDES MODAL
+// TEXT MODAL
+const modalText = document.querySelector("#modalText");
+const modalTextTitle = document.querySelector("#modalTextTitle");
+const modalTextInput = document.querySelector("#modalTextInput");
+
+// Number Modal
+const modalNumber = document.querySelector("#modalNumber");
+const modalNumberTitle = document.querySelector("#modalNumberTitle");
+const modalNumberInput = document.querySelector("#modalNumberInput");
+
+// Slider Modal
+const modalSlider = document.querySelector("#modalSlider");
+const modalSliderTitle = document.querySelector("#modalSliderTitle");
+const modalSliderInput = document.querySelector("#modalSliderInput");
+
+// --- Funktion zum Öffnen ---
+
+function openModalText(title, placeholder) {
+    modalTextTitle.textContent = title;
+    modalTextInput.placeholder = placeholder;
+    modalText.style.display = "flex";
+}
+
+function openModalNumber(title, initialValue) {
+    modalNumberTitle.textContent = title;
+    modalNumberInput.value = initialValue;
+    modalNumber.style.display = "flex";
+}
+
+function openModalSlider(title, isChecked) {
+    modalSliderTitle.textContent = title;
+    modalSliderInput.checked = isChecked;
+    modalSlider.style.display = "flex";
+}
+
+// --- Handhabung zur Schliessung der Modale 
+
+// Close Buttons 
+document.querySelector("#modalTextCancel").onclick = () => modal.style.display = "none";
+document.querySelector("#modalTextApply").onclick = () => modal.style.display = "none"
+console.log("Angewendet:", modalTextInput.value);
+
+document.querySelector("#modalNumberCancel").onclick = () => modal.style.display = "none";
+document.querySelectorAll("#modalNumberApply").onclick = () => modal.style.display = "none"
+console.log("Angewendete nummer:", modalNumberInput.value);
+
+
+
+// tab switching
+navButtons.forEach(btn => {
+    btn.onclick = () => loadTools(btn.dataset.tab);
+});
