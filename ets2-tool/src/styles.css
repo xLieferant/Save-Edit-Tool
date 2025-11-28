@@ -160,3 +160,64 @@ nav button:hover {
     display: flex;
     justify-content: space-between;
 }
+
+/* Der Container, der den Schalter umgibt und die Größe definiert (ersetzt .switch) */
+.modal-box {
+  /* Stellt sicher, dass absolute Positionierung für den Slider funktioniert */
+  position: relative; 
+}
+
+/* Das Styling für den Schieberegler selbst (ersetzt .slider) */
+.checkboxSlider {
+  background-color: #ccc;
+  bottom: 0;
+  cursor: pointer;
+  left: 0;
+  position: absolute; /* Positioniert den Slider relativ zum .modal-box Container */
+  right: 0;
+  top: 0;
+  transition: .4s;
+  
+  /* Größe des Sliders anpassen, wenn das modal-box der Elternelement ist */
+  width: 60px; 
+  height: 34px;
+  /* Du musst eventuell top/left anpassen, um es neben dem Titel zu positionieren, 
+     oder den Slider in einen eigenen, kleineren Container innerhalb der modal-box packen. */
+}
+
+/* Der innere Kreis (ersetzt .slider:before) */
+.checkboxSlider::before {
+  background-color: #fff;
+  bottom: 4px;
+  content: "";
+  height: 26px;
+  left: 4px;
+  position: absolute;
+  transition: .4s;
+  width: 26px;
+  /* Runde Form für den Kreis */
+  border-radius: 50%; 
+}
+
+/* Zustand, wenn die Checkbox aktiviert ist (ersetzt input:checked + .slider) */
+/* Wir nutzen hier den CSS-Selektor ~ (General Sibling Combinator), 
+   da input und .checkboxSlider gleichberechtigte Geschwister sind */
+input:checked ~ .checkboxSlider {
+  background-color: #66bb6a;
+}
+
+/* Bewegung des Kreises nach rechts, wenn aktiviert (ersetzt input:checked + .slider:before) */
+input:checked ~ .checkboxSlider::before {
+  transform: translateX(26px);
+}
+
+/* Die runde Form für den gesamten Schieberegler (ersetzt .slider.round) */
+.checkboxSlider {
+  border-radius: 34px;
+}
+
+/* Original input verstecken (ersetzt .switch input) */
+/* Dein HTML hat jetzt 2x id="checkbox", ich habe das im HTML unten korrigiert */
+#modalInput[type="checkbox"] {
+  display:none;
+}
