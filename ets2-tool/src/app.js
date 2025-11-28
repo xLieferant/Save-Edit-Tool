@@ -25,21 +25,56 @@ function loadTools(tab) {
 }
 
 // default
-loadTools("trailer");
+loadTools("truck");
 
-// modal handling
-const modal = document.querySelector("#modal");
-const modalTitle = document.querySelector("#modalTitle");
-const modalInput = document.querySelector("#modalInput");
+// NEUE SELEKTOREN FÜR JEDES MODAL
+// TEXT MODAL
+const modalText = document.querySelector("#modalText");
+const modalTextTitle = document.querySelector("#modalTextTitle");
+const modalTextInput = document.querySelector("#modalTextInput");
 
-function openModal(title, placeholder) {
-    modalTitle.textContent = title;
-    modalInput.placeholder = placeholder;
-    modal.style.display = "flex";
+// Number Modal
+const modalNumber = document.querySelector("#modalNumber");
+const modalNumberTitle = document.querySelector("#modalNumberTitle");
+const modalNumberInput = document.querySelector("#modalNumberInput");
+
+// Slider Modal
+const modalSlider = document.querySelector("#modalSlider");
+const modalSliderTitle = document.querySelector("#modalSliderTitle");
+const modalSliderInput = document.querySelector("#modalSliderInput");
+
+// --- Funktion zum Öffnen ---
+
+function openModalText(title, placeholder) {
+    modalTextTitle.textContent = title;
+    modalTextInput.placeholder = placeholder;
+    modalText.style.display = "flex";
 }
 
-document.querySelector("#modalCancel").onclick = () => modal.style.display = "none";
-document.querySelector("#modalApply").onclick = () => modal.style.display = "none";
+function openModalNumber(title, initialValue) {
+    modalNumberTitle.textContent = title;
+    modalNumberInput.value = initialValue;
+    modalNumber.style.display = "flex";
+}
+
+function openModalSlider(title, isChecked) {
+    modalSliderTitle.textContent = title;
+    modalSliderInput.checked = isChecked;
+    modalSlider.style.display = "flex";
+}
+
+// --- Handhabung zur Schliessung der Modale 
+
+// Close Buttons 
+document.querySelector("#modalTextCancel").onclick = () => modal.style.display = "none";
+document.querySelector("#modalTextApply").onclick = () => modal.style.display = "none"
+console.log("Angewendet:", modalTextInput.value);
+
+document.querySelector("#modalNumberCancel").onclick = () => modal.style.display = "none";
+document.querySelectorAll("#modalNumberApply").onclick = () => modal.style.display = "none"
+console.log("Angewendete nummer:", modalNumberInput.value);
+
+
 
 // tab switching
 navButtons.forEach(btn => {
