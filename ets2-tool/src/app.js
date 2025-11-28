@@ -87,7 +87,7 @@ modalTextCancel.onclick = () => {
 }
 
 modalNumberCancel.onclick = () => {
-    modalText.style.display = "none";
+    modalNumber.style.display = "none";
     console.log("Angewendet -> Close Button", modalNumberCancel.value);
 }
 
