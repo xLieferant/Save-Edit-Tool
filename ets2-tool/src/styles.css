@@ -162,46 +162,57 @@ nav button:hover, nav .link-btn:hover {
 
 /* --- CUSTOM DROPDOWN LIST STYLES --- */
 .custom-dropdown-list {
-    display: none; /* Standardmäßig versteckt */
+    display: none; 
     position: absolute;
-    bottom: 100%; /* Positioniert die Liste direkt über der Leiste */
-
-    /* Zentrierung */
+    bottom: 100%; 
     left: 50%; 
     transform: translateX(-50%);
-    width: 250px; /* Breite festlegen, damit es größer als der Button ist */
-    /* right: 0; würde die Zentrierung via left: 50% und transform überschreiben */
+    width: 250px; /* Breite beibehalten */
 
-    /* Stil wie im Bild */
-    background: #1b1f25; /* Dunkler Hintergrund */
+    background: #1b1f25; 
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px; /* Einheitliche, leicht abgerundete Ecken */
-    max-height: 200px; /* Begrenzte Höhe für Scrollbarkeit */
-    overflow-y: scroll;
-    -ms-overflow-style: none;
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3); /* Dezenter Schatten */
+    border-radius: 8px; 
+    max-height: 200px; 
+    overflow-y: scroll; /* Muss 'scroll' oder 'auto' sein, damit es funktioniert */
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
     z-index: 10;
-    list-style: none; /* Entfernt standardmäßige List-Punkte, falls es eine <ul> ist */
-    padding: 0; /* Entfernt standardmäßiges padding */
-    margin: 0; /* Entfernt standardmäßiges margin */
+    list-style: none;
+    padding: 0;
+    margin: 0;
+
+    /* Scrollbar ausblenden in Firefox */
+    scrollbar-width: none; 
+    /* Scrollbar ausblenden in IE/Edge Legacy */
+    -ms-overflow-style: none; 
+}
+
+/* Scrollbar ausblenden in Chrome, Safari, Edge, Opera */
+.custom-dropdown-list::-webkit-scrollbar {
+    display: none;
 }
 
 .custom-dropdown-list.show {
-    display: block; /* Zeigt die Liste, wenn die Klasse "show" hinzugefügt wird */
+    display: block;
 }
 
 /* Stil für die einzelnen Einträge (Dropdown-Items) */
 .dropdown-item {
-    padding: 10px 15px;
+    padding: 15px 15px; /* <-- HIER: Padding vergrößert das Feld vertikal */
     cursor: pointer;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    
+    /* Hervorhebung der Trennung zwischen Einträgen */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15); /* etwas stärkerer Rand */
+    
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    color: #fff; /* Weiße Schrift für Kontrast auf dunklem Hintergrund */
-    display: flex; /* Für Symbole und Text nebeneinander */
+    color: #fff; 
+    display: flex; 
     align-items: center;
-    gap: 10px; /* Abstand zwischen Symbol und Text */
+    gap: 10px; 
+    
+    /* Optional: Leichte Schatten oder Rand bei Hover zur Hervorhebung */
+    transition: background 0.2s;
 }
 
 .dropdown-item:last-child {
@@ -209,7 +220,7 @@ nav button:hover, nav .link-btn:hover {
 }
 
 .dropdown-item:hover {
-    background: rgba(0, 255, 255, 0.15); /* Eine subtile Akzentfarbe beim Hover */
+    background: rgba(0, 255, 255, 0.15); 
 }
 
 
