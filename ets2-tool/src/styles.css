@@ -160,28 +160,37 @@ nav button:hover, nav .link-btn:hover {
      Styles wie im HTML Inline definiert, kann hier überschrieben werden 
 } */
 
-
 /* --- CUSTOM DROPDOWN LIST STYLES --- */
 .custom-dropdown-list {
     display: none; /* Standardmäßig versteckt */
     position: absolute;
     bottom: 100%; /* Positioniert die Liste direkt über der Leiste */
-    left: 0;
-    right: 0;
-    background: #1b1f25; /* Hintergrund wie deine Modal-Box */
+
+    /* Zentrierung */
+    left: 50%; 
+    transform: translateX(-50%);
+    width: 250px; /* Breite festlegen, damit es größer als der Button ist */
+    /* right: 0; würde die Zentrierung via left: 50% und transform überschreiben */
+
+    /* Stil wie im Bild */
+    background: #1b1f25; /* Dunkler Hintergrund */
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px 8px 0 0; /* Abgerundete Ecken oben */
-    max-height: auto; /* Begrenzte Höhe für Scrollbarkeit */
-    min-width: 300px;
-    overflow-y: auto;
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+    border-radius: 8px; /* Einheitliche, leicht abgerundete Ecken */
+    max-height: 200px; /* Begrenzte Höhe für Scrollbarkeit */
+    overflow-y: scroll;
+    -ms-overflow-style: none;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3); /* Dezenter Schatten */
     z-index: 10;
+    list-style: none; /* Entfernt standardmäßige List-Punkte, falls es eine <ul> ist */
+    padding: 0; /* Entfernt standardmäßiges padding */
+    margin: 0; /* Entfernt standardmäßiges margin */
 }
 
 .custom-dropdown-list.show {
     display: block; /* Zeigt die Liste, wenn die Klasse "show" hinzugefügt wird */
 }
 
+/* Stil für die einzelnen Einträge (Dropdown-Items) */
 .dropdown-item {
     padding: 10px 15px;
     cursor: pointer;
@@ -189,10 +198,18 @@ nav button:hover, nav .link-btn:hover {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    color: #fff; /* Weiße Schrift für Kontrast auf dunklem Hintergrund */
+    display: flex; /* Für Symbole und Text nebeneinander */
+    align-items: center;
+    gap: 10px; /* Abstand zwischen Symbol und Text */
+}
+
+.dropdown-item:last-child {
+    border-bottom: none; /* Kein Rand beim letzten Element */
 }
 
 .dropdown-item:hover {
-    background: rgba(0, 255, 255, 0.2); /* Dein Akzent #0ff mit Transparenz */
+    background: rgba(0, 255, 255, 0.15); /* Eine subtile Akzentfarbe beim Hover */
 }
 
 
