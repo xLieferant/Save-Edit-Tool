@@ -1,5 +1,6 @@
 const container = document.querySelector("#tool-container");
 const navButtons = document.querySelectorAll(".nav-btn");
+const linkButtons = document.querySelectorAll(".link-btn");
 
 function loadTools(tab) {
     container.innerHTML = "";
