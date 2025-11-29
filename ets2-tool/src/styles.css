@@ -266,7 +266,7 @@ nav button:hover, nav .link-btn:hover {
 }
 
 #modalTextCancel, #modalNumberCancel, #modalSliderCancel { background: #ff3c3c; color: white; font-weight: bold;}
-#modalTextApply, #modalNumberApply { background: #66bb6a; color: black; font-weight: bold; }
+#modalTextApply, #modalNumberApply { background: #63c768; color: black; font-weight: bold; }
 
 
 /* --- TOGGLE SWITCH STYLES (für Checkbox Modal) --- */
