@@ -109,3 +109,26 @@ modalSliderCancel.onclick = () => {
 navButtons.forEach(btn => {
     btn.onclick = () => loadTools(btn.dataset.tab);
 });
+
+const ets2Btn = document.getElementById('ets2Btn');
+        const atsBtn = document.getElementById('atsBtn');
+
+        function selectGame(selectedButton, otherButton) {
+            // Fügt dem ausgewählten Button die 'active' Klasse hinzu
+            selectedButton.classList.add('active');
+            // Entfernt die 'active' Klasse vom anderen Button
+            otherButton.classList.remove('active');
+            
+            // Hier könntest du weiteren Frontend-Logik hinzufügen, 
+            // z.B. Inhalte basierend auf dem ausgewählten Spiel ein- oder ausblenden.
+            console.log(`Spiel gewechselt zu: ${selectedButton.textContent}`);
+        }
+
+        // Event-Listener für die Klicks
+        ets2Btn.addEventListener('click', () => {
+            selectGame(ets2Btn, atsBtn);
+        });
+
+        atsBtn.addEventListener('click', () => {
+            selectGame(atsBtn, ets2Btn);
+        });

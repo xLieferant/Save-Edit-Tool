@@ -1,158 +1,168 @@
 /* --- BASIS & TYPOGRAFIE --- */
 body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #0c0f14; /* Dunkler Hintergrund */
-    color: white; /* Helle Schriftfarbe */
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #0c0f14; /* Dunkler Hintergrund */
+  color: white; /* Helle Schriftfarbe */
 }
 
 /* --- MAIN HEADER & NAVIGATION --- */
 .main-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px 30px;
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 30px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .logo {
-    font-size: 22px;
-    font-weight: bold;
-    color: #0ff; /* Akzentfarbe Cyan */
+  font-size: 22px;
+  font-weight: bold;
+  color: #0ff; /* Akzentfarbe Cyan */
 }
 
 /* Stile für alle Navigations-Elemente (Button und A) */
-nav button, nav .link-btn {
-    background: none;
-    border: none;
-    color: #aaa;
-    margin-left: 20px;
-    font-size: 16px;
-    cursor: pointer;
-    text-decoration: none; /* Entfernt Unterstreichung bei Links */
-    padding: 0;
+nav button,
+nav .link-btn {
+  background: none;
+  border: none;
+  color: #aaa;
+  margin-left: 20px;
+  font-size: 16px;
+  cursor: pointer;
+  text-decoration: none; /* Entfernt Unterstreichung bei Links */
+  padding: 0;
 }
 
-nav button:hover, nav .link-btn:hover {
-    color: #0ff;
+nav button:hover,
+nav .link-btn:hover {
+  color: #0ff;
 }
 
 /* --- WERKZEUG-KARTEN CONTAINER --- */
 #tool-container {
-    padding: 30px;
-    display: grid;
-    /* Responsive Grid: mindestens 280px breite Spalten */
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 25px;
+  padding: 30px;
+  display: grid;
+  /* Responsive Grid: mindestens 280px breite Spalten */
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 25px;
 }
 
 .tool-card {
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 16px;
-    overflow: hidden;
-    backdrop-filter: blur(6px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    transition: 0.2s;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  overflow: hidden;
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: 0.2s;
 }
 
 .tool-card:hover {
-    transform: translateY(-5px);
-    border-color: #0ff;
+  transform: translateY(-5px);
+  border-color: #0ff;
 }
 
 .tool-card img {
-    width: 100%;
-    height: 150px;
-    object-fit: cover;
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
 }
 
 .tool-content {
-    padding: 18px;
+  padding: 18px;
 }
 
 .tool-content h3 {
-    margin: 0 0 5px;
+  margin: 0 0 5px;
 }
 
 .tool-content p {
-    margin: 0 0 10px;
-    color: #bbb;
+  margin: 0 0 10px;
+  color: #bbb;
 }
 
 .tool-card button {
-    width: 100%;
-    padding: 10px;
-    background: #0ff;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    color: black; /* Textfarbe auf Buttons, damit sie lesbar sind */
+  width: 100%;
+  padding: 10px;
+  background: #0ff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  color: black; /* Textfarbe auf Buttons, damit sie lesbar sind */
 }
-
 
 /* --- FOOTER BAR & CUSTOM PROFILE PICKER --- */
 .profile-bar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 65px;
-    background: rgba(255, 255, 255, 0.05);
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    display: flex;
-    align-items: center;
-    padding: 0 25px;
-    gap: 20px;
-    backdrop-filter: blur(10px);
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 65px;
+  background: rgba(255, 255, 255, 0.05);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  padding: 0 25px;
+  gap: 20px;
+  backdrop-filter: blur(10px);
 }
 
 .game-switch button {
-    background: none;
-    border: 1px solid #555;
-    padding: 6px 14px;
-    border-radius: 8px;
-    color: #aaa;
-    cursor: pointer;
+  background: none;
+  border: 1px solid #555;
+  padding: 6px 14px;
+  border-radius: 8px;
+  color: #aaa;
+  cursor: pointer;
 }
 
 .game-switch button.active {
-    background: #0ff;
-    color: black;
+  background: #0ff;
+  color: black;
 }
 
-.profile-picker, .save-picker {
-    position: relative; /* Wichtig für die Positionierung des Dropdowns */
-    background: rgba(255, 255, 255, 0.08);
-    padding: 8px 12px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    cursor: pointer;
-    width: auto;
+.game-switch button:disabled {
+  background-color: #ddd; /* Hellgrauer Hintergrund */
+  color: #888; /* Dunklerer Text */
+  cursor: not-allowed; /* Zeigt ein "Stopp"-Symbol beim Hover */
+  border-color: #ccc;
+}
+
+.profile-picker,
+.save-picker {
+  position: relative; /* Wichtig für die Positionierung des Dropdowns */
+  background: rgba(255, 255, 255, 0.08);
+  padding: 8px 12px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  cursor: pointer;
+  width: auto;
 }
 
 /* Der Pfeil-Button im Picker */
-.profile-picker button, .save-picker button {
-    background: none;
-    border: none;
-    color: white;
-    cursor: pointer;
-    padding: 0;
-    margin: 0;
+.profile-picker button,
+.save-picker button {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
 }
 
 .refresh-btn {
-    margin-left: auto; /* Schiebt den Button ganz nach rechts */
-    background: #111;
-    border: 1px solid #0ff;
-    color: #0ff;
-    border-radius: 50%;
-    width: 36px;
-    height: 36px;
-    cursor: pointer;
+  margin-left: auto; /* Schiebt den Button ganz nach rechts */
+  background: #111;
+  border: 1px solid #0ff;
+  color: #0ff;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
 }
 
 /* Statusmeldung (im HTML nun separat platziert)
@@ -162,158 +172,167 @@ nav button:hover, nav .link-btn:hover {
 
 /* --- CUSTOM DROPDOWN LIST STYLES --- */
 .custom-dropdown-list {
-    display: none; 
-    position: absolute;
-    bottom: 100%; 
-    left: 50%; 
-    transform: translateX(-50%);
-    width: 250px; /* Breite beibehalten */
+  display: none;
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 250px; /* Breite beibehalten */
 
-    background: #1b1f25; 
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px; 
-    max-height: 250px; 
-    overflow-y: scroll; /* Muss 'scroll' oder 'auto' sein, damit es funktioniert */
-    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
-    z-index: 10;
-    list-style: none;
-    padding: 0;
-    margin: 0;
+  background: #1b1f25;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  max-height: 250px;
+  overflow-y: scroll; /* Muss 'scroll' oder 'auto' sein, damit es funktioniert */
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 10;
+  list-style: none;
+  padding: 0;
+  margin: 0;
 
-    /* Scrollbar ausblenden in Firefox */
-    scrollbar-width: none; 
-    /* Scrollbar ausblenden in IE/Edge Legacy */
-    -ms-overflow-style: none; 
+  /* Scrollbar ausblenden in Firefox */
+  scrollbar-width: none;
+  /* Scrollbar ausblenden in IE/Edge Legacy */
+  -ms-overflow-style: none;
 }
 
 /* Scrollbar ausblenden in Chrome, Safari, Edge, Opera */
 .custom-dropdown-list::-webkit-scrollbar {
-    display: none;
+  display: none;
 }
 
 .custom-dropdown-list.show {
-    display: block;
+  display: block;
 }
 
 /* Stil für die einzelnen Einträge (Dropdown-Items) */
 .dropdown-item {
-    padding: 15px 15px; /* <-- HIER: Padding vergrößert das Feld vertikal */
-    cursor: pointer;
-    
-    /* Hervorhebung der Trennung zwischen Einträgen */
-    border-bottom: 1px solid rgba(255, 255, 255, 0.15); /* etwas stärkerer Rand */
-    
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    color: #fff; 
-    display: flex; 
-    align-items: center;
-    gap: 10px; 
-    
-    /* Optional: Leichte Schatten oder Rand bei Hover zur Hervorhebung */
-    transition: background 0.2s;
+  padding: 15px 15px; /* <-- HIER: Padding vergrößert das Feld vertikal */
+  cursor: pointer;
+
+  /* Hervorhebung der Trennung zwischen Einträgen */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15); /* etwas stärkerer Rand */
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  /* Optional: Leichte Schatten oder Rand bei Hover zur Hervorhebung */
+  transition: background 0.2s;
 }
 
 .dropdown-item:last-child {
-    border-bottom: none; /* Kein Rand beim letzten Element */
+  border-bottom: none; /* Kein Rand beim letzten Element */
 }
 
 .dropdown-item:hover {
-    background: rgba(0, 255, 255, 0.15); 
+  background: rgba(0, 255, 255, 0.15);
 }
-
 
 /* --- MODAL STYLES --- */
 .modal-backdrop {
-    display: none;
-    justify-content: center;
-    align-items: center;
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.6);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
 }
 
 .modal-box {
-    background: #1b1f25;
-    padding: 25px;
-    border-radius: 12px;
-    width: 350px;
-    position: relative; /* Wichtig für absolute Positionierung interner Elemente */
+  background: #1b1f25;
+  padding: 25px;
+  border-radius: 12px;
+  width: 350px;
+  position: relative; /* Wichtig für absolute Positionierung interner Elemente */
 }
 
 .modal-box input {
-    width: 100%;
-    padding: 10px;
-    margin: 10px 0 20px;
-    box-sizing: border-box; /* Stellt sicher, dass padding die Breite nicht überschreitet */
-    background: #333;
-    border: 1px solid #555;
-    color: white;
-    border-radius: 5px;
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0 20px;
+  box-sizing: border-box; /* Stellt sicher, dass padding die Breite nicht überschreitet */
+  background: #333;
+  border: 1px solid #555;
+  color: white;
+  border-radius: 5px;
 }
 
 .modal-actions {
-    display: flex;
-    justify-content: space-between;
+  display: flex;
+  justify-content: space-between;
 }
 
 .modal-actions button {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
 }
 
-#modalTextCancel, #modalNumberCancel, #modalSliderCancel { background: #ff3c3c; color: white; font-weight: bold;}
-#modalTextApply, #modalNumberApply { background: #63c768; color: black; font-weight: bold; }
-
+#modalTextCancel,
+#modalNumberCancel,
+#modalSliderCancel {
+  background: #ff3c3c;
+  color: white;
+  font-weight: bold;
+}
+#modalTextApply,
+#modalNumberApply {
+  background: #63c768;
+  color: black;
+  font-weight: bold;
+}
 
 /* --- TOGGLE SWITCH STYLES (für Checkbox Modal) --- */
 
 /* Das originale input-Element verstecken (ID in HTML auf modalSliderInput geändert) */
 input[type="checkbox"].toggle-checkbox {
-    display: none;
+  display: none;
 }
 
 /* Das Styling für den Schieberegler (Label mit der Klasse checkboxSlider) */
 .checkboxSlider {
-    background-color: #ccc;
-    bottom: auto; /* Positionierung korrigiert */
-    cursor: pointer;
-    left: auto;
-    /* absolute Positionierung innerhalb des modal-box entfernen, um es im Flow zu lassen */
-    position: relative; 
-    right: auto;
-    top: auto;
-    transition: .4s;
-    display: block; /* Nimmt Platz ein */
-    margin: 10px 0 20px 0;
-    width: 60px; /* Größe definiert */
-    height: 34px;
-    border-radius: 34px; /* Runde Form für den gesamten Schieberegler */
+  background-color: #ccc;
+  bottom: auto; /* Positionierung korrigiert */
+  cursor: pointer;
+  left: auto;
+  /* absolute Positionierung innerhalb des modal-box entfernen, um es im Flow zu lassen */
+  position: relative;
+  right: auto;
+  top: auto;
+  transition: 0.4s;
+  display: block; /* Nimmt Platz ein */
+  margin: 10px 0 20px 0;
+  width: 60px; /* Größe definiert */
+  height: 34px;
+  border-radius: 34px; /* Runde Form für den gesamten Schieberegler */
 }
 
 /* Der innere Kreis */
 .checkboxSlider::before {
-    background-color: #fff;
-    bottom: 4px;
-    content: "";
-    height: 26px;
-    left: 4px;
-    position: absolute;
-    transition: .4s;
-    width: 26px;
-    border-radius: 50%; /* Runde Form für den Kreis */
+  background-color: #fff;
+  bottom: 4px;
+  content: "";
+  height: 26px;
+  left: 4px;
+  position: absolute;
+  transition: 0.4s;
+  width: 26px;
+  border-radius: 50%; /* Runde Form für den Kreis */
 }
 
 /* Zustand, wenn die Checkbox aktiviert ist (via General Sibling Combinator ~) */
 /* Wir nutzen das "for" Attribut des Labels und die ID des Input */
 #modalSliderInput:checked ~ .checkboxSlider {
-    background-color: #66bb6a; /* Grüne Farbe bei Aktivierung */
+  background-color: #66bb6a; /* Grüne Farbe bei Aktivierung */
 }
 
 /* Bewegung des Kreises nach rechts, wenn aktiviert */
 #modalSliderInput:checked ~ .checkboxSlider::before {
-    transform: translateX(26px);
+  transform: translateX(26px);
 }
