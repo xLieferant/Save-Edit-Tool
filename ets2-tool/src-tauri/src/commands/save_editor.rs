@@ -1,73 +1,43 @@
+use crate::utils::decrypt::decrypt_if_needed;
+use crate::utils::paths::autosave_path;
+use crate::log;
+use tauri::command;
+use std::env;
 use regex::Regex;
 use std::fs;
-use std::path::Path;
-use tauri::command;
 
-use crate::utils::paths::autosave_path;
-use crate::utils::decrypt::decrypt_if_needed;
-use crate::utils::extract::extract_value;
-
-/// Interne Hilfsfunktion: ersetzt key: NUMBER (beibehaltung leading whitespace) mit neuem Wert.
-/// Nutzt multiline Regex, ersetzt nur die erste passende Zeile.
-fn replace_key_value_once(content: &str, key: &str, new_value: i64) -> String {
-    // ^(\s*key\s*:\s*)-?\d+
-    let pattern = format!(r"(?m)^(\s*{}\s*:\s*)-?\d+", regex::escape(key));
-    let re = Regex::new(&pattern).unwrap();
-    let replacement = format!("${{1}}{}", new_value);
-    re.replace(content, replacement.as_str()).to_string()
-}
-
-fn write_back(path: &Path, content: &str) -> Result<(), String> {
-    fs::write(path, content).map_err(|e| format!("Fehler beim Schreiben: {}", e))
+#[command]
+pub fn edit_money(amount: i64) -> Result<(), String> {
+    let profile = env::var("CURRENT_PROFILE").map_err(|_| "Kein Profil geladen.".to_string())?;
+    let path = autosave_path(&profile);
+    let content = decrypt_if_needed(&path)?;
+    let re = Regex::new(r"info_money_account:\s*\d+").unwrap();
+    let new = re.replace(&content, format!("info_money_account: {}", amount));
+    fs::write(&path, new.as_bytes()).map_err(|e| e.to_string())?;
+    log!("Geld geändert: {}", amount);
+    Ok(())
 }
 
 #[command]
-pub fn edit_money(profile_path: String, new_value: i64) -> Result<String, String> {
-    let autosave = autosave_path(&profile_path);
-
-    if !autosave.exists() {
-        return Err(format!("Autosave nicht gefunden: {}", autosave.display()));
-    }
-
-    let content = decrypt_if_needed(&autosave)?;
-    let prev = extract_value(&content, "money_account").unwrap_or(0);
-
-    let updated = replace_key_value_once(&content, "money_account", new_value);
-    write_back(&autosave, &updated)?;
-
-    Ok(format!("Money geändert: {} -> {}", prev, new_value))
+pub fn edit_xp(xp: i64) -> Result<(), String> {
+    let profile = env::var("CURRENT_PROFILE").map_err(|_| "Kein Profil geladen.".to_string())?;
+    let path = autosave_path(&profile);
+    let content = decrypt_if_needed(&path)?;
+    let re = Regex::new(r"info_players_experience:\s*\d+").unwrap();
+    let new = re.replace(&content, format!("info_players_experience: {}", xp));
+    fs::write(&path, new.as_bytes()).map_err(|e| e.to_string())?;
+    log!("XP geändert: {}", xp);
+    Ok(())
 }
 
 #[command]
-pub fn edit_xp(profile_path: String, new_value: i64) -> Result<String, String> {
-    let autosave = autosave_path(&profile_path);
-
-    if !autosave.exists() {
-        return Err(format!("Autosave nicht gefunden: {}", autosave.display()));
-    }
-
-    let content = decrypt_if_needed(&autosave)?;
-    let prev = extract_value(&content, "experience_points").unwrap_or(0);
-
-    let updated = replace_key_value_once(&content, "experience_points", new_value);
-    write_back(&autosave, &updated)?;
-
-    Ok(format!("XP geändert: {} -> {}", prev, new_value))
-}
-
-#[command]
-pub fn edit_level(profile_path: String, new_value: i64) -> Result<String, String> {
-    let autosave = autosave_path(&profile_path);
-
-    if !autosave.exists() {
-        return Err(format!("Autosave nicht gefunden: {}", autosave.display()));
-    }
-
-    let content = decrypt_if_needed(&autosave)?;
-    let prev = extract_value(&content, "info_player_level").unwrap_or(0);
-
-    let updated = replace_key_value_once(&content, "info_player_level", new_value);
-    write_back(&autosave, &updated)?;
-
-    Ok(format!("Level geändert: {} -> {}", prev, new_value))
+pub fn edit_level(level: i64) -> Result<(), String> {
+    let profile = env::var("CURRENT_PROFILE").map_err(|_| "Kein Profil geladen.".to_string())?;
+    let path = autosave_path(&profile);
+    let content = decrypt_if_needed(&path)?;
+    let re = Regex::new(r"info_player_level:\s*\d+").unwrap();
+    let new = re.replace(&content, format!("info_player_level: {}", level));
+    fs::write(&path, new.as_bytes()).map_err(|e| e.to_string())?;
+    log!("Level geändert: {}", level);
+    Ok(())
 }
