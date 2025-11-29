@@ -93,26 +93,6 @@ document.addEventListener("DOMContentLoaded", () => {
     await updateAllDisplays();
   }
 
-  // // --- GELD LESEN ---
-  // async function updateMoneyDisplay() {
-  //   try {
-  //     const money = await invoke("read_money");
-  //     moneyDisplay.textContent = `Geld: ${money.toLocaleString()} €`;
-  //   } catch (error) {
-  //     moneyDisplay.textContent = `Fehler beim Laden: ${error}`;
-  //   }
-  // }
-
-  // // --- XP LESEN ---
-  // async function updateXpDisplay() {
-  //   try {
-  //     const xp = await invoke("read_xp");
-  //     xpDisplay.textContent = `Erfahrungspunkte: ${xp.toLocaleString()} XP`;
-  //   } catch (error) {
-  //     xpDisplay.textContent = `Fehler beim Laden: ${error}`;
-  //   }
-  // }
-
   // --- ALLE DATEN AUF EINMAL LESEN ---
   async function updateAllDisplays() {
     try {
