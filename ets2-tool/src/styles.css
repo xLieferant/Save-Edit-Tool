@@ -1,7 +1,7 @@
 /* --- BASIS & TYPOGRAFIE --- */
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
+  font-family: serif, sans-serif;
   background: #0c0f14; /* Dunkler Hintergrund */
   color: white; /* Helle Schriftfarbe */
 }
@@ -12,7 +12,7 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 15px 30px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.05); 
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
@@ -111,7 +111,7 @@ nav .link-btn:hover {
 
 .game-switch button {
   background: none;
-  border: 1px solid #555;
+  border: 2px solid #555;
   padding: 6px 14px;
   border-radius: 8px;
   color: #aaa;
@@ -163,6 +163,22 @@ nav .link-btn:hover {
   width: 36px;
   height: 36px;
   cursor: pointer;
+}
+
+.refresh-btn:hover {
+  margin-left: auto; /* Schiebt den Button ganz nach rechts */
+  background: #111;
+  border: 2px solid rgb(0, 255, 85);
+  color: rgb(0, 255, 21);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  /* hier kommt der Grüne Glow effect! 
+  Reinfolge = horizontal / vertical / blur radius / spread radius / FARBE und GAMMA */ 
+  box-shadow: 0px 0px 15px 3px rgba(0,255,55,0.75);
+    -webkit-box-shadow: 0px 0px 15px 3px rgba(0,255,55,0.75);
+    -moz-box-shadow: 0px 0px 15px 3px rgba(0,255,55,0.75);
 }
 
 /* Statusmeldung (im HTML nun separat platziert)
@@ -282,7 +298,8 @@ nav .link-btn:hover {
   font-weight: bold;
 }
 #modalTextApply,
-#modalNumberApply {
+#modalNumberApply
+#modalSliderApply {
   background: #63c768;
   color: black;
   font-weight: bold;
