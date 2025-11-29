@@ -96,7 +96,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // --- ALLE DATEN AUF EINMAL LESEN ---
   async function updateAllDisplays() {
     try {
-      const data = await invoke("read_all_profile_data");
+      const data = await invoke("read_all_save_data");
       window.currentProfileData = data;
 
       moneyDisplay.textContent = `Geld: ${data.money.toLocaleString()} €`;
