@@ -55,7 +55,15 @@ pub fn read_all_save_data() -> Result<SaveGameData, String> {
         trailers_owned: re(r"trailers:\s*(\d+)").captures(&content).and_then(|c| c[1].parse().ok()),
         kilometers_total: re(r"km_total:\s*(\d+)").captures(&content).and_then(|c| c[1].parse().ok()),
     };
-    log!("Daten erfolgreich gelesen."); // Used here
-    log!("Daten erfolgreich gelesen: Geld: {:?}, XP: {:?}", data.money, data.xp);
+    log!(
+        "Gefundene Daten: Geld: {:?}, XP: {:?}, Level: {:?}, Garagen: {:?}, Trucks: {:?}, Trailer: {:?}, KM Total: {:?}",
+        data.money,
+        data.xp,
+        data.level,
+        data.garages,
+        data.trucks_owned,
+        data.trailers_owned,
+        data.kilometers_total
+    );
     Ok(data)
 }
