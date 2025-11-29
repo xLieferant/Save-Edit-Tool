@@ -59,7 +59,7 @@ function openModalText(title, placeholder) {
 
 function openModalNumber(title, initialValue) {
     modalNumberTitle.textContent = title;
-    modalNumberInput.value = initialValue;
+    modalNumberInput.value = initialValue || 0;
     modalNumber.style.display = "flex";
 }
 

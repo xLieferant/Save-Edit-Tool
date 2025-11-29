@@ -117,9 +117,14 @@ document.addEventListener("DOMContentLoaded", () => {
   async function updateAllDisplays() {
     try {
       const data = await invoke("read_all_profile_data");
+      window.currentProfileData = data;
+
       moneyDisplay.textContent = `Geld: ${data.money.toLocaleString()} €`;
       xpDisplay.textContent = `Erfahrungspunkte: ${data.xp.toLocaleString()} XP`;
       // und so weiter für die anderen Werte
+
+      loadTools(activeTab);
+
     } catch (error) {
       moneyDisplay.textContent = `Fehler beim Laden: ${error}`;
       xpDisplay.textContent = `Fehler beim Laden: ${error}`;
