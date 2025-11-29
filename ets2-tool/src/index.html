@@ -10,7 +10,10 @@
 <body>
 
 <header class="main-header">
-    <div class="logo">ETS2 TOOLBOX</div>
+    <div class="logo">
+        <img src="images/xlLogo.png" alt="ets2Logo" sizes="15px">
+        <span>SAVE EDITOR FOR SCS - xLieferant</span>
+    </div>
     <nav>
         <button class="nav-btn active" data-tab="truck">Truck</button> <!-- "active" Klasse als Standard gesetzt -->
         <button class="nav-btn" data-tab="trailer">Trailer</button>
@@ -31,8 +34,14 @@
 
 <footer class="profile-bar">
     <div class="game-switch">
-        <button id="ets2Btn" class="active">ETS2</button>
-        <button id="atsBtn" disabled>ATS (Coming Soon)</button>
+        <button id="ets2Btn" class="active"> 
+            <img src="images/ets2_32x32.png" alt="ets2Logo" sizes="15px">
+            <span>ETS2</span>
+        </button>
+        <button id="atsBtn" disabled>
+            <img src="images/ats_32x32.png" alt="ats Logo" class="switchButtonLogo">
+            <span>ATS (Coming Soon)</span>
+        </button>
     </div>
 
     <!-- Die Struktur für das benutzerdefinierte Dropdown-Menü -->
@@ -47,7 +56,7 @@
 
     <div class="save-picker">
         <span id="saveName">Select a save</span>
-        <button id="openSaveModal">▼</button>
+        <button id="openSaveModal" disabled>▼</button>
     </div>
 
     <button id="refreshBtn" class="refresh-btn">⟳</button>
