@@ -1,7 +1,7 @@
 /* --- BASIS & TYPOGRAFIE --- */
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
+  font-family: serif, sans-serif;
   background: #0c0f14; /* Dunkler Hintergrund */
   color: white; /* Helle Schriftfarbe */
 }
@@ -12,7 +12,7 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 15px 30px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.05); 
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
@@ -21,6 +21,14 @@ body {
   font-size: 22px;
   font-weight: bold;
   color: #0ff; /* Akzentfarbe Cyan */
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo img {
+  width: 32px;
+  height: 32px;
 }
 
 /* Stile für alle Navigations-Elemente (Button und A) */
@@ -36,7 +44,7 @@ nav .link-btn {
   padding: 0;
 }
 
-nav button:hover,
+nav button:hove,
 nav .link-btn:hover {
   color: #0ff;
 }
@@ -60,8 +68,11 @@ nav .link-btn:hover {
 }
 
 .tool-card:hover {
-  transform: translateY(-5px);
+  transform: translateY(-15px); /* Tool Card Hover kommt nach oben -> Wird hoch gehoben */ 
   border-color: #0ff;
+  box-shadow: 0px 0px 15px 3px rgba(0, 225, 255, 0.75);
+    -webkit-box-shadow: 0px 0px 15px 3px rgba(0,255,255,0.75);
+    -moz-box-shadow: 0px 0px 15px 3px rgba(0,255,255,0.75);
 }
 
 .tool-card img {
@@ -88,7 +99,7 @@ nav .link-btn:hover {
   padding: 10px;
   background: #0ff;
   border: none;
-  border-radius: 10px;
+  border-radius: 20px;
   cursor: pointer;
   color: black; /* Textfarbe auf Buttons, damit sie lesbar sind */
 }
@@ -111,11 +122,15 @@ nav .link-btn:hover {
 
 .game-switch button {
   background: none;
-  border: 1px solid #555;
-  padding: 6px 14px;
+  border: 2px solid #555;
+  padding: 7px 14px;
   border-radius: 8px;
   color: #aaa;
   cursor: pointer;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+  font-weight: bold;
 }
 
 .game-switch button.active {
@@ -128,6 +143,17 @@ nav .link-btn:hover {
   color: #888; /* Dunklerer Text */
   cursor: not-allowed; /* Zeigt ein "Stopp"-Symbol beim Hover */
   border-color: #ccc;
+}
+
+.game-switch button img {
+     /* Setzt eine konsistente Größe für beide Logos */
+    width: 20px; 
+    height: 20px;
+    /* Größenangaben im HTML (sizes="15px") werden hier überschrieben */
+}
+
+.game-switch button span {
+  transform: translateY(-15px);
 }
 
 .profile-picker,
@@ -148,10 +174,15 @@ nav .link-btn:hover {
 .save-picker button {
   background: none;
   border: none;
-  color: white;
+  color: #0ff;
   cursor: pointer;
   padding: 0;
   margin: 0;
+}
+
+.status-message {
+  color: red;
+  font-weight: bold;
 }
 
 .refresh-btn {
@@ -163,6 +194,22 @@ nav .link-btn:hover {
   width: 36px;
   height: 36px;
   cursor: pointer;
+}
+
+.refresh-btn:hover {
+  margin-left: auto; /* Schiebt den Button ganz nach rechts */
+  background: #111;
+  border: 2px solid rgb(0, 255, 85);
+  color: rgb(0, 255, 21);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  /* hier kommt der Grüne Glow effect! 
+  Reinfolge = horizontal / vertical / blur radius / spread radius / FARBE und GAMMA */ 
+  box-shadow: 0px 0px 15px 3px rgba(0,255,55,0.75);
+    -webkit-box-shadow: 0px 0px 15px 3px rgba(0,255,55,0.75);
+    -moz-box-shadow: 0px 0px 15px 3px rgba(0,255,55,0.75);
 }
 
 /* Statusmeldung (im HTML nun separat platziert)
@@ -219,7 +266,8 @@ nav .link-btn:hover {
   color: #fff;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 15px;
+  border-radius: 10px;
 
   /* Optional: Leichte Schatten oder Rand bei Hover zur Hervorhebung */
   transition: background 0.2s;
@@ -240,7 +288,10 @@ nav .link-btn:hover {
   align-items: center;
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.4);
+
+  /* Weichzeichner Effekt*/
+  backdrop-filter: blur(8px);
 }
 
 .modal-box {
@@ -282,7 +333,8 @@ nav .link-btn:hover {
   font-weight: bold;
 }
 #modalTextApply,
-#modalNumberApply {
+#modalNumberApply,
+#modalSliderApply {
   background: #63c768;
   color: black;
   font-weight: bold;
