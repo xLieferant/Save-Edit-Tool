@@ -1,112 +1,119 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ETS2 Save Editor U+002d Alex Edition</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css" />
     <!-- Hier kann optional ein Favicon oder Preconnects eingefügt werden -->
-</head>
-<body>
-
-<header class="main-header">
-    <div class="logo">
-        <img src="images/xlLogo.png" alt="ets2Logo" sizes="15px">
+  </head>
+  <body>
+    <header class="main-header">
+      <div class="logo">
+        <img src="images/xlLogo.png" alt="ets2Logo" sizes="15px" />
         <span>SAVE EDITOR FOR SCS - xLieferant</span>
-    </div>
-    <nav>
-        <button class="nav-btn active" data-tab="truck">Truck</button> <!-- "active" Klasse als Standard gesetzt -->
+      </div>
+      <nav>
+        <button class="nav-btn active" data-tab="truck">Truck</button>
+        <!-- "active" Klasse als Standard gesetzt -->
         <button class="nav-btn" data-tab="trailer">Trailer</button>
         <button class="nav-btn" data-tab="profile">Profile</button>
         <button class="nav-btn" data-tab="settings">Settings</button>
         <!-- Dein YouTube-Link als Link-Button -->
         <a href="www.youtube.com" target="_blank" class="link-btn">YouTube</a>
-    </nav>
-</header>
+      </nav>
+    </header>
 
-<main id="tool-container">
-    <!-- Tools werden per JS geladen (standardmäßig 'truck') -->
-</main>
+    <main id="tool-container">
+      <!-- Tools werden per JS geladen (standardmäßig 'truck') -->
+    </main>
 
-<!-- Statusmeldung für Profile (außerhalb des Footers positioniert, damit sie Platz hat) -->
-<p id="profile-status" style="margin: 10px 25px 0; font-size: 0.8em; color: #0ff;"></p>
+    <!-- Statusmeldung für Profile (außerhalb des Footers positioniert, damit sie Platz hat) -->
+    <p
+      id="profile-status"
+      style="margin: 10px 25px 0; font-size: 0.8em; color: #0ff"
+    ></p>
 
-
-<footer class="profile-bar">
-    <div class="game-switch">
-        <button id="ets2Btn" class="active"> 
-            <img src="images/ets2_32x32.png" alt="ets2Logo" sizes="15px">
-            <span>ETS2</span>
+    <footer class="profile-bar">
+      <div class="game-switch">
+        <button id="ets2Btn" class="active">
+          <img src="images/ets2_32x32.png" alt="ets2Logo" sizes="15px" />
+          <span>ETS2</span>
         </button>
         <button id="atsBtn" disabled>
-            <img src="images/ats_32x32.png" alt="ats Logo" class="switchButtonLogo">
-            <span>ATS (Coming Soon)</span>
+          <img
+            src="images/ats_32x32.png"
+            alt="ats Logo"
+            class="switchButtonLogo"
+          />
+          <span>ATS (Coming Soon)</span>
         </button>
-    </div>
+      </div>
 
-    <!-- Die Struktur für das benutzerdefinierte Dropdown-Menü -->
-    <div class="profile-picker">
+      <!-- Die Struktur für das benutzerdefinierte Dropdown-Menü -->
+      <div class="profile-picker">
         <span id="profileNameDisplay">Select a profile</span>
         <button id="openProfileModal">▼</button>
         <!-- Container für die dynamisch generierte Dropdown-Liste -->
         <div id="profileDropdownList" class="custom-dropdown-list">
-            <!-- Profile werden hier durch JS eingefügt -->
+          <!-- Profile werden hier durch JS eingefügt -->
         </div>
-    </div>
+      </div>
 
-    <div class="save-picker">
-        <span id="saveName">Select a save</span>
+      <div class="save-picker">
+        <span id="saveName">
+          Select a save <br class="info" />
+          <span class="status-message">Coming Soon!</span>
+        </span>
         <button id="openSaveModal" disabled>▼</button>
-    </div>
+      </div>
 
-    <button id="refreshBtn" class="refresh-btn">⟳</button>
-</footer>
+      <button id="refreshBtn" class="refresh-btn">⟳</button>
+    </footer>
 
-
-<!-- MODAL: Text-Input -->
-<div class="modal-backdrop" id="modalText">
-    <div class="modal-box">
+    <!-- MODAL: Text-Input -->
+    <div class="modal-backdrop" id="modalText">
+      <div class="modal-box">
         <h2 id="modalTextTitle">Modal Title</h2>
-        <input id="modalTextInput" type="text" placeholder="">
+        <input id="modalTextInput" type="text" placeholder="" />
         <div class="modal-actions">
-            <button id="modalTextCancel">Close</button>
-            <button id="modalTextApply" class="apply">Apply</button>
+          <button id="modalTextCancel">Close</button>
+          <button id="modalTextApply" class="apply">Apply</button>
         </div>
+      </div>
     </div>
-</div>
 
-<!-- MODAL: Number-Input -->
-<div class="modal-backdrop" id="modalNumber">
-    <div class="modal-box">
+    <!-- MODAL: Number-Input -->
+    <div class="modal-backdrop" id="modalNumber">
+      <div class="modal-box">
         <h2 id="modalNumberTitle">Modal Title</h2>
-        <input id="modalNumberInput" type="number" placeholder="">
+        <input id="modalNumberInput" type="number" placeholder="" />
         <div class="modal-actions">
-            <button id="modalNumberCancel">Close</button>
-            <button id="modalNumberApply" class="apply">Apply</button>
+          <button id="modalNumberCancel">Close</button>
+          <button id="modalNumberApply" class="apply">Apply</button>
         </div>
+      </div>
     </div>
-</div>
 
-<!-- MODAL: Slider/Checkbox Input -->
-<div class="modal-backdrop" id="modalSlider">
-    <div class="modal-box">
+    <!-- MODAL: Slider/Checkbox Input -->
+    <div class="modal-backdrop" id="modalSlider">
+      <div class="modal-box">
         <h2 id="modalSliderTitle">Modal Title</h2>
-        <input id="modalSliderInput" type="checkbox" class="toggle-checkbox">
+        <input id="modalSliderInput" type="checkbox" class="toggle-checkbox" />
         <!-- Das Label dient als der visuelle Slider, der über CSS gestylt wird -->
-        <label for="modalSliderInput" class="checkboxSlider"></label> 
+        <label for="modalSliderInput" class="checkboxSlider"></label>
         <div class="modal-actions">
-            <button id="modalSliderCancel">Close</button>
-            <button id="modalSliderApply" class="apply">Apply</button>
+          <button id="modalSliderCancel">Close</button>
+          <button id="modalSliderApply" class="apply">Apply</button>
         </div>
+      </div>
     </div>
-</div>
 
-<!-- Hier habe ich die Skripte optimiert -->
-<!-- tools.js und app.js scheinen andere, nicht gezeigte Logik zu enthalten -->
-<script src="tools.js"></script>
-<script src="app.js"></script> 
-<!-- main.js (das Skript mit all deiner Logik) als Modul und mit defer laden -->
-<script type="module" src="main.js" defer></script>
-
-</body>
+    <!-- Hier habe ich die Skripte optimiert -->
+    <!-- tools.js und app.js scheinen andere, nicht gezeigte Logik zu enthalten -->
+    <script src="tools.js"></script>
+    <script src="app.js"></script>
+    <!-- main.js (das Skript mit all deiner Logik) als Modul und mit defer laden -->
+    <script type="module" src="main.js" defer></script>
+  </body>
 </html>

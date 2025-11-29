@@ -44,7 +44,7 @@ nav .link-btn {
   padding: 0;
 }
 
-nav button:hover,
+nav button:hove,
 nav .link-btn:hover {
   color: #0ff;
 }
@@ -180,6 +180,10 @@ nav .link-btn:hover {
   margin: 0;
 }
 
+.status-message {
+  color: red;
+  font-weight: bold;
+}
 
 .refresh-btn {
   margin-left: auto; /* Schiebt den Button ganz nach rechts */
@@ -284,7 +288,10 @@ nav .link-btn:hover {
   align-items: center;
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.4);
+
+  /* Weichzeichner Effekt*/
+  backdrop-filter: blur(8px);
 }
 
 .modal-box {
@@ -326,7 +333,7 @@ nav .link-btn:hover {
   font-weight: bold;
 }
 #modalTextApply,
-#modalNumberApply
+#modalNumberApply,
 #modalSliderApply {
   background: #63c768;
   color: black;
