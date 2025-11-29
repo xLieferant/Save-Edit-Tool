@@ -11,8 +11,9 @@
     "windows": [
       {
         "title": "ets2-tool",
-        "width": 950,
-        "height": 750
+        "minWidth": 950,
+        "minHeight": 650,
+        "height": 750        
       }
     ],
     "security": {
