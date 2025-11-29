@@ -5,7 +5,7 @@ const tools = {
         {
             title: "Repair Truck",
             desc: "Repair your current truck",
-            img: "images/repair.jpg",
+            img: "images/repair.png",
             action: () => openModalSlider("", "")
         },
         {
@@ -17,7 +17,7 @@ const tools = {
         {
             title: "Truck milage",
             desc: "Change your Milage at your current truck",
-            img: "images/odometer.jpg",
+            img: "images/odometer.png",
             action: () => openModalNumber("Change your odometer","How much KM do you want?")
         }
     ],
