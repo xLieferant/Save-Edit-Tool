@@ -5,13 +5,13 @@ const tools = {
         {
             title: "Repair Truck",
             desc: "Repair your current truck",
-            img: "images/xxx.jpg",
+            img: "images/repair.jpg",
             action: () => openModalSlider("", "")
         },
         {
             title: "Fuel Level",
             desc: "Change your fuel level at your current truck",
-            img: "images/fuel.jpg",
+            img: "images/gasstation.jpg",
             action: () => openModalNumber("Change fuel level","How much fuel do you want?")
         },
         {
@@ -48,13 +48,13 @@ const tools = {
             title: "Change XP",
             desc: "Modify profile XP",
             img: "images/xp.jpg",
-            action: () => openModalNumber("Change experience", "Enter experience")
+            action: () => openModalNumber("Change experience", window.currentProfileData?.xp || 0)
         },
         {
             title: "Money",
             desc: "Modify users Money",
             img: "images/money.jpg",
-            action: () => openModalNumber("Change money")
+            action: () => openModalNumber("Change money", window.currentProfileData?.money || 0)
         },
         {
             title: "Experience Skills",
