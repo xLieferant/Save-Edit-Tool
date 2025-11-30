@@ -16,10 +16,7 @@ pub fn quicksave_config_path(profile_dir: &str) -> PathBuf {
           .join("config.cfg")
   }
 
+/// Pfad zur globalen config.cfg (Basis-Verzeichnis)
 pub fn ets2_base_config_path() -> Option<PathBuf> {
-    // Wir nehmen den Option<PathBuf> von ets2_base_path()
-    ets2_base_path().map(|base_path| {
-        // Wenn base_path existiert, hängen wir "config.cfg" an
-        base_path.join("config.cfg")
-    })
+    ets2_base_path().map(|base_path| base_path.join("config.cfg"))
 }

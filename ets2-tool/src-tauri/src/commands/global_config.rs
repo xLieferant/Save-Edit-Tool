@@ -1,38 +1,41 @@
-use crate::log;
-use crate::models::global_config_info::BaseGameConfig; // <- Korrigiert: richtiges Modul importieren
-use crate::utils::decrypt::decrypt_if_needed;
+// Make sure these imports match your project structure
 use crate::utils::paths::ets2_base_config_path;
+// Import the new struct from models
+use crate::models::global_config_info::BaseGameConfig; 
+use crate::log; 
+use tauri::command;
 use regex::Regex;
 use std::fs;
-use tauri::command;
+use std::path::Path; // Wird für path.exists() benötigt
 
-/// Liest die Basis-Config (config.cfg) des Spiels
+//* Liest die globale config.cfg im Basis-Verzeichnis des Spiels *//
 #[command]
 pub fn read_base_config() -> Result<BaseGameConfig, String> {
-    log!("Lese globale Config");
+    
+    log!("Lese globale Config"); 
 
-    // Pfad ermitteln
+    // Pfad zur globalen config.cfg ermitteln
     let path = match ets2_base_config_path() {
         Some(p) => p,
         None => {
-            let err_msg = "Konnte Standardpfad zur config.cfg nicht ermitteln.";
+            let err_msg = "Konnte Standardpfad zur globalen config.cfg nicht ermitteln.";
             log!("{}", err_msg);
             return Err(err_msg.into());
         }
     };
 
-    // Existenz prüfen
+    // Prüfe, ob die Datei existiert
     if !path.exists() {
         let err_msg = format!("Die Datei wurde nicht gefunden unter: {:?}", path);
         log!("{}", err_msg);
         return Err(err_msg);
     }
 
-    // config.cfg **nicht entschlüsseln**, nur lesen
+    // config.cfg wird **nicht entschlüsselt**, nur gelesen
     let content =
         fs::read_to_string(&path).map_err(|e| format!("Fehler beim Lesen der Datei: {}", e))?;
 
-    // Regex zum Auslesen der Werte
+    // Sicherstellen, dass Regex korrekt funktioniert
     let re = |pat: &str| Regex::new(pat).unwrap();
     let data = BaseGameConfig {
         max_convoy_size: re(r#"uset g_max_convoy_size\s*"?(\d+)"??"#)
