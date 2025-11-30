@@ -13,7 +13,6 @@ use std::path::Path; // Wird für path.exists() benötigt, war vermutlich schon 
 // Der Funktionskopf akzeptiert den Pfad direkt
 pub fn read_save_config(profile_path: &str) -> Result<SaveGameConfig, String> {
     
-    // Die Logik für env::var("CURRENT_PROFILE") entfällt hier komplett.
     // Wir nehmen den übergebenen profile_path direkt.
     
     log!("Lese Config aus Profilpfad: {}", profile_path); 

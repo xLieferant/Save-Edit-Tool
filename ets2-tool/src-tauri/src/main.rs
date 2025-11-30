@@ -21,6 +21,7 @@ fn main() {
             commands::save_editor::edit_level,
             // profile/quicksave/config.cfg Reader
             commands::save_config::read_save_config,
+            commands::global_config::read_base_config,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri app");
