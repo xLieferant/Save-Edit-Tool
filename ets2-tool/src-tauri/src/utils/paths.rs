@@ -1,5 +1,9 @@
 use std::path::{Path, PathBuf};
 
+pub fn ets2_base_path() -> Option<PathBuf> {
+    dirs::document_dir().map(|d| d.join("Euro Truck Simulator 2"))
+}
+
 pub fn autosave_path(profile_path: &str) -> PathBuf {
     Path::new(profile_path)
         .join("save")
@@ -7,6 +11,7 @@ pub fn autosave_path(profile_path: &str) -> PathBuf {
         .join("info.sii")
 }
 
-pub fn ets2_base_path() -> Option<PathBuf> {
-    dirs::document_dir().map(|d| d.join("Euro Truck Simulator 2"))
-}
+  pub fn quicksave_config_path(profile_dir: &str) -> PathBuf {
+      Path::new(profile_dir)
+          .join("config.cfg")
+  }
