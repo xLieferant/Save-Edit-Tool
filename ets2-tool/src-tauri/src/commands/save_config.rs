@@ -35,11 +35,11 @@ pub fn read_save_config(profile_path: &str) -> Result<SaveGameConfig, String> {
     let data = SaveGameConfig {
         // Der Regex-Pattern sucht nach dem genauen String in der config.cfg
         // c[1] ist korrekt für die erste Capture-Gruppe (die Ziffern).
-        factor_parked: re(r#"uset g_lod_factor_parked\s*"(\d+)""#).captures(&content).and_then(|c| c[1].parse().ok()),
+        factor_parking_doubles: re(r#"uset g_simple_parking_doubles\s*"?(\d+)"??"#).captures(&content).and_then(|c| c[1].parse().ok()),
     };
     log!(
-        "Gefundene Daten: uset g_lod_factor_parked {:?}",
-        data.factor_parked,
+        "Gefundene Daten: uset g_simple_parking_doubles {:?}",
+        data.factor_parking_doubles,
     );
     Ok(data)
 }
