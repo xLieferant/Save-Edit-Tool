@@ -120,7 +120,7 @@ document.addEventListener("DOMContentLoaded", () => {
     await invoke("edit_money", { amount });
 
     editStatus.textContent = "Geld geändert!";
-    await updateMoneyDisplay();
+    await updateAllDisplay();
   });
 
   // --- LEVEL (XP) SPEICHERN ---
@@ -132,6 +132,6 @@ document.addEventListener("DOMContentLoaded", () => {
     await invoke("edit_level", { xp });
 
     editStatus.textContent = "Level geändert!";
-    await updateXpDisplay();
+    await updateDisplay();
   });
 });
