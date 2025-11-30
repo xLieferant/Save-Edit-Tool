@@ -6,7 +6,7 @@ use crate::log;
 use tauri::command;
 use regex::Regex;
 use std::fs;
-use std::path::Path; // Wird für path.exists() benötigt
+ // Wird für path.exists() benötigt
 
 //* Liest die globale config.cfg im Basis-Verzeichnis des Spiels *//
 #[command]

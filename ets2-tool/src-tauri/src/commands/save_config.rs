@@ -6,7 +6,7 @@ use crate::models::save_game_config::SaveGameConfig;
 use crate::log; 
 use tauri::command;
 use regex::Regex;
-use std::path::Path; // Wird für path.exists() benötigt, war vermutlich schon da
+ // Wird für path.exists() benötigt, war vermutlich schon da
 
 //* Hiermit wird die config.cfg im Basis-Ordner des Profils gelesen (z.B. .../Euro Truck Simulator 2/profiles/12345/config.cfg) *//
 #[command]
