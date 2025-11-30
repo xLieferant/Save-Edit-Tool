@@ -4,11 +4,12 @@ use crate::utils::paths::autosave_path;
 // Import the new struct from models
 use crate::models::save_game_config::SaveGameConfig; 
 use crate::log; 
+use tauri::command;
 use std::env;
 use regex::Regex;
 
 //* Hiermit wird die Config.cfg in Profile/quicksave/config.cfg gelesen *//
-#[tauri::command]
+#[command]
 pub fn read_save_config() -> Result<SaveGameConfig, String> {
     let profile = env::var("CURRENT_PROFILE").map_err(|_| {
         log!("Error: Kein Profil geladen."); 
