@@ -1,11 +1,13 @@
 const container = document.querySelector("#tool-container");
 const navButtons = document.querySelectorAll(".nav-btn");
-const linkButtons = document.querySelectorAll(".link-btn");
+
+let activeTab = "truck";
 
 function loadTools(tab) {
+    activeTab = tab;
     container.innerHTML = "";
 
-    tools[tab].forEach(t => {
+    tools[tab].forEach((t) => {
         const card = document.createElement("div");
         card.classList.add("tool-card");
 
@@ -19,116 +21,77 @@ function loadTools(tab) {
         `;
 
         card.querySelector("button").addEventListener("click", t.action);
-
         container.appendChild(card);
     });
 }
 
-// default
+// default load
 loadTools("truck");
 
-// NEUE SELEKTOREN FÜR JEDES MODAL
-// TEXT MODAL
+// Modal references
 const modalText = document.querySelector("#modalText");
 const modalTextTitle = document.querySelector("#modalTextTitle");
 const modalTextInput = document.querySelector("#modalTextInput");
-const modalTextCancel = document.querySelector("#modalTextCancel");
-const modalTextApply = document.querySelector("#modalTextApply");
 
-// Number Modal
 const modalNumber = document.querySelector("#modalNumber");
 const modalNumberTitle = document.querySelector("#modalNumberTitle");
 const modalNumberInput = document.querySelector("#modalNumberInput");
-const modalNumberCancel = document.querySelector("#modalNumberCancel");
-const modalNumberApply = document.querySelector("#modalNumberApply");
 
-// Slider Modal
 const modalSlider = document.querySelector("#modalSlider");
 const modalSliderTitle = document.querySelector("#modalSliderTitle");
 const modalSliderInput = document.querySelector("#modalSliderInput");
-const modalSliderCancel = document.querySelector("#modalSliderCancel")
-const modalSliderApply = document.querySelector("#modalSliderApply");
 
-// --- Funktion zum Öffnen ---
-
-function openModalText(title, placeholder) {
+// OPEN MODALS
+window.openModalText = function(title, placeholder) {
     modalTextTitle.textContent = title;
     modalTextInput.placeholder = placeholder;
     modalText.style.display = "flex";
-}
+};
 
-function openModalNumber(title, initialValue) {
+window.openModalNumber = function(title, placeholderOrValue) {
     modalNumberTitle.textContent = title;
-    modalNumberInput.value = initialValue || 0;
+
+    if (typeof placeholderOrValue === "string") {
+        modalNumberInput.placeholder = placeholderOrValue;
+        modalNumberInput.value = "";
+    } else {
+        modalNumberInput.value = placeholderOrValue || 0;
+    }
+
     modalNumber.style.display = "flex";
-}
+};
 
-function openModalSlider(title, isChecked) {
+window.openModalSlider = function(title, isChecked) {
     modalSliderTitle.textContent = title;
-    modalSliderInput.checked = isChecked;
+    modalSliderInput.checked = Boolean(isChecked);
     modalSlider.style.display = "flex";
-}
+};
 
-// --- Handhabung zur Schliessung der Modale 
+// CLOSE events
+document.querySelector("#modalTextCancel").onclick = () => (modalText.style.display = "none");
+document.querySelector("#modalNumberCancel").onclick = () => (modalNumber.style.display = "none");
+document.querySelector("#modalSliderCancel").onclick = () => (modalSlider.style.display = "none");
 
-// Close Buttons 
-
-modalTextApply.onclick = () => {
+document.querySelector("#modalTextApply").onclick = () => {
     modalText.style.display = "none";
-    console.log("Angewendet:", modalTextInput.value);
-}
+    console.log("Text applied:", modalTextInput.value);
+};
 
-modalNumberApply.onclick = () => {
+document.querySelector("#modalNumberApply").onclick = () => {
     modalNumber.style.display = "none";
-    console.log("Angewendete Nummer:", modalNumberInput.value);
-}
+    console.log("Number applied:", modalNumberInput.value);
+};
 
-modalSliderApply.onclick = () => {
+document.querySelector("#modalSliderApply").onclick = () => {
     modalSlider.style.display = "none";
-    console.log("Apply Button used", modalSliderInput.value)
-}
+    console.log("Slider applied:", modalSliderInput.checked);
+};
 
-modalTextCancel.onclick = () => {
-    modalText.style.display = "none";
-    console.log("Angewendet -> Close Button", modalTextCancel.value);
-}
-
-modalNumberCancel.onclick = () => {
-    modalNumber.style.display = "none";
-    console.log("Angewendet -> Close Button", modalNumberCancel.value);
-}
-
-modalSliderCancel.onclick = () => {
-    modalSlider.style.display = "none";
-    console.log("Angewendet - Close Button", modalSliderCancel.value);
-}
-
-
-
-// tab switching
-navButtons.forEach(btn => {
-    btn.onclick = () => loadTools(btn.dataset.tab);
+// Tab switching
+navButtons.forEach((btn) => {
+    btn.onclick = () => {
+        navButtons.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        loadTools(btn.dataset.tab);
+    };
 });
-
-const ets2Btn = document.getElementById('ets2Btn');
-        const atsBtn = document.getElementById('atsBtn');
-
-        function selectGame(selectedButton, otherButton) {
-            // Fügt dem ausgewählten Button die 'active' Klasse hinzu
-            selectedButton.classList.add('active');
-            // Entfernt die 'active' Klasse vom anderen Button
-            otherButton.classList.remove('active');
-            
-            // Hier könntest du weiteren Frontend-Logik hinzufügen, 
-            // z.B. Inhalte basierend auf dem ausgewählten Spiel ein- oder ausblenden.
-            console.log(`Spiel gewechselt zu: ${selectedButton.textContent}`);
-        }
-
-        // Event-Listener für die Klicks
-        ets2Btn.addEventListener('click', () => {
-            selectGame(ets2Btn, atsBtn);
-        });
-
-        atsBtn.addEventListener('click', () => {
-            selectGame(atsBtn, ets2Btn);
-        });
