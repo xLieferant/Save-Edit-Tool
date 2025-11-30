@@ -75,7 +75,7 @@ pub fn find_ets2_profiles() -> Vec<ProfileInfo> {
 pub fn load_profile(profile_path: String) -> Result<String, String> {
     let autosave = crate::utils::paths::autosave_path(&profile_path);
     if !autosave.exists() {
-        return Err(format!("Autosave nicht gefunden: {}", autosave.display()));
+        return Err(format!("Quicksave nicht gefunden: {}", autosave.display()));
     }
 
     std::env::set_var("CURRENT_PROFILE", &profile_path);
