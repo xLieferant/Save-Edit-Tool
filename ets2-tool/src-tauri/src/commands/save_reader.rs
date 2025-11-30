@@ -49,21 +49,17 @@ pub fn read_all_save_data() -> Result<SaveGameData, String> {
     let data = SaveGameData {
         money: re(r"info_money_account:\s*(\d+)").captures(&content).and_then(|c| c[1].parse().ok()),
         xp: re(r"info_players_experience:\s*(\d+)").captures(&content).and_then(|c| c[1].parse().ok()),
-        level: re(r"info_player_level:\s*(\d+)").captures(&content).and_then(|c| c[1].parse().ok()),
-        garages: re(r"garages:\s*(\d+)").captures(&content).and_then(|c| c[1].parse().ok()),
-        trucks_owned: re(r"trucks:\s*(\d+)").captures(&content).and_then(|c| c[1].parse().ok()),
-        trailers_owned: re(r"trailers:\s*(\d+)").captures(&content).and_then(|c| c[1].parse().ok()),
-        kilometers_total: re(r"km_total:\s*(\d+)").captures(&content).and_then(|c| c[1].parse().ok()),
+        recruitments: re(r"info_unlocked_recruitments:\s*(\d+)").captures(&content).and_then(|c| c[1].parse().ok()),
+        dealers: re(r"info_unlocked_dealers:\s*(\d+)").captures(&content).and_then(|c| c[1].parse().ok()),
+        visited_cities: re(r"info_visited_cities:\s*(\d+)").captures(&content).and_then(|c| c[1].parse().ok()),
     };
     log!(
-        "Gefundene Daten: Geld: {:?}, XP: {:?}, Level: {:?}, Garagen: {:?}, Trucks: {:?}, Trailer: {:?}, KM Total: {:?}",
+        "Gefundene Daten: Geld: {:?}, XP: {:?}, Recruitments: {:?}, dealers: {:?}, visited_cities: {:?}",
         data.money,
         data.xp,
-        data.level,
-        data.garages,
-        data.trucks_owned,
-        data.trailers_owned,
-        data.kilometers_total
+        data.recruitments,
+        data.dealers,
+        data.visited_cities,
     );
     Ok(data)
 }
