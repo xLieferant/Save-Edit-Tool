@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 pub fn autosave_path(profile_path: &str) -> PathBuf {
     Path::new(profile_path)
         .join("save")
-        .join("autosave")
+        .join("quicksave")
         .join("info.sii")
 }
 
