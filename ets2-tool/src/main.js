@@ -104,7 +104,6 @@ document.addEventListener("DOMContentLoaded", () => {
       // und so weiter für die anderen Werte
 
       loadTools(activeTab);
-
     } catch (error) {
       moneyDisplay.textContent = `Fehler beim Laden: ${error}`;
       xpDisplay.textContent = `Fehler beim Laden: ${error}`;
