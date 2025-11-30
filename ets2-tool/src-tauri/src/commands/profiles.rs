@@ -6,7 +6,7 @@ use crate::utils::paths::ets2_base_path;
 use crate::log;
 use std::fs;
 use tauri::command;
-use std::path::Path;
+// use std::path::Path;
 
 #[command]
 pub fn find_ets2_profiles() -> Vec<ProfileInfo> {
