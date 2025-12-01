@@ -388,3 +388,86 @@ input[type="checkbox"].toggle-checkbox {
 #modalSliderInput:checked ~ .checkboxSlider::before {
   transform: translateX(26px);
 }
+
+
+/* -------------------- MULTI MODAL STYLING -------------------- */
+#modalMultiContent .multi-row {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 15px;
+}
+
+#modalMultiContent label {
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+#modalMultiContent input[type="text"],
+#modalMultiContent input[type="number"],
+#modalMultiContent select {
+  width: 100%;
+  padding: 10px;
+  background: #333;
+  border: 1px solid #555;
+  border-radius: 5px;
+  color: white;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+}
+
+/* Checkbox / Slider in Multi-Modal */
+#modalMultiContent input[type="checkbox"].toggle-checkbox {
+  display: none;
+}
+
+#modalMultiContent .checkboxSlider {
+  background-color: #ccc;
+  position: relative;
+  display: block;
+  margin: 10px 0 20px 0;
+  width: 60px;
+  height: 34px;
+  border-radius: 34px;
+  cursor: pointer;
+  transition: 0.4s;
+}
+
+#modalMultiContent .checkboxSlider::before {
+  content: "";
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: #fff;
+  border-radius: 50%;
+  transition: 0.4s;
+}
+
+#modalMultiContent input[type="checkbox"]:checked + .checkboxSlider {
+  background-color: #66bb6a;
+}
+
+#modalMultiContent input[type="checkbox"]:checked + .checkboxSlider::before {
+  transform: translateX(26px);
+}
+
+/* Buttons im Multi-Modal */
+#modalMulti .modal-actions button {
+  padding: 8px 16px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+}
+
+#modalMulti #modalMultiCancel {
+  background: #ff3c3c;
+  color: white;
+  font-weight: bold;
+}
+
+#modalMulti #modalMultiApply {
+  background: #63c768;
+  color: black;
+  font-weight: bold;
+}
