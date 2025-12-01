@@ -71,43 +71,55 @@
       <button id="refreshBtn" class="refresh-btn">⟳</button>
     </footer>
 
-    <!-- MODAL: Text-Input -->
-    <div class="modal-backdrop" id="modalText">
-      <div class="modal-box">
-        <h2 id="modalTextTitle">Modal Title</h2>
-        <input id="modalTextInput" type="text" placeholder="" />
-        <div class="modal-actions">
-          <button id="modalTextCancel">Close</button>
-          <button id="modalTextApply" class="apply">Apply</button>
-        </div>
-      </div>
+<!-- MODAL: Text-Input -->
+<div class="modal-backdrop" id="modalText">
+  <div class="modal-box">
+    <h2 id="modalTextTitle">Modal Title</h2>
+    <input id="modalTextInput" type="text" placeholder="" />
+    <div class="modal-actions">
+      <button id="modalTextCancel">Close</button>
+      <button id="modalTextApply" class="apply">Apply</button>
     </div>
+  </div>
+</div>
 
-    <!-- MODAL: Number-Input -->
-    <div class="modal-backdrop" id="modalNumber">
-      <div class="modal-box">
-        <h2 id="modalNumberTitle">Modal Title</h2>
-        <input id="modalNumberInput" type="number" placeholder="" />
-        <div class="modal-actions">
-          <button id="modalNumberCancel">Close</button>
-          <button id="modalNumberApply" class="apply">Apply</button>
-        </div>
-      </div>
+<!-- MODAL: Number-Input -->
+<div class="modal-backdrop" id="modalNumber">
+  <div class="modal-box">
+    <h2 id="modalNumberTitle">Modal Title</h2>
+    <input id="modalNumberInput" type="number" placeholder="" />
+    <div class="modal-actions">
+      <button id="modalNumberCancel">Close</button>
+      <button id="modalNumberApply" class="apply">Apply</button>
     </div>
+  </div>
+</div>
 
-    <!-- MODAL: Slider/Checkbox Input -->
-    <div class="modal-backdrop" id="modalSlider">
-      <div class="modal-box">
-        <h2 id="modalSliderTitle">Modal Title</h2>
-        <input id="modalSliderInput" type="checkbox" class="toggle-checkbox" />
-        <!-- Das Label dient als der visuelle Slider, der über CSS gestylt wird -->
-        <label for="modalSliderInput" class="checkboxSlider"></label>
-        <div class="modal-actions">
-          <button id="modalSliderCancel">Close</button>
-          <button id="modalSliderApply" class="apply">Apply</button>
-        </div>
-      </div>
+<!-- MODAL: Slider/Checkbox Input -->
+<div class="modal-backdrop" id="modalSlider">
+  <div class="modal-box">
+    <h2 id="modalSliderTitle">Modal Title</h2>
+    <input id="modalSliderInput" type="checkbox" class="toggle-checkbox" />
+    <label for="modalSliderInput" class="checkboxSlider"></label>
+    <div class="modal-actions">
+      <button id="modalSliderCancel">Close</button>
+      <button id="modalSliderApply" class="apply">Apply</button>
     </div>
+  </div>
+</div>
+
+<!-- MODAL: Multi Input (Dropdown, Slider, Number) -->
+<div class="modal-backdrop" id="modalMulti">
+  <div class="modal-box">
+    <h2 id="modalMultiTitle">Modal Title</h2>
+    <div id="modalMultiContent"></div>
+    <div class="modal-actions">
+      <button id="modalMultiCancel">Close</button>
+      <button id="modalMultiApply" class="apply">Apply</button>
+    </div>
+  </div>
+</div>
+
 
     <!-- Hier habe ich die Skripte optimiert -->
     <!-- tools.js und app.js scheinen andere, nicht gezeigte Logik zu enthalten -->
