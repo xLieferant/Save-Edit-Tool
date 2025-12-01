@@ -7,7 +7,7 @@ const tools = {
             title: "Repair Truck",
             desc: "Repair your current truck",
             img: "images/repair.png",
-            action: () => openModalSlider("", "")
+            action: () => openModalSlider("Repair Truck", false)
         },
         {
             title: "Fuel Level",
@@ -28,7 +28,7 @@ const tools = {
             title: "Repair",
             desc: "Repair your Trailer",
             img: "images/trailerRepair.jpg",
-            action: () => openModalSlider("", "")
+            action: () => openModalSlider("Repair Trailer", false)
         },
         {
             title: "Change Trailer License Plate",
@@ -90,36 +90,34 @@ const tools = {
             title: "Language",
             desc: "Change your language",
             img: "images/lang.jpg",
-            action: () =>
-                openModalMulti("Language Settings", [
-                    {
-                        type: "dropdown",
-                        id: "languageSelector",
-                        label: "Language",
-                        value: window.baseConfig?.language || "Deutsch",
-                        options: ["Deutsch", "English", "Spanish", "French", "Italian"]
-                    }
-                ])
+            action: () => openModalMulti("Language Settings", [
+                {
+                    type: "dropdown",
+                    id: "languageSelector",
+                    label: "Language",
+                    value: window.baseConfig?.language || "Deutsch",
+                    options: ["Deutsch", "English", "Spanish", "French", "Italian"]
+                }
+            ])
         },
         {
             title: "Dev Mode",
             desc: "Developer & Console Mode",
             img: "images/dev.jpg",
-            action: () =>
-                openModalMulti("Developer Settings", [
-                    {
-                        type: "slider",
-                        id: "developer",
-                        label: "Developer Mode",
-                        value: window.baseConfig?.developer || false
-                    },
-                    {
-                        type: "slider",
-                        id: "console",
-                        label: "Console Mode",
-                        value: window.baseConfig?.console || false
-                    }
-                ])
+            action: () => openModalMulti("Developer Settings", [
+                {
+                    type: "slider",
+                    id: "developer",
+                    label: "Developer Mode",
+                    value: window.baseConfig?.developer || false
+                },
+                {
+                    type: "slider",
+                    id: "console",
+                    label: "Console Mode",
+                    value: window.baseConfig?.console || false
+                }
+            ])
         }
     ]
 };
