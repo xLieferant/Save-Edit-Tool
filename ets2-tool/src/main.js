@@ -16,7 +16,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let selectedProfilePath = null;
 
-  // Dropdown toggle
+  /* -------------------------------------------------------------------------- */
+  /*                           DROPDOWN STEUERUNG                               */
+  /* -------------------------------------------------------------------------- */
+
   function toggleProfileDropdown() {
     profileDropdownList.classList.toggle("show");
   }
@@ -32,7 +35,10 @@ document.addEventListener("DOMContentLoaded", () => {
     toggleProfileDropdown();
   });
 
-  // Scan profiles
+  /* -------------------------------------------------------------------------- */
+  /*                               PROFILE SCANNEN                              */
+  /* -------------------------------------------------------------------------- */
+
   scanBtn.addEventListener("click", async () => {
     profileStatus.textContent = "Scanning profiles...";
     profileDropdownList.innerHTML = "";
@@ -60,6 +66,10 @@ document.addEventListener("DOMContentLoaded", () => {
     profileStatus.textContent = `${profiles.length} profiles found`;
   });
 
+  /* -------------------------------------------------------------------------- */
+  /*                           PROFIL LADEN & LOGIK                             */
+  /* -------------------------------------------------------------------------- */
+
   async function loadSelectedProfile() {
     if (!selectedProfilePath) {
       profileStatus.textContent = "No profile selected!";
@@ -74,18 +84,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     await updateAllDisplays();
 
-    // Lese Profil-Config (profilabhängig)
     const saveConfig = await invoke("read_save_config", {
       profilePath: selectedProfilePath,
     });
     console.log("Profil-Config:", saveConfig);
 
-    // Lese globale Config (Basisverzeichnis)
-    const globalConfig = await getGlobalConfig();
+    const globalConfig = await loadGlobalConfig();
     console.log("Globale Config geladen:", globalConfig);
   }
 
-  // Load all save data
+  /* -------------------------------------------------------------------------- */
+  /*                              SAVE-DATEN ANZEIGEN                           */
+  /* -------------------------------------------------------------------------- */
+
   async function updateAllDisplays() {
     try {
       const data = await invoke("read_all_save_data");
@@ -93,7 +104,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (moneyDisplay)
         moneyDisplay.textContent = `Geld: ${data.money.toLocaleString()} €`;
-      if (xpDisplay) xpDisplay.textContent = `XP: ${data.xp.toLocaleString()}`;
+
+      if (xpDisplay)
+        xpDisplay.textContent = `XP: ${data.xp.toLocaleString()}`;
 
       loadTools(activeTab);
     } catch (error) {
@@ -101,15 +114,35 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Funktion, um die globale config.cfg auszulesen
+  /* -------------------------------------------------------------------------- */
+  /*                       GLOBALE BASEGAME CONFIG (Optimiert)                  */
+  /* -------------------------------------------------------------------------- */
+
+  // Ruft die globale config.cfg aus Rust ab
   async function getGlobalConfig() {
     try {
-      const data = await invoke("read_base_config");
-      return data;
+      return await invoke("read_base_config");
     } catch (error) {
       console.error("Fehler beim Auslesen der globalen Config:", error);
+      return null;
     }
   }
+
+  // Lädt globale Config einmal und speichert sie global ab
+  async function loadGlobalConfig() {
+    try {
+      const cfg = await getGlobalConfig();
+      window.baseConfig = cfg;
+      return cfg;
+    } catch (err) {
+      console.error("Fehler beim GlobalConfig:", err);
+      return null;
+    }
+  }
+
+  /* -------------------------------------------------------------------------- */
+  /*                         SAVE FUNKTIONEN (MONEY / XP)                       */
+  /* -------------------------------------------------------------------------- */
 
   // Save money
   if (moneyBtn) {
@@ -137,6 +170,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Optional: globale Config direkt beim Start auslesen
-//   getGlobalConfig();
+  // Global config optional direkt laden
+  // loadGlobalConfig();
 });
