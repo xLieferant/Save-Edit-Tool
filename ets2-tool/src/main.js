@@ -105,8 +105,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (moneyDisplay)
         moneyDisplay.textContent = `Geld: ${data.money.toLocaleString()} €`;
 
-      if (xpDisplay)
-        xpDisplay.textContent = `XP: ${data.xp.toLocaleString()}`;
+      if (xpDisplay) xpDisplay.textContent = `XP: ${data.xp.toLocaleString()}`;
 
       loadTools(activeTab);
     } catch (error) {
