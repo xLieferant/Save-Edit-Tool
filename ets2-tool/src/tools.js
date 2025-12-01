@@ -67,7 +67,46 @@ const tools = {
       title: "Experience Skills",
       desc: "Set skill points",
       img: "images/skillPoint.jpg",
-      action: () => openModalText("Set Skill points", "Enter skill value"),
+      action: () =>
+        openModalNumber("Choose Experience Skill", [
+          {
+            type: "number",
+            id: "adr",
+            label: "ADR",
+            value: window.baseConfig?.theme || "",
+            // options: ["Dark", "Light", "Neon"],
+          },
+          {
+            type: "number",
+            id: "long_dist",
+            label: "Long Distance",
+            value: window.baseConfig?.theme || "",
+          },
+          {
+            type: "number",
+            id: "heavy",
+            label: "Heavy",
+            value: window.baseConfig?.theme || "",
+          },
+          {
+            type: "number",
+            id: "fragile",
+            label: "Fragile",
+            value: window.baseConfig?.theme || "",
+          },
+          {
+            type: "number",
+            id: "urgent",
+            label: "Urgent",
+            value: window.baseConfig?.theme || "",
+          },
+          {
+            type: "number",
+            id: "mechanical",
+            label: "Mechanical",
+            value: window.baseConfig?.theme || "",
+          }
+        ]),
     },
   ],
 
