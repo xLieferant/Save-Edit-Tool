@@ -5,9 +5,10 @@ use crate::utils::paths::quicksave_game_path;
 use regex::Regex;
 use std::env;
 use tauri::command;
+use std::fs;
 
 #[command]
-pub fn read_all_save_data() -> Result<GameDataQuicksave, String> {
+pub fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
     let profile = env::var("CURRENT_PROFILE").map_err(|_| {
         log!("Error: Kein Profil geladen."); // Used here
         "Kein Profil geladen.".to_string()
@@ -19,29 +20,33 @@ pub fn read_all_save_data() -> Result<GameDataQuicksave, String> {
 
     let re = |pat: &str| Regex::new(pat).unwrap();
     let data = GameDataQuicksave {
-        money: re(r"info_money_account:\s*(\d+)")
+        adr: re(r"adr:\s*(\d+)")
             .captures(&content)
             .and_then(|c| c[1].parse().ok()),
-        xp: re(r"info_players_experience:\s*(\d+)")
+        long_dist: re(r"long_dist:\s*(\d+)")
             .captures(&content)
             .and_then(|c| c[1].parse().ok()),
-        recruitments: re(r"info_unlocked_recruitments:\s*(\d+)")
+        heavy: re(r"heavy:\s*(\d+)")
             .captures(&content)
             .and_then(|c| c[1].parse().ok()),
-        dealers: re(r"info_unlocked_dealers:\s*(\d+)")
+        fragile: re(r"fragile:\s*(\d+)")
             .captures(&content)
             .and_then(|c| c[1].parse().ok()),
-        visited_cities: re(r"info_visited_cities:\s*(\d+)")
+        urgent: re(r"urgent:\s*(\d+)")
+            .captures(&content)
+            .and_then(|c| c[1].parse().ok()),
+        mechanical: re(r"mechanical:\s*(\d+)")
             .captures(&content)
             .and_then(|c| c[1].parse().ok()),
     };
     log!(
-        "Gefundene Daten: Geld: {:?}, XP: {:?}, Recruitments: {:?}, dealers: {:?}, visited_cities: {:?}",
-        data.money,
-        data.xp,
-        data.recruitments,
-        data.dealers,
-        data.visited_cities,
+        "Gefundene Daten: ADR: {:?}, Long Distance: {:?}, Heavy load: {:?}, Fragile: {:?}, urgend: {:?}, mechanical: {:?}",
+        data.adr,
+        data.long_dist,
+        data.heavy,
+        data.fragile,
+        data.urgent,
+        data.mechanical,
     );
     Ok(data)
 }
