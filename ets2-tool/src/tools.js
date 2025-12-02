@@ -69,7 +69,10 @@ const tools = {
       img: "images/skillPoint.jpg",
       action: () =>
         openModalSkills("Set Experience Skills", [
-          { type: "adr", id: "skill_adr", label: "ADR", value: 0 },
+          { type: "adr",
+            id: "skill_adr",
+            label: "ADR",
+            value: 0 },
           {
             type: "slider",
             id: "skill_long",
