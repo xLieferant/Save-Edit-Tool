@@ -83,6 +83,7 @@ document.addEventListener("DOMContentLoaded", () => {
     profileStatus.textContent = result;
 
     await updateAllDisplays();
+    await loadQuicksaveGame();
 
     const saveConfig = await invoke("read_save_config", {
       profilePath: selectedProfilePath,
