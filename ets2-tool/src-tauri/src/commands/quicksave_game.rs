@@ -41,15 +41,19 @@ pub fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
         mechanical: re(r"mechanical:\s*(\d+)")
             .captures(&content)
             .and_then(|c| c[1].parse().ok()),
+        vehicle: re(r"vehicle\s*:\s*([a-zA-Z0-9._]+)") // <-- Hinzugefügte Klammer hier
+            .captures(&content)
+            .and_then(|c| c.get(1).map(|m| m.as_str().to_string())),
     };
     log!(
-        "Gefundene Daten: ADR: {:?}, Long Distance: {:?}, Heavy load: {:?}, Fragile: {:?}, urgend: {:?}, mechanical: {:?}",
+        "Gefundene Daten: ADR: {:?}, Long Distance: {:?}, Heavy load: {:?}, Fragile: {:?}, urgend: {:?}, mechanical: {:?}, vehicle: {:?}",
         data.adr,
         data.long_dist,
         data.heavy,
         data.fragile,
         data.urgent,
         data.mechanical,
+        data.vehicle,
     );
     Ok(data)
 }
