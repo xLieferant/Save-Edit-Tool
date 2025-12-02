@@ -144,7 +144,7 @@ const tools = {
             id: "languageSelector",
             label: "Language",
             value: window.baseConfig?.language || "Deutsch",
-            options: ["Deutsch", "English", "Spanish", "French", "Italian"],
+            options: ["Deutsch", "English (Coming Soon)", "Spanish (Coming Soon)", "French (Coming Soon)", "Italian (Coming Soon)"],
           },
         ]),
     },
