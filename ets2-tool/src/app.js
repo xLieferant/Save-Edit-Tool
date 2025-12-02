@@ -151,9 +151,27 @@ window.openModalSkills = function (title, skillConfig) {
 
     if (skill.type === "slider") {
       row.innerHTML = `
-        <div class="skill-label">${skill.label}<span id="${skill.id}_val">${skill.value}</span></div>
-        <input type="range" min="0" max="6" id="${skill.id}" class="skill-slider" value="${skill.value}">
-      `;
+    <div class="skill-label">
+      ${skill.label} <span id="${skill.id}_val">${skill.value}</span>
+    </div>
+    <input 
+      type="range" 
+      min="0" 
+      max="6" 
+      id="${skill.id}" 
+      class="skill-slider" 
+      value="${skill.value}">
+  `;
+    }
+
+    // After row is appended
+    if (skill.type === "slider") {
+      const slider = row.querySelector(`#${skill.id}`);
+      const output = row.querySelector(`#${skill.id}_val`);
+
+      slider.addEventListener("input", () => {
+        output.textContent = slider.value;
+      });
     }
 
     modalMultiContent.appendChild(row);
@@ -161,7 +179,6 @@ window.openModalSkills = function (title, skillConfig) {
 
   modalMulti.style.display = "flex";
 };
-
 
 // Apply Button
 document.querySelector("#modalMultiApply").onclick = () => {

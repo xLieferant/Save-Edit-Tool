@@ -506,7 +506,7 @@ input[type="checkbox"].toggle-checkbox {
   appearance: none;
   width: 20px;
   height: 20px;
-  background: #ffb300;
+  background: #0ff;
   border-radius: 50%;
   cursor: pointer;
   margin-top: -6px;
@@ -516,7 +516,7 @@ input[type="checkbox"].toggle-checkbox {
 .skill-slider::-moz-range-thumb {
   width: 20px;
   height: 20px;
-  background: #ffb300;
+  background: #0ff;
   border-radius: 50%;
   cursor: pointer;
 }
