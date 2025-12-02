@@ -11,6 +11,13 @@ pub fn autosave_path(profile_path: &str) -> PathBuf {
         .join("info.sii")
 }
 
+pub fn quicksave_game_path(profile_path: &str) -> PathBuf {
+    Path::new(profile_path)
+        .join("save")
+        .join("quicksave")
+        .join("game.sii")
+}
+
 pub fn quicksave_config_path(profile_dir: &str) -> PathBuf {
       Path::new(profile_dir)
           .join("config.cfg")
