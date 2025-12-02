@@ -9,6 +9,9 @@ use std::fs;
 
 #[command]
 pub fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
+
+    log!("Lese Quicksave Game.sii");
+    
     let profile = env::var("CURRENT_PROFILE").map_err(|_| {
         log!("Error: Kein Profil geladen."); // Used here
         "Kein Profil geladen.".to_string()
