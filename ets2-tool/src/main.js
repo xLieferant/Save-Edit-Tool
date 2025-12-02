@@ -139,6 +139,44 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+/* -------------------------------------------------------------------------- */
+/*                          QUICKSAVE GAME DATA (Optimiert)                   */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Ruft die Quicksave-Daten aus Rust ab
+ */
+async function getQuicksaveGame() {
+  try {
+    return await invoke("quicksave_game_info");
+  } catch (error) {
+    console.error("Fehler beim Auslesen der Quicksave-Daten:", error);
+    return null;
+  }
+}
+
+/**
+ * Lädt Quicksave-Daten einmal und speichert sie global
+ */
+async function loadQuicksaveGame() {
+  try {
+    const data = await getQuicksaveGame();
+    window.quicksaveData = data;
+    return data;
+  } catch (err) {
+    console.error("Fehler beim Laden der Quicksave-Daten:", err);
+    return null;
+  }
+}
+
+// Beispielnutzung
+loadQuicksaveGame().then(data => {
+  if (data) {
+    console.log("Quicksave geladen:", data);
+  }
+});
+
+
   /* -------------------------------------------------------------------------- */
   /*                         SAVE FUNKTIONEN (MONEY / XP)                       */
   /* -------------------------------------------------------------------------- */
