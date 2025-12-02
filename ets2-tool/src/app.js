@@ -125,38 +125,53 @@ document.querySelector("#modalSliderApply").onclick = () => {
 // --------------------------------------------------------------
 // MULTI-MODAL (für mehrere Slider/Dropdown/Number Inputs)
 // --------------------------------------------------------------
-window.openModalMulti = function (title, fields) {
+window.openModalSkills = function (title, skillConfig) {
+  console.log("DEBUG: openModalSkills called"); // <-- Debug
   modalMultiTitle.textContent = title;
   modalMultiContent.innerHTML = "";
 
-  fields.forEach((f) => {
+  skillConfig.forEach((skill) => {
     const row = document.createElement("div");
-    row.classList.add("multi-row");
+    row.classList.add("skill-row");
 
-    if (f.type === "slider") {
+    if (skill.type === "adr") {
       row.innerHTML = `
-                <label>${f.label}</label>
-                <input type="checkbox" id="${f.id}" ${f.value ? "checked" : ""}>
-            `;
-    } else if (f.type === "dropdown") {
+        <div class="skill-label">${skill.label}</div>
+        <select id="${skill.id}">
+          <option value="0">None</option>
+          <option value="1">Class 1</option>
+          <option value="2">Class 2</option>
+          <option value="3">Class 3</option>
+          <option value="4">Class 4</option>
+          <option value="5">Class 5</option>
+          <option value="6">Class 6</option>
+        </select>
+      `;
+    }
+
+    if (skill.type === "slider") {
       row.innerHTML = `
-                <label>${f.label}</label>
-                <select id="${f.id}">
-                    ${f.options
-                      .map(
-                        (o) =>
-                          `<option value="${o}" ${
-                            f.value === o ? "selected" : ""
-                          }>${o}</option>`
-                      )
-                      .join("")}
-                </select>
-            `;
-    } else if (f.type === "number") {
-      row.innerHTML = `
-                <label>${f.label}</label>
-                <input type="number" id="${f.id}" value="${f.value}">
-            `;
+    <div class="skill-label">
+      ${skill.label} <span id="${skill.id}_val">${skill.value}</span>
+    </div>
+    <input 
+      type="range" 
+      min="0" 
+      max="6" 
+      id="${skill.id}" 
+      class="skill-slider" 
+      value="${skill.value}">
+  `;
+    }
+
+    // After row is appended
+    if (skill.type === "slider") {
+      const slider = row.querySelector(`#${skill.id}`);
+      const output = row.querySelector(`#${skill.id}_val`);
+
+      slider.addEventListener("input", () => {
+        output.textContent = slider.value;
+      });
     }
 
     modalMultiContent.appendChild(row);
@@ -165,20 +180,22 @@ window.openModalMulti = function (title, fields) {
   modalMulti.style.display = "flex";
 };
 
-document.querySelector("#modalMultiCancel").onclick = () =>
-  (modalMulti.style.display = "none");
-
+// Apply Button
 document.querySelector("#modalMultiApply").onclick = () => {
   const inputs = modalMultiContent.querySelectorAll("input, select");
   const values = {};
 
   inputs.forEach((inp) => {
-    values[inp.id] = inp.type === "checkbox" ? inp.checked : inp.value;
+    values[inp.id] = inp.value;
   });
 
-  console.log("MULTI MODAL VALUES:", values);
+  console.log("SKILL VALUES:", values);
   modalMulti.style.display = "none";
 };
+
+// Cancel Button
+document.querySelector("#modalMultiCancel").onclick = () =>
+  (modalMulti.style.display = "none");
 
 // --------------------------------------------------------------
 // TAB SWITCHING
