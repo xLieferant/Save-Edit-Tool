@@ -53,3 +53,14 @@ pub fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
     );
     Ok(data)
 }
+
+
+/* Ich will noch diesen Command hier auslesen  
+license_plate: "B<offset hshift=4 vshift=-5><img src=/material/ui/lp/germany/b.mat color=FFFFFFFF><offset hshift=4 vshift=5>RG 4117|germany"
+
+Bestimmt sowas wie - finde vehicle : _nameless.1df.04bc.8810 
+.... 
+odometer: 7256
+trip_fuel_l: 1050
+
+ */
