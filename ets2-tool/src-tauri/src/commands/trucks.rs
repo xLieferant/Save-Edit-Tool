@@ -1,6 +1,6 @@
 use std::fs;
 use tauri::command;
-use create::log;
+use crate::log;
 
 use crate::utils::sii_parser::parse_trucks_from_sii;
 use crate::models::trucks::ParsedTruck;
