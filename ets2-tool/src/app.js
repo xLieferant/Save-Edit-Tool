@@ -184,7 +184,7 @@ window.openModalSkills = function (title, skillConfig) {
 };
 
 // --------------------------------------------------------------
-// Modal Text (für mehrere Slider/Dropdown/Number Inputs)
+// Modaltext (für mehrere Slider/Dropdown/Number Inputs)
 // --------------------------------------------------------------
 
 window.openModalText = function (title, placeholder) {
@@ -201,9 +201,7 @@ document.querySelector("#modalTextApply").onclick = () => {
   modalText.style.display = "none";
 };
 
-// --------------------------------------------------------------
-// MULTI-MODAL (für mehrere Slider/Dropdown/Number Inputs)
-// --------------------------------------------------------------
+
 
 window.openModalMulti = function (title, placeholder) {
   modalMultiTitle.textContent = title;
@@ -245,4 +243,4 @@ navButtons.forEach((btn) => {
     btn.classList.add("active");
     loadTools(btn.dataset.tab);
   };
-});}
+});
