@@ -89,7 +89,23 @@ pub fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
         trip_fuel_l,
     };
 
-    log!("Quicksave Daten extrahiert.");
+    log!(
+        "Gefundene Daten: ADR: {:?}, Long Distance: {:?}, Heavy load: {:?}, Fragile: {:?}, urgend: {:?}, mechanical: {:?}, vehicle: {:?}, brand_path: {:?},
+        license_plate: {:?}, odometer: {:?}, trip_fuel_l: {:?}",
+        data.adr,
+        data.long_dist,
+        data.heavy,
+        data.fragile,
+        data.urgent,
+        data.mechanical,
+        data.vehicle_id,
+        data.brand_path,
+        data.license_plate,
+        data.odometer,
+        data.trip_fuel_l,
+    );
 
     Ok(data)
 }
+
+
