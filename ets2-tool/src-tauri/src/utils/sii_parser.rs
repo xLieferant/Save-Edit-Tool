@@ -8,13 +8,14 @@ pub fn parse_trucks_from_sii(content: &str) -> Vec<ParsedTruck> {
      log!("Starte Truck-Parsing");
 
     // Fahrzeug-Blöcke erkennen
-    let re_block = Regex::new(r"vehicle\s*:\s*([^\s]+)\s*\{([^}]+)\}").unwrap();
+    let re_block = Regex::new(r"(vehicle\s*:\s*[^\s]+)\s*\{([^}]+)\}").unwrap();
 
     for caps in re_block.captures_iter(content) {
         let truck_id = caps.get(1).unwrap().as_str().trim().to_string();
         let block = caps.get(2).unwrap().as_str();
 
         log!("Truck_IDs gefunden {}.", truck_id);
+        log!("Truck_id Block ELEMENT{}.", block);
 
         let brand = extract_value(block, "brand").unwrap_or_default();
         let model = extract_value(block, "model").unwrap_or_default();
