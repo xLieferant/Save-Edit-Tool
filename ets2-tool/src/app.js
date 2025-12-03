@@ -29,7 +29,7 @@ function loadTools(tab) {
 }
 
 // --------------------------------------------------------------
-// NEUER CODE: Event-Listener für Nav-Buttons
+// NEUER CODE: Event-Listener für Nav-Buttonsf
 // --------------------------------------------------------------
 
 navButtons.forEach((button) => {
@@ -70,6 +70,9 @@ const modalSliderInput = document.querySelector("#modalSliderInput");
 const modalMulti = document.querySelector("#modalMulti");
 const modalMultiTitle = document.querySelector("#modalMultiTitle");
 const modalMultiContent = document.querySelector("#modalMultiContent");
+
+const modalMultiApply = document.getElementById("modalMultiApply"); 
+const modalMultiCancel = document.getElementById("modalMultiCancel");
 
 // --------------------------------------------------------------
 // TEXT MODAL
@@ -178,6 +181,40 @@ window.openModalSkills = function (title, skillConfig) {
   });
 
   modalMulti.style.display = "flex";
+};
+
+// --------------------------------------------------------------
+// Modaltext (für mehrere Slider/Dropdown/Number Inputs)
+// --------------------------------------------------------------
+
+window.openModalText = function (title, placeholder) {
+  modalTextTitle.textContent = title;
+  modalTextInput.placeholder = placeholder;
+  modalText.style.display = "flex";
+};
+
+document.querySelector("#modalTextCancel").onclick = () =>
+  (modalText.style.display = "none");
+
+document.querySelector("#modalTextApply").onclick = () => {
+  console.log("Text applied:", modalTextInput.value);
+  modalText.style.display = "none";
+};
+
+
+
+window.openModalMulti = function (title, placeholder) {
+  modalMultiTitle.textContent = title;
+  modalMultiContent.textContent = placeholder;
+  modalMulti.style.display = "flex";
+};
+
+document.querySelector("#modalMultiCancel").onclick = () => 
+(modalMulti.style.display = "none");
+
+document.querySelector("#modalMultiApply").onclick = () => {
+  console.log("Content applied:", modalMultiContent.value)
+  modalMulti.style.display = "none";
 };
 
 // Apply Button
