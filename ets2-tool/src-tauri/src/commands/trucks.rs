@@ -14,7 +14,7 @@ pub async fn get_all_trucks(profile_path: String) -> Result<Vec<ParsedTruck>, St
         .map_err(|e| format!("Fehler beim Lesen von game.sii: {}", e))?;
 
     let trucks = parse_trucks_from_sii(&content);
-        log!("parse_trucks_fronm_sii {}", parse_trucks_from_sii);
+        log!("parse_trucks_fronm_sii Erfolgreich ausgeführt.");
 
     Ok(trucks)
 }
