@@ -14,6 +14,8 @@ pub fn parse_trucks_from_sii(content: &str) -> Vec<ParsedTruck> {
         let truck_id = caps.get(1).unwrap().as_str().trim().to_string();
         let block = caps.get(2).unwrap().as_str();
 
+        log!("Truck_IDs gefunden {}.", truck_id);
+
         let brand = extract_value(block, "brand").unwrap_or_default();
         let model = extract_value(block, "model").unwrap_or_default();
         let garage = extract_value(block, "assigned_garage");
