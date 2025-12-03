@@ -6,8 +6,6 @@ use std::collections::HashMap;
 pub fn parse_trucks_from_sii(content: &str) -> Vec<ParsedTruck> {
     let mut trucks = Vec::new();
 
-    log!("Starte Truck-Parsing");
-
     // 1) Alle vehicle_accessory-Einträge für data_path sammeln
     let re_vehicle_accessory =
         Regex::new(r#"vehicle_accessory\s*:\s*([^\s]+)\s*\{\s*data_path:\s*"([^"]+)""#).unwrap();
