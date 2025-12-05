@@ -69,32 +69,38 @@ const tools = {
       img: "images/skillPoint.jpg",
       action: () =>
         openModalMulti("Set Experience Skills", [
-          { type: "adr", id: "skill_adr", label: "ADR", value: 0 },
+          { type: "adr",
+            id: "skill_adr",
+            label: "ADR",
+            value: window.currentQuicksaveData.adr || 0 },
           {
             type: "slider",
             id: "skill_long",
             label: "Long Distance",
-            value: 0,
+            value: window.currentQuicksaveData.long_dist || 0,
           },
           {
             type: "slider",
             id: "skill_heavy",
             label: "High Value Cargo",
-            value: 0,
+            value: window.currentQuicksaveData.heavy || 0,
           },
           {
             type: "slider",
             id: "skill_fragile",
             label: "Fragile Cargo",
-            value: 0,
+            value: window.currentQuicksaveData.fragile || 0,
           },
           {
             type: "slider",
             id: "skill_urgent",
             label: "Just in Time Delivery",
-            value: 0,
+            value: window.currentQuicksaveData.urgent || 0,
           },
-          { type: "slider", id: "skill_eco", label: "Eco Driving", value: 0 },
+          { type: "slider",
+            id: "skill_eco",
+            label: "Eco Driving",
+            value: window.currentQuicksaveData.mechanical || 0 }, // mechanical = eco! 
         ]),
     },
     { // hinzugefügt für Account Stats

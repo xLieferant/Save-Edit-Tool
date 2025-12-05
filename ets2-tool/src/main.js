@@ -84,6 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     await updateAllDisplays();
     await loadQuicksaveGame();
+    await updateQuicksaveGame();
 
     const saveConfig = await invoke("read_save_config", {
       profilePath: selectedProfilePath,
@@ -107,6 +108,26 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const data = await invoke("read_all_save_data");
       window.currentProfileData = data;
+
+      if (moneyDisplay)
+        moneyDisplay.textContent = `Geld: ${data.money.toLocaleString()} €`;
+
+      if (xpDisplay) xpDisplay.textContent = `XP: ${data.xp.toLocaleString()}`;
+
+      loadTools(activeTab);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+    /* -------------------------------------------------------------------------- */
+  /*                              Quicksave_Game ANZEIGEN                           */
+  /* -------------------------------------------------------------------------- */
+
+  async function updateQuicksaveGame() {
+    try {
+      const data = await invoke("quicksave_game_info");
+      window.currentQuicksaveData = data;
 
       if (moneyDisplay)
         moneyDisplay.textContent = `Geld: ${data.money.toLocaleString()} €`;
