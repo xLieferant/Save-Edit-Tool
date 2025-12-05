@@ -188,6 +188,20 @@ const tools = {
         ]),
     },
     {
+      title: "Traffic value",
+      desc: "Change the traffic factor",
+      img: "images/xxx", // <- Bild muss noch eingefügt werden! 
+      action: () =>
+        openModalNumber("g set_traffic", window.baseConfig?.traffic || 1), // <- 1 ist Standard Value
+    },
+    {
+      title: "Parking Doubles",
+      desc: "Do you want to park double trailer?",
+      img: "images/xxx", // <- Parking double Bilder einfügen
+      action: () =>
+        openModalSlider("Do you want to park doubles?", window.baseConfig?.factor_parking_doubles || 0), // <-- 0 Standard wert
+    },
+    {
       title: "Dev Mode",
       desc: "Developer & Console Mode",
       img: "images/dev.jpg",
