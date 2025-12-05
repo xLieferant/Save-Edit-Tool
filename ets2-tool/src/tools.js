@@ -68,7 +68,7 @@ const tools = {
       desc: "Set skill points",
       img: "images/skillPoint.jpg",
       action: () =>
-        openModalSkills("Set Experience Skills", [
+        openModalMulti("Set Experience Skills", [
           { type: "adr",
             id: "skill_adr",
             label: "ADR",
