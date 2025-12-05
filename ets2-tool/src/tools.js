@@ -16,10 +16,22 @@ const tools = {
       action: () => openModalNumber("Change fuel level", "How much fuel?"),
     },
     {
+      title: "Change Fuel Tank",
+      desc: "Change your fuel Tank!",
+      img: "images/xxx", // Bild einfügen! 
+      action: () => openModalNumber("How big will be your tank?", window.currentQuicksaveData.trip_fuel_l || 0),
+    },
+    {
       title: "Truck milage",
       desc: "Change your Milage at your current truck",
       img: "images/odometer.png",
-      action: () => openModalNumber("Change your odometer", "How many KM?"),
+      action: () => openModalNumber("Change your odometer", window.currentQuicksaveData.odometer || 0),
+    },
+    {
+      title: "Truck License Plate",
+      desc: "Change your license plate",
+      img: "images/xxx", // <- Bild einfügen! 
+      action: () => openModalText("Change your license plate", window.currentQuicksaveData.license_plate),
     },
   ],
 
