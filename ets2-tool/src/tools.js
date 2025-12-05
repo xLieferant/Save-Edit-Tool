@@ -69,10 +69,7 @@ const tools = {
       img: "images/skillPoint.jpg",
       action: () =>
         openModalMulti("Set Experience Skills", [
-          { type: "adr",
-            id: "skill_adr",
-            label: "ADR",
-            value: 0 },
+          { type: "adr", id: "skill_adr", label: "ADR", value: 0 },
           {
             type: "slider",
             id: "skill_long",
@@ -98,6 +95,32 @@ const tools = {
             value: 0,
           },
           { type: "slider", id: "skill_eco", label: "Eco Driving", value: 0 },
+        ]),
+    },
+    { // hinzugefügt für Account Stats
+      title: "Stats",
+      desc: "Account informations",
+      img: "images/skillPoint.jpg", // <- Muss noch geändert werden
+      action: () =>
+        openModalMulti("Show differnet stats!", [
+          {
+            type: "number",
+            id: "skill_long",
+            label: "Recruitment Centers",
+            value: window.currentProfileData.recruitments || 0
+          },
+          {
+            type: "number",
+            id: "skill_long",
+            label: "Dealers",
+            value: window.currentProfileData.dealers || 0
+          },
+          {
+            type: "number",
+            id: "skill_long",
+            label: "Visited cities",
+            value: window.currentProfileData.visited_cities || 0
+          },
         ]),
     },
   ],
