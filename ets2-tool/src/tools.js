@@ -16,10 +16,22 @@ const tools = {
       action: () => openModalNumber("Change fuel level", "How much fuel?"),
     },
     {
+      title: "Change Fuel Tank",
+      desc: "Change your fuel Tank!",
+      img: "images/xxx", // Bild einfügen! 
+      action: () => openModalNumber("How big will be your tank?", window.currentQuicksaveData.trip_fuel_l || 0),
+    },
+    {
       title: "Truck milage",
       desc: "Change your Milage at your current truck",
       img: "images/odometer.png",
-      action: () => openModalNumber("Change your odometer", "How many KM?"),
+      action: () => openModalNumber("Change your odometer", window.currentQuicksaveData.odometer || 0),
+    },
+    {
+      title: "Truck License Plate",
+      desc: "Change your license plate",
+      img: "images/xxx", // <- Bild einfügen! 
+      action: () => openModalText("Change your license plate", window.currentQuicksaveData.license_plate),
     },
   ],
 
@@ -68,36 +80,65 @@ const tools = {
       desc: "Set skill points",
       img: "images/skillPoint.jpg",
       action: () =>
-        openModalSkills("Set Experience Skills", [
+        openModalMulti("Set Experience Skills", [
           { type: "adr",
             id: "skill_adr",
             label: "ADR",
-            value: 0 },
+            value: window.currentQuicksaveData.adr || 0 },
           {
             type: "slider",
             id: "skill_long",
             label: "Long Distance",
-            value: 0,
+            value: window.currentQuicksaveData.long_dist || 0,
           },
           {
             type: "slider",
             id: "skill_heavy",
             label: "High Value Cargo",
-            value: 0,
+            value: window.currentQuicksaveData.heavy || 0,
           },
           {
             type: "slider",
             id: "skill_fragile",
             label: "Fragile Cargo",
-            value: 0,
+            value: window.currentQuicksaveData.fragile || 0,
           },
           {
             type: "slider",
             id: "skill_urgent",
             label: "Just in Time Delivery",
-            value: 0,
+            value: window.currentQuicksaveData.urgent || 0,
           },
-          { type: "slider", id: "skill_eco", label: "Eco Driving", value: 0 },
+          { type: "slider",
+            id: "skill_eco",
+            label: "Eco Driving",
+            value: window.currentQuicksaveData.mechanical || 0 }, // mechanical = eco! 
+        ]),
+    },
+    { // hinzugefügt für Account Stats
+      title: "Stats",
+      desc: "Account informations",
+      img: "images/skillPoint.jpg", // <- Muss noch geändert werden
+      action: () =>
+        openModalMulti("Show differnet stats!", [
+          {
+            type: "number",
+            id: "skill_long",
+            label: "Recruitment Centers",
+            value: window.currentProfileData.recruitments || 0
+          },
+          {
+            type: "number",
+            id: "skill_long",
+            label: "Dealers",
+            value: window.currentProfileData.dealers || 0
+          },
+          {
+            type: "number",
+            id: "skill_long",
+            label: "Visited cities",
+            value: window.currentProfileData.visited_cities || 0
+          },
         ]),
     },
   ],
@@ -145,6 +186,20 @@ const tools = {
             ],
           },
         ]),
+    },
+    {
+      title: "Traffic value",
+      desc: "Change the traffic factor",
+      img: "images/xxx", // <- Bild muss noch eingefügt werden! 
+      action: () =>
+        openModalNumber("g set_traffic", window.baseConfig?.traffic || 1), // <- 1 ist Standard Value
+    },
+    {
+      title: "Parking Doubles",
+      desc: "Do you want to park double trailer?",
+      img: "images/xxx", // <- Parking double Bilder einfügen
+      action: () =>
+        openModalSlider("Do you want to park doubles?", window.baseConfig?.factor_parking_doubles || 0), // <-- 0 Standard wert
     },
     {
       title: "Dev Mode",

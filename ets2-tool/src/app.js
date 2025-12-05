@@ -1,9 +1,8 @@
-// --------------------------------------------------------------
-// LOAD TOOLS INTO UI (Ihr bestehender Code)
-// --------------------------------------------------------------
+/* --------------------------------------------------------------
+   TOOL LOADER UND TAB HANDLING
+-------------------------------------------------------------- */
 const container = document.querySelector("#tool-container");
-const navButtons = document.querySelectorAll(".nav-btn"); // Diese Variable wird jetzt genutzt
-
+const navButtons = document.querySelectorAll(".nav-btn");
 let activeTab = "truck";
 
 function loadTools(tab) {
@@ -15,46 +14,35 @@ function loadTools(tab) {
     card.classList.add("tool-card");
 
     card.innerHTML = `
-            <img src="${t.img}">
-            <div class="tool-content">
-                <h3>${t.title}</h3>
-                <p>${t.desc}</p>
-                <button>Open</button>
-            </div>
-        `;
+      <img src="${t.img}">
+      <div class="tool-content">
+          <h3>${t.title}</h3>
+          <p>${t.desc}</p>
+          <button>Open</button>
+      </div>
+    `;
 
     card.querySelector("button").addEventListener("click", t.action);
     container.appendChild(card);
   });
 }
 
-// --------------------------------------------------------------
-// NEUER CODE: Event-Listener für Nav-Buttonsf
-// --------------------------------------------------------------
-
-navButtons.forEach((button) => {
-  button.addEventListener("click", function () {
-    // 1. "active" Klasse vom aktuell aktiven Button entfernen
-    document.querySelector(".nav-btn.active").classList.remove("active");
-
-    // 2. "active" Klasse zum geklickten Button hinzufügen
-    this.classList.add("active"); // 'this' bezieht sich auf den Button, der geklickt wurde
-
-    // 3. Den entsprechenden Tab-Inhalt laden
-    const tabToLoad = this.dataset.tab;
-    loadTools(tabToLoad);
+navButtons.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    document.querySelector(".nav-btn.active")?.classList.remove("active");
+    btn.classList.add("active");
+    loadTools(btn.dataset.tab);
   });
 });
 
-// Default load (von der aktiven Klasse) - Ihr bestehender Code
+// Default Tab
 const defaultTabBtn = document.querySelector(".nav-btn.active");
-if (defaultTabBtn) {
-  loadTools(defaultTabBtn.dataset.tab);
-}
+if (defaultTabBtn) loadTools(defaultTabBtn.dataset.tab);
 
-// --------------------------------------------------------------
-// MODAL REFERENCES
-// --------------------------------------------------------------
+
+/* --------------------------------------------------------------
+   MODAL REFERENCES
+-------------------------------------------------------------- */
 const modalText = document.querySelector("#modalText");
 const modalTextTitle = document.querySelector("#modalTextTitle");
 const modalTextInput = document.querySelector("#modalTextInput");
@@ -71,176 +59,206 @@ const modalMulti = document.querySelector("#modalMulti");
 const modalMultiTitle = document.querySelector("#modalMultiTitle");
 const modalMultiContent = document.querySelector("#modalMultiContent");
 
-const modalMultiApply = document.getElementById("modalMultiApply"); 
-const modalMultiCancel = document.getElementById("modalMultiCancel");
+const modalMultiApplyBtn = document.getElementById("modalMultiApply");
+const modalMultiCancelBtn = document.getElementById("modalMultiCancel");
 
-// --------------------------------------------------------------
-// TEXT MODAL
-// --------------------------------------------------------------
+
+/* --------------------------------------------------------------
+   TEXT MODAL
+-------------------------------------------------------------- */
 window.openModalText = function (title, placeholder) {
   modalTextTitle.textContent = title;
   modalTextInput.placeholder = placeholder;
   modalText.style.display = "flex";
+
+  return new Promise((resolve) => {
+    function apply() {
+      const val = modalTextInput.value;
+      cleanup();
+      resolve(val);
+    }
+    function cancel() {
+      cleanup();
+      resolve(null);
+    }
+    function cleanup() {
+      modalTextApply.removeEventListener("click", apply);
+      modalTextCancel.removeEventListener("click", cancel);
+      modalText.style.display = "none";
+    }
+
+    modalTextApply.addEventListener("click", apply);
+    modalTextCancel.addEventListener("click", cancel);
+  });
 };
 
-document.querySelector("#modalTextCancel").onclick = () =>
-  (modalText.style.display = "none");
 
-document.querySelector("#modalTextApply").onclick = () => {
-  console.log("Text applied:", modalTextInput.value);
-  modalText.style.display = "none";
-};
-
-// --------------------------------------------------------------
-// NUMBER MODAL
-// --------------------------------------------------------------
-window.openModalNumber = function (title, value) {
+/* --------------------------------------------------------------
+   NUMBER MODAL
+-------------------------------------------------------------- */
+window.openModalNumber = function (title, value = 0) {
   modalNumberTitle.textContent = title;
-  modalNumberInput.value = value || 0;
+  modalNumberInput.value = value;
   modalNumber.style.display = "flex";
+
+  return new Promise((resolve) => {
+    function apply() {
+      const val = Number(modalNumberInput.value);
+      cleanup();
+      resolve(val);
+    }
+    function cancel() {
+      cleanup();
+      resolve(null);
+    }
+    function cleanup() {
+      modalNumberApply.removeEventListener("click", apply);
+      modalNumberCancel.removeEventListener("click", cancel);
+      modalNumber.style.display = "none";
+    }
+
+    modalNumberApply.addEventListener("click", apply);
+    modalNumberCancel.addEventListener("click", cancel);
+  });
 };
 
-document.querySelector("#modalNumberCancel").onclick = () =>
-  (modalNumber.style.display = "none");
 
-document.querySelector("#modalNumberApply").onclick = () => {
-  console.log("Number applied:", modalNumberInput.value);
-  modalNumber.style.display = "none";
-};
-
-// --------------------------------------------------------------
-// SLIDER MODAL
-// --------------------------------------------------------------
+/* --------------------------------------------------------------
+   SLIDER MODAL
+-------------------------------------------------------------- */
 window.openModalSlider = function (title, isChecked) {
   modalSliderTitle.textContent = title;
   modalSliderInput.checked = Boolean(isChecked);
   modalSlider.style.display = "flex";
+
+  return new Promise((resolve) => {
+    function apply() {
+      const val = modalSliderInput.checked;
+      cleanup();
+      resolve(val);
+    }
+    function cancel() {
+      cleanup();
+      resolve(null);
+    }
+    function cleanup() {
+      modalSliderApply.removeEventListener("click", apply);
+      modalSliderCancel.removeEventListener("click", cancel);
+      modalSlider.style.display = "none";
+    }
+
+    modalSliderApply.addEventListener("click", apply);
+    modalSliderCancel.addEventListener("click", cancel);
+  });
 };
 
-document.querySelector("#modalSliderCancel").onclick = () =>
-  (modalSlider.style.display = "none");
 
-document.querySelector("#modalSliderApply").onclick = () => {
-  console.log("Slider applied:", modalSliderInput.checked);
-  modalSlider.style.display = "none";
-};
-
-// --------------------------------------------------------------
-// MULTI-MODAL (für mehrere Slider/Dropdown/Number Inputs)
-// --------------------------------------------------------------
-window.openModalSkills = function (title, skillConfig) {
-  console.log("DEBUG: openModalSkills called"); // <-- Debug
+/* --------------------------------------------------------------
+   MULTI-MODAL (NUMBER, SLIDER, DROPDOWN, ADR)
+-------------------------------------------------------------- */
+window.openModalMulti = function (title, config = []) {
   modalMultiTitle.textContent = title;
   modalMultiContent.innerHTML = "";
 
-  skillConfig.forEach((skill) => {
+  config.forEach((item) => {
     const row = document.createElement("div");
-    row.classList.add("skill-row");
+    row.className = "modal-row";
 
-    if (skill.type === "adr") {
-      row.innerHTML = `
-        <div class="skill-label">${skill.label}</div>
-        <select id="${skill.id}">
-          <option value="0">None</option>
-          <option value="1">Class 1</option>
-          <option value="2">Class 2</option>
-          <option value="3">Class 3</option>
-          <option value="4">Class 4</option>
-          <option value="5">Class 5</option>
-          <option value="6">Class 6</option>
-        </select>
-      `;
+    const label = document.createElement("div");
+    label.className = "modal-label";
+    label.textContent = item.label;
+
+    const control = document.createElement("div");
+    control.className = "modal-control";
+
+
+    /* NUMBER */
+    if (item.type === "number") {
+      const input = document.createElement("input");
+      input.type = "number";
+      input.id = item.id;
+      input.value = item.value ?? 0;
+      input.className = "modal-number";
+      control.appendChild(input);
     }
 
-    if (skill.type === "slider") {
-      row.innerHTML = `
-    <div class="skill-label">
-      ${skill.label} <span id="${skill.id}_val">${skill.value}</span>
-    </div>
-    <input 
-      type="range" 
-      min="0" 
-      max="6" 
-      id="${skill.id}" 
-      class="skill-slider" 
-      value="${skill.value}">
-  `;
+    /* DROPDOWN */
+    if (item.type === "dropdown") {
+      const select = document.createElement("select");
+      select.id = item.id;
+      select.className = "modal-dropdown";
+
+      item.options.forEach((o) => {
+        const opt = document.createElement("option");
+        opt.value = o;
+        opt.textContent = o;
+        if (String(o) === String(item.value)) opt.selected = true;
+        select.appendChild(opt);
+      });
+
+      control.appendChild(select);
     }
 
-    // After row is appended
-    if (skill.type === "slider") {
-      const slider = row.querySelector(`#${skill.id}`);
-      const output = row.querySelector(`#${skill.id}_val`);
+    /* SLIDER */
+    if (item.type === "slider" || item.type === "adr") {
+      const val = document.createElement("span");
+      val.id = `${item.id}_val`;
+      val.className = "slider-value";
+      val.textContent = item.value;
+
+      const slider = document.createElement("input");
+      slider.type = "range";
+      slider.min = 0;
+      slider.max = 6;
+      slider.id = item.id;
+      slider.className = "skill-slider";
+      slider.value = item.value ?? 0;
 
       slider.addEventListener("input", () => {
-        output.textContent = slider.value;
+        val.textContent = slider.value;
       });
+
+      control.appendChild(val);
+      control.appendChild(slider);
     }
+
+    row.appendChild(label);
+    row.appendChild(control);
 
     modalMultiContent.appendChild(row);
   });
 
   modalMulti.style.display = "flex";
-};
 
-// --------------------------------------------------------------
-// Modaltext (für mehrere Slider/Dropdown/Number Inputs)
-// --------------------------------------------------------------
+  return new Promise((resolve) => {
+    function apply() {
+      const inputs = modalMultiContent.querySelectorAll("input, select");
+      const result = {};
 
-window.openModalText = function (title, placeholder) {
-  modalTextTitle.textContent = title;
-  modalTextInput.placeholder = placeholder;
-  modalText.style.display = "flex";
-};
+      inputs.forEach((i) => {
+        if (i.type === "range" || i.type === "number") {
+          result[i.id] = Number(i.value);
+        } else {
+          result[i.id] = i.value;
+        }
+      });
 
-document.querySelector("#modalTextCancel").onclick = () =>
-  (modalText.style.display = "none");
+      cleanup();
+      resolve(result);
+    }
 
-document.querySelector("#modalTextApply").onclick = () => {
-  console.log("Text applied:", modalTextInput.value);
-  modalText.style.display = "none";
-};
+    function cancel() {
+      cleanup();
+      resolve(null);
+    }
 
+    function cleanup() {
+      modalMultiApplyBtn.removeEventListener("click", apply);
+      modalMultiCancelBtn.removeEventListener("click", cancel);
+      modalMulti.style.display = "none";
+    }
 
-
-window.openModalMulti = function (title, placeholder) {
-  modalMultiTitle.textContent = title;
-  modalMultiContent.textContent = placeholder;
-  modalMulti.style.display = "flex";
-};
-
-document.querySelector("#modalMultiCancel").onclick = () => 
-(modalMulti.style.display = "none");
-
-document.querySelector("#modalMultiApply").onclick = () => {
-  console.log("Content applied:", modalMultiContent.value)
-  modalMulti.style.display = "none";
-};
-
-// Apply Button
-document.querySelector("#modalMultiApply").onclick = () => {
-  const inputs = modalMultiContent.querySelectorAll("input, select");
-  const values = {};
-
-  inputs.forEach((inp) => {
-    values[inp.id] = inp.value;
+    modalMultiApplyBtn.addEventListener("click", apply);
+    modalMultiCancelBtn.addEventListener("click", cancel);
   });
-
-  console.log("SKILL VALUES:", values);
-  modalMulti.style.display = "none";
 };
-
-// Cancel Button
-document.querySelector("#modalMultiCancel").onclick = () =>
-  (modalMulti.style.display = "none");
-
-// --------------------------------------------------------------
-// TAB SWITCHING
-// --------------------------------------------------------------
-navButtons.forEach((btn) => {
-  btn.onclick = () => {
-    navButtons.forEach((b) => b.classList.remove("active"));
-    btn.classList.add("active");
-    loadTools(btn.dataset.tab);
-  };
-});

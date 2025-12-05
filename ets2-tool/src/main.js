@@ -84,6 +84,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     await updateAllDisplays();
     await loadQuicksaveGame();
+    await updateQuicksaveGame();
+    await readSaveGameConfig();
 
     const saveConfig = await invoke("read_save_config", {
       profilePath: selectedProfilePath,
@@ -93,7 +95,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const globalConfig = await loadGlobalConfig();
     console.log("Globale Config geladen:", globalConfig);
 
-    
     const trucks = await invoke("get_all_trucks", {
       profilePath: selectedProfilePath,
     });
@@ -113,6 +114,34 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (xpDisplay) xpDisplay.textContent = `XP: ${data.xp.toLocaleString()}`;
 
+      loadTools(activeTab);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  /* -------------------------------------------------------------------------- */
+  /*                              Quicksave_Game ANZEIGEN                           */
+  /* -------------------------------------------------------------------------- */
+
+  async function updateQuicksaveGame() {
+    try {
+      const data = await invoke("quicksave_game_info");
+      window.currentQuicksaveData = data;
+      loadTools(activeTab);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  /* -------------------------------------------------------------------------- */
+  /*                              Read_Save_Config ANZEIGEN                           */
+  /* -------------------------------------------------------------------------- */
+
+  async function readSaveGameConfig() {
+    try {
+      const data = await invoke("read_save_config");
+      window.readSaveGameConfig = data;
       loadTools(activeTab);
     } catch (error) {
       console.error(error);
