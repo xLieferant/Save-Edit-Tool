@@ -45,8 +45,42 @@ pub fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
         .as_str();
 
     log!("player_id gefunden! player: {}", player_id_string);
+    log!("player_block information: {}", player_block);
+
     // ------------------------------------------------------------
-    // 2. Skills lesen
+    // 2. Profil lesen
+    // ------------------------------------------------------------
+
+    // Bank-ID
+    let re_bank_name = cragex(r"bank:\s*([a-zA-Z0-9._]+)")?;
+    log!("re_bank_name befehl durchgelaufen!");
+
+    // Bank-Block
+    let re_bank_name_full = cragex(r"bank\s*:\s*([a-zA-Z0-9._]+)\s*\{([^}]*)\}")?;
+
+    let bank_caps = re_bank_name_full
+        .captures(&content)
+        .ok_or("Bank Block nicht gefunden")?;
+
+    // ID extrahieren
+    let bank_id_string = bank_caps
+        .get(1)
+        .ok_or("Bank Parsing Error")?
+        .as_str()
+        .trim()
+        .to_string();
+
+    // Block extrahieren
+    let bank_block = bank_caps
+        .get(2)
+        .ok_or("Bank Block Parsing Error")?
+        .as_str();
+
+    log!("Bank_ID gefunden! bank: {}", bank_id_string);
+    log!("bank_block information: {}", bank_block);
+
+    // ------------------------------------------------------------
+    // 3. Skills lesen
     // ------------------------------------------------------------
 
     let adr = cragex(r"adr:\s*(\d+)")
@@ -85,7 +119,7 @@ pub fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
         .flatten()
         .and_then(|c| c[1].parse().ok());
     // ------------------------------------------------------------
-    // 3. Player-Felder extrahieren
+    // 4. Player-Felder extrahieren
     // ------------------------------------------------------------
 
     let my_truck = cragex(r"my_truck:\s*([a-zA-Z0-9._]+|null)")?
@@ -109,7 +143,7 @@ pub fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
     let truck_id = my_truck.clone().ok_or("Kein my_truck im Player gefunden")?;
 
     // ------------------------------------------------------------
-    // 4. Vehicle-Block finden
+    // 5. Vehicle-Block finden
     // ------------------------------------------------------------
     let vehicle_regex = format!(
         r"vehicle\s*:\s*{}\s*\{{([^}}]+)}}",
@@ -128,7 +162,7 @@ pub fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
         .as_str();
 
     // ------------------------------------------------------------
-    // 5. Werte aus Fahrzeugblock lesen
+    // 6. Werte aus Fahrzeugblock lesen
     // ------------------------------------------------------------
 
     let odometer = cragex(r"odometer:\s*(\d+)")?
@@ -144,10 +178,12 @@ pub fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
         .map(|c| c[1].to_string());
 
     // ------------------------------------------------------------
-    // 6. Rückgabe
+    // 7. Rückgabe
     // ------------------------------------------------------------
 
     Ok(GameDataQuicksave {
+        player_id: Some(player_id_string),
+        bank_id: Some(bank_id_string),
         adr,
         long_dist,
         heavy,
@@ -160,6 +196,5 @@ pub fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
         license_plate,
         odometer,
         trip_fuel_l,
-        player_id: Some(player_id_string),
     })
 }
