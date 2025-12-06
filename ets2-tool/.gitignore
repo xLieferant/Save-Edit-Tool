@@ -24,6 +24,3 @@ dist-ssr
 *.sw?
 
 backup.txt
-images
-
-anchor
