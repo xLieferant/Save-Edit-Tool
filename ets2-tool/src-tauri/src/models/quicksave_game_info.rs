@@ -2,6 +2,7 @@ use serde::Serialize;
 
 #[derive(Serialize)]
 pub struct GameDataQuicksave {
+    pub player_id: Option<String>,
     pub adr: Option<i64>,
     pub long_dist: Option<i64>,
     pub heavy: Option<i64>,

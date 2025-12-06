@@ -10,14 +10,43 @@ use tauri::command;
 pub fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
     log!("Lese Quicksave Game.sii");
 
-    let profile = env::var("CURRENT_PROFILE")
-        .map_err(|_| "Kein Profil geladen.".to_string())?;
+    let profile = env::var("CURRENT_PROFILE").map_err(|_| "Kein Profil geladen.".to_string())?;
 
     let path = quicksave_game_path(&profile);
     let content = decrypt_if_needed(&path)?;
 
     // ------------------------------------------------------------
-    // 1. Skills lesen
+    // 1. Profil lesen
+    // ------------------------------------------------------------
+
+    // Player-ID
+    let re_player = cragex(r"player:\s*([a-zA-Z0-9._]+)")?;
+    log!("re_player befehl durchgelaufen!");
+
+    // Player-Block
+    let re_player_full = cragex(r"player\s*:\s*([a-zA-Z0-9._]+)\s*\{([^}]*)\}")?;
+
+    let player_caps = re_player_full
+        .captures(&content)
+        .ok_or("Player Block nicht gefunden")?;
+
+    // ID extrahieren
+    let player_id_string = player_caps
+        .get(1)
+        .ok_or("Player ID Parsing Error")?
+        .as_str()
+        .trim()
+        .to_string();
+
+    // Block extrahieren
+    let player_block = player_caps
+        .get(2)
+        .ok_or("Player Block Parsing Error")?
+        .as_str();
+
+    log!("player_id gefunden! player: {}", player_id_string);
+    // ------------------------------------------------------------
+    // 2. Skills lesen
     // ------------------------------------------------------------
 
     let adr = cragex(r"adr:\s*(\d+)")
@@ -55,20 +84,6 @@ pub fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
         .ok()
         .flatten()
         .and_then(|c| c[1].parse().ok());
-
-    // ------------------------------------------------------------
-    // 2. Player finden
-    // ------------------------------------------------------------
-    let re_player = cragex(r"player\s*:\s*([a-zA-Z0-9._]+)\s*\{([^}]*)\}")?;
-
-    let player_caps = re_player
-        .captures(&content)
-        .ok_or("Player Block nicht gefunden")?;
-
-    let player_block = player_caps.get(2)
-        .ok_or("Player Block Parsing Error")?
-        .as_str();
-
     // ------------------------------------------------------------
     // 3. Player-Felder extrahieren
     // ------------------------------------------------------------
@@ -91,9 +106,7 @@ pub fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
         trucks.push(cap[1].to_string());
     }
 
-    let truck_id = my_truck
-        .clone()
-        .ok_or("Kein my_truck im Player gefunden")?;
+    let truck_id = my_truck.clone().ok_or("Kein my_truck im Player gefunden")?;
 
     // ------------------------------------------------------------
     // 4. Vehicle-Block finden
@@ -147,5 +160,6 @@ pub fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
         license_plate,
         odometer,
         trip_fuel_l,
+        player_id: Some(player_id_string),
     })
 }
