@@ -1,9 +1,9 @@
 use crate::log;
 use crate::models::quicksave_game_info::GameDataQuicksave;
-use crate::utils::decrypt::decrypt_if_needed;
-use crate::utils::paths::quicksave_game_path;
 use crate::utils::regex_helper::cragex;
 use crate::utils::sii_parser::parse_trucks_from_sii;
+use crate::utils::paths::quicksave_game_path;
+use crate::utils::decrypt::decrypt_if_needed;
 use std::env;
 use tauri::command;
 
@@ -11,16 +11,12 @@ use tauri::command;
 pub async fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
     log!("Lese Quicksave Game.sii");
 
-    // -------------------------------
     // Profil laden
-    // -------------------------------
     let profile = env::var("CURRENT_PROFILE").map_err(|_| "Kein Profil geladen.".to_string())?;
     let path = quicksave_game_path(&profile);
     let content = decrypt_if_needed(&path)?;
 
-    // -------------------------------
-    // 1. Player Block
-    // -------------------------------
+    // Player Block
     let re_player_full = cragex(r"player\s*:\s*([a-zA-Z0-9._]+)\s*\{([^}]*)\}")?;
     let player_caps = re_player_full
         .captures(&content)
@@ -46,9 +42,7 @@ pub async fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
     log!("Player ID: {}", player_id);
     log!("My Truck: {:?}", player_my_truck);
 
-    // -------------------------------
-    // 2. Bank Block
-    // -------------------------------
+    // Bank Block
     let re_bank_full = cragex(r"bank\s*:\s*([a-zA-Z0-9._]+)\s*\{([^}]*)\}")?;
     let bank_caps = re_bank_full
         .captures(&content)
@@ -64,9 +58,7 @@ pub async fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
     log!("Bank ID: {}", bank_id);
     log!("Player Money: {:?}", player_money);
 
-    // -------------------------------
-    // 3. Skills
-    // -------------------------------
+    // Skills
     let parse_skill = |name: &str| -> Option<i64> {
         cragex(&format!(r"{}:\s*(\d+)", name))
             .ok()?
@@ -81,9 +73,7 @@ pub async fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
     let urgent = parse_skill("urgent");
     let mechanical = parse_skill("mechanical");
 
-    // -------------------------------
-    // 4. Vehicle Block + Player Truck Info
-    // -------------------------------
+    // Vehicle Block + Truck Info
     let truck_id = player_my_truck.clone().ok_or("Kein my_truck im Player gefunden")?;
     let vehicle_regex = format!(r"vehicle\s*:\s*{}\s*\{{([^}}]+)}}", regex::escape(&truck_id));
     let vehicle_block = cragex(&vehicle_regex)?
