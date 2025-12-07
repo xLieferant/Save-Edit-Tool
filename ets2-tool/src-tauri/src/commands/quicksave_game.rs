@@ -16,7 +16,7 @@ pub fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
     let content = decrypt_if_needed(&path)?;
 
     // ------------------------------------------------------------
-    // 1. Profil lesen
+    // 1. Profil Block lesen + XP auslesen! 
     // ------------------------------------------------------------
 
     // Player-ID
@@ -44,6 +44,22 @@ pub fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
         .ok_or("Player Block Parsing Error")?
         .as_str();
 
+    // Player Block - my_truck auslesen! 
+    let re_my_truck = cragex(r"my_truck\s*:\s*([a-zA-Z0-9._]+)")?;
+
+    let player_my_truck = re_my_truck
+        .captures(player_block)
+        .and_then(|caps| caps.get(1))
+        .map(|m| m.as_str().to_string());
+
+    // Player Block - my_trailer auslesen! 
+    let re_my_trailer = cragex(r"my_trailer\s*:\s*([a-zA-Z0-9._]+)")?;
+
+    let player_my_trailer = re_my_trailer
+        .captures(player_block)
+        .and_then(|caps| caps.get(1))
+        .map(|m| m.as_str().to_string());
+
     // XP auslesen
     let re_xp = cragex(r"experience_points:\s*(\d+)")?;
 
@@ -54,6 +70,8 @@ pub fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
 
     log!("player_id gefunden! player: {}", player_id_string);
     log!("player_block information: {}", player_block);
+    log!("my_truck information: {:?}", player_my_truck);
+    log!("my_trailer information: {:?}", player_my_trailer);
     log!("Expierence Points: {:?}", player_xp);
 
     // ------------------------------------------------------------
@@ -206,6 +224,8 @@ pub fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
         player_id: Some(player_id_string),
         bank_id: Some(bank_id_string),
         player_xp,
+        player_my_truck,
+        player_my_trailer,
         adr,
         long_dist,
         heavy,
