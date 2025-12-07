@@ -13,10 +13,14 @@ pub struct GameDataQuicksave {
     pub fragile: Option<i64>,
     pub urgent: Option<i64>,
     pub mechanical: Option<i64>,
-
     pub vehicle_id: Option<String>,
     pub brand_path: Option<String>,
     pub license_plate: Option<String>,
     pub odometer: Option<i64>,
     pub trip_fuel_l: Option<i64>,
+
+    // Neue Felder:
+    pub truck_brand: Option<String>,
+    pub truck_model: Option<String>,
 }
+

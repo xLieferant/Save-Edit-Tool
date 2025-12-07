@@ -16,7 +16,7 @@ pub async fn get_player_truck_info(profile_path: String, player_truck_id: String
     log!("Inhalt erfolgreich aus game.sii extrahiert und entschlüsselt.");
 
     let trucks = parse_trucks_from_sii(&content);
-
+    log!("let trucks = parse_truck_from_sii wird ausgeführt! ----------------");
     let truck = trucks.into_iter()
         .find(|t| t.truck_id == player_truck_id)
         .ok_or("Player Truck nicht gefunden")?;
