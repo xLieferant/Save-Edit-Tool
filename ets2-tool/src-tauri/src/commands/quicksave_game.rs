@@ -44,8 +44,17 @@ pub fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
         .ok_or("Player Block Parsing Error")?
         .as_str();
 
+    // XP auslesen
+    let re_xp = cragex(r"experience_points:\s*(\d+)")?;
+
+    let player_xp = re_xp
+        .captures(&content)
+        .and_then(|caps| caps.get(1))
+        .and_then(|m| m.as_str().parse::<i64>().ok());
+
     log!("player_id gefunden! player: {}", player_id_string);
     log!("player_block information: {}", player_block);
+    log!("Expierence Points: {:?}", player_xp);
 
     // ------------------------------------------------------------
     // 2. Profil lesen
@@ -71,13 +80,17 @@ pub fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
         .to_string();
 
     // Block extrahieren
-    let bank_block = bank_caps
-        .get(2)
-        .ok_or("Bank Block Parsing Error")?
-        .as_str();
+    let bank_block = bank_caps.get(2).ok_or("Bank Block Parsing Error")?.as_str();
+
+    // Player Money lesen
+    let player_money = cragex(r"money_account:\s*(\d+)")?
+        .captures(bank_block)
+        .map(|c| c[1].to_string())
+        .filter(|v| v != "null");
 
     log!("Bank_ID gefunden! bank: {}", bank_id_string);
     log!("bank_block information: {}", bank_block);
+    log!("player_money: {:?}", player_money);
 
     // ------------------------------------------------------------
     // 3. Skills lesen
@@ -118,6 +131,14 @@ pub fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
         .ok()
         .flatten()
         .and_then(|c| c[1].parse().ok());
+
+    log!("ADR Level: {:?}", adr);
+    log!("Long Distance: {:?}", long_dist);
+    log!("Heavy: {:?}", heavy);
+    log!("Fragile: {:?}", fragile);
+    log!("Urgent: {:?}", urgent);
+    log!("Mechanical: {:?}", mechanical);
+
     // ------------------------------------------------------------
     // 4. Player-Felder extrahieren
     // ------------------------------------------------------------
@@ -184,6 +205,7 @@ pub fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
     Ok(GameDataQuicksave {
         player_id: Some(player_id_string),
         bank_id: Some(bank_id_string),
+        player_xp,
         adr,
         long_dist,
         heavy,
