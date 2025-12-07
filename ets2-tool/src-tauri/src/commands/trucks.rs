@@ -1,11 +1,9 @@
 use std::path::Path;
 use tauri::command;
 use crate::log;
-
-use crate::utils::sii_parser::parse_trucks_from_sii;
 use crate::models::trucks::ParsedTruck;
-// Passe diesen Pfad an, wo auch immer deine Entschlüsselungsfunktion liegt
-use crate::utils::decrypt::decrypt_if_needed; 
+use crate::utils::sii_parser::parse_trucks_from_sii;
+use crate::utils::decrypt::decrypt_if_needed; // <-- vergessen
 
 
 #[command]
@@ -27,3 +25,4 @@ pub async fn get_player_truck_info(profile_path: String, player_truck_id: String
 
     Ok(truck)
 }
+
