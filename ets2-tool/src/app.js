@@ -45,19 +45,24 @@ if (defaultTabBtn) loadTools(defaultTabBtn.dataset.tab);
 const modalText = document.querySelector("#modalText");
 const modalTextTitle = document.querySelector("#modalTextTitle");
 const modalTextInput = document.querySelector("#modalTextInput");
+const modalTextApply = document.getElementById("modalTextApply");
+const modalTextCancel = document.getElementById("modalTextCancel");
 
 const modalNumber = document.querySelector("#modalNumber");
 const modalNumberTitle = document.querySelector("#modalNumberTitle");
 const modalNumberInput = document.querySelector("#modalNumberInput");
+const modalNumberApply = document.getElementById("modalNumberApply");
+const modalNumberCancel = document.getElementById("modalNumberCancel");
 
 const modalSlider = document.querySelector("#modalSlider");
 const modalSliderTitle = document.querySelector("#modalSliderTitle");
 const modalSliderInput = document.querySelector("#modalSliderInput");
+const modalSliderApply = document.getElementById("modalSliderApply");
+const modalSliderCancel = document.getElementById("modalSliderCancel");
 
 const modalMulti = document.querySelector("#modalMulti");
 const modalMultiTitle = document.querySelector("#modalMultiTitle");
 const modalMultiContent = document.querySelector("#modalMultiContent");
-
 const modalMultiApplyBtn = document.getElementById("modalMultiApply");
 const modalMultiCancelBtn = document.getElementById("modalMultiCancel");
 
@@ -67,6 +72,7 @@ const modalMultiCancelBtn = document.getElementById("modalMultiCancel");
 window.openModalText = function (title, placeholder) {
   modalTextTitle.textContent = title;
   modalTextInput.placeholder = placeholder;
+  modalText.value = "";
   modalText.style.display = "flex";
 
   return new Promise((resolve) => {
@@ -120,16 +126,16 @@ window.openModalNumber = function (title, value = 0) {
 };
 
 /* --------------------------------------------------------------
-   SLIDER MODAL
+   SLIDER MODAL (Single 0/1)
 -------------------------------------------------------------- */
-window.openModalSlider = function (title, isChecked) {
+window.openModalSlider = function (title, isChecked = 0) {
   modalSliderTitle.textContent = title;
   modalSliderInput.checked = Boolean(isChecked);
   modalSlider.style.display = "flex";
 
   return new Promise((resolve) => {
     function apply() {
-      const val = modalSliderInput.checked;
+      const val = modalSliderInput.checked ? 1 : 0;
       cleanup();
       resolve(val);
     }
@@ -149,13 +155,17 @@ window.openModalSlider = function (title, isChecked) {
 };
 
 /* --------------------------------------------------------------
-   MULTI-MODAL (NUMBER, SLIDER, DROPDOWN, ADR)
+   MULTI-MODAL (NUMBER, SLIDER, DROPDOWN, ADR, CHECKBOX)
 -------------------------------------------------------------- */
 window.openModalMulti = function (title, config = []) {
   modalMultiTitle.textContent = title;
   modalMultiContent.innerHTML = "";
 
-  config.forEach((item) => {
+  const adrLevels = [1, 3, 7, 15, 31, 63];
+
+  const inputs = [];
+
+  config.forEach((item, index) => {
     const row = document.createElement("div");
     row.className = "modal-row";
 
@@ -174,6 +184,7 @@ window.openModalMulti = function (title, config = []) {
       input.value = item.value ?? 0;
       input.className = "modal-number";
       control.appendChild(input);
+      inputs.push(input);
     }
 
     /* DROPDOWN */
@@ -191,30 +202,28 @@ window.openModalMulti = function (title, config = []) {
       });
 
       control.appendChild(select);
+      inputs.push(select);
     }
 
-    /* SLIDER */
+    /* SLIDER / ADR */
     if (item.type === "slider" || item.type === "adr") {
       const val = document.createElement("span");
       val.id = `${item.id}_val`;
       val.className = "slider-value";
 
-      let slider = document.createElement("input");
+      const slider = document.createElement("input");
       slider.type = "range";
 
       if (item.type === "adr") {
-        // Mapping für ADR Levels
-        const adrLevels = [1, 3, 7, 15, 31, 63];
         slider.min = 0;
         slider.max = adrLevels.length - 1;
-        slider.value = adrLevels.indexOf(item.value) ?? 0; // Setze Startwert auf Index
+        slider.value = adrLevels.indexOf(item.value) ?? 0;
         val.textContent = adrLevels[slider.value];
 
         slider.addEventListener("input", () => {
           val.textContent = adrLevels[slider.value];
         });
       } else {
-        // Normaler Slider
         slider.min = 0;
         slider.max = 6;
         slider.value = item.value ?? 0;
@@ -226,14 +235,24 @@ window.openModalMulti = function (title, config = []) {
 
       slider.id = item.id;
       slider.className = "skill-slider";
-
       control.appendChild(val);
       control.appendChild(slider);
+      inputs.push(slider);
+    }
+
+    /* CHECKBOX */
+    if (item.type === "checkbox") {
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.id = item.id;
+      input.checked = Boolean(item.value ?? 0);
+      input.className = "modal-checkbox";
+      control.appendChild(input);
+      inputs.push(input);
     }
 
     row.appendChild(label);
     row.appendChild(control);
-
     modalMultiContent.appendChild(row);
   });
 
@@ -241,12 +260,15 @@ window.openModalMulti = function (title, config = []) {
 
   return new Promise((resolve) => {
     function apply() {
-      const inputs = modalMultiContent.querySelectorAll("input, select");
       const result = {};
-
       inputs.forEach((i) => {
-        if (i.type === "range" || i.type === "number") {
+        if (i.type === "range" && config.find(c => c.id === i.id)?.type === "adr") {
+          const val = adrLevels[i.value];
+          result[i.id] = val;
+        } else if (i.type === "range" || i.type === "number") {
           result[i.id] = Number(i.value);
+        } else if (i.type === "checkbox") {
+          result[i.id] = i.checked ? 1 : 0;
         } else {
           result[i.id] = i.value;
         }

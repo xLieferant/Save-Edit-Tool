@@ -208,18 +208,23 @@ const tools = {
       action: () =>
         openModalMulti("Developer Settings", [
           {
-            type: "slider",
+            type: "checkbox",
             id: "developer",
             label: "Developer Mode",
             value: window.baseConfig?.developer || false,
           },
           {
-            type: "slider",
+            type: "checkbox",
             id: "console",
             label: "Console Mode",
             value: window.baseConfig?.console || false,
           },
-        ]),
+        ]).then(result => {
+          if(result){
+            window.baseConfig.developer = result.developer;
+            window.baseConfig.console = result.console;
+          }
+        })
     },
   ],
 };
