@@ -9,22 +9,21 @@ use crate::utils::decrypt::decrypt_if_needed;
 
 
 #[command]
-pub async fn get_all_trucks(profile_path: String) -> Result<Vec<ParsedTruck>, String> {
-    
+pub async fn get_player_truck_info(profile_path: String, player_truck_id: String) -> Result<ParsedTruck, String> {
     let game_sii_path_str = format!("{}/save/quicksave/game.sii", profile_path);
     let game_sii_path = Path::new(&game_sii_path_str);
-    
     log!("Versuche game.sii zu laden/entschlüsseln: {}", game_sii_path.display());
 
-    // Rufe die Entschlüsselungsfunktion auf, sie gibt den String-Inhalt zurück
     let content = decrypt_if_needed(game_sii_path)?;
-    
     log!("Inhalt erfolgreich aus game.sii extrahiert und entschlüsselt.");
 
-    // Den lesbaren Inhalt an die Parsing-Logik übergeben
     let trucks = parse_trucks_from_sii(&content);
-    
-    log!("parse_trucks_from_sii Erfolgreich ausgeführt. Gefundene Trucks: {}", trucks.len());
 
-    Ok(trucks) // Wichtig: Rückgabe in Ok() einpacken
+    let truck = trucks.into_iter()
+        .find(|t| t.truck_id == player_truck_id)
+        .ok_or("Player Truck nicht gefunden")?;
+
+    log!("Player Truck gefunden: ID={}, Brand={}, Model={}", truck.truck_id, truck.brand, truck.model);
+
+    Ok(truck)
 }
