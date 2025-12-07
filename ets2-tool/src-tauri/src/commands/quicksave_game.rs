@@ -11,7 +11,9 @@ use tauri::command;
 pub async fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
     log!("Lese Quicksave Game.sii");
 
+    // -------------------------------
     // Profil laden
+    // -------------------------------
     let profile = env::var("CURRENT_PROFILE").map_err(|_| "Kein Profil geladen.".to_string())?;
     let path = quicksave_game_path(&profile);
     let content = decrypt_if_needed(&path)?;
@@ -42,7 +44,9 @@ pub async fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
     log!("Player ID: {}", player_id);
     log!("My Truck: {:?}", player_my_truck);
 
-    // Bank Block
+    // -------------------------------
+    // Bank block
+    // -------------------------------
     let re_bank_full = cragex(r"bank\s*:\s*([a-zA-Z0-9._]+)\s*\{([^}]*)\}")?;
     let bank_caps = re_bank_full
         .captures(&content)
@@ -58,7 +62,9 @@ pub async fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
     log!("Bank ID: {}", bank_id);
     log!("Player Money: {:?}", player_money);
 
+    // -------------------------------
     // Skills
+    // -------------------------------
     let parse_skill = |name: &str| -> Option<i64> {
         cragex(&format!(r"{}:\s*(\d+)", name))
             .ok()?
@@ -73,7 +79,9 @@ pub async fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
     let urgent = parse_skill("urgent");
     let mechanical = parse_skill("mechanical");
 
-    // Vehicle Block + Truck Info
+    // -------------------------------
+    // Vehicle Block + Player Truck Info
+    // -------------------------------
     let truck_id = player_my_truck.clone().ok_or("Kein my_truck im Player gefunden")?;
     let vehicle_regex = format!(r"vehicle\s*:\s*{}\s*\{{([^}}]+)}}", regex::escape(&truck_id));
     let vehicle_block = cragex(&vehicle_regex)?
