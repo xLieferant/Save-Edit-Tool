@@ -39,7 +39,6 @@ navButtons.forEach((btn) => {
 const defaultTabBtn = document.querySelector(".nav-btn.active");
 if (defaultTabBtn) loadTools(defaultTabBtn.dataset.tab);
 
-
 /* --------------------------------------------------------------
    MODAL REFERENCES
 -------------------------------------------------------------- */
@@ -61,7 +60,6 @@ const modalMultiContent = document.querySelector("#modalMultiContent");
 
 const modalMultiApplyBtn = document.getElementById("modalMultiApply");
 const modalMultiCancelBtn = document.getElementById("modalMultiCancel");
-
 
 /* --------------------------------------------------------------
    TEXT MODAL
@@ -92,7 +90,6 @@ window.openModalText = function (title, placeholder) {
   });
 };
 
-
 /* --------------------------------------------------------------
    NUMBER MODAL
 -------------------------------------------------------------- */
@@ -121,7 +118,6 @@ window.openModalNumber = function (title, value = 0) {
     modalNumberCancel.addEventListener("click", cancel);
   });
 };
-
 
 /* --------------------------------------------------------------
    SLIDER MODAL
@@ -152,7 +148,6 @@ window.openModalSlider = function (title, isChecked) {
   });
 };
 
-
 /* --------------------------------------------------------------
    MULTI-MODAL (NUMBER, SLIDER, DROPDOWN, ADR)
 -------------------------------------------------------------- */
@@ -170,7 +165,6 @@ window.openModalMulti = function (title, config = []) {
 
     const control = document.createElement("div");
     control.className = "modal-control";
-
 
     /* NUMBER */
     if (item.type === "number") {
@@ -204,19 +198,34 @@ window.openModalMulti = function (title, config = []) {
       const val = document.createElement("span");
       val.id = `${item.id}_val`;
       val.className = "slider-value";
-      val.textContent = item.value;
 
-      const slider = document.createElement("input");
+      let slider = document.createElement("input");
       slider.type = "range";
-      slider.min = 0;
-      slider.max = 6;
+
+      if (item.type === "adr") {
+        // Mapping für ADR Levels
+        const adrLevels = [1, 3, 7, 15, 31, 63];
+        slider.min = 0;
+        slider.max = adrLevels.length - 1;
+        slider.value = adrLevels.indexOf(item.value) ?? 0; // Setze Startwert auf Index
+        val.textContent = adrLevels[slider.value];
+
+        slider.addEventListener("input", () => {
+          val.textContent = adrLevels[slider.value];
+        });
+      } else {
+        // Normaler Slider
+        slider.min = 0;
+        slider.max = 6;
+        slider.value = item.value ?? 0;
+
+        slider.addEventListener("input", () => {
+          val.textContent = slider.value;
+        });
+      }
+
       slider.id = item.id;
       slider.className = "skill-slider";
-      slider.value = item.value ?? 0;
-
-      slider.addEventListener("input", () => {
-        val.textContent = slider.value;
-      });
 
       control.appendChild(val);
       control.appendChild(slider);
