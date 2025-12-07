@@ -21,7 +21,14 @@ pub async fn get_player_truck_info(profile_path: String, player_truck_id: String
         .find(|t| t.truck_id == player_truck_id)
         .ok_or("Player Truck nicht gefunden")?;
 
-    log!("Player Truck gefunden: ID={}, Brand={}, Model={}", truck.truck_id, truck.brand, truck.model);
+    log!(
+    "Player ID: {} fährt Truck: {} ({} {})",
+    player_truck_id, // falls du die Player-ID separat hast, sonst passt hier der Truck
+    truck.truck_id,
+    truck.brand,
+    truck.model
+);
+
 
     Ok(truck)
 }
