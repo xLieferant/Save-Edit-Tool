@@ -22,7 +22,7 @@ const tools = {
       action: () =>
         openModalNumber(
           "How big will be your tank?",
-          window.currentQuicksaveData?.trip_fuel_l || 0
+          window.parseTruckSii?.trip_fuel_l || 0
         ),
     },
     {
@@ -32,7 +32,7 @@ const tools = {
       action: () =>
         openModalNumber(
           "Change your odometer",
-          window.currentQuicksaveData?.odometer || 0
+          window.parseTruckSii?.odometer || 0
         ),
     },
     {
@@ -42,7 +42,7 @@ const tools = {
       action: () =>
         openModalText(
           "Change your license plate",
-          window.currentQuicksaveData?.license_plate
+          window.parseTruckSii?.license_plate
         ),
     },
   ],

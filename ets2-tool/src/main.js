@@ -100,6 +100,7 @@ document.addEventListener("DOMContentLoaded", () => {
       await loadProfileSaveConfig();
       await loadBaseConfig();
       await loadAllTrucks();
+      await parseTrucksFromSii();
 
       profileStatus.textContent = "Profile loaded";
       loadTools(activeTab);
@@ -161,6 +162,17 @@ document.addEventListener("DOMContentLoaded", () => {
         profilePath: selectedProfilePath
       });
       window.allTrucks = trucks || [];
+    } catch (err) {
+      console.error("Error truck list", err);
+    }
+  }
+
+    async function parseTrucksFromSii() {
+    try {
+      const parseTruck = await invoke("parse_trucks_from_sii", {
+        profilePath: selectedProfilePath
+      });
+      window.parseTruckSii = parseTruck || [];
     } catch (err) {
       console.error("Error truck list", err);
     }

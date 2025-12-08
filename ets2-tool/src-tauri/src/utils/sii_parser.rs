@@ -19,7 +19,14 @@ pub fn parse_trucks_from_sii(content: &str) -> Vec<ParsedTruck> {
     let re_block = Regex::new(r"(vehicle\s*:\s*[^\s]+)\s*\{([^}]+)\}").unwrap();
 
     for caps in re_block.captures_iter(content) {
-        let truck_id = caps.get(1).unwrap().as_str().trim().to_string();
+        // Truck-ID bereinigen
+        let truck_id_raw = caps.get(1).unwrap().as_str().trim().to_string();
+        let truck_id = truck_id_raw
+            .split(':')
+            .nth(1)
+            .unwrap_or("")
+            .trim()
+            .to_string();
         let block = caps.get(2).unwrap().as_str();
 
         log!("Truck_ID gefunden: {}", truck_id);
@@ -38,10 +45,10 @@ pub fn parse_trucks_from_sii(content: &str) -> Vec<ParsedTruck> {
             if let Some(path) = accessory_map.get(acc) {
                 let parts: Vec<&str> = path.split('/').collect();
                 if parts.len() >= 5 {
-                    let truck_info = parts[4]; // z.B. scania.s_2016
-                    let mut split = truck_info.split('.');
-                    brand = split.next().unwrap_or("").to_string();
-                    model = split.next().unwrap_or("").to_string();
+                    let truck_info = parts[4];
+                    let parts2: Vec<&str> = truck_info.split('.').collect();
+                    brand = parts2.get(0).unwrap_or(&"").to_string();
+                    model = parts2[1..].join(".");
                     break;
                 }
             }
@@ -82,6 +89,8 @@ pub fn parse_trucks_from_sii(content: &str) -> Vec<ParsedTruck> {
 
     trucks
 }
+
+// Hilfsfunktionen zum Extrahieren von Werten
 
 fn extract_value(block: &str, key: &str) -> Option<String> {
     let re = Regex::new(&format!(r#"{}\s*:\s*"([^"]*)""#, key)).unwrap();
