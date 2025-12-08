@@ -20,17 +20,25 @@ pub async fn get_all_trucks(profile_path: String) -> Result<Vec<ParsedTruck>, St
 }
 
 #[command]
-pub async fn get_player_truck(profile_path: String, player_truck_id: String) -> Result<ParsedTruck, String> {
+pub async fn get_player_truck(profile_path: String) -> Result<ParsedTruck, String> {
     let path_string = format!("{}/save/quicksave/game.sii", profile_path);
     let game_sii_path = Path::new(&path_string);
 
     let content = decrypt_if_needed(game_sii_path)?;
     let trucks = sii_parser::parse_trucks_from_sii(&content);
 
-    let truck = trucks.into_iter()
-        .find(|t| t.truck_id == player_truck_id)
-        .ok_or("Player Truck nicht gefunden")?;
+    log!("parse_trucks_from_sii → {} Trucks gefunden", trucks.len());
+    for t in &trucks {
+        log!("Truck: {} ({}, {}) {:?}", t.truck_id, t.brand, t.model, t.odometer);
+    }
 
-    log!("Player Truck gefunden: {} ({}, {})", truck.truck_id, truck.brand, truck.model);
+    // Nimm den ersten Truck als Player Truck
+    let truck = trucks
+        .into_iter()
+        .next()
+        .ok_or("Keine Trucks gefunden")?;
+
+    log!("Player Truck automatisch gesetzt: {} ({}, {}) {:?}", truck.truck_id, truck.brand, truck.model, truck.odometer);
     Ok(truck)
 }
+

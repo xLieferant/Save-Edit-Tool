@@ -25,6 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
   window.baseConfig = {};
   window.allTrucks = [];
   window.parseTruckSii = [];
+  window.playerTruck = null; // <-- Player Truck automatisch
 
   /* -------------------------------------------------------------------------- */
   /*                           DROPDOWN STEUERUNG                               */
@@ -152,39 +153,25 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function loadAllTrucks() {
-  try {
-    if (!selectedProfilePath) return;
+    try {
+      if (!selectedProfilePath) return;
 
-    // Alle Trucks laden
-    const trucks = await invoke("get_all_trucks", {
-      profile_path: selectedProfilePath
-    });
-    window.allTrucks = trucks;
+      const trucks = await invoke("get_player_truck", {
+        profile_path: selectedProfilePath
+      });
 
-    // Player Truck direkt setzen
-    if (window.currentProfileData.player_truck_id) {
-      window.playerTruck = trucks.find(
-        t => t.truck_id === window.currentProfileData.player_truck_id
-      );
+      window.playerTruck = trucks; // <-- erster Truck automatisch
+      window.allTrucks = [trucks]; // für Kompatibilität mit allen Trucks
+
+      console.log("Player Truck geladen:", window.playerTruck);
+    } catch (err) {
+      console.error("Error loading trucks", err);
     }
-
-    // Fallback: Wenn kein playerTruck gesetzt ist, nimm den ersten Truck
-    if (!window.playerTruck && trucks.length > 0) {
-      window.playerTruck = trucks[0];
-    }
-
-    console.log("Player Truck geladen:", window.playerTruck);
-
-  } catch (err) {
-    console.error("Error loading trucks", err);
   }
-}
 
-
-  // Hilfsfunktion: aktiven Truck holen (Standard: erster Truck)
+  // Hilfsfunktion: aktiven Truck holen (Standard: playerTruck)
   window.getActiveTruck = function () {
-    if (!window.parseTruckSii || window.parseTruckSii.length === 0) return {};
-    return window.parseTruckSii[0];
+    return window.playerTruck || {};
   };
 
   /* -------------------------------------------------------------------------- */
