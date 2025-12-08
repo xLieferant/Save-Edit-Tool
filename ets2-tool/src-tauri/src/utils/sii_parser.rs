@@ -48,6 +48,20 @@ pub fn parse_trucks_from_sii(content: &str) -> Vec<ParsedTruck> {
         let mileage = extract_f32(block, "mileage");
         let assigned_garage = extract_value(block, "assigned_garage");
 
+        // EINFACHES LOG HIER:
+        log!(
+            "Parsed Truck Data -> ID: {}, Brand: {}, Model: {}, Odo: {:?}, Mileage: {:?}, Fuel: {:?}, Plate: {:?}, Garage: {:?}",
+            truck_id,
+            brand,
+            model,
+            odometer,
+            mileage,
+            trip_fuel_l,
+            license_plate,
+            assigned_garage
+        );
+        // ENDE DES LOGS
+
         trucks.push(ParsedTruck {
             truck_id,
             brand,

@@ -24,8 +24,6 @@ pub async fn get_player_truck(profile_path: String, player_truck_id: String) -> 
     let path_string = format!("{}/save/quicksave/game.sii", profile_path);
     let game_sii_path = Path::new(&path_string);
 
-    log!("Versuche game.sii zu laden: {}", game_sii_path.display());
-
     let content = decrypt_if_needed(game_sii_path)?;
     let trucks = sii_parser::parse_trucks_from_sii(&content);
 

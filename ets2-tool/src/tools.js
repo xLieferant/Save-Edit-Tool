@@ -15,23 +15,22 @@ const tools = {
       img: "images/gasstation.jpg",
       action: () => openModalNumber("Change fuel level", "How much fuel?"),
     },
-    {
+ {
       title: "Fuel Level",
       desc: "Change your fuel level at your current truck",
       img: "images/gasstation.jpg",
       action: () => {
-        const truck = getActiveTruck();
-        openModalNumber("Change fuel level", truck.trip_fuel_l || 0);
+        const fuel = window.playerTruck?.trip_fuel_l || 0;
+        openModalNumber("Change fuel level", fuel);
       },
     },
     {
-      title: "Truck milage",
+      title: "Truck Mileage",
       desc: "Change your Milage at your current truck",
       img: "images/odometer.png",
       action: () => {
-        const truck = getActiveTruck();
-        const odometer = truck.odometer || 0;
-        openModalNumber("Change your odometer", odometer);
+        const odo = window.playerTruck?.odometer || 0;
+        openModalNumber("Change your odometer", odo);
       },
     },
     {
@@ -39,14 +38,11 @@ const tools = {
       desc: "Change your license plate",
       img: "images/xxx",
       action: () => {
-        const truck = getActiveTruck();
-        let plate = truck.license_plate || "";
-        // nur ersten Teil der Plate, falls | vorhanden
-        plate = plate.split("|")[0];
+        const plate = window.playerTruck?.license_plate || "";
         openModalText("Change your license plate", plate);
       },
     },
-  ],
+    ],
 
   trailer: [
     {

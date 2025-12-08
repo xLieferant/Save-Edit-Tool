@@ -116,8 +116,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (moneyDisplay)
         moneyDisplay.textContent = `Geld: ${data.money.toLocaleString()} €`;
-      if (xpDisplay)
-        xpDisplay.textContent = `XP: ${data.xp.toLocaleString()}`;
+      if (xpDisplay) xpDisplay.textContent = `XP: ${data.xp.toLocaleString()}`;
     } catch (err) {
       console.error("Error loading profile data", err);
     }
@@ -153,17 +152,34 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function loadAllTrucks() {
-    try {
-      const trucks = await invoke("parse_trucks_from_sii", {
-        profilePath: selectedProfilePath,
-      });
-      window.allTrucks = trucks || [];
-      window.parseTruckSii = trucks || [];
-      console.log("Loaded Trucks:", window.parseTruckSii);
-    } catch (err) {
-      console.error("Error loading trucks", err);
+  try {
+    if (!selectedProfilePath) return;
+
+    // Alle Trucks laden
+    const trucks = await invoke("get_all_trucks", {
+      profile_path: selectedProfilePath
+    });
+    window.allTrucks = trucks;
+
+    // Player Truck direkt setzen
+    if (window.currentProfileData.player_truck_id) {
+      window.playerTruck = trucks.find(
+        t => t.truck_id === window.currentProfileData.player_truck_id
+      );
     }
+
+    // Fallback: Wenn kein playerTruck gesetzt ist, nimm den ersten Truck
+    if (!window.playerTruck && trucks.length > 0) {
+      window.playerTruck = trucks[0];
+    }
+
+    console.log("Player Truck geladen:", window.playerTruck);
+
+  } catch (err) {
+    console.error("Error loading trucks", err);
   }
+}
+
 
   // Hilfsfunktion: aktiven Truck holen (Standard: erster Truck)
   window.getActiveTruck = function () {
