@@ -1,6 +1,10 @@
 const { invoke } = window.__TAURI__.core;
 
 document.addEventListener("DOMContentLoaded", () => {
+  /* -------------------------------------------------------------------------- */
+  /*                               DOM ELEMENTE                                 */
+  /* -------------------------------------------------------------------------- */
+
   const scanBtn = document.querySelector("#refreshBtn");
   const profileNameDisplay = document.querySelector("#profileNameDisplay");
   const profileDropdownList = document.querySelector("#profileDropdownList");
@@ -15,6 +19,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const editStatus = document.querySelector("#edit-status");
 
   let selectedProfilePath = null;
+
+  window.currentProfileData = {};
+  window.currentQuicksaveData = {};
+  window.readSaveGameConfig = {};
+  window.baseConfig = {};
 
   /* -------------------------------------------------------------------------- */
   /*                           DROPDOWN STEUERUNG                               */
@@ -36,38 +45,42 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* -------------------------------------------------------------------------- */
-  /*                               PROFILE SCANNEN                              */
+  /*                           PROFILE SCANNEN                                  */
   /* -------------------------------------------------------------------------- */
 
   scanBtn.addEventListener("click", async () => {
     profileStatus.textContent = "Scanning profiles...";
     profileDropdownList.innerHTML = "";
 
-    const profiles = await invoke("find_ets2_profiles");
+    try {
+      const profiles = await invoke("find_ets2_profiles");
+      profileStatus.textContent = `${profiles.length} profiles found`;
 
-    profiles.forEach((p) => {
-      if (!p.success) return;
+      profiles.forEach((p) => {
+        if (!p.success) return;
 
-      const item = document.createElement("div");
-      item.classList.add("dropdown-item");
-      item.textContent = `${p.name} (${p.path})`;
-      item.dataset.path = p.path;
+        const item = document.createElement("div");
+        item.classList.add("dropdown-item");
+        item.textContent = `${p.name} (${p.path})`;
+        item.dataset.path = p.path;
 
-      item.addEventListener("click", () => {
-        selectedProfilePath = p.path;
-        profileNameDisplay.textContent = p.name;
-        profileDropdownList.classList.remove("show");
-        loadSelectedProfile();
+        item.addEventListener("click", () => {
+          selectedProfilePath = p.path;
+          profileNameDisplay.textContent = p.name;
+          profileDropdownList.classList.remove("show");
+          loadSelectedProfile();
+        });
+
+        profileDropdownList.appendChild(item);
       });
-
-      profileDropdownList.appendChild(item);
-    });
-
-    profileStatus.textContent = `${profiles.length} profiles found`;
+    } catch (e) {
+      profileStatus.textContent = "Scan failed";
+      console.error(e);
+    }
   });
 
   /* -------------------------------------------------------------------------- */
-  /*                           PROFIL LADEN & LOGIK                             */
+  /*                        PROFIL + SAVEFILES LADEN                             */
   /* -------------------------------------------------------------------------- */
 
   async function loadSelectedProfile() {
@@ -76,175 +89,111 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    profileStatus.textContent = "Loading autosave/info.sii...";
-    const result = await invoke("load_profile", {
-      profilePath: selectedProfilePath,
-    });
-    profileStatus.textContent = result;
+    profileStatus.textContent = "Loading profile...";
 
-    await updateAllDisplays();
-    await loadQuicksaveGame();
-    await updateQuicksaveGame();
-    await readSaveGameConfig();
+    try {
+      await invoke("load_profile", { profilePath: selectedProfilePath });
 
-    const saveConfig = await invoke("read_save_config", {
-      profilePath: selectedProfilePath,
-    });
-    console.log("Profil-Config:", saveConfig);
+      // Nacheinander alle relevanten Daten laden
+      await loadProfileData();
+      await loadQuicksave();
+      await loadProfileSaveConfig();
+      await loadBaseConfig();
+      await loadAllTrucks();
 
-    const globalConfig = await loadGlobalConfig();
-    console.log("Globale Config geladen:", globalConfig);
-
-    const trucks = await invoke("get_all_trucks", {
-      profilePath: selectedProfilePath,
-    });
+      profileStatus.textContent = "Profile loaded";
+      loadTools(activeTab);
+    } catch (err) {
+      console.error("Profile loading failed", err);
+      profileStatus.textContent = "Error loading profile";
+    }
   }
 
   /* -------------------------------------------------------------------------- */
-  /*                              SAVE-DATEN ANZEIGEN                           */
+  /*                       EINZELNE LADEN-FUNKTIONEN                             */
   /* -------------------------------------------------------------------------- */
 
-  async function updateAllDisplays() {
+  async function loadProfileData() {
     try {
       const data = await invoke("read_all_save_data");
       window.currentProfileData = data;
 
-      if (moneyDisplay)
-        moneyDisplay.textContent = `Geld: ${data.money.toLocaleString()} €`;
-
+      if (moneyDisplay) moneyDisplay.textContent = `Geld: ${data.money.toLocaleString()} €`;
       if (xpDisplay) xpDisplay.textContent = `XP: ${data.xp.toLocaleString()}`;
 
-      loadTools(activeTab);
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error("Error profile data", err);
     }
   }
 
-  /* -------------------------------------------------------------------------- */
-  /*                              Quicksave_Game ANZEIGEN                           */
-  /* -------------------------------------------------------------------------- */
-
-  async function updateQuicksaveGame() {
+  async function loadQuicksave() {
     try {
       const data = await invoke("quicksave_game_info");
       window.currentQuicksaveData = data;
-      loadTools(activeTab);
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error("Error quicksave", err);
     }
   }
 
-  /* -------------------------------------------------------------------------- */
-  /*                              Read_Save_Config ANZEIGEN                           */
-  /* -------------------------------------------------------------------------- */
-
-  async function readSaveGameConfig() {
+  async function loadProfileSaveConfig() {
     try {
-      const data = await invoke("read_save_config");
+      const data = await invoke("read_save_config", {
+        profilePath: selectedProfilePath
+      });
       window.readSaveGameConfig = data;
-      loadTools(activeTab);
-    } catch (error) {
-      console.error(error);
+    } catch (err) {
+      console.error("Error save config", err);
     }
   }
 
-  /* -------------------------------------------------------------------------- */
-  /*                       GLOBALE BASEGAME CONFIG (Optimiert)                  */
-  /* -------------------------------------------------------------------------- */
-
-  // Ruft die globale config.cfg aus Rust ab
-  async function getGlobalConfig() {
+  async function loadBaseConfig() {
     try {
-      return await invoke("read_base_config");
-    } catch (error) {
-      console.error("Fehler beim Auslesen der globalen Config:", error);
-      return null;
-    }
-  }
-
-  // Lädt globale Config einmal und speichert sie global ab
-  async function loadGlobalConfig() {
-    try {
-      const cfg = await getGlobalConfig();
+      const cfg = await invoke("read_base_config");
       window.baseConfig = cfg;
-      return cfg;
     } catch (err) {
-      console.error("Fehler beim GlobalConfig:", err);
-      return null;
+      console.error("Error base config", err);
     }
   }
 
-  /* -------------------------------------------------------------------------- */
-  /*                          QUICKSAVE GAME DATA (Optimiert)                   */
-  /* -------------------------------------------------------------------------- */
-
-  /**
-   * Ruft die Quicksave-Daten aus Rust ab
-   */
-  async function getQuicksaveGame() {
+  async function loadAllTrucks() {
     try {
-      return await invoke("quicksave_game_info");
-    } catch (error) {
-      console.error("Fehler beim Auslesen der Quicksave-Daten:", error);
-      return null;
-    }
-  }
-
-  /**
-   * Lädt Quicksave-Daten einmal und speichert sie global
-   */
-  async function loadQuicksaveGame() {
-    try {
-      const data = await getQuicksaveGame();
-      window.quicksaveData = data;
-      return data;
+      const trucks = await invoke("get_all_trucks", {
+        profilePath: selectedProfilePath
+      });
+      window.allTrucks = trucks || [];
     } catch (err) {
-      console.error("Fehler beim Laden der Quicksave-Daten:", err);
-      return null;
+      console.error("Error truck list", err);
     }
   }
 
-  // Beispielnutzung
-  loadQuicksaveGame().then((data) => {
-    if (data) {
-      console.log("Quicksave geladen:", data);
-    }
-  });
-
   /* -------------------------------------------------------------------------- */
-  /*                         SAVE FUNKTIONEN (MONEY / XP)                       */
+  /*                         SAVE-FUNKTIONEN (MONEY / XP)                        */
   /* -------------------------------------------------------------------------- */
 
-  // Save money
   if (moneyBtn) {
     moneyBtn.addEventListener("click", async () => {
       const amount = Number(document.querySelector("#money-input").value);
-      editStatus.textContent = "Saving...";
+      editStatus.textContent = "Saving…";
 
       await invoke("edit_money", { amount });
 
       editStatus.textContent = "Money saved!";
-      await updateAllDisplays();
+      await loadProfileData();
+      loadTools(activeTab);
     });
   }
 
-  // Save XP/Level
   if (levelBtn) {
     levelBtn.addEventListener("click", async () => {
       const xp = Number(document.querySelector("#level-input").value);
-      editStatus.textContent = "Saving...";
+      editStatus.textContent = "Saving…";
 
       await invoke("edit_level", { xp });
 
       editStatus.textContent = "XP saved!";
-      await updateAllDisplays();
+      await loadProfileData();
+      loadTools(activeTab);
     });
   }
 
-  /* -------------------------------------------------------------------------- */
-  /*                         GET ALL TRUCKS INFOS                      */
-  /* -------------------------------------------------------------------------- */
-
-  // Global config optional direkt laden
-  // loadGlobalConfig();
 });

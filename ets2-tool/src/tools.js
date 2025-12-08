@@ -18,31 +18,45 @@ const tools = {
     {
       title: "Change Fuel Tank",
       desc: "Change your fuel Tank!",
-      img: "images/xxx", // Bild einfügen! 
-      action: () => openModalNumber("How big will be your tank?", window.currentQuicksaveData.trip_fuel_l || 0),
+      img: "images/xxx",
+      action: () =>
+        openModalNumber(
+          "How big will be your tank?",
+          window.currentQuicksaveData?.trip_fuel_l || 0
+        ),
     },
     {
       title: "Truck milage",
       desc: "Change your Milage at your current truck",
       img: "images/odometer.png",
-      action: () => openModalNumber("Change your odometer", window.currentQuicksaveData.odometer || 0),
+      action: () =>
+        openModalNumber(
+          "Change your odometer",
+          window.currentQuicksaveData?.odometer || 0
+        ),
     },
     {
       title: "Truck License Plate",
       desc: "Change your license plate",
-      img: "images/xxx", // <- Bild einfügen! 
-      action: () => openModalText("Change your license plate", window.currentQuicksaveData.license_plate),
+      img: "images/xxx",
+      action: () =>
+        openModalText(
+          "Change your license plate",
+          window.currentQuicksaveData?.license_plate
+        ),
     },
   ],
 
   trailer: [
     {
+      // [] TO DO | Trailer HP finden
       title: "Repair",
       desc: "Repair your Trailer",
       img: "images/trailerRepair.jpg",
       action: () => openModalSlider("Repair Trailer", false),
     },
     {
+      // [] TO DO. Kennzeichen angeben
       title: "Change Trailer License Plate",
       desc: "Modify your trailer license plate",
       img: "images/trailer_license.jpg",
@@ -50,6 +64,7 @@ const tools = {
         openModalText("Change trailer license", "New License Plate"),
     },
     {
+      // [] TO DO Job Weight finden
       title: "Modify Job Weight",
       desc: "Adjust the job's cargo weight",
       img: "images/job_weight.jpg",
@@ -81,41 +96,46 @@ const tools = {
       img: "images/skillPoint.jpg",
       action: () =>
         openModalMulti("Set Experience Skills", [
-          { type: "adr",
+          {
+            type: "adr",
             id: "skill_adr",
             label: "ADR",
-            value: window.currentQuicksaveData.adr || 0 },
+            value: window.currentQuicksaveData?.adr || 0,
+          },
           {
             type: "slider",
             id: "skill_long",
             label: "Long Distance",
-            value: window.currentQuicksaveData.long_dist || 0,
+            value: window.currentQuicksaveData?.long_dist || 0,
           },
           {
             type: "slider",
             id: "skill_heavy",
             label: "High Value Cargo",
-            value: window.currentQuicksaveData.heavy || 0,
+            value: window.currentQuicksaveData?.heavy || 0,
           },
           {
             type: "slider",
             id: "skill_fragile",
             label: "Fragile Cargo",
-            value: window.currentQuicksaveData.fragile || 0,
+            value: window.currentQuicksaveData?.fragile || 0,
           },
           {
             type: "slider",
             id: "skill_urgent",
             label: "Just in Time Delivery",
-            value: window.currentQuicksaveData.urgent || 0,
+            value: window.currentQuicksaveData?.urgent || 0,
           },
-          { type: "slider",
+          {
+            type: "slider",
             id: "skill_eco",
             label: "Eco Driving",
-            value: window.currentQuicksaveData.mechanical || 0 }, // mechanical = eco! 
+            value: window.currentQuicksaveData?.mechanical || 0,
+          }, // mechanical = eco!
         ]),
     },
-    { // hinzugefügt für Account Stats
+    {
+      // hinzugefügt für Account Stats
       title: "Stats",
       desc: "Account informations",
       img: "images/skillPoint.jpg", // <- Muss noch geändert werden
@@ -125,19 +145,19 @@ const tools = {
             type: "number",
             id: "skill_long",
             label: "Recruitment Centers",
-            value: window.currentProfileData.recruitments || 0
+            value: window.currentProfileData.recruitments || 0,
           },
           {
             type: "number",
             id: "skill_long",
             label: "Dealers",
-            value: window.currentProfileData.dealers || 0
+            value: window.currentProfileData.dealers || 0,
           },
           {
             type: "number",
             id: "skill_long",
             label: "Visited cities",
-            value: window.currentProfileData.visited_cities || 0
+            value: window.currentProfileData.visited_cities || 0,
           },
         ]),
     },
@@ -145,6 +165,7 @@ const tools = {
 
   settings: [
     {
+      // [] TO DO, value ist nicht .baseConfig! Muss noch geändert werden
       title: "Color Theme",
       desc: "Change the UI theme",
       img: "images/styles.jpg",
@@ -154,7 +175,7 @@ const tools = {
             type: "dropdown",
             id: "theme",
             label: "Theme",
-            value: window.baseConfig?.theme || "Dark",
+            value: window.baseConfig?.theme || "Dark", // hier muss der value noch geändert  werden!
             options: ["Dark", "Light", "Neon"],
           },
         ]),
@@ -167,6 +188,7 @@ const tools = {
         openModalNumber("Convoy Size", window.baseConfig?.max_convoy_size || 8),
     },
     {
+      // [] TO DO, value ist nicht .baseConfig! Muss noch geändert werden
       title: "Language",
       desc: "Change your language",
       img: "images/lang.jpg",
@@ -190,7 +212,7 @@ const tools = {
     {
       title: "Traffic value",
       desc: "Change the traffic factor",
-      img: "images/xxx", // <- Bild muss noch eingefügt werden! 
+      img: "images/xxx", // <- Bild muss noch eingefügt werden!
       action: () =>
         openModalNumber("g set_traffic", window.baseConfig?.traffic || 1), // <- 1 ist Standard Value
     },
@@ -199,7 +221,10 @@ const tools = {
       desc: "Do you want to park double trailer?",
       img: "images/xxx", // <- Parking double Bilder einfügen
       action: () =>
-        openModalSlider("Do you want to park doubles?", window.baseConfig?.factor_parking_doubles || 0), // <-- 0 Standard wert
+        openModalNumber(
+          "Do you want to park doubles?",
+          window.readSaveGameConfig?.factor_parking_doubles || 0
+        ), // <-- 0 Standard wert
     },
     {
       title: "Dev Mode",
@@ -219,12 +244,12 @@ const tools = {
             label: "Console Mode",
             value: window.baseConfig?.console || false,
           },
-        ]).then(result => {
-          if(result){
+        ]).then((result) => {
+          if (result) {
             window.baseConfig.developer = result.developer;
             window.baseConfig.console = result.console;
           }
-        })
+        }),
     },
   ],
 };

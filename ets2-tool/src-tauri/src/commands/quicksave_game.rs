@@ -124,7 +124,7 @@ pub async fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
                 truck.model
             );
 
-            let vehicle_regex = format!(r"vehicle\s*:\s*{}\s*\{{([^}}]+)}}", regex::escape(&truck.truck_id));
+            let vehicle_regex = format!(r"vehicle\s*:\s*{}\s*\{{([\s\S]*?)\n\}}", regex::escape(&truck.truck_id));
             log!("Vehicle Regex: {}", vehicle_regex);
 
             let vehicle_block = cragex(&vehicle_regex)?
