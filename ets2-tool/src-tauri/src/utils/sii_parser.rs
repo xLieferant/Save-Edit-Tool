@@ -95,8 +95,16 @@ pub fn parse_trucks_from_sii(content: &str) -> Vec<ParsedTruck> {
 fn extract_value(block: &str, key: &str) -> Option<String> {
     let re = Regex::new(&format!(r#"{}\s*:\s*"([^"]*)""#, key)).unwrap();
     re.captures(block)
-        .and_then(|c| Some(c.get(1)?.as_str().to_string()))
+        .and_then(|c| {
+            c.get(1).map(|m| {
+                let raw = m.as_str().to_string();
+                // <offset ...> und andere ETS2-Tags entfernen
+                let tag_re = Regex::new(r"<[^>]+>").unwrap();
+                tag_re.replace_all(&raw, "").to_string()
+            })
+        })
 }
+
 
 fn extract_f32(block: &str, key: &str) -> Option<f32> {
     let re = Regex::new(&format!(r#"{}\s*:\s*([0-9\.\-]+)"#, key)).unwrap();

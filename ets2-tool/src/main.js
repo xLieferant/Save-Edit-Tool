@@ -119,9 +119,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await invoke("read_all_save_data");
       window.currentProfileData = data;
 
-      if (moneyDisplay) moneyDisplay.textContent = `Geld: ${data.money.toLocaleString()} €`;
+      if (moneyDisplay)
+        moneyDisplay.textContent = `Geld: ${data.money.toLocaleString()} €`;
       if (xpDisplay) xpDisplay.textContent = `XP: ${data.xp.toLocaleString()}`;
-
     } catch (err) {
       console.error("Error profile data", err);
     }
@@ -139,7 +139,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function loadProfileSaveConfig() {
     try {
       const data = await invoke("read_save_config", {
-        profilePath: selectedProfilePath
+        profilePath: selectedProfilePath,
       });
       window.readSaveGameConfig = data;
     } catch (err) {
@@ -159,7 +159,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function loadAllTrucks() {
     try {
       const trucks = await invoke("get_all_trucks", {
-        profilePath: selectedProfilePath
+        profilePath: selectedProfilePath,
       });
       window.allTrucks = trucks || [];
     } catch (err) {
@@ -167,16 +167,23 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-    async function parseTrucksFromSii() {
+  async function parseTrucksFromSii() {
     try {
       const parseTruck = await invoke("parse_trucks_from_sii", {
-        profilePath: selectedProfilePath
+        profilePath: selectedProfilePath,
       });
       window.parseTruckSii = parseTruck || [];
+      console.log("Parsed Trucks:", window.parseTruckSii);
     } catch (err) {
       console.error("Error truck list", err);
     }
   }
+
+  // Hilfsfunktion: aktiven Truck holen (Standard: erster Truck)
+  window.getActiveTruck = function () {
+    if (!window.parseTruckSii || window.parseTruckSii.length === 0) return {};
+    return window.parseTruckSii[0]; // hier könntest du später einen Index oder Truck-ID wählen
+  };
 
   /* -------------------------------------------------------------------------- */
   /*                         SAVE-FUNKTIONEN (MONEY / XP)                        */
@@ -207,5 +214,4 @@ document.addEventListener("DOMContentLoaded", () => {
       loadTools(activeTab);
     });
   }
-
 });

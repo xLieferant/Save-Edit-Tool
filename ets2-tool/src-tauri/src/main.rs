@@ -20,6 +20,7 @@ fn main() {
             commands::global_config::read_base_config,
             commands::quicksave_game::quicksave_game_info,
             commands::trucks::get_player_truck_info,
+            commands::trucks::parse_trucks_from_sii,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri app");

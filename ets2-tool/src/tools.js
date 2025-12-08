@@ -16,34 +16,35 @@ const tools = {
       action: () => openModalNumber("Change fuel level", "How much fuel?"),
     },
     {
-      title: "Change Fuel Tank",
-      desc: "Change your fuel Tank!",
-      img: "images/xxx",
-      action: () =>
-        openModalNumber(
-          "How big will be your tank?",
-          window.parseTruckSii?.trip_fuel_l || 0
-        ),
+      title: "Fuel Level",
+      desc: "Change your fuel level at your current truck",
+      img: "images/gasstation.jpg",
+      action: () => {
+        const truck = getActiveTruck();
+        openModalNumber("Change fuel level", truck.trip_fuel_l || 0);
+      },
     },
     {
       title: "Truck milage",
       desc: "Change your Milage at your current truck",
       img: "images/odometer.png",
-      action: () =>
-        openModalNumber(
-          "Change your odometer",
-          window.parseTruckSii?.odometer || 0
-        ),
+      action: () => {
+        const truck = getActiveTruck();
+        const odometer = truck.odometer || 0;
+        openModalNumber("Change your odometer", odometer);
+      },
     },
     {
       title: "Truck License Plate",
       desc: "Change your license plate",
       img: "images/xxx",
-      action: () =>
-        openModalText(
-          "Change your license plate",
-          window.parseTruckSii?.license_plate
-        ),
+      action: () => {
+        const truck = getActiveTruck();
+        let plate = truck.license_plate || "";
+        // nur ersten Teil der Plate, falls | vorhanden
+        plate = plate.split("|")[0];
+        openModalText("Change your license plate", plate);
+      },
     },
   ],
 
