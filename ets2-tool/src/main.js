@@ -4,7 +4,6 @@ document.addEventListener("DOMContentLoaded", () => {
   /* -------------------------------------------------------------------------- */
   /*                               DOM ELEMENTE                                 */
   /* -------------------------------------------------------------------------- */
-
   const scanBtn = document.querySelector("#refreshBtn");
   const profileNameDisplay = document.querySelector("#profileNameDisplay");
   const profileDropdownList = document.querySelector("#profileDropdownList");
@@ -24,11 +23,12 @@ document.addEventListener("DOMContentLoaded", () => {
   window.currentQuicksaveData = {};
   window.readSaveGameConfig = {};
   window.baseConfig = {};
+  window.allTrucks = [];
+  window.parseTruckSii = [];
 
   /* -------------------------------------------------------------------------- */
   /*                           DROPDOWN STEUERUNG                               */
   /* -------------------------------------------------------------------------- */
-
   function toggleProfileDropdown() {
     profileDropdownList.classList.toggle("show");
   }
@@ -47,7 +47,6 @@ document.addEventListener("DOMContentLoaded", () => {
   /* -------------------------------------------------------------------------- */
   /*                           PROFILE SCANNEN                                  */
   /* -------------------------------------------------------------------------- */
-
   scanBtn.addEventListener("click", async () => {
     profileStatus.textContent = "Scanning profiles...";
     profileDropdownList.innerHTML = "";
@@ -73,16 +72,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
         profileDropdownList.appendChild(item);
       });
-    } catch (e) {
+    } catch (err) {
       profileStatus.textContent = "Scan failed";
-      console.error(e);
+      console.error(err);
     }
   });
 
   /* -------------------------------------------------------------------------- */
   /*                        PROFIL + SAVEFILES LADEN                             */
   /* -------------------------------------------------------------------------- */
-
   async function loadSelectedProfile() {
     if (!selectedProfilePath) {
       profileStatus.textContent = "No profile selected!";
@@ -94,13 +92,11 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       await invoke("load_profile", { profilePath: selectedProfilePath });
 
-      // Nacheinander alle relevanten Daten laden
       await loadProfileData();
       await loadQuicksave();
       await loadProfileSaveConfig();
       await loadBaseConfig();
       await loadAllTrucks();
-      await parseTrucksFromSii();
 
       profileStatus.textContent = "Profile loaded";
       loadTools(activeTab);
@@ -113,7 +109,6 @@ document.addEventListener("DOMContentLoaded", () => {
   /* -------------------------------------------------------------------------- */
   /*                       EINZELNE LADEN-FUNKTIONEN                             */
   /* -------------------------------------------------------------------------- */
-
   async function loadProfileData() {
     try {
       const data = await invoke("read_all_save_data");
@@ -121,9 +116,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (moneyDisplay)
         moneyDisplay.textContent = `Geld: ${data.money.toLocaleString()} €`;
-      if (xpDisplay) xpDisplay.textContent = `XP: ${data.xp.toLocaleString()}`;
+      if (xpDisplay)
+        xpDisplay.textContent = `XP: ${data.xp.toLocaleString()}`;
     } catch (err) {
-      console.error("Error profile data", err);
+      console.error("Error loading profile data", err);
     }
   }
 
@@ -132,7 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await invoke("quicksave_game_info");
       window.currentQuicksaveData = data;
     } catch (err) {
-      console.error("Error quicksave", err);
+      console.error("Error loading quicksave", err);
     }
   }
 
@@ -143,7 +139,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       window.readSaveGameConfig = data;
     } catch (err) {
-      console.error("Error save config", err);
+      console.error("Error loading save config", err);
     }
   }
 
@@ -152,53 +148,46 @@ document.addEventListener("DOMContentLoaded", () => {
       const cfg = await invoke("read_base_config");
       window.baseConfig = cfg;
     } catch (err) {
-      console.error("Error base config", err);
+      console.error("Error loading base config", err);
     }
   }
 
   async function loadAllTrucks() {
     try {
-      const trucks = await invoke("get_all_trucks", {
+      const trucks = await invoke("parse_trucks_from_sii", {
         profilePath: selectedProfilePath,
       });
       window.allTrucks = trucks || [];
+      window.parseTruckSii = trucks || [];
+      console.log("Loaded Trucks:", window.parseTruckSii);
     } catch (err) {
-      console.error("Error truck list", err);
-    }
-  }
-
-  async function parseTrucksFromSii() {
-    try {
-      const parseTruck = await invoke("parse_trucks_from_sii", {
-        profilePath: selectedProfilePath,
-      });
-      window.parseTruckSii = parseTruck || [];
-      console.log("Parsed Trucks:", window.parseTruckSii);
-    } catch (err) {
-      console.error("Error truck list", err);
+      console.error("Error loading trucks", err);
     }
   }
 
   // Hilfsfunktion: aktiven Truck holen (Standard: erster Truck)
   window.getActiveTruck = function () {
     if (!window.parseTruckSii || window.parseTruckSii.length === 0) return {};
-    return window.parseTruckSii[0]; // hier könntest du später einen Index oder Truck-ID wählen
+    return window.parseTruckSii[0];
   };
 
   /* -------------------------------------------------------------------------- */
   /*                         SAVE-FUNKTIONEN (MONEY / XP)                        */
   /* -------------------------------------------------------------------------- */
-
   if (moneyBtn) {
     moneyBtn.addEventListener("click", async () => {
       const amount = Number(document.querySelector("#money-input").value);
       editStatus.textContent = "Saving…";
 
-      await invoke("edit_money", { amount });
-
-      editStatus.textContent = "Money saved!";
-      await loadProfileData();
-      loadTools(activeTab);
+      try {
+        await invoke("edit_money", { amount });
+        editStatus.textContent = "Money saved!";
+        await loadProfileData();
+        loadTools(activeTab);
+      } catch (err) {
+        console.error("Error saving money", err);
+        editStatus.textContent = "Error saving money";
+      }
     });
   }
 
@@ -207,11 +196,15 @@ document.addEventListener("DOMContentLoaded", () => {
       const xp = Number(document.querySelector("#level-input").value);
       editStatus.textContent = "Saving…";
 
-      await invoke("edit_level", { xp });
-
-      editStatus.textContent = "XP saved!";
-      await loadProfileData();
-      loadTools(activeTab);
+      try {
+        await invoke("edit_level", { xp });
+        editStatus.textContent = "XP saved!";
+        await loadProfileData();
+        loadTools(activeTab);
+      } catch (err) {
+        console.error("Error saving XP", err);
+        editStatus.textContent = "Error saving XP";
+      }
     });
   }
 });

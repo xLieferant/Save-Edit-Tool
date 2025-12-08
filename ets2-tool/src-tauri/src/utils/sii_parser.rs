@@ -6,7 +6,6 @@ use std::collections::HashMap;
 pub fn parse_trucks_from_sii(content: &str) -> Vec<ParsedTruck> {
     let mut trucks = Vec::new();
 
-    // 1) Alle vehicle_accessory-Einträge für data_path sammeln
     let re_vehicle_accessory =
         Regex::new(r#"vehicle_accessory\s*:\s*([^\s]+)\s*\{\s*data_path:\s*"([^"]+)""#).unwrap();
 
@@ -15,30 +14,19 @@ pub fn parse_trucks_from_sii(content: &str) -> Vec<ParsedTruck> {
         accessory_map.insert(cap[1].to_string(), cap[2].to_string());
     }
 
-    // 2) Fahrzeug-Blöcke erkennen
     let re_block = Regex::new(r"(vehicle\s*:\s*[^\s]+)\s*\{([^}]+)\}").unwrap();
 
     for caps in re_block.captures_iter(content) {
-        // Truck-ID bereinigen
         let truck_id_raw = caps.get(1).unwrap().as_str().trim().to_string();
-        let truck_id = truck_id_raw
-            .split(':')
-            .nth(1)
-            .unwrap_or("")
-            .trim()
-            .to_string();
+        let truck_id = truck_id_raw.split(':').nth(1).unwrap_or("").trim().to_string();
         let block = caps.get(2).unwrap().as_str();
 
-        log!("Truck_ID gefunden: {}", truck_id);
-
-        // Accessories sammeln
         let re_accessory = Regex::new(r"accessories\[\d+\]:\s*([^\s]+)").unwrap();
         let mut accessories = Vec::new();
         for acc_cap in re_accessory.captures_iter(block) {
             accessories.push(acc_cap[1].to_string());
         }
 
-        // Marke und Modell ermitteln
         let mut brand = String::new();
         let mut model = String::new();
         for acc in &accessories {
@@ -54,7 +42,6 @@ pub fn parse_trucks_from_sii(content: &str) -> Vec<ParsedTruck> {
             }
         }
 
-        // Werte extrahieren
         let odometer = extract_i64(block, "odometer");
         let trip_fuel_l = extract_i64(block, "trip_fuel_l");
         let license_plate = extract_value(block, "license_plate");
@@ -73,44 +60,13 @@ pub fn parse_trucks_from_sii(content: &str) -> Vec<ParsedTruck> {
         });
     }
 
-    log!("Parsing abgeschlossen. Insgesamt {} Trucks.", trucks.len());
-
-    for truck in &trucks {
-        log!(
-            "Gefundene Truck-ID: {} | Brand: {} | Model: {} | Plate: {:?} | Odometer: {:?} | Fuel: {:?}",
-            truck.truck_id,
-            truck.brand,
-            truck.model,
-            truck.license_plate,
-            truck.odometer,
-            truck.trip_fuel_l
-        );
-    }
-
     trucks
 }
-
-// Hilfsfunktionen zum Extrahieren von Werten
 
 fn extract_value(block: &str, key: &str) -> Option<String> {
     let re = Regex::new(&format!(r#"{}\s*:\s*"([^"]*)""#, key)).unwrap();
     re.captures(block)
-        .and_then(|c| {
-            c.get(1).map(|m| {
-                let raw = m.as_str().to_string();
-                // <offset ...> und andere ETS2-Tags entfernen
-                let tag_re = Regex::new(r"<[^>]+>").unwrap();
-                tag_re.replace_all(&raw, "").to_string()
-            })
-        })
-}
-
-
-fn extract_f32(block: &str, key: &str) -> Option<f32> {
-    let re = Regex::new(&format!(r#"{}\s*:\s*([0-9\.\-]+)"#, key)).unwrap();
-    re.captures(block)
-        .and_then(|c| c.get(1))
-        .and_then(|m| m.as_str().parse::<f32>().ok())
+        .and_then(|c| c.get(1).map(|m| m.as_str().to_string()))
 }
 
 fn extract_i64(block: &str, key: &str) -> Option<i64> {
@@ -118,4 +74,11 @@ fn extract_i64(block: &str, key: &str) -> Option<i64> {
     re.captures(block)
         .and_then(|c| c.get(1))
         .and_then(|m| m.as_str().parse::<i64>().ok())
+}
+
+fn extract_f32(block: &str, key: &str) -> Option<f32> {
+    let re = Regex::new(&format!(r#"{}\s*:\s*([0-9\.\-]+)"#, key)).unwrap();
+    re.captures(block)
+        .and_then(|c| c.get(1))
+        .and_then(|m| m.as_str().parse::<f32>().ok())
 }
