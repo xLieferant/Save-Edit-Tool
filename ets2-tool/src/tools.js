@@ -215,7 +215,7 @@ const tools = {
       desc: "Do you want to park double trailer?",
       img: "images/xxx", // <- Parking double Bilder einfügen
       action: () =>
-        openModalNumber(
+        openModalSlider(
           "Do you want to park doubles?",
           window.readSaveGameConfig?.factor_parking_doubles || 0
         ), // <-- 0 Standard wert
