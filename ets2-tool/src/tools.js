@@ -13,36 +13,33 @@ const tools = {
       title: "Fuel Level",
       desc: "Change your fuel level at your current truck",
       img: "images/gasstation.jpg",
-      action: () => openModalNumber("Change fuel level", "How much fuel?"),
-    },
- {
-      title: "Fuel Level",
-      desc: "Change your fuel level at your current truck",
-      img: "images/gasstation.jpg",
-      action: () => {
-        const fuel = window.playerTruck?.trip_fuel_l || 0;
-        openModalNumber("Change fuel level", fuel);
-      },
+      action: () =>
+        openModalNumber(
+          "Change fuel level",
+          window.playerTruck?.trip_fuel_l || 0
+        ),
     },
     {
       title: "Truck Mileage",
-      desc: "Change your Milage at your current truck",
+      desc: "Change your Mileage at your current truck",
       img: "images/odometer.png",
-      action: () => {
-        const odo = window.playerTruck?.odometer || 0;
-        openModalNumber("Change your odometer", odo);
-      },
+      action: () =>
+        openModalNumber(
+          "Change your odometer",
+          window.playerTruck?.odometer || 0
+        ),
     },
     {
       title: "Truck License Plate",
       desc: "Change your license plate",
-      img: "images/xxx",
-      action: () => {
-        const plate = window.playerTruck?.license_plate || "";
-        openModalText("Change your license plate", plate);
-      },
+      img: "images/xxx.png",
+      action: () =>
+        openModalText(
+          "Change your license plate",
+          window.playerTruck?.license_plate || ""
+        ),
     },
-    ],
+  ],
 
   trailer: [
     {

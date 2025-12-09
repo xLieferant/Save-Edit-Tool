@@ -156,14 +156,20 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       if (!selectedProfilePath) return;
 
-      const trucks = await invoke("get_player_truck", {
-        profile_path: selectedProfilePath
+      const playerTruck = await invoke("get_player_truck", {
+        profilePath: selectedProfilePath
       });
 
-      window.playerTruck = trucks; // <-- erster Truck automatisch
-      window.allTrucks = [trucks]; // für Kompatibilität mit allen Trucks
+
+
+      window.playerTruck = playerTruck; // Player Truck automatisch setzen
+      window.allTrucks = [window.playerTruck]; // für Kompatibilität mit allen Trucks
 
       console.log("Player Truck geladen:", window.playerTruck);
+      console.log("get_player_truck RETURN:", playerTruck);
+      console.log("Keys:", Object.keys(playerTruck));
+      console.log("Fuel:", playerTruck.trip_fuel_l);
+
     } catch (err) {
       console.error("Error loading trucks", err);
     }
