@@ -2,6 +2,7 @@ use crate::log;
 use crate::models::quicksave_game_info::GameDataQuicksave;
 use crate::utils::regex_helper::cragex;
 use crate::utils::sii_parser::parse_trucks_from_sii;
+use crate::utils::sii_parser::parse_trailers_from_sii;
 use crate::utils::paths::quicksave_game_path;
 use crate::utils::decrypt::decrypt_if_needed;
 use std::env;
@@ -150,27 +151,83 @@ pub async fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
             }
         }
     }
+        // ------------------------------------------------------------
+        // TRAILER PARSING (NEU)
+        // ------------------------------------------------------------
+
+    let trailers = parse_trailers_from_sii(&content);
+    log!("{} Trailer gefunden", trailers.len());
+
+    // Player Trailer Felder
+    let mut trailer_brand = None;
+    let mut trailer_model = None;
+    let mut trailer_license_plate = None;
+    let mut trailer_odometer = None;
+    let mut trailer_odometer_float = None;
+    let mut trailer_wear_float = None;
+    let mut trailer_wheels_float = None;
+    let mut trailer_assigned_garage = None;
+
+    // Player Trailer ID holen
+    let re_player_trailer = cragex(
+        r"player\s*:\s*[A-Za-z0-9._]+\s*\{[^}]*?my_trailer\s*:\s*([A-Za-z0-9._]+)"
+    ).map_err(|e| format!("Regex Fehler Player Trailer: {}", e))?;
+
+    let trailer_id = re_player_trailer
+        .captures(&content)
+        .and_then(|c| c.get(1))
+        .map(|m| m.as_str().to_string());
+
+    if let Some(trailer_id) = trailer_id {
+        let id_clean = trailer_id.trim().to_lowercase();
+
+        if let Some(tr) = trailers.iter().find(|t| t.trailer_id.to_lowercase() == id_clean) {
+            log!("Player Trailer gefunden: {:?}", tr);
+
+            trailer_brand = tr.brand.clone();
+            trailer_model = tr.model.clone();
+            trailer_license_plate = tr.license_plate.clone();
+            trailer_odometer = tr.odometer;
+            trailer_odometer_float = tr.odometer_float;
+            trailer_wear_float = tr.wear_float;
+            trailer_wheels_float = tr.wheels_float;
+            trailer_assigned_garage = tr.assigned_garage.clone();
+        }
+    }
 
     log!("Struct wird erzeugt...");
 
     Ok(GameDataQuicksave {
-        player_id: Some(player_id),
-        bank_id: Some(bank_id),
-        player_xp,
-        player_my_truck: player_my_truck.clone(),
-        player_my_trailer,
-        adr,
-        long_dist,
-        heavy,
-        fragile,
-        urgent,
-        mechanical,
-        vehicle_id: player_my_truck.clone(),
-        brand_path: truck_brand.clone(),
-        license_plate,
-        odometer,
-        trip_fuel_l,
-        truck_brand,
-        truck_model,
-    })
+    player_id: Some(player_id),
+    bank_id: Some(bank_id),
+    player_xp,
+    player_my_truck: player_my_truck.clone(),
+    player_my_trailer,
+    adr,
+    long_dist,
+    heavy,
+    fragile,
+    urgent,
+    mechanical,
+
+    // Truck Daten
+    vehicle_id: player_my_truck.clone(),
+    brand_path: truck_brand.clone(),
+    license_plate,
+    odometer,
+    trip_fuel_l,
+    truck_brand,
+    truck_model,
+
+    // Trailer Daten (NEU)
+    trailer_brand,
+    trailer_model,
+    trailer_license_plate,
+    trailer_odometer,
+    trailer_odometer_float,
+    trailer_wear_float,
+    trailer_wheels_float,
+    trailer_assigned_garage,
+})
+
 }

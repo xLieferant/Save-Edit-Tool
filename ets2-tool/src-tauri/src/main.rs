@@ -34,6 +34,10 @@ fn main() {
             // Trucks
             commands::trucks::get_all_trucks,
             commands::trucks::get_player_truck,
+
+            //Trailer 
+            commands::trailers::get_all_trailers,
+            commands::trailers::get_player_trailer,
         ])
         .run(tauri::generate_context!())
         .expect("Error while running Tauri app");
