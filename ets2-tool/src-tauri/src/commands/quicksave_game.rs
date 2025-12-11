@@ -80,11 +80,11 @@ pub async fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
 
     log!("Bank ID = {}", bank_id);
 
-    let player_money = cragex(r"money_account:\s*(\d+)")?
+    let _player_money = cragex(r"money_account:\s*(\d+)")?
         .captures(bank_block)
         .map(|c| c.get(1).unwrap().as_str().to_string());
 
-    log!("Money = {:?}", player_money);
+    log!("Money geladen");
 
     // Skills
     let skill = |name: &str| {
@@ -115,9 +115,8 @@ pub async fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
     let mut trip_fuel_l = None;
 
     if let Some(ref id) = player_my_truck {
-        log!("Suche Player Truck {}", id);
-
         let id_clean = id.trim().to_lowercase();
+        log!("Suche Player Truck {}", id_clean);
 
         if let Some(t) = trucks.iter().find(|t| t.truck_id.to_lowercase() == id_clean) {
             log!("Truck gefunden: {:?}", t);
@@ -125,7 +124,7 @@ pub async fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
             truck_brand = Some(t.brand.clone());
             truck_model = Some(t.model.clone());
 
-            // vehicle block extrahieren
+            // vehicle block
             let vehicle_regex = format!(
                 r"vehicle\s*:\s*{}\s*\{{([\s\S]*?)\}}",
                 regex::escape(&t.truck_id)
@@ -151,14 +150,14 @@ pub async fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
             }
         }
     }
-        // ------------------------------------------------------------
-        // TRAILER PARSING (NEU)
-        // ------------------------------------------------------------
+
+    // ------------------------------------------------------------
+    // TRAILER PARSING ÜBER parse_trailers_from_sii
+    // ------------------------------------------------------------
 
     let trailers = parse_trailers_from_sii(&content);
     log!("{} Trailer gefunden", trailers.len());
 
-    // Player Trailer Felder
     let mut trailer_brand = None;
     let mut trailer_model = None;
     let mut trailer_license_plate = None;
@@ -168,18 +167,9 @@ pub async fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
     let mut trailer_wheels_float = None;
     let mut trailer_assigned_garage = None;
 
-    // Player Trailer ID holen
-    let re_player_trailer = cragex(
-        r"player\s*:\s*[A-Za-z0-9._]+\s*\{[^}]*?my_trailer\s*:\s*([A-Za-z0-9._]+)"
-    ).map_err(|e| format!("Regex Fehler Player Trailer: {}", e))?;
-
-    let trailer_id = re_player_trailer
-        .captures(&content)
-        .and_then(|c| c.get(1))
-        .map(|m| m.as_str().to_string());
-
-    if let Some(trailer_id) = trailer_id {
-        let id_clean = trailer_id.trim().to_lowercase();
+    if let Some(ref my_trailer_id) = player_my_trailer {
+        let id_clean = my_trailer_id.trim().to_lowercase();
+        log!("Suche Player Trailer {}", id_clean);
 
         if let Some(tr) = trailers.iter().find(|t| t.trailer_id.to_lowercase() == id_clean) {
             log!("Player Trailer gefunden: {:?}", tr);
@@ -198,36 +188,35 @@ pub async fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
     log!("Struct wird erzeugt...");
 
     Ok(GameDataQuicksave {
-    player_id: Some(player_id),
-    bank_id: Some(bank_id),
-    player_xp,
-    player_my_truck: player_my_truck.clone(),
-    player_my_trailer,
-    adr,
-    long_dist,
-    heavy,
-    fragile,
-    urgent,
-    mechanical,
+        player_id: Some(player_id),
+        bank_id: Some(bank_id),
+        player_xp,
+        player_my_truck: player_my_truck.clone(),
+        player_my_trailer,
+        adr,
+        long_dist,
+        heavy,
+        fragile,
+        urgent,
+        mechanical,
 
-    // Truck Daten
-    vehicle_id: player_my_truck.clone(),
-    brand_path: truck_brand.clone(),
-    license_plate,
-    odometer,
-    trip_fuel_l,
-    truck_brand,
-    truck_model,
+        // Truck
+        vehicle_id: player_my_truck.clone(),
+        brand_path: truck_brand.clone(),
+        license_plate,
+        odometer,
+        trip_fuel_l,
+        truck_brand,
+        truck_model,
 
-    // Trailer Daten (NEU)
-    trailer_brand,
-    trailer_model,
-    trailer_license_plate,
-    trailer_odometer,
-    trailer_odometer_float,
-    trailer_wear_float,
-    trailer_wheels_float,
-    trailer_assigned_garage,
-})
-
+        // Trailer
+        trailer_brand,
+        trailer_model,
+        trailer_license_plate,
+        trailer_odometer,
+        trailer_odometer_float,
+        trailer_wear_float,
+        trailer_wheels_float,
+        trailer_assigned_garage,
+    })
 }
