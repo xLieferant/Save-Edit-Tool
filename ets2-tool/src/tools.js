@@ -10,7 +10,7 @@ const tools = {
       action: () => openModalSlider("Repair Truck", false),
     },
     {
-      title: "Fuel Level",
+      title: "Fuel Level - 'COMING SOON'",
       desc: "Change your fuel level at your current truck",
       img: "images/gasstation.jpg",
       action: () =>
@@ -32,7 +32,7 @@ const tools = {
     {
       title: "Truck License Plate",
       desc: "Change your license plate",
-      img: "images/xxx.png",
+      img: "images/trailer_license.jpg",
       action: () =>
         openModalText(
           "Change your license plate",
@@ -44,14 +44,14 @@ const tools = {
   trailer: [
     {
       // [] TO DO | Trailer HP finden
-      title: "Repair",
+      title: "Repair - 'COMING SOON'",
       desc: "Repair your Trailer",
       img: "images/trailerRepair.jpg",
       action: () => openModalSlider("Repair Trailer", false),
     },
     {
       // [] TO DO. Kennzeichen angeben
-      title: "Change Trailer License Plate",
+      title: "Change Trailer License Plate - 'COMING SOON'",
       desc: "Modify your trailer license plate",
       img: "images/trailer_license.jpg",
       action: () =>
@@ -59,9 +59,9 @@ const tools = {
     },
     {
       // [] TO DO Job Weight finden
-      title: "Modify Job Weight",
+      title: "Modify Job Weight - 'COMING SOON'",
       desc: "Adjust the job's cargo weight",
-      img: "images/job_weight.jpg",
+      img: "images/comingsoon.png",
       action: () => openModalNumber("Modify job weight", "Weight in kg"),
     },
   ],
@@ -160,9 +160,9 @@ const tools = {
   settings: [
     {
       // [] TO DO, value ist nicht .baseConfig! Muss noch geändert werden
-      title: "Color Theme",
+      title: "Color Theme - 'COMING SOON'",
       desc: "Change the UI theme",
-      img: "images/styles.jpg",
+      img: "images/comingsoon.png",
       action: () =>
         openModalMulti("Choose Color Theme", [
           {
@@ -183,9 +183,9 @@ const tools = {
     },
     {
       // [] TO DO, value ist nicht .baseConfig! Muss noch geändert werden
-      title: "Language",
+      title: "Language - 'COMING SOON'",
       desc: "Change your language",
-      img: "images/lang.jpg",
+      img: "images/language.png",
       action: () =>
         openModalMulti("Language Settings", [
           {
@@ -206,14 +206,14 @@ const tools = {
     {
       title: "Traffic value",
       desc: "Change the traffic factor",
-      img: "images/xxx", // <- Bild muss noch eingefügt werden!
+      img: "images/traffic_value.png", // <- Bild muss noch eingefügt werden!
       action: () =>
         openModalNumber("g set_traffic", window.baseConfig?.traffic || 1), // <- 1 ist Standard Value
     },
     {
       title: "Parking Doubles",
       desc: "Do you want to park double trailer?",
-      img: "images/xxx", // <- Parking double Bilder einfügen
+      img: "images/parking_double.png", // <- Parking double Bilder einfügen
       action: () =>
         openModalSlider(
           "Do you want to park doubles?",
