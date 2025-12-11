@@ -1,6 +1,10 @@
-use crate::utils::sii_parser::parse_trailers_from_sii;
+use crate::utils::sii_parser::{
+    parse_trailers_from_sii, extract_string, extract_string_array
+};
 use crate::utils::decrypt::decrypt_if_needed;
 use crate::models::trailers::ParsedTrailer;
+use crate::utils::sii_parser::TrailerData;
+use crate::utils::hex_float::parse_value_auto;
 use crate::utils::regex_helper::cragex;
 use crate::log;
 use tauri::command;
@@ -11,15 +15,13 @@ pub async fn get_player_trailer(profile_path: String) -> Result<ParsedTrailer, S
     log!("get_player_trailer: Profil {}", profile_path);
 
     let path = format!("{}/save/quicksave/game.sii", profile_path);
-
     let content = decrypt_if_needed(Path::new(&path)).map_err(|e| {
         log!("Decrypt Fehler: {}", e);
         e
     })?;
 
-    let trailers = parse_trailers_from_sii(&content);
+    let trailers_data = parse_trailers_from_sii(&content);
 
-    // my_trailer aus Player block extrahieren
     let re_player_trailer = cragex(
         r"player\s*:\s*[A-Za-z0-9._]+\s*\{[^}]*?my_trailer\s*:\s*([A-Za-z0-9._]+)"
     ).map_err(|e| format!("Regex Fehler: {}", e))?;
@@ -32,12 +34,12 @@ pub async fn get_player_trailer(profile_path: String) -> Result<ParsedTrailer, S
 
     let id_clean = trailer_id.trim().to_lowercase();
 
-    let base = trailers
+    let trailer_data = trailers_data
         .into_iter()
         .find(|t| t.trailer_id.to_lowercase() == id_clean)
         .ok_or("Player Trailer nicht gefunden".to_string())?;
 
-    Ok(base)
+    Ok(parsed_trailer_from_data(&trailer_data))
 }
 
 #[command]
@@ -45,14 +47,50 @@ pub async fn get_all_trailers(profile_path: String) -> Result<Vec<ParsedTrailer>
     log!("get_all_trailers: Profil {}", profile_path);
 
     let path = format!("{}/save/quicksave/game.sii", profile_path);
-
     let content = decrypt_if_needed(Path::new(&path)).map_err(|e| {
         log!("Decrypt Fehler: {}", e);
         e
     })?;
 
-    let trailers = parse_trailers_from_sii(&content);
-    log!("{} Trailer gefunden", trailers.len());
+    let trailers_data = parse_trailers_from_sii(&content);
 
-    Ok(trailers)
+    let parsed_trailers: Vec<ParsedTrailer> = trailers_data
+        .into_iter()
+        .map(|trailer_data| parsed_trailer_from_data(&trailer_data))
+        .collect();
+
+    log!("{} Trailer gefunden", parsed_trailers.len());
+    Ok(parsed_trailers)
+}
+
+// Hilfsfunktion: ParsedTrailer aus TrailerData
+fn parsed_trailer_from_data(tr: &TrailerData) -> ParsedTrailer {
+    // Alle Floats über parse_value_auto (Hex oder Float)
+    // odometer (f32) + odometer_float (Option<f32>)
+    let odometer = tr.odometer + tr.odometer_float.unwrap_or(0.0);
+    
+    // In your sii_parser, 'wear_float' corresponds to 'trailer_body_wear'
+    let body_wear = tr.wear_float.unwrap_or(0.0);
+    
+    // In your sii_parser, 'wheels_float' is Option<Vec<f32>>
+    let wheels_wear = tr.wheels_float.clone().unwrap_or_default();
+
+    ParsedTrailer {
+        trailer_id: tr.trailer_id.clone(),
+        
+        // These fields are expected by ParsedTrailer but not present in TrailerData from your parser
+        cargo_mass: 0.0, 
+        cargo_damage: 0.0,
+        body_wear_unfixable: 0.0,
+        chassis_wear: 0.0,
+        chassis_wear_unfixable: 0.0,
+        wheels_wear_unfixable: vec![],
+        integrity_odometer: 0.0, // Set to default f32 value
+        accessories: vec![],     // Set to default empty Vec<String>
+
+        body_wear,
+        wheels_wear,
+        odometer,
+        license_plate: tr.license_plate.clone(),
+    }
 }

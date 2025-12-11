@@ -26,11 +26,10 @@ pub struct GameDataQuicksave {
     pub trailer_brand: Option<String>,
     pub trailer_model: Option<String>,
     pub trailer_license_plate: Option<String>,
-    pub trailer_odometer: Option<i64>,
-    pub trailer_odometer_float: Option<f32>,
-    pub trailer_wear_float: Option<f32>,
-    pub trailer_wheels_float: Option<f32>,
-    pub trailer_assigned_garage: Option<String>,
+    pub trailer_odometer: Option<Vec<f32>>,
+    pub trailer_odometer_float: Option<Vec<f32>>,
+    pub trailer_wear_float: Option<Vec<f32>>,
+    pub trailer_wheels_float: Option<Vec<String>>,
 }
 
 
