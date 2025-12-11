@@ -65,6 +65,10 @@ nav .link-btn:hover {
   backdrop-filter: blur(6px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   transition: 0.2s;
+
+  display: flex;
+  flex-direction: column; /* vertikal stapeln */
+  justify-content: space-between; /* Header/Text oben, Button unten */
 }
 
 .tool-card:hover {
@@ -83,6 +87,9 @@ nav .link-btn:hover {
 
 .tool-content {
   padding: 18px;
+  flex-grow: 1; /* nimmt verbleibenden Platz ein */
+  display: flex;
+  flex-direction: column;
 }
 
 .tool-content h3 {
@@ -92,6 +99,7 @@ nav .link-btn:hover {
 .tool-content p {
   margin: 0 0 10px;
   color: #bbb;
+  flex-grow: 1;
 }
 
 .tool-card button {
@@ -101,7 +109,8 @@ nav .link-btn:hover {
   border: none;
   border-radius: 20px;
   cursor: pointer;
-  color: black; /* Textfarbe auf Buttons, damit sie lesbar sind */
+  color: black;
+  margin-top: auto; /* schiebt den Button nach unten */
 }
 
 /* --- FOOTER BAR & CUSTOM PROFILE PICKER --- */
@@ -345,8 +354,8 @@ nav .link-btn:hover {
   background-color: #ff4d4f; /* rot hintergrund */
   color: white;              /* weiße Schrift */
   cursor: not-allowed;       /* Maus zeigt nicht erlaubt */
-  border: 1px solid #ff4d4f;
-  opacity: 0.8;              /* leicht transparent */
+  border: 5px solid #ff4d4f;
+  opacity: 0.6;              /* leicht transparent */
 }
 
 .modal-disabled {
