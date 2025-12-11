@@ -10,6 +10,8 @@ function loadTools(tab) {
   container.innerHTML = "";
 
   tools[tab].forEach((t) => {
+    if (t.hidden) return; // unsichtbare Tools überspringen
+
     const card = document.createElement("div");
     card.classList.add("tool-card");
 
@@ -22,7 +24,16 @@ function loadTools(tab) {
       </div>
     `;
 
-    card.querySelector("button").addEventListener("click", t.action);
+    const btn = card.querySelector("button");
+
+    if (t.disabled) {
+      btn.disabled = true;
+      btn.classList.add("modal-disabled"); // CSS: rot + cursornot-allowed
+      btn.textContent = "Coming Soon";
+    } else {
+      btn.addEventListener("click", t.action);
+    }
+
     container.appendChild(card);
   });
 }

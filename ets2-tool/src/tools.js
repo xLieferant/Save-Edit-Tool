@@ -7,17 +7,22 @@ const tools = {
       title: "Repair Truck",
       desc: "Repair your current truck",
       img: "images/repair.png",
-      action: () => openModalSlider("Repair Truck", false),
+      //action: () => openModalSlider("Repair Truck", false),
+      action: () => {},
+      disabled: true,
     },
     {
       title: "Fuel Level - 'COMING SOON'",
       desc: "Change your fuel level at your current truck",
       img: "images/gasstation.jpg",
-      action: () =>
-        openModalNumber(
-          "Change fuel level",
-          window.playerTruck?.trip_fuel_l || 0
-        ),
+      // action: () =>
+      //   openModalNumber(
+      //     "Change fuel level",
+      //     window.playerTruck?.trip_fuel_l || 0
+      //   ),
+
+      action: () => {},
+      disabled: true,
     },
     {
       title: "Truck Mileage",
@@ -47,22 +52,28 @@ const tools = {
       title: "Repair - 'COMING SOON'",
       desc: "Repair your Trailer",
       img: "images/trailerRepair.jpg",
-      action: () => openModalSlider("Repair Trailer", false),
+      action: () => {}, // keine Aktion
+      // action: () => openModalSlider("Repair Trailer", false),
+      disabled: true,
     },
     {
       // [] TO DO. Kennzeichen angeben
       title: "Change Trailer License Plate - 'COMING SOON'",
       desc: "Modify your trailer license plate",
       img: "images/trailer_license.jpg",
-      action: () =>
-        openModalText("Change trailer license", "New License Plate"),
+      // action: () =>
+      //   openModalText("Change trailer license", "New License Plate"),
+      action: () => {},
+      disabled: true,
     },
     {
       // [] TO DO Job Weight finden
       title: "Modify Job Weight - 'COMING SOON'",
       desc: "Adjust the job's cargo weight",
       img: "images/comingsoon.png",
-      action: () => openModalNumber("Modify job weight", "Weight in kg"),
+      //action: () => openModalNumber("Modify job weight", "Weight in kg"),
+      action: () => {},
+      disabled: true,
     },
   ],
 
@@ -186,22 +197,24 @@ const tools = {
       title: "Language - 'COMING SOON'",
       desc: "Change your language",
       img: "images/language.png",
-      action: () =>
-        openModalMulti("Language Settings", [
-          {
-            type: "dropdown",
-            id: "languageSelector",
-            label: "Language",
-            value: window.baseConfig?.language || "Deutsch",
-            options: [
-              "Deutsch",
-              "English (Coming Soon)",
-              "Spanish (Coming Soon)",
-              "French (Coming Soon)",
-              "Italian (Coming Soon)",
-            ],
-          },
-        ]),
+      // action: () =>
+      //   openModalMulti("Language Settings", [
+      //     {
+      //       type: "dropdown",
+      //       id: "languageSelector",
+      //       label: "Language",
+      //       value: window.baseConfig?.language || "Deutsch",
+      //       options: [
+      //         "Deutsch",
+      //         "English (Coming Soon)",
+      //         "Spanish (Coming Soon)",
+      //         "French (Coming Soon)",
+      //         "Italian (Coming Soon)",
+      //       ],
+      //     },
+      //   ]),
+      action: () => {},
+      disabled: true,
     },
     {
       title: "Traffic value",

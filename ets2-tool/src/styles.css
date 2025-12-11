@@ -340,6 +340,26 @@ nav .link-btn:hover {
   font-weight: bold;
 }
 
+/* Für deaktivierte "Coming Soon"-Buttons */
+.modal-disabled {
+  background-color: #ff4d4f; /* rot hintergrund */
+  color: white;              /* weiße Schrift */
+  cursor: not-allowed;       /* Maus zeigt nicht erlaubt */
+  border: 1px solid #ff4d4f;
+  opacity: 0.8;              /* leicht transparent */
+}
+
+.modal-disabled {
+  color: red;
+  cursor: not-allowed;
+}
+
+.modal-disabled:hover {
+  background-color: #ff4d4f; /* bleibt gleich */
+}
+
+
+
 /* --- TOGGLE SWITCH STYLES (für Checkbox Modal) --- */
 
 /* Das originale input-Element verstecken (ID in HTML auf modalSliderInput geändert) */
