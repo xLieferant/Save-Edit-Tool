@@ -105,13 +105,34 @@ nav .link-btn:hover {
 .tool-card button {
   width: 100%;
   padding: 10px;
-  background: #0ff;
+  background: #0ff; /*0ff ist mein Türkis wert*/
   border: none;
   border-radius: 20px;
   cursor: pointer;
   color: black;
   margin-top: auto; /* schiebt den Button nach unten */
 }
+
+/* Deaktivierte "Coming Soon"-Buttons */
+.tool-card button.modal-disabled {
+  background: #ff0004 !important;
+  color: white !important;
+  cursor: not-allowed;
+  border: 0px solid #ff4d4f;
+  opacity: 0.8;
+}
+
+/* Hover für deaktiviert */
+.tool-card button.modal-disabled:hover {
+  background-color: #ff4d4f;
+  box-shadow: 0px 0px 15px 3px rgba(255, 0, 0, 0.75);
+}
+
+.tool-card.modal-disabled:hover {
+  border-color: red;
+  box-shadow: 0px 0px 15px 3px rgba(255, 0, 0, 0.75);
+}
+
 
 /* --- FOOTER BAR & CUSTOM PROFILE PICKER --- */
 .profile-bar {
@@ -349,23 +370,6 @@ nav .link-btn:hover {
   font-weight: bold;
 }
 
-/* Für deaktivierte "Coming Soon"-Buttons */
-.modal-disabled {
-  background-color: #ff4d4f; /* rot hintergrund */
-  color: white;              /* weiße Schrift */
-  cursor: not-allowed;       /* Maus zeigt nicht erlaubt */
-  border: 5px solid #ff4d4f;
-  opacity: 0.6;              /* leicht transparent */
-}
-
-.modal-disabled {
-  color: red;
-  cursor: not-allowed;
-}
-
-.modal-disabled:hover {
-  background-color: #ff4d4f; /* bleibt gleich */
-}
 
 
 
