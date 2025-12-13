@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "ets2-tool",
+  "productName": "Save-Edit Tool xLieferant",
   "version": "0.0.8",
-  "identifier": "com.alexa.ets2-tool",
+  "identifier": "com.xLieferant.SaveEditTool",
   "build": {
     "frontendDist": "../src"
   },

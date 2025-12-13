@@ -6,3 +6,4 @@ pub mod global_config;
 pub mod quicksave_game;
 pub mod trucks;
 pub mod trailers;
+pub mod apply_setting;
