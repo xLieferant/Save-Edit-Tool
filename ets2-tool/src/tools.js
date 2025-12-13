@@ -105,7 +105,7 @@ export const tools = {
           window.currentProfileData?.xp || 0
         );
         if (newValue !== null) {
-          await invoke("edit_level", { xp: newValue });
+          await invoke("edit_xp", { xp: newValue });
           await loadProfileData();
         }
       },
@@ -181,27 +181,33 @@ export const tools = {
       title: "Stats",
       desc: "Account informations",
       img: "images/skillPoint.jpg", // <- Muss noch geändert werden
-      action: () =>
-        openModalMulti("Show differnet stats!", [
+      action: async () => {
+        const res = await openModalMulti("Show different stats!", [
           {
             type: "number",
-            id: "skill_long",
+            id: "stat_recruitments",
             label: "Recruitment Centers",
-            value: window.currentProfileData.recruitments || 0,
+            value: window.currentProfileData?.recruitments || 0,
           },
           {
             type: "number",
-            id: "skill_long",
+            id: "stat_dealers",
             label: "Dealers",
-            value: window.currentProfileData.dealers || 0,
+            value: window.currentProfileData?.dealers || 0,
           },
           {
             type: "number",
-            id: "skill_long",
+            id: "stat_visited_cities",
             label: "Visited cities",
-            value: window.currentProfileData.visited_cities || 0,
+            value: window.currentProfileData?.visited_cities || 0,
           },
-        ]),
+        ]);
+        if (res) {
+          for (const key in res) {
+            await window.applySetting(key, res[key]);
+          }
+        }
+      },
     },
   ],
 
@@ -290,7 +296,7 @@ export const tools = {
           window.readSaveGameConfig?.factor_parking_doubles || 0
         );
         if (newValue !== null) {
-          await invoke("edit_save_config_value", { key: "g_factor_parking_doubles", value: String(newValue) });
+          await invoke("edit_save_config_value", { key: "g_simple_parking_doubles", value: String(newValue) });
           await loadProfileSaveConfig();
         }
       },

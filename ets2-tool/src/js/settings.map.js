@@ -95,5 +95,26 @@ export const SETTINGS_MAP = {
     file: "save",
     type: "number",
     reload: ["quicksave"]
-  }
+  },
+
+  stat_recruitments: {
+    key: "recruitment_agencies",
+    file: "save",
+    type: "number",
+    reload: ["profile"]
+  },
+
+  stat_dealers: {
+    key: "truck_dealers",
+    file: "save",
+    type: "number",
+    reload: ["profile"]
+  },
+
+  stat_visited_cities: {
+    key: "visited_cities",
+    file: "save",
+    type: "number",
+    reload: ["profile"]
+  },
 };

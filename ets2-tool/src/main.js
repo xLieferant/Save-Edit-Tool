@@ -1,4 +1,5 @@
 import { loadTools, activeTab } from "./app.js";
+import { applySetting } from "./js/applySetting.js";
 
 console.log("[main.js] Skript gestartet.");
 
@@ -40,6 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
   window.loadProfileSaveConfig = loadProfileSaveConfig;
   window.loadBaseConfig = loadBaseConfig;
   window.loadAllTrucks = loadAllTrucks;
+  window.applySetting = applySetting;
 
   /* -------------------------------------------------------------------------- */
   /*                           DROPDOWN STEUERUNG                               */
