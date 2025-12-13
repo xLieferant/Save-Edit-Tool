@@ -1,7 +1,14 @@
+import {
+  openModalNumber,
+  openModalText,
+  openModalSlider,
+  openModalMulti,
+} from "./app.js";
+
 // --------------------------------------------------------------
 // TOOL DEFINITIONS
 // --------------------------------------------------------------
-const tools = {
+export const tools = {
   truck: [
     {
       title: "Repair Truck",
@@ -28,21 +35,31 @@ const tools = {
       title: "Truck Mileage",
       desc: "Change your Mileage at your current truck",
       img: "images/odometer.png",
-      action: () =>
-        openModalNumber(
+      action: async () => {
+        const newValue = await openModalNumber(
           "Change your odometer",
           window.playerTruck?.odometer || 0
-        ),
+        );
+        if (newValue !== null) {
+          await invoke("edit_truck_odometer", { value: newValue });
+          await loadAllTrucks();
+        }
+      },
     },
     {
       title: "Truck License Plate",
       desc: "Change your license plate",
       img: "images/trailer_license.jpg",
-      action: () =>
-        openModalText(
+      action: async () => {
+        const newValue = await openModalText(
           "Change your license plate",
           window.playerTruck?.license_plate || ""
-        ),
+        );
+        if (newValue !== null) {
+          await invoke("edit_truck_license_plate", { value: newValue });
+          await loadAllTrucks();
+        }
+      },
     },
   ],
 
@@ -82,25 +99,38 @@ const tools = {
       title: "Change XP",
       desc: "Modify profile XP",
       img: "images/xp.jpg",
-      action: () =>
-        openModalNumber(
+      action: async () => {
+        const newValue = await openModalNumber(
           "Change experience",
           window.currentProfileData?.xp || 0
-        ),
+        );
+        if (newValue !== null) {
+          await invoke("edit_level", { xp: newValue });
+          await loadProfileData();
+        }
+      },
     },
     {
       title: "Money",
       desc: "Modify users Money",
       img: "images/money.jpg",
-      action: () =>
-        openModalNumber("Change money", window.currentProfileData?.money || 0),
+      action: async () => {
+        const newValue = await openModalNumber(
+          "Change money",
+          window.currentProfileData?.money || 0
+        );
+        if (newValue !== null) {
+          await invoke("edit_money", { amount: newValue });
+          await loadProfileData();
+        }
+      },
     },
     {
       title: "Experience Skills",
       desc: "Set skill points",
       img: "images/skillPoint.jpg",
-      action: () =>
-        openModalMulti("Set Experience Skills", [
+      action: async () => {
+        const res = await openModalMulti("Set Experience Skills", [
           {
             type: "adr",
             id: "skill_adr",
@@ -137,7 +167,14 @@ const tools = {
             label: "Eco Driving",
             value: window.currentQuicksaveData?.mechanical || 0,
           }, // mechanical = eco!
-        ]),
+        ]);
+        if (res) {
+          // Hier musst du noch die invoke-Befehle für die Skills hinzufügen
+          // z.B. await invoke("edit_skill", { skill: 'adr', value: res.skill_adr });
+          console.log("Skills to save:", res);
+          await loadQuicksave(); // Daten neu laden
+        }
+      },
     },
     {
       // hinzugefügt für Account Stats
@@ -189,16 +226,24 @@ const tools = {
       title: "Convoy 128",
       desc: "Change convoy size",
       img: "images/convoy.jpg",
-      action: () =>
-        openModalNumber("Convoy Size", window.baseConfig?.max_convoy_size || 8),
+      action: async () => {
+        const newValue = await openModalNumber(
+          "Convoy Size",
+          window.baseConfig?.max_convoy_size || 8
+        );
+        if (newValue !== null) {
+          await invoke("edit_config_value", { key: "g_max_convoy_size", value: String(newValue) });
+          await loadBaseConfig();
+        }
+      },
     },
     {
       // [] TO DO, value ist nicht .baseConfig! Muss noch geändert werden
       title: "Language - 'COMING SOON'",
       desc: "Change your language",
       img: "images/language.png",
-      // action: () =>
-      //   openModalMulti("Language Settings", [
+      // action: async () => {
+      //   const res = await openModalMulti("Language Settings", [
       //     {
       //       type: "dropdown",
       //       id: "languageSelector",
@@ -212,7 +257,11 @@ const tools = {
       //         "Italian (Coming Soon)",
       //       ],
       //     },
-      //   ]),
+      //   ]);
+      //   if (res) {
+      //      // ... Speicherlogik
+      //   }
+      // },
       action: () => {},
       disabled: true,
     },
@@ -220,18 +269,31 @@ const tools = {
       title: "Traffic value",
       desc: "Change the traffic factor",
       img: "images/traffic_value.png", // <- Bild muss noch eingefügt werden!
-      action: () =>
-        openModalNumber("g set_traffic", window.baseConfig?.traffic || 1), // <- 1 ist Standard Value
+      action: async () => {
+        const newValue = await openModalNumber(
+          "g_traffic",
+          window.baseConfig?.traffic || 1
+        );
+        if (newValue !== null) {
+          await invoke("edit_config_value", { key: "g_traffic", value: String(newValue) });
+          await loadBaseConfig();
+        }
+      },
     },
     {
       title: "Parking Doubles",
       desc: "Do you want to park double trailer?",
       img: "images/parking_double.png", // <- Parking double Bilder einfügen
-      action: () =>
-        openModalSlider(
+      action: async () => {
+        const newValue = await openModalSlider(
           "Do you want to park doubles?",
           window.readSaveGameConfig?.factor_parking_doubles || 0
-        ), // <-- 0 Standard wert
+        );
+        if (newValue !== null) {
+          await invoke("edit_save_config_value", { key: "g_factor_parking_doubles", value: String(newValue) });
+          await loadProfileSaveConfig();
+        }
+      },
     },
     {
       title: "Dev Mode",
@@ -244,8 +306,9 @@ const tools = {
       ]);
 
       if (res) {
-        await applySetting("developer", res.developer);
-        await applySetting("console", res.console);
+        await invoke("edit_config_value", { key: "g_developer", value: String(res.developer) });
+        await invoke("edit_config_value", { key: "g_console", value: String(res.console) });
+        await loadBaseConfig();
       }
     },
     },

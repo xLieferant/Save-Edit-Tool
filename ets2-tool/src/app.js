@@ -1,11 +1,15 @@
+import { tools } from "./tools.js";
+
 /* --------------------------------------------------------------
    TOOL LOADER UND TAB HANDLING
 -------------------------------------------------------------- */
 const container = document.querySelector("#tool-container");
 const navButtons = document.querySelectorAll(".nav-btn");
-let activeTab = "truck";
+export let activeTab = "truck";
 
-function loadTools(tab) {
+export function loadTools(tab) {
+  console.log(`[app.js] Lade Tools für Tab: ${tab}`);
+
   activeTab = tab;
   container.innerHTML = "";
 
@@ -80,12 +84,13 @@ const modalMultiCancelBtn = document.getElementById("modalMultiCancel");
 /* --------------------------------------------------------------
    TEXT MODAL
 -------------------------------------------------------------- */
-window.openModalText = function (title, placeholder) {
+export function openModalText(title, placeholder) {
   modalTextTitle.textContent = title;
   modalTextInput.placeholder = placeholder;
   modalText.value = "";
   modalText.style.display = "flex";
 
+  console.log(`[app.js] Öffne Text-Modal: "${title}"`);
   return new Promise((resolve) => {
     function apply() {
       const val = modalTextInput.value;
@@ -110,15 +115,16 @@ window.openModalText = function (title, placeholder) {
 /* --------------------------------------------------------------
    NUMBER MODAL
 -------------------------------------------------------------- */
-window.openModalNumber = function (title, value = 0) {
+export function openModalNumber(title, value = 0) {
   modalNumberTitle.textContent = title;
   modalNumberInput.value = value;
   modalNumber.style.display = "flex";
 
+  console.log(`[app.js] Öffne Number-Modal: "${title}" mit Wert ${value}`);
   return new Promise((resolve) => {
     function apply() {
       const val = Number(modalNumberInput.value);
-      console.log("Apply Click");
+      console.log("[app.js] Number-Modal 'Apply' geklickt, Wert:", val);
       cleanup();
       resolve(val);
     }
@@ -140,14 +146,16 @@ window.openModalNumber = function (title, value = 0) {
 /* --------------------------------------------------------------
    SLIDER MODAL (Single 0/1)
 -------------------------------------------------------------- */
-window.openModalSlider = function (title, isChecked = 0) {
+export function openModalSlider(title, isChecked = 0) {
   modalSliderTitle.textContent = title;
   modalSliderInput.checked = Boolean(isChecked);
   modalSlider.style.display = "flex";
 
+  console.log(`[app.js] Öffne Slider-Modal: "${title}" mit Wert ${isChecked}`);
   return new Promise((resolve) => {
     function apply() {
       const val = modalSliderInput.checked ? 1 : 0;
+      console.log("[app.js] Slider-Modal 'Apply' geklickt, Wert:", val);
       cleanup();
       resolve(val);
     }
@@ -169,10 +177,11 @@ window.openModalSlider = function (title, isChecked = 0) {
 /* --------------------------------------------------------------
    MULTI-MODAL (NUMBER, SLIDER, DROPDOWN, ADR, CHECKBOX)
 -------------------------------------------------------------- */
-window.openModalMulti = function (title, config = []) {
+export function openModalMulti(title, config = []) {
   modalMultiTitle.textContent = title;
   modalMultiContent.innerHTML = "";
 
+  console.log(`[app.js] Öffne Multi-Modal: "${title}"`);
   const adrLevels = [1, 3, 7, 15, 31, 63];
 
   const inputs = [];
@@ -286,6 +295,7 @@ window.openModalMulti = function (title, config = []) {
         }
       });
 
+      console.log("[app.js] Multi-Modal 'Apply' geklickt, Werte:", result);
       cleanup();
       resolve(result);
     }
