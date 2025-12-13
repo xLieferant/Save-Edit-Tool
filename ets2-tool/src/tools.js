@@ -237,26 +237,17 @@ const tools = {
       title: "Dev Mode",
       desc: "Developer & Console Mode",
       img: "images/dev.jpg",
-      action: () =>
-        openModalMulti("Developer Settings", [
-          {
-            type: "checkbox",
-            id: "developer",
-            label: "Developer Mode",
-            value: window.baseConfig?.developer || false,
-          },
-          {
-            type: "checkbox",
-            id: "console",
-            label: "Console Mode",
-            value: window.baseConfig?.console || false,
-          },
-        ]).then((result) => {
-          if (result) {
-            window.baseConfig.developer = result.developer;
-            window.baseConfig.console = result.console;
-          }
-        }),
+      action: async () => {
+      const res = await openModalMulti("Developer Settings", [
+        { type: "checkbox", id: "developer", label: "Developer", value: window.baseConfig?.developer },
+        { type: "checkbox", id: "console", label: "Console", value: window.baseConfig?.console },
+      ]);
+
+      if (res) {
+        await applySetting("developer", res.developer);
+        await applySetting("console", res.console);
+      }
+    },
     },
   ],
 };

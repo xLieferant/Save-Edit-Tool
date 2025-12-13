@@ -118,6 +118,7 @@ window.openModalNumber = function (title, value = 0) {
   return new Promise((resolve) => {
     function apply() {
       const val = Number(modalNumberInput.value);
+      console.log("Apply Click");
       cleanup();
       resolve(val);
     }
