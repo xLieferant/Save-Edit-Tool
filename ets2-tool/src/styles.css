@@ -65,6 +65,10 @@ nav .link-btn:hover {
   backdrop-filter: blur(6px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   transition: 0.2s;
+
+  display: flex;
+  flex-direction: column; /* vertikal stapeln */
+  justify-content: space-between; /* Header/Text oben, Button unten */
 }
 
 .tool-card:hover {
@@ -83,6 +87,9 @@ nav .link-btn:hover {
 
 .tool-content {
   padding: 18px;
+  flex-grow: 1; /* nimmt verbleibenden Platz ein */
+  display: flex;
+  flex-direction: column;
 }
 
 .tool-content h3 {
@@ -92,17 +99,40 @@ nav .link-btn:hover {
 .tool-content p {
   margin: 0 0 10px;
   color: #bbb;
+  flex-grow: 1;
 }
 
 .tool-card button {
   width: 100%;
   padding: 10px;
-  background: #0ff;
+  background: #0ff; /*0ff ist mein Türkis wert*/
   border: none;
   border-radius: 20px;
   cursor: pointer;
-  color: black; /* Textfarbe auf Buttons, damit sie lesbar sind */
+  color: black;
+  margin-top: auto; /* schiebt den Button nach unten */
 }
+
+/* Deaktivierte "Coming Soon"-Buttons */
+.tool-card button.modal-disabled {
+  background: #ff0004 !important;
+  color: white !important;
+  cursor: not-allowed;
+  border: 0px solid #ff4d4f;
+  opacity: 0.8;
+}
+
+/* Hover für deaktiviert */
+.tool-card button.modal-disabled:hover {
+  background-color: #ff4d4f;
+  box-shadow: 0px 0px 15px 3px rgba(255, 0, 0, 0.75);
+}
+
+.tool-card.modal-disabled:hover {
+  border-color: red;
+  box-shadow: 0px 0px 15px 3px rgba(255, 0, 0, 0.75);
+}
+
 
 /* --- FOOTER BAR & CUSTOM PROFILE PICKER --- */
 .profile-bar {
@@ -339,6 +369,9 @@ nav .link-btn:hover {
   color: black;
   font-weight: bold;
 }
+
+
+
 
 /* --- TOGGLE SWITCH STYLES (für Checkbox Modal) --- */
 

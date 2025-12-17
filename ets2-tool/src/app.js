@@ -1,15 +1,21 @@
+import { tools } from "./tools.js";
+
 /* --------------------------------------------------------------
    TOOL LOADER UND TAB HANDLING
 -------------------------------------------------------------- */
 const container = document.querySelector("#tool-container");
 const navButtons = document.querySelectorAll(".nav-btn");
-let activeTab = "truck";
+export let activeTab = "truck";
 
-function loadTools(tab) {
+export function loadTools(tab) {
+  console.log(`[app.js] Lade Tools für Tab: ${tab}`);
+
   activeTab = tab;
   container.innerHTML = "";
 
   tools[tab].forEach((t) => {
+    if (t.hidden) return; // unsichtbare Tools überspringen
+
     const card = document.createElement("div");
     card.classList.add("tool-card");
 
@@ -22,7 +28,16 @@ function loadTools(tab) {
       </div>
     `;
 
-    card.querySelector("button").addEventListener("click", t.action);
+    const btn = card.querySelector("button");
+
+    if (t.disabled) {
+      btn.disabled = true;
+      btn.classList.add("modal-disabled"); // CSS: rot + cursornot-allowed
+      btn.textContent = "Coming Soon";
+    } else {
+      btn.addEventListener("click", t.action);
+    }
+
     container.appendChild(card);
   });
 }
@@ -39,38 +54,43 @@ navButtons.forEach((btn) => {
 const defaultTabBtn = document.querySelector(".nav-btn.active");
 if (defaultTabBtn) loadTools(defaultTabBtn.dataset.tab);
 
-
 /* --------------------------------------------------------------
    MODAL REFERENCES
 -------------------------------------------------------------- */
 const modalText = document.querySelector("#modalText");
 const modalTextTitle = document.querySelector("#modalTextTitle");
 const modalTextInput = document.querySelector("#modalTextInput");
+const modalTextApply = document.getElementById("modalTextApply");
+const modalTextCancel = document.getElementById("modalTextCancel");
 
 const modalNumber = document.querySelector("#modalNumber");
 const modalNumberTitle = document.querySelector("#modalNumberTitle");
 const modalNumberInput = document.querySelector("#modalNumberInput");
+const modalNumberApply = document.getElementById("modalNumberApply");
+const modalNumberCancel = document.getElementById("modalNumberCancel");
 
 const modalSlider = document.querySelector("#modalSlider");
 const modalSliderTitle = document.querySelector("#modalSliderTitle");
 const modalSliderInput = document.querySelector("#modalSliderInput");
+const modalSliderApply = document.getElementById("modalSliderApply");
+const modalSliderCancel = document.getElementById("modalSliderCancel");
 
 const modalMulti = document.querySelector("#modalMulti");
 const modalMultiTitle = document.querySelector("#modalMultiTitle");
 const modalMultiContent = document.querySelector("#modalMultiContent");
-
 const modalMultiApplyBtn = document.getElementById("modalMultiApply");
 const modalMultiCancelBtn = document.getElementById("modalMultiCancel");
-
 
 /* --------------------------------------------------------------
    TEXT MODAL
 -------------------------------------------------------------- */
-window.openModalText = function (title, placeholder) {
+export function openModalText(title, placeholder) {
   modalTextTitle.textContent = title;
   modalTextInput.placeholder = placeholder;
+  modalText.value = "";
   modalText.style.display = "flex";
 
+  console.log(`[app.js] Öffne Text-Modal: "${title}"`);
   return new Promise((resolve) => {
     function apply() {
       const val = modalTextInput.value;
@@ -92,18 +112,19 @@ window.openModalText = function (title, placeholder) {
   });
 };
 
-
 /* --------------------------------------------------------------
    NUMBER MODAL
 -------------------------------------------------------------- */
-window.openModalNumber = function (title, value = 0) {
+export function openModalNumber(title, value = 0) {
   modalNumberTitle.textContent = title;
   modalNumberInput.value = value;
   modalNumber.style.display = "flex";
 
+  console.log(`[app.js] Öffne Number-Modal: "${title}" mit Wert ${value}`);
   return new Promise((resolve) => {
     function apply() {
       const val = Number(modalNumberInput.value);
+      console.log("[app.js] Number-Modal 'Apply' geklickt, Wert:", val);
       cleanup();
       resolve(val);
     }
@@ -122,18 +143,19 @@ window.openModalNumber = function (title, value = 0) {
   });
 };
 
-
 /* --------------------------------------------------------------
-   SLIDER MODAL
+   SLIDER MODAL (Single 0/1)
 -------------------------------------------------------------- */
-window.openModalSlider = function (title, isChecked) {
+export function openModalSlider(title, isChecked = 0) {
   modalSliderTitle.textContent = title;
   modalSliderInput.checked = Boolean(isChecked);
   modalSlider.style.display = "flex";
 
+  console.log(`[app.js] Öffne Slider-Modal: "${title}" mit Wert ${isChecked}`);
   return new Promise((resolve) => {
     function apply() {
-      const val = modalSliderInput.checked;
+      const val = modalSliderInput.checked ? 1 : 0;
+      console.log("[app.js] Slider-Modal 'Apply' geklickt, Wert:", val);
       cleanup();
       resolve(val);
     }
@@ -152,15 +174,19 @@ window.openModalSlider = function (title, isChecked) {
   });
 };
 
-
 /* --------------------------------------------------------------
-   MULTI-MODAL (NUMBER, SLIDER, DROPDOWN, ADR)
+   MULTI-MODAL (NUMBER, SLIDER, DROPDOWN, ADR, CHECKBOX)
 -------------------------------------------------------------- */
-window.openModalMulti = function (title, config = []) {
+export function openModalMulti(title, config = []) {
   modalMultiTitle.textContent = title;
   modalMultiContent.innerHTML = "";
 
-  config.forEach((item) => {
+  console.log(`[app.js] Öffne Multi-Modal: "${title}"`);
+  const adrLevels = [1, 3, 7, 15, 31, 63];
+
+  const inputs = [];
+
+  config.forEach((item, index) => {
     const row = document.createElement("div");
     row.className = "modal-row";
 
@@ -171,7 +197,6 @@ window.openModalMulti = function (title, config = []) {
     const control = document.createElement("div");
     control.className = "modal-control";
 
-
     /* NUMBER */
     if (item.type === "number") {
       const input = document.createElement("input");
@@ -180,6 +205,7 @@ window.openModalMulti = function (title, config = []) {
       input.value = item.value ?? 0;
       input.className = "modal-number";
       control.appendChild(input);
+      inputs.push(input);
     }
 
     /* DROPDOWN */
@@ -197,34 +223,57 @@ window.openModalMulti = function (title, config = []) {
       });
 
       control.appendChild(select);
+      inputs.push(select);
     }
 
-    /* SLIDER */
+    /* SLIDER / ADR */
     if (item.type === "slider" || item.type === "adr") {
       const val = document.createElement("span");
       val.id = `${item.id}_val`;
       val.className = "slider-value";
-      val.textContent = item.value;
 
       const slider = document.createElement("input");
       slider.type = "range";
-      slider.min = 0;
-      slider.max = 6;
+
+      if (item.type === "adr") {
+        slider.min = 0;
+        slider.max = adrLevels.length - 1;
+        slider.value = adrLevels.indexOf(item.value) ?? 0;
+        val.textContent = adrLevels[slider.value];
+
+        slider.addEventListener("input", () => {
+          val.textContent = adrLevels[slider.value];
+        });
+      } else {
+        slider.min = 0;
+        slider.max = 6;
+        slider.value = item.value ?? 0;
+
+        slider.addEventListener("input", () => {
+          val.textContent = slider.value;
+        });
+      }
+
       slider.id = item.id;
       slider.className = "skill-slider";
-      slider.value = item.value ?? 0;
-
-      slider.addEventListener("input", () => {
-        val.textContent = slider.value;
-      });
-
       control.appendChild(val);
       control.appendChild(slider);
+      inputs.push(slider);
+    }
+
+    /* CHECKBOX */
+    if (item.type === "checkbox") {
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.id = item.id;
+      input.checked = Boolean(item.value ?? 0);
+      input.className = "modal-checkbox";
+      control.appendChild(input);
+      inputs.push(input);
     }
 
     row.appendChild(label);
     row.appendChild(control);
-
     modalMultiContent.appendChild(row);
   });
 
@@ -232,17 +281,21 @@ window.openModalMulti = function (title, config = []) {
 
   return new Promise((resolve) => {
     function apply() {
-      const inputs = modalMultiContent.querySelectorAll("input, select");
       const result = {};
-
       inputs.forEach((i) => {
-        if (i.type === "range" || i.type === "number") {
+        if (i.type === "range" && config.find(c => c.id === i.id)?.type === "adr") {
+          const val = adrLevels[i.value];
+          result[i.id] = val;
+        } else if (i.type === "range" || i.type === "number") {
           result[i.id] = Number(i.value);
+        } else if (i.type === "checkbox") {
+          result[i.id] = i.checked ? 1 : 0;
         } else {
           result[i.id] = i.value;
         }
       });
 
+      console.log("[app.js] Multi-Modal 'Apply' geklickt, Werte:", result);
       cleanup();
       resolve(result);
     }

@@ -120,11 +120,7 @@
       </div>
     </div>
 
-    <!-- Hier habe ich die Skripte optimiert -->
-    <!-- tools.js und app.js scheinen andere, nicht gezeigte Logik zu enthalten -->
-    <script src="tools.js"></script>
-    <script src="app.js"></script>
-    <!-- main.js (das Skript mit all deiner Logik) als Modul und mit defer laden -->
+    <!-- Nur noch main.js als Modul laden. Es kümmert sich um den Import der anderen Skripte. -->
     <script type="module" src="main.js" defer></script>
   </body>
 </html>
