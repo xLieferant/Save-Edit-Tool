@@ -105,7 +105,7 @@ export const tools = {
           window.currentProfileData?.xp || 0
         );
         if (newValue !== null) {
-          await invoke("edit_xp", { xp: newValue });
+          await window.invoke("apply_setting", { key: "xp", value: newValue });
           await loadProfileData();
         }
       },
@@ -120,7 +120,7 @@ export const tools = {
           window.currentProfileData?.money || 0
         );
         if (newValue !== null) {
-          await invoke("edit_money", { amount: newValue });
+          await window.invoke("apply_setting", { key: "money", value: newValue });
           await loadProfileData();
         }
       },
@@ -238,7 +238,7 @@ export const tools = {
           window.baseConfig?.max_convoy_size || 8
         );
         if (newValue !== null) {
-          await invoke("edit_config_value", { key: "g_max_convoy_size", value: String(newValue) });
+          await window.invoke("apply_setting", { key: "max_convoy_size", value: newValue });
           await loadBaseConfig();
         }
       },
@@ -281,7 +281,7 @@ export const tools = {
           window.baseConfig?.traffic || 1
         );
         if (newValue !== null) {
-          await invoke("edit_config_value", { key: "g_traffic", value: String(newValue) });
+          await window.invoke("apply_setting", { key: "traffic", value: newValue });
           await loadBaseConfig();
         }
       },
@@ -312,8 +312,8 @@ export const tools = {
       ]);
 
       if (res) {
-        await invoke("edit_config_value", { key: "g_developer", value: String(res.developer) });
-        await invoke("edit_config_value", { key: "g_console", value: String(res.console) });
+        await window.invoke("apply_setting", { key: "developer", value: res.developer });
+        await window.invoke("apply_setting", { key: "console", value: res.console });
         await loadBaseConfig();
       }
     },
