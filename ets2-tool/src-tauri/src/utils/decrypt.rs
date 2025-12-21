@@ -80,3 +80,38 @@ pub fn decrypt_if_needed(path: &Path) -> Result<String, String> {
             .map_err(|e| format!("Fehler beim Lesen der Originaldatei: {}", e))
     }
 }
+
+/// Sichert die Originaldatei als .bak
+pub fn backup_file(path: &Path) -> Result<(), String> {
+    let backup_path = path.with_extension("bak");
+    fs::copy(path, &backup_path).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+/// Modifiziert einen Block in der Datei und ersetzt die Originaldatei atomar
+pub fn modify_block(path: &Path, block_name: &str, updater: impl Fn(&str) -> String) -> Result<(), String> {
+    // Backup erstellen
+    backup_file(path)?;
+
+    // Datei lesen
+    let content = fs::read_to_string(path).map_err(|e| e.to_string())?;
+
+    // Regex zum Finden des Blocks
+    let re = regex::Regex::new(&format!(r"{}s*:\s*[A-Za-z0-9._]+\s*\{{([\s\S]*?)\}}", block_name))
+        .map_err(|e| e.to_string())?;
+
+    // Block modifizieren
+    let new_content = re.replace(&content, |caps: &regex::Captures| {
+        let block = &caps[1];
+        updater(block)
+    }).to_string();
+
+    // Temp-Datei schreiben
+    let tmp_path = path.with_extension("tmp");
+    fs::write(&tmp_path, &new_content).map_err(|e| e.to_string())?;
+
+    // Atomar ersetzen
+    fs::rename(tmp_path, path).map_err(|e| e.to_string())?;
+
+    Ok(())
+}
