@@ -160,7 +160,7 @@ pub async fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
             trailer_odometer_float = tr.odometer_float.map(|v| vec![v]);
             trailer_wear_float = tr.wear_float.map(|v| vec![v]);
             trailer_wheels_float = tr.wheels_float.clone().map(|vec_f32|
-                 vec_f32.into_iter().map(|f| f.to_string()).collect());
+                vec_f32.into_iter().map(|f| f.to_string()).collect());
         }
     }
 
