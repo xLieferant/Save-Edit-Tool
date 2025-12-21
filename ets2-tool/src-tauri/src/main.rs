@@ -1,44 +1,54 @@
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+#![cfg_attr(
+    all(not(debug_assertions), target_os = "windows"),
+    windows_subsystem = "windows"
+)]
 
 mod commands;
 mod logs;
 mod models;
 mod utils;
 
-use tauri::generate_handler;
-
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(generate_handler![
-            // Profile Commands
+        .invoke_handler(tauri::generate_handler![
+            // apply_setting.rs
+            commands::apply_setting::apply_setting,
+
+            // global_config.rs
+            commands::global_config::read_base_config,
+
+            // profiles.rs
             commands::profiles::find_ets2_profiles,
             commands::profiles::load_profile,
 
-            // SaveReader
+            // quicksave_game.rs
+            commands::quicksave_game::quicksave_game_info,
+
+            // save_config.rs
+            commands::save_config::read_save_config,
+
+            // save_editor.rs
+            commands::save_editor::edit_money,
+            commands::save_editor::edit_xp,
+            commands::save_editor::edit_level,
+            commands::save_editor::edit_truck_odometer,
+            commands::save_editor::edit_truck_license_plate,
+            commands::save_editor::edit_config_value,
+            commands::save_editor::edit_save_config_value,
+
+            // save_reader.rs
             commands::save_reader::read_money,
             commands::save_reader::read_xp,
             commands::save_reader::read_all_save_data,
 
-            // SaveEditor
-            commands::save_editor::edit_money,
-            commands::save_editor::edit_xp,
-            commands::save_editor::edit_level,
-
-            // Config
-            commands::save_config::read_save_config,
-            commands::global_config::read_base_config,
-
-            // Quicksave
-            commands::quicksave_game::quicksave_game_info,
-
-            // Trucks
+            // trucks.rs
             commands::trucks::get_all_trucks,
             commands::trucks::get_player_truck,
 
-            //Trailer 
-            commands::trailers::get_all_trailers,
+            // trailers.rs
             commands::trailers::get_player_trailer,
+            commands::trailers::get_all_trailers
         ])
         .run(tauri::generate_context!())
-        .expect("Error while running Tauri app");
+        .expect("error while running tauri application");
 }
