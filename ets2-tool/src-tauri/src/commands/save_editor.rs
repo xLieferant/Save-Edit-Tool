@@ -100,9 +100,43 @@ pub fn edit_truck_license_plate(value: String) -> Result<(), String> {
     Ok(())
 }
 
+#[command]
+pub fn edit_traffic_value(value: i64) -> Result<(), String> {
+    let path = ets2_base_config_path()
+        .ok_or("Globaler Config-Pfad nicht gefunden".to_string())?;
+
+    log!("Schreibe Traffic in: {}", path.display());
+
+    let content = fs::read_to_string(&path)
+        .map_err(|e| e.to_string())?;
+
+    let re = Regex::new(r#"uset g_traffic\s+"[^"]+""#).unwrap();
+
+    if !re.is_match(&content) {
+        return Err("g_traffic nicht in config.cfg gefunden".into());
+    }
+
+    let new_content = re.replace(
+        &content,
+        format!(r#"uset g_traffic "{}""#, value),
+    );
+
+    fs::write(&path, new_content.as_bytes())
+        .map_err(|e| e.to_string())?;
+
+    // Verifikation
+    let verify = fs::read_to_string(&path).map_err(|e| e.to_string())?;
+    if !verify.contains(&format!(r#"uset g_traffic "{}""#, value)) {
+        return Err("Traffic-Wert konnte nicht verifiziert werden".into());
+    }
+
+    log!("Traffic erfolgreich geändert auf {}", value);
+    Ok(())
+}
+
 #[derive(Deserialize)]
 pub struct KeyValuePayload {
-    key: String,
+    key: String,     
     value: String,
 }
 

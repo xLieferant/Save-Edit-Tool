@@ -278,10 +278,10 @@ export const tools = {
       action: async () => {
         const newValue = await openModalNumber(
           "g_traffic",
-          window.baseConfig?.traffic || 1
+          window.baseConfig?.traffic || 0
         );
         if (newValue !== null) {
-          await window.invoke("apply_setting", { key: "traffic", value: newValue });
+          await invoke("edit_traffic_value", { value: newValue });
           await loadBaseConfig();
         }
       },
