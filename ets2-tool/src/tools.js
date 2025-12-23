@@ -296,7 +296,7 @@ export const tools = {
           window.readSaveGameConfig?.factor_parking_doubles || 0
         );
         if (newValue !== null) {
-          await invoke("edit_save_config_value", { key: "g_simple_parking_doubles", value: String(newValue) });
+          await invoke("edit_parking_doubles_value", { value: newValue });
           await loadProfileSaveConfig();
         }
       },

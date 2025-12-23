@@ -133,6 +133,42 @@ pub fn edit_traffic_value(value: i64) -> Result<(), String> {
     log!("Traffic erfolgreich geändert auf {}", value);
     Ok(())
 }
+#[command]
+pub fn edit_parking_doubles_value(value: i64) -> Result<(), String> {
+
+    let profile = env::var("CURRENT_PROFILE")
+        .map_err(|_| "Kein Profil geladen.".to_string())?;
+
+    let path = quicksave_config_path(&profile);
+
+    log!("Schreibe Parking Doubles Value in: {}", path.display());
+
+    let content = fs::read_to_string(&path)
+        .map_err(|e| e.to_string())?;
+
+    let re = Regex::new(r#"uset g_simple_parking_doubles\s+"[^"]+""#).unwrap();
+
+    if !re.is_match(&content) {
+        return Err("uset g_simple_parking_doubles nicht in player/config.cfg gefunden".into());
+    }
+
+    let new_content = re.replace(
+        &content,
+        format!(r#"uset g_simple_parking_doubles "{}""#, value),
+    );
+
+    fs::write(&path, new_content.as_bytes())
+        .map_err(|e| e.to_string())?;
+
+    // Verifikation
+    let verify = fs::read_to_string(&path).map_err(|e| e.to_string())?;
+    if !verify.contains(&format!(r#"uset g_simple_parking_doubles "{}""#, value)) {
+        return Err("Simple Parking Doubles-Wert konnte nicht verifiziert werden".into());
+    }
+
+    log!("Parking Doubles erfolgreich geändert auf {}", value);
+    Ok(())
+}
 
 #[derive(Deserialize)]
 pub struct KeyValuePayload {

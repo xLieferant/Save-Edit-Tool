@@ -36,6 +36,7 @@ fn main() {
             commands::save_editor::edit_config_value,
             commands::save_editor::edit_save_config_value,
             commands::save_editor::edit_traffic_value,
+            commands::save_editor::edit_parking_doubles_value,
 
 
             // save_reader.rs
