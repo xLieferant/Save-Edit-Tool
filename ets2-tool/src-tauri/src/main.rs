@@ -40,6 +40,8 @@ fn main() {
             commands::save_editor::edit_developer_value,
             commands::save_editor::edit_console_value,
             commands::save_editor::edit_convoy_value,
+            commands::save_editor::edit_player_money,
+
 
 
 

@@ -1,5 +1,10 @@
 use crate::utils::decrypt::decrypt_if_needed;
-use crate::utils::paths::{autosave_path, ets2_base_config_path, quicksave_config_path};
+use crate::utils::paths::{
+    autosave_path,
+    ets2_base_config_path,
+    quicksave_config_path,
+    quicksave_game_path};
+use crate::utils::regex_helper::cragex;
 use crate::log;
 use tauri::command;
 use std::env;
@@ -49,6 +54,38 @@ pub fn edit_level(xp: i64) -> Result<(), String> {
 pub struct EditValuePayload {
     value: String,
 }
+
+#[command]
+pub fn edit_player_money(value: i64) -> Result<(), String> {
+    log!("--- edit_player_money START ---");
+
+    let profile = env::var("CURRENT_PROFILE")
+        .map_err(|_| "Kein Profil geladen.".to_string())?;
+
+    let path = quicksave_game_path(&profile);
+    let content = decrypt_if_needed(&path)?;
+
+    let re_money = Regex::new(r"money_account:\s*(\d+)").map_err(|e| e.to_string())?;
+
+    if !re_money.is_match(&content) {
+        return Err("money_account nicht gefunden".into());
+    }
+
+    let new_content = re_money.replace(
+        &content,
+        format!("money_account: {}", value)
+    );
+
+    fs::write(&path, new_content.as_bytes())
+        .map_err(|e| e.to_string())?;
+
+    log!("Money erfolgreich geändert auf {}", value);
+    log!("--- edit_player_money END ---");
+
+    Ok(())
+}
+
+
 
 #[command]
 pub fn edit_truck_odometer(value: i64) -> Result<(), String> {

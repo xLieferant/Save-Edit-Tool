@@ -120,7 +120,7 @@ export const tools = {
           window.currentProfileData?.money || 0
         );
         if (newValue !== null) {
-          await window.invoke("apply_setting", { key: "money", value: newValue });
+          await invoke("edit_player_money", { value: newValue });
           await loadProfileData();
         }
       },
