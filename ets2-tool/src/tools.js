@@ -105,7 +105,7 @@ export const tools = {
           window.currentProfileData?.xp || 0
         );
         if (newValue !== null) {
-          await window.invoke("apply_setting", { key: "xp", value: newValue });
+          await invoke("edit_player_experience", { value: newValue });
           await loadProfileData();
         }
       },

@@ -85,6 +85,36 @@ pub fn edit_player_money(value: i64) -> Result<(), String> {
     Ok(())
 }
 
+#[command]
+pub fn edit_player_experience(value: i64) -> Result<(), String> {
+    log!("--- edit_player_experience START ---");
+
+    let profile = env::var("CURRENT_PROFILE")
+        .map_err(|_| "Kein Profil geladen.".to_string())?;
+
+    let path = quicksave_game_path(&profile);
+    let content = decrypt_if_needed(&path)?;
+
+    let re_experience = Regex::new(r"experience_points:\s*(\d+)").map_err(|e| e.to_string())?;
+
+    if !re_experience.is_match(&content) {
+        return Err("experience_points: nicht gefunden".into());
+    }
+
+    let new_content = re_experience.replace(
+        &content,
+        format!("experience_points: {}", value)
+    );
+
+    fs::write(&path, new_content.as_bytes())
+        .map_err(|e| e.to_string())?;
+
+    log!("Experience erfolgreich geändert auf {}", value);
+    log!("--- edit_player_experience END ---");
+
+    Ok(())
+}
+
 
 
 #[command]
