@@ -312,8 +312,8 @@ export const tools = {
       ]);
 
       if (res) {
-        await window.invoke("apply_setting", { key: "developer", value: res.developer });
-        await window.invoke("apply_setting", { key: "console", value: res.console });
+        await invoke("edit_developer_value", { value: res.developer });
+        await invoke("edit_console_value", { value: res.console });
         await loadBaseConfig();
       }
     },
