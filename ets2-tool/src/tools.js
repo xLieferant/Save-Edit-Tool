@@ -104,9 +104,21 @@ export const tools = {
           "Change experience",
           window.currentProfileData?.xp || 0
         );
+
         if (newValue !== null) {
           await invoke("edit_player_experience", { value: newValue });
-          await loadProfileData();
+
+          // 🔴 WICHTIG: Frontend-State sofort aktualisieren
+          window.currentProfileData.xp = newValue;
+
+          // Anzeige direkt setzen
+          const xpDisplay = document.querySelector("#xpShow");
+          if (xpDisplay) {
+            xpDisplay.textContent = `XP: ${newValue.toLocaleString()}`;
+          }
+
+          // Optional: späteres Reload für Sicherheit
+          //await loadProfileData();
         }
       },
     },
@@ -119,9 +131,21 @@ export const tools = {
           "Change money",
           window.currentProfileData?.money || 0
         );
+
         if (newValue !== null) {
           await invoke("edit_player_money", { value: newValue });
-          await loadProfileData();
+
+          // 🔴 WICHTIG: Frontend-State sofort aktualisieren
+          window.currentProfileData.money = newValue;
+
+          // Anzeige direkt setzen
+          const moneyDisplay = document.querySelector("#moneyShow");
+          if (moneyDisplay) {
+            moneyDisplay.textContent = `Geld: ${newValue.toLocaleString()} €`;
+          }
+
+          // Optional: späteres Reload für Sicherheit
+          // await loadProfileData();
         }
       },
     },
@@ -169,12 +193,30 @@ export const tools = {
           }, // mechanical = eco!
         ]);
         if (res) {
-          await invoke("edit_skill_value", { skill: 'adr', value: res.skill_adr });
-          await invoke("edit_skill_value", { skill: 'long_dist', value: res.skill_long });
-          await invoke("edit_skill_value", { skill: 'heavy', value: res.skill_heavy });
-          await invoke("edit_skill_value", { skill: 'fragile', value: res.skill_fragile });
-          await invoke("edit_skill_value", { skill: 'urgent', value: res.skill_urgent });
-          await invoke("edit_skill_value", { skill: 'mechanical', value: res.skill_eco });
+          await invoke("edit_skill_value", {
+            skill: "adr",
+            value: res.skill_adr,
+          });
+          await invoke("edit_skill_value", {
+            skill: "long_dist",
+            value: res.skill_long,
+          });
+          await invoke("edit_skill_value", {
+            skill: "heavy",
+            value: res.skill_heavy,
+          });
+          await invoke("edit_skill_value", {
+            skill: "fragile",
+            value: res.skill_fragile,
+          });
+          await invoke("edit_skill_value", {
+            skill: "urgent",
+            value: res.skill_urgent,
+          });
+          await invoke("edit_skill_value", {
+            skill: "mechanical",
+            value: res.skill_eco,
+          });
           console.log("Skills to save:", res);
           await loadQuicksave(); // Daten neu laden
         }
@@ -237,19 +279,15 @@ export const tools = {
       desc: "Change convoy size",
       img: "images/convoy.jpg",
       action: async () => {
-        const isActive = 
-          window.baseConfig?.max_convoy_size === 128 ? 1 : 0;
+        const isActive = window.baseConfig?.max_convoy_size === 128 ? 1 : 0;
 
-          const res = await openModalSlider(
-            "Enable 128 Convoy?",
-            isActive
-          );
+        const res = await openModalSlider("Enable 128 Convoy?", isActive);
 
-          if (res !== null) {
-            const value = res === 1 ? 128 : 8;
-            await invoke("edit_convoy_value", { value });
-            await loadBaseConfig();
-          }
+        if (res !== null) {
+          const value = res === 1 ? 128 : 8;
+          await invoke("edit_convoy_value", { value });
+          await loadBaseConfig();
+        }
       },
     },
     {
@@ -315,17 +353,27 @@ export const tools = {
       desc: "Developer & Console Mode",
       img: "images/dev.jpg",
       action: async () => {
-      const res = await openModalMulti("Developer Settings", [
-        { type: "checkbox", id: "developer", label: "Developer", value: window.baseConfig?.developer },
-        { type: "checkbox", id: "console", label: "Console", value: window.baseConfig?.console },
-      ]);
+        const res = await openModalMulti("Developer Settings", [
+          {
+            type: "checkbox",
+            id: "developer",
+            label: "Developer",
+            value: window.baseConfig?.developer,
+          },
+          {
+            type: "checkbox",
+            id: "console",
+            label: "Console",
+            value: window.baseConfig?.console,
+          },
+        ]);
 
-      if (res) {
-        await invoke("edit_developer_value", { value: res.developer });
-        await invoke("edit_console_value", { value: res.console });
-        await loadBaseConfig();
-      }
-    },
+        if (res) {
+          await invoke("edit_developer_value", { value: res.developer });
+          await invoke("edit_console_value", { value: res.console });
+          await loadBaseConfig();
+        }
+      },
     },
   ],
 };
