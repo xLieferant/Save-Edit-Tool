@@ -249,6 +249,9 @@ export function openModalMulti(title, config = []) {
         slider.max = 6;
         slider.value = item.value ?? 0;
 
+        val.textContent = slider.value;
+
+
         slider.addEventListener("input", () => {
           val.textContent = slider.value;
         });
