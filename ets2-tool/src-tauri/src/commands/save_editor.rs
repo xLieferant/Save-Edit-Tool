@@ -169,6 +169,40 @@ pub fn edit_console_value(value: i64) -> Result<(), String> {
 }
 
 #[command]
+pub fn edit_convoy_value(value: i64) -> Result<(), String> {
+    let path = ets2_base_config_path()
+        .ok_or("Globaler Config-Pfad nicht gefunden".to_string())?;
+
+    log!("Schreibe Convoy in: {}", path.display());
+
+    let content = fs::read_to_string(&path)
+        .map_err(|e| e.to_string())?;
+
+    let re = Regex::new(r#"uset g_max_convoy_size\s+"[^"]+""#).unwrap();
+
+    if !re.is_match(&content) {
+        return Err("g_max_convoy_size nicht in config.cfg gefunden".into());
+    }
+
+    let new_content = re.replace(
+        &content,
+        format!(r#"uset g_max_convoy_size "{}""#, value),
+    );
+
+    fs::write(&path, new_content.as_bytes())
+        .map_err(|e| e.to_string())?;
+
+    // Verifikation
+    let verify = fs::read_to_string(&path).map_err(|e| e.to_string())?;
+    if !verify.contains(&format!(r#"uset g_max_convoy_size "{}""#, value)) {
+        return Err("Convoy-Wert konnte nicht verifiziert werden".into());
+    }
+
+    log!("Convoy erfolgreich geändert auf {}", value);
+    Ok(())
+}
+
+#[command]
 pub fn edit_traffic_value(value: i64) -> Result<(), String> {
     let path = ets2_base_config_path()
         .ok_or("Globaler Config-Pfad nicht gefunden".to_string())?;

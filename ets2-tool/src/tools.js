@@ -238,7 +238,7 @@ export const tools = {
           window.baseConfig?.max_convoy_size || 8
         );
         if (newValue !== null) {
-          await window.invoke("apply_setting", { key: "max_convoy_size", value: newValue });
+          await invoke("edit_convoy_value", { value: newValue });
           await loadBaseConfig();
         }
       },
