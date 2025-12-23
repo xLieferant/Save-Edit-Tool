@@ -115,8 +115,6 @@ pub fn edit_player_experience(value: i64) -> Result<(), String> {
     Ok(())
 }
 
-
-
 #[command]
 pub fn edit_truck_odometer(value: i64) -> Result<(), String> {
     let profile = env::var("CURRENT_PROFILE").map_err(|_| "Kein Profil geladen.".to_string())?;
@@ -145,27 +143,51 @@ pub fn edit_truck_odometer(value: i64) -> Result<(), String> {
 
 #[command]
 pub fn edit_truck_license_plate(value: String) -> Result<(), String> {
-    let profile = env::var("CURRENT_PROFILE").map_err(|_| "Kein Profil geladen.".to_string())?;
-    let path = Path::new(&profile).join("save").join("quicksave").join("game.sii");
+    log!("--- edit_truck_license_plate START ---");
+
+    let profile = env::var("CURRENT_PROFILE")
+        .map_err(|_| "Kein Profil geladen.".to_string())?;
+
+    let path = quicksave_game_path(&profile);
     let content = decrypt_if_needed(&path)?;
 
-    let re_player_truck = Regex::new(r"player\s*:\s*[A-Za-z0-9._]+\s*\{[^}]*?my_truck\s*:\s*([A-Za-z0-9._]+)").unwrap();
-    let player_truck_id = re_player_truck.captures(&content)
-        .and_then(|c| c.get(1).map(|v| v.as_str()))
-        .ok_or("Player-Truck ID nicht gefunden".to_string())?;
+    // Player-Truck-ID ermitteln
+    let re_player_truck = Regex::new(
+        r"player\s*:\s*[A-Za-z0-9._]+\s*\{[^}]*?my_truck\s*:\s*([A-Za-z0-9._]+)"
+    ).unwrap();
 
-    let vehicle_regex_str = format!(r#"(vehicle\s*:\s*{}\s*\{{([\s\S]*?license_plate:\s*)"[^"]*"([\s\S]*?)\}})"#, regex::escape(player_truck_id));
-    let re_vehicle = Regex::new(&vehicle_regex_str).map_err(|e| e.to_string())?;
+    let player_truck_id = re_player_truck
+        .captures(&content)
+        .and_then(|c| c.get(1).map(|v| v.as_str()))
+        .ok_or("Player-Truck ID nicht gefunden")?;
+
+    // License Plate im Vehicle-Block ersetzen (STRING!)
+    let vehicle_regex = format!(
+        r#"(vehicle\s*:\s*{}\s*\{{[\s\S]*?license_plate:\s*)"[^"]*"([\s\S]*?\}})"#,
+        regex::escape(player_truck_id)
+    );
+
+    let re_vehicle = Regex::new(&vehicle_regex)
+        .map_err(|e| e.to_string())?;
 
     if !re_vehicle.is_match(&content) {
-        return Err(format!("Vehicle-Block für Truck {} nicht gefunden oder hat kein Kennzeichen", player_truck_id));
+        return Err("License Plate im Vehicle-Block nicht gefunden".into());
     }
 
-    let new_content = re_vehicle.replace(&content, format!("$1$2\"{}\"$3", value)).to_string();
-    fs::write(&path, new_content).map_err(|e| e.to_string())?;
-    log!("LKW-Kennzeichen geändert: {}", value);
+    let new_content = re_vehicle.replace(
+        &content,
+        format!(r#"$1"{}"$2"#, value)
+    );
+
+    std::fs::write(&path, new_content.as_bytes())
+        .map_err(|e| e.to_string())?;
+
+    log!("License Plate geändert");
+    log!("--- edit_truck_license_plate END ---");
+
     Ok(())
 }
+
 
 #[command]
 pub fn edit_developer_value(value: i64) -> Result<(), String> {
@@ -267,7 +289,6 @@ pub fn edit_skill_value(skill: String, value: i64) -> Result<(), String> {
 
     Ok(())
 }
-
 
 #[command]
 pub fn edit_convoy_value(value: i64) -> Result<(), String> {

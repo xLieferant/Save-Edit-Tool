@@ -43,6 +43,7 @@ fn main() {
             commands::save_editor::edit_player_money,
             commands::save_editor::edit_player_experience,
             commands::save_editor::edit_skill_value,
+            commands::save_editor::edit_truck_license_plate,
             
 
 

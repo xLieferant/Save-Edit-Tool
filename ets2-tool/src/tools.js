@@ -53,7 +53,7 @@ export const tools = {
       action: async () => {
         const newValue = await openModalText(
           "Change your license plate",
-          window.playerTruck?.license_plate || ""
+          window.extractPlateText(window.playerTruck?.license_plate)
         );
         if (newValue !== null) {
           await invoke("edit_truck_license_plate", { value: newValue });

@@ -237,4 +237,20 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
+  
+  // --------------------------------------------------------------
+  // ETS2 Helper: License Plate sauber anzeigen (UI ONLY)
+  // --------------------------------------------------------------
+  window.extractPlateText = function (raw) {
+    if (!raw) return "";
+    
+    // Entfernt ALLE ETS2-UI-Tags wie <offset ...>, <img ...>, etc.
+    // Behält normalen Text vollständig bei
+    return raw
+      .replace(/<[^>]*>/g, "")   // alles zwischen < und > löschen
+      .split("|")[0]             // Länderkennung entfernen
+      .trim();
+};
+
+  
 });
