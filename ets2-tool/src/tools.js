@@ -237,14 +237,19 @@ export const tools = {
       desc: "Change convoy size",
       img: "images/convoy.jpg",
       action: async () => {
-        const newValue = await openModalNumber(
-          "Convoy Size",
-          window.baseConfig?.max_convoy_size || 8
-        );
-        if (newValue !== null) {
-          await invoke("edit_convoy_value", { value: newValue });
-          await loadBaseConfig();
-        }
+        const isActive = 
+          window.baseConfig?.max_convoy_size === 128 ? 1 : 0;
+
+          const res = await openModalSlider(
+            "Enable 128 Convoy?",
+            isActive
+          );
+
+          if (res !== null) {
+            const value = res === 1 ? 128 : 8;
+            await invoke("edit_convoy_value", { value });
+            await loadBaseConfig();
+          }
       },
     },
     {
