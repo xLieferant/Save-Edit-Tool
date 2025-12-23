@@ -169,8 +169,12 @@ export const tools = {
           }, // mechanical = eco!
         ]);
         if (res) {
-          // Hier musst du noch die invoke-Befehle für die Skills hinzufügen
-          // z.B. await invoke("edit_skill", { skill: 'adr', value: res.skill_adr });
+          await invoke("edit_skill_value", { skill: 'adr', value: res.skill_adr });
+          await invoke("edit_skill_value", { skill: 'long_dist', value: res.skill_long });
+          await invoke("edit_skill_value", { skill: 'heavy', value: res.skill_heavy });
+          await invoke("edit_skill_value", { skill: 'fragile', value: res.skill_fragile });
+          await invoke("edit_skill_value", { skill: 'urgent', value: res.skill_urgent });
+          await invoke("edit_skill_value", { skill: 'mechanical', value: res.skill_eco });
           console.log("Skills to save:", res);
           await loadQuicksave(); // Daten neu laden
         }

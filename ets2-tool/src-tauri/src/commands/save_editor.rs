@@ -236,6 +236,40 @@ pub fn edit_console_value(value: i64) -> Result<(), String> {
 }
 
 #[command]
+pub fn edit_skill_value(skill: String, value: i64) -> Result<(), String> {
+    log!("--- edit_skill START ---");
+    log!("Skill: {}, Wert: {}", skill, value);
+
+    let profile = env::var("CURRENT_PROFILE")
+        .map_err(|_| "Kein Profil geladen.".to_string())?;
+
+    let path = quicksave_game_path(&profile);
+    let content = decrypt_if_needed(&path)?;
+
+    // Regex dynamisch je Skill
+    let re = Regex::new(&format!(r"\b{}\s*:\s*\d+", regex::escape(&skill)))
+        .map_err(|e| e.to_string())?;
+
+    if !re.is_match(&content) {
+        return Err(format!("Skill '{}' nicht gefunden", skill));
+    }
+
+    let new_content = re.replace(
+        &content,
+        format!("{}: {}", skill, value)
+    );
+
+    fs::write(&path, new_content.as_bytes())
+        .map_err(|e| e.to_string())?;
+
+    log!("Skill '{}' erfolgreich geändert auf {}", skill, value);
+    log!("--- edit_skill END ---");
+
+    Ok(())
+}
+
+
+#[command]
 pub fn edit_convoy_value(value: i64) -> Result<(), String> {
     let path = ets2_base_config_path()
         .ok_or("Globaler Config-Pfad nicht gefunden".to_string())?;
