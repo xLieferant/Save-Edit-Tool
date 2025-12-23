@@ -73,10 +73,11 @@ pub async fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
     let bank_block = caps_bank.get(2).map(|m| m.as_str()).unwrap_or("");
     log!("Bank ID = {:?}", bank_id);
 
+    // Player money (_player_money bleibt unverändert)
     let _player_money = cragex(r"money_account:\s*(\d+)")?
         .captures(bank_block)
-        .map(|c| c.get(1).unwrap().as_str().to_string());
-    log!("Money geladen");
+        .and_then(|c| c.get(1)?.as_str().parse::<i64>().ok());
+    log!("Money geladen: {:?}", _player_money);
 
     // Skills helper
     let skill = |name: &str| -> Option<i64> {
