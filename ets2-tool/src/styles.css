@@ -505,6 +505,11 @@ input[type="checkbox"].toggle-checkbox {
   font-weight: bold;
 }
 
+.slider-value {
+  min-width: 24px;
+  font-weight: bold;
+}
+
 .skill-row {
   margin-bottom: 22px;
 }
