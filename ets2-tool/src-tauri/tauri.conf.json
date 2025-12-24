@@ -9,6 +9,7 @@
   },
 
   "app": {
+    "withGlobalTauri": true,
     "windows": [
       {
         "title": "ets2-tool",
