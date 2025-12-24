@@ -5,7 +5,7 @@ import { tools } from "./tools.js";
 -------------------------------------------------------------- */
 const container = document.querySelector("#tool-container");
 const navButtons = document.querySelectorAll(".nav-btn");
-export let activeTab = "truck";
+export let activeTab = "profile";
 
 export function loadTools(tab) {
   console.log(`[app.js] Lade Tools für Tab: ${tab}`);

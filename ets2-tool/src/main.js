@@ -27,6 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const editStatus = document.querySelector("#edit-status");
 
   const youtubeBtn = document.querySelector("#youtubeBtn");
+  const patreonBtn = document.querySelector("#patreonBtn");
 
   let selectedProfilePath = null;
 
@@ -263,6 +264,14 @@ document.addEventListener("DOMContentLoaded", () => {
   youtubeBtn.addEventListener("click", async () => {
     try {
       await openUrl("https://www.youtube.com/");
+    } catch (err) {
+      console.error("Fehler beim Öffnen von YouTube:", err);
+      alert("YouTube konnte nicht geöffnet werden.");
+    }
+  });
+  patreonBtn.addEventListener("click", async () => {
+    try {
+      await openUrl("https://www.patreon.com/");
     } catch (err) {
       console.error("Fehler beim Öffnen von YouTube:", err);
       alert("YouTube konnte nicht geöffnet werden.");
