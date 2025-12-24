@@ -1,19 +1,20 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Save-Edit Tool xLieferant",
-  "version": "0.0.5",
+  "version": "0.1.0",
   "identifier": "com.xLieferant.SaveEditTool",
+
   "build": {
     "frontendDist": "../src"
   },
+
   "app": {
-    "withGlobalTauri": true,
     "windows": [
       {
         "title": "ets2-tool",
         "minWidth": 1000,
         "minHeight": 650,
-        "height": 750        
+        "height": 750
       }
     ],
     "security": {
@@ -21,7 +22,6 @@
     }
   },
   "bundle": {
-    "active": true,
     "targets": "all",
     "icon": [
       "icons/32x32.png",
@@ -30,5 +30,13 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/xLieferant/Save-Edit-Tool/releases/latest/download/latest.json"
+      ],
+      "pubkey": "untrusted comment: minisign public key: 0552E79945330C64\nRWQkDDNFmedSBestuV74KW+3Y54KiGCqmeCjJFL0/mdu05YKfe3Gy2ig"
+    }
   }
 }
