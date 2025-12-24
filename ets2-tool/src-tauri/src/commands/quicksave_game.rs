@@ -1,11 +1,11 @@
 use crate::log;
 use crate::models::quicksave_game_info::GameDataQuicksave;
-use crate::utils::regex_helper::cragex;
-use crate::utils::sii_parser::{parse_trucks_from_sii, parse_trailers_from_sii};
-use crate::utils::paths::quicksave_game_path;
 use crate::utils::decrypt::decrypt_if_needed;
-use tauri::command;
+use crate::utils::paths::quicksave_game_path;
+use crate::utils::regex_helper::cragex;
+use crate::utils::sii_parser::{parse_trailers_from_sii, parse_trucks_from_sii};
 use std::env;
+use tauri::command;
 
 #[command]
 pub async fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
@@ -44,7 +44,11 @@ pub async fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
         .captures(player_block)
         .and_then(|c| {
             let v = c.get(1).unwrap().as_str().trim().to_string();
-            if v == "null" { None } else { Some(v) }
+            if v == "null" {
+                None
+            } else {
+                Some(v)
+            }
         });
     log!("my_truck = {:?}", player_my_truck);
 
@@ -53,7 +57,11 @@ pub async fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
         .captures(player_block)
         .and_then(|c| {
             let v = c.get(1).unwrap().as_str().trim().to_string();
-            if v == "null" { None } else { Some(v) }
+            if v == "null" {
+                None
+            } else {
+                Some(v)
+            }
         });
     log!("my_trailer = {:?}", player_my_trailer);
 
@@ -108,13 +116,20 @@ pub async fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
 
     if let Some(ref id) = player_my_truck {
         let id_clean = id.trim().to_lowercase();
-        if let Some(t) = trucks.iter().find(|t| t.truck_id.to_lowercase() == id_clean) {
+        if let Some(t) = trucks
+            .iter()
+            .find(|t| t.truck_id.to_lowercase() == id_clean)
+        {
             truck_brand = Some(t.brand.clone());
             truck_model = Some(t.model.clone());
 
             // Vehicle block
-            let vehicle_regex = format!(r"vehicle\s*:\s*{}\s*\{{([\s\S]*?)\}}", regex::escape(&t.truck_id));
-            let re_vehicle = cragex(&vehicle_regex).map_err(|e| format!("Regex Fehler Vehicle Block: {}", e))?;
+            let vehicle_regex = format!(
+                r"vehicle\s*:\s*{}\s*\{{([\s\S]*?)\}}",
+                regex::escape(&t.truck_id)
+            );
+            let re_vehicle =
+                cragex(&vehicle_regex).map_err(|e| format!("Regex Fehler Vehicle Block: {}", e))?;
             if let Some(caps) = re_vehicle.captures(&content) {
                 let block = caps.get(1).map(|m| m.as_str()).unwrap_or("");
 
@@ -147,11 +162,13 @@ pub async fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
     let mut trailer_wear_float: Option<Vec<f32>> = None;
     let mut trailer_wheels_float: Option<Vec<String>> = None;
 
-
     if let Some(ref my_trailer_id) = player_my_trailer {
         let id_clean = my_trailer_id.trim().to_lowercase();
         // The variable 'tr' is bound here
-        if let Some(tr) = trailers.iter().find(|t| t.trailer_id.to_lowercase() == id_clean) {
+        if let Some(tr) = trailers
+            .iter()
+            .find(|t| t.trailer_id.to_lowercase() == id_clean)
+        {
             // These assignments are inside the scope of 'tr'
             trailer_brand = tr.brand.clone();
             trailer_model = tr.model.clone();
@@ -160,8 +177,10 @@ pub async fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
             // The problematic lines moved inside here:
             trailer_odometer_float = tr.odometer_float.map(|v| vec![v]);
             trailer_wear_float = tr.wear_float.map(|v| vec![v]);
-            trailer_wheels_float = tr.wheels_float.clone().map(|vec_f32|
-                vec_f32.into_iter().map(|f| f.to_string()).collect());
+            trailer_wheels_float = tr
+                .wheels_float
+                .clone()
+                .map(|vec_f32| vec_f32.into_iter().map(|f| f.to_string()).collect());
         }
     }
 

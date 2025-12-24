@@ -6,5 +6,5 @@ pub struct SaveGameData {
     pub xp: Option<i64>,
     pub recruitments: Option<i64>,
     pub dealers: Option<i64>,
-    pub visited_cities: Option<i64>
+    pub visited_cities: Option<i64>,
 }

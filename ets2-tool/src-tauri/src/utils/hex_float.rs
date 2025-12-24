@@ -50,6 +50,9 @@ pub fn parse_value_auto(input: &str) -> Result<f32, String> {
             log!("parse_value_auto: Float erkannt: {}", v);
             Ok(v)
         }
-        Err(_) => Err(format!("Konnte '{}' nicht als Hex oder Float interpretieren", input)),
+        Err(_) => Err(format!(
+            "Konnte '{}' nicht als Hex oder Float interpretieren",
+            input
+        )),
     }
 }

@@ -31,5 +31,3 @@ pub struct GameDataQuicksave {
     pub trailer_wear_float: Option<Vec<f32>>,
     pub trailer_wheels_float: Option<Vec<String>>,
 }
-
-

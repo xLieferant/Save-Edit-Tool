@@ -1,9 +1,9 @@
-pub mod profiles;
-pub mod save_reader;
-pub mod save_editor;
-pub mod save_config;
-pub mod global_config;
-pub mod quicksave_game;
-pub mod trucks;
-pub mod trailers;
 pub mod apply_setting;
+pub mod global_config;
+pub mod profiles;
+pub mod quicksave_game;
+pub mod save_config;
+pub mod save_editor;
+pub mod save_reader;
+pub mod trailers;
+pub mod trucks;

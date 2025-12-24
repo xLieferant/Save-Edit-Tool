@@ -1,10 +1,10 @@
-use crate::utils::sii_parser::parse_trucks_from_sii;
-use crate::utils::decrypt::decrypt_if_needed;
-use crate::models::trucks::ParsedTruck;
-use crate::utils::regex_helper::cragex;
 use crate::log;
-use tauri::command;
+use crate::models::trucks::ParsedTruck;
+use crate::utils::decrypt::decrypt_if_needed;
+use crate::utils::regex_helper::cragex;
+use crate::utils::sii_parser::parse_trucks_from_sii;
 use std::path::Path;
+use tauri::command;
 
 #[command]
 pub async fn get_all_trucks(profile_path: String) -> Result<Vec<ParsedTruck>, String> {
@@ -36,9 +36,9 @@ pub async fn get_player_truck(profile_path: String) -> Result<ParsedTruck, Strin
 
     let trucks = parse_trucks_from_sii(&content);
 
-    let re_player_truck = cragex(
-        r"player\s*:\s*[A-Za-z0-9._]+\s*\{[^}]*?my_truck\s*:\s*([A-Za-z0-9._]+)"
-    ).map_err(|e| format!("Regex Fehler: {}", e))?;
+    let re_player_truck =
+        cragex(r"player\s*:\s*[A-Za-z0-9._]+\s*\{[^}]*?my_truck\s*:\s*([A-Za-z0-9._]+)")
+            .map_err(|e| format!("Regex Fehler: {}", e))?;
 
     let player_truck_id = re_player_truck
         .captures(&content)

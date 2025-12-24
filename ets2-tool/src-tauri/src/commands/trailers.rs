@@ -1,14 +1,12 @@
-use crate::utils::sii_parser::{
-    parse_trailers_from_sii, extract_string, extract_string_array
-};
-use crate::utils::decrypt::decrypt_if_needed;
+use crate::log;
 use crate::models::trailers::ParsedTrailer;
-use crate::utils::sii_parser::TrailerData;
+use crate::utils::decrypt::decrypt_if_needed;
 use crate::utils::hex_float::parse_value_auto;
 use crate::utils::regex_helper::cragex;
-use crate::log;
-use tauri::command;
+use crate::utils::sii_parser::TrailerData;
+use crate::utils::sii_parser::{extract_string, extract_string_array, parse_trailers_from_sii};
 use std::path::Path;
+use tauri::command;
 
 #[command]
 pub async fn get_player_trailer(profile_path: String) -> Result<ParsedTrailer, String> {
@@ -22,9 +20,9 @@ pub async fn get_player_trailer(profile_path: String) -> Result<ParsedTrailer, S
 
     let trailers_data = parse_trailers_from_sii(&content);
 
-    let re_player_trailer = cragex(
-        r"player\s*:\s*[A-Za-z0-9._]+\s*\{[^}]*?my_trailer\s*:\s*([A-Za-z0-9._]+)"
-    ).map_err(|e| format!("Regex Fehler: {}", e))?;
+    let re_player_trailer =
+        cragex(r"player\s*:\s*[A-Za-z0-9._]+\s*\{[^}]*?my_trailer\s*:\s*([A-Za-z0-9._]+)")
+            .map_err(|e| format!("Regex Fehler: {}", e))?;
 
     let trailer_id = re_player_trailer
         .captures(&content)
@@ -68,18 +66,18 @@ fn parsed_trailer_from_data(tr: &TrailerData) -> ParsedTrailer {
     // Alle Floats über parse_value_auto (Hex oder Float)
     // odometer (f32) + odometer_float (Option<f32>)
     let odometer = tr.odometer + tr.odometer_float.unwrap_or(0.0);
-    
+
     // In your sii_parser, 'wear_float' corresponds to 'trailer_body_wear'
     let body_wear = tr.wear_float.unwrap_or(0.0);
-    
+
     // In your sii_parser, 'wheels_float' is Option<Vec<f32>>
     let wheels_wear = tr.wheels_float.clone().unwrap_or_default();
 
     ParsedTrailer {
         trailer_id: tr.trailer_id.clone(),
-        
+
         // These fields are expected by ParsedTrailer but not present in TrailerData from your parser
-        cargo_mass: 0.0, 
+        cargo_mass: 0.0,
         cargo_damage: 0.0,
         body_wear_unfixable: 0.0,
         chassis_wear: 0.0,

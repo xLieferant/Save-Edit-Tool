@@ -1,5 +1,6 @@
 import { loadTools, activeTab } from "./app.js";
 import { applySetting } from "./js/applySetting.js";
+const { openUrl } = window.__TAURI__.opener;
 
 console.log("[main.js] Skript gestartet.");
 
@@ -24,6 +25,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const moneyBtn = document.querySelector("#save-money-btn");
   const levelBtn = document.querySelector("#save-level-btn");
   const editStatus = document.querySelector("#edit-status");
+
+  const youtubeBtn = document.querySelector("#youtubeBtn");
 
   let selectedProfilePath = null;
 
@@ -237,20 +240,32 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
   }
-  
+
   // --------------------------------------------------------------
   // ETS2 Helper: License Plate sauber anzeigen (UI ONLY)
   // --------------------------------------------------------------
   window.extractPlateText = function (raw) {
     if (!raw) return "";
-    
+
     // Entfernt ALLE ETS2-UI-Tags wie <offset ...>, <img ...>, etc.
     // Behält normalen Text vollständig bei
     return raw
-      .replace(/<[^>]*>/g, "")   // alles zwischen < und > löschen
-      .split("|")[0]             // Länderkennung entfernen
+      .replace(/<[^>]*>/g, "") // alles zwischen < und > löschen
+      .split("|")[0] // Länderkennung entfernen
       .trim();
-};
+  };
 
-  
+  // --------------------------------------------------------------
+  // Link öffner
+  // --------------------------------------------------------------
+
+  // Dann im Button:
+  youtubeBtn.addEventListener("click", async () => {
+    try {
+      await openUrl("https://www.youtube.com/");
+    } catch (err) {
+      console.error("Fehler beim Öffnen von YouTube:", err);
+      alert("YouTube konnte nicht geöffnet werden.");
+    }
+  });
 });

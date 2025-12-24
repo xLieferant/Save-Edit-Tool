@@ -1,17 +1,15 @@
+use crate::log;
 use crate::utils::decrypt::decrypt_if_needed;
 use crate::utils::paths::{
-    autosave_path,
-    ets2_base_config_path,
-    quicksave_config_path,
-    quicksave_game_path};
+    autosave_path, ets2_base_config_path, quicksave_config_path, quicksave_game_path,
+};
 use crate::utils::regex_helper::cragex;
-use crate::log;
-use tauri::command;
-use std::env;
 use regex::Regex;
-use std::fs;
 use serde::Deserialize;
+use std::env;
+use std::fs;
 use std::path::Path;
+use tauri::command;
 
 #[command]
 pub fn edit_money(amount: i64) -> Result<(), String> {
@@ -59,8 +57,7 @@ pub struct EditValuePayload {
 pub fn edit_player_money(value: i64) -> Result<(), String> {
     log!("--- edit_player_money START ---");
 
-    let profile = env::var("CURRENT_PROFILE")
-        .map_err(|_| "Kein Profil geladen.".to_string())?;
+    let profile = env::var("CURRENT_PROFILE").map_err(|_| "Kein Profil geladen.".to_string())?;
 
     let path = quicksave_game_path(&profile);
     let content = decrypt_if_needed(&path)?;
@@ -71,13 +68,9 @@ pub fn edit_player_money(value: i64) -> Result<(), String> {
         return Err("money_account nicht gefunden".into());
     }
 
-    let new_content = re_money.replace(
-        &content,
-        format!("money_account: {}", value)
-    );
+    let new_content = re_money.replace(&content, format!("money_account: {}", value));
 
-    fs::write(&path, new_content.as_bytes())
-        .map_err(|e| e.to_string())?;
+    fs::write(&path, new_content.as_bytes()).map_err(|e| e.to_string())?;
 
     log!("Money erfolgreich geändert auf {}", value);
     log!("--- edit_player_money END ---");
@@ -89,8 +82,7 @@ pub fn edit_player_money(value: i64) -> Result<(), String> {
 pub fn edit_player_experience(value: i64) -> Result<(), String> {
     log!("--- edit_player_experience START ---");
 
-    let profile = env::var("CURRENT_PROFILE")
-        .map_err(|_| "Kein Profil geladen.".to_string())?;
+    let profile = env::var("CURRENT_PROFILE").map_err(|_| "Kein Profil geladen.".to_string())?;
 
     let path = quicksave_game_path(&profile);
     let content = decrypt_if_needed(&path)?;
@@ -101,13 +93,9 @@ pub fn edit_player_experience(value: i64) -> Result<(), String> {
         return Err("experience_points: nicht gefunden".into());
     }
 
-    let new_content = re_experience.replace(
-        &content,
-        format!("experience_points: {}", value)
-    );
+    let new_content = re_experience.replace(&content, format!("experience_points: {}", value));
 
-    fs::write(&path, new_content.as_bytes())
-        .map_err(|e| e.to_string())?;
+    fs::write(&path, new_content.as_bytes()).map_err(|e| e.to_string())?;
 
     log!("Experience erfolgreich geändert auf {}", value);
     log!("--- edit_player_experience END ---");
@@ -118,24 +106,38 @@ pub fn edit_player_experience(value: i64) -> Result<(), String> {
 #[command]
 pub fn edit_truck_odometer(value: i64) -> Result<(), String> {
     let profile = env::var("CURRENT_PROFILE").map_err(|_| "Kein Profil geladen.".to_string())?;
-    let path = Path::new(&profile).join("save").join("quicksave").join("game.sii");
+    let path = Path::new(&profile)
+        .join("save")
+        .join("quicksave")
+        .join("game.sii");
     let content = decrypt_if_needed(&path)?;
 
     // Finde zuerst den Truck des Spielers
-    let re_player_truck = Regex::new(r"player\s*:\s*[A-Za-z0-9._]+\s*\{[^}]*?my_truck\s*:\s*([A-Za-z0-9._]+)").unwrap();
-    let player_truck_id = re_player_truck.captures(&content)
+    let re_player_truck =
+        Regex::new(r"player\s*:\s*[A-Za-z0-9._]+\s*\{[^}]*?my_truck\s*:\s*([A-Za-z0-9._]+)")
+            .unwrap();
+    let player_truck_id = re_player_truck
+        .captures(&content)
         .and_then(|c| c.get(1).map(|v| v.as_str()))
         .ok_or("Player-Truck ID nicht gefunden".to_string())?;
 
     // Finde den vehicle-Block des Trucks und ersetze den Odometer
-    let vehicle_regex_str = format!(r"(vehicle\s*:\s*{}\s*\{{([\s\S]*?odometer:\s*)-?\d+([\s\S]*?)\}})", regex::escape(player_truck_id));
+    let vehicle_regex_str = format!(
+        r"(vehicle\s*:\s*{}\s*\{{([\s\S]*?odometer:\s*)-?\d+([\s\S]*?)\}})",
+        regex::escape(player_truck_id)
+    );
     let re_vehicle = Regex::new(&vehicle_regex_str).map_err(|e| e.to_string())?;
-    
+
     if !re_vehicle.is_match(&content) {
-        return Err(format!("Vehicle-Block für Truck {} nicht gefunden", player_truck_id));
+        return Err(format!(
+            "Vehicle-Block für Truck {} nicht gefunden",
+            player_truck_id
+        ));
     }
 
-    let new_content = re_vehicle.replace(&content, format!("$1$2{}$3", value)).to_string();
+    let new_content = re_vehicle
+        .replace(&content, format!("$1$2{}$3", value))
+        .to_string();
     fs::write(&path, new_content).map_err(|e| e.to_string())?;
     log!("LKW-Odometer geändert: {}", value);
     Ok(())
@@ -145,16 +147,15 @@ pub fn edit_truck_odometer(value: i64) -> Result<(), String> {
 pub fn edit_truck_license_plate(value: String) -> Result<(), String> {
     log!("--- edit_truck_license_plate START ---");
 
-    let profile = env::var("CURRENT_PROFILE")
-        .map_err(|_| "Kein Profil geladen.".to_string())?;
+    let profile = env::var("CURRENT_PROFILE").map_err(|_| "Kein Profil geladen.".to_string())?;
 
     let path = quicksave_game_path(&profile);
     let content = decrypt_if_needed(&path)?;
 
     // Player-Truck-ID ermitteln
-    let re_player_truck = Regex::new(
-        r"player\s*:\s*[A-Za-z0-9._]+\s*\{[^}]*?my_truck\s*:\s*([A-Za-z0-9._]+)"
-    ).unwrap();
+    let re_player_truck =
+        Regex::new(r"player\s*:\s*[A-Za-z0-9._]+\s*\{[^}]*?my_truck\s*:\s*([A-Za-z0-9._]+)")
+            .unwrap();
 
     let player_truck_id = re_player_truck
         .captures(&content)
@@ -167,20 +168,15 @@ pub fn edit_truck_license_plate(value: String) -> Result<(), String> {
         regex::escape(player_truck_id)
     );
 
-    let re_vehicle = Regex::new(&vehicle_regex)
-        .map_err(|e| e.to_string())?;
+    let re_vehicle = Regex::new(&vehicle_regex).map_err(|e| e.to_string())?;
 
     if !re_vehicle.is_match(&content) {
         return Err("License Plate im Vehicle-Block nicht gefunden".into());
     }
 
-    let new_content = re_vehicle.replace(
-        &content,
-        format!(r#"$1"{}"$2"#, value)
-    );
+    let new_content = re_vehicle.replace(&content, format!(r#"$1"{}"$2"#, value));
 
-    std::fs::write(&path, new_content.as_bytes())
-        .map_err(|e| e.to_string())?;
+    std::fs::write(&path, new_content.as_bytes()).map_err(|e| e.to_string())?;
 
     log!("License Plate geändert");
     log!("--- edit_truck_license_plate END ---");
@@ -188,16 +184,13 @@ pub fn edit_truck_license_plate(value: String) -> Result<(), String> {
     Ok(())
 }
 
-
 #[command]
 pub fn edit_developer_value(value: i64) -> Result<(), String> {
-    let path = ets2_base_config_path()
-        .ok_or("Globaler Config-Pfad nicht gefunden".to_string())?;
+    let path = ets2_base_config_path().ok_or("Globaler Config-Pfad nicht gefunden".to_string())?;
 
     log!("Schreibe Developer Value in: {}", path.display());
 
-    let content = fs::read_to_string(&path)
-        .map_err(|e| e.to_string())?;
+    let content = fs::read_to_string(&path).map_err(|e| e.to_string())?;
 
     let re = Regex::new(r#"uset g_developer\s+"[^"]+""#).unwrap();
 
@@ -205,13 +198,9 @@ pub fn edit_developer_value(value: i64) -> Result<(), String> {
         return Err("g_developer nicht in config.cfg gefunden".into());
     }
 
-    let new_content = re.replace(
-        &content,
-        format!(r#"uset g_developer "{}""#, value),
-    );
+    let new_content = re.replace(&content, format!(r#"uset g_developer "{}""#, value));
 
-    fs::write(&path, new_content.as_bytes())
-        .map_err(|e| e.to_string())?;
+    fs::write(&path, new_content.as_bytes()).map_err(|e| e.to_string())?;
 
     // Verifikation
     let verify = fs::read_to_string(&path).map_err(|e| e.to_string())?;
@@ -225,13 +214,11 @@ pub fn edit_developer_value(value: i64) -> Result<(), String> {
 
 #[command]
 pub fn edit_console_value(value: i64) -> Result<(), String> {
-    let path = ets2_base_config_path()
-        .ok_or("Globaler Config-Pfad nicht gefunden".to_string())?;
+    let path = ets2_base_config_path().ok_or("Globaler Config-Pfad nicht gefunden".to_string())?;
 
     log!("Schreibe Console Value in: {}", path.display());
 
-    let content = fs::read_to_string(&path)
-        .map_err(|e| e.to_string())?;
+    let content = fs::read_to_string(&path).map_err(|e| e.to_string())?;
 
     let re = Regex::new(r#"uset g_console\s+"[^"]+""#).unwrap();
 
@@ -239,13 +226,9 @@ pub fn edit_console_value(value: i64) -> Result<(), String> {
         return Err("g_console nicht in config.cfg gefunden".into());
     }
 
-    let new_content = re.replace(
-        &content,
-        format!(r#"uset g_console "{}""#, value),
-    );
+    let new_content = re.replace(&content, format!(r#"uset g_console "{}""#, value));
 
-    fs::write(&path, new_content.as_bytes())
-        .map_err(|e| e.to_string())?;
+    fs::write(&path, new_content.as_bytes()).map_err(|e| e.to_string())?;
 
     // Verifikation
     let verify = fs::read_to_string(&path).map_err(|e| e.to_string())?;
@@ -262,8 +245,7 @@ pub fn edit_skill_value(skill: String, value: i64) -> Result<(), String> {
     log!("--- edit_skill START ---");
     log!("Skill: {}, Wert: {}", skill, value);
 
-    let profile = env::var("CURRENT_PROFILE")
-        .map_err(|_| "Kein Profil geladen.".to_string())?;
+    let profile = env::var("CURRENT_PROFILE").map_err(|_| "Kein Profil geladen.".to_string())?;
 
     let path = quicksave_game_path(&profile);
     let content = decrypt_if_needed(&path)?;
@@ -276,13 +258,9 @@ pub fn edit_skill_value(skill: String, value: i64) -> Result<(), String> {
         return Err(format!("Skill '{}' nicht gefunden", skill));
     }
 
-    let new_content = re.replace(
-        &content,
-        format!("{}: {}", skill, value)
-    );
+    let new_content = re.replace(&content, format!("{}: {}", skill, value));
 
-    fs::write(&path, new_content.as_bytes())
-        .map_err(|e| e.to_string())?;
+    fs::write(&path, new_content.as_bytes()).map_err(|e| e.to_string())?;
 
     log!("Skill '{}' erfolgreich geändert auf {}", skill, value);
     log!("--- edit_skill END ---");
@@ -292,13 +270,11 @@ pub fn edit_skill_value(skill: String, value: i64) -> Result<(), String> {
 
 #[command]
 pub fn edit_convoy_value(value: i64) -> Result<(), String> {
-    let path = ets2_base_config_path()
-        .ok_or("Globaler Config-Pfad nicht gefunden".to_string())?;
+    let path = ets2_base_config_path().ok_or("Globaler Config-Pfad nicht gefunden".to_string())?;
 
     log!("Schreibe Convoy in: {}", path.display());
 
-    let content = fs::read_to_string(&path)
-        .map_err(|e| e.to_string())?;
+    let content = fs::read_to_string(&path).map_err(|e| e.to_string())?;
 
     let re = Regex::new(r#"uset g_max_convoy_size\s+"[^"]+""#).unwrap();
 
@@ -306,13 +282,9 @@ pub fn edit_convoy_value(value: i64) -> Result<(), String> {
         return Err("g_max_convoy_size nicht in config.cfg gefunden".into());
     }
 
-    let new_content = re.replace(
-        &content,
-        format!(r#"uset g_max_convoy_size "{}""#, value),
-    );
+    let new_content = re.replace(&content, format!(r#"uset g_max_convoy_size "{}""#, value));
 
-    fs::write(&path, new_content.as_bytes())
-        .map_err(|e| e.to_string())?;
+    fs::write(&path, new_content.as_bytes()).map_err(|e| e.to_string())?;
 
     // Verifikation
     let verify = fs::read_to_string(&path).map_err(|e| e.to_string())?;
@@ -329,46 +301,35 @@ pub fn edit_traffic_value(value: i64) -> Result<(), String> {
     // 🔒 Clamping: garantiert 0–10
     let value = value.clamp(0, 10);
 
-    let path = ets2_base_config_path()
-        .ok_or("Globaler Config-Pfad nicht gefunden".to_string())?;
+    let path = ets2_base_config_path().ok_or("Globaler Config-Pfad nicht gefunden".to_string())?;
 
     log!("Schreibe Traffic in: {} (Wert: {})", path.display(), value);
 
-    let content = fs::read_to_string(&path)
-        .map_err(|e| e.to_string())?;
+    let content = fs::read_to_string(&path).map_err(|e| e.to_string())?;
 
-    let re = Regex::new(r#"uset g_traffic\s+"[^"]+""#)
-        .map_err(|e| e.to_string())?;
+    let re = Regex::new(r#"uset g_traffic\s+"[^"]+""#).map_err(|e| e.to_string())?;
 
     if !re.is_match(&content) {
         return Err("g_traffic nicht in config.cfg gefunden".into());
     }
 
-    let new_content = re.replace(
-        &content,
-        format!(r#"uset g_traffic "{}""#, value),
-    );
+    let new_content = re.replace(&content, format!(r#"uset g_traffic "{}""#, value));
 
-    fs::write(&path, new_content.as_bytes())
-        .map_err(|e| e.to_string())?;
+    fs::write(&path, new_content.as_bytes()).map_err(|e| e.to_string())?;
 
     log!("Traffic erfolgreich geändert auf {}", value);
     Ok(())
 }
 
-
 #[command]
 pub fn edit_parking_doubles_value(value: i64) -> Result<(), String> {
-
-    let profile = env::var("CURRENT_PROFILE")
-        .map_err(|_| "Kein Profil geladen.".to_string())?;
+    let profile = env::var("CURRENT_PROFILE").map_err(|_| "Kein Profil geladen.".to_string())?;
 
     let path = quicksave_config_path(&profile);
 
     log!("Schreibe Parking Doubles Value in: {}", path.display());
 
-    let content = fs::read_to_string(&path)
-        .map_err(|e| e.to_string())?;
+    let content = fs::read_to_string(&path).map_err(|e| e.to_string())?;
 
     let re = Regex::new(r#"uset g_simple_parking_doubles\s+"[^"]+""#).unwrap();
 
@@ -381,8 +342,7 @@ pub fn edit_parking_doubles_value(value: i64) -> Result<(), String> {
         format!(r#"uset g_simple_parking_doubles "{}""#, value),
     );
 
-    fs::write(&path, new_content.as_bytes())
-        .map_err(|e| e.to_string())?;
+    fs::write(&path, new_content.as_bytes()).map_err(|e| e.to_string())?;
 
     // Verifikation
     let verify = fs::read_to_string(&path).map_err(|e| e.to_string())?;
@@ -396,7 +356,7 @@ pub fn edit_parking_doubles_value(value: i64) -> Result<(), String> {
 
 #[derive(Deserialize)]
 pub struct KeyValuePayload {
-    key: String,     
+    key: String,
     value: String,
 }
 
@@ -405,9 +365,16 @@ pub fn edit_config_value(payload: KeyValuePayload) -> Result<(), String> {
     let path = ets2_base_config_path().ok_or("Globaler Config-Pfad nicht gefunden".to_string())?;
     let content = fs::read_to_string(&path).map_err(|e| e.to_string())?;
     let re = Regex::new(&format!(r#"uset {}\s*"?.*"?"#, payload.key)).unwrap();
-    let new_content = re.replace(&content, format!(r#"uset {} "{}""#, payload.key, payload.value));
+    let new_content = re.replace(
+        &content,
+        format!(r#"uset {} "{}""#, payload.key, payload.value),
+    );
     fs::write(&path, new_content.as_bytes()).map_err(|e| e.to_string())?;
-    log!("Globalen Config-Wert geändert: {} -> {}", payload.key, payload.value);
+    log!(
+        "Globalen Config-Wert geändert: {} -> {}",
+        payload.key,
+        payload.value
+    );
     Ok(())
 }
 
@@ -417,8 +384,15 @@ pub fn edit_save_config_value(payload: KeyValuePayload) -> Result<(), String> {
     let path = quicksave_config_path(&profile);
     let content = fs::read_to_string(&path).map_err(|e| e.to_string())?;
     let re = Regex::new(&format!(r#"uset {}\s*"?.*"?"#, payload.key)).unwrap();
-    let new_content = re.replace(&content, format!(r#"uset {} "{}""#, payload.key, payload.value));
+    let new_content = re.replace(
+        &content,
+        format!(r#"uset {} "{}""#, payload.key, payload.value),
+    );
     fs::write(&path, new_content.as_bytes()).map_err(|e| e.to_string())?;
-    log!("Profil-Config-Wert geändert: {} -> {}", payload.key, payload.value);
+    log!(
+        "Profil-Config-Wert geändert: {} -> {}",
+        payload.key,
+        payload.value
+    );
     Ok(())
 }

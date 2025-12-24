@@ -1,7 +1,7 @@
 use crate::log;
-use crate::models::trucks::ParsedTruck;
 use crate::models::trailers::ParsedTrailer;
-use crate::utils::hex_float::{parse_value_auto, hex_to_float};
+use crate::models::trucks::ParsedTruck;
+use crate::utils::hex_float::{hex_to_float, parse_value_auto};
 use regex::Regex;
 use std::collections::HashMap;
 
@@ -28,14 +28,14 @@ pub fn extract_value(block: &str, key: &str) -> Option<String> {
 
 pub fn extract_string(block: &str, key: &str) -> Option<String> {
     let re = Regex::new(&format!(r#"{}\s*:\s*"([^"]*)""#, key)).ok()?;
-    re.captures(block).and_then(|c| c.get(1).map(|m| m.as_str().to_string()))
+    re.captures(block)
+        .and_then(|c| c.get(1).map(|m| m.as_str().to_string()))
 }
 
 pub fn extract_string_array(block: &str, key: &str) -> Vec<String> {
     let re = Regex::new(&format!(r#"{}\[\d+\]:\s*"([^"]*)""#, key)).unwrap();
     re.captures_iter(block).map(|c| c[1].to_string()).collect()
 }
-
 
 pub fn extract_raw<'a>(block: &'a str, key: &'a str) -> Option<&'a str> {
     let pattern = format!(r"{}\s*:\s*&([0-9a-fA-F]+)", key);
@@ -72,7 +72,12 @@ pub fn parse_trucks_from_sii(content: &str) -> Vec<ParsedTruck> {
     let re_block = Regex::new(r"(vehicle\s*:\s*[^\s]+)\s*\{([^}]+)\}").unwrap();
     for caps in re_block.captures_iter(content) {
         let truck_id_raw = caps.get(1).unwrap().as_str().trim().to_string();
-        let truck_id = truck_id_raw.split(':').nth(1).unwrap_or("").trim().to_string();
+        let truck_id = truck_id_raw
+            .split(':')
+            .nth(1)
+            .unwrap_or("")
+            .trim()
+            .to_string();
         let block = caps.get(2).unwrap().as_str();
 
         let re_accessory = Regex::new(r"accessories\[\d+\]:\s*([^\s]+)").unwrap();
@@ -170,7 +175,11 @@ pub fn parse_trailers_from_sii(text: &str) -> Vec<TrailerData> {
                 wheels.push(val);
             }
         }
-        let wheels_float = if wheels.is_empty() { None } else { Some(wheels) };
+        let wheels_float = if wheels.is_empty() {
+            None
+        } else {
+            Some(wheels)
+        };
 
         let assigned_garage = re_assigned.captures(body).map(|c| c[1].to_string());
 

@@ -20,7 +20,7 @@ tauri-build = { version = "2.5.3", features = [] }
 
 [dependencies]
 tauri = { version = "2.9.5", features = [] }
-tauri-plugin-opener = "2.5.2"
+tauri-plugin-opener = "2"
 regex = "1.12.2"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.147"

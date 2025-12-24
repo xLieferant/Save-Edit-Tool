@@ -1,18 +1,17 @@
 // Make sure these imports match your project structure
 use crate::utils::paths::ets2_base_config_path;
 // Import the new struct from models
-use crate::models::global_config_info::BaseGameConfig; 
-use crate::log; 
-use tauri::command;
+use crate::log;
+use crate::models::global_config_info::BaseGameConfig;
 use regex::Regex;
 use std::fs;
- // Wird für path.exists() benötigt
+use tauri::command;
+// Wird für path.exists() benötigt
 
 //* Liest die globale config.cfg im Basis-Verzeichnis des Spiels *//
 #[command]
 pub fn read_base_config() -> Result<BaseGameConfig, String> {
-    
-    log!("Lese globale Config"); 
+    log!("Lese globale Config");
 
     // Pfad zur globalen config.cfg ermitteln
     let path = match ets2_base_config_path() {
