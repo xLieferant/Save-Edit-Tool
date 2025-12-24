@@ -45,12 +45,11 @@ fn main() {
             commands::save_editor::edit_skill_value,
             commands::save_editor::edit_truck_license_plate,
             
-
-
             // save_reader.rs
             commands::save_reader::read_money,
             commands::save_reader::read_xp,
             commands::save_reader::read_all_save_data,
+            commands::save_reader::read_traffic_value,
 
             // trucks.rs
             commands::trucks::get_all_trucks,

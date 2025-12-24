@@ -326,15 +326,19 @@ pub fn edit_convoy_value(value: i64) -> Result<(), String> {
 
 #[command]
 pub fn edit_traffic_value(value: i64) -> Result<(), String> {
+    // 🔒 Clamping: garantiert 0–10
+    let value = value.clamp(0, 10);
+
     let path = ets2_base_config_path()
         .ok_or("Globaler Config-Pfad nicht gefunden".to_string())?;
 
-    log!("Schreibe Traffic in: {}", path.display());
+    log!("Schreibe Traffic in: {} (Wert: {})", path.display(), value);
 
     let content = fs::read_to_string(&path)
         .map_err(|e| e.to_string())?;
 
-    let re = Regex::new(r#"uset g_traffic\s+"[^"]+""#).unwrap();
+    let re = Regex::new(r#"uset g_traffic\s+"[^"]+""#)
+        .map_err(|e| e.to_string())?;
 
     if !re.is_match(&content) {
         return Err("g_traffic nicht in config.cfg gefunden".into());
@@ -348,15 +352,10 @@ pub fn edit_traffic_value(value: i64) -> Result<(), String> {
     fs::write(&path, new_content.as_bytes())
         .map_err(|e| e.to_string())?;
 
-    // Verifikation
-    let verify = fs::read_to_string(&path).map_err(|e| e.to_string())?;
-    if !verify.contains(&format!(r#"uset g_traffic "{}""#, value)) {
-        return Err("Traffic-Wert konnte nicht verifiziert werden".into());
-    }
-
     log!("Traffic erfolgreich geändert auf {}", value);
     Ok(())
 }
+
 
 #[command]
 pub fn edit_parking_doubles_value(value: i64) -> Result<(), String> {

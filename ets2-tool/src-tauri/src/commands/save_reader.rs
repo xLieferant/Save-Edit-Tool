@@ -1,5 +1,7 @@
 use crate::log; // This import is now used
 use crate::models::save_game_data::SaveGameData;
+use crate::utils::paths::ets2_base_config_path;
+use std::fs;
 use crate::utils::decrypt::decrypt_if_needed;
 use crate::utils::paths::autosave_path;
 use regex::Regex;
@@ -78,4 +80,26 @@ pub fn read_all_save_data() -> Result<SaveGameData, String> {
         data.visited_cities,
     );
     Ok(data)
+}
+
+#[command]
+pub fn read_traffic_value() -> Result<i64, String> {
+    let path = ets2_base_config_path()
+        .ok_or("Globaler Config-Pfad nicht gefunden".to_string())?;
+
+    let content = fs::read_to_string(&path)
+        .map_err(|e| e.to_string())?;
+
+    let re = Regex::new(r#"uset g_traffic\s+"(\d+)""#)
+        .map_err(|e| e.to_string())?;
+
+    let caps = re
+        .captures(&content)
+        .and_then(|c| c.get(1))
+        .ok_or("g_traffic nicht gefunden".to_string())?;
+
+    let value = caps.as_str().parse::<i64>()
+        .map_err(|_| "Traffic-Wert ungültig".to_string())?;
+
+    Ok(value.clamp(0, 10))
 }

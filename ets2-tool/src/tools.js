@@ -4,6 +4,7 @@ import {
   openModalSlider,
   openModalMulti,
 } from "./app.js";
+// import { clamp } from "./utils.js";
 
 // --------------------------------------------------------------
 // TOOL DEFINITIONS
@@ -321,15 +322,33 @@ export const tools = {
     {
       title: "Traffic value",
       desc: "Change the traffic factor",
-      img: "images/traffic_value.png", // <- Bild muss noch eingefügt werden!
+      img: "images/traffic_value.png",
       action: async () => {
-        const newValue = await openModalNumber(
-          "g_traffic",
-          window.baseConfig?.traffic || 0
-        );
-        if (newValue !== null) {
-          await invoke("edit_traffic_value", { value: newValue });
-          await loadBaseConfig();
+        try {
+          const currentTraffic = await invoke("read_traffic_value");
+
+          const newValue = await openModalNumber(
+            "g_traffic (0–10)",
+            currentTraffic
+          );
+
+          if (newValue === null) return;
+
+          const numericValue = Number(newValue);
+          if (Number.isNaN(numericValue)) {
+            alert("Ungültiger Wert");
+            return;
+          }
+
+          const clamped = Math.min(10, Math.max(0, numericValue));
+
+          await invoke("edit_traffic_value", { value: clamped });
+          window.baseConfig.traffic = clamped;
+
+          console.log("[Traffic] gesetzt auf", clamped);
+        } catch (err) {
+          console.error("Traffic Modal Fehler:", err);
+          alert("Traffic-Wert konnte nicht geändert werden");
         }
       },
     },
