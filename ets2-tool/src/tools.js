@@ -271,7 +271,7 @@ export const tools = {
             id: "theme",
             label: "Theme",
             value: window.baseConfig?.theme || "Dark", // hier muss der value noch geändert  werden!
-            options: ["Dark", "Light", "Neon"],
+            options: ["Dark", "Light - Coming SOON", "Neon - Coming SOON"],
           },
         ]),
     },
