@@ -263,7 +263,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Dann im Button:
   youtubeBtn.addEventListener("click", async () => {
     try {
-      await openUrl("https://www.youtube.com/");
+      await openUrl("https://www.youtube.com/@xLieferant");
     } catch (err) {
       console.error("Fehler beim Öffnen von YouTube:", err);
       alert("YouTube konnte nicht geöffnet werden.");
@@ -271,7 +271,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   patreonBtn.addEventListener("click", async () => {
     try {
-      await openUrl("https://www.patreon.com/");
+      await openUrl("https://www.patreon.com/cw/xLieferant");
     } catch (err) {
       console.error("Fehler beim Öffnen von YouTube:", err);
       alert("YouTube konnte nicht geöffnet werden.");
