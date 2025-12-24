@@ -1,7 +1,11 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Save-Edit Tool xLieferant",
-  "version": "0.1.0",
+
+  "package": {
+    "productName": "Save-Edit Tool xLieferant",
+    "version": "0.1.0"
+  },
+
   "identifier": "com.xLieferant.SaveEditTool",
 
   "build": {
@@ -22,6 +26,7 @@
       "csp": null
     }
   },
+
   "bundle": {
     "active": true,
     "targets": "all",
@@ -33,8 +38,11 @@
       "icons/icon.ico"
     ]
   },
+
   "plugins": {
     "updater": {
+      "active": true,
+      "dialog": true,
       "endpoints": [
         "https://github.com/xLieferant/Save-Edit-Tool/releases/latest/download/latest.json"
       ],
