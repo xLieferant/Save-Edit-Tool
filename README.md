@@ -5,25 +5,44 @@
 Welcome to the ETS2 Save Editor – Alex Edition. This tool is designed to help you easily modify your Euro Truck Simulator 2 profile, truck settings, and game preferences.
 🚀 Features
 🚛 Truck Tab
+
 Repair Truck: Fix your vehicle instantly (Under Development).
+
 Fuel Level: Adjust your fuel levels (Coming Soon).
+
 Telemetry: View current Truck Mileage and License Plate info (Editing coming in future updates).
+
 📦 Trailer Tab
+
 Main structure implemented. Advanced editing functions will be added in upcoming releases.
+
 👤 Profile Tab
+
 Economy: Edit your Money and XP values.
+
 Skills: Manually overwrite driver skill levels.
+
 Stats: Read-only view of your career progress.
+
 ⚙️ Settings Tab
+
 Toggle game-wide settings including Convoy mode, Traffic density, Parking Doubles, and Dev Mode.
+
 Note: Changes require a game restart or should be applied while the game is closed.
+
 🛠 Installation & Usage
+
 Download: Visit the GitHub Releases page.
+
 Install: Download the latest .msi or .exe and run the installer.
+
 Refresh: Open the tool and click the "Refresh" button to load your profiles.
+
 Edit: Modify your desired values and save.
+
 [!TIP]
 This tool features an auto-updater. You will be notified automatically when a new version is available.
+
 ⚠️ Important Notes
 Developer Info: This is a hobby project developed in my free time. Feedback is always welcome!
 Performance: Due to Windows Defender scans during installation and background processes, some inputs may have a slight delay. Optimizations are ongoing.
