@@ -1,6 +1,8 @@
 name: Tauri Release
 
 on:
+  workflow_dispatch:
+  pull_request:
   release:
     types: [published]
 
