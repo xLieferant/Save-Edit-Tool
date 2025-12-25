@@ -49,6 +49,46 @@ nav .link-btn:hover {
   color: #0ff;
 }
 
+/* --- HEADER ACTION BUTTONS --- */
+.nav-action {
+  padding: 8px 18px;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(6px);
+  transition: all 0.25s ease;
+  border: 1px solid transparent;
+  color: #fff;
+}
+
+/* YouTube */
+.nav-action.youtube {
+  border-color: rgba(255, 0, 0, 0.6);
+  color: #ff4d4f;
+}
+
+.nav-action.youtube:hover {
+  background: rgba(255, 0, 0, 0.15);
+  box-shadow: 0 0 15px rgba(255, 0, 0, 0.7);
+  transform: translateY(-2px);
+}
+
+/* Patreon */
+.nav-action.patreon {
+  border-color: rgba(255, 165, 0, 0.6);
+  color: #ffa500;
+}
+
+.nav-action.patreon:hover {
+  background: rgba(255, 165, 0, 0.15);
+  box-shadow: 0 0 15px rgba(255, 165, 0, 0.7);
+  transform: translateY(-2px);
+}
+
+
+
 /* --- WERKZEUG-KARTEN CONTAINER --- */
 #tool-container {
   padding: 30px;
