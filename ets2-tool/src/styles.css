@@ -44,7 +44,7 @@ nav .link-btn {
   padding: 0;
 }
 
-nav button:hove,
+nav button:hover,
 nav .link-btn:hover {
   color: #0ff;
 }
