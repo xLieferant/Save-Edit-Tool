@@ -264,16 +264,18 @@ export const tools = {
       title: "Color Theme - 'COMING SOON'",
       desc: "Change the UI theme",
       img: "images/comingsoon.png",
-      action: () =>
-        openModalMulti("Choose Color Theme", [
-          {
-            type: "dropdown",
-            id: "theme",
-            label: "Theme",
-            value: window.baseConfig?.theme || "Dark", // hier muss der value noch geändert  werden!
-            options: ["Dark", "Light - Coming SOON", "Neon - Coming SOON"],
-          },
-        ]),
+      // action: () =>
+      //   openModalMulti("Choose Color Theme", [
+      //     {
+      //       type: "dropdown",
+      //       id: "theme",
+      //       label: "Theme",
+      //       value: window.baseConfig?.theme || "Dark", // hier muss der value noch geändert  werden!
+      //       options: ["Dark", "Light - Coming SOON", "Neon - Coming SOON"],
+      //     },
+      //   ]),
+      action: () => {},
+      disabled: true,
     },
     {
       title: "Convoy 128",
