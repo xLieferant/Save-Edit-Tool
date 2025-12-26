@@ -10,6 +10,16 @@ Unavailable features appear as “Coming soon”.
 
 Updates are delivered through a built-in auto-updater using GitHub Releases.
 
+## 🚀 Upcoming in v0.2.0
+We are currently working on a major UI/UX overhaul to make the experience faster and more modern.
+
+- **Modernized UI:** Clean, structured layout with a new tab-based navigation.
+- **Theme Support:** Choose between three curated themes: *Neon Night*, *Dark Pro*, and *Pure Light*.
+- **Performance:** Optimized core logic for a snappier feel and faster load times.
+- **Quality of Life:** Improved modal handling, contextual help texts, and status indicators.
+- **Community Focus:** Integrated update checker and direct GitHub feedback links.
+
+
 ---
 
 ## Features in Version 0.1 Alpha

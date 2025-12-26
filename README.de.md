@@ -10,6 +10,16 @@ Nicht verfügbare Features erscheinen als „Coming soon“.
 
 Updates werden über einen Auto-Updater bereitgestellt, der GitHub Releases nutzt.
 
+## Daran Arbeite ich gerade 
+### 🚀 Geplant für v0.2.0
+Ich arbeite derzeit an einer umfassenden Überarbeitung der UI/UX, um die Anwendung schneller und moderner zu machen.
+
+- **Modernisierte UI:** Sauberes, strukturiertes Layout mit neuer Tab-Navigation.
+- **Theme-Support:** Wähle zwischen drei Designs: *Neon Night*, *Dark Pro* und *Pure Light*.
+- **Performance:** Optimierte Kern-Logik für schnellere Reaktionszeiten.
+- **Quality of Life:** Verbessertes Modal-Handling, kontextbezogene Hilfetexte und Status-Anzeigen.
+- **Community-Fokus:** Integrierter Update-Checker und direkte Verlinkung für GitHub-Feedback.
+
 ---
 
 ## Features in Version 0.1 Alpha
