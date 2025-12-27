@@ -166,120 +166,172 @@ body {
   transform: translateY(-2px);
 }
 
-/* --- FOOTER BAR & CUSTOM PROFILE PICKER --- */
+/* --- FOOTER BAR (vertikal zentriert) --- */
 .profile-bar {
   position: fixed;
   bottom: 20px;
-  left: 260px;
-  right: 15px;
-  height: 70px;
+  left: 50%;               /* horizontal zentrieren */
+  transform: translateX(-50%);
+  height: 55px;             /* kleiner als vorher */
+  padding: 0 16px;
 
-  background: rgba(150, 200, 165, 0.07);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(27, 31, 37, 0.85);
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 16px;
 
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 18px;
+  display: inline-flex;      /* passt sich der Inhaltbreite an */
+  align-items: center;       /* vertikal zentriert */
+  justify-content: center;
+  gap: 15px;
 
+  box-shadow: 0 6px 25px rgba(0,0,0,0.35);
+  z-index: 200;
+}
+
+/* --- GAME SWITCH --- */
+.game-switch {
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 0 22px;
-
-  box-shadow: 0 10px 35px rgba(0,0,0,0.45);
-  z-index: 90;
+  gap: 6px;  /* enger zusammen */
 }
 
 .game-switch button {
-  background: none;
-  border: 2px solid #555;
-  padding: 7px 14px;
-  border-radius: 8px;
-  color: #aaa;
-  cursor: pointer;
-  align-items: center;
-  gap: 10px;
-  justify-content: center;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(0,255,255,0.25);
+  color: #0ff;
   font-weight: bold;
+  font-size: 13px;          /* kleiner */
+  border-radius: 8px;       /* eleganter */
+  padding: 4px 10px;        /* kompakter */
+  display: flex;
+  align-items: center;
+  gap: 6px;                 /* enger zusammen */
+  cursor: pointer;
+  transition: all 0.25s ease;
+  height: 34px;             /* etwas niedriger */
 }
 
 .game-switch button.active {
   background: #0ff;
   color: black;
+  box-shadow: 0 0 10px #0ff;
 }
 
 .game-switch button:disabled {
-  background-color: #383838; /* Hellgrauer Hintergrund */
-  color: #888; /* Dunklerer Text */
-  cursor: not-allowed; /* Zeigt ein "Stopp"-Symbol beim Hover */
-  border-color: #ccc;
+  background: rgba(255,255,255,0.02);
+  color: #555;
+  border-color: rgba(255,255,255,0.05);
+  cursor: not-allowed;
 }
 
-.game-switch button img {
-     /* Setzt eine konsistente Größe für beide Logos */
-    width: 20px; 
-    height: 20px;
-    /* Größenangaben im HTML (sizes="15px") werden hier überschrieben */
-}
-
-.game-switch button span {
-  transform: translateY(-15px);
-}
-
+/* --- PROFILE & SAVE PICKER --- */
 .profile-picker,
 .save-picker {
-  position: relative; /* Wichtig für die Positionierung des Dropdowns */
-  background: rgba(255, 255, 255, 0.08);
-  padding: 8px 12px;
-  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1;
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 10px;
+  background: rgba(0,255,255,0.05);
+  border: 1px solid rgba(0,255,255,0.15);
+  border-radius: 10px;
+  padding: 4px 10px;
   cursor: pointer;
-  width: auto;
+  transition: all 0.25s ease;
+  height: 34px;
 }
 
-/* Der Pfeil-Button im Picker */
+.profile-picker:hover,
+.save-picker:hover {
+  background: rgba(0,255,255,0.1);
+  box-shadow: 0 0 10px rgba(0,255,255,0.3);
+}
+
+.profile-picker span,
+.save-picker span {
+  line-height: 1;
+  font-size: 13px;
+}
+
 .profile-picker button,
 .save-picker button {
   background: none;
   border: none;
   color: #0ff;
+  font-size: 14px;
   cursor: pointer;
   padding: 0;
   margin: 0;
 }
 
-.status-message {
-  color: red;
-  font-weight: bold;
+/* --- DROPDOWN LIST --- */
+.custom-dropdown-list {
+  top: -260px; /* über Picker anzeigen */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 240px;
+  max-height: 250px;
+  overflow-y: auto;
+  border-radius: 10px;
+  backdrop-filter: blur(14px) saturate(150%);
+  background: rgba(27,31,37,0.95);
+  border: 1px solid rgba(0,255,255,0.2);
+  box-shadow: 0 8px 20px rgba(0,255,255,0.25);
+  z-index: 250;
 }
 
+/* --- REFRESH BUTTON --- */
 .refresh-btn {
-  margin-left: auto; /* Schiebt den Button ganz nach rechts */
-  background: #111;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(0,255,255,0.1);
   border: 1px solid #0ff;
   color: #0ff;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
   cursor: pointer;
+  transition: all 0.25s ease;
 }
 
 .refresh-btn:hover {
-  margin-left: auto; /* Schiebt den Button ganz nach rechts */
-  background: #111;
-  border: 2px solid rgb(0, 255, 85);
-  color: rgb(0, 255, 21);
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  cursor: pointer;
-  /* hier kommt der Grüne Glow effect! 
-  Reinfolge = horizontal / vertical / blur radius / spread radius / FARBE und GAMMA */ 
-  box-shadow: 0px 0px 15px 3px rgba(0,255,55,0.75);
-    -webkit-box-shadow: 0px 0px 15px 3px rgba(0,255,55,0.75);
-    -moz-box-shadow: 0px 0px 15px 3px rgba(0,255,55,0.75);
+  background: rgba(0,255,255,0.25);
+  box-shadow: 0 0 15px #0ff;
+  transform: translateY(-2px);
+}
+
+/* --- FLEX VERTEILUNG: enger & zentral --- */
+.profile-bar > .game-switch,
+.profile-bar > .profile-picker,
+.profile-bar > .save-picker,
+.profile-bar > .refresh-btn {
+  flex-shrink: 0;
+}
+/* --- OPTIONAL: Balken hinter den Inhalten abschneiden --- */
+.profile-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  border-radius: 16px;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgba(0,255,255,0.15);
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 1024px) {
+  .profile-bar {
+    left: 15px;
+    right: 15px;
+  }
 }
 
 
@@ -347,11 +399,15 @@ body {
 
 /* --- TOOL CARDS --- */
 #tool-container {
-  margin-left: 240px;
-  padding: 30px 40px 120px;
+  top: 0;                 /* immer oben starten */
+  left: 230px;            /* Sidebar-Breite */
+  right: 0;               /* bis zum rechten Rand */
+  bottom: 60px;          /* 110px Platz unten */
+  padding: 30px 40px 0;   /* oben 0, rechts/links 40px */
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 25px;
+  overflow-y: auto;       /* scrollt nur der Container */
 }
 
 
