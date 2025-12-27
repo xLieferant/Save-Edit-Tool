@@ -6,6 +6,7 @@ body {
   color: white;
 }
 
+/* --- HEADER & LOGO --- */
 .main-header {
   width: 240px;
   display: flex;
@@ -14,19 +15,18 @@ body {
   margin-bottom: 20px;
 }
 
-/* --- LOGO --- */
 .logo {
-  position: fixed;   /* immer sichtbar */
-  top: 10px;         /* Abstand vom oberen Rand */
-  left: 15px;        /* Abstand vom linken Rand */
+  position: fixed;
+  top: 10px;
+  left: 15px;
   display: flex;
   align-items: center;
   gap: 12px;
-  z-index: 300;      /* über Tool-Container */
+  z-index: 300;
 }
 
 .logo img {
-  width: 48px; /* etwas größer */
+  width: 48px;
   height: 48px;
   border-radius: 6px;
 }
@@ -38,46 +38,41 @@ body {
 }
 
 .logo-title {
-  font-size: 20px; /* größer für mehr Präsenz */
+  font-size: 20px;
   font-weight: 700;
   color: #0ff;
 }
 
 .logo-subtitle {
-  font-size: 14px; /* etwas größer */
+  font-size: 14px;
   font-weight: 400;
   color: #bbb;
 }
 
-
-
-/* --- SIDEBAR FIXIEREN --- */
+/* --- SIDEBAR --- */
 .nav-wrapper {
   position: fixed;
   top: 60px;
-  left: 15px; /* weiter links */
+  left: 15px;
   bottom: 15px;
   width: 190px;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.08);/* minimal breiter für mehr Platz */
+  padding: 20px 16px;
   display: flex;
   flex-direction: column;
-  padding: 20px 16px;
-  /* background: rgba(255, 255, 255, 0.07); */
-  background: rgba(150, 200, 165, 0.07);
+  background: rgba(150,200,165,0.07);
   backdrop-filter: blur(24px) saturate(150%);
   -webkit-backdrop-filter: blur(24px) saturate(150%);
   border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255,255,255,0.15);
   box-shadow: 0 25px 65px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08);
   z-index: 100;
   transition: left 0.4s ease;
 }
 
-/* --- CONTENT NEBEN SIDEBAR --- */
+/* --- MAIN CONTENT --- */
 .main-content,
 #tool-container {
-  margin-left: 240px; /* passt zum neuen Sidebar-Offset */
+  margin-left: 240px;
   padding: 30px 40px 120px;
   height: auto;
   transition: margin-left 0.3s ease;
@@ -103,7 +98,7 @@ body {
   align-items: center;
   gap: 12px;
   cursor: pointer;
-  transition: background 0.25s ease, border-color 0.25s ease, color 0.25s ease, transform 0.15s ease;
+  transition: background 0.25s, border-color 0.25s, color 0.25s, transform 0.15s;
 }
 
 .nav-btn:hover {
@@ -113,7 +108,6 @@ body {
   transform: translateX(3px);
 }
 
-/* Optional: für die Sidebar-Buttons noch ein sanfter Neon-Glow */
 .nav-btn.active {
   background: linear-gradient(135deg, rgba(0,255,255,0.2), rgba(0,255,255,0.05));
   border-color: rgba(0,255,255,0.5);
@@ -123,7 +117,7 @@ body {
   transition: all 0.3s ease;
 }
 
-/* --- BOTTOM ACTION BUTTONS --- */
+/* --- NAV BOTTOM ACTIONS --- */
 .nav-bottom {
   margin-top: auto;
   display: flex;
@@ -166,35 +160,58 @@ body {
   transform: translateY(-2px);
 }
 
-/* --- FOOTER BAR (vertikal zentriert) --- */
+/* --- PROFILE BAR --- */
 .profile-bar {
   position: fixed;
   bottom: 20px;
-  left: 50%;               /* horizontal zentrieren */
+  left: 50%;
   transform: translateX(-50%);
-  height: 55px;             /* kleiner als vorher */
+  height: 55px;
   padding: 0 16px;
-
-  background: rgba(27, 31, 37, 0.85);
+  background: rgba(27,31,37,0.85);
   backdrop-filter: blur(14px) saturate(150%);
   -webkit-backdrop-filter: blur(14px) saturate(150%);
-  border: 1px solid rgba(0, 255, 255, 0.2);
+  border: 1px solid rgba(0,255,255,0.2);
   border-radius: 16px;
-
-  display: inline-flex;      /* passt sich der Inhaltbreite an */
-  align-items: center;       /* vertikal zentriert */
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
   gap: 15px;
-
   box-shadow: 0 6px 25px rgba(0,0,0,0.35);
   z-index: 200;
+}
+
+.profile-bar > .game-switch,
+.profile-bar > .profile-picker,
+.profile-bar > .save-picker,
+.profile-bar > .refresh-btn {
+  flex-shrink: 0;
+}
+
+.profile-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  border-radius: 16px;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgba(0,255,255,0.15);
+}
+
+@media (max-width: 1024px) {
+  .profile-bar {
+    left: 15px;
+    right: 15px;
+  }
 }
 
 /* --- GAME SWITCH --- */
 .game-switch {
   display: flex;
   align-items: center;
-  gap: 6px;  /* enger zusammen */
+  gap: 6px;
 }
 
 .game-switch button {
@@ -202,15 +219,15 @@ body {
   border: 1px solid rgba(0,255,255,0.25);
   color: #0ff;
   font-weight: bold;
-  font-size: 13px;          /* kleiner */
-  border-radius: 8px;       /* eleganter */
-  padding: 4px 10px;        /* kompakter */
+  font-size: 13px;
+  border-radius: 8px;
+  padding: 4px 10px;
   display: flex;
   align-items: center;
-  gap: 6px;                 /* enger zusammen */
+  gap: 6px;
   cursor: pointer;
   transition: all 0.25s ease;
-  height: 34px;             /* etwas niedriger */
+  height: 34px;
 }
 
 .game-switch button.active {
@@ -226,7 +243,7 @@ body {
   cursor: not-allowed;
 }
 
-/* --- PROFILE & SAVE PICKER --- */
+/* --- PICKERS --- */
 .profile-picker,
 .save-picker {
   font-size: 13px;
@@ -252,7 +269,6 @@ body {
 
 .profile-picker span,
 .save-picker span {
-  line-height: 1;
   font-size: 13px;
 }
 
@@ -267,27 +283,61 @@ body {
   margin: 0;
 }
 
-/* --- DROPDOWN LIST --- */
+/* --- DROPDOWN --- */
 .custom-dropdown-list {
-  top: -260px; /* über Picker anzeigen */
+  display: none;
+  position: absolute;
+  bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
-  width: 240px;
+  width: 250px;
+  background: rgba(27,31,37,0.9);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
   max-height: 250px;
+  backdrop-filter: blur(14px);
   overflow-y: auto;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.3);
+  z-index: 10;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.custom-dropdown-list::-webkit-scrollbar {
+  display: none;
+}
+
+.custom-dropdown-list.show {
+  display: block;
+}
+
+.dropdown-item {
+  padding: 15px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 15px;
   border-radius: 10px;
-  backdrop-filter: blur(14px) saturate(150%);
-  background: rgba(27,31,37,0.95);
-  border: 1px solid rgba(0,255,255,0.2);
-  box-shadow: 0 8px 20px rgba(0,255,255,0.25);
-  z-index: 250;
+  transition: background 0.2s;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item:hover {
+  background: rgba(0,255,255,0.15);
 }
 
 /* --- REFRESH BUTTON --- */
 .refresh-btn {
   width: 28px;
   height: 28px;
-  padding: 0;
   border-radius: 50%;
   background: rgba(0,255,255,0.1);
   border: 1px solid #0ff;
@@ -306,36 +356,7 @@ body {
   transform: translateY(-2px);
 }
 
-/* --- FLEX VERTEILUNG: enger & zentral --- */
-.profile-bar > .game-switch,
-.profile-bar > .profile-picker,
-.profile-bar > .save-picker,
-.profile-bar > .refresh-btn {
-  flex-shrink: 0;
-}
-/* --- OPTIONAL: Balken hinter den Inhalten abschneiden --- */
-.profile-bar::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  border-radius: 16px;
-  pointer-events: none;
-  box-shadow: inset 0 0 0 1px rgba(0,255,255,0.15);
-}
-
-/* --- RESPONSIVE --- */
-@media (max-width: 1024px) {
-  .profile-bar {
-    left: 15px;
-    right: 15px;
-  }
-}
-
-
-/* --- MODALE --- */
+/* --- MODALS & MULTI MODAL --- */
 .modal-backdrop {
   display: none;
   justify-content: center;
@@ -347,21 +368,25 @@ body {
   z-index: 200;
 }
 
-.modal-box {
+.modal-box,
+#modalMultiContent {
   background: #1b1f25;
   padding: 25px;
   border-radius: 12px;
   width: 350px;
-  max-height: calc(100vh - 10px); /* gesamte Höhe minus 5px oben und unten */
-  overflow-y: auto; /* Scrollbar bei Bedarf */
-  margin: 5px auto; /* 5px Abstand oben/unten */
+  max-height: calc(100vh - 10px);
+  overflow-y: auto;
+  margin: 5px auto;
   position: relative;
 }
 
-.modal-box input {
+.modal-box input,
+#modalMultiContent input[type="text"],
+#modalMultiContent input[type="number"],
+#modalMultiContent select {
   width: 100%;
   padding: 10px;
-  margin: 10px 0 20px;
+  margin-bottom: 10px;
   box-sizing: border-box;
   background: #333;
   border: 1px solid #555;
@@ -369,12 +394,14 @@ body {
   border-radius: 5px;
 }
 
-.modal-actions {
+.modal-actions,
+#modalMulti .modal-actions {
   display: flex;
   justify-content: space-between;
 }
 
-.modal-actions button {
+.modal-actions button,
+#modalMulti .modal-actions button {
   padding: 8px 16px;
   border: none;
   border-radius: 5px;
@@ -383,7 +410,8 @@ body {
 
 #modalTextCancel,
 #modalNumberCancel,
-#modalSliderCancel {
+#modalSliderCancel,
+#modalMultiCancel {
   background: #ff3c3c;
   color: white;
   font-weight: bold;
@@ -391,7 +419,8 @@ body {
 
 #modalTextApply,
 #modalNumberApply,
-#modalSliderApply {
+#modalSliderApply,
+#modalMultiApply {
   background: #63c768;
   color: black;
   font-weight: bold;
@@ -399,26 +428,24 @@ body {
 
 /* --- TOOL CARDS --- */
 #tool-container {
-  top: 0;                 /* immer oben starten */
-  left: 230px;            /* Sidebar-Breite */
-  right: 0;               /* bis zum rechten Rand */
-  bottom: 60px;          /* 110px Platz unten */
-  padding: 30px 40px 0;   /* oben 0, rechts/links 40px */
+  top: 0;
+  left: 230px;
+  right: 0;
+  bottom: 60px;
+  padding: 30px 40px 0;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 25px;
-  overflow-y: auto;       /* scrollt nur der Container */
+  overflow-y: auto;
 }
-
 
 .tool-card {
   margin-top: 15px;
-  background: rgba(255, 255, 255, 0.045);
+  background: rgba(255,255,255,0.045);
   border-radius: 16px;
   overflow: hidden;
   backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255,255,255,0.08);
   transition: 0.4s;
   display: flex;
   flex-direction: column;
@@ -475,66 +502,12 @@ body {
 
 .tool-card button.modal-disabled:hover {
   background-color: #ff4d4f;
-  box-shadow: 0px 0px 15px 3px rgba(255, 0, 0, 0.75);
+  box-shadow: 0px 0px 15px 3px rgba(255,0,0,0.75);
 }
 
 .tool-card.modal-disabled:hover {
   border-color: red;
-  box-shadow: 0px 0px 15px 3px rgba(255, 0, 0, 0.75);
-}
-
-/* --- CUSTOM DROPDOWN LIST --- */
-.custom-dropdown-list {
-  display: none;
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 250px;
-  background: rgba(27,31,37,0.9);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  max-height: 250px;
-  backdrop-filter: blur(14px);
-  overflow-y: scroll;
-  box-shadow: 0 -4px 12px rgba(0,0,0,0.3);
-  z-index: 10;
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.custom-dropdown-list::-webkit-scrollbar {
-  display: none;
-}
-
-.custom-dropdown-list.show {
-  display: block;
-}
-
-.dropdown-item {
-  padding: 15px 15px;
-  cursor: pointer;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  border-radius: 10px;
-  transition: background 0.2s;
-}
-
-.dropdown-item:last-child {
-  border-bottom: none;
-}
-
-.dropdown-item:hover {
-  background: rgba(0, 255, 255, 0.15);
+  box-shadow: 0px 0px 15px 3px rgba(255,0,0,0.75);
 }
 
 /* --- TOGGLE SWITCH --- */
@@ -566,100 +539,15 @@ input[type="checkbox"].toggle-checkbox {
   transition: 0.4s;
 }
 
-#modalSliderInput:checked ~ .checkboxSlider {
+input[type="checkbox"]:checked + .checkboxSlider {
   background-color: #66bb6a;
 }
 
-#modalSliderInput:checked ~ .checkboxSlider::before {
-  transform: translateX(15px);
-}
-
-/* --- MULTI MODAL --- */
-#modalMultiContent .multi-row {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 15px;
-}
-
-#modalMultiContent label {
-  margin-bottom: 5px;
-  font-weight: bold;
-}
-
-#modalMultiContent input[type="text"],
-#modalMultiContent input[type="number"],
-#modalMultiContent select {
-  width: 100%;
-  padding: 10px;
-  background: #333;
-  border: 1px solid #555;
-  border-radius: 5px;
-  color: white;
-  box-sizing: border-box;
-  margin-bottom: 10px;
-}
-
-#modalMultiContent input[type="checkbox"].toggle-checkbox {
-  display: none;
-}
-
-#modalMultiContent .checkboxSlider {
-  background-color: #ccc;
-  position: relative;
-  display: block;
-  margin: 10px 0 20px 0;
-  width: 60px;
-  height: 34px;
-  border-radius: 34px;
-  cursor: pointer;
-  transition: 0.4s;
-}
-
-#modalMultiContent .checkboxSlider::before {
-  content: "";
-  position: absolute;
-  width: 26px;
-  height: 26px;
-  left: 4px;
-  bottom: 4px;
-  background-color: #fff;
-  border-radius: 50%;
-  transition: 0.4s;
-}
-
-#modalMultiContent input[type="checkbox"]:checked + .checkboxSlider {
-  background-color: #66bb6a;
-}
-
-#modalMultiContent input[type="checkbox"]:checked + .checkboxSlider::before {
+input[type="checkbox"]:checked + .checkboxSlider::before {
   transform: translateX(26px);
 }
 
-#modalMulti .modal-actions button {
-  padding: 8px 16px;
-  border-radius: 5px;
-  border: none;
-  cursor: pointer;
-}
-
-#modalMulti #modalMultiCancel {
-  background: #ff3c3c;
-  color: white;
-  font-weight: bold;
-}
-
-#modalMulti #modalMultiApply {
-  background: #63c768;
-  color: black;
-  font-weight: bold;
-}
-
-/* --- SKILLS SLIDER --- */
-.slider-value {
-  min-width: 24px;
-  font-weight: bold;
-}
-
+/* --- SLIDERS --- */
 .skill-row {
   margin-bottom: 22px;
 }
