@@ -260,22 +260,40 @@ export const tools = {
 
   settings: [
     {
-      // [] TO DO, value ist nicht .baseConfig! Muss noch geändert werden
-      title: "Color Theme - 'COMING SOON'",
+      title: "Color Theme",
       desc: "Change the UI theme",
       img: "images/comingsoon.png",
-      // action: () =>
-      //   openModalMulti("Choose Color Theme", [
-      //     {
-      //       type: "dropdown",
-      //       id: "theme",
-      //       label: "Theme",
-      //       value: window.baseConfig?.theme || "Dark", // hier muss der value noch geändert  werden!
-      //       options: ["Dark", "Light - Coming SOON", "Neon - Coming SOON"],
-      //     },
-      //   ]),
-      action: () => {},
-      disabled: true,
+      action: () => {
+        // 1. Lade aktuelles Theme aus localStorage oder Default 'dark'
+        let currentTheme = localStorage.getItem("theme") || "dark";
+
+        // 2. Body initial setzen (falls noch nicht gesetzt)
+        document.body.classList.remove("theme-dark", "theme-light", "theme-neon");
+        document.body.classList.add(`theme-${currentTheme}`);
+
+        // 3. Öffne Modal
+        openModalMulti("Choose Color Theme", [
+          {
+            type: "dropdown",
+            id: "theme",
+            label: "Theme",
+            value: currentTheme,
+            options: ["dark", "light", "neon"],
+            onChange: (newTheme) => {
+              // 4. Body-Klasse ändern
+              document.body.classList.remove("theme-dark", "theme-light", "theme-neon");
+              document.body.classList.add(`theme-${newTheme}`);
+
+              // 5. localStorage speichern
+              localStorage.setItem("theme", newTheme);
+
+              // 6. aktuelle Variable updaten
+              currentTheme = newTheme;
+            },
+          },
+        ]);
+      },
+      disabled: false,
     },
     {
       title: "Convoy 128",
