@@ -8,80 +8,45 @@ use std::process::Command;
 pub fn decrypt_if_needed(path: &Path) -> Result<String, String> {
     log!("decrypt_if_needed: {}", path.display());
 
-    // Nur .sii-Dateien entschlüsseln
-    if path.extension().map(|ext| ext != "sii").unwrap_or(true) {
+    if path.extension().and_then(|ext| ext.to_str()) != Some("sii") {
         log!("Datei ist keine .sii, kein Entschlüsseln nötig.");
-        return fs::read_to_string(path).map_err(|e| format!("Fehler beim Lesen der Datei: {}", e));
+        let bytes = fs::read(path).map_err(|e| format!("Fehler beim Lesen der Datei: {}", e))?;
+        return Ok(String::from_utf8_lossy(&bytes).to_string());
     }
 
-    // Prüfen, ob schon entschlüsselt
-    if let Ok(orig) = fs::read_to_string(path) {
-        if orig.starts_with("SiiNunit") {
-            log!("Datei ist bereits entschlüsselt.");
-            return Ok(orig);
-        }
+    let orig_bytes = fs::read(path).map_err(|e| format!("Fehler beim Lesen der Datei: {}", e))?;
+    let orig = String::from_utf8_lossy(&orig_bytes);
+    if orig.starts_with("SiiNunit") {
+        log!("Datei ist bereits entschlüsselt.");
+        return Ok(orig.to_string());
     }
 
-    // Temp-Datei für Entschlüsselung
-    let temp_out = std::env::temp_dir().join("ets2_tool").join(format!(
-        "decoded_{}.sii",
-        path.file_stem().unwrap().to_string_lossy()
-    ));
-
+    let temp_out = std::env::temp_dir().join("ets2_tool")
+        .join(format!("decoded_{}.sii", path.file_stem().unwrap().to_string_lossy()));
     let _ = fs::create_dir_all(temp_out.parent().unwrap());
+    let _ = fs::remove_file(&temp_out);
 
-    if temp_out.exists() {
-        log!("Lösche alte Temp-Datei: {}", temp_out.display());
-        let _ = fs::remove_file(&temp_out);
-    }
-
-    // Entschlüsseln mit Tools
-    let local_tool = Path::new("tools/SII_Decrypt.exe");
-    let mut decrypted = false;
-
-    if local_tool.exists() {
+    let decrypted = if Path::new("tools/SII_Decrypt.exe").exists() {
         log!("Versuche tools/SII_Decrypt.exe für {}", path.display());
-        if let Ok(output) = Command::new(&local_tool).arg(path).arg(&temp_out).output() {
-            if output.status.success() && temp_out.exists() {
-                decrypted = true;
-                log!("Datei erfolgreich entschlüsselt (tools/SII_Decrypt.exe).");
-            } else {
-                log!(
-                    "tools/SII_Decrypt.exe fehlgeschlagen: {}",
-                    String::from_utf8_lossy(&output.stderr)
-                );
-            }
-        }
-    }
-
-    // Fallback: decrypt_truck
-    if !decrypted {
-        log!("Fallback: decrypt_truck für {}", path.display());
-        if let Ok(output) = Command::new("decrypt_truck")
-            .arg(path)
-            .arg(&temp_out)
-            .output()
-        {
-            if output.status.success() && temp_out.exists() {
-                decrypted = true;
-                log!("Datei erfolgreich entschlüsselt (decrypt_truck).");
-            } else {
-                log!(
-                    "decrypt_truck fehlgeschlagen: {}",
-                    String::from_utf8_lossy(&output.stderr)
-                );
-            }
-        }
-    }
-
-    // Ergebnis aus Temp-Datei oder Original
-    if decrypted {
-        fs::read_to_string(&temp_out)
-            .map_err(|e| format!("Fehler beim Lesen der entschlüsselten Datei: {}", e))
+        let output = Command::new("tools/SII_Decrypt.exe").arg(path).arg(&temp_out).output();
+        output.map_or(false, |o| o.status.success() && temp_out.exists())
     } else {
-        fs::read_to_string(path).map_err(|e| format!("Fehler beim Lesen der Originaldatei: {}", e))
+        false
+    } || {
+        log!("Fallback: decrypt_truck für {}", path.display());
+        let output = Command::new("decrypt_truck").arg(path).arg(&temp_out).output();
+        output.map_or(false, |o| o.status.success() && temp_out.exists())
+    };
+
+    if decrypted {
+        let decrypted_bytes = fs::read(&temp_out)
+            .map_err(|e| format!("Fehler beim Lesen der entschlüsselten Datei: {}", e))?;
+        Ok(String::from_utf8_lossy(&decrypted_bytes).to_string())
+    } else {
+        Ok(orig.to_string())
     }
 }
+
 
 /// Erstellt ein Backup der Originaldatei als .bak
 pub fn backup_file(path: &Path) -> Result<(), String> {
