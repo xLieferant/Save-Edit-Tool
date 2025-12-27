@@ -1,9 +1,72 @@
+:root {
+  --bg-main: #0c0f14;
+  --text-main: #ffffff;
+  --text-muted: #bbbbbb;
+
+  --accent: #00ffff;
+  --accent-soft: rgba(0,255,255,0.15);
+
+  --panel-bg: rgba(27,31,37,0.85);
+  --panel-border: rgba(255,255,255,0.15);
+
+  --card-bg: rgba(255,255,255,0.045);
+  --card-border: rgba(255,255,255,0.08);
+}
+
+body.theme-dark {
+  --bg-main: #0c0f14;
+  --text-main: #ffffff;
+  --text-muted: #bbbbbb;
+
+  --accent: #00ffff;
+  --accent-soft: rgba(0,255,255,0.15);
+
+  --panel-bg: rgba(27,31,37,0.85);
+  --panel-border: rgba(255,255,255,0.15);
+
+  --card-bg: rgba(255,255,255,0.045);
+  --card-border: rgba(255,255,255,0.08);
+}
+
+body.theme-light {
+  --bg-main: #f4f6fa;
+  --text-main: #111111;
+  --text-muted: #555555;
+
+  --accent: #0066ff;
+  --accent-soft: rgba(0,102,255,0.15);
+
+  --panel-bg: rgba(255,255,255,0.9);
+  --panel-border: rgba(0,0,0,0.12);
+
+  --card-bg: rgba(255,255,255,0.85);
+  --card-border: rgba(0,0,0,0.08);
+}
+
+body.theme-neon {
+  --bg-main: #06070a;
+  --text-main: #ffffff;
+  --text-muted: #9effff;
+
+  --accent: #00ff9c;
+  --accent-soft: rgba(0,255,156,0.25);
+
+  --panel-bg: rgba(0,20,20,0.9);
+  --panel-border: rgba(0,255,156,0.4);
+
+  --card-bg: rgba(0,255,156,0.05);
+  --card-border: rgba(0,255,156,0.35);
+}
+
+
+
+
 /* --- BASIS & TYPOGRAFIE --- */
 body {
   margin: 0;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  background: #0c0f14;
-  color: white;
+  background: var(--bg-main);
+  color: var(--text-main);
 }
 
 /* --- HEADER & LOGO --- */
@@ -40,13 +103,13 @@ body {
 .logo-title {
   font-size: 20px;
   font-weight: 700;
-  color: #0ff;
+  color: var(--accent);
 }
 
 .logo-subtitle {
   font-size: 14px;
   font-weight: 400;
-  color: #bbb;
+  color: var(--text-muted);
 }
 
 /* --- SIDEBAR --- */
@@ -59,11 +122,11 @@ body {
   padding: 20px 16px;
   display: flex;
   flex-direction: column;
-  background: rgba(150,200,165,0.07);
+  background: var(--panel-bg);
   backdrop-filter: blur(24px) saturate(150%);
   -webkit-backdrop-filter: blur(24px) saturate(150%);
   border-radius: 24px;
-  border: 1px solid rgba(255,255,255,0.15);
+  border: 1px solid var(--panel-border);
   box-shadow: 0 25px 65px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08);
   z-index: 100;
   transition: left 0.4s ease;
@@ -475,11 +538,11 @@ body {
 
 .tool-card {
   margin-top: 15px;
-  background: rgba(255,255,255,0.045);
+  background: var(--card-bg);
   border-radius: 16px;
   overflow: hidden;
   backdrop-filter: blur(14px);
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid var(--card-border);
   transition: 0.4s;
   display: flex;
   flex-direction: column;
@@ -519,7 +582,7 @@ body {
   width: 100%;
   font-weight: 600;
   padding: 10px;
-  background: #0ff;
+  background: var(--accent);
   border: none;
   border-radius: 14px;
   cursor: pointer;

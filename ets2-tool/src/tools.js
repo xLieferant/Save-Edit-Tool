@@ -263,38 +263,32 @@ export const tools = {
       title: "Color Theme",
       desc: "Change the UI theme",
       img: "images/comingsoon.png",
-      // action: () => {
-      //   // 1. Lade aktuelles Theme aus localStorage oder Default 'dark'
-      //   let currentTheme = localStorage.getItem("theme") || "dark";
+      action: async () => {
+        const currentTheme = localStorage.getItem("theme") || "dark";
 
-      //   // 2. Body initial setzen (falls noch nicht gesetzt)
-      //   document.body.classList.remove("theme-dark", "theme-light", "theme-neon");
-      //   document.body.classList.add(`theme-${currentTheme}`);
+        const res = await openModalMulti("Choose Color Theme", [
+          {
+            type: "dropdown",
+            id: "theme",
+            label: "Theme",
+            value: currentTheme,
+            options: ["dark", "light", "neon"],
+          },
+        ]);
 
-      //   // 3. Öffne Modal
-      //   openModalMulti("Choose Color Theme", [
-      //     {
-      //       type: "dropdown",
-      //       id: "theme",
-      //       label: "Theme",
-      //       value: currentTheme,
-      //       options: ["dark", "light", "neon"],
-      //       onChange: (newTheme) => {
-      //         // 4. Body-Klasse ändern
-      //         document.body.classList.remove("theme-dark", "theme-light", "theme-neon");
-      //         document.body.classList.add(`theme-${newTheme}`);
+        if (!res) return;
 
-      //         // 5. localStorage speichern
-      //         localStorage.setItem("theme", newTheme);
+        const newTheme = res.theme;
 
-      //         // 6. aktuelle Variable updaten
-      //         currentTheme = newTheme;
-      //       },
-      //     },
-      //   ]);
-      // },
-      action: () => {},
-      disabled: true,
+        document.body.classList.remove(
+          "theme-dark",
+          "theme-light",
+          "theme-neon"
+        );
+        document.body.classList.add(`theme-${newTheme}`);
+        localStorage.setItem("theme", newTheme);
+      },
+      disabled: false,
     },
     {
       title: "Convoy 128",
