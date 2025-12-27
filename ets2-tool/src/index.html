@@ -10,19 +10,28 @@
   <body>
     <header class="main-header">
       <div class="logo">
-        <img src="images/xlLogo.png" alt="ets2Logo" sizes="15px" />
-        <span>SAVE EDITOR FOR SCS - xLieferant</span>
+        <img src="images/xlLogo.png" alt="ets2Logo" />
+          <div class="logo-text">
+            <span class="logo-title">SAVE EDITOR</span>
+            <span class="logo-subtitle">for SCS - xLieferant</span>
+          </div>
       </div>
-      <nav>
-        <button class="nav-btn" data-tab="truck">Truck</button>
-        <!-- "active" Klasse als Standard gesetzt -->
-        <button class="nav-btn" data-tab="trailer">Trailer</button>
-        <button class="nav-btn active" data-tab="profile">Profile</button>
-        <button class="nav-btn" data-tab="settings">Settings</button>
-        <!-- Dein YouTube-Link als Link-Button -->
-        <button id="youtubeBtn" class="nav-action youtube">YouTube</button>
-        <button id="patreonBtn" class="nav-action patreon">Patreon</button>
-        
+      <nav class="nav-wrapper">
+        <div class="nav-main">
+          <button class="nav-btn" data-tab="truck">🚛Truck</button>
+          <button class="nav-btn" data-tab="trailer">🚚Trailer</button>
+          <button class="nav-btn active" data-tab="profile">💠Profile</button>
+          <button class="nav-btn" data-tab="settings">⚙️Settings</button>
+        </div>
+
+        <div class="nav-bottom">
+          <button id="youtubeBtn" class="nav-action youtube">YouTube</button>
+          <button id="patreonBtn" class="nav-action patreon">Patreon</button>
+          <p class="version-info"
+        style="font-size: 0.75em; color: #888; opacity: 0.6; margin-top: 5px">
+        v0.1.0
+      </p>
+        </div>
       </nav>
     </header>
 
@@ -48,7 +57,7 @@
             alt="ats Logo"
             class="switchButtonLogo"
           />
-          <span>ATS (Coming Soon)</span>
+          <span>ATS</span>
         </button>
       </div>
 
@@ -71,7 +80,6 @@
       </div>
 
       <button id="refreshBtn" class="refresh-btn">⟳</button>
-      <div class="version-info" style="font-size:0.75em; color:#888; opacity: 0.6; margin-top:5px;">v0.1.0</div>
     </footer>
 
     <!-- MODAL: Text-Input -->

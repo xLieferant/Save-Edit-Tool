@@ -2,366 +2,349 @@
 body {
   margin: 0;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  background: #0c0f14; /* Dunkler Hintergrund */
-  color: white; /* Helle Schriftfarbe */
+  background: #0c0f14;
+  color: white;
 }
 
-/* --- MAIN HEADER & NAVIGATION --- */
 .main-header {
+  width: 240px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 15px 30px;
-  background: rgba(255, 255, 255, 0.05); 
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  justify-content: space-between;
+  margin-bottom: 20px;
 }
 
+/* --- LOGO --- */
 .logo {
-  font-size: 22px;
-  font-weight: bold;
-  color: #0ff; /* Akzentfarbe Cyan */
+  position: fixed;   /* immer sichtbar */
+  top: 10px;         /* Abstand vom oberen Rand */
+  left: 15px;        /* Abstand vom linken Rand */
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  z-index: 300;      /* über Tool-Container */
 }
 
 .logo img {
-  width: 32px;
-  height: 32px;
+  width: 48px; /* etwas größer */
+  height: 48px;
+  border-radius: 6px;
 }
 
-/* Stile für alle Navigations-Elemente (Button und A) */
-nav button,
-nav .link-btn {
-  background: none;
-  border: none;
-  color: #aaa;
-  margin-left: 20px;
-  font-size: 16px;
-  cursor: pointer;
-  text-decoration: none; /* Entfernt Unterstreichung bei Links */
-  padding: 0;
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
 }
 
-nav button:hover,
-nav .link-btn:hover {
+.logo-title {
+  font-size: 20px; /* größer für mehr Präsenz */
+  font-weight: 700;
   color: #0ff;
 }
 
-/* --- HEADER ACTION BUTTONS --- */
-.nav-action {
-  padding: 8px 18px;
-  border-radius: 14px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(6px);
-  transition: all 0.25s ease;
-  border: 1px solid transparent;
-  color: #fff;
+.logo-subtitle {
+  font-size: 14px; /* etwas größer */
+  font-weight: 400;
+  color: #bbb;
 }
 
-/* YouTube */
+
+
+/* --- SIDEBAR FIXIEREN --- */
+.nav-wrapper {
+  position: fixed;
+  top: 60px;
+  left: 15px; /* weiter links */
+  bottom: 15px;
+  width: 190px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.08);/* minimal breiter für mehr Platz */
+  display: flex;
+  flex-direction: column;
+  padding: 20px 16px;
+  /* background: rgba(255, 255, 255, 0.07); */
+  background: rgba(150, 200, 165, 0.07);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 25px 65px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08);
+  z-index: 100;
+  transition: left 0.4s ease;
+}
+
+/* --- CONTENT NEBEN SIDEBAR --- */
+.main-content,
+#tool-container {
+  margin-left: 240px; /* passt zum neuen Sidebar-Offset */
+  padding: 30px 40px 120px;
+  height: auto;
+  transition: margin-left 0.3s ease;
+}
+
+/* --- NAVIGATION --- */
+.nav-main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nav-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 12px 16px;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.75);
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: background 0.25s ease, border-color 0.25s ease, color 0.25s ease, transform 0.15s ease;
+}
+
+.nav-btn:hover {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.12);
+  color: #fff;
+  transform: translateX(3px);
+}
+
+/* Optional: für die Sidebar-Buttons noch ein sanfter Neon-Glow */
+.nav-btn.active {
+  background: linear-gradient(135deg, rgba(0,255,255,0.2), rgba(0,255,255,0.05));
+  border-color: rgba(0,255,255,0.5);
+  color: #0ff;
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px rgba(0,255,255,0.3), 0 6px 18px rgba(0,255,255,0.35);
+  transition: all 0.3s ease;
+}
+
+/* --- BOTTOM ACTION BUTTONS --- */
+.nav-bottom {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nav-action {
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: 16px;
+  font-size: 14px;
+  font-weight: 600;
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.12);
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
 .nav-action.youtube {
-  border-color: rgba(255, 0, 0, 0.6);
   color: #ff4d4f;
+  border-color: rgba(255,77,79,0.45);
 }
 
 .nav-action.youtube:hover {
-  background: rgba(255, 0, 0, 0.15);
-  box-shadow: 0 0 15px rgba(255, 0, 0, 0.7);
+  background: rgba(255,77,79,0.15);
+  box-shadow: 0 0 25px rgba(255,77,79,0.35);
   transform: translateY(-2px);
 }
 
-/* Patreon */
 .nav-action.patreon {
-  border-color: rgba(255, 165, 0, 0.6);
   color: #ffa500;
+  border-color: rgba(255,165,0,0.45);
 }
 
 .nav-action.patreon:hover {
-  background: rgba(255, 165, 0, 0.15);
-  box-shadow: 0 0 15px rgba(255, 165, 0, 0.7);
+  background: rgba(255,165,0,0.15);
+  box-shadow: 0 0 25px rgba(255,165,0,0.35);
   transform: translateY(-2px);
 }
 
-
-
-/* --- WERKZEUG-KARTEN CONTAINER --- */
-#tool-container {
-  padding: 30px;
-  display: grid;
-  /* Responsive Grid: mindestens 280px breite Spalten */
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 25px;
-}
-
-.tool-card {
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 16px;
-  overflow: hidden;
-  backdrop-filter: blur(6px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  transition: 0.2s;
-
-  display: flex;
-  flex-direction: column; /* vertikal stapeln */
-  justify-content: space-between; /* Header/Text oben, Button unten */
-}
-
-.tool-card:hover {
-  transform: translateY(-15px); /* Tool Card Hover kommt nach oben -> Wird hoch gehoben */ 
-  border-color: #0ff;
-  box-shadow: 0px 0px 15px 3px rgba(0, 225, 255, 0.75);
-    -webkit-box-shadow: 0px 0px 15px 3px rgba(0,255,255,0.75);
-    -moz-box-shadow: 0px 0px 15px 3px rgba(0,255,255,0.75);
-}
-
-.tool-card img {
-  width: 100%;
-  height: 150px;
-  object-fit: cover;
-}
-
-.tool-content {
-  padding: 18px;
-  flex-grow: 1; /* nimmt verbleibenden Platz ein */
-  display: flex;
-  flex-direction: column;
-}
-
-.tool-content h3 {
-  margin: 0 0 5px;
-}
-
-.tool-content p {
-  margin: 0 0 10px;
-  color: #bbb;
-  flex-grow: 1;
-}
-
-.tool-card button {
-  width: 100%;
-  padding: 10px;
-  background: #0ff; /*0ff ist mein Türkis wert*/
-  border: none;
-  border-radius: 20px;
-  cursor: pointer;
-  color: black;
-  margin-top: auto; /* schiebt den Button nach unten */
-}
-
-/* Deaktivierte "Coming Soon"-Buttons */
-.tool-card button.modal-disabled {
-  background: #ff0004 !important;
-  color: white !important;
-  cursor: not-allowed;
-  border: 0px solid #ff4d4f;
-  opacity: 0.8;
-}
-
-/* Hover für deaktiviert */
-.tool-card button.modal-disabled:hover {
-  background-color: #ff4d4f;
-  box-shadow: 0px 0px 15px 3px rgba(255, 0, 0, 0.75);
-}
-
-.tool-card.modal-disabled:hover {
-  border-color: red;
-  box-shadow: 0px 0px 15px 3px rgba(255, 0, 0, 0.75);
-}
-
-
-/* --- FOOTER BAR & CUSTOM PROFILE PICKER --- */
+/* --- FOOTER BAR (vertikal zentriert) --- */
 .profile-bar {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 65px;
-  background: rgba(255, 255, 255, 0.05);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  bottom: 20px;
+  left: 50%;               /* horizontal zentrieren */
+  transform: translateX(-50%);
+  height: 55px;             /* kleiner als vorher */
+  padding: 0 16px;
+
+  background: rgba(27, 31, 37, 0.85);
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  border: 1px solid rgba(0, 255, 255, 0.2);
+  border-radius: 16px;
+
+  display: inline-flex;      /* passt sich der Inhaltbreite an */
+  align-items: center;       /* vertikal zentriert */
+  justify-content: center;
+  gap: 15px;
+
+  box-shadow: 0 6px 25px rgba(0,0,0,0.35);
+  z-index: 200;
+}
+
+/* --- GAME SWITCH --- */
+.game-switch {
   display: flex;
   align-items: center;
-  padding: 0 25px;
-  gap: 20px;
-  backdrop-filter: blur(10px);
+  gap: 6px;  /* enger zusammen */
 }
 
 .game-switch button {
-  background: none;
-  border: 2px solid #555;
-  padding: 7px 14px;
-  border-radius: 8px;
-  color: #aaa;
-  cursor: pointer;
-  align-items: center;
-  gap: 10px;
-  justify-content: center;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(0,255,255,0.25);
+  color: #0ff;
   font-weight: bold;
+  font-size: 13px;          /* kleiner */
+  border-radius: 8px;       /* eleganter */
+  padding: 4px 10px;        /* kompakter */
+  display: flex;
+  align-items: center;
+  gap: 6px;                 /* enger zusammen */
+  cursor: pointer;
+  transition: all 0.25s ease;
+  height: 34px;             /* etwas niedriger */
 }
 
 .game-switch button.active {
   background: #0ff;
   color: black;
+  box-shadow: 0 0 10px #0ff;
 }
 
 .game-switch button:disabled {
-  background-color: #ddd; /* Hellgrauer Hintergrund */
-  color: #888; /* Dunklerer Text */
-  cursor: not-allowed; /* Zeigt ein "Stopp"-Symbol beim Hover */
-  border-color: #ccc;
+  background: rgba(255,255,255,0.02);
+  color: #555;
+  border-color: rgba(255,255,255,0.05);
+  cursor: not-allowed;
 }
 
-.game-switch button img {
-     /* Setzt eine konsistente Größe für beide Logos */
-    width: 20px; 
-    height: 20px;
-    /* Größenangaben im HTML (sizes="15px") werden hier überschrieben */
-}
-
-.game-switch button span {
-  transform: translateY(-15px);
-}
-
+/* --- PROFILE & SAVE PICKER --- */
 .profile-picker,
 .save-picker {
-  position: relative; /* Wichtig für die Positionierung des Dropdowns */
-  background: rgba(255, 255, 255, 0.08);
-  padding: 8px 12px;
-  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1;
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 10px;
+  background: rgba(0,255,255,0.05);
+  border: 1px solid rgba(0,255,255,0.15);
+  border-radius: 10px;
+  padding: 4px 10px;
   cursor: pointer;
-  width: auto;
+  transition: all 0.25s ease;
+  height: 34px;
 }
 
-/* Der Pfeil-Button im Picker */
+.profile-picker:hover,
+.save-picker:hover {
+  background: rgba(0,255,255,0.1);
+  box-shadow: 0 0 10px rgba(0,255,255,0.3);
+}
+
+.profile-picker span,
+.save-picker span {
+  line-height: 1;
+  font-size: 13px;
+}
+
 .profile-picker button,
 .save-picker button {
   background: none;
   border: none;
   color: #0ff;
+  font-size: 14px;
   cursor: pointer;
   padding: 0;
   margin: 0;
 }
 
-.status-message {
-  color: red;
-  font-weight: bold;
+/* --- DROPDOWN LIST --- */
+.custom-dropdown-list {
+  top: -260px; /* über Picker anzeigen */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 240px;
+  max-height: 250px;
+  overflow-y: auto;
+  border-radius: 10px;
+  backdrop-filter: blur(14px) saturate(150%);
+  background: rgba(27,31,37,0.95);
+  border: 1px solid rgba(0,255,255,0.2);
+  box-shadow: 0 8px 20px rgba(0,255,255,0.25);
+  z-index: 250;
 }
 
+/* --- REFRESH BUTTON --- */
 .refresh-btn {
-  margin-left: auto; /* Schiebt den Button ganz nach rechts */
-  background: #111;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(0,255,255,0.1);
   border: 1px solid #0ff;
   color: #0ff;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
   cursor: pointer;
+  transition: all 0.25s ease;
 }
 
 .refresh-btn:hover {
-  margin-left: auto; /* Schiebt den Button ganz nach rechts */
-  background: #111;
-  border: 2px solid rgb(0, 255, 85);
-  color: rgb(0, 255, 21);
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  cursor: pointer;
-  /* hier kommt der Grüne Glow effect! 
-  Reinfolge = horizontal / vertical / blur radius / spread radius / FARBE und GAMMA */ 
-  box-shadow: 0px 0px 15px 3px rgba(0,255,55,0.75);
-    -webkit-box-shadow: 0px 0px 15px 3px rgba(0,255,55,0.75);
-    -moz-box-shadow: 0px 0px 15px 3px rgba(0,255,55,0.75);
+  background: rgba(0,255,255,0.25);
+  box-shadow: 0 0 15px #0ff;
+  transform: translateY(-2px);
 }
 
-/* Statusmeldung (im HTML nun separat platziert)
-#profile-status {
-     Styles wie im HTML Inline definiert, kann hier überschrieben werden 
-} */
-
-/* --- CUSTOM DROPDOWN LIST STYLES --- */
-.custom-dropdown-list {
-  display: none;
+/* --- FLEX VERTEILUNG: enger & zentral --- */
+.profile-bar > .game-switch,
+.profile-bar > .profile-picker,
+.profile-bar > .save-picker,
+.profile-bar > .refresh-btn {
+  flex-shrink: 0;
+}
+/* --- OPTIONAL: Balken hinter den Inhalten abschneiden --- */
+.profile-bar::after {
+  content: '';
   position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 250px; /* Breite beibehalten */
-
-  background: #1b1f25;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  max-height: 250px;
-  overflow-y: scroll; /* Muss 'scroll' oder 'auto' sein, damit es funktioniert */
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
-  z-index: 10;
-  list-style: none;
-  padding: 0;
-  margin: 0;
-
-  /* Scrollbar ausblenden in Firefox */
-  scrollbar-width: none;
-  /* Scrollbar ausblenden in IE/Edge Legacy */
-  -ms-overflow-style: none;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  border-radius: 16px;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgba(0,255,255,0.15);
 }
 
-/* Scrollbar ausblenden in Chrome, Safari, Edge, Opera */
-.custom-dropdown-list::-webkit-scrollbar {
-  display: none;
+/* --- RESPONSIVE --- */
+@media (max-width: 1024px) {
+  .profile-bar {
+    left: 15px;
+    right: 15px;
+  }
 }
 
-.custom-dropdown-list.show {
-  display: block;
-}
 
-/* Stil für die einzelnen Einträge (Dropdown-Items) */
-.dropdown-item {
-  padding: 15px 15px; /* <-- HIER: Padding vergrößert das Feld vertikal */
-  cursor: pointer;
-
-  /* Hervorhebung der Trennung zwischen Einträgen */
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15); /* etwas stärkerer Rand */
-
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  border-radius: 10px;
-
-  /* Optional: Leichte Schatten oder Rand bei Hover zur Hervorhebung */
-  transition: background 0.2s;
-}
-
-.dropdown-item:last-child {
-  border-bottom: none; /* Kein Rand beim letzten Element */
-}
-
-.dropdown-item:hover {
-  background: rgba(0, 255, 255, 0.15);
-}
-
-/* --- MODAL STYLES --- */
+/* --- MODALE --- */
 .modal-backdrop {
   display: none;
   justify-content: center;
   align-items: center;
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-
-  /* Weichzeichner Effekt*/
+  background: rgba(0,0,0,0.4);
   backdrop-filter: blur(8px);
+  z-index: 200;
 }
 
 .modal-box {
@@ -369,14 +352,17 @@ nav .link-btn:hover {
   padding: 25px;
   border-radius: 12px;
   width: 350px;
-  position: relative; /* Wichtig für absolute Positionierung interner Elemente */
+  max-height: calc(100vh - 10px); /* gesamte Höhe minus 5px oben und unten */
+  overflow-y: auto; /* Scrollbar bei Bedarf */
+  margin: 5px auto; /* 5px Abstand oben/unten */
+  position: relative;
 }
 
 .modal-box input {
   width: 100%;
   padding: 10px;
   margin: 10px 0 20px;
-  box-sizing: border-box; /* Stellt sicher, dass padding die Breite nicht überschreitet */
+  box-sizing: border-box;
   background: #333;
   border: 1px solid #555;
   color: white;
@@ -402,6 +388,7 @@ nav .link-btn:hover {
   color: white;
   font-weight: bold;
 }
+
 #modalTextApply,
 #modalNumberApply,
 #modalSliderApply {
@@ -410,60 +397,184 @@ nav .link-btn:hover {
   font-weight: bold;
 }
 
+/* --- TOOL CARDS --- */
+#tool-container {
+  top: 0;                 /* immer oben starten */
+  left: 230px;            /* Sidebar-Breite */
+  right: 0;               /* bis zum rechten Rand */
+  bottom: 60px;          /* 110px Platz unten */
+  padding: 30px 40px 0;   /* oben 0, rechts/links 40px */
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 25px;
+  overflow-y: auto;       /* scrollt nur der Container */
+}
 
 
+.tool-card {
+  margin-top: 15px;
+  background: rgba(255, 255, 255, 0.045);
+  border-radius: 16px;
+  overflow: hidden;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: 0.4s;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
 
-/* --- TOGGLE SWITCH STYLES (für Checkbox Modal) --- */
+.tool-card:hover {
+  transform: translateY(-10px);
+  border-color: rgba(0,255,255,0.6);
+  box-shadow: 0 8px 30px rgba(0,255,255,0.25);
+}
 
-/* Das originale input-Element verstecken (ID in HTML auf modalSliderInput geändert) */
+.tool-card img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+}
+
+.tool-content {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.tool-content h3 {
+  margin: 0 0 5px;
+}
+
+.tool-content p {
+  margin: 0 0 10px;
+  color: #bbb;
+  flex-grow: 1;
+}
+
+.tool-card button {
+  width: 100%;
+  font-weight: 600;
+  padding: 10px;
+  background: #0ff;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  color: black;
+  margin-top: auto;
+}
+
+.tool-card button.modal-disabled {
+  background: #ff0004 !important;
+  color: white !important;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.tool-card button.modal-disabled:hover {
+  background-color: #ff4d4f;
+  box-shadow: 0px 0px 15px 3px rgba(255, 0, 0, 0.75);
+}
+
+.tool-card.modal-disabled:hover {
+  border-color: red;
+  box-shadow: 0px 0px 15px 3px rgba(255, 0, 0, 0.75);
+}
+
+/* --- CUSTOM DROPDOWN LIST --- */
+.custom-dropdown-list {
+  display: none;
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 250px;
+  background: rgba(27,31,37,0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  max-height: 250px;
+  backdrop-filter: blur(14px);
+  overflow-y: scroll;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.3);
+  z-index: 10;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.custom-dropdown-list::-webkit-scrollbar {
+  display: none;
+}
+
+.custom-dropdown-list.show {
+  display: block;
+}
+
+.dropdown-item {
+  padding: 15px 15px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  border-radius: 10px;
+  transition: background 0.2s;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item:hover {
+  background: rgba(0, 255, 255, 0.15);
+}
+
+/* --- TOGGLE SWITCH --- */
 input[type="checkbox"].toggle-checkbox {
   display: none;
 }
 
-/* Das Styling für den Schieberegler (Label mit der Klasse checkboxSlider) */
 .checkboxSlider {
   background-color: #ccc;
-  bottom: auto; /* Positionierung korrigiert */
-  cursor: pointer;
-  left: auto;
-  /* absolute Positionierung innerhalb des modal-box entfernen, um es im Flow zu lassen */
   position: relative;
-  right: auto;
-  top: auto;
-  transition: 0.4s;
-  display: block; /* Nimmt Platz ein */
+  display: block;
   margin: 10px 0 20px 0;
-  width: 60px; /* Größe definiert */
+  width: 60px;
   height: 34px;
-  border-radius: 34px; /* Runde Form für den gesamten Schieberegler */
+  border-radius: 34px;
+  cursor: pointer;
+  transition: 0.4s;
 }
 
-/* Der innere Kreis */
 .checkboxSlider::before {
-  background-color: #fff;
-  bottom: 4px;
   content: "";
+  position: absolute;
+  width: 26px;
   height: 26px;
   left: 4px;
-  position: absolute;
+  bottom: 4px;
+  background-color: #fff;
+  border-radius: 50%;
   transition: 0.4s;
-  width: 26px;
-  border-radius: 50%; /* Runde Form für den Kreis */
 }
 
-/* Zustand, wenn die Checkbox aktiviert ist (via General Sibling Combinator ~) */
-/* Wir nutzen das "for" Attribut des Labels und die ID des Input */
 #modalSliderInput:checked ~ .checkboxSlider {
-  background-color: #66bb6a; /* Grüne Farbe bei Aktivierung */
+  background-color: #66bb6a;
 }
 
-/* Bewegung des Kreises nach rechts, wenn aktiviert */
 #modalSliderInput:checked ~ .checkboxSlider::before {
   transform: translateX(15px);
 }
 
-
-/* -------------------- MULTI MODAL STYLING -------------------- */
+/* --- MULTI MODAL --- */
 #modalMultiContent .multi-row {
   display: flex;
   flex-direction: column;
@@ -488,7 +599,6 @@ input[type="checkbox"].toggle-checkbox {
   margin-bottom: 10px;
 }
 
-/* Checkbox / Slider in Multi-Modal */
 #modalMultiContent input[type="checkbox"].toggle-checkbox {
   display: none;
 }
@@ -525,7 +635,6 @@ input[type="checkbox"].toggle-checkbox {
   transform: translateX(26px);
 }
 
-/* Buttons im Multi-Modal */
 #modalMulti .modal-actions button {
   padding: 8px 16px;
   border-radius: 5px;
@@ -545,6 +654,7 @@ input[type="checkbox"].toggle-checkbox {
   font-weight: bold;
 }
 
+/* --- SKILLS SLIDER --- */
 .slider-value {
   min-width: 24px;
   font-weight: bold;
@@ -572,14 +682,12 @@ input[type="checkbox"].toggle-checkbox {
   appearance: none;
 }
 
-/* Slider Track */
 .skill-slider::-webkit-slider-runnable-track {
   height: 8px;
   background: #444;
   border-radius: 6px;
 }
 
-/* Slider Filled (Orange) */
 .skill-slider::-webkit-slider-thumb {
   appearance: none;
   width: 20px;
@@ -590,7 +698,6 @@ input[type="checkbox"].toggle-checkbox {
   margin-top: -6px;
 }
 
-/* Firefox */
 .skill-slider::-moz-range-thumb {
   width: 20px;
   height: 20px;
