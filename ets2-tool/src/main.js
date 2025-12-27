@@ -277,4 +277,13 @@ document.addEventListener("DOMContentLoaded", () => {
       alert("YouTube konnte nicht geöffnet werden.");
     }
   });
+  githubBtn.addEventListener("click", async () => {
+    try {
+      await openUrl("https://github.com/xLieferant/Save-Edit-Tool");
+    } catch (err) {
+      console.error("Fehler beim Öffnen von GitHub:", err);
+      alert("GitHub konnte nicht geöffnet werden.");
+    }
+  });
 });
+

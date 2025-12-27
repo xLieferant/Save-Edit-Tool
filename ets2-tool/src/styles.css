@@ -223,6 +223,18 @@ body {
   transform: translateY(-2px);
 }
 
+.nav-action.github {
+  color: #66bb6a;
+  border-color: #76f37c;
+}
+
+.nav-action.github:hover {
+  background: rgba(102,187,106,0.15);
+  box-shadow: 0 0 25px rgba(99, 206, 104, 0.35);
+  transform: translateY(-2px);
+}
+
+
 /* --- PROFILE BAR --- */
 .profile-bar {
   position: fixed;
