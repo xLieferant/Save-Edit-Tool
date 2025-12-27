@@ -9,21 +9,24 @@ body {
 /* --- SIDEBAR FIXIEREN --- */
 .nav-wrapper {
   position: fixed;
-  top: 20px;
-  left: 10px; /* weiter links */
-  bottom: 20px;
-  width: 240px; /* minimal breiter für mehr Platz */
+  top: 60px;
+  left: 15px; /* weiter links */
+  bottom: 15px;
+  width: 190px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.08);/* minimal breiter für mehr Platz */
   display: flex;
   flex-direction: column;
   padding: 20px 16px;
-  background: rgba(255, 255, 255, 0.07);
+  /* background: rgba(255, 255, 255, 0.07); */
+  background: rgba(150, 200, 165, 0.07);
   backdrop-filter: blur(24px) saturate(150%);
   -webkit-backdrop-filter: blur(24px) saturate(150%);
   border-radius: 24px;
   border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow: 0 25px 65px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08);
   z-index: 100;
-  transition: left 0.3s ease;
+  transition: left 0.4s ease;
 }
 
 /* --- CONTENT NEBEN SIDEBAR --- */
@@ -74,24 +77,127 @@ body {
   transition: all 0.3s ease;
 }
 
-/* --- FOOTER BAR --- */
+/* --- FOOTER BAR & CUSTOM PROFILE PICKER --- */
 .profile-bar {
   position: fixed;
   bottom: 20px;
-  left: 260px; /* Start an Sidebar */
-  right: 30px;
+  left: 260px;
+  right: 15px;
   height: 70px;
-  background: rgba(255,255,255,0.06);
+
+  background: rgba(150, 200, 165, 0.07);
   backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: 18px;
+
   display: flex;
   align-items: center;
   gap: 20px;
   padding: 0 22px;
+
   box-shadow: 0 10px 35px rgba(0,0,0,0.45);
   z-index: 90;
 }
+
+.game-switch button {
+  background: none;
+  border: 2px solid #555;
+  padding: 7px 14px;
+  border-radius: 8px;
+  color: #aaa;
+  cursor: pointer;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.game-switch button.active {
+  background: #0ff;
+  color: black;
+}
+
+.game-switch button:disabled {
+  background-color: #383838; /* Hellgrauer Hintergrund */
+  color: #888; /* Dunklerer Text */
+  cursor: not-allowed; /* Zeigt ein "Stopp"-Symbol beim Hover */
+  border-color: #ccc;
+}
+
+.game-switch button img {
+     /* Setzt eine konsistente Größe für beide Logos */
+    width: 20px; 
+    height: 20px;
+    /* Größenangaben im HTML (sizes="15px") werden hier überschrieben */
+}
+
+.game-switch button span {
+  transform: translateY(-15px);
+}
+
+.profile-picker,
+.save-picker {
+  position: relative; /* Wichtig für die Positionierung des Dropdowns */
+  background: rgba(255, 255, 255, 0.08);
+  padding: 8px 12px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  cursor: pointer;
+  width: auto;
+}
+
+/* Der Pfeil-Button im Picker */
+.profile-picker button,
+.save-picker button {
+  background: none;
+  border: none;
+  color: #0ff;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+}
+
+.status-message {
+  color: red;
+  font-weight: bold;
+}
+
+.refresh-btn {
+  margin-left: auto; /* Schiebt den Button ganz nach rechts */
+  background: #111;
+  border: 1px solid #0ff;
+  color: #0ff;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+}
+
+.refresh-btn:hover {
+  margin-left: auto; /* Schiebt den Button ganz nach rechts */
+  background: #111;
+  border: 2px solid rgb(0, 255, 85);
+  color: rgb(0, 255, 21);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  /* hier kommt der Grüne Glow effect! 
+  Reinfolge = horizontal / vertical / blur radius / spread radius / FARBE und GAMMA */ 
+  box-shadow: 0px 0px 15px 3px rgba(0,255,55,0.75);
+    -webkit-box-shadow: 0px 0px 15px 3px rgba(0,255,55,0.75);
+    -moz-box-shadow: 0px 0px 15px 3px rgba(0,255,55,0.75);
+}
+
+/* Statusmeldung (im HTML nun separat platziert)
+#profile-status {
+     Styles wie im HTML Inline definiert, kann hier überschrieben werden 
+} */
+
 
 /* --- MODALE --- */
 .modal-backdrop {
@@ -306,127 +412,6 @@ body {
   box-shadow: 0px 0px 15px 3px rgba(255, 0, 0, 0.75);
 }
 
-
-/* --- FOOTER BAR & CUSTOM PROFILE PICKER --- */
-.profile-bar {
-  position: fixed;
-  bottom: 20px;
-  left: 260px;
-  right: 30px;
-  height: 70px;
-
-  background: rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 18px;
-
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 0 22px;
-
-  box-shadow: 0 10px 35px rgba(0,0,0,0.45);
-  z-index: 90;
-}
-
-.game-switch button {
-  background: none;
-  border: 2px solid #555;
-  padding: 7px 14px;
-  border-radius: 8px;
-  color: #aaa;
-  cursor: pointer;
-  align-items: center;
-  gap: 10px;
-  justify-content: center;
-  font-weight: bold;
-}
-
-.game-switch button.active {
-  background: #0ff;
-  color: black;
-}
-
-.game-switch button:disabled {
-  background-color: #ddd; /* Hellgrauer Hintergrund */
-  color: #888; /* Dunklerer Text */
-  cursor: not-allowed; /* Zeigt ein "Stopp"-Symbol beim Hover */
-  border-color: #ccc;
-}
-
-.game-switch button img {
-     /* Setzt eine konsistente Größe für beide Logos */
-    width: 20px; 
-    height: 20px;
-    /* Größenangaben im HTML (sizes="15px") werden hier überschrieben */
-}
-
-.game-switch button span {
-  transform: translateY(-15px);
-}
-
-.profile-picker,
-.save-picker {
-  position: relative; /* Wichtig für die Positionierung des Dropdowns */
-  background: rgba(255, 255, 255, 0.08);
-  padding: 8px 12px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  cursor: pointer;
-  width: auto;
-}
-
-/* Der Pfeil-Button im Picker */
-.profile-picker button,
-.save-picker button {
-  background: none;
-  border: none;
-  color: #0ff;
-  cursor: pointer;
-  padding: 0;
-  margin: 0;
-}
-
-.status-message {
-  color: red;
-  font-weight: bold;
-}
-
-.refresh-btn {
-  margin-left: auto; /* Schiebt den Button ganz nach rechts */
-  background: #111;
-  border: 1px solid #0ff;
-  color: #0ff;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  cursor: pointer;
-}
-
-.refresh-btn:hover {
-  margin-left: auto; /* Schiebt den Button ganz nach rechts */
-  background: #111;
-  border: 2px solid rgb(0, 255, 85);
-  color: rgb(0, 255, 21);
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  cursor: pointer;
-  /* hier kommt der Grüne Glow effect! 
-  Reinfolge = horizontal / vertical / blur radius / spread radius / FARBE und GAMMA */ 
-  box-shadow: 0px 0px 15px 3px rgba(0,255,55,0.75);
-    -webkit-box-shadow: 0px 0px 15px 3px rgba(0,255,55,0.75);
-    -moz-box-shadow: 0px 0px 15px 3px rgba(0,255,55,0.75);
-}
-
-/* Statusmeldung (im HTML nun separat platziert)
-#profile-status {
-     Styles wie im HTML Inline definiert, kann hier überschrieben werden 
-} */
 
 /* --- CUSTOM DROPDOWN LIST STYLES --- */
 .custom-dropdown-list {
