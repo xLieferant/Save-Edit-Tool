@@ -290,22 +290,26 @@ body {
   bottom: 100%;
   left: 50%;
   transform: translateX(-50%);
-  width: 250px;
-  background: rgba(27,31,37,0.9);
-  border: 1px solid rgba(255,255,255,0.1);
+  width: 250px; /* Breite beibehalten */
+
+  background: #1b1f25;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   max-height: 250px;
-  backdrop-filter: blur(14px);
-  overflow-y: auto;
-  box-shadow: 0 -4px 12px rgba(0,0,0,0.3);
+  overflow-y: scroll; /* Muss 'scroll' oder 'auto' sein, damit es funktioniert */
+  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
   z-index: 10;
   list-style: none;
   padding: 0;
   margin: 0;
+
+  /* Scrollbar ausblenden in Firefox */
   scrollbar-width: none;
+  /* Scrollbar ausblenden in IE/Edge Legacy */
   -ms-overflow-style: none;
 }
 
+/* Scrollbar ausblenden in Chrome, Safari, Edge, Opera */
 .custom-dropdown-list::-webkit-scrollbar {
   display: none;
 }
@@ -314,24 +318,33 @@ body {
   display: block;
 }
 
+/* Stil für die einzelnen Einträge (Dropdown-Items) */
 .dropdown-item {
-  padding: 15px;
+  padding: 15px 15px; /* <-- HIER: Padding vergrößert das Feld vertikal */
   cursor: pointer;
-  border-bottom: 1px solid rgba(255,255,255,0.15);
+
+  /* Hervorhebung der Trennung zwischen Einträgen */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15); /* etwas stärkerer Rand */
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: #fff;
   display: flex;
   align-items: center;
   gap: 15px;
   border-radius: 10px;
+
+  /* Optional: Leichte Schatten oder Rand bei Hover zur Hervorhebung */
   transition: background 0.2s;
 }
 
 .dropdown-item:last-child {
-  border-bottom: none;
+  border-bottom: none; /* Kein Rand beim letzten Element */
 }
 
 .dropdown-item:hover {
-  background: rgba(0,255,255,0.15);
+  background: rgba(0, 255, 255, 0.15);
 }
 
 /* --- REFRESH BUTTON --- */
@@ -357,6 +370,16 @@ body {
 }
 
 /* --- MODALS & MULTI MODAL --- */
+
+.modal-box {
+  background: #1b1f25;
+  padding: 25px;
+  border-radius: 12px;
+  width: 350px;
+  position: relative; /* Wichtig für absolute Positionierung interner Elemente */
+}
+
+
 .modal-backdrop {
   display: none;
   justify-content: center;
@@ -368,16 +391,15 @@ body {
   z-index: 200;
 }
 
-.modal-box,
-#modalMultiContent {
-  background: #1b1f25;
-  padding: 25px;
-  border-radius: 12px;
-  width: 350px;
-  max-height: calc(100vh - 10px);
-  overflow-y: auto;
-  margin: 5px auto;
-  position: relative;
+#modalMultiContent .multi-row {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 15px;
+}
+
+#modalMultiContent label {
+  margin-bottom: 5px;
+  font-weight: bold;
 }
 
 .modal-box input,
