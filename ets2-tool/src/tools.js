@@ -108,6 +108,7 @@ export const tools = {
 
         if (newValue !== null) {
           await invoke("edit_player_experience", { value: newValue });
+          showToast("XP sucessfully saved!", "success");
 
           // 🔴 WICHTIG: Frontend-State sofort aktualisieren
           window.currentProfileData.xp = newValue;
@@ -135,6 +136,7 @@ export const tools = {
 
         if (newValue !== null) {
           await invoke("edit_player_money", { value: newValue });
+          showToast("Money sucessfully saved!", "success");
 
           // 🔴 WICHTIG: Frontend-State sofort aktualisieren
           window.currentProfileData.money = newValue;
@@ -220,6 +222,7 @@ export const tools = {
           });
           console.log("Skills to save:", res);
           await loadQuicksave(); // Daten neu laden
+          showToast("Skills sucessfully saved!", "success");
         }
       },
     },
@@ -262,7 +265,7 @@ export const tools = {
     {
       title: "Color Theme",
       desc: "Change the UI theme",
-      img: "images/comingsoon.png",
+      img: "images/themeChooser.png",
       action: async () => {
         const currentTheme = localStorage.getItem("theme") || "dark";
 
@@ -277,6 +280,7 @@ export const tools = {
         ]);
 
         if (!res) return;
+        showToast("Color Theme sucessfully changed!", "success");
 
         const newTheme = res.theme;
 
@@ -303,6 +307,7 @@ export const tools = {
           const value = res === 1 ? 128 : 8;
           await invoke("edit_convoy_value", { value });
           await loadBaseConfig();
+          showToast("Convoy sucessfully changed!", "success");
         }
       },
     },
@@ -359,11 +364,10 @@ export const tools = {
 
           await invoke("edit_traffic_value", { value: clamped });
           window.baseConfig.traffic = clamped;
-
-          console.log("[Traffic] gesetzt auf", clamped);
+          showToast("Trafic Value sucessfully changed!", "success");
         } catch (err) {
           console.error("Traffic Modal Fehler:", err);
-          alert("Traffic-Wert konnte nicht geändert werden");
+          showToast("Trafic Value not sucessfully changed!", "error");
         }
       },
     },
@@ -379,6 +383,7 @@ export const tools = {
         if (newValue !== null) {
           await invoke("edit_parking_doubles_value", { value: newValue });
           await loadProfileSaveConfig();
+          showToast("Parking doubles sucessfully changed!", "success");
         }
       },
     },
@@ -406,6 +411,7 @@ export const tools = {
           await invoke("edit_developer_value", { value: res.developer });
           await invoke("edit_console_value", { value: res.console });
           await loadBaseConfig();
+          showToast("Developer and Console mode sucessfully changed!", "success");
         }
       },
     },

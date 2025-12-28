@@ -55,7 +55,7 @@ const defaultTabBtn = document.querySelector(".nav-btn.active");
 if (defaultTabBtn) loadTools(defaultTabBtn.dataset.tab);
 
 document.addEventListener("DOMContentLoaded", () => {
-  const savedTheme = localStorage.getItem("theme") || "dark";
+  const savedTheme = localStorage.getItem("theme") || "neon";
   document.body.classList.remove("theme-dark", "theme-light", "theme-neon");
   document.body.classList.add(`theme-${savedTheme}`);
 });
@@ -305,7 +305,7 @@ export function openModalMulti(title, config = []) {
         }
       });
 
-      console.log("[app.js] Multi-Modal 'Apply' geklickt, Werte:", result);
+      // console.log("[app.js] Multi-Modal 'Apply' geklickt, Werte:", result);
       cleanup();
       resolve(result);
     }

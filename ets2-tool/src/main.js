@@ -41,7 +41,7 @@ function getToastIcon(type) {
     case "error":   return "✖";
     case "warning": return "⚠";
     case "info":
-    default:        return "ℹ";
+    default:        return "U+0069";
   }
 }
 
@@ -198,6 +198,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const profiles = await invoke("find_ets2_profiles");
       profileStatus.textContent = `${profiles.length} profiles found`;
+      showToast("Profiles found!", "success");
 
       profiles.forEach((p) => {
         if (!p.success) return;
@@ -219,6 +220,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (err) {
       profileStatus.textContent = "Scan fehlgeschlagen";
       console.error(err);
+      showToast("No profiles found!", "error");
     }
   });
 
@@ -243,9 +245,11 @@ document.addEventListener("DOMContentLoaded", () => {
       await loadAllTrucks();
 
       profileStatus.textContent = "Profile loaded";
+      showToast("Profil succesfully loaded!", "success");
       loadTools(activeTab);
     } catch (err) {
       profileStatus.textContent = "Error loading profile";
+      showToast("Profil was not loaded!", "error");
       console.error(err);
     }
   }
@@ -257,9 +261,6 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const data = await invoke("read_all_save_data");
       window.currentProfileData = data;
-      if (moneyDisplay)
-        moneyDisplay.textContent = `Geld: ${data.money.toLocaleString()} €`;
-      if (xpDisplay) xpDisplay.textContent = `XP: ${data.xp.toLocaleString()}`;
     } catch (err) {
       console.error(err);
     }

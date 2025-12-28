@@ -8,12 +8,12 @@ use tauri::command;
 
 #[command]
 pub async fn get_all_trucks(profile_path: String) -> Result<Vec<ParsedTruck>, String> {
-    log!("get_all_trucks: Profil {}", profile_path);
+    // log!("get_all_trucks: Profil {}", profile_path);
 
     let path = format!("{}/save/quicksave/game.sii", profile_path);
 
     let content = decrypt_if_needed(Path::new(&path)).map_err(|e| {
-        log!("Decrypt Fehler: {}", e);
+        // log!("Decrypt Fehler: {}", e);
         e
     })?;
 
@@ -25,12 +25,12 @@ pub async fn get_all_trucks(profile_path: String) -> Result<Vec<ParsedTruck>, St
 
 #[command]
 pub async fn get_player_truck(profile_path: String) -> Result<ParsedTruck, String> {
-    log!("get_player_truck: Profil {}", profile_path);
+    // log!("get_player_truck: Profil {}", profile_path);
 
     let path = format!("{}/save/quicksave/game.sii", profile_path);
 
     let content = decrypt_if_needed(Path::new(&path)).map_err(|e| {
-        log!("Decrypt Fehler: {}", e);
+        // log!("Decrypt Fehler: {}", e);
         e
     })?;
 
