@@ -9,6 +9,8 @@
     "main"
   ],
   "permissions": [
-    "updater:default"
+    "updater:default",
+    "core:app:allow-version",
+    "core:app:default"
   ]
 }
