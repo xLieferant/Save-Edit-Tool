@@ -1,7 +1,7 @@
 import { loadTools, activeTab } from "./app.js";
 import { applySetting } from "./js/applySetting.js";
 
-const { app, open } = window.__TAURI__;
+const { app } = window.__TAURI__;
 const { openUrl } = window.__TAURI__.opener;
 const { invoke } = window.__TAURI__.core;
 window.invoke = invoke; // global verfügbar
@@ -10,13 +10,41 @@ window.invoke = invoke; // global verfügbar
 // -----------------------------
 // TOAST-FUNKTION
 // -----------------------------
-window.showToast = function(message, type = "info") {
+window.showToast = function (message, type = "info") {
   const toast = document.createElement("div");
-  toast.className = `toast ${type}`;
-  toast.textContent = message;
+  toast.className = `toast toast-${type}`;
+
+  const icon = document.createElement("span");
+  icon.className = "toast-icon";
+  icon.innerHTML = getToastIcon(type);
+
+  const text = document.createElement("span");
+  text.className = "toast-text";
+  text.textContent = message;
+
+  toast.appendChild(icon);
+  toast.appendChild(text);
+
   document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 3000);
+
+  requestAnimationFrame(() => toast.classList.add("show"));
+
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 300);
+  }, 4500);
+};
+
+function getToastIcon(type) {
+  switch (type) {
+    case "success": return "✔";
+    case "error":   return "✖";
+    case "warning": return "⚠";
+    case "info":
+    default:        return "ℹ";
+  }
 }
+
 
 // -----------------------------
 // APP VERSION HILFSFUNKTION
@@ -45,30 +73,57 @@ async function initVersionInfo() {
 // UPDATE CHECK
 // -----------------------------
 async function checkForUpdate() {
+  showToast("Suche nach Updates …", "info");
+
   const currentVersion = await appVersion();
   const repo = "xLieferant/Save-Edit-Tool";
-  try {
-    const res = await fetch(
-      `https://api.github.com/repos/${repo}/releases/latest`
-    );
-    const data = await res.json();
 
-    if (data.tag_name !== `v${currentVersion}`) {
-      showToast(`Neue Version verfügbar: ${data.tag_name}`, "info");
-      console.log("Update-URL:", data.html_url);
+  try {
+    const res = await fetch(`https://api.github.com/repos/${repo}/releases/latest`);
+    const data = await res.json();
+    const latestVersion = data.tag_name.replace(/^v/, "");
+
+    const comparison = compareVersions(currentVersion, latestVersion);
+
+    if (comparison >= 0) {
+      showToast(
+          comparison === 1
+              ? "Dev-Version aktiv (neuer als Release)"
+              : "Du hast die neueste Version",
+          "success"
+      );
     } else {
-      showToast("Du hast die neueste Version!", "success");
+      showToast(`Update verfügbar: v${latestVersion}`, "warning");
+      console.log("Update:", data.html_url);
     }
-  } catch (err) {
-    console.error("Update-Check fehlgeschlagen", err);
-    showToast("Fehler beim Update-Check", "error");
+  } catch {
+    showToast("Update-Check fehlgeschlagen", "error");
   }
 }
 
 
+/**
+ * Vergleicht zwei SemVer-Strings.
+ * Gibt 1 zurück, wenn v1 > v2
+ * Gibt -1 zurück, wenn v1 < v2
+ * Gibt 0 zurück, wenn v1 == v2
+ */
+function compareVersions(v1, v2) {
+  const parts1 = v1.replace(/^v/, "").split('.').map(Number);
+  const parts2 = v2.replace(/^v/, "").split('.').map(Number);
+  for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+    const p1 = parts1[i] || 0;
+    const p2 = parts2[i] || 0;
+    if (p1 > p2) return 1;
+    if (p1 < p2) return -1;
+  }
+  return 0;
+}
+
+
 document.addEventListener("DOMContentLoaded", () => {
-  const checkUpdateBtn = document.getElementById("checkUpdateBtn");
-  checkUpdateBtn.addEventListener("click", checkForUpdate);
+  const versionBtn = document.getElementById("versionBtn");
+  versionBtn.addEventListener("click", checkForUpdate);
 
   // Optional: alle 10 Minuten automatisch prüfen
   setInterval(checkForUpdate, 10 * 60 * 1000);
