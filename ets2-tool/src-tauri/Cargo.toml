@@ -1,6 +1,6 @@
 [package]
 name = "ets2-tool"
-version = "0.2.1"
+version = "0.2.0"
 description = "A Tauri App"
 authors = ["xLieferant"]
 edition = "2021"
