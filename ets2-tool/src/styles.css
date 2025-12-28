@@ -729,3 +729,35 @@ input[type="checkbox"]:checked + .checkboxSlider::before {
   border-radius: 50%;
   cursor: pointer;
 }
+
+/* -----------------------------
+   TOAST NOTIFICATIONS
+----------------------------- */
+.toast {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  background-color: rgba(0,0,0,0.85);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 0.9em;
+  opacity: 0;
+  animation: fadein 0.3s forwards, fadeout 0.3s 2.7s forwards;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  z-index: 9999;
+}
+
+.toast.success { background-color: rgba(0, 200, 0, 0.85); }
+.toast.error   { background-color: rgba(200, 0, 0, 0.85); }
+.toast.info    { background-color: rgba(0, 150, 255, 0.85); }
+
+@keyframes fadein {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeout {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(20px); }
+}
