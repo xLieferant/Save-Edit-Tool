@@ -11,6 +11,12 @@
   "permissions": [
     "updater:default",
     "core:app:allow-version",
+    "core:app:default",
+    "updater:allow-check",
+    "updater:allow-download",
+    "updater:allow-download-and-install",
+    "updater:allow-install",
+    "core:app:allow-version",
     "core:app:default"
   ]
 }
