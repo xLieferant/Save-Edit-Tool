@@ -6,10 +6,11 @@ const { openUrl } = window.__TAURI__.opener;
 const { invoke } = window.__TAURI__.core;
 window.invoke = invoke; // global verfügbar
 
+
 // -----------------------------
 // TOAST-FUNKTION
 // -----------------------------
-function showToast(message, type = "info") {
+window.showToast = function(message, type = "info") {
   const toast = document.createElement("div");
   toast.className = `toast ${type}`;
   toast.textContent = message;
@@ -47,7 +48,9 @@ async function checkForUpdate() {
   const currentVersion = await appVersion();
   const repo = "xLieferant/Save-Edit-Tool";
   try {
-    const res = await fetch(`https://api.github.com/repos/${repo}/releases/latest`);
+    const res = await fetch(
+      `https://api.github.com/repos/${repo}/releases/latest`
+    );
     const data = await res.json();
 
     if (data.tag_name !== `v${currentVersion}`) {
@@ -61,6 +64,15 @@ async function checkForUpdate() {
     showToast("Fehler beim Update-Check", "error");
   }
 }
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  const checkUpdateBtn = document.getElementById("checkUpdateBtn");
+  checkUpdateBtn.addEventListener("click", checkForUpdate);
+
+  // Optional: alle 10 Minuten automatisch prüfen
+  setInterval(checkForUpdate, 10 * 60 * 1000);
+});
 
 // -----------------------------
 // DOMContentLoaded
@@ -190,42 +202,59 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const data = await invoke("read_all_save_data");
       window.currentProfileData = data;
-      if (moneyDisplay) moneyDisplay.textContent = `Geld: ${data.money.toLocaleString()} €`;
+      if (moneyDisplay)
+        moneyDisplay.textContent = `Geld: ${data.money.toLocaleString()} €`;
       if (xpDisplay) xpDisplay.textContent = `XP: ${data.xp.toLocaleString()}`;
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   async function loadQuicksave() {
     try {
       const data = await invoke("quicksave_game_info");
       window.currentQuicksaveData = data;
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   async function loadProfileSaveConfig() {
     try {
-      const data = await invoke("read_save_config", { profilePath: selectedProfilePath });
+      const data = await invoke("read_save_config", {
+        profilePath: selectedProfilePath,
+      });
       window.readSaveGameConfig = data;
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   async function loadBaseConfig() {
     try {
       const cfg = await invoke("read_base_config");
       window.baseConfig = cfg;
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   async function loadAllTrucks() {
     try {
       if (!selectedProfilePath) return;
-      const playerTruck = await invoke("get_player_truck", { profilePath: selectedProfilePath });
+      const playerTruck = await invoke("get_player_truck", {
+        profilePath: selectedProfilePath,
+      });
       window.playerTruck = playerTruck;
       window.allTrucks = [window.playerTruck];
-    } catch (err) { console.error(err); }
+    } catch (err) {
+      console.error(err);
+    }
   }
 
-  window.getActiveTruck = function () { return window.playerTruck || {}; };
+  window.getActiveTruck = function () {
+    return window.playerTruck || {};
+  };
 
   // -----------------------------
   // Save Money / XP
@@ -267,7 +296,10 @@ document.addEventListener("DOMContentLoaded", () => {
   // -----------------------------
   window.extractPlateText = (raw) => {
     if (!raw) return "";
-    return raw.replace(/<[^>]*>/g, "").split("|")[0].trim();
+    return raw
+      .replace(/<[^>]*>/g, "")
+      .split("|")[0]
+      .trim();
   };
 
   // -----------------------------
