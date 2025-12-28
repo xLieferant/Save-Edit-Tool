@@ -21,20 +21,28 @@ pub fn decrypt_if_needed(path: &Path) -> Result<String, String> {
         return Ok(orig.to_string());
     }
 
-    let temp_out = std::env::temp_dir().join("ets2_tool")
-        .join(format!("decoded_{}.sii", path.file_stem().unwrap().to_string_lossy()));
+    let temp_out = std::env::temp_dir().join("ets2_tool").join(format!(
+        "decoded_{}.sii",
+        path.file_stem().unwrap().to_string_lossy()
+    ));
     let _ = fs::create_dir_all(temp_out.parent().unwrap());
     let _ = fs::remove_file(&temp_out);
 
     let decrypted = if Path::new("tools/SII_Decrypt.exe").exists() {
         log!("Versuche tools/SII_Decrypt.exe für {}", path.display());
-        let output = Command::new("tools/SII_Decrypt.exe").arg(path).arg(&temp_out).output();
+        let output = Command::new("tools/SII_Decrypt.exe")
+            .arg(path)
+            .arg(&temp_out)
+            .output();
         output.map_or(false, |o| o.status.success() && temp_out.exists())
     } else {
         false
     } || {
         log!("Fallback: decrypt_truck für {}", path.display());
-        let output = Command::new("decrypt_truck").arg(path).arg(&temp_out).output();
+        let output = Command::new("decrypt_truck")
+            .arg(path)
+            .arg(&temp_out)
+            .output();
         output.map_or(false, |o| o.status.success() && temp_out.exists())
     };
 
@@ -46,7 +54,6 @@ pub fn decrypt_if_needed(path: &Path) -> Result<String, String> {
         Ok(orig.to_string())
     }
 }
-
 
 /// Erstellt ein Backup der Originaldatei als .bak
 pub fn backup_file(path: &Path) -> Result<(), String> {

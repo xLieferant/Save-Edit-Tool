@@ -6,7 +6,8 @@
     "main"
   ],
   "permissions": [
-    "opener:default"
+    "opener:default",
+    "process:default"
   ],
   "features": [
     "core:default",
