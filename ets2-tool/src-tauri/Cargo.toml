@@ -1,34 +1,41 @@
 [package]
 name = "ets2-tool"
-version = "0.2.1"
-description = "A Tauri App"
+version = "0.2.2"
+description = "Save-Edit Tool for ETS2"
 authors = ["xLieferant"]
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+edition = "2024"
+license = "MIT"
 
 [lib]
-# The `_lib` suffix may seem redundant but it is necessary
-# to make the lib name unique and wouldn't conflict with the bin name.
-# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
 name = "ets2_tool_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
-
 
 [build-dependencies]
 tauri-build = { version = "2.5.3", features = [] }
 
 [dependencies]
 tauri = { version = "2.9.5", features = [] }
-tauri-plugin-opener = "2.5.2"
-regex = "1.12.2"
-serde = { version = "1.0.228", features = ["derive"] }
+
+# Tauri Plugins
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
+tauri-plugin-opener = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+
+# Core
+serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.148"
 dirs = "6.0.0"
-decrypt_truck = "1.3.4"
-log = "0.4.29"
-chrono = "0.4.42"
-tauri-plugin-process = "2"
+once_cell = "1.19"
 
-[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
-tauri-plugin-updater = "2"
+
+# ETS2 / Tooling
+decrypt_truck = "1.3.4"
+walkdir = "2.5.0"
+regex = "1.4.2"
+
+
+# Utility
+log = "0.4"
+chrono = "0.4"
