@@ -53,7 +53,7 @@
 
   "bundle": {
     "active": true,
-    "targets": ["msi"],
+    "targets": ["msi", "nsis"],
     "createUpdaterArtifacts": true,
     "icon": [
       "icons/32x32.png",
