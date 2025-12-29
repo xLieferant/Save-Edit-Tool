@@ -3,17 +3,17 @@ use crate::utils::decrypt::decrypt_if_needed;
 use crate::utils::paths::{
     autosave_path, ets2_base_config_path, quicksave_config_path, quicksave_game_path,
 };
+use crate::utils::current_profile::{get_current_profile, require_current_profile };
 use crate::utils::regex_helper::cragex;
 use regex::Regex;
 use serde::Deserialize;
-use std::env;
 use std::fs;
 use std::path::Path;
 use tauri::command;
 
 #[command]
 pub fn edit_money(amount: i64) -> Result<(), String> {
-    let profile = env::var("CURRENT_PROFILE").map_err(|_| "Kein Profil geladen.".to_string())?;
+    let profile = require_current_profile()?;
     let path = autosave_path(&profile);
     let content = decrypt_if_needed(&path)?;
     let re = Regex::new(r"info_money_account:\s*\d+").unwrap();
@@ -25,7 +25,7 @@ pub fn edit_money(amount: i64) -> Result<(), String> {
 
 #[command]
 pub fn edit_xp(xp: i64) -> Result<(), String> {
-    let profile = env::var("CURRENT_PROFILE").map_err(|_| "Kein Profil geladen.".to_string())?;
+    let profile = require_current_profile()?;
     let path = autosave_path(&profile);
     let content = decrypt_if_needed(&path)?;
     let re = Regex::new(r"info_players_experience:\s*\d+").unwrap();
@@ -37,7 +37,7 @@ pub fn edit_xp(xp: i64) -> Result<(), String> {
 
 #[command]
 pub fn edit_level(xp: i64) -> Result<(), String> {
-    let profile = env::var("CURRENT_PROFILE").map_err(|_| "Kein Profil geladen.".to_string())?;
+    let profile = require_current_profile()?;
     let path = autosave_path(&profile);
     let content = decrypt_if_needed(&path)?;
     // Der Befehl heißt edit_level, aber ändert die XP. Das ist konsistent mit deinem JS.
@@ -57,7 +57,7 @@ pub struct EditValuePayload {
 pub fn edit_player_money(value: i64) -> Result<(), String> {
     log!("--- edit_player_money START ---");
 
-    let profile = env::var("CURRENT_PROFILE").map_err(|_| "Kein Profil geladen.".to_string())?;
+    let profile = require_current_profile()?;
 
     let path = quicksave_game_path(&profile);
     let content = decrypt_if_needed(&path)?;
@@ -82,7 +82,7 @@ pub fn edit_player_money(value: i64) -> Result<(), String> {
 pub fn edit_player_experience(value: i64) -> Result<(), String> {
     log!("--- edit_player_experience START ---");
 
-    let profile = env::var("CURRENT_PROFILE").map_err(|_| "Kein Profil geladen.".to_string())?;
+    let profile = require_current_profile()?;
 
     let path = quicksave_game_path(&profile);
     let content = decrypt_if_needed(&path)?;
@@ -105,7 +105,7 @@ pub fn edit_player_experience(value: i64) -> Result<(), String> {
 
 #[command]
 pub fn edit_truck_odometer(value: i64) -> Result<(), String> {
-    let profile = env::var("CURRENT_PROFILE").map_err(|_| "Kein Profil geladen.".to_string())?;
+    let profile = require_current_profile()?;
     let path = Path::new(&profile)
         .join("save")
         .join("quicksave")
@@ -147,7 +147,7 @@ pub fn edit_truck_odometer(value: i64) -> Result<(), String> {
 pub fn edit_truck_license_plate(value: String) -> Result<(), String> {
     log!("--- edit_truck_license_plate START ---");
 
-    let profile = env::var("CURRENT_PROFILE").map_err(|_| "Kein Profil geladen.".to_string())?;
+    let profile = require_current_profile()?;
 
     let path = quicksave_game_path(&profile);
     let content = decrypt_if_needed(&path)?;
@@ -245,7 +245,7 @@ pub fn edit_skill_value(skill: String, value: i64) -> Result<(), String> {
     log!("--- edit_skill START ---");
     log!("Skill: {}, Wert: {}", skill, value);
 
-    let profile = env::var("CURRENT_PROFILE").map_err(|_| "Kein Profil geladen.".to_string())?;
+    let profile = require_current_profile()?;
 
     let path = quicksave_game_path(&profile);
     let content = decrypt_if_needed(&path)?;
@@ -323,7 +323,7 @@ pub fn edit_traffic_value(value: i64) -> Result<(), String> {
 
 #[command]
 pub fn edit_parking_doubles_value(value: i64) -> Result<(), String> {
-    let profile = env::var("CURRENT_PROFILE").map_err(|_| "Kein Profil geladen.".to_string())?;
+    let profile = require_current_profile()?;
 
     let path = quicksave_config_path(&profile);
 
@@ -380,7 +380,7 @@ pub fn edit_config_value(payload: KeyValuePayload) -> Result<(), String> {
 
 #[command]
 pub fn edit_save_config_value(payload: KeyValuePayload) -> Result<(), String> {
-    let profile = env::var("CURRENT_PROFILE").map_err(|_| "Kein Profil geladen.".to_string())?;
+    let profile = require_current_profile()?;
     let path = quicksave_config_path(&profile);
     let content = fs::read_to_string(&path).map_err(|e| e.to_string())?;
     let re = Regex::new(&format!(r#"uset {}\s*"?.*"?"#, payload.key)).unwrap();

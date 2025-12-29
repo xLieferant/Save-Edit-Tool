@@ -21,6 +21,10 @@ fn main() {
             // profiles.rs
             commands::profiles::find_ets2_profiles,
             commands::profiles::load_profile,
+            commands::profiles::save_profiles_cache,
+            commands::profiles::read_profiles_cache,
+            commands::profiles::save_last_profile,
+            commands::profiles::read_last_profile,
             // quicksave_game.rs
             commands::quicksave_game::quicksave_game_info,
             // save_config.rs

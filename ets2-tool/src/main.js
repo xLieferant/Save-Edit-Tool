@@ -36,11 +36,15 @@ window.showToast = function (message, type = "info") {
 
 function getToastIcon(type) {
   switch (type) {
-    case "success": return "✔";
-    case "error":   return "✖";
-    case "warning": return "⚠";
+    case "success":
+      return "✔";
+    case "error":
+      return "✖";
+    case "warning":
+      return "⚠";
     case "info":
-    default:        return "ℹ";
+    default:
+      return "ℹ";
   }
 }
 
@@ -267,12 +271,171 @@ document.addEventListener("DOMContentLoaded", () => {
   // EXTERNE LINKS
   // -----------------------------
   youtubeBtn?.addEventListener("click", () =>
-      openUrl("https://www.youtube.com/@xLieferant")
+    openUrl("https://www.youtube.com/@xLieferant")
   );
   patreonBtn?.addEventListener("click", () =>
-      openUrl("https://www.patreon.com/cw/xLieferant")
+    openUrl("https://www.patreon.com/cw/xLieferant")
   );
   githubBtn?.addEventListener("click", () =>
-      openUrl("https://github.com/xLieferant/Save-Edit-Tool")
+    openUrl("https://github.com/xLieferant/Save-Edit-Tool")
   );
+  // -----------------------------
+  // PROFILE SCAN (AUTO & CACHE)
+  // -----------------------------
+  async function scanProfiles({
+    saveToBackend = true,
+    showToasts = true,
+  } = {}) {
+    profileStatus.textContent = "Scanning profiles...";
+    profileDropdownList.innerHTML = "";
+
+    try {
+      const profiles = await invoke("find_ets2_profiles");
+      profileStatus.textContent = `${profiles.length} profiles found`;
+      if (showToasts) showToast("Profiles found!", "success");
+
+      // Fill dropdown
+      profiles.forEach((p) => {
+        if (!p.success) return;
+        const item = document.createElement("div");
+        item.className = "dropdown-item";
+        item.textContent = `${p.name} (${p.path})`;
+
+        item.addEventListener("click", async () => {
+          selectedProfilePath = p.path;
+          profileNameDisplay.textContent = p.name;
+          profileDropdownList.classList.remove("show");
+
+          // Persist last profile (localStorage + backend)
+          localStorage.setItem("ets2_last_profile", p.path);
+          try {
+            await invoke("save_last_profile", {
+              profile_path: p.path
+            });
+          } catch (e) {
+            console.warn("save_last_profile failed", e);
+          }
+
+          await loadSelectedProfile();
+        });
+
+        profileDropdownList.appendChild(item);
+      });
+
+      // Save cache to localStorage and backend cache
+      try {
+        localStorage.setItem("ets2_profiles_cache", JSON.stringify(profiles));
+        if (saveToBackend) {
+          // Convert shapes to backend's expected shape: { path, name, success, message }
+          const toSave = profiles.map((p) => ({
+            path: p.path,
+            name: p.name ?? null,
+            success: !!p.success,
+            message: p.message ?? null,
+          }));
+          await invoke("save_profiles_cache", { profiles: toSave });
+        }
+      } catch (e) {
+        console.warn("Could not save profile cache:", e);
+      }
+
+      // Auto-load last profile if present
+      // Priority: backend last_profile -> localStorage last_profile -> none
+      let last = null;
+      try {
+        const remoteLast = await invoke("read_last_profile");
+        if (remoteLast) last = remoteLast;
+      } catch (e) {
+        // ignore: backend may not have been created yet
+      }
+      if (!last) {
+        last = localStorage.getItem("ets2_last_profile");
+      }
+
+      if (last) {
+        // try to find matching profile in this scan
+        const matched = profiles.find((p) => p.path === last);
+        if (matched && matched.success) {
+          selectedProfilePath = matched.path;
+          profileNameDisplay.textContent = matched.name ?? "Unknown";
+          // load without further user action
+          await loadSelectedProfile();
+          return;
+        } else {
+          // fallback: try to load last path directly (may still work)
+          selectedProfilePath = last;
+          profileNameDisplay.textContent = last;
+          try {
+            await loadSelectedProfile();
+            return;
+          } catch (e) {
+            console.warn("Autoload of last profile failed", e);
+          }
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      profileStatus.textContent = "Scan fehlgeschlagen";
+      showToast("No profiles found!", "error");
+    }
+  }
+
+  // replace old scan button handler with:
+  scanBtn?.addEventListener("click", async () => {
+    await scanProfiles({ saveToBackend: true, showToasts: true });
+  });
+
+  // -----------------------------
+  // AUTO-SCAN ON STARTUP
+  // -----------------------------
+  (async function autoScanOnStartup() {
+    // Try to read backend cache first so we can show something instantly
+    try {
+      const cached = await invoke("read_profiles_cache");
+      if (cached && cached.length) {
+        // populate dropdown from cache first (fast)
+        profileDropdownList.innerHTML = "";
+        cached.forEach((p) => {
+          if (!p.success) return;
+          const item = document.createElement("div");
+          item.className = "dropdown-item";
+          item.textContent = `${p.name} (${p.path})`;
+          item.addEventListener("click", async () => {
+            selectedProfilePath = p.path;
+            profileNameDisplay.textContent = p.name;
+            profileDropdownList.classList.remove("show");
+            localStorage.setItem("ets2_last_profile", p.path);
+            try {
+              await invoke("save_last_profile", { profile_path: p.path });
+            } catch (e) {}
+            await loadSelectedProfile();
+          });
+          profileDropdownList.appendChild(item);
+        });
+
+        // If there is a last_profile saved, try to load it
+        try {
+          const last = await invoke("read_last_profile");
+          if (last) {
+            selectedProfilePath = last;
+            profileNameDisplay.textContent = "loading last profile...";
+            await loadSelectedProfile();
+            // After we've loaded, also perform background scan to refresh cache new profiles
+            setTimeout(
+              () => scanProfiles({ saveToBackend: true, showToasts: false }),
+              500
+            );
+            return;
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+    } catch (e) {
+      // no cache available — continue to scanning
+    }
+
+    // If we reach here: no cache/last found -> do a scan now (this will create the cache)
+    await scanProfiles({ saveToBackend: true, showToasts: true });
+  })();
 });

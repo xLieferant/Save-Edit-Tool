@@ -5,3 +5,4 @@ pub mod save_game_config;
 pub mod save_game_data;
 pub mod trailers;
 pub mod trucks;
+pub mod cached_profile;

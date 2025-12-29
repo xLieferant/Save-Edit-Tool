@@ -4,7 +4,7 @@ use crate::utils::decrypt::decrypt_if_needed;
 use crate::utils::paths::quicksave_game_path;
 use crate::utils::regex_helper::cragex;
 use crate::utils::sii_parser::{parse_trailers_from_sii, parse_trucks_from_sii};
-use std::env;
+use crate::utils::current_profile::{get_current_profile, require_current_profile};
 use tauri::command;
 
 #[command]
@@ -13,7 +13,7 @@ pub async fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
     log!("Starte quicksave_game_info()");
     log!("-------------------------------------------");
 
-    let profile = env::var("CURRENT_PROFILE").map_err(|_| "Kein Profil gesetzt".to_string())?;
+    let profile = require_current_profile()?;
     log!("Profil: {}", profile);
 
     let path = quicksave_game_path(&profile);

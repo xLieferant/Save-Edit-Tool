@@ -4,9 +4,79 @@ use crate::utils::decrypt::decrypt_if_needed;
 use crate::utils::extract::extract_profile_name;
 use crate::utils::hex::decode_hex_folder_name;
 use crate::utils::paths::ets2_base_path;
+use crate::utils::current_profile::set_current_profile;
+use crate::models::cached_profile::CachedProfile;
 use std::fs;
 use tauri::command;
+use serde::{Serialize, Deserialize};
+use tauri::Manager;
+
+use std::io::Write;
+use std::path::PathBuf;
 // use std::path::Path;
+
+fn app_cache_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    // tauri::api::path::config_dir() liefert Option<PathBuf> -> v2: app.path().config_dir()
+    if let Ok(mut dir) = app.path().config_dir() {
+        dir.push("save-edit-tool"); // eigener Ordner für die App
+        if let Err(e) = fs::create_dir_all(&dir) {
+            return Err(format!("Failed to create config dir: {}", e));
+        }
+        Ok(dir)
+    } else {
+        Err("Konnte Config-Verzeichnis nicht bestimmen".into())
+    }
+}
+
+#[command]
+pub fn save_profiles_cache(app: tauri::AppHandle, profiles: Vec<CachedProfile>) -> Result<String, String> {
+    let dir = app_cache_dir(&app)?;
+    let file = dir.join("profiles_cache.json");
+    let json = serde_json::to_string_pretty(&profiles)
+        .map_err(|e| format!("Serialize error: {}", e))?;
+    fs::write(&file, json).map_err(|e| format!("Write error: {}", e))?;
+    Ok(file.display().to_string())
+}
+
+#[command]
+pub fn read_profiles_cache(app: tauri::AppHandle) -> Result<Vec<CachedProfile>, String> {
+    let dir = app_cache_dir(&app)?;
+    let file = dir.join("profiles_cache.json");
+    if !file.exists() {
+        return Ok(vec![]);
+    }
+    let content = fs::read_to_string(&file).map_err(|e| format!("Read error: {}", e))?;
+    let profiles: Vec<CachedProfile> =
+        serde_json::from_str(&content).map_err(|e| format!("Parse error: {}", e))?;
+    Ok(profiles)
+}
+
+#[command]
+pub fn save_last_profile(app: tauri::AppHandle, profile_path: String) -> Result<String, String> {
+    let dir = app_cache_dir(&app)?;
+    let file = dir.join("last_profile.json");
+    let obj = serde_json::json!({ "last_profile": profile_path });
+    let json = serde_json::to_string_pretty(&obj).map_err(|e| format!("Serialize err: {}", e))?;
+    fs::write(&file, json).map_err(|e| format!("Write err: {}", e))?;
+    Ok(file.display().to_string())
+}
+
+#[command]
+pub fn read_last_profile(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    let dir = app_cache_dir(&app)?;
+    let file = dir.join("last_profile.json");
+    if !file.exists() {
+        return Ok(None);
+    }
+    let content = fs::read_to_string(&file).map_err(|e| format!("Read error: {}", e))?;
+    let v: serde_json::Value =
+        serde_json::from_str(&content).map_err(|e| format!("Parse error: {}", e))?;
+    if let Some(p) = v.get("last_profile").and_then(|s| s.as_str()) {
+        Ok(Some(p.to_string()))
+    } else {
+        Ok(None)
+    }
+}
 
 #[command]
 pub fn find_ets2_profiles() -> Vec<ProfileInfo> {
@@ -98,10 +168,14 @@ pub fn find_ets2_profiles() -> Vec<ProfileInfo> {
 pub fn load_profile(profile_path: String) -> Result<String, String> {
     let autosave = crate::utils::paths::autosave_path(&profile_path);
     if !autosave.exists() {
-        return Err(format!("Quicksave nicht gefunden: {}", autosave.display()));
+        return Err(format!(
+            "Quicksave nicht gefunden: {}",
+            autosave.display()
+        ));
     }
 
-    std::env::set_var("CURRENT_PROFILE", &profile_path);
+    set_current_profile(profile_path.clone());
+
     log!("Profil erfolgreich geladen: {}", profile_path);
     Ok(format!("Profil geladen: {}", profile_path))
 }
