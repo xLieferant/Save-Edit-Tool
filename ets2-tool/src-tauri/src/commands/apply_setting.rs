@@ -1,10 +1,11 @@
 use crate::log;
 use crate::utils::decrypt::decrypt_if_needed;
 use crate::utils::paths::{autosave_path, ets2_base_config_path};
+use crate::utils::current_profile::{get_current_profile , require_current_profile};
 use regex::Regex;
 use serde::Deserialize;
 use serde_json::Value;
-use std::env;
+
 use std::fs;
 use tauri::command;
 
@@ -98,8 +99,7 @@ pub fn apply_setting(payload: ApplyPayload) -> Result<(), String> {
         // ---------------------------------------------------------------------
         "money" | "xp" => {
             // 1. Profil prüfen
-            let profile = env::var("CURRENT_PROFILE")
-                .map_err(|_| "Kein Profil geladen. Bitte erst ein Profil laden.".to_string())?;
+            let profile = require_current_profile()?;
 
             let path = autosave_path(&profile);
 

@@ -3,17 +3,14 @@ use crate::models::save_game_data::SaveGameData;
 use crate::utils::decrypt::decrypt_if_needed;
 use crate::utils::paths::autosave_path;
 use crate::utils::paths::ets2_base_config_path;
+use crate::utils::current_profile::{get_current_profile, require_current_profile };
 use regex::Regex;
-use std::env;
 use std::fs;
 use tauri::command;
 
 #[command]
 pub fn read_money() -> Result<i64, String> {
-    let profile = env::var("CURRENT_PROFILE").map_err(|_| {
-        log!("Error: Kein Profil geladen."); // Used here
-        "Kein Profil geladen.".to_string()
-    })?;
+    let profile = require_current_profile()?;
 
     log!("Lese Geld aus Profil: {}", profile); // Used here
     let path = autosave_path(&profile);
@@ -27,10 +24,7 @@ pub fn read_money() -> Result<i64, String> {
 
 #[command]
 pub fn read_xp() -> Result<i64, String> {
-    let profile = env::var("CURRENT_PROFILE").map_err(|_| {
-        log!("Error: Kein Profil geladen."); // Used here
-        "Kein Profil geladen.".to_string()
-    })?;
+    let profile = require_current_profile()?;
 
     log!("Lese XP aus Profil: {}", profile); // Used here
     let path = autosave_path(&profile);
@@ -44,10 +38,7 @@ pub fn read_xp() -> Result<i64, String> {
 
 #[command]
 pub fn read_all_save_data() -> Result<SaveGameData, String> {
-    let profile = env::var("CURRENT_PROFILE").map_err(|_| {
-        log!("Error: Kein Profil geladen."); // Used here
-        "Kein Profil geladen.".to_string()
-    })?;
+    let profile = require_current_profile()?;
 
     log!("Lese alle Speicherdaten aus Profil: {}", profile); // Used here
     let path = autosave_path(&profile);

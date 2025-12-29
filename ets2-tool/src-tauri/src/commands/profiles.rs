@@ -4,6 +4,7 @@ use crate::utils::decrypt::decrypt_if_needed;
 use crate::utils::extract::extract_profile_name;
 use crate::utils::hex::decode_hex_folder_name;
 use crate::utils::paths::ets2_base_path;
+use crate::utils::current_profile::set_current_profile;
 use std::fs;
 use tauri::command;
 // use std::path::Path;
@@ -98,10 +99,14 @@ pub fn find_ets2_profiles() -> Vec<ProfileInfo> {
 pub fn load_profile(profile_path: String) -> Result<String, String> {
     let autosave = crate::utils::paths::autosave_path(&profile_path);
     if !autosave.exists() {
-        return Err(format!("Quicksave nicht gefunden: {}", autosave.display()));
+        return Err(format!(
+            "Quicksave nicht gefunden: {}",
+            autosave.display()
+        ));
     }
 
-    std::env::set_var("CURRENT_PROFILE", &profile_path);
+    set_current_profile(profile_path.clone());
+
     log!("Profil erfolgreich geladen: {}", profile_path);
     Ok(format!("Profil geladen: {}", profile_path))
 }
