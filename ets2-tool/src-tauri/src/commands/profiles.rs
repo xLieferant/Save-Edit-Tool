@@ -131,44 +131,42 @@ pub fn find_profile_saves(profile_path: String) -> Result<Vec<SaveInfo>, String>
             name: None,
             success: false,
             message: None,
-            kind: SaveKind::Invalid, // NEU - Default setzen
+            kind: SaveKind::Invalid, // Default
         };
-
-        if !info_sii.exists() {
-            save.message = Some("info.sii fehlt".into());
-            saves.push(save);
-            continue;
-        }
-
-        match decrypt_if_needed(&info_sii) {
-            Ok(text) => {
-                if let Some(name) = extract_save_name(&text) {
-                    save.name = Some(name);
-                    save.success = true;
-                } else {
-                    save.message = Some("Save-Name nicht gefunden".into());
+        
+        if info_sii.exists() {
+            match decrypt_if_needed(&info_sii) {
+                Ok(text) => {
+                    save.name = extract_save_name(&text);
+                    save.success = save.name.is_some();
+                
+                    // → Klassifizieren, egal ob success true/false
+                    save.kind = if !save.success {
+                        SaveKind::Invalid
+                    } else if save.folder.to_lowercase().contains("auto")
+                        || save.folder.to_lowercase().contains("quick")
+                        || save
+                            .name
+                            .as_deref()
+                            .unwrap_or("")
+                            .to_lowercase()
+                            .contains("schnell")
+                    {
+                        SaveKind::Autosave
+                    } else {
+                        SaveKind::Manual
+                    };
                 }
-                save.kind = if !save.success {
-                    SaveKind::Invalid
-                } else if save.folder.contains("auto")
-                    || save.folder.contains("quick")
-                    || save
-                        .name
-                        .as_deref()
-                        .unwrap_or("")
-                        .to_lowercase()
-                        .contains("schnell")
-                {
-                    SaveKind::Autosave
-                } else {
-                    SaveKind::Manual
-                };
+                Err(e) => {
+                    save.message = Some(e);
+                    save.kind = SaveKind::Invalid;
+                }
             }
-            Err(e) => {
-                save.message = Some(e);
-            }
+        } else {
+            save.message = Some("info.sii fehlt".into());
+            save.kind = SaveKind::Invalid;
         }
-
+        
         saves.push(save);
     }
 

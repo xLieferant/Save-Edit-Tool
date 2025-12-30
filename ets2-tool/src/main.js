@@ -232,41 +232,47 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function scanSavesForProfile() {
-    if (!selectedProfilePath) return;
+  if (!selectedProfilePath) return;
 
-    saveDropdownList.innerHTML = "";
-    saveDropdownList.classList.add("show");
-    openSaveModalBtn.disabled = false;
+  saveDropdownList.innerHTML = "";
+  saveDropdownList.classList.add("show");
+  openSaveModalBtn.disabled = false;
 
-    try {
-      const saves = await invoke("find_profile_saves", {
-        profilePath: selectedProfilePath,
+  try {
+    const saves = await invoke("find_profile_saves", {
+      profilePath: selectedProfilePath,
+    });
+
+    // 🔹 Filter: nur Manual / Autosave + gültiger Name
+    const filteredSaves = saves.filter(
+      (s) =>
+        s.success &&
+        (s.kind === "Manual" || s.kind === "Autosave") &&
+        s.name &&
+        s.name.trim() !== ""
+    );
+
+    filteredSaves.forEach((s) => {
+      const item = document.createElement("div");
+      item.className = "dropdown-item";
+      item.textContent = s.name ?? s.folder;
+
+      item.addEventListener("click", async () => {
+        selectedSavePath = s.path;
+        window.currentSavePath = s.path;
+        saveNameDisplay.textContent = s.name ?? s.folder;
+        saveDropdownList.classList.remove("show");
+
+        await loadSelectedSave();
       });
 
-      saves.forEach((s) => {
-        if (!s.success) return;
-
-        const item = document.createElement("div");
-        item.className = "dropdown-item";
-        item.textContent = s.name ?? s.folder;
-
-        item.addEventListener("click", async () => {
-          selectedSavePath = s.path;
-          window.currentSavePath = s.path;
-
-          saveNameDisplay.textContent = s.name ?? s.folder;
-          saveDropdownList.classList.remove("show");
-
-          await loadSelectedSave();
-        });
-
-        saveDropdownList.appendChild(item);
-      });
-    } catch (e) {
-      console.error(e);
-      showToast("No saves found", "warning");
-    }
+      saveDropdownList.appendChild(item);
+    });
+  } catch (e) {
+    console.error(e);
+    showToast("No saves found", "warning");
   }
+}
 
   async function loadSelectedSave() {
     try {
