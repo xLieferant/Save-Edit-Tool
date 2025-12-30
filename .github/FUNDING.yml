@@ -1,0 +1,9 @@
+# FUNDING.yml
+# Zeigt die Sponsorenschaltflächen für dein Repository an
+
+github: [xLieferant]                # Dein GitHub Sponsors-Profil
+patreon: xLieferant                  # Dein Patreon-Profil
+custom: 
+  - "https://www.youtube.com/channel/UCrItoMYJxU7KjnFtX5zxcQw/join"   # YouTube Mitglied werden
+  - "https://streamelements.com/xlieferant-a6aef/tip"                  # Direkter Support / Trinkgeld
+  - "https://www.youtube.com/@xLieferant"                               # YouTube-Kanal
