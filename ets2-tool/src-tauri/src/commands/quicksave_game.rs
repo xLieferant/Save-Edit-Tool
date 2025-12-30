@@ -6,14 +6,19 @@ use crate::utils::regex_helper::cragex;
 use crate::utils::sii_parser::{parse_trailers_from_sii, parse_trucks_from_sii};
 use crate::utils::current_profile::{get_current_profile, require_current_profile};
 use tauri::command;
+use tauri::State;
+use crate::state::{AppProfileState, DecryptCache};
 
 #[command]
-pub async fn quicksave_game_info() -> Result<GameDataQuicksave, String> {
+pub async fn quicksave_game_info(
+        profile_state: State<'_, AppProfileState>,
+        cache: State<'_, DecryptCache>,
+) -> Result<GameDataQuicksave, String> {
     log!("-------------------------------------------");
     log!("Starte quicksave_game_info()");
     log!("-------------------------------------------");
 
-    let profile = require_current_profile()?;
+    let profile = require_current_profile(profile_state)?;
     log!("Profil: {}", profile);
 
     let path = quicksave_game_path(&profile);

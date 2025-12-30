@@ -2,54 +2,66 @@
 
 [Deutsch Version](README.de.md) |  [English Version](README.en.md) 🔴
 
-Welcome to the ETS2 Save Editor – Alex Edition. This tool is designed to help you easily modify your Euro Truck Simulator 2 profile, truck settings, and game preferences.
-🚀 Features
-🚛 Truck Tab
+Welcome to the ETS2 Save Editor – Alex Edition, a powerful yet user-friendly tool to modify your Euro Truck Simulator 2 profiles, truck settings, and game preferences.
+This project is developed as a hobby project, fully open-source, and intended for learning and customization purposes.
 
-Repair Truck: Fix your vehicle instantly (Under Development).
+# 🚀 Features
+## 🚛 Truck Tab
 
-Fuel Level: Adjust your fuel levels (Coming Soon).
-
-Telemetry: View current Truck Mileage and License Plate info (Editing coming in future updates).
+- Repair Truck – Instantly fix your vehicle (Under Development).
+- Fuel Level – Adjust fuel levels (Coming Soon).
+- Telemetry – View current truck mileage and license plate info (Editing coming in future updates).
 
 📦 Trailer Tab
+> [!NOTE] 
+> Trailer Management – Main structure implemented. Advanced editing features will be added in upcoming releases.
 
-Main structure implemented. Advanced editing functions will be added in upcoming releases.
+## 👤 Profile Tab
 
-👤 Profile Tab
+- Economy – Edit your money and XP values.
+- Skills – Manually overwrite driver skill levels.
+- Stats – Read-only view of your career progress.
 
-Economy: Edit your Money and XP values.
+## ⚙️ Settings Tab
 
-Skills: Manually overwrite driver skill levels.
+- Toggle game-wide settings including:
+- Convoy Mode
+- Traffic Density
+- Parking Doubles
+- Developer Mode
 
-Stats: Read-only view of your career progress.
+> [!NOTE] 
+> Changes require a game restart or should be applied while the game is closed.
 
-⚙️ Settings Tab
+## 🛠 Installation & Usage
 
-Toggle game-wide settings including Convoy mode, Traffic density, Parking Doubles, and Dev Mode.
+- Download – Visit the GitHub Releases [GitHub Releases](https://github.com/xLieferant/Save-Edit-Tool/releases)
+- Install – Download the latest .msi or .exe installer and run it.
+- Refresh Profiles – Open the tool and click the Refresh button to load your profiles.
+- Edit Values – Modify your desired values (money, XP, skills, etc.) and save.
+> [!TIP]
+> The tool features an auto-updater. You will be notified automatically when a new version is available.
 
-Note: Changes require a game restart or should be applied while the game is closed.
+## ⚠️ Important Notes
 
-🛠 Installation & Usage
+***Developer Info – This is a hobby project created by Alex. Everything is open-source for anyone curious to learn how it works. The idea is not to reinvent the wheel but to offer a learning tool. Feedback and contributions are welcome!***
 
-Download: Visit the GitHub Releases page.
+> [!TIP]
+> Performance – Some operations may have a slight delay due to Windows Defender scans or background processes. Optimizations are ongoing.
 
-Install: Download the latest .msi or .exe and run the installer.
+> [!Warning]
+> Uninstalling – Standard removal via Add or Remove Programs in Windows.
 
-Refresh: Open the tool and click the "Refresh" button to load your profiles.
+## 💻 Credits
 
-Edit: Modify your desired values and save.
+### Alex – Full development, design, and project management.
 
-[!TIP]
-This tool features an auto-updater. You will be notified automatically when a new version is available.
+### DecryptTruck [@CoffeSiberian](https://github.com/CoffeSiberian) 
+Used for decrypting ETS2 save files.
 
-⚠️ Important Notes
-Developer Info: This is a hobby project developed in my free time. Feedback is always welcome!
-Performance: Due to Windows Defender scans during installation and background processes, some inputs may have a slight delay. Optimizations are ongoing.
-Uninstalling: Standard removal via "Add or Remove Programs" in Windows.
+### Open-source Libraries & Tools – Tauri
+Rust crates, and other dependencies for backend and UI functionality.
 
-<img width="1042" height="883" alt="Screenshot 2025-12-25 113313" src="https://github.com/user-attachments/assets/630f6144-2ea5-4beb-b563-6b6853808646" />
-<img width="1047" height="876" alt="Screenshot 2025-12-25 113317" src="https://github.com/user-attachments/assets/f6e8f308-9ccf-4a34-86ae-63e302add05f" />
-<img width="1048" height="873" alt="Screenshot 2025-12-25 113327" src="https://github.com/user-attachments/assets/de97b834-15c7-4a23-9091-82f744038ee1" />
-<img width="1045" height="870" alt="Screenshot 2025-12-25 113333" src="https://github.com/user-attachments/assets/b8893b54-04ae-4a7e-83cd-821ca9f6e0f6" />
+### Community Feedback
+Thanks to everyone who tested and provided suggestions during development.
 

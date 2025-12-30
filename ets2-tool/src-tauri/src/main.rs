@@ -3,13 +3,18 @@
     windows_subsystem = "windows"
 )]
 
+use crate::state::{ AppProfileState, DecryptCache };
+
 mod commands;
 mod logs;
 mod models;
 mod utils;
+mod state;
 
 fn main() {
     tauri::Builder::default()
+        .manage(DecryptCache::default())
+        .manage(AppProfileState::default())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_opener::init())

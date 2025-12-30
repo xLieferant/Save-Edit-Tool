@@ -5,6 +5,8 @@ use crate::utils::current_profile::{get_current_profile , require_current_profil
 use regex::Regex;
 use serde::Deserialize;
 use serde_json::Value;
+use crate::state::AppProfileState;
+use tauri::State;
 
 use std::fs;
 use tauri::command;
@@ -32,7 +34,10 @@ fn value_to_string(v: &Value) -> String {
 }
 
 #[command]
-pub fn apply_setting(payload: ApplyPayload) -> Result<(), String> {
+pub fn apply_setting(
+    payload: ApplyPayload,
+    profile_state: State<'_, AppProfileState>,
+) -> Result<(), String> {
     let val_str = value_to_string(&payload.value);
     log!(
         "apply_setting aufgerufen: Key='{}', Value='{}'",
@@ -99,7 +104,7 @@ pub fn apply_setting(payload: ApplyPayload) -> Result<(), String> {
         // ---------------------------------------------------------------------
         "money" | "xp" => {
             // 1. Profil prüfen
-            let profile = require_current_profile()?;
+            let profile = require_current_profile(profile_state)?;
 
             let path = autosave_path(&profile);
 

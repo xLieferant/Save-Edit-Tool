@@ -1,58 +1,56 @@
 use crate::log;
+use decrypt_truck::decrypt_bin_file;
+use tauri::State;
+use crate::state::DecryptCache;
 use std::fs;
 use std::path::Path;
 use std::process::Command;
 
-/// Entschlüsselt eine .sii-Datei bei Bedarf und gibt den Inhalt zurück.
-/// Temp-Dateien werden in %TEMP%/ets2_tool erstellt, Originaldateien bleiben unberührt.
+/// Liest eine .sii-Datei und entschlüsselt sie bei Bedarf
+
 pub fn decrypt_if_needed(path: &Path) -> Result<String, String> {
     log!("decrypt_if_needed: {}", path.display());
 
-    if path.extension().and_then(|ext| ext.to_str()) != Some("sii") {
-        log!("Datei ist keine .sii, kein Entschlüsseln nötig.");
-        let bytes = fs::read(path).map_err(|e| format!("Fehler beim Lesen der Datei: {}", e))?;
+    let bytes = fs::read(path).map_err(|e| format!("Datei konnte nicht gelesen werden: {}", e))?;
+
+    // 1️⃣ Klartext?
+    if bytes.starts_with(b"SiiNunit") {
         return Ok(String::from_utf8_lossy(&bytes).to_string());
     }
 
-    let orig_bytes = fs::read(path).map_err(|e| format!("Fehler beim Lesen der Datei: {}", e))?;
-    let orig = String::from_utf8_lossy(&orig_bytes);
-    if orig.starts_with("SiiNunit") {
-        log!("Datei ist bereits entschlüsselt.");
-        return Ok(orig.to_string());
+    // 2️⃣ Nicht-binäre Datei? → einfach als Text lesen
+    if !bytes.starts_with(b"\x00") && !bytes.iter().any(|b| *b == 0) {
+        return Ok(String::from_utf8_lossy(&bytes).to_string());
     }
 
-    let temp_out = std::env::temp_dir().join("ets2_tool").join(format!(
-        "decoded_{}.sii",
-        path.file_stem().unwrap().to_string_lossy()
-    ));
-    let _ = fs::create_dir_all(temp_out.parent().unwrap());
-    let _ = fs::remove_file(&temp_out);
-
-    let decrypted = if Path::new("tools/SII_Decrypt.exe").exists() {
-        log!("Versuche tools/SII_Decrypt.exe für {}", path.display());
-        let output = Command::new("tools/SII_Decrypt.exe")
-            .arg(path)
-            .arg(&temp_out)
-            .output();
-        output.map_or(false, |o| o.status.success() && temp_out.exists())
-    } else {
-        false
-    } || {
-        log!("Fallback: decrypt_truck für {}", path.display());
-        let output = Command::new("decrypt_truck")
-            .arg(path)
-            .arg(&temp_out)
-            .output();
-        output.map_or(false, |o| o.status.success() && temp_out.exists())
-    };
-
-    if decrypted {
-        let decrypted_bytes = fs::read(&temp_out)
-            .map_err(|e| format!("Fehler beim Lesen der entschlüsselten Datei: {}", e))?;
-        Ok(String::from_utf8_lossy(&decrypted_bytes).to_string())
-    } else {
-        Ok(orig.to_string())
+    // 3️⃣ ETS2 verschlüsselt → decrypt_truck
+    match decrypt_bin_file(&bytes) {
+        Ok(decrypted) => Ok(String::from_utf8_lossy(&decrypted).to_string()),
+        Err(e) => {
+            log!("Decrypt übersprungen ({}): {:?}", path.display(), e);
+            // Fallback: als Text zurückgeben
+            Ok(String::from_utf8_lossy(&bytes).to_string())
+        }
     }
+}
+
+pub fn decrypt_cached(path: &Path, cache: &State<DecryptCache>) -> Result<String, String> {
+    // Cache hit?
+    if let Some(v) = cache.files.lock().unwrap().get(path).cloned() {
+        return Ok(v);
+    }
+
+    // Decrypt einmal
+    let content = decrypt_if_needed(path)?;
+
+    // Cache speichern
+    cache
+        .files
+        .lock()
+        .unwrap()
+        .insert(path.to_path_buf(), content.clone());
+
+    Ok(content)
 }
 
 /// Erstellt ein Backup der Originaldatei als .bak
