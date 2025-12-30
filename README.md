@@ -65,3 +65,10 @@ Rust crates, and other dependencies for backend and UI functionality.
 ### Community Feedback
 Thanks to everyone who tested and provided suggestions during development.
 
+<img width="1434" height="934" alt="Screenshot 2025-12-28 102354" src="https://github.com/user-attachments/assets/42938c58-fb40-4ce3-ac80-582d2699c9a9" />
+<img width="1435" height="937" alt="Screenshot 2025-12-28 102346" src="https://github.com/user-attachments/assets/1358ec68-bb5c-4b8b-8842-ab60f6257ea9" />
+<img width="259" height="242" alt="Screenshot 2025-12-28 100515" src="https://github.com/user-attachments/assets/b6a763aa-363b-413f-8541-82a5362ab9c9" />
+<img width="252" height="61" alt="Screenshot 2025-12-28 100513" src="https://github.com/user-attachments/assets/5c6b8131-b738-4725-8ec2-aaa673bf354a" />
+<img width="349" height="118" alt="Screenshot 2025-12-28 100510" src="https://github.com/user-attachments/assets/f7876045-f9a6-4a1e-81ab-1170de51b072" />
+<img width="1250" height="886" alt="Screenshot 2025-12-28 100507" src="https://github.com/user-attachments/assets/aef67a77-5f5c-4ded-95c7-1703c9aee352" />
+<img width="1437" height="933" alt="Screenshot 2025-12-28 102402" src="https://github.com/user-attachments/assets/ee608a41-ec60-46d1-b9c9-21e52c9fa169" />
