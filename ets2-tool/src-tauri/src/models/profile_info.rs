@@ -7,3 +7,10 @@ pub struct ProfileInfo {
     pub success: bool,
     pub message: Option<String>,
 }
+
+#[derive(Debug, Serialize, Clone)]
+pub enum SaveKind {
+    Manual,
+    Autosave,
+    Invalid,
+}

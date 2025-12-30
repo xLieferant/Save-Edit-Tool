@@ -1,4 +1,5 @@
 use serde::Serialize;
+use crate::models::profile_info::SaveKind;
 
 #[derive(Debug, Serialize)]
 pub struct SaveInfo {
@@ -7,4 +8,5 @@ pub struct SaveInfo {
     pub name: Option<String>,
     pub success: bool,
     pub message: Option<String>,
+    pub kind: SaveKind, // NEU
 }

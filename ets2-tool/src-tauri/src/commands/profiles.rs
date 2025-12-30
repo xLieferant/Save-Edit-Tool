@@ -1,9 +1,13 @@
 use crate::log;
 use crate::models::cached_profile::CachedProfile;
 use crate::models::profile_info::ProfileInfo;
+use crate::models::save_info::SaveInfo;
+use crate::state::{AppProfileState, DecryptCache};
 use crate::utils::current_profile::set_current_profile;
 use crate::utils::decrypt::decrypt_if_needed;
 use crate::utils::extract::extract_profile_name;
+use crate::utils::extract_save_name::extract_save_name;
+use crate::models::profile_info::SaveKind;
 use crate::utils::hex::decode_hex_folder_name;
 use crate::utils::paths::ets2_base_path;
 use serde::{Deserialize, Serialize};
@@ -11,9 +15,6 @@ use std::fs;
 use tauri::command;
 use tauri::Manager;
 use tauri::State;
-use crate::state::{AppProfileState, DecryptCache};
-use crate::utils::extract_save_name::extract_save_name;
-use crate::models::save_info::SaveInfo;
 
 use std::io::Write;
 use std::path::PathBuf;
@@ -130,6 +131,7 @@ pub fn find_profile_saves(profile_path: String) -> Result<Vec<SaveInfo>, String>
             name: None,
             success: false,
             message: None,
+            kind: SaveKind::Invalid, // NEU - Default setzen
         };
 
         if !info_sii.exists() {
@@ -146,6 +148,21 @@ pub fn find_profile_saves(profile_path: String) -> Result<Vec<SaveInfo>, String>
                 } else {
                     save.message = Some("Save-Name nicht gefunden".into());
                 }
+                save.kind = if !save.success {
+                    SaveKind::Invalid
+                } else if save.folder.contains("auto")
+                    || save.folder.contains("quick")
+                    || save
+                        .name
+                        .as_deref()
+                        .unwrap_or("")
+                        .to_lowercase()
+                        .contains("schnell")
+                {
+                    SaveKind::Autosave
+                } else {
+                    SaveKind::Manual
+                };
             }
             Err(e) => {
                 save.message = Some(e);
