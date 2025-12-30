@@ -12,6 +12,8 @@ use tauri::command;
 use tauri::Manager;
 use tauri::State;
 use crate::state::{AppProfileState, DecryptCache};
+use crate::utils::extract_save_name::extract_save_name;
+use crate::models::save_info::SaveInfo;
 
 use std::io::Write;
 use std::path::PathBuf;
@@ -99,6 +101,61 @@ pub fn set_active_profile(
         profile_path
     );
     Ok(())
+}
+
+#[command]
+pub fn find_profile_saves(profile_path: String) -> Result<Vec<SaveInfo>, String> {
+    let save_root = std::path::Path::new(&profile_path).join("save");
+
+    if !save_root.exists() {
+        return Err("Save-Ordner nicht gefunden".into());
+    }
+
+    let mut saves = Vec::new();
+
+    let entries = fs::read_dir(&save_root)
+        .map_err(|e| format!("Save-Ordner konnte nicht gelesen werden: {}", e))?;
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if !path.is_dir() {
+            continue;
+        }
+
+        let info_sii = path.join("info.sii");
+
+        let mut save = SaveInfo {
+            path: path.display().to_string(),
+            folder: path.file_name().unwrap().to_string_lossy().to_string(),
+            name: None,
+            success: false,
+            message: None,
+        };
+
+        if !info_sii.exists() {
+            save.message = Some("info.sii fehlt".into());
+            saves.push(save);
+            continue;
+        }
+
+        match decrypt_if_needed(&info_sii) {
+            Ok(text) => {
+                if let Some(name) = extract_save_name(&text) {
+                    save.name = Some(name);
+                    save.success = true;
+                } else {
+                    save.message = Some("Save-Name nicht gefunden".into());
+                }
+            }
+            Err(e) => {
+                save.message = Some(e);
+            }
+        }
+
+        saves.push(save);
+    }
+
+    Ok(saves)
 }
 
 #[command]

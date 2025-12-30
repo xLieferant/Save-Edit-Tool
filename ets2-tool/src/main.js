@@ -110,6 +110,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const openProfileModalBtn = document.querySelector("#openProfileModal");
   const profileStatus = document.querySelector("#profile-status");
 
+  // SAVE PICKER
+  const saveNameDisplay = document.querySelector("#saveName");
+  const saveDropdownList = document.querySelector("#saveDropdownList");
+  const openSaveModalBtn = document.querySelector("#openSaveModal");
+
   const moneyBtn = document.querySelector("#save-money-btn");
   const levelBtn = document.querySelector("#save-level-btn");
   const editStatus = document.querySelector("#edit-status");
@@ -119,6 +124,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const githubBtn = document.querySelector("#githubBtn");
 
   let selectedProfilePath = null;
+  let selectedSavePath = null;
+  window.currentSavePath = null;
 
   // -----------------------------
   // GLOBAL STATE
@@ -143,11 +150,20 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!e.target.closest(".profile-picker")) {
       profileDropdownList.classList.remove("show");
     }
+    if (!e.target.closest(".save-picker")) {
+      saveDropdownList.classList.remove("show");
+    }
   });
 
   openProfileModalBtn?.addEventListener("click", (e) => {
     e.stopPropagation();
     toggleProfileDropdown();
+  });
+
+  openSaveModalBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (!selectedProfilePath) return;
+    saveDropdownList.classList.toggle("show");
   });
 
   // -----------------------------
@@ -204,12 +220,72 @@ document.addEventListener("DOMContentLoaded", () => {
       profileStatus.textContent = "Profile loaded";
       showToast("Profile successfully loaded!", "success");
       loadTools(activeTab);
+
+      // ✅ HIER IST DER ENTSCHEIDENDE FIX
+      await scanSavesForProfile();
+
     } catch (err) {
       console.error(err);
       profileStatus.textContent = "Error loading profile";
       showToast("Profile was not loaded!", "error");
     }
   }
+
+  async function scanSavesForProfile() {
+    if (!selectedProfilePath) return;
+
+    saveDropdownList.innerHTML = "";
+    saveDropdownList.classList.add("show");
+    openSaveModalBtn.disabled = false;
+
+    try {
+      const saves = await invoke("find_profile_saves", {
+        profilePath: selectedProfilePath,
+      });
+
+      saves.forEach((s) => {
+        if (!s.success) return;
+
+        const item = document.createElement("div");
+        item.className = "dropdown-item";
+        item.textContent = s.name ?? s.folder;
+
+        item.addEventListener("click", async () => {
+          selectedSavePath = s.path;
+          window.currentSavePath = s.path;
+
+          saveNameDisplay.textContent = s.name ?? s.folder;
+          saveDropdownList.classList.remove("show");
+
+          await loadSelectedSave();
+        });
+
+        saveDropdownList.appendChild(item);
+      });
+    } catch (e) {
+      console.error(e);
+      showToast("No saves found", "warning");
+    }
+  }
+
+  async function loadSelectedSave() {
+    try {
+      profileStatus.textContent = "Loading save...";
+
+      await loadProfileData();
+      await loadQuicksave();
+      await loadProfileSaveConfig();
+      await loadBaseConfig();
+      await loadAllTrucks();
+
+      profileStatus.textContent = "Save loaded";
+      showToast("Save loaded!", "success");
+    } catch (e) {
+      console.error(e);
+      showToast("Failed to load save", "error");
+    }
+  }
+
 
   async function loadProfileData() {
     window.currentProfileData = await invoke("read_all_save_data");
@@ -310,7 +386,7 @@ document.addEventListener("DOMContentLoaded", () => {
           localStorage.setItem("ets2_last_profile", p.path);
           try {
             await invoke("save_last_profile", {
-              profile_path: p.path
+              profile_path: p.path,
             });
           } catch (e) {
             console.warn("save_last_profile failed", e);

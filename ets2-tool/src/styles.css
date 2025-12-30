@@ -461,6 +461,17 @@ body {
   background: var(--accent-soft);
 }
 
+.dropdown-list {
+  display: none;
+  position: absolute;
+  z-index: 1000;
+}
+
+.dropdown-list.show {
+  display: block;
+}
+
+
 /* --- REFRESH BUTTON --- */
 .refresh-btn {
   width: 28px;
