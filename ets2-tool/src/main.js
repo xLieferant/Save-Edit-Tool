@@ -189,6 +189,7 @@ document.addEventListener("DOMContentLoaded", () => {
           selectedProfilePath = p.path;
           profileNameDisplay.textContent = p.name;
           profileDropdownList.classList.remove("show");
+          await invoke("switch_profile", { new_profile_path: selectedProfilePath });
           await loadSelectedProfile();
         });
 
@@ -204,32 +205,39 @@ document.addEventListener("DOMContentLoaded", () => {
   // -----------------------------
   // PROFILE LADEN
   // -----------------------------
-  async function loadSelectedProfile() {
-    if (!selectedProfilePath) return;
+async function loadSelectedProfile() {
+  if (!selectedProfilePath) return;
 
-    try {
-      profileStatus.textContent = "Loading profile...";
-      await invoke("load_profile", { profilePath: selectedProfilePath });
+  try {
+    profileStatus.textContent = "Loading profile...";
 
-      await loadProfileData();
-      await loadQuicksave();
-      await loadProfileSaveConfig();
-      await loadBaseConfig();
-      await loadAllTrucks();
+    // → Alte Saves entfernen
+    saveDropdownList.innerHTML = "";
+    selectedSavePath = null;
+    window.currentSavePath = null;
+    saveNameDisplay.textContent = "Select a save";
 
-      profileStatus.textContent = "Profile loaded";
-      showToast("Profile successfully loaded!", "success");
-      loadTools(activeTab);
+    await invoke("load_profile", { profilePath: selectedProfilePath });
 
-      // ✅ HIER IST DER ENTSCHEIDENDE FIX
-      await scanSavesForProfile();
+    await loadProfileData();
+    await loadQuicksave();
+    await loadProfileSaveConfig();
+    await loadBaseConfig();
+    await loadAllTrucks();
 
-    } catch (err) {
-      console.error(err);
-      profileStatus.textContent = "Error loading profile";
-      showToast("Profile was not loaded!", "error");
-    }
+    profileStatus.textContent = "Profile loaded";
+    showToast("Profile successfully loaded!", "success");
+    loadTools(activeTab);
+
+    // Scanne die neuen Saves
+    await scanSavesForProfile();
+
+  } catch (err) {
+    console.error(err);
+    profileStatus.textContent = "Error loading profile";
+    showToast("Profile was not loaded!", "error");
   }
+}
 
   async function scanSavesForProfile() {
   if (!selectedProfilePath) return;
@@ -243,14 +251,19 @@ document.addEventListener("DOMContentLoaded", () => {
       profilePath: selectedProfilePath,
     });
 
-    // 🔹 Filter: nur Manual / Autosave + gültiger Name
+    // 🔹 Nur gültige Saves (Autosave, Quicksave, nummerierte Manual)
     const filteredSaves = saves.filter(
-      (s) =>
-        s.success &&
-        (s.kind === "Manual" || s.kind === "Autosave") &&
-        s.name &&
-        s.name.trim() !== ""
+      (s) => s.success && s.kind !== "Invalid"
     );
+
+    // 🔹 Optional: sortieren (Autosave, Quicksave, dann nummeriert)
+    filteredSaves.sort((a, b) => {
+      const order = { "autosave": 0, "quicksave": 1 };
+      const ka = order[a.folder.toLowerCase()] ?? 2;
+      const kb = order[b.folder.toLowerCase()] ?? 2;
+      if (ka !== kb) return ka - kb;
+      return a.folder.localeCompare(b.folder, undefined, { numeric: true });
+    });
 
     filteredSaves.forEach((s) => {
       const item = document.createElement("div");
@@ -270,7 +283,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   } catch (e) {
     console.error(e);
-    showToast("No saves found", "warning");
   }
 }
 

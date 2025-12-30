@@ -31,6 +31,7 @@ fn main() {
             commands::profiles::save_last_profile,
             commands::profiles::read_last_profile,
             commands::profiles::find_profile_saves,
+            commands::profiles::switch_profile,
             // quicksave_game.rs
             commands::quicksave_game::quicksave_game_info,
             // save_config.rs

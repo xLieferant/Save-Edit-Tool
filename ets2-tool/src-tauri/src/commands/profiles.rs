@@ -104,6 +104,20 @@ pub fn set_active_profile(
     Ok(())
 }
 
+#[tauri::command]
+pub fn switch_profile(
+    cache: State<DecryptCache>,
+    new_profile_path: String,
+) -> Result<(), String> {
+    // 🔥 Cache vollständig leeren
+    cache.files.lock().unwrap().clear();
+
+    log!("Profil gewechselt: {} → Cache geleert", new_profile_path);
+
+    Ok(())
+}
+
+
 #[command]
 pub fn find_profile_saves(profile_path: String) -> Result<Vec<SaveInfo>, String> {
     let save_root = std::path::Path::new(&profile_path).join("save");
@@ -120,6 +134,13 @@ pub fn find_profile_saves(profile_path: String) -> Result<Vec<SaveInfo>, String>
     for entry in entries.flatten() {
         let path = entry.path();
         if !path.is_dir() {
+            continue;
+        }
+    
+        let folder_name = path.file_name().unwrap().to_string_lossy();
+
+        // Nur quicksave, autosave oder numerische Ordner
+        if folder_name != "quicksave" && folder_name != "autosave" && folder_name.parse::<u32>().is_err() {
             continue;
         }
 
@@ -139,22 +160,18 @@ pub fn find_profile_saves(profile_path: String) -> Result<Vec<SaveInfo>, String>
                 Ok(text) => {
                     save.name = extract_save_name(&text);
                     save.success = save.name.is_some();
-                
-                    // → Klassifizieren, egal ob success true/false
+
+                    // 🔹 NEUER FILTER
                     save.kind = if !save.success {
                         SaveKind::Invalid
-                    } else if save.folder.to_lowercase().contains("auto")
-                        || save.folder.to_lowercase().contains("quick")
-                        || save
-                            .name
-                            .as_deref()
-                            .unwrap_or("")
-                            .to_lowercase()
-                            .contains("schnell")
+                    } else if save.folder.to_lowercase() == "autosave"
+                        || save.folder.to_lowercase() == "quicksave"
                     {
                         SaveKind::Autosave
-                    } else {
+                    } else if save.folder.chars().all(|c| c.is_digit(10)) {
                         SaveKind::Manual
+                    } else {
+                        SaveKind::Invalid
                     };
                 }
                 Err(e) => {
@@ -172,6 +189,7 @@ pub fn find_profile_saves(profile_path: String) -> Result<Vec<SaveInfo>, String>
 
     Ok(saves)
 }
+
 
 #[command]
 pub fn find_ets2_profiles() -> Vec<ProfileInfo> {
