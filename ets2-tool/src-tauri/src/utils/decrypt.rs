@@ -1,27 +1,56 @@
 use crate::log;
+use decrypt_truck::decrypt_bin_file;
+use tauri::State;
+use crate::state::DecryptCache;
 use std::fs;
 use std::path::Path;
 use std::process::Command;
-use decrypt_truck::decrypt_bin_file;
 
 /// Liest eine .sii-Datei und entschlüsselt sie bei Bedarf
+
 pub fn decrypt_if_needed(path: &Path) -> Result<String, String> {
-    log!("decrypt_if_needed (rust): {}", path.display());
+    log!("decrypt_if_needed: {}", path.display());
 
-    let bytes = fs::read(path)
-        .map_err(|e| format!("Datei konnte nicht gelesen werden: {}", e))?;
+    let bytes = fs::read(path).map_err(|e| format!("Datei konnte nicht gelesen werden: {}", e))?;
 
-    // Wenn Datei bereits Klartext ist → direkt zurück
+    // 1️⃣ Klartext?
     if bytes.starts_with(b"SiiNunit") {
-        log!("Datei ist bereits entschlüsselt");
         return Ok(String::from_utf8_lossy(&bytes).to_string());
     }
 
-    // ETS2 Save → binär verschlüsselt → jetzt entschlüsseln
-    let decrypted = decrypt_bin_file(&bytes)
-        .map_err(|e| format!("Decrypt fehlgeschlagen: {:?}", e))?;
+    // 2️⃣ Nicht-binäre Datei? → einfach als Text lesen
+    if !bytes.starts_with(b"\x00") && !bytes.iter().any(|b| *b == 0) {
+        return Ok(String::from_utf8_lossy(&bytes).to_string());
+    }
 
-    Ok(String::from_utf8_lossy(&decrypted).to_string())
+    // 3️⃣ ETS2 verschlüsselt → decrypt_truck
+    match decrypt_bin_file(&bytes) {
+        Ok(decrypted) => Ok(String::from_utf8_lossy(&decrypted).to_string()),
+        Err(e) => {
+            log!("Decrypt übersprungen ({}): {:?}", path.display(), e);
+            // Fallback: als Text zurückgeben
+            Ok(String::from_utf8_lossy(&bytes).to_string())
+        }
+    }
+}
+
+pub fn decrypt_cached(path: &Path, cache: &State<DecryptCache>) -> Result<String, String> {
+    // Cache hit?
+    if let Some(v) = cache.files.lock().unwrap().get(path).cloned() {
+        return Ok(v);
+    }
+
+    // Decrypt einmal
+    let content = decrypt_if_needed(path)?;
+
+    // Cache speichern
+    cache
+        .files
+        .lock()
+        .unwrap()
+        .insert(path.to_path_buf(), content.clone());
+
+    Ok(content)
 }
 
 /// Erstellt ein Backup der Originaldatei als .bak

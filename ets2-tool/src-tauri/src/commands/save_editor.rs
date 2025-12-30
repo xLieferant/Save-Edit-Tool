@@ -10,10 +10,15 @@ use serde::Deserialize;
 use std::fs;
 use std::path::Path;
 use tauri::command;
+use tauri::State;
+use crate::state::{AppProfileState, DecryptCache};
 
 #[command]
-pub fn edit_money(amount: i64) -> Result<(), String> {
-    let profile = require_current_profile()?;
+pub fn edit_money(
+    amount: i64,
+    profile_state: State<'_, AppProfileState>,
+) -> Result<(), String> {
+    let profile = require_current_profile(profile_state)?;
     let path = autosave_path(&profile);
     let content = decrypt_if_needed(&path)?;
     let re = Regex::new(r"info_money_account:\s*\d+").unwrap();
@@ -24,8 +29,11 @@ pub fn edit_money(amount: i64) -> Result<(), String> {
 }
 
 #[command]
-pub fn edit_xp(xp: i64) -> Result<(), String> {
-    let profile = require_current_profile()?;
+pub fn edit_xp(
+    xp: i64,
+    profile_state: State<'_, AppProfileState>,
+) -> Result<(), String> {
+    let profile = require_current_profile(profile_state)?;
     let path = autosave_path(&profile);
     let content = decrypt_if_needed(&path)?;
     let re = Regex::new(r"info_players_experience:\s*\d+").unwrap();
@@ -36,8 +44,11 @@ pub fn edit_xp(xp: i64) -> Result<(), String> {
 }
 
 #[command]
-pub fn edit_level(xp: i64) -> Result<(), String> {
-    let profile = require_current_profile()?;
+pub fn edit_level(
+    xp: i64,
+    profile_state: State<'_, AppProfileState>,
+) -> Result<(), String> {
+    let profile = require_current_profile(profile_state)?;
     let path = autosave_path(&profile);
     let content = decrypt_if_needed(&path)?;
     // Der Befehl heißt edit_level, aber ändert die XP. Das ist konsistent mit deinem JS.
@@ -54,10 +65,13 @@ pub struct EditValuePayload {
 }
 
 #[command]
-pub fn edit_player_money(value: i64) -> Result<(), String> {
+pub fn edit_player_money(
+    value: i64,
+    profile_state: State<'_, AppProfileState>,
+) -> Result<(), String> {
     log!("--- edit_player_money START ---");
 
-    let profile = require_current_profile()?;
+    let profile = require_current_profile(profile_state)?;
 
     let path = quicksave_game_path(&profile);
     let content = decrypt_if_needed(&path)?;
@@ -79,10 +93,13 @@ pub fn edit_player_money(value: i64) -> Result<(), String> {
 }
 
 #[command]
-pub fn edit_player_experience(value: i64) -> Result<(), String> {
+pub fn edit_player_experience(
+    value: i64,
+    profile_state: State<'_, AppProfileState>,
+) -> Result<(), String> {
     log!("--- edit_player_experience START ---");
 
-    let profile = require_current_profile()?;
+    let profile = require_current_profile(profile_state)?;
 
     let path = quicksave_game_path(&profile);
     let content = decrypt_if_needed(&path)?;
@@ -104,8 +121,11 @@ pub fn edit_player_experience(value: i64) -> Result<(), String> {
 }
 
 #[command]
-pub fn edit_truck_odometer(value: i64) -> Result<(), String> {
-    let profile = require_current_profile()?;
+pub fn edit_truck_odometer(
+    value: i64,
+    profile_state: State<'_, AppProfileState>,
+) -> Result<(), String> {
+    let profile = require_current_profile(profile_state)?;
     let path = Path::new(&profile)
         .join("save")
         .join("quicksave")
@@ -144,10 +164,13 @@ pub fn edit_truck_odometer(value: i64) -> Result<(), String> {
 }
 
 #[command]
-pub fn edit_truck_license_plate(value: String) -> Result<(), String> {
+pub fn edit_truck_license_plate(
+    value: String,
+    profile_state: State<'_, AppProfileState>,
+) -> Result<(), String> {
     log!("--- edit_truck_license_plate START ---");
 
-    let profile = require_current_profile()?;
+    let profile = require_current_profile(profile_state)?;;
 
     let path = quicksave_game_path(&profile);
     let content = decrypt_if_needed(&path)?;
@@ -185,7 +208,10 @@ pub fn edit_truck_license_plate(value: String) -> Result<(), String> {
 }
 
 #[command]
-pub fn edit_developer_value(value: i64) -> Result<(), String> {
+pub fn edit_developer_value(
+    value: i64,
+    profile_state: State<'_, AppProfileState>,
+) -> Result<(), String> {
     let path = ets2_base_config_path().ok_or("Globaler Config-Pfad nicht gefunden".to_string())?;
 
     log!("Schreibe Developer Value in: {}", path.display());
@@ -213,7 +239,10 @@ pub fn edit_developer_value(value: i64) -> Result<(), String> {
 }
 
 #[command]
-pub fn edit_console_value(value: i64) -> Result<(), String> {
+pub fn edit_console_value(
+    value: i64,
+    profile_state: State<'_, AppProfileState>,
+) -> Result<(), String> {
     let path = ets2_base_config_path().ok_or("Globaler Config-Pfad nicht gefunden".to_string())?;
 
     log!("Schreibe Console Value in: {}", path.display());
@@ -241,11 +270,15 @@ pub fn edit_console_value(value: i64) -> Result<(), String> {
 }
 
 #[command]
-pub fn edit_skill_value(skill: String, value: i64) -> Result<(), String> {
+pub fn edit_skill_value(
+    skill: String,
+    value: i64,
+    profile_state: State<'_, AppProfileState>,
+) -> Result<(), String> {
     log!("--- edit_skill START ---");
     log!("Skill: {}, Wert: {}", skill, value);
 
-    let profile = require_current_profile()?;
+    let profile = require_current_profile(profile_state)?;
 
     let path = quicksave_game_path(&profile);
     let content = decrypt_if_needed(&path)?;
@@ -269,7 +302,10 @@ pub fn edit_skill_value(skill: String, value: i64) -> Result<(), String> {
 }
 
 #[command]
-pub fn edit_convoy_value(value: i64) -> Result<(), String> {
+pub fn edit_convoy_value(
+    value: i64,
+    profile_state: State<'_, AppProfileState>,
+) -> Result<(), String> {
     let path = ets2_base_config_path().ok_or("Globaler Config-Pfad nicht gefunden".to_string())?;
 
     log!("Schreibe Convoy in: {}", path.display());
@@ -297,7 +333,10 @@ pub fn edit_convoy_value(value: i64) -> Result<(), String> {
 }
 
 #[command]
-pub fn edit_traffic_value(value: i64) -> Result<(), String> {
+pub fn edit_traffic_value(
+    value: i64,
+    profile_state: State<'_, AppProfileState>,
+) -> Result<(), String> {
     // 🔒 Clamping: garantiert 0–10
     let value = value.clamp(0, 10);
 
@@ -322,8 +361,11 @@ pub fn edit_traffic_value(value: i64) -> Result<(), String> {
 }
 
 #[command]
-pub fn edit_parking_doubles_value(value: i64) -> Result<(), String> {
-    let profile = require_current_profile()?;
+pub fn edit_parking_doubles_value(
+    value: i64,
+    profile_state: State<'_, AppProfileState>,
+) -> Result<(), String> {
+    let profile = require_current_profile(profile_state)?;
 
     let path = quicksave_config_path(&profile);
 
@@ -361,7 +403,10 @@ pub struct KeyValuePayload {
 }
 
 #[command]
-pub fn edit_config_value(payload: KeyValuePayload) -> Result<(), String> {
+pub fn edit_config_value(
+    payload: KeyValuePayload,
+    profile_state: State<'_, AppProfileState>,
+) -> Result<(), String> {
     let path = ets2_base_config_path().ok_or("Globaler Config-Pfad nicht gefunden".to_string())?;
     let content = fs::read_to_string(&path).map_err(|e| e.to_string())?;
     let re = Regex::new(&format!(r#"uset {}\s*"?.*"?"#, payload.key)).unwrap();
@@ -379,8 +424,11 @@ pub fn edit_config_value(payload: KeyValuePayload) -> Result<(), String> {
 }
 
 #[command]
-pub fn edit_save_config_value(payload: KeyValuePayload) -> Result<(), String> {
-    let profile = require_current_profile()?;
+pub fn edit_save_config_value(
+    payload: KeyValuePayload,
+    profile_state: State<'_, AppProfileState>,
+) -> Result<(), String> {
+    let profile = require_current_profile(profile_state)?;
     let path = quicksave_config_path(&profile);
     let content = fs::read_to_string(&path).map_err(|e| e.to_string())?;
     let re = Regex::new(&format!(r#"uset {}\s*"?.*"?"#, payload.key)).unwrap();

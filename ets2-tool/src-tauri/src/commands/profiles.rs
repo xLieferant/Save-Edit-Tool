@@ -1,15 +1,17 @@
 use crate::log;
+use crate::models::cached_profile::CachedProfile;
 use crate::models::profile_info::ProfileInfo;
+use crate::utils::current_profile::set_current_profile;
 use crate::utils::decrypt::decrypt_if_needed;
 use crate::utils::extract::extract_profile_name;
 use crate::utils::hex::decode_hex_folder_name;
 use crate::utils::paths::ets2_base_path;
-use crate::utils::current_profile::set_current_profile;
-use crate::models::cached_profile::CachedProfile;
+use serde::{Deserialize, Serialize};
 use std::fs;
 use tauri::command;
-use serde::{Serialize, Deserialize};
 use tauri::Manager;
+use tauri::State;
+use crate::state::{AppProfileState, DecryptCache};
 
 use std::io::Write;
 use std::path::PathBuf;
@@ -29,11 +31,14 @@ fn app_cache_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
 }
 
 #[command]
-pub fn save_profiles_cache(app: tauri::AppHandle, profiles: Vec<CachedProfile>) -> Result<String, String> {
+pub fn save_profiles_cache(
+    app: tauri::AppHandle,
+    profiles: Vec<CachedProfile>,
+) -> Result<String, String> {
     let dir = app_cache_dir(&app)?;
     let file = dir.join("profiles_cache.json");
-    let json = serde_json::to_string_pretty(&profiles)
-        .map_err(|e| format!("Serialize error: {}", e))?;
+    let json =
+        serde_json::to_string_pretty(&profiles).map_err(|e| format!("Serialize error: {}", e))?;
     fs::write(&file, json).map_err(|e| format!("Write error: {}", e))?;
     Ok(file.display().to_string())
 }
@@ -76,6 +81,24 @@ pub fn read_last_profile(app: tauri::AppHandle) -> Result<Option<String>, String
     } else {
         Ok(None)
     }
+}
+
+pub fn set_active_profile(
+    profile_path: String,
+    profile_state: State<'_, AppProfileState>,
+    cache: State<'_, DecryptCache>,
+) -> Result<(), String> {
+    // Profil setzen
+    *profile_state.current_profile.lock().unwrap() = Some(profile_path.clone());
+
+    // 🔥 Cache vollständig leeren
+    cache.files.lock().unwrap().clear();
+
+    log!(
+        "Aktives Profil gesetzt & DecryptCache geleert: {}",
+        profile_path
+    );
+    Ok(())
 }
 
 #[command]
@@ -165,16 +188,17 @@ pub fn find_ets2_profiles() -> Vec<ProfileInfo> {
 }
 
 #[command]
-pub fn load_profile(profile_path: String) -> Result<String, String> {
+pub fn load_profile(
+    profile_path: String,
+    profile_state: State<'_, AppProfileState>,
+    cache: State<'_, DecryptCache>,
+) -> Result<String, String> {
     let autosave = crate::utils::paths::autosave_path(&profile_path);
     if !autosave.exists() {
-        return Err(format!(
-            "Quicksave nicht gefunden: {}",
-            autosave.display()
-        ));
+        return Err(format!("Quicksave nicht gefunden: {}", autosave.display()));
     }
 
-    set_current_profile(profile_path.clone());
+    set_active_profile(profile_path.clone(), profile_state, cache)?;
 
     log!("Profil erfolgreich geladen: {}", profile_path);
     Ok(format!("Profil geladen: {}", profile_path))
