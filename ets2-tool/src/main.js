@@ -90,7 +90,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Auto-Updater (verzögert, stabil)
   setTimeout(() => {
     checkUpdaterOnStartup(showToast);
-  }, 3000);
+  }, 2000);
 
   // -----------------------------
   // UPDATE BUTTONS
@@ -150,8 +150,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // -----------------------------
   // DROPDOWN
   // -----------------------------
-  function toggleProfileDropdown() {
-    profileDropdownList.classList.toggle("show");
+  function closeAllDropdowns() {
+    profileDropdownList.classList.remove("show");
+    saveDropdownList.classList.remove("show");
   }
 
   document.addEventListener("click", (e) => {
@@ -165,13 +166,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   openProfileModalBtn?.addEventListener("click", (e) => {
     e.stopPropagation();
-    toggleProfileDropdown();
+    const wasOpen = profileDropdownList.classList.contains("show");
+    closeAllDropdowns();
+    if (!wasOpen) profileDropdownList.classList.add("show");
   });
 
   openSaveModalBtn?.addEventListener("click", (e) => {
     e.stopPropagation();
     if (!selectedProfilePath) return;
-    saveDropdownList.classList.toggle("show");
+    const wasOpen = saveDropdownList.classList.contains("show");
+    closeAllDropdowns();
+    if (!wasOpen) saveDropdownList.classList.add("show");
   });
 
   // -----------------------------
@@ -214,7 +219,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // -----------------------------
   // PROFILE LADEN
-  // -----------------------------
+  // ----------------------------- 
   async function loadSelectedProfile() {
     if (!selectedProfilePath) return;
 
@@ -229,18 +234,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
       await invoke("load_profile", { profilePath: selectedProfilePath });
 
-      await loadProfileData();
-      await loadQuicksave();
-      await loadProfileSaveConfig();
-      await loadBaseConfig();
-      await loadAllTrucks();
-
-      profileStatus.textContent = "Profile loaded";
-      showToast("Profile successfully loaded!", "success");
-      loadTools(activeTab);
-
       // Scanne die neuen Saves
       await scanSavesForProfile();
+
+      // Configs laden (unabhängig vom Save)
+      try {
+        await loadBaseConfig();
+        await loadProfileSaveConfig();
+      } catch (e) { console.warn("Config load warning:", e); }
+
+      // State bereinigen (kein Save geladen)
+      window.currentProfileData = {};
+      window.currentQuicksaveData = {};
+      window.allTrucks = [];
+      window.playerTruck = null;
+
+      profileStatus.textContent = "Profile loaded. Please select a save.";
+      showToast("Profile loaded. Please select a save game.", "info");
+      loadTools(activeTab);
     } catch (err) {
       console.error(err);
       profileStatus.textContent = "Error loading profile";
@@ -265,19 +276,37 @@ document.addEventListener("DOMContentLoaded", () => {
         (s) => s.success && s.kind !== "Invalid"
       );
 
-      // 🔹 Optional: sortieren (Autosave, Quicksave, dann nummeriert)
+      // 🔹 Sortieren: Quicksave (0), Autosave (1), Manual (2 - absteigend/neuste zuerst)
       filteredSaves.sort((a, b) => {
-        const order = { autosave: 0, quicksave: 1 };
-        const ka = order[a.folder.toLowerCase()] ?? 2;
-        const kb = order[b.folder.toLowerCase()] ?? 2;
-        if (ka !== kb) return ka - kb;
-        return a.folder.localeCompare(b.folder, undefined, { numeric: true });
+        const fA = a.folder.toLowerCase();
+        const fB = b.folder.toLowerCase();
+
+        const getPriority = (folder) => {
+          if (folder === 'quicksave') return 0;
+          if (folder === 'autosave') return 1;
+          return 2;
+        };
+
+        const pA = getPriority(fA);
+        const pB = getPriority(fB);
+
+        if (pA !== pB) return pA - pB;
+
+        // Manual saves: descending (newest/highest number first)
+        return fB.localeCompare(fA, undefined, { numeric: true });
       });
 
       filteredSaves.forEach((s) => {
         const item = document.createElement("div");
         item.className = "dropdown-item";
-        item.textContent = s.name ?? s.folder;
+        
+        let displayName = s.name ?? s.folder;
+        if (s.folder.toLowerCase() === 'quicksave') displayName = "~ Quicksave ~";
+        else if (s.folder.toLowerCase() === 'autosave') displayName = "~ Autosave ~";
+        else displayName = `${displayName} [${s.folder}]`;
+
+        item.textContent = displayName;
+        item.title = s.path; // Zeigt beim Drüberfahren den vollen Pfad an
 
         item.addEventListener("click", async () => {
           selectedSavePath = s.path;
@@ -311,6 +340,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       profileStatus.textContent = "Save loaded";
       showToast("Save loaded!", "success");
+      loadTools(activeTab);
     } catch (e) {
       console.error(e);
       showToast("Failed to load save", "error");
