@@ -74,6 +74,14 @@ async function initVersionInfo() {
 document.addEventListener("DOMContentLoaded", () => {
   console.log("[main.js] DOM vollständig geladen.");
 
+  //  # TODO []  Werte müssen immer aktuell sein!
+  setInterval(async () => {
+    if (selectedSavePath) {
+      window.currentQuicksaveData = await invoke("quicksave_game_info");
+      updateUIWithCurrentQuicksave(); // Funktion, die DOM aktualisiert
+    }
+  }, 1000000); // alle 3 Sekunden #FIXME Darf nicht immer alles decrypten, muss sofort lesen, ansonsten bestimmt perfomance probleme!
+
   // -----------------------------
   // BASIS INIT
   // -----------------------------
@@ -189,7 +197,9 @@ document.addEventListener("DOMContentLoaded", () => {
           selectedProfilePath = p.path;
           profileNameDisplay.textContent = p.name;
           profileDropdownList.classList.remove("show");
-          await invoke("switch_profile", { new_profile_path: selectedProfilePath });
+          await invoke("switch_profile", {
+            new_profile_path: selectedProfilePath,
+          });
           await loadSelectedProfile();
         });
 
@@ -205,90 +215,89 @@ document.addEventListener("DOMContentLoaded", () => {
   // -----------------------------
   // PROFILE LADEN
   // -----------------------------
-async function loadSelectedProfile() {
-  if (!selectedProfilePath) return;
+  async function loadSelectedProfile() {
+    if (!selectedProfilePath) return;
 
-  try {
-    profileStatus.textContent = "Loading profile...";
+    try {
+      profileStatus.textContent = "Loading profile...";
 
-    // → Alte Saves entfernen
-    saveDropdownList.innerHTML = "";
-    selectedSavePath = null;
-    window.currentSavePath = null;
-    saveNameDisplay.textContent = "Select a save";
+      // → Alte Saves entfernen
+      saveDropdownList.innerHTML = "";
+      selectedSavePath = null;
+      window.currentSavePath = null;
+      saveNameDisplay.textContent = "Select a save";
 
-    await invoke("load_profile", { profilePath: selectedProfilePath });
+      await invoke("load_profile", { profilePath: selectedProfilePath });
 
-    await loadProfileData();
-    await loadQuicksave();
-    await loadProfileSaveConfig();
-    await loadBaseConfig();
-    await loadAllTrucks();
+      await loadProfileData();
+      await loadQuicksave();
+      await loadProfileSaveConfig();
+      await loadBaseConfig();
+      await loadAllTrucks();
 
-    profileStatus.textContent = "Profile loaded";
-    showToast("Profile successfully loaded!", "success");
-    loadTools(activeTab);
+      profileStatus.textContent = "Profile loaded";
+      showToast("Profile successfully loaded!", "success");
+      loadTools(activeTab);
 
-    // Scanne die neuen Saves
-    await scanSavesForProfile();
-
-  } catch (err) {
-    console.error(err);
-    profileStatus.textContent = "Error loading profile";
-    showToast("Profile was not loaded!", "error");
+      // Scanne die neuen Saves
+      await scanSavesForProfile();
+    } catch (err) {
+      console.error(err);
+      profileStatus.textContent = "Error loading profile";
+      showToast("Profile was not loaded!", "error");
+    }
   }
-}
 
   async function scanSavesForProfile() {
-  if (!selectedProfilePath) return;
+    if (!selectedProfilePath) return;
 
-  saveDropdownList.innerHTML = "";
-  saveDropdownList.classList.add("show");
-  openSaveModalBtn.disabled = false;
+    saveDropdownList.innerHTML = "";
+    saveDropdownList.classList.add("show");
+    openSaveModalBtn.disabled = false;
 
-  try {
-    const saves = await invoke("find_profile_saves", {
-      profilePath: selectedProfilePath,
-    });
-
-    // 🔹 Nur gültige Saves (Autosave, Quicksave, nummerierte Manual)
-    const filteredSaves = saves.filter(
-      (s) => s.success && s.kind !== "Invalid"
-    );
-
-    // 🔹 Optional: sortieren (Autosave, Quicksave, dann nummeriert)
-    filteredSaves.sort((a, b) => {
-      const order = { "autosave": 0, "quicksave": 1 };
-      const ka = order[a.folder.toLowerCase()] ?? 2;
-      const kb = order[b.folder.toLowerCase()] ?? 2;
-      if (ka !== kb) return ka - kb;
-      return a.folder.localeCompare(b.folder, undefined, { numeric: true });
-    });
-
-    filteredSaves.forEach((s) => {
-      const item = document.createElement("div");
-      item.className = "dropdown-item";
-      item.textContent = s.name ?? s.folder;
-
-      item.addEventListener("click", async () => {
-        selectedSavePath = s.path;
-        window.currentSavePath = s.path;
-        saveNameDisplay.textContent = s.name ?? s.folder;
-        saveDropdownList.classList.remove("show");
-
-        await invoke("set_current_save" , {
-          savePath: s.path,
-        });
-
-        await loadSelectedSave();
+    try {
+      const saves = await invoke("find_profile_saves", {
+        profilePath: selectedProfilePath,
       });
 
-      saveDropdownList.appendChild(item);
-    });
-  } catch (e) {
-    console.error(e);
+      // 🔹 Nur gültige Saves (Autosave, Quicksave, nummerierte Manual)
+      const filteredSaves = saves.filter(
+        (s) => s.success && s.kind !== "Invalid"
+      );
+
+      // 🔹 Optional: sortieren (Autosave, Quicksave, dann nummeriert)
+      filteredSaves.sort((a, b) => {
+        const order = { autosave: 0, quicksave: 1 };
+        const ka = order[a.folder.toLowerCase()] ?? 2;
+        const kb = order[b.folder.toLowerCase()] ?? 2;
+        if (ka !== kb) return ka - kb;
+        return a.folder.localeCompare(b.folder, undefined, { numeric: true });
+      });
+
+      filteredSaves.forEach((s) => {
+        const item = document.createElement("div");
+        item.className = "dropdown-item";
+        item.textContent = s.name ?? s.folder;
+
+        item.addEventListener("click", async () => {
+          selectedSavePath = s.path;
+          window.currentSavePath = s.path;
+          saveNameDisplay.textContent = s.name ?? s.folder;
+          saveDropdownList.classList.remove("show");
+
+          await invoke("set_current_save", {
+            savePath: s.path,
+          });
+
+          await loadSelectedSave();
+        });
+
+        saveDropdownList.appendChild(item);
+      });
+    } catch (e) {
+      console.error(e);
+    }
   }
-}
 
   async function loadSelectedSave() {
     try {
@@ -307,7 +316,6 @@ async function loadSelectedProfile() {
       showToast("Failed to load save", "error");
     }
   }
-
 
   async function loadProfileData() {
     window.currentProfileData = await invoke("read_all_save_data");
