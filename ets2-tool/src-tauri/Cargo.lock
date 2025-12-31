@@ -1001,7 +1001,7 @@ dependencies = [
 
 [[package]]
 name = "ets2-tool"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "chrono",
  "decrypt_truck",
