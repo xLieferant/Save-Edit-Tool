@@ -229,18 +229,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
       await invoke("load_profile", { profilePath: selectedProfilePath });
 
-      await loadProfileData();
-      await loadQuicksave();
-      await loadProfileSaveConfig();
-      await loadBaseConfig();
-      await loadAllTrucks();
-
-      profileStatus.textContent = "Profile loaded";
-      showToast("Profile successfully loaded!", "success");
-      loadTools(activeTab);
-
       // Scanne die neuen Saves
       await scanSavesForProfile();
+
+      // Configs laden (unabhängig vom Save)
+      try {
+        await loadBaseConfig();
+        await loadProfileSaveConfig();
+      } catch (e) { console.warn("Config load warning:", e); }
+
+      // State bereinigen (kein Save geladen)
+      window.currentProfileData = {};
+      window.currentQuicksaveData = {};
+      window.allTrucks = [];
+      window.playerTruck = null;
+
+      profileStatus.textContent = "Profile loaded. Please select a save.";
+      showToast("Profile loaded. Please select a save game.", "info");
+      loadTools(activeTab);
     } catch (err) {
       console.error(err);
       profileStatus.textContent = "Error loading profile";
@@ -311,6 +317,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       profileStatus.textContent = "Save loaded";
       showToast("Save loaded!", "success");
+      loadTools(activeTab);
     } catch (e) {
       console.error(e);
       showToast("Failed to load save", "error");
