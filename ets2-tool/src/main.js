@@ -117,6 +117,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const profileDropdownList = document.querySelector("#profileDropdownList");
   const openProfileModalBtn = document.querySelector("#openProfileModal");
   const profileStatus = document.querySelector("#profile-status");
+  
+  // CLONE ELEMENTS
+  const cloneBtn = document.getElementById("cloneProfileBtn");
+  const modalClone = document.getElementById("modalClone");
+  const cloneNameInput = document.getElementById("cloneNameInput");
+  const cloneValidationMsg = document.getElementById("cloneValidationMsg");
+  const modalCloneApply = document.getElementById("modalCloneApply");
+  const modalCloneCancel = document.getElementById("modalCloneCancel");
+  const cloneSourceDisplay = document.getElementById("cloneSourceDisplay");
 
   // SAVE PICKER
   const saveNameDisplay = document.querySelector("#saveName");
@@ -415,6 +424,100 @@ document.addEventListener("DOMContentLoaded", () => {
   githubBtn?.addEventListener("click", () =>
     openUrl("https://github.com/xLieferant/Save-Edit-Tool")
   );
+
+  // -----------------------------
+  // CLONE PROFILE LOGIC
+  // -----------------------------
+  
+  // Open Modal
+  cloneBtn?.addEventListener("click", () => {
+    if (!selectedProfilePath) {
+      showToast("Please select a profile first!", "warning");
+      return;
+    }
+    cloneSourceDisplay.textContent = `Source: ${profileNameDisplay.textContent}`;
+    cloneNameInput.value = "";
+    cloneValidationMsg.textContent = "";
+    modalCloneApply.disabled = true;
+    modalClone.classList.add("show");
+    cloneNameInput.focus();
+  });
+
+  // Close Modal
+  modalCloneCancel?.addEventListener("click", () => {
+    modalClone.classList.remove("show");
+  });
+
+  // Live Validation
+  let cloneDebounceTimer;
+  cloneNameInput?.addEventListener("input", () => {
+    const newName = cloneNameInput.value.trim();
+    modalCloneApply.disabled = true;
+    cloneValidationMsg.textContent = "Checking...";
+    cloneValidationMsg.style.color = "#aaa";
+
+    clearTimeout(cloneDebounceTimer);
+    cloneDebounceTimer = setTimeout(async () => {
+      if (!newName) {
+        cloneValidationMsg.textContent = "";
+        return;
+      }
+
+      try {
+        // Backend Check
+        const status = await invoke("validate_clone_target", {
+          sourceProfile: selectedProfilePath,
+          newName: newName
+        });
+
+        if (status.valid) {
+          cloneValidationMsg.textContent = "✔ " + status.message;
+          cloneValidationMsg.style.color = "#4caf50"; // Green
+          modalCloneApply.disabled = false;
+        } else {
+          cloneValidationMsg.textContent = "❌ " + status.message;
+          cloneValidationMsg.style.color = "#f44336"; // Red
+        }
+      } catch (e) {
+        cloneValidationMsg.textContent = "Error: " + e;
+        cloneValidationMsg.style.color = "#f44336";
+      }
+    }, 300); // 300ms warten nach dem Tippen
+  });
+
+  // Execute Clone
+  modalCloneApply?.addEventListener("click", async () => {
+    const newName = cloneNameInput.value.trim();
+    const backup = document.getElementById("cloneBackup").checked;
+    const replaceHex = document.getElementById("cloneReplaceHex").checked;
+    const replaceText = document.getElementById("cloneReplaceText").checked;
+
+    if (!selectedProfilePath || !newName) return;
+
+    modalCloneApply.disabled = true;
+    modalCloneApply.textContent = "Cloning...";
+
+    try {
+      const msg = await invoke("clone_profile_command", {
+        sourceProfile: selectedProfilePath,
+        newName,
+        backup,
+        replaceHex,
+        replaceText
+      });
+      showToast(msg, "success");
+      modalClone.classList.remove("show");
+      // Refresh Profile List
+      scanBtn.click();
+    } catch (e) {
+      showToast("Clone failed: " + e, "error");
+      console.error(e);
+    } finally {
+      modalCloneApply.textContent = "Clone";
+      // Button bleibt disabled bis zur nächsten Eingabe
+    }
+  });
+
   // -----------------------------
   // PROFILE SCAN (AUTO & CACHE)
   // -----------------------------

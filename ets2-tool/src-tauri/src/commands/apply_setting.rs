@@ -1,11 +1,11 @@
 use crate::log;
+use crate::state::AppProfileState;
+use crate::utils::current_profile::{get_current_profile, require_current_profile};
 use crate::utils::decrypt::decrypt_if_needed;
 use crate::utils::paths::{autosave_path, ets2_base_config_path};
-use crate::utils::current_profile::{get_current_profile , require_current_profile};
 use regex::Regex;
 use serde::Deserialize;
 use serde_json::Value;
-use crate::state::AppProfileState;
 use tauri::State;
 
 use std::fs;

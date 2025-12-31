@@ -1,5 +1,5 @@
-use serde::Serialize;
 use crate::models::profile_info::SaveKind;
+use serde::Serialize;
 
 #[derive(Debug, Serialize)]
 pub struct SaveInfo {
