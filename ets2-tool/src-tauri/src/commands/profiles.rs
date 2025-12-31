@@ -312,23 +312,26 @@ pub fn load_profile(
     cache: State<'_, DecryptCache>,
 ) -> Result<String, String> {
 
+    let save_to_load = if let Some(path_str) = save_path {
+        PathBuf::from(path_str)
+    } else {
+        crate::utils::paths::autosave_path(&profile_path)
+    };
+
+    if !save_to_load.exists() {
+        return Err(format!("Save nicht gefunden: {}", save_to_load.display()));
+    }
+
     // Profil setzen
     set_active_profile(profile_path.clone(), profile_state.clone(), cache.clone())?;
 
-    if let Some(path_str) = save_path {
-        let save_to_load = PathBuf::from(path_str);
-        if !save_to_load.exists() {
-            return Err(format!("Save nicht gefunden: {}", save_to_load.display()));
-        }
-        set_current_save(
-            save_to_load.to_string_lossy().to_string(),
-            profile_state,
-            cache,
-        )?;
-        log!("Profil geladen: {} | Save: {}", profile_path, save_to_load.display());
-    } else {
-        *profile_state.current_save.lock().unwrap() = None;
-        log!("Profil geladen: {} | Kein Save ausgewählt (Warten auf Benutzer)", profile_path);
-    }
+    // 🔥 SAVE SETZEN (Entweder übergeben oder Autosave)
+    set_current_save(
+        save_to_load.to_string_lossy().to_string(),
+        profile_state,
+        cache,
+    )?;
+
+    log!("Profil geladen: {} | Save: {}", profile_path, save_to_load.display());
     Ok("Profil geladen".into())
 }

@@ -74,6 +74,7 @@ async function initVersionInfo() {
 document.addEventListener("DOMContentLoaded", () => {
   console.log("[main.js] DOM vollständig geladen.");
 
+  //  # [x]  Werte müssen immer aktuell sein!
   setInterval(async () => {
     if (selectedSavePath) {
       window.currentQuicksaveData = await invoke("quicksave_game_info");

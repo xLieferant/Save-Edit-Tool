@@ -1,7 +1,8 @@
 use crate::log;
 use crate::models::save_game_data::SaveGameData;
 use crate::utils::decrypt::decrypt_if_needed;
-use crate::utils::paths::{ets2_base_config_path, game_sii_from_save};
+use crate::utils::paths::{autosave_path, ets2_base_config_path, game_sii_from_save};
+use crate::utils::current_profile::{require_current_profile};
 use regex::Regex;
 use std::fs;
 use std::path::Path;
@@ -14,7 +15,9 @@ fn get_active_save_path(profile_state: State<'_, AppProfileState>) -> Result<std
     if let Some(save) = save_opt {
         return Ok(game_sii_from_save(Path::new(&save)));
     }
-    Err("Kein Save ausgewählt".into())
+    // Fallback: Autosave, falls kein Save explizit geladen wurde
+    let profile = require_current_profile(profile_state)?;
+    Ok(autosave_path(&profile))
 }
 
 #[command]
