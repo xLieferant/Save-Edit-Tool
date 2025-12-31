@@ -74,13 +74,13 @@ async function initVersionInfo() {
 document.addEventListener("DOMContentLoaded", () => {
   console.log("[main.js] DOM vollständig geladen.");
 
-  //  # TODO []  Werte müssen immer aktuell sein!
+  //  # [x]  Werte müssen immer aktuell sein!
   setInterval(async () => {
     if (selectedSavePath) {
       window.currentQuicksaveData = await invoke("quicksave_game_info");
       updateUIWithCurrentQuicksave(); // Funktion, die DOM aktualisiert
     }
-  }, 1000000); // alle 3 Sekunden #FIXME Darf nicht immer alles decrypten, muss sofort lesen, ansonsten bestimmt perfomance probleme!
+  }, 500000); // alle 5 Min 
 
   // -----------------------------
   // BASIS INIT

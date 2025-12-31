@@ -1,7 +1,7 @@
 use crate::log;
 use crate::utils::decrypt::decrypt_if_needed;
 use crate::utils::paths::{
-    autosave_path, ets2_base_config_path, quicksave_config_path, quicksave_game_path,
+    autosave_path, ets2_base_config_path, quicksave_config_path, quicksave_game_path, game_sii_from_save
 };
 use crate::utils::current_profile::{get_current_profile, require_current_profile };
 use crate::utils::regex_helper::cragex;
@@ -13,17 +13,32 @@ use tauri::command;
 use tauri::State;
 use crate::state::{AppProfileState, DecryptCache};
 
+fn get_active_save_path(profile_state: State<'_, AppProfileState>) -> Result<std::path::PathBuf, String> {
+    let save_opt = profile_state.current_save.lock().unwrap().clone();
+    if let Some(save) = save_opt {
+        return Ok(game_sii_from_save(Path::new(&save)));
+    }
+    let profile = require_current_profile(profile_state)?;
+    Ok(autosave_path(&profile))
+}
+
 #[command]
 pub fn edit_money(
     amount: i64,
     profile_state: State<'_, AppProfileState>,
 ) -> Result<(), String> {
-    let profile = require_current_profile(profile_state)?;
-    let path = autosave_path(&profile);
+    let path = get_active_save_path(profile_state)?;
     let content = decrypt_if_needed(&path)?;
-    let re = Regex::new(r"info_money_account:\s*\d+").unwrap();
-    let new = re.replace(&content, format!("info_money_account: {}", amount));
-    fs::write(&path, new.as_bytes()).map_err(|e| e.to_string())?;
+    
+    // 1. Info-Wert ersetzen
+    let re_info = Regex::new(r"info_money_account:\s*\d+").unwrap();
+    let content = re_info.replace(&content, format!("info_money_account: {}", amount)).to_string();
+
+    // 2. Echten Wert ersetzen (unter Beibehaltung der Einrückung)
+    let re_main = Regex::new(r"(?m)^(\s*)money_account:\s*\d+").unwrap();
+    let content = re_main.replace(&content, format!("${{1}}money_account: {}", amount)).to_string();
+
+    fs::write(&path, content.as_bytes()).map_err(|e| e.to_string())?;
     log!("Geld geändert: {}", amount);
     Ok(())
 }
@@ -33,12 +48,18 @@ pub fn edit_xp(
     xp: i64,
     profile_state: State<'_, AppProfileState>,
 ) -> Result<(), String> {
-    let profile = require_current_profile(profile_state)?;
-    let path = autosave_path(&profile);
+    let path = get_active_save_path(profile_state)?;
     let content = decrypt_if_needed(&path)?;
-    let re = Regex::new(r"info_players_experience:\s*\d+").unwrap();
-    let new = re.replace(&content, format!("info_players_experience: {}", xp));
-    fs::write(&path, new.as_bytes()).map_err(|e| e.to_string())?;
+
+    // 1. Info-Wert ersetzen
+    let re_info = Regex::new(r"info_players_experience:\s*\d+").unwrap();
+    let content = re_info.replace(&content, format!("info_players_experience: {}", xp)).to_string();
+
+    // 2. Echten Wert ersetzen
+    let re_main = Regex::new(r"(?m)^(\s*)experience_points:\s*\d+").unwrap();
+    let content = re_main.replace(&content, format!("${{1}}experience_points: {}", xp)).to_string();
+
+    fs::write(&path, content.as_bytes()).map_err(|e| e.to_string())?;
     log!("XP geändert: {}", xp);
     Ok(())
 }
@@ -48,13 +69,18 @@ pub fn edit_level(
     xp: i64,
     profile_state: State<'_, AppProfileState>,
 ) -> Result<(), String> {
-    let profile = require_current_profile(profile_state)?;
-    let path = autosave_path(&profile);
+    let path = get_active_save_path(profile_state)?;
     let content = decrypt_if_needed(&path)?;
-    // Der Befehl heißt edit_level, aber ändert die XP. Das ist konsistent mit deinem JS.
-    let re = Regex::new(r"info_players_experience:\s*\d+").unwrap();
-    let new = re.replace(&content, format!("info_players_experience: {}", xp));
-    fs::write(&path, new.as_bytes()).map_err(|e| e.to_string())?;
+    
+    // 1. Info-Wert ersetzen
+    let re_info = Regex::new(r"info_players_experience:\s*\d+").unwrap();
+    let content = re_info.replace(&content, format!("info_players_experience: {}", xp)).to_string();
+
+    // 2. Echten Wert ersetzen
+    let re_main = Regex::new(r"(?m)^(\s*)experience_points:\s*\d+").unwrap();
+    let content = re_main.replace(&content, format!("${{1}}experience_points: {}", xp)).to_string();
+
+    fs::write(&path, content.as_bytes()).map_err(|e| e.to_string())?;
     log!("XP (via edit_level) geändert: {}", xp);
     Ok(())
 }
