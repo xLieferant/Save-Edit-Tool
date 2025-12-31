@@ -307,26 +307,31 @@ pub fn find_ets2_profiles() -> Vec<ProfileInfo> {
 #[command]
 pub fn load_profile(
     profile_path: String,
+    save_path: Option<String>,
     profile_state: State<'_, AppProfileState>,
     cache: State<'_, DecryptCache>,
 ) -> Result<String, String> {
 
-    let autosave = crate::utils::paths::autosave_path(&profile_path);
-    if !autosave.exists() {
-        return Err(format!("Quicksave nicht gefunden: {}", autosave.display()));
+    let save_to_load = if let Some(path_str) = save_path {
+        PathBuf::from(path_str)
+    } else {
+        crate::utils::paths::autosave_path(&profile_path)
+    };
+
+    if !save_to_load.exists() {
+        return Err(format!("Save nicht gefunden: {}", save_to_load.display()));
     }
 
     // Profil setzen
     set_active_profile(profile_path.clone(), profile_state.clone(), cache.clone())?;
 
-    // 🔥 SAVE AUTOMATISCH SETZEN
+    // 🔥 SAVE SETZEN (Entweder übergeben oder Autosave)
     set_current_save(
-        autosave.to_string_lossy().to_string(),
+        save_to_load.to_string_lossy().to_string(),
         profile_state,
         cache,
     )?;
 
-    log!("Profil + Autosave geladen: {}", profile_path);
+    log!("Profil geladen: {} | Save: {}", profile_path, save_to_load.display());
     Ok("Profil geladen".into())
 }
-
