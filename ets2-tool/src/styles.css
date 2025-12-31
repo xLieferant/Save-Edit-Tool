@@ -398,7 +398,8 @@ body {
 }
 
 /* --- DROPDOWN --- */
-.custom-dropdown-list {
+.custom-dropdown-list,
+.dropdown-list {
   display: none;
   position: absolute;
   bottom: 100%;
@@ -411,10 +412,10 @@ body {
   border-radius: 8px;
 
   max-height: 250px;
-  overflow-y: scroll;
+  overflow-y: auto;
   box-shadow: var(--card-box-shadow);
 
-  z-index: 10;
+  z-index: 1000;
   list-style: none;
   padding: 0;
   margin: 0;
@@ -424,17 +425,19 @@ body {
   -ms-overflow-style: none;       /* IE / Edge Legacy */
 }
 
-/* Chrome, Safari, Edge, Opera */
-.custom-dropdown-list::-webkit-scrollbar {
-  display: none;
+.custom-dropdown-list::-webkit-scrollbar,
+.dropdown-list::-webkit-scrollbar {
+  display: none;                  /* Chrome, Safari, Edge, Opera */
 }
 
-.custom-dropdown-list.show {
+.custom-dropdown-list.show,
+.dropdown-list.show {
   display: block;
 }
 
 /* --- DROPDOWN ITEM --- */
-.dropdown-item {
+.custom-dropdown-list .dropdown-item,
+.dropdown-list .dropdown-item {
   padding: 15px;
   cursor: pointer;
 
@@ -453,13 +456,16 @@ body {
   transition: background 0.2s;
 }
 
-.dropdown-item:last-child {
+.custom-dropdown-list .dropdown-item:last-child,
+.dropdown-list .dropdown-item:last-child {
   border-bottom: none;
 }
 
-.dropdown-item:hover {
+.custom-dropdown-list .dropdown-item:hover,
+.dropdown-list .dropdown-item:hover {
   background: var(--accent-soft);
 }
+
 
 /* --- REFRESH BUTTON --- */
 .refresh-btn {

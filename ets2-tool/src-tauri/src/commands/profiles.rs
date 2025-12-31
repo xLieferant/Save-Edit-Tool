@@ -1,9 +1,13 @@
 use crate::log;
 use crate::models::cached_profile::CachedProfile;
 use crate::models::profile_info::ProfileInfo;
+use crate::models::save_info::SaveInfo;
+use crate::state::{AppProfileState, DecryptCache};
 use crate::utils::current_profile::set_current_profile;
 use crate::utils::decrypt::decrypt_if_needed;
 use crate::utils::extract::extract_profile_name;
+use crate::utils::extract_save_name::extract_save_name;
+use crate::models::profile_info::SaveKind;
 use crate::utils::hex::decode_hex_folder_name;
 use crate::utils::paths::ets2_base_path;
 use serde::{Deserialize, Serialize};
@@ -11,7 +15,6 @@ use std::fs;
 use tauri::command;
 use tauri::Manager;
 use tauri::State;
-use crate::state::{AppProfileState, DecryptCache};
 
 use std::io::Write;
 use std::path::PathBuf;
@@ -83,6 +86,7 @@ pub fn read_last_profile(app: tauri::AppHandle) -> Result<Option<String>, String
     }
 }
 
+#[command]
 pub fn set_active_profile(
     profile_path: String,
     profile_state: State<'_, AppProfileState>,
@@ -100,6 +104,119 @@ pub fn set_active_profile(
     );
     Ok(())
 }
+
+#[command]
+pub fn set_current_save(
+    save_path: String,
+    state: State<'_, AppProfileState>,
+    cache: State<'_, DecryptCache>,
+) -> Result<(), String> {
+    *state.current_save.lock().unwrap() = Some(save_path.clone());
+    // Cache leeren
+    cache.files.lock().unwrap().clear();
+    log!("Aktiver Save gesetzt: {}", save_path);
+    Ok(())
+}
+
+#[tauri::command]
+pub fn switch_profile(
+    cache: State<DecryptCache>,
+    new_profile_path: String,
+) -> Result<(), String> {
+    // 🔥 Cache vollständig leeren
+    cache.files.lock().unwrap().clear();
+
+    log!("Profil gewechselt: {} → Cache geleert", new_profile_path);
+
+    Ok(())
+}
+
+
+#[command]
+pub fn find_profile_saves(profile_path: String) -> Result<Vec<SaveInfo>, String> {
+    use std::fs;
+    use std::path::{Path, PathBuf};
+
+    let save_root = Path::new(&profile_path).join("save");
+
+    if !save_root.is_dir() {
+        return Err("Save-Ordner nicht gefunden".into());
+    }
+
+    let entries = fs::read_dir(&save_root)
+        .map_err(|e| format!("Save-Ordner konnte nicht gelesen werden: {}", e))?;
+
+    let mut saves = Vec::new();
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+
+        // 🔒 Invariante: Save MUSS ein Ordner sein
+        if !path.is_dir() {
+            continue;
+        }
+
+        let folder = match path.file_name().and_then(|n| n.to_str()) {
+            Some(f) => f.to_string(),
+            None => continue,
+        };
+
+        // 🔹 Nur erlaubte Save-Ordner
+        let kind = classify_save_folder(&folder);
+        if kind == SaveKind::Invalid {
+            continue;
+        }
+
+        let info_sii = path.join("info.sii");
+
+        let mut save = SaveInfo {
+            path: path.display().to_string(),
+            folder: folder.clone(),
+            name: None,
+            success: false,
+            message: None,
+            kind,
+        };
+
+        // 🔹 info.sii ist optional – aber wichtig für Name/Status
+        if info_sii.is_file() {
+            match decrypt_if_needed(&info_sii) {
+                Ok(text) => {
+                    save.name = extract_save_name(&text);
+                    save.success = save.name.is_some();
+
+                    if !save.success {
+                        save.message = Some("Kein Save-Name gefunden".into());
+                        save.kind = SaveKind::Invalid;
+                    }
+                }
+                Err(e) => {
+                    save.message = Some(e);
+                    save.success = false;
+                    save.kind = SaveKind::Invalid;
+                }
+            }
+        } else {
+            save.message = Some("info.sii fehlt".into());
+            save.success = false;
+            save.kind = SaveKind::Invalid;
+        }
+
+        saves.push(save);
+    }
+
+    Ok(saves)
+}
+
+fn classify_save_folder(folder: &str) -> SaveKind {
+    match folder.to_lowercase().as_str() {
+        "quicksave" | "autosave" => SaveKind::Autosave,
+        _ if folder.chars().all(|c| c.is_ascii_digit()) => SaveKind::Manual,
+        _ => SaveKind::Invalid,
+    }
+}
+
+
 
 #[command]
 pub fn find_ets2_profiles() -> Vec<ProfileInfo> {
@@ -193,13 +310,23 @@ pub fn load_profile(
     profile_state: State<'_, AppProfileState>,
     cache: State<'_, DecryptCache>,
 ) -> Result<String, String> {
+
     let autosave = crate::utils::paths::autosave_path(&profile_path);
     if !autosave.exists() {
         return Err(format!("Quicksave nicht gefunden: {}", autosave.display()));
     }
 
-    set_active_profile(profile_path.clone(), profile_state, cache)?;
+    // Profil setzen
+    set_active_profile(profile_path.clone(), profile_state.clone(), cache.clone())?;
 
-    log!("Profil erfolgreich geladen: {}", profile_path);
-    Ok(format!("Profil geladen: {}", profile_path))
+    // 🔥 SAVE AUTOMATISCH SETZEN
+    set_current_save(
+        autosave.to_string_lossy().to_string(),
+        profile_state,
+        cache,
+    )?;
+
+    log!("Profil + Autosave geladen: {}", profile_path);
+    Ok("Profil geladen".into())
 }
+

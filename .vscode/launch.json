@@ -8,7 +8,7 @@
             "name": "Launch",
             "type": "lldb",
             "request": "launch",
-            "program": "${workspaceRoot}//ets2-tool//src-tauri//target//release//ets2-tools.exe",
+            "program": "?${workspaceRoot}//ets2-tool//src-tauri//target//release//ets2-tools.exe",
             "args": [],
             "cwd": "${workspaceRoot}"
         }

@@ -110,6 +110,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const openProfileModalBtn = document.querySelector("#openProfileModal");
   const profileStatus = document.querySelector("#profile-status");
 
+  // SAVE PICKER
+  const saveNameDisplay = document.querySelector("#saveName");
+  const saveDropdownList = document.querySelector("#saveDropdownList");
+  const openSaveModalBtn = document.querySelector("#openSaveModal");
+
   const moneyBtn = document.querySelector("#save-money-btn");
   const levelBtn = document.querySelector("#save-level-btn");
   const editStatus = document.querySelector("#edit-status");
@@ -119,6 +124,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const githubBtn = document.querySelector("#githubBtn");
 
   let selectedProfilePath = null;
+  let selectedSavePath = null;
+  window.currentSavePath = null;
 
   // -----------------------------
   // GLOBAL STATE
@@ -143,11 +150,20 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!e.target.closest(".profile-picker")) {
       profileDropdownList.classList.remove("show");
     }
+    if (!e.target.closest(".save-picker")) {
+      saveDropdownList.classList.remove("show");
+    }
   });
 
   openProfileModalBtn?.addEventListener("click", (e) => {
     e.stopPropagation();
     toggleProfileDropdown();
+  });
+
+  openSaveModalBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (!selectedProfilePath) return;
+    saveDropdownList.classList.toggle("show");
   });
 
   // -----------------------------
@@ -173,6 +189,7 @@ document.addEventListener("DOMContentLoaded", () => {
           selectedProfilePath = p.path;
           profileNameDisplay.textContent = p.name;
           profileDropdownList.classList.remove("show");
+          await invoke("switch_profile", { new_profile_path: selectedProfilePath });
           await loadSelectedProfile();
         });
 
@@ -188,12 +205,94 @@ document.addEventListener("DOMContentLoaded", () => {
   // -----------------------------
   // PROFILE LADEN
   // -----------------------------
-  async function loadSelectedProfile() {
-    if (!selectedProfilePath) return;
+async function loadSelectedProfile() {
+  if (!selectedProfilePath) return;
 
+  try {
+    profileStatus.textContent = "Loading profile...";
+
+    // → Alte Saves entfernen
+    saveDropdownList.innerHTML = "";
+    selectedSavePath = null;
+    window.currentSavePath = null;
+    saveNameDisplay.textContent = "Select a save";
+
+    await invoke("load_profile", { profilePath: selectedProfilePath });
+
+    await loadProfileData();
+    await loadQuicksave();
+    await loadProfileSaveConfig();
+    await loadBaseConfig();
+    await loadAllTrucks();
+
+    profileStatus.textContent = "Profile loaded";
+    showToast("Profile successfully loaded!", "success");
+    loadTools(activeTab);
+
+    // Scanne die neuen Saves
+    await scanSavesForProfile();
+
+  } catch (err) {
+    console.error(err);
+    profileStatus.textContent = "Error loading profile";
+    showToast("Profile was not loaded!", "error");
+  }
+}
+
+  async function scanSavesForProfile() {
+  if (!selectedProfilePath) return;
+
+  saveDropdownList.innerHTML = "";
+  saveDropdownList.classList.add("show");
+  openSaveModalBtn.disabled = false;
+
+  try {
+    const saves = await invoke("find_profile_saves", {
+      profilePath: selectedProfilePath,
+    });
+
+    // 🔹 Nur gültige Saves (Autosave, Quicksave, nummerierte Manual)
+    const filteredSaves = saves.filter(
+      (s) => s.success && s.kind !== "Invalid"
+    );
+
+    // 🔹 Optional: sortieren (Autosave, Quicksave, dann nummeriert)
+    filteredSaves.sort((a, b) => {
+      const order = { "autosave": 0, "quicksave": 1 };
+      const ka = order[a.folder.toLowerCase()] ?? 2;
+      const kb = order[b.folder.toLowerCase()] ?? 2;
+      if (ka !== kb) return ka - kb;
+      return a.folder.localeCompare(b.folder, undefined, { numeric: true });
+    });
+
+    filteredSaves.forEach((s) => {
+      const item = document.createElement("div");
+      item.className = "dropdown-item";
+      item.textContent = s.name ?? s.folder;
+
+      item.addEventListener("click", async () => {
+        selectedSavePath = s.path;
+        window.currentSavePath = s.path;
+        saveNameDisplay.textContent = s.name ?? s.folder;
+        saveDropdownList.classList.remove("show");
+
+        await invoke("set_current_save" , {
+          savePath: s.path,
+        });
+
+        await loadSelectedSave();
+      });
+
+      saveDropdownList.appendChild(item);
+    });
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+  async function loadSelectedSave() {
     try {
-      profileStatus.textContent = "Loading profile...";
-      await invoke("load_profile", { profilePath: selectedProfilePath });
+      profileStatus.textContent = "Loading save...";
 
       await loadProfileData();
       await loadQuicksave();
@@ -201,15 +300,14 @@ document.addEventListener("DOMContentLoaded", () => {
       await loadBaseConfig();
       await loadAllTrucks();
 
-      profileStatus.textContent = "Profile loaded";
-      showToast("Profile successfully loaded!", "success");
-      loadTools(activeTab);
-    } catch (err) {
-      console.error(err);
-      profileStatus.textContent = "Error loading profile";
-      showToast("Profile was not loaded!", "error");
+      profileStatus.textContent = "Save loaded";
+      showToast("Save loaded!", "success");
+    } catch (e) {
+      console.error(e);
+      showToast("Failed to load save", "error");
     }
   }
+
 
   async function loadProfileData() {
     window.currentProfileData = await invoke("read_all_save_data");
@@ -310,7 +408,7 @@ document.addEventListener("DOMContentLoaded", () => {
           localStorage.setItem("ets2_last_profile", p.path);
           try {
             await invoke("save_last_profile", {
-              profile_path: p.path
+              profilePath: p.path,
             });
           } catch (e) {
             console.warn("save_last_profile failed", e);
@@ -406,7 +504,9 @@ document.addEventListener("DOMContentLoaded", () => {
             profileDropdownList.classList.remove("show");
             localStorage.setItem("ets2_last_profile", p.path);
             try {
-              await invoke("save_last_profile", { profile_path: p.path });
+              await invoke("save_last_profile", {
+                profilePath: p.path,
+              });
             } catch (e) {}
             await loadSelectedProfile();
           });
