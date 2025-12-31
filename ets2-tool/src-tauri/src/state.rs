@@ -10,5 +10,6 @@ pub struct DecryptCache {
 #[derive(Default)]
 pub struct AppProfileState {
     pub current_profile: Mutex<Option<String>>,
+    pub current_save: Mutex<Option<String>>,
 }
 

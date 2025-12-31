@@ -276,6 +276,10 @@ async function loadSelectedProfile() {
         saveNameDisplay.textContent = s.name ?? s.folder;
         saveDropdownList.classList.remove("show");
 
+        await invoke("set_current_save" , {
+          savePath: s.path,
+        });
+
         await loadSelectedSave();
       });
 
@@ -404,7 +408,7 @@ async function loadSelectedProfile() {
           localStorage.setItem("ets2_last_profile", p.path);
           try {
             await invoke("save_last_profile", {
-              profile_path: p.path,
+              profilePath: p.path,
             });
           } catch (e) {
             console.warn("save_last_profile failed", e);
@@ -500,7 +504,9 @@ async function loadSelectedProfile() {
             profileDropdownList.classList.remove("show");
             localStorage.setItem("ets2_last_profile", p.path);
             try {
-              await invoke("save_last_profile", { profile_path: p.path });
+              await invoke("save_last_profile", {
+                profilePath: p.path,
+              });
             } catch (e) {}
             await loadSelectedProfile();
           });

@@ -1,13 +1,14 @@
 use crate::log;
 use crate::models::quicksave_game_info::GameDataQuicksave;
 use crate::utils::decrypt::decrypt_if_needed;
-use crate::utils::paths::quicksave_game_path;
+use crate::utils::paths::{ quicksave_game_path, game_sii_from_save };
 use crate::utils::regex_helper::cragex;
 use crate::utils::sii_parser::{parse_trailers_from_sii, parse_trucks_from_sii};
-use crate::utils::current_profile::{get_current_profile, require_current_profile};
+use crate::utils::current_profile::{get_current_profile, require_current_profile, require_current_save};
 use tauri::command;
 use tauri::State;
 use crate::state::{AppProfileState, DecryptCache};
+use std::path::Path;
 
 #[command]
 pub async fn quicksave_game_info(
@@ -18,10 +19,19 @@ pub async fn quicksave_game_info(
     log!("Starte quicksave_game_info()");
     log!("-------------------------------------------");
 
-    let profile = require_current_profile(profile_state)?;
+    let profile = require_current_profile(profile_state.clone())?;
     log!("Profil: {}", profile);
 
-    let path = quicksave_game_path(&profile);
+    let save = profile_state
+        .current_save
+        .lock()
+        .unwrap()
+        .clone()
+        .ok_or_else(|| "Kein Save geladen".to_string())?;
+    log!("Save: {}", save);
+
+
+    let path = game_sii_from_save(Path::new(&save));
     log!("Pfad: {:?}", path);
 
     let content = decrypt_if_needed(&path).map_err(|e| {

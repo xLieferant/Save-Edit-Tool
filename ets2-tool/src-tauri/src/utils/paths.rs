@@ -28,6 +28,19 @@ pub fn ets2_base_config_path() -> Option<PathBuf> {
     ets2_base_path().map(|base_path| base_path.join("config.cfg"))
 }
 
+pub fn game_sii_from_save(save_path: &Path) -> PathBuf {
+    if save_path.is_file() {
+        // info.sii → Parent nehmen
+        save_path
+            .parent()
+            .unwrap()
+            .join("game.sii")
+    } else {
+        save_path.join("game.sii")
+    }
+}
+
+
 /* --------------------------------------------------
    WRAPPER FÜR APPLY_SETTING
 -------------------------------------------------- */

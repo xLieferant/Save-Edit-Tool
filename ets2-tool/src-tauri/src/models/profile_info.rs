@@ -8,7 +8,7 @@ pub struct ProfileInfo {
     pub message: Option<String>,
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, PartialEq, Clone)]
 pub enum SaveKind {
     Manual,
     Autosave,
