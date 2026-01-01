@@ -1,7 +1,7 @@
 use crate::log;
 use crate::models::trailers::ParsedTrailer;
 use crate::models::trucks::ParsedTruck;
-use crate::utils::hex_float::{hex_to_float, parse_value_auto};
+use crate::shared::hex_float::{hex_to_float, parse_value_auto};
 use regex::Regex;
 use std::collections::HashMap;
 

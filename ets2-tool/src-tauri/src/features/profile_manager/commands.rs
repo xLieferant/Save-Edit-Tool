@@ -1,15 +1,15 @@
-use crate::log;
+use crate::shared::logs;
 use crate::models::cached_profile::CachedProfile;
 use crate::models::profile_info::ProfileInfo;
 use crate::models::profile_info::SaveKind;
 use crate::models::save_info::SaveInfo;
 use crate::state::{AppProfileState, DecryptCache};
-use crate::utils::current_profile::set_current_profile;
-use crate::utils::decrypt::decrypt_if_needed;
-use crate::utils::extract::extract_profile_name;
-use crate::utils::extract_save_name::extract_save_name;
-use crate::utils::hex::decode_hex_folder_name;
-use crate::utils::paths::ets2_base_path;
+use crate::shared::current_profile::set_current_profile;
+use crate::shared::decrypt::decrypt_if_needed;
+use crate::shared::extract::extract_profile_name;
+use crate::shared::extract_save_name::extract_save_name;
+use crate::shared::hex_float::decode_hex_folder_name;
+use crate::shared::paths::ets2_base_path;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use tauri::Manager;
@@ -308,7 +308,7 @@ pub fn load_profile(
     let save_to_load = if let Some(path_str) = save_path {
         PathBuf::from(path_str)
     } else {
-        crate::utils::paths::autosave_path(&profile_path)
+        crate::shared::paths::autosave_path(&profile_path)
     };
 
     if !save_to_load.exists() {

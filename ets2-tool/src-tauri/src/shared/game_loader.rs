@@ -1,5 +1,5 @@
 use crate::log;
-use crate::utils::decrypt::decrypt_if_needed;
+use crate::shared::decrypt::decrypt_if_needed;
 use std::path::Path;
 
 /// Lädt und entschlüsselt die game.sii eines Profils

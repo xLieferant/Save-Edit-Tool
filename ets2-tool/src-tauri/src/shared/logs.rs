@@ -6,7 +6,7 @@ use std::io::Write;
 #[macro_export]
 macro_rules! log {
     ($($arg:tt)*) => {{
-        $crate::logs::write_log(format!($($arg)*));
+        $crate::crate::shared::logs::write_log(format!($($arg)*));
     }};
 }
 

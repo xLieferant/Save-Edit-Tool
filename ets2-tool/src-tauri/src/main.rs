@@ -5,11 +5,10 @@
 
 use crate::state::{AppProfileState, DecryptCache};
 
-mod commands;
-mod logs;
 mod models;
 mod state;
-mod utils;
+mod shared;   // ehemals utils
+mod features; // ehemals commands (aufgeteilt)
 
 fn main() {
     tauri::Builder::default()
@@ -20,56 +19,54 @@ fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
-            // apply_setting.rs
-            commands::apply_setting::apply_setting,
-            // global_config.rs
-            commands::global_config::read_base_config,
-            // profiles.rs
-            commands::profiles::find_ets2_profiles,
-            commands::profiles::load_profile,
-            commands::profiles::save_profiles_cache,
-            commands::profiles::read_profiles_cache,
-            commands::profiles::save_last_profile,
-            commands::profiles::read_last_profile,
-            commands::profiles::find_profile_saves,
-            commands::profiles::switch_profile,
-            commands::profiles::set_active_profile,
-            commands::profiles::set_current_save,
-            // quicksave_game.rs
-            commands::quicksave_game::quicksave_game_info,
-            // save_config.rs
-            commands::save_config::read_save_config,
-            // save_editor.rs
-            commands::save_editor::edit_money,
-            commands::save_editor::edit_xp,
-            commands::save_editor::edit_level,
-            commands::save_editor::edit_truck_odometer,
-            commands::save_editor::edit_truck_license_plate,
-            commands::save_editor::edit_config_value,
-            commands::save_editor::edit_save_config_value,
-            commands::save_editor::edit_traffic_value,
-            commands::save_editor::edit_parking_doubles_value,
-            commands::save_editor::edit_developer_value,
-            commands::save_editor::edit_console_value,
-            commands::save_editor::edit_convoy_value,
-            commands::save_editor::edit_player_money,
-            commands::save_editor::edit_player_experience,
-            commands::save_editor::edit_skill_value,
-            commands::save_editor::edit_truck_license_plate,
-            // save_reader.rs
-            commands::save_reader::read_money,
-            commands::save_reader::read_xp,
-            commands::save_reader::read_all_save_data,
-            commands::save_reader::read_traffic_value,
-            // trucks.rs
-            commands::trucks::get_all_trucks,
-            commands::trucks::get_player_truck,
-            // trailers.rs
-            commands::trailers::get_player_trailer,
-            commands::trailers::get_all_trailers,
-            //clone_profiles.rs
-            commands::clone_profiles::clone_profile_command,
-            commands::clone_profiles::validate_clone_target,
+            // Apply Settings
+            features::settings::apply_settings::apply_setting,
+            // Read Base and Save Config.cfg
+            features::settings::game_config::read_base_config,
+            features::settings::game_config::read_save_config,
+            // Profile Manager
+            features::profile_manager::commands::find_ets2_profiles,
+            features::profile_manager::commands::load_profile,
+            features::profile_manager::commands::save_profiles_cache,
+            features::profile_manager::commands::read_profiles_cache,
+            features::profile_manager::commands::save_last_profile,
+            features::profile_manager::commands::read_last_profile,
+            features::profile_manager::commands::find_profile_saves,
+            features::profile_manager::commands::switch_profile,
+            features::profile_manager::commands::set_active_profile,
+            features::profile_manager::commands::set_current_save,
+            // Profile Editing
+            features::save_editor::commands::edit_money,
+            features::save_editor::commands::edit_xp,
+            features::save_editor::commands::edit_level,
+            features::save_editor::commands::edit_truck_odometer,
+            features::save_editor::commands::edit_truck_license_plate,
+            features::save_editor::commands::edit_config_value,
+            features::save_editor::commands::edit_save_config_value,
+            features::save_editor::commands::edit_traffic_value,
+            features::save_editor::commands::edit_parking_doubles_value,
+            features::save_editor::commands::edit_developer_value,
+            features::save_editor::commands::edit_console_value,
+            features::save_editor::commands::edit_convoy_value,
+            features::save_editor::commands::edit_player_money,
+            features::save_editor::commands::edit_player_experience,
+            features::save_editor::commands::edit_skill_value,
+            features::save_editor::commands::edit_truck_license_plate,
+            // Save Analysis
+            features::save_analysis::reader::read_money,
+            features::save_analysis::reader::read_xp,
+            features::save_analysis::reader::read_all_save_data,
+            features::save_analysis::reader::read_traffic_value,
+            features::save_analysis::quicksave::quicksave_game_info,
+            // Vehicles and trailers
+            features::vehicles::trucks::get_all_trucks,
+            features::vehicles::trucks::get_player_truck,
+            features::vehicles::trailers::get_all_trailers,
+            features::vehicles::trailers::get_player_trailer,
+            
+            // FEATURE: PROFILE CLONE (Jetzt aus dem neuen Ordner)
+            features::profile_clone::commands::clone_profile_command,
+            features::profile_clone::commands::validate_clone_target,
 
         ])
         .run(tauri::generate_context!())

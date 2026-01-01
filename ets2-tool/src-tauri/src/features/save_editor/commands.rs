@@ -1,12 +1,12 @@
-use crate::log;
+// use crate::log;
 use crate::state::{AppProfileState, DecryptCache};
-use crate::utils::current_profile::{get_current_profile, require_current_profile};
-use crate::utils::decrypt::decrypt_if_needed;
-use crate::utils::paths::{
+use crate::shared::current_profile::{get_current_profile, require_current_profile};
+use crate::shared::decrypt::decrypt_if_needed;
+use crate::shared::paths::{
     autosave_path, ets2_base_config_path, game_sii_from_save, quicksave_config_path,
     quicksave_game_path,
 };
-use crate::utils::regex_helper::cragex;
+use crate::shared::regex_helper::cragex;
 use regex::Regex;
 use serde::Deserialize;
 use std::fs;
