@@ -1,19 +1,21 @@
 use crate::log;
 use crate::models::quicksave_game_info::GameDataQuicksave;
+use crate::state::{AppProfileState, DecryptCache};
+use crate::utils::current_profile::{
+    get_current_profile, require_current_profile, require_current_save,
+};
 use crate::utils::decrypt::decrypt_if_needed;
-use crate::utils::paths::{ quicksave_game_path, game_sii_from_save };
+use crate::utils::paths::{game_sii_from_save, quicksave_game_path};
 use crate::utils::regex_helper::cragex;
 use crate::utils::sii_parser::{parse_trailers_from_sii, parse_trucks_from_sii};
-use crate::utils::current_profile::{get_current_profile, require_current_profile, require_current_save};
-use tauri::command;
-use tauri::State;
-use crate::state::{AppProfileState, DecryptCache};
 use std::path::Path;
+use tauri::State;
+use tauri::command;
 
 #[command]
 pub async fn quicksave_game_info(
-        profile_state: State<'_, AppProfileState>,
-        cache: State<'_, DecryptCache>,
+    profile_state: State<'_, AppProfileState>,
+    cache: State<'_, DecryptCache>,
 ) -> Result<GameDataQuicksave, String> {
     log!("-------------------------------------------");
     log!("Starte quicksave_game_info()");
@@ -29,7 +31,6 @@ pub async fn quicksave_game_info(
         .clone()
         .ok_or_else(|| "Kein Save geladen".to_string())?;
     log!("Save: {}", save);
-
 
     let path = game_sii_from_save(Path::new(&save));
     log!("Pfad: {:?}", path);
@@ -59,11 +60,7 @@ pub async fn quicksave_game_info(
         .captures(player_block)
         .and_then(|c| {
             let v = c.get(1).unwrap().as_str().trim().to_string();
-            if v == "null" {
-                None
-            } else {
-                Some(v)
-            }
+            if v == "null" { None } else { Some(v) }
         });
     log!("my_truck = {:?}", player_my_truck);
 
@@ -72,11 +69,7 @@ pub async fn quicksave_game_info(
         .captures(player_block)
         .and_then(|c| {
             let v = c.get(1).unwrap().as_str().trim().to_string();
-            if v == "null" {
-                None
-            } else {
-                Some(v)
-            }
+            if v == "null" { None } else { Some(v) }
         });
     log!("my_trailer = {:?}", player_my_trailer);
 

@@ -11,3 +11,7 @@ pub fn decode_hex_folder_name(hex: &str) -> Option<String> {
 
     bytes_res.ok().and_then(|b| String::from_utf8(b).ok())
 }
+
+pub fn text_to_hex(text: &str) -> String {
+    text.as_bytes().iter().map(|b| format!("{:02X}", b)).collect()
+}

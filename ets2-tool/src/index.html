@@ -77,6 +77,14 @@
         <div id="saveDropdownList" class="dropdown-list"></div>
       </div>
 
+      <button
+        id="cloneProfileBtn"
+        class="refresh-btn"
+        title="Clone Profile"
+        style="margin-right: 5px"
+      >
+        👯
+      </button>
       <button id="refreshBtn" class="refresh-btn">⟳</button>
     </footer>
 
@@ -125,6 +133,40 @@
         <div class="modal-actions">
           <button id="modalMultiCancel">Close</button>
           <button id="modalMultiApply" class="apply">Apply</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: Clone Profile -->
+    <div class="modal-backdrop" id="modalClone">
+      <div class="modal-box">
+        <h2 id="modalCloneTitle">Clone Profile</h2>
+
+        <p id="cloneSourceDisplay"></p>
+
+        <input id="cloneNameInput" type="text" placeholder="New Profile Name" />
+        <div id="cloneValidationMsg"></div>
+
+        <div class="clone-options">
+          <label class="checkbox-row">
+            <input type="checkbox" id="cloneBackup" checked />
+            <span>Create Backup (.bak)</span>
+          </label>
+
+          <label class="checkbox-row">
+            <input type="checkbox" id="cloneReplaceHex" checked />
+            <span>Replace Hex Identifiers (Recommended)</span>
+          </label>
+
+          <label class="checkbox-row">
+            <input type="checkbox" id="cloneReplaceText" checked />
+            <span>Replace Text Names</span>
+          </label>
+        </div>
+
+        <div class="modal-actions">
+          <button id="modalCloneCancel">Cancel</button>
+          <button id="modalCloneApply" class="apply">Clone</button>
         </div>
       </div>
     </div>

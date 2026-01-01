@@ -88,6 +88,18 @@ const modalMultiContent = document.querySelector("#modalMultiContent");
 const modalMultiApplyBtn = document.getElementById("modalMultiApply");
 const modalMultiCancelBtn = document.getElementById("modalMultiCancel");
 
+const modalClone = document.getElementById("modalClone");
+const cloneSourceDisplay = document.getElementById("cloneSourceDisplay");
+const cloneNameInput = document.getElementById("cloneNameInput");
+const cloneValidationMsg = document.getElementById("cloneValidationMsg");
+const cloneBackup = document.getElementById("cloneBackup");
+const cloneReplaceHex = document.getElementById("cloneReplaceHex");
+const cloneReplaceText = document.getElementById("cloneReplaceText");
+const modalCloneApply = document.getElementById("modalCloneApply");
+const modalCloneCancel = document.getElementById("modalCloneCancel");
+
+
+
 /* --------------------------------------------------------------
    TEXT MODAL
 -------------------------------------------------------------- */
@@ -325,3 +337,107 @@ export function openModalMulti(title, config = []) {
     modalMultiCancelBtn.addEventListener("click", cancel);
   });
 };
+
+/* --------------------------------------------------------------
+   CLONE PROFILE MODAL
+-------------------------------------------------------------- */
+export function openCloneProfileModal() {
+  if (!window.selectedProfilePath) {
+    window.showToast("Please select a profile first!", "warning");
+    return;
+  }
+
+  // Reset UI
+  cloneNameInput.value = "";
+  cloneValidationMsg.textContent = "";
+  modalCloneApply.disabled = true;
+  modalCloneApply.textContent = "Clone";
+  
+  const profileName = document.querySelector("#profileNameDisplay")?.textContent || "Unknown";
+  cloneSourceDisplay.textContent = `Source: ${profileName}`;
+
+  modalClone.style.display = "flex";
+  cloneNameInput.focus();
+
+  let debounceTimer;
+
+  function validate() {
+    const newName = cloneNameInput.value.trim();
+    modalCloneApply.disabled = true;
+    cloneValidationMsg.textContent = "Checking...";
+    cloneValidationMsg.style.color = "#aaa";
+
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(async () => {
+      if (!newName) {
+        cloneValidationMsg.textContent = "";
+        return;
+      }
+
+      try {
+        const status = await window.invoke("validate_clone_target", {
+          sourceProfile: window.selectedProfilePath,
+          newName: newName,
+        });
+
+        if (status.valid) {
+          cloneValidationMsg.textContent = `✔ ${status.message}`;
+          cloneValidationMsg.style.color = "#4caf50";
+          modalCloneApply.disabled = false;
+        } else {
+          cloneValidationMsg.textContent = `❌ ${status.message}`;
+          cloneValidationMsg.style.color = "#f44336";
+        }
+      } catch (e) {
+        cloneValidationMsg.textContent = `Error: ${e}`;
+        cloneValidationMsg.style.color = "#f44336";
+      }
+    }, 300);
+  }
+
+  async function apply() {
+    const newName = cloneNameInput.value.trim();
+    if (!newName) return;
+
+    modalCloneApply.disabled = true;
+    modalCloneApply.textContent = "Cloning...";
+
+    try {
+      const msg = await window.invoke("clone_profile_command", {
+        sourceProfile: window.selectedProfilePath,
+        newName,
+        backup: cloneBackup.checked,
+        replaceHex: cloneReplaceHex.checked,
+        replaceText: cloneReplaceText.checked,
+      });
+
+      window.showToast(msg, "success");
+      
+      // Refresh list
+      const refreshBtn = document.querySelector("#refreshBtn");
+      if (refreshBtn) refreshBtn.click();
+
+      cleanup();
+    } catch (e) {
+      window.showToast(`Clone failed: ${e}`, "error");
+      console.error(e);
+      modalCloneApply.disabled = false;
+      modalCloneApply.textContent = "Clone";
+    }
+  }
+
+  function cancel() {
+    cleanup();
+  }
+
+  function cleanup() {
+    cloneNameInput.removeEventListener("input", validate);
+    modalCloneApply.removeEventListener("click", apply);
+    modalCloneCancel.removeEventListener("click", cancel);
+    modalClone.style.display = "none";
+  }
+
+  cloneNameInput.addEventListener("input", validate);
+  modalCloneApply.addEventListener("click", apply);
+  modalCloneCancel.addEventListener("click", cancel);
+}

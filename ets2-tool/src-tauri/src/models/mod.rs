@@ -1,9 +1,10 @@
+pub mod cached_profile;
+pub mod clone_profiles_info;
 pub mod global_config_info;
 pub mod profile_info;
 pub mod quicksave_game_info;
 pub mod save_game_config;
 pub mod save_game_data;
+pub mod save_info;
 pub mod trailers;
 pub mod trucks;
-pub mod cached_profile;
-pub mod save_info;

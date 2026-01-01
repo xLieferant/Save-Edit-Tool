@@ -1,20 +1,20 @@
 use crate::log;
 use crate::models::cached_profile::CachedProfile;
 use crate::models::profile_info::ProfileInfo;
+use crate::models::profile_info::SaveKind;
 use crate::models::save_info::SaveInfo;
 use crate::state::{AppProfileState, DecryptCache};
 use crate::utils::current_profile::set_current_profile;
 use crate::utils::decrypt::decrypt_if_needed;
 use crate::utils::extract::extract_profile_name;
 use crate::utils::extract_save_name::extract_save_name;
-use crate::models::profile_info::SaveKind;
 use crate::utils::hex::decode_hex_folder_name;
 use crate::utils::paths::ets2_base_path;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use tauri::command;
 use tauri::Manager;
 use tauri::State;
+use tauri::command;
 
 use std::io::Write;
 use std::path::PathBuf;
@@ -119,10 +119,7 @@ pub fn set_current_save(
 }
 
 #[tauri::command]
-pub fn switch_profile(
-    cache: State<DecryptCache>,
-    new_profile_path: String,
-) -> Result<(), String> {
+pub fn switch_profile(cache: State<DecryptCache>, new_profile_path: String) -> Result<(), String> {
     // 🔥 Cache vollständig leeren
     cache.files.lock().unwrap().clear();
 
@@ -130,7 +127,6 @@ pub fn switch_profile(
 
     Ok(())
 }
-
 
 #[command]
 pub fn find_profile_saves(profile_path: String) -> Result<Vec<SaveInfo>, String> {
@@ -215,8 +211,6 @@ fn classify_save_folder(folder: &str) -> SaveKind {
         _ => SaveKind::Invalid,
     }
 }
-
-
 
 #[command]
 pub fn find_ets2_profiles() -> Vec<ProfileInfo> {
@@ -311,7 +305,6 @@ pub fn load_profile(
     profile_state: State<'_, AppProfileState>,
     cache: State<'_, DecryptCache>,
 ) -> Result<String, String> {
-
     let save_to_load = if let Some(path_str) = save_path {
         PathBuf::from(path_str)
     } else {
@@ -332,6 +325,10 @@ pub fn load_profile(
         cache,
     )?;
 
-    log!("Profil geladen: {} | Save: {}", profile_path, save_to_load.display());
+    log!(
+        "Profil geladen: {} | Save: {}",
+        profile_path,
+        save_to_load.display()
+    );
     Ok("Profil geladen".into())
 }

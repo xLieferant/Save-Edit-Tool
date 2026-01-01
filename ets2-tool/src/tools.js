@@ -3,6 +3,7 @@ import {
   openModalText,
   openModalSlider,
   openModalMulti,
+  openCloneProfileModal,
 } from "./app.js";
 // import { clamp } from "./utils.js";
 
@@ -258,7 +259,7 @@ export const tools = {
           }
         }
       },
-    },
+    }
   ],
 
   settings: [

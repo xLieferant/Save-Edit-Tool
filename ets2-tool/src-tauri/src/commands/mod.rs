@@ -1,4 +1,5 @@
 pub mod apply_setting;
+pub mod clone_profiles;
 pub mod global_config;
 pub mod profiles;
 pub mod quicksave_game;

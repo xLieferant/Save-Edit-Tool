@@ -39,3 +39,5 @@ regex = "1.4.2"
 # Utility
 log = "0.4"
 chrono = "0.4"
+uuid = "1.19.0"
+zip = "7.0.0"

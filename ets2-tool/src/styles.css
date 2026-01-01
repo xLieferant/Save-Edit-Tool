@@ -585,7 +585,8 @@ body {
 #modalTextCancel,
 #modalNumberCancel,
 #modalSliderCancel,
-#modalMultiCancel {
+#modalMultiCancel,
+#modalCloneCancel {
   background: #ff3c3c;
   color: white;
   font-weight: bold;
@@ -594,7 +595,8 @@ body {
 #modalTextApply,
 #modalNumberApply,
 #modalSliderApply,
-#modalMultiApply {
+#modalMultiApply,
+#modalCloneApply {
   background: #63c768;
   color: black;
   font-weight: bold;
@@ -865,3 +867,34 @@ input[type="checkbox"]:checked + .checkboxSlider::before {
   color: #ffa500;
 }
 
+/* ---------- Options ---------- */
+/* .clone-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox-row input {
+  accent-color: var(--accent)
+} */
+/* ---------- Animation ---------- */
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
