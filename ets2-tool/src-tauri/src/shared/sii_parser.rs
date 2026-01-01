@@ -1,7 +1,6 @@
-use crate::log;
-use crate::models::trailers::ParsedTrailer;
+use crate::dev_log;
 use crate::models::trucks::ParsedTruck;
-use crate::shared::hex_float::{hex_to_float, parse_value_auto};
+use crate::shared::hex_float::hex_to_float;
 use regex::Regex;
 use std::collections::HashMap;
 
@@ -107,7 +106,7 @@ pub fn parse_trucks_from_sii(content: &str) -> Vec<ParsedTruck> {
         let mileage = extract_f32(block, "mileage");
         let assigned_garage = extract_value(block, "assigned_garage");
 
-        log!(
+        dev_log!(
             "Parsed Truck -> ID: {}, Brand: {}, Model: {}, Odo: {:?}, Mileage: {:?}, Fuel: {:?}, Plate: {:?}, Garage: {:?}",
             truck_id,
             brand,

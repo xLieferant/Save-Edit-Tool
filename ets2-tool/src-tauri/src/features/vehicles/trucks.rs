@@ -1,36 +1,36 @@
-use crate::log;
+use crate::dev_log;
 use crate::models::trucks::ParsedTruck;
-use crate::utils::decrypt::decrypt_if_needed;
-use crate::utils::regex_helper::cragex;
-use crate::utils::sii_parser::parse_trucks_from_sii;
+use crate::shared::decrypt::decrypt_if_needed;
+use crate::shared::regex_helper::cragex;
+use crate::shared::sii_parser::parse_trucks_from_sii;
 use std::path::Path;
 use tauri::command;
 
 #[command]
 pub async fn get_all_trucks(profile_path: String) -> Result<Vec<ParsedTruck>, String> {
-    // log!("get_all_trucks: Profil {}", profile_path);
+    // dev_log!("get_all_trucks: Profil {}", profile_path);
 
     let path = format!("{}/save/quicksave/game.sii", profile_path);
 
     let content = decrypt_if_needed(Path::new(&path)).map_err(|e| {
-        // log!("Decrypt Fehler: {}", e);
+        // dev_log!("Decrypt Fehler: {}", e);
         e
     })?;
 
     let trucks = parse_trucks_from_sii(&content);
-    log!("{} Trucks gefunden", trucks.len());
+    dev_log!("{} Trucks gefunden", trucks.len());
 
     Ok(trucks)
 }
 
 #[command]
 pub async fn get_player_truck(profile_path: String) -> Result<ParsedTruck, String> {
-    // log!("get_player_truck: Profil {}", profile_path);
+    // dev_log!("get_player_truck: Profil {}", profile_path);
 
     let path = format!("{}/save/quicksave/game.sii", profile_path);
 
     let content = decrypt_if_needed(Path::new(&path)).map_err(|e| {
-        // log!("Decrypt Fehler: {}", e);
+        // dev_log!("Decrypt Fehler: {}", e);
         e
     })?;
 

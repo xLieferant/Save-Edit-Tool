@@ -1,20 +1,20 @@
-use crate::log;
+use crate::dev_log;
 use crate::models::trailers::ParsedTrailer;
-use crate::utils::decrypt::decrypt_if_needed;
-use crate::utils::hex_float::parse_value_auto;
-use crate::utils::regex_helper::cragex;
-use crate::utils::sii_parser::TrailerData;
-use crate::utils::sii_parser::{extract_string, extract_string_array, parse_trailers_from_sii};
+use crate::shared::decrypt::decrypt_if_needed;
+use crate::shared::hex_float::parse_value_auto;
+use crate::shared::regex_helper::cragex;
+use crate::shared::sii_parser::TrailerData;
+use crate::shared::sii_parser::{extract_string, extract_string_array, parse_trailers_from_sii};
 use std::path::Path;
 use tauri::command;
 
 #[command]
 pub async fn get_player_trailer(profile_path: String) -> Result<ParsedTrailer, String> {
-    log!("get_player_trailer: Profil {}", profile_path);
+    dev_log!("get_player_trailer: Profil {}", profile_path);
 
     let path = format!("{}/save/quicksave/game.sii", profile_path);
     let content = decrypt_if_needed(Path::new(&path)).map_err(|e| {
-        log!("Decrypt Fehler: {}", e);
+        dev_log!("Decrypt Fehler: {}", e);
         e
     })?;
 
@@ -42,11 +42,11 @@ pub async fn get_player_trailer(profile_path: String) -> Result<ParsedTrailer, S
 
 #[command]
 pub async fn get_all_trailers(profile_path: String) -> Result<Vec<ParsedTrailer>, String> {
-    log!("get_all_trailers: Profil {}", profile_path);
+    dev_log!("get_all_trailers: Profil {}", profile_path);
 
     let path = format!("{}/save/quicksave/game.sii", profile_path);
     let content = decrypt_if_needed(Path::new(&path)).map_err(|e| {
-        log!("Decrypt Fehler: {}", e);
+        dev_log!("Decrypt Fehler: {}", e);
         e
     })?;
 
@@ -57,7 +57,7 @@ pub async fn get_all_trailers(profile_path: String) -> Result<Vec<ParsedTrailer>
         .map(|trailer_data| parsed_trailer_from_data(&trailer_data))
         .collect();
 
-    log!("{} Trailer gefunden", parsed_trailers.len());
+    dev_log!("{} Trailer gefunden", parsed_trailers.len());
     Ok(parsed_trailers)
 }
 

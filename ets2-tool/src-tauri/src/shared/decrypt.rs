@@ -1,15 +1,14 @@
-use crate::log;
+use crate::dev_log;
 use crate::state::DecryptCache;
 use decrypt_truck::decrypt_bin_file;
 use std::fs;
 use std::path::Path;
-use std::process::Command;
 use tauri::State;
 
 /// Liest eine .sii-Datei und entschlüsselt sie bei Bedarf
 
 pub fn decrypt_if_needed(path: &Path) -> Result<String, String> {
-    log!("decrypt_if_needed: {}", path.display());
+    dev_log!("decrypt_if_needed: {}", path.display());
 
     let bytes = fs::read(path).map_err(|e| format!("Datei konnte nicht gelesen werden: {}", e))?;
 
@@ -27,7 +26,7 @@ pub fn decrypt_if_needed(path: &Path) -> Result<String, String> {
     match decrypt_bin_file(&bytes) {
         Ok(decrypted) => Ok(String::from_utf8_lossy(&decrypted).to_string()),
         Err(e) => {
-            log!("Decrypt übersprungen ({}): {:?}", path.display(), e);
+            dev_log!("Decrypt übersprungen ({}): {:?}", path.display(), e);
             // Fallback: als Text zurückgeben
             Ok(String::from_utf8_lossy(&bytes).to_string())
         }
@@ -57,7 +56,7 @@ pub fn decrypt_cached(path: &Path, cache: &State<DecryptCache>) -> Result<String
 pub fn backup_file(path: &Path) -> Result<(), String> {
     let backup_path = path.with_extension("bak");
     fs::copy(path, &backup_path).map_err(|e| e.to_string())?;
-    log!("Backup erstellt: {}", backup_path.display());
+    dev_log!("Backup erstellt: {}", backup_path.display());
     Ok(())
 }
 
@@ -89,7 +88,7 @@ pub fn modify_block(
     fs::write(&tmp_path, &new_content).map_err(|e| e.to_string())?;
     fs::rename(tmp_path, path).map_err(|e| e.to_string())?;
 
-    log!(
+    dev_log!(
         "Block '{}' erfolgreich modifiziert: {}",
         block_name,
         path.display()

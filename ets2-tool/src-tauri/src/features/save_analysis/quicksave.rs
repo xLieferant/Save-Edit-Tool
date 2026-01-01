@@ -1,13 +1,13 @@
-use crate::log;
+use crate::dev_log;
 use crate::models::quicksave_game_info::GameDataQuicksave;
 use crate::state::{AppProfileState, DecryptCache};
-use crate::utils::current_profile::{
+use crate::shared::current_profile::{
     get_current_profile, require_current_profile, require_current_save,
 };
-use crate::utils::decrypt::decrypt_if_needed;
-use crate::utils::paths::{game_sii_from_save, quicksave_game_path};
-use crate::utils::regex_helper::cragex;
-use crate::utils::sii_parser::{parse_trailers_from_sii, parse_trucks_from_sii};
+use crate::shared::decrypt::decrypt_if_needed;
+use crate::shared::paths::{game_sii_from_save, quicksave_game_path};
+use crate::shared::regex_helper::cragex;
+use crate::shared::sii_parser::{parse_trailers_from_sii, parse_trucks_from_sii};
 use std::path::Path;
 use tauri::State;
 use tauri::command;
@@ -17,12 +17,12 @@ pub async fn quicksave_game_info(
     profile_state: State<'_, AppProfileState>,
     cache: State<'_, DecryptCache>,
 ) -> Result<GameDataQuicksave, String> {
-    log!("-------------------------------------------");
-    log!("Starte quicksave_game_info()");
-    log!("-------------------------------------------");
+    dev_log!("-------------------------------------------");
+    dev_log!("Starte quicksave_game_info()");
+    dev_log!("-------------------------------------------");
 
     let profile = require_current_profile(profile_state.clone())?;
-    log!("Profil: {}", profile);
+    dev_log!("Profil: {}", profile);
 
     let save = profile_state
         .current_save
@@ -30,17 +30,17 @@ pub async fn quicksave_game_info(
         .unwrap()
         .clone()
         .ok_or_else(|| "Kein Save geladen".to_string())?;
-    log!("Save: {}", save);
+    dev_log!("Save: {}", save);
 
     let path = game_sii_from_save(Path::new(&save));
-    log!("Pfad: {:?}", path);
+    dev_log!("Pfad: {:?}", path);
 
     let content = decrypt_if_needed(&path).map_err(|e| {
-        log!("Decrypt Fehler: {}", e);
+        dev_log!("Decrypt Fehler: {}", e);
         e
     })?;
 
-    log!("Datei geladen. Parsing...");
+    dev_log!("Datei geladen. Parsing...");
 
     // Player block
     let re_player = cragex(r"player\s*:\s*([A-Za-z0-9._]+)\s*\{([\s\S]*?)\}")
@@ -53,7 +53,7 @@ pub async fn quicksave_game_info(
     let player_id = caps.get(1).map(|m| m.as_str().to_string());
     let player_block = caps.get(2).map(|m| m.as_str()).unwrap_or("");
 
-    log!("Player ID = {:?}", player_id);
+    dev_log!("Player ID = {:?}", player_id);
 
     // my_truck
     let player_my_truck = cragex(r"my_truck\s*:\s*([A-Za-z0-9._]+|null)")?
@@ -62,7 +62,7 @@ pub async fn quicksave_game_info(
             let v = c.get(1).unwrap().as_str().trim().to_string();
             if v == "null" { None } else { Some(v) }
         });
-    log!("my_truck = {:?}", player_my_truck);
+    dev_log!("my_truck = {:?}", player_my_truck);
 
     // my_trailer
     let player_my_trailer = cragex(r"my_trailer\s*:\s*([A-Za-z0-9._]+|null)")?
@@ -71,13 +71,13 @@ pub async fn quicksave_game_info(
             let v = c.get(1).unwrap().as_str().trim().to_string();
             if v == "null" { None } else { Some(v) }
         });
-    log!("my_trailer = {:?}", player_my_trailer);
+    dev_log!("my_trailer = {:?}", player_my_trailer);
 
     // XP
     let player_xp = cragex(r"experience_points:\s*(\d+)")?
         .captures(&content)
         .and_then(|c| c.get(1).unwrap().as_str().parse::<i64>().ok());
-    log!("XP = {:?}", player_xp);
+    dev_log!("XP = {:?}", player_xp);
 
     // Bank block
     let re_bank = cragex(r"bank\s*:\s*([A-Za-z0-9._]+)\s*\{([\s\S]*?)\}")
@@ -87,13 +87,13 @@ pub async fn quicksave_game_info(
         .ok_or("Bank Block nicht gefunden")?;
     let bank_id = caps_bank.get(1).map(|m| m.as_str().to_string());
     let bank_block = caps_bank.get(2).map(|m| m.as_str()).unwrap_or("");
-    log!("Bank ID = {:?}", bank_id);
+    dev_log!("Bank ID = {:?}", bank_id);
 
     // Player money (_player_money bleibt unverändert)
     let _player_money = cragex(r"money_account:\s*(\d+)")?
         .captures(bank_block)
         .and_then(|c| c.get(1)?.as_str().parse::<i64>().ok());
-    log!("Money geladen: {:?}", _player_money);
+    dev_log!("Money geladen: {:?}", _player_money);
 
     // Skills helper
     let skill = |name: &str| -> Option<i64> {
@@ -109,11 +109,11 @@ pub async fn quicksave_game_info(
     let fragile = skill("fragile");
     let urgent = skill("urgent");
     let mechanical = skill("mechanical");
-    log!("Skills geladen");
+    dev_log!("Skills geladen");
 
     // All trucks
     let trucks = parse_trucks_from_sii(&content);
-    log!("{} Trucks gefunden", trucks.len());
+    dev_log!("{} Trucks gefunden", trucks.len());
 
     // Player truck data
     let mut truck_brand = None;
@@ -159,7 +159,7 @@ pub async fn quicksave_game_info(
 
     // TRAILER PARSING
     let trailers = parse_trailers_from_sii(&content);
-    log!("{} Trailer gefunden", trailers.len());
+    dev_log!("{} Trailer gefunden", trailers.len());
 
     let mut trailer_brand = None;
     let mut trailer_model = None;

@@ -4,9 +4,9 @@ use std::io::Write;
 
 // Wichtig: Dieses Makro exportiert das globale log!-Makro
 #[macro_export]
-macro_rules! log {
+macro_rules! dev_log {
     ($($arg:tt)*) => {{
-        $crate::crate::shared::logs::write_log(format!($($arg)*));
+        $crate::shared::logs::write_log(format!($($arg)*));
     }};
 }
 

@@ -1,4 +1,4 @@
-use crate::shared::logs;
+use crate::dev_log;
 use crate::models::cached_profile::CachedProfile;
 use crate::models::profile_info::ProfileInfo;
 use crate::models::profile_info::SaveKind;
@@ -98,7 +98,7 @@ pub fn set_active_profile(
     // 🔥 Cache vollständig leeren
     cache.files.lock().unwrap().clear();
 
-    log!(
+    dev_log!(
         "Aktives Profil gesetzt & DecryptCache geleert: {}",
         profile_path
     );
@@ -114,7 +114,7 @@ pub fn set_current_save(
     *state.current_save.lock().unwrap() = Some(save_path.clone());
     // Cache leeren
     cache.files.lock().unwrap().clear();
-    log!("Aktiver Save gesetzt: {}", save_path);
+    dev_log!("Aktiver Save gesetzt: {}", save_path);
     Ok(())
 }
 
@@ -123,7 +123,7 @@ pub fn switch_profile(cache: State<DecryptCache>, new_profile_path: String) -> R
     // 🔥 Cache vollständig leeren
     cache.files.lock().unwrap().clear();
 
-    log!("Profil gewechselt: {} → Cache geleert", new_profile_path);
+    dev_log!("Profil gewechselt: {} → Cache geleert", new_profile_path);
 
     Ok(())
 }
@@ -214,7 +214,7 @@ fn classify_save_folder(folder: &str) -> SaveKind {
 
 #[command]
 pub fn find_ets2_profiles() -> Vec<ProfileInfo> {
-    log!("Starte Profil-Suche…");
+    dev_log!("Starte Profil-Suche…");
     let mut found_profiles = Vec::new();
 
     if let Some(base) = ets2_base_path() {
@@ -275,14 +275,14 @@ pub fn find_ets2_profiles() -> Vec<ProfileInfo> {
                         info.name = Some(name);
                         info.success = true;
                         info.message = Some("OK".into());
-                        log!(
+                        dev_log!(
                             "Profil gefunden: {} ({})",
                             info.path,
                             info.name.as_ref().unwrap()
                         );
                     } else {
                         info.message = Some("profile_name nicht gefunden".into());
-                        log!("profile_name nicht gefunden in {}", info.path);
+                        dev_log!("profile_name nicht gefunden in {}", info.path);
                     }
 
                     found_profiles.push(info);
@@ -291,7 +291,7 @@ pub fn find_ets2_profiles() -> Vec<ProfileInfo> {
         }
     }
 
-    log!(
+    dev_log!(
         "Profil-Suche abgeschlossen. Gefunden: {}",
         found_profiles.len()
     );
@@ -325,7 +325,7 @@ pub fn load_profile(
         cache,
     )?;
 
-    log!(
+    dev_log!(
         "Profil geladen: {} | Save: {}",
         profile_path,
         save_to_load.display()
