@@ -61,11 +61,14 @@ pub fn extract_f32(block: &str, key: &str) -> Option<f32> {
 pub fn parse_trucks_from_sii(content: &str) -> Vec<ParsedTruck> {
     let mut trucks = Vec::new();
 
-    let re_vehicle_accessory =
-        Regex::new(r#"vehicle_accessory\s*:\s*([^\s]+)\s*\{\s*data_path:\s*"([^"]+)""#).unwrap();
+    let re_vehicle_accessory_block = Regex::new(r"vehicle_accessory\s*:\s*([^\s]+)\s*\{([^}]+)\}").unwrap();
+    let re_data_path = Regex::new(r#"data_path:\s*"([^"]+)""#).unwrap();
+
     let mut accessory_map: HashMap<String, String> = HashMap::new();
-    for cap in re_vehicle_accessory.captures_iter(content) {
-        accessory_map.insert(cap[1].to_string(), cap[2].to_string());
+    for cap in re_vehicle_accessory_block.captures_iter(content) {
+        if let Some(dp_cap) = re_data_path.captures(&cap[2]) {
+            accessory_map.insert(cap[1].to_string(), dp_cap[1].to_string());
+        }
     }
 
     let re_block = Regex::new(r"(vehicle\s*:\s*[^\s]+)\s*\{([^}]+)\}").unwrap();

@@ -429,6 +429,15 @@ document.addEventListener("DOMContentLoaded", () => {
   );
 
   // -----------------------------
+  // EXPOSE GLOBAL FUNCTIONS
+  // -----------------------------
+  window.loadQuicksave = loadQuicksave;
+  window.loadProfileData = loadProfileData;
+  window.loadProfileSaveConfig = loadProfileSaveConfig;
+  window.loadBaseConfig = loadBaseConfig;
+  window.loadAllTrucks = loadAllTrucks;
+
+  // -----------------------------
   // CLONE PROFILE LOGIC
   // -----------------------------
   const cloneBtn = document.getElementById("cloneProfileBtn");
