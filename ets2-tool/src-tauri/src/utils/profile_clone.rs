@@ -5,6 +5,10 @@ use tauri::command;
 use std::fs;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
+use zip::write::FileOptions;
+use zip::ZipWriter;
+use zip::ZipArchive;
+
 
 /// Hauptfunktion, die alles orchestriert
 pub fn clone_profile(
