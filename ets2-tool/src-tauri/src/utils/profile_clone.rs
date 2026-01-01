@@ -3,9 +3,7 @@ use std::fs;
 use crate::models::clone_profiles_info::CloneOptions;
 use crate::utils::hex; // dein vorhandenes hex_to_text / text_to_hex
 use crate::utils::decrypt::decrypt_if_needed;
-use uuid::Uuid;
 use walkdir::WalkDir;
-use std::env::temp_dir;
 
 /// Hauptfunktion, die alles orchestriert
 pub fn clone_profile(
@@ -19,34 +17,48 @@ pub fn clone_profile(
 
     // 1️⃣ Backup
     if options.backup {
-        let backup_path = source.with_extension("backup.zip");
-        backup_profile(source, &backup_path)?;
+        // Backup als Ordner kopieren (ZIP bräuchte externe Crate)
+        let backup_path = source.with_extension("bak");
+        if backup_path.exists() {
+            fs::remove_dir_all(&backup_path)?;
+        }
+        fs::create_dir_all(&backup_path)?;
+        copy_dir_recursive(source, &backup_path)?;
         println!("Backup erstellt: {:?}", backup_path);
     }
 
-    // // 2️⃣ Neues Profilverzeichnis 
-    // let new_id = hex::encode({Uuid::new_v4().to_string()});  // #FIXME <- Hex to text ! 
-    // let parent_dir = source.parent().ok_or("Kein übergeordnetes Verzeichnis")?;
-    // let temp_dir = parent_dir.join(format!("{}_tmp", new_id));
-    // fs::create_dir_all(&temp_dir)?;
-    // copy_dir_recursive(source, &temp_dir)?;
+    // 2️⃣ Neues Profilverzeichnis vorbereiten
+    // Der Ordnername muss der HEX-Wert des neuen Namens sein
+    let new_folder_name = hex::text_to_hex(new_name);
+    let parent_dir = source.parent().ok_or("Kein übergeordnetes Verzeichnis")?;
+    
+    let final_path = parent_dir.join(&new_folder_name);
+    if final_path.exists() {
+        return Err(format!("Profilordner existiert bereits: {}", new_folder_name).into());
+    }
+
+    // Temp-Verzeichnis erstellen
+    let temp_dir = parent_dir.join(format!("{}_tmp", new_folder_name));
+    if temp_dir.exists() {
+        fs::remove_dir_all(&temp_dir)?;
+    }
+    fs::create_dir_all(&temp_dir)?;
+
+    // Inhalt kopieren
+    copy_dir_recursive(source, &temp_dir)?;
 
     // 3️⃣ Inhalte anpassen
-    replace_identifiers(&temp_dir, source.file_name().unwrap().to_str().unwrap(), new_name, options)?;
+    // Wir müssen den alten Profilnamen wissen (Text), um ihn zu ersetzen.
+    // Wenn der Quellordner Hex ist, decodieren wir ihn.
+    let dir_name = source.file_name().unwrap().to_str().unwrap();
+    let old_name = hex::decode_hex_folder_name(dir_name).unwrap_or(dir_name.to_string());
+
+    replace_identifiers(&temp_dir, &old_name, new_name, options)?;
 
     // 4️⃣ Final umbenennen
-    let final_path = parent_dir.join(new_name);
     fs::rename(&temp_dir, &final_path)?;
 
     Ok(final_path)
-}
-
-/// Backup als ZIP erstellen
-fn backup_profile(source: &Path, zip_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
-    // Platzhalter, du kannst dein bestehendes ZIP-Backup nutzen
-    // fs::copy einfach als Platzhalter:
-    fs::copy(source, zip_path)?;
-    Ok(())
 }
 
 /// Ordner rekursiv kopieren
