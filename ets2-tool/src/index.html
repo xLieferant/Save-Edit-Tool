@@ -45,14 +45,6 @@
     ></p>
 
     <footer class="profile-bar">
-      <div class="profileBurger">
-        <button id="profileBurgerBtn">
-          <span>
-            🗂️
-          </span>
-        </button>
-      </div>
-
       <div class="game-switch">
         <button id="ets2Btn" class="active">
           <img src="images/ets2_32x32.png" alt="ets2Logo" sizes="15px" />
@@ -85,7 +77,14 @@
         <div id="saveDropdownList" class="dropdown-list"></div>
       </div>
 
-      <button id="cloneProfileBtn" class="refresh-btn" title="Clone Profile" style="margin-right: 5px;">👯</button>
+      <button
+        id="cloneProfileBtn"
+        class="refresh-btn"
+        title="Clone Profile"
+        style="margin-right: 5px"
+      >
+        👯
+      </button>
       <button id="refreshBtn" class="refresh-btn">⟳</button>
     </footer>
 
@@ -141,29 +140,42 @@
     <!-- MODAL: Clone Profile -->
     <div class="modal-backdrop" id="modalClone">
       <div class="modal-box">
-        <h2>Clone Profile</h2>
-        <p id="cloneSourceDisplay" style="font-size: 0.9em; color: #aaa; margin-bottom: 15px;"></p>
-        
-        <div style="margin-bottom: 15px;">
-            <input id="cloneNameInput" type="text" placeholder="New Profile Name" style="width: 100%; padding: 8px; box-sizing: border-box;" />
-            <div id="cloneValidationMsg" style="font-size: 0.8em; min-height: 1.2em; margin-top: 5px; text-align: left;"></div>
+        <h2 class="modal-title">Clone Profile</h2>
+
+        <p id="cloneSourceDisplay" class="modal-subtitle"></p>
+
+        <div class="modal-field">
+          <input
+            id="cloneNameInput"
+            type="text"
+            placeholder="New Profile Name"
+            class="modal-input"
+          />
+          <div id="cloneValidationMsg" class="modal-validation"></div>
         </div>
 
-        <div class="clone-options" style="text-align: left; display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px;">
-            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                <input type="checkbox" id="cloneBackup" checked> <span>Create Backup of Source (.zip)</span>
-            </label>
-            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                <input type="checkbox" id="cloneReplaceHex" checked> <span>Replace Hex Identifiers (Recommended)</span>
-            </label>
-            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                <input type="checkbox" id="cloneReplaceText" checked> <span>Replace Text Names</span>
-            </label>
+        <div class="clone-options">
+          <label class="checkbox-row">
+            <input type="checkbox" id="cloneBackup" checked />
+            <span>Create Backup of Source (.zip)</span>
+          </label>
+
+          <label class="checkbox-row">
+            <input type="checkbox" id="cloneReplaceHex" checked />
+            <span>Replace Hex Identifiers (Recommended)</span>
+          </label>
+
+          <label class="checkbox-row">
+            <input type="checkbox" id="cloneReplaceText" checked />
+            <span>Replace Text Names</span>
+          </label>
         </div>
 
         <div class="modal-actions">
-          <button id="modalCloneCancel">Cancel</button>
-          <button id="modalCloneApply" class="apply" disabled>Clone</button>
+          <button id="modalCloneCancel" class="btn secondary">Cancel</button>
+          <button id="modalCloneApply" class="btn primary" disabled>
+            Clone
+          </button>
         </div>
       </div>
     </div>

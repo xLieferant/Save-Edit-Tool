@@ -865,3 +865,146 @@ input[type="checkbox"]:checked + .checkboxSlider::before {
   color: #ffa500;
 }
 
+/* ---------- Backdrop ---------- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-backdrop.active {
+  display: flex;
+}
+
+/* ---------- Modal Box ---------- */
+.modal-box {
+  width: 420px;
+  max-width: 90%;
+  background: #121212;
+  border-radius: 10px;
+  padding: 22px;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.05),
+              0 20px 40px rgba(0,0,0,0.6);
+  animation: modalFadeIn 0.15s ease-out;
+}
+
+/* ---------- Text ---------- */
+.modal-title {
+  margin: 0 0 8px 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.modal-subtitle {
+  font-size: 0.9rem;
+  color: #aaa;
+  margin-bottom: 16px;
+}
+
+/* ---------- Inputs ---------- */
+.modal-field {
+  margin-bottom: 16px;
+}
+
+.modal-input {
+  width: 100%;
+  padding: 9px 10px;
+  background: #1b1b1b;
+  border: 1px solid #2a2a2a;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 0.95rem;
+}
+
+.modal-input:focus {
+  outline: none;
+  border-color: #4da3ff;
+  box-shadow: 0 0 0 1px rgba(77,163,255,0.4);
+}
+
+/* ---------- Validation ---------- */
+.modal-validation {
+  min-height: 1.2em;
+  font-size: 0.8rem;
+  margin-top: 5px;
+}
+
+.modal-validation.error {
+  color: #ff6b6b;
+}
+
+.modal-validation.success {
+  color: #6bff95;
+}
+
+/* ---------- Options ---------- */
+.clone-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox-row input {
+  accent-color: #4da3ff;
+}
+
+/* ---------- Actions ---------- */
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.btn {
+  padding: 7px 14px;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+
+.btn.secondary {
+  background: #2a2a2a;
+  color: #ddd;
+}
+
+.btn.secondary:hover {
+  background: #333;
+}
+
+.btn.primary {
+  background: #4da3ff;
+  color: #000;
+  font-weight: 500;
+}
+
+.btn.primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ---------- Animation ---------- */
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

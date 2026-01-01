@@ -1,4 +1,4 @@
-import { loadTools, activeTab } from "./app.js";
+import { loadTools, activeTab, openCloneProfileModal } from "./app.js";
 import { applySetting } from "./js/applySetting.js";
 import { checkUpdaterOnStartup, manualUpdateCheck } from "./js/updater.js";
 
@@ -76,7 +76,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   //  # [x]  Werte müssen immer aktuell sein!
   setInterval(async () => {
-    if (selectedSavePath) {
+    if (window.selectedSavePath) {
       window.currentQuicksaveData = await invoke("quicksave_game_info");
       updateUIWithCurrentQuicksave(); // Funktion, die DOM aktualisiert
     }
@@ -117,15 +117,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const profileDropdownList = document.querySelector("#profileDropdownList");
   const openProfileModalBtn = document.querySelector("#openProfileModal");
   const profileStatus = document.querySelector("#profile-status");
-  
-  // CLONE ELEMENTS
-  const cloneBtn = document.getElementById("cloneProfileBtn");
-  const modalClone = document.getElementById("modalClone");
-  const cloneNameInput = document.getElementById("cloneNameInput");
-  const cloneValidationMsg = document.getElementById("cloneValidationMsg");
-  const modalCloneApply = document.getElementById("modalCloneApply");
-  const modalCloneCancel = document.getElementById("modalCloneCancel");
-  const cloneSourceDisplay = document.getElementById("cloneSourceDisplay");
 
   // SAVE PICKER
   const saveNameDisplay = document.querySelector("#saveName");
@@ -140,8 +131,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const patreonBtn = document.querySelector("#patreonBtn");
   const githubBtn = document.querySelector("#githubBtn");
 
-  let selectedProfilePath = null;
-  let selectedSavePath = null;
+  // Global state for selected paths
+  window.selectedProfilePath = null;
+  window.selectedSavePath = null;
   window.currentSavePath = null;
 
   // -----------------------------
@@ -173,20 +165,32 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  openProfileModalBtn?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const wasOpen = profileDropdownList.classList.contains("show");
-    closeAllDropdowns();
-    if (!wasOpen) profileDropdownList.classList.add("show");
-  });
+  // 🔹 FIX: Klick auf den gesamten Container (Text + Pfeil) öffnet das Menü
+  const profilePicker = document.querySelector(".profile-picker");
+  if (profilePicker) {
+    profilePicker.addEventListener("click", (e) => {
+      // Verhindern, dass Klicks innerhalb der Liste das Menü sofort wieder schließen/togglen
+      if (e.target.closest(".custom-dropdown-list")) return;
 
-  openSaveModalBtn?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    if (!selectedProfilePath) return;
-    const wasOpen = saveDropdownList.classList.contains("show");
-    closeAllDropdowns();
-    if (!wasOpen) saveDropdownList.classList.add("show");
-  });
+      e.stopPropagation();
+      const wasOpen = profileDropdownList.classList.contains("show");
+      closeAllDropdowns();
+      if (!wasOpen) profileDropdownList.classList.add("show");
+    });
+  }
+
+  const savePicker = document.querySelector(".save-picker");
+  if (savePicker) {
+    savePicker.addEventListener("click", (e) => {
+      if (e.target.closest(".dropdown-list")) return;
+
+      e.stopPropagation();
+      if (!window.selectedProfilePath) return;
+      const wasOpen = saveDropdownList.classList.contains("show");
+      closeAllDropdowns();
+      if (!wasOpen) saveDropdownList.classList.add("show");
+    });
+  }
 
   // -----------------------------
   // PROFILE SCAN
@@ -208,11 +212,11 @@ document.addEventListener("DOMContentLoaded", () => {
         item.textContent = `${p.name} (${p.path})`;
 
         item.addEventListener("click", async () => {
-          selectedProfilePath = p.path;
+          window.selectedProfilePath = p.path;
           profileNameDisplay.textContent = p.name;
           profileDropdownList.classList.remove("show");
           await invoke("switch_profile", {
-            new_profile_path: selectedProfilePath,
+            new_profile_path: window.selectedProfilePath,
           });
           await loadSelectedProfile();
         });
@@ -230,18 +234,18 @@ document.addEventListener("DOMContentLoaded", () => {
   // PROFILE LADEN
   // ----------------------------- 
   async function loadSelectedProfile() {
-    if (!selectedProfilePath) return;
+    if (!window.selectedProfilePath) return;
 
     try {
       profileStatus.textContent = "Loading profile...";
 
       // → Alte Saves entfernen
       saveDropdownList.innerHTML = "";
-      selectedSavePath = null;
+      window.selectedSavePath = null;
       window.currentSavePath = null;
       saveNameDisplay.textContent = "Select a save";
 
-      await invoke("load_profile", { profilePath: selectedProfilePath });
+      await invoke("load_profile", { profilePath: window.selectedProfilePath });
 
       // Scanne die neuen Saves
       await scanSavesForProfile();
@@ -269,7 +273,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function scanSavesForProfile() {
-    if (!selectedProfilePath) return;
+    if (!window.selectedProfilePath) return;
 
     saveDropdownList.innerHTML = "";
     saveDropdownList.classList.add("show");
@@ -277,7 +281,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try {
       const saves = await invoke("find_profile_saves", {
-        profilePath: selectedProfilePath,
+        profilePath: window.selectedProfilePath,
       });
 
       // 🔹 Nur gültige Saves (Autosave, Quicksave, nummerierte Manual)
@@ -318,7 +322,7 @@ document.addEventListener("DOMContentLoaded", () => {
         item.title = s.path; // Zeigt beim Drüberfahren den vollen Pfad an
 
         item.addEventListener("click", async () => {
-          selectedSavePath = s.path;
+          window.selectedSavePath = s.path;
           window.currentSavePath = s.path;
           saveNameDisplay.textContent = s.name ?? s.folder;
           saveDropdownList.classList.remove("show");
@@ -366,7 +370,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function loadProfileSaveConfig() {
     window.readSaveGameConfig = await invoke("read_save_config", {
-      profilePath: selectedProfilePath,
+      profilePath: window.selectedProfilePath,
     });
   }
 
@@ -376,7 +380,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function loadAllTrucks() {
     window.playerTruck = await invoke("get_player_truck", {
-      profilePath: selectedProfilePath,
+      profilePath: window.selectedProfilePath,
     });
     window.allTrucks = [window.playerTruck];
   }
@@ -428,94 +432,10 @@ document.addEventListener("DOMContentLoaded", () => {
   // -----------------------------
   // CLONE PROFILE LOGIC
   // -----------------------------
-  
-  // Open Modal
+  const cloneBtn = document.getElementById("cloneProfileBtn");
   cloneBtn?.addEventListener("click", () => {
-    if (!selectedProfilePath) {
-      showToast("Please select a profile first!", "warning");
-      return;
-    }
-    cloneSourceDisplay.textContent = `Source: ${profileNameDisplay.textContent}`;
-    cloneNameInput.value = "";
-    cloneValidationMsg.textContent = "";
-    modalCloneApply.disabled = true;
-    modalClone.classList.add("show");
-    cloneNameInput.focus();
-  });
-
-  // Close Modal
-  modalCloneCancel?.addEventListener("click", () => {
-    modalClone.classList.remove("show");
-  });
-
-  // Live Validation
-  let cloneDebounceTimer;
-  cloneNameInput?.addEventListener("input", () => {
-    const newName = cloneNameInput.value.trim();
-    modalCloneApply.disabled = true;
-    cloneValidationMsg.textContent = "Checking...";
-    cloneValidationMsg.style.color = "#aaa";
-
-    clearTimeout(cloneDebounceTimer);
-    cloneDebounceTimer = setTimeout(async () => {
-      if (!newName) {
-        cloneValidationMsg.textContent = "";
-        return;
-      }
-
-      try {
-        // Backend Check
-        const status = await invoke("validate_clone_target", {
-          sourceProfile: selectedProfilePath,
-          newName: newName
-        });
-
-        if (status.valid) {
-          cloneValidationMsg.textContent = "✔ " + status.message;
-          cloneValidationMsg.style.color = "#4caf50"; // Green
-          modalCloneApply.disabled = false;
-        } else {
-          cloneValidationMsg.textContent = "❌ " + status.message;
-          cloneValidationMsg.style.color = "#f44336"; // Red
-        }
-      } catch (e) {
-        cloneValidationMsg.textContent = "Error: " + e;
-        cloneValidationMsg.style.color = "#f44336";
-      }
-    }, 300); // 300ms warten nach dem Tippen
-  });
-
-  // Execute Clone
-  modalCloneApply?.addEventListener("click", async () => {
-    const newName = cloneNameInput.value.trim();
-    const backup = document.getElementById("cloneBackup").checked;
-    const replaceHex = document.getElementById("cloneReplaceHex").checked;
-    const replaceText = document.getElementById("cloneReplaceText").checked;
-
-    if (!selectedProfilePath || !newName) return;
-
-    modalCloneApply.disabled = true;
-    modalCloneApply.textContent = "Cloning...";
-
-    try {
-      const msg = await invoke("clone_profile_command", {
-        sourceProfile: selectedProfilePath,
-        newName,
-        backup,
-        replaceHex,
-        replaceText
-      });
-      showToast(msg, "success");
-      modalClone.classList.remove("show");
-      // Refresh Profile List
-      scanBtn.click();
-    } catch (e) {
-      showToast("Clone failed: " + e, "error");
-      console.error(e);
-    } finally {
-      modalCloneApply.textContent = "Clone";
-      // Button bleibt disabled bis zur nächsten Eingabe
-    }
+    // Ruft die zentrale Modal-Funktion aus app.js auf
+    openCloneProfileModal();
   });
 
   // -----------------------------
@@ -541,7 +461,7 @@ document.addEventListener("DOMContentLoaded", () => {
         item.textContent = `${p.name} (${p.path})`;
 
         item.addEventListener("click", async () => {
-          selectedProfilePath = p.path;
+          window.selectedProfilePath = p.path;
           profileNameDisplay.textContent = p.name;
           profileDropdownList.classList.remove("show");
 
@@ -593,16 +513,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (last) {
         // try to find matching profile in this scan
-        const matched = profiles.find((p) => p.path === last);
+        const matched = profiles.find((p) => p.path === last && p.success);
         if (matched && matched.success) {
-          selectedProfilePath = matched.path;
+          window.selectedProfilePath = matched.path;
           profileNameDisplay.textContent = matched.name ?? "Unknown";
           // load without further user action
           await loadSelectedProfile();
           return;
         } else {
           // fallback: try to load last path directly (may still work)
-          selectedProfilePath = last;
+          window.selectedProfilePath = last;
           profileNameDisplay.textContent = last;
           try {
             await loadSelectedProfile();
@@ -640,7 +560,7 @@ document.addEventListener("DOMContentLoaded", () => {
           item.className = "dropdown-item";
           item.textContent = `${p.name} (${p.path})`;
           item.addEventListener("click", async () => {
-            selectedProfilePath = p.path;
+            window.selectedProfilePath = p.path;
             profileNameDisplay.textContent = p.name;
             profileDropdownList.classList.remove("show");
             localStorage.setItem("ets2_last_profile", p.path);
@@ -658,7 +578,7 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
           const last = await invoke("read_last_profile");
           if (last) {
-            selectedProfilePath = last;
+            window.selectedProfilePath = last;
             profileNameDisplay.textContent = "loading last profile...";
             await loadSelectedProfile();
             // After we've loaded, also perform background scan to refresh cache new profiles
