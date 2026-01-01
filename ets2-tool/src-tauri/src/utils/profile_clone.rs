@@ -1,10 +1,11 @@
 use std::path::{Path, PathBuf};
 use std::fs;
-use crate::models::CloneOptions;
+use crate::models::clone_profiles_info::CloneOptions;
 use crate::utils::hex; // dein vorhandenes hex_to_text / text_to_hex
 use crate::utils::decrypt::decrypt_if_needed;
 use uuid::Uuid;
 use walkdir::WalkDir;
+use std::env::temp_dir;
 
 /// Hauptfunktion, die alles orchestriert
 pub fn clone_profile(
@@ -23,12 +24,12 @@ pub fn clone_profile(
         println!("Backup erstellt: {:?}", backup_path);
     }
 
-    // 2️⃣ Neues Profilverzeichnis
-    let new_id = Uuid::new_v4().to_string();
-    let parent_dir = source.parent().ok_or("Kein übergeordnetes Verzeichnis")?;
-    let temp_dir = parent_dir.join(format!("{}_tmp", new_id));
-    fs::create_dir_all(&temp_dir)?;
-    copy_dir_recursive(source, &temp_dir)?;
+    // // 2️⃣ Neues Profilverzeichnis 
+    // let new_id = hex::encode({Uuid::new_v4().to_string()});  // #FIXME <- Hex to text ! 
+    // let parent_dir = source.parent().ok_or("Kein übergeordnetes Verzeichnis")?;
+    // let temp_dir = parent_dir.join(format!("{}_tmp", new_id));
+    // fs::create_dir_all(&temp_dir)?;
+    // copy_dir_recursive(source, &temp_dir)?;
 
     // 3️⃣ Inhalte anpassen
     replace_identifiers(&temp_dir, source.file_name().unwrap().to_str().unwrap(), new_name, options)?;

@@ -1,16 +1,15 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Launch",
+            "name": "Debug Tauri App",
             "type": "lldb",
             "request": "launch",
-            "program": "?${workspaceRoot}//ets2-tool//src-tauri//target//release//ets2-tools.exe",
+            // Nutze ${workspaceFolder} als Basis, um Fehler durch absolute Pfade zu vermeiden
+            "program": "${workspaceFolder}/ets2-tool/src-tauri/target/release/ets2-tool.exe",
             "args": [],
-            "cwd": "${workspaceRoot}"
+            "cwd": "${workspaceFolder}",
+            "stopOnEntry": false
         }
     ]
 }
