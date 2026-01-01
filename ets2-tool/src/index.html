@@ -140,24 +140,17 @@
     <!-- MODAL: Clone Profile -->
     <div class="modal-backdrop" id="modalClone">
       <div class="modal-box">
-        <h2 class="modal-title">Clone Profile</h2>
+        <h2 id="modalCloneTitle">Clone Profile</h2>
 
-        <p id="cloneSourceDisplay" class="modal-subtitle"></p>
+        <p id="cloneSourceDisplay"></p>
 
-        <div class="modal-field">
-          <input
-            id="cloneNameInput"
-            type="text"
-            placeholder="New Profile Name"
-            class="modal-input"
-          />
-          <div id="cloneValidationMsg" class="modal-validation"></div>
-        </div>
+        <input id="cloneNameInput" type="text" placeholder="New Profile Name" />
+        <div id="cloneValidationMsg"></div>
 
         <div class="clone-options">
           <label class="checkbox-row">
             <input type="checkbox" id="cloneBackup" checked />
-            <span>Create Backup of Source (.zip)</span>
+            <span>Create Backup (.bak)</span>
           </label>
 
           <label class="checkbox-row">
@@ -172,10 +165,8 @@
         </div>
 
         <div class="modal-actions">
-          <button id="modalCloneCancel" class="btn secondary">Cancel</button>
-          <button id="modalCloneApply" class="btn primary" disabled>
-            Clone
-          </button>
+          <button id="modalCloneCancel">Cancel</button>
+          <button id="modalCloneApply" class="apply">Clone</button>
         </div>
       </div>
     </div>

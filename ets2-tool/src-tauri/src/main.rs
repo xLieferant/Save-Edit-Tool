@@ -66,7 +66,11 @@ fn main() {
             commands::trucks::get_player_truck,
             // trailers.rs
             commands::trailers::get_player_trailer,
-            commands::trailers::get_all_trailers
+            commands::trailers::get_all_trailers,
+            //utils 
+            //profile_clone.rs
+            utils::profile_clone::validate_clone_target_cmd,
+            utils::profile_clone::clone_profile_cmd,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
