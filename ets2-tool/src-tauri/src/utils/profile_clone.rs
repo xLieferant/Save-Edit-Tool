@@ -1,16 +1,13 @@
 use crate::models::clone_profiles_info::CloneOptions;
-use crate::utils::decrypt::decrypt_if_needed;
-use crate::utils::hex; // dein vorhandenes hex_to_text / text_to_hex
-use tauri::command;
-use std::fs;
+use crate::utils::{decrypt::decrypt_if_needed, hex};
+use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
-use zip::write::FileOptions;
-use zip::ZipWriter;
-use zip::ZipArchive;
+use zip::{ZipWriter, write::FileOptions};
+use zip::CompressionMethod;
+use std::io::Write;
 
-
-/// Hauptfunktion, die alles orchestriert
+/// Hauptlogik
 pub fn clone_profile(
     source: &Path,
     new_name: &str,
@@ -20,154 +17,126 @@ pub fn clone_profile(
         return Err("Quellprofil existiert nicht".into());
     }
 
-    // 1️⃣ Backup
+    let parent = source.parent().ok_or("Kein Parent-Verzeichnis")?;
+    let new_hex = hex::text_to_hex(new_name);
+    let target_dir = parent.join(&new_hex);
+
+    if target_dir.exists() {
+        return Err("Zielprofil existiert bereits".into());
+    }
+
+    // 1️⃣ ZIP-Backup
     if options.backup {
-        // Backup als Ordner kopieren (ZIP bräuchte externe Crate)
-        let backup_path = source.with_extension("bak");
-        if backup_path.exists() {
-            fs::remove_dir_all(&backup_path)?;
-        }
-        fs::create_dir_all(&backup_path)?;
-        copy_dir_recursive(source, &backup_path)?;
-        println!("Backup erstellt: {:?}", backup_path);
+        create_zip_backup(source, parent)?;
     }
 
-    // 2️⃣ Neues Profilverzeichnis vorbereiten
-    // Der Ordnername muss der HEX-Wert des neuen Namens sein
-    let new_folder_name = hex::text_to_hex(new_name);
-    let parent_dir = source.parent().ok_or("Kein übergeordnetes Verzeichnis")?;
-
-    let final_path = parent_dir.join(&new_folder_name);
-    if final_path.exists() {
-        return Err(format!("Profilordner existiert bereits: {}", new_folder_name).into());
-    }
-
-    // Temp-Verzeichnis erstellen
-    let temp_dir = parent_dir.join(format!("{}_tmp", new_folder_name));
+    // 2️⃣ Temp kopieren
+    let temp_dir = parent.join(format!("{}_tmp", new_hex));
     if temp_dir.exists() {
         fs::remove_dir_all(&temp_dir)?;
     }
-    fs::create_dir_all(&temp_dir)?;
-
-    // Inhalt kopieren
     copy_dir_recursive(source, &temp_dir)?;
 
-    // 3️⃣ Inhalte anpassen
-    // Wir müssen den alten Profilnamen wissen (Text), um ihn zu ersetzen.
-    // Wenn der Quellordner Hex ist, decodieren wir ihn.
-    let dir_name = source.file_name().unwrap().to_str().unwrap();
-    let old_name = hex::decode_hex_folder_name(dir_name).unwrap_or(dir_name.to_string());
+    // 3️⃣ Alten Namen aus profile.sii lesen
+    let profile_sii = temp_dir.join("profile.sii");
+    let decrypted = decrypt_if_needed(&profile_sii)?;
+    let old_name =
+        extract_profile_name(&decrypted).ok_or("Profilname konnte nicht gelesen werden")?;
 
+    // 4️⃣ Ersetzen
     replace_identifiers(&temp_dir, &old_name, new_name, options)?;
 
-    // 4️⃣ Final umbenennen
-    fs::rename(&temp_dir, &final_path)?;
+    // 5️⃣ Final umbenennen
+    fs::rename(&temp_dir, &target_dir)?;
 
-    Ok(final_path)
+    Ok(target_dir)
 }
 
-/// Ordner rekursiv kopieren
-fn copy_dir_recursive(src: &Path, dest: &Path) -> Result<(), Box<dyn std::error::Error>> {
-    for entry in WalkDir::new(src) {
+fn create_zip_backup(source: &Path, parent: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    let backup_root = parent.join("Save Edit Tool Profile Backups");
+    fs::create_dir_all(&backup_root)?;
+
+    let profile_name = source.file_name().unwrap().to_string_lossy();
+    let timestamp = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S");
+    let zip_path = backup_root.join(format!("{}_{}.zip", profile_name, timestamp));
+
+    let file = File::create(zip_path)?;
+    let mut zip = ZipWriter::new(file);
+    let options: FileOptions<()> = 
+        FileOptions::default().compression_method(CompressionMethod::Deflated);
+
+    for entry in WalkDir::new(source) {
         let entry = entry?;
         let path = entry.path();
-        let relative = path.strip_prefix(src)?;
-        let dest_path = dest.join(relative);
+        let name = path.strip_prefix(source)?.to_string_lossy();
 
-        if path.is_dir() {
-            fs::create_dir_all(&dest_path)?;
+        if path.is_file() {
+            zip.start_file(name, options)?;
+            let data = fs::read(path)?;
+            zip.write_all(&data)?;
+        }
+    }
+
+    zip.finish()?;
+    Ok(())
+}
+
+/// Rekursives Kopieren
+fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    for entry in WalkDir::new(src) {
+        let entry = entry?;
+        let rel = entry.path().strip_prefix(src)?;
+        let dest = dst.join(rel);
+
+        if entry.file_type().is_dir() {
+            fs::create_dir_all(&dest)?;
         } else {
-            fs::copy(path, &dest_path)?;
+            fs::copy(entry.path(), &dest)?;
         }
     }
     Ok(())
 }
 
-/// Inhalte anpassen (Text + Hex)
+/// Profilname aus profile.sii extrahieren
+fn extract_profile_name(content: &str) -> Option<String> {
+    for line in content.lines() {
+        if line.trim_start().starts_with("profile_name:") {
+            return line.split('"').nth(1).map(|s| s.to_string());
+        }
+    }
+    None
+}
+
+/// Ersetzungen durchführen
 fn replace_identifiers(
     dir: &Path,
-    old_name: &str,
-    new_name: &str,
+    old: &str,
+    new: &str,
     options: CloneOptions,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let extensions = vec!["sii", "profile", "cfg", "txt", "save"];
+    let old_hex = hex::text_to_hex(old);
+    let new_hex = hex::text_to_hex(new);
 
     for entry in WalkDir::new(dir) {
         let entry = entry?;
         let path = entry.path();
 
-        if path.is_file() {
-            if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
-                if extensions.contains(&ext) {
-                    // 🔥 WICHTIG: decrypt_if_needed nutzen, sonst crasht es bei binären profile.sii
-                    let content = decrypt_if_needed(path)
-                        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
-
-                    let mut new_content = content.clone();
-
-                    if options.replace_text {
-                        new_content = new_content.replace(old_name, new_name);
-                    }
-
-                    if options.replace_hex {
-                        let old_hex = hex::text_to_hex(old_name);
-                        let new_hex = hex::text_to_hex(new_name);
-                        new_content = new_content.replace(&old_hex, &new_hex);
-
-                        let old_escaped: String = old_name
-                            .as_bytes()
-                            .iter()
-                            .map(|b| format!("\\x{:02x}", b))
-                            .collect();
-                        let new_escaped: String = new_name
-                            .as_bytes()
-                            .iter()
-                            .map(|b| format!("\\x{:02x}", b))
-                            .collect();
-                        new_content = new_content.replace(&old_escaped, &new_escaped);
-                    }
-
-                    if new_content != content {
-                        fs::write(path, new_content)?;
-                    }
-                }
-            }
+        if !path.is_file() {
+            continue;
         }
+
+        let mut content = decrypt_if_needed(path)?;
+
+        if options.replace_text {
+            content = content.replace(old, new);
+        }
+
+        if options.replace_hex {
+            content = content.replace(&old_hex, &new_hex);
+        }
+
+        fs::write(path, content)?;
     }
 
     Ok(())
-}
-
-#[command]
-pub fn validate_clone_target_cmd(source: String, new_name: String) -> Result<(), String> {
-    let source_path = std::path::PathBuf::from(source);
-
-    if !source_path.exists() {
-        return Err("Source profile does not exist".into());
-    }
-
-    let parent = source_path.parent().ok_or("Invalid source profile path")?;
-
-    let new_folder = crate::utils::hex::text_to_hex(&new_name);
-    let target_path = parent.join(new_folder);
-
-    if target_path.exists() {
-        return Err("A profile with this name already exists".into());
-    }
-
-    Ok(())
-}
-
-/// Wrapper-Command für Tauri, da clone_profile selbst nicht direkt aufrufbar ist
-#[command]
-pub fn clone_profile_cmd(
-    source: String,
-    new_name: String,
-    options: CloneOptions,
-) -> Result<String, String> {
-    let source_path = PathBuf::from(source);
-    match clone_profile(&source_path, &new_name, options) {
-        Ok(path) => Ok(path.to_string_lossy().to_string()),
-        Err(e) => Err(e.to_string()),
-    }
 }

@@ -3,14 +3,13 @@ use std::path::Path;
 use crate::utils::profile_clone;
 use crate::models::clone_profiles_info::{CloneOptions, CloneTargetStatus};
 
-
 #[command]
 pub fn clone_profile_command(
     source_profile: String,
     new_name: String,
     backup: bool,
     replace_hex: bool,
-    replace_text: bool
+    replace_text: bool,
 ) -> Result<String, String> {
     let options = CloneOptions {
         backup,
@@ -26,10 +25,10 @@ pub fn clone_profile_command(
 #[command]
 pub fn validate_clone_target(
     source_profile: String,
-    new_name: String
+    new_name: String,
 ) -> Result<CloneTargetStatus, String> {
     let source = Path::new(&source_profile);
-    
+
     if !source.exists() {
         return Ok(CloneTargetStatus {
             valid: false,
@@ -38,15 +37,14 @@ pub fn validate_clone_target(
         });
     }
 
-    let parent = source.parent().ok_or("Konnte Elternverzeichnis nicht finden")?;
-    // Hinweis: Hier wird new_name direkt als Ordnername verwendet. 
-    // Falls du Hex-Ordnernamen willst, müsste man new_name hier noch hex-encoden.
-    let target_path = parent.join(&new_name);
+    let parent = source.parent().ok_or("Ungültiger Profilpfad")?;
+    let hex_name = crate::utils::hex::text_to_hex(&new_name);
+    let target_path = parent.join(&hex_name);
 
     if target_path.exists() {
         return Ok(CloneTargetStatus {
             valid: false,
-            message: format!("Ein Profilordner mit dem Namen '{}' existiert bereits.", new_name),
+            message: "Profilname existiert bereits.".into(),
             target_path: Some(target_path.to_string_lossy().to_string()),
         });
     }
