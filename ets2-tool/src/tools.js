@@ -259,6 +259,17 @@ export const tools = {
           }
         }
       },
+    },
+    {
+      title: "Move modifications",
+      desc: "Move your active Modifications from Acc1 to Acc2",
+      img: "images/comingsoon.png",
+      action: async () => {
+        if (window.handleMoveMods) {
+          await window.handleMoveMods();
+        }
+      },
+      disabled: false,
     }
   ],
 

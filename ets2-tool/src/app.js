@@ -103,10 +103,10 @@ const modalCloneCancel = document.getElementById("modalCloneCancel");
 /* --------------------------------------------------------------
    TEXT MODAL
 -------------------------------------------------------------- */
-export function openModalText(title, placeholder) {
+export function openModalText(title, placeholder, initialValue = "") {
   modalTextTitle.textContent = title;
   modalTextInput.placeholder = placeholder;
-  modalText.value = "";
+  modalText.value = initialValue;
   modalText.style.display = "flex";
 
   console.log(`[app.js] Öffne Text-Modal: "${title}"`);

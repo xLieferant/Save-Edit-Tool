@@ -1,5 +1,5 @@
 use crate::models::clone_profiles_info::CloneOptions;
-use crate::utils::{decrypt::decrypt_if_needed, hex};
+use crate::shared::{decrypt::decrypt_if_needed, hex_float};
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
@@ -18,7 +18,7 @@ pub fn clone_profile(
     }
 
     let parent = source.parent().ok_or("Kein Parent-Verzeichnis")?;
-    let new_hex = hex::text_to_hex(new_name);
+    let new_hex = hex_float::text_to_hex(new_name);
     let target_dir = parent.join(&new_hex);
 
     if target_dir.exists() {
@@ -114,8 +114,8 @@ fn replace_identifiers(
     new: &str,
     options: CloneOptions,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let old_hex = hex::text_to_hex(old);
-    let new_hex = hex::text_to_hex(new);
+    let old_hex = hex_float::text_to_hex(old);
+    let new_hex = hex_float::text_to_hex(new);
 
     for entry in WalkDir::new(dir) {
         let entry = entry?;

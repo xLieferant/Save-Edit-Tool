@@ -1,15 +1,15 @@
-use crate::log;
+use crate::dev_log;
 use crate::models::cached_profile::CachedProfile;
 use crate::models::profile_info::ProfileInfo;
 use crate::models::profile_info::SaveKind;
 use crate::models::save_info::SaveInfo;
 use crate::state::{AppProfileState, DecryptCache};
-use crate::utils::current_profile::set_current_profile;
-use crate::utils::decrypt::decrypt_if_needed;
-use crate::utils::extract::extract_profile_name;
-use crate::utils::extract_save_name::extract_save_name;
-use crate::utils::hex::decode_hex_folder_name;
-use crate::utils::paths::ets2_base_path;
+use crate::shared::current_profile::set_current_profile;
+use crate::shared::decrypt::decrypt_if_needed;
+use crate::shared::extract::extract_profile_name;
+use crate::shared::extract_save_name::extract_save_name;
+use crate::shared::hex_float::decode_hex_folder_name;
+use crate::shared::paths::ets2_base_path;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use tauri::Manager;
@@ -98,7 +98,7 @@ pub fn set_active_profile(
     // 🔥 Cache vollständig leeren
     cache.files.lock().unwrap().clear();
 
-    log!(
+    dev_log!(
         "Aktives Profil gesetzt & DecryptCache geleert: {}",
         profile_path
     );
@@ -114,7 +114,7 @@ pub fn set_current_save(
     *state.current_save.lock().unwrap() = Some(save_path.clone());
     // Cache leeren
     cache.files.lock().unwrap().clear();
-    log!("Aktiver Save gesetzt: {}", save_path);
+    dev_log!("Aktiver Save gesetzt: {}", save_path);
     Ok(())
 }
 
@@ -123,7 +123,7 @@ pub fn switch_profile(cache: State<DecryptCache>, new_profile_path: String) -> R
     // 🔥 Cache vollständig leeren
     cache.files.lock().unwrap().clear();
 
-    log!("Profil gewechselt: {} → Cache geleert", new_profile_path);
+    dev_log!("Profil gewechselt: {} → Cache geleert", new_profile_path);
 
     Ok(())
 }
@@ -214,7 +214,7 @@ fn classify_save_folder(folder: &str) -> SaveKind {
 
 #[command]
 pub fn find_ets2_profiles() -> Vec<ProfileInfo> {
-    log!("Starte Profil-Suche…");
+    dev_log!("Starte Profil-Suche…");
     let mut found_profiles = Vec::new();
 
     if let Some(base) = ets2_base_path() {
@@ -275,14 +275,14 @@ pub fn find_ets2_profiles() -> Vec<ProfileInfo> {
                         info.name = Some(name);
                         info.success = true;
                         info.message = Some("OK".into());
-                        log!(
+                        dev_log!(
                             "Profil gefunden: {} ({})",
                             info.path,
                             info.name.as_ref().unwrap()
                         );
                     } else {
                         info.message = Some("profile_name nicht gefunden".into());
-                        log!("profile_name nicht gefunden in {}", info.path);
+                        dev_log!("profile_name nicht gefunden in {}", info.path);
                     }
 
                     found_profiles.push(info);
@@ -291,7 +291,7 @@ pub fn find_ets2_profiles() -> Vec<ProfileInfo> {
         }
     }
 
-    log!(
+    dev_log!(
         "Profil-Suche abgeschlossen. Gefunden: {}",
         found_profiles.len()
     );
@@ -308,7 +308,7 @@ pub fn load_profile(
     let save_to_load = if let Some(path_str) = save_path {
         PathBuf::from(path_str)
     } else {
-        crate::utils::paths::autosave_path(&profile_path)
+        crate::shared::paths::autosave_path(&profile_path)
     };
 
     if !save_to_load.exists() {
@@ -325,7 +325,7 @@ pub fn load_profile(
         cache,
     )?;
 
-    log!(
+    dev_log!(
         "Profil geladen: {} | Save: {}",
         profile_path,
         save_to_load.display()

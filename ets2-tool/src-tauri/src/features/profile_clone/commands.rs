@@ -1,7 +1,7 @@
 use tauri::command;
 use std::path::Path;
-use crate::utils::profile_clone;
 use crate::models::clone_profiles_info::{CloneOptions, CloneTargetStatus};
+use crate::features::profile_clone::logic as profile_clone;
 
 #[command]
 pub fn clone_profile_command(
@@ -38,7 +38,7 @@ pub fn validate_clone_target(
     }
 
     let parent = source.parent().ok_or("Ungültiger Profilpfad")?;
-    let hex_name = crate::utils::hex::text_to_hex(&new_name);
+    let hex_name = crate::shared::hex_float::text_to_hex(&new_name);
     let target_path = parent.join(&hex_name);
 
     if target_path.exists() {

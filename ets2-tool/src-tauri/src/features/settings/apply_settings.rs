@@ -1,8 +1,8 @@
-use crate::log;
+use crate::dev_log;
 use crate::state::AppProfileState;
-use crate::utils::current_profile::{get_current_profile, require_current_profile};
-use crate::utils::decrypt::decrypt_if_needed;
-use crate::utils::paths::{autosave_path, ets2_base_config_path};
+use crate::shared::current_profile::{get_current_profile, require_current_profile};
+use crate::shared::decrypt::decrypt_if_needed;
+use crate::shared::paths::{autosave_path, ets2_base_config_path};
 use regex::Regex;
 use serde::Deserialize;
 use serde_json::Value;
@@ -39,7 +39,7 @@ pub fn apply_setting(
     profile_state: State<'_, AppProfileState>,
 ) -> Result<(), String> {
     let val_str = value_to_string(&payload.value);
-    log!(
+    dev_log!(
         "apply_setting aufgerufen: Key='{}', Value='{}'",
         payload.key,
         val_str
@@ -92,7 +92,7 @@ pub fn apply_setting(
             fs::write(&path, new_content)
                 .map_err(|e| format!("Fehler beim Schreiben der Config: {}", e))?;
 
-            log!(
+            dev_log!(
                 "Global Config '{}' erfolgreich geändert auf: {}",
                 config_key,
                 val_str
@@ -137,7 +137,7 @@ pub fn apply_setting(
             fs::write(&path, new_content.as_bytes())
                 .map_err(|e| format!("Fehler beim Schreiben des Savegames: {}", e))?;
 
-            log!(
+            dev_log!(
                 "Savegame '{}' erfolgreich geändert auf: {}",
                 payload.key,
                 val_str

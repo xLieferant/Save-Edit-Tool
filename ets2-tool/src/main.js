@@ -1,4 +1,4 @@
-import { loadTools, activeTab, openCloneProfileModal } from "./app.js";
+import { loadTools, activeTab, openCloneProfileModal, openModalMulti, openModalText } from "./app.js";
 import { applySetting } from "./js/applySetting.js";
 import { checkUpdaterOnStartup, manualUpdateCheck } from "./js/updater.js";
 
@@ -74,7 +74,6 @@ async function initVersionInfo() {
 document.addEventListener("DOMContentLoaded", () => {
   console.log("[main.js] DOM vollständig geladen.");
 
-  //  # [x]  Werte müssen immer aktuell sein!
   setInterval(async () => {
     if (window.selectedSavePath) {
       window.currentQuicksaveData = await invoke("quicksave_game_info");
@@ -430,13 +429,129 @@ document.addEventListener("DOMContentLoaded", () => {
   );
 
   // -----------------------------
+  // EXPOSE GLOBAL FUNCTIONS
+  // -----------------------------
+  window.loadQuicksave = loadQuicksave;
+  window.loadProfileData = loadProfileData;
+  window.loadProfileSaveConfig = loadProfileSaveConfig;
+  window.loadBaseConfig = loadBaseConfig;
+  window.loadAllTrucks = loadAllTrucks;
+
+  // -----------------------------
   // CLONE PROFILE LOGIC
   // -----------------------------
   const cloneBtn = document.getElementById("cloneProfileBtn");
-  cloneBtn?.addEventListener("click", () => {
-    // Ruft die zentrale Modal-Funktion aus app.js auf
-    openCloneProfileModal();
+  cloneBtn?.addEventListener("click", async () => {
+    if (!window.selectedProfilePath) {
+      showToast("No profile selected!", "warning");
+      return;
+    }
+
+    // 1. Auswahl-Modal: Rename oder Duplicate
+    const choice = await openModalMulti("Manage Profile", [
+      {
+        type: "dropdown",
+        id: "action",
+        label: "Action",
+        value: "Duplicate",
+        options: ["Duplicate", "Rename"],
+      },
+    ]);
+
+    if (!choice) return;
+
+    // 2. Aktion ausführen
+    if (choice.action === "Duplicate") {
+      openCloneProfileModal();
+    } else if (choice.action === "Rename") {
+      await handleProfileRename();
+    }
   });
+
+  async function handleProfileRename() {
+      const currentName = profileNameDisplay.textContent;
+      const newName = await openModalText("Rename Profile", "New Name", currentName);
+
+      if (newName && newName.trim() !== "" && newName !== currentName) {
+        try {
+          const newPath = await invoke("profile_rename", { newName: newName.trim() });
+          showToast("Profile renamed successfully!", "success");
+          
+          // Update UI & Cache
+          window.selectedProfilePath = newPath;
+          profileNameDisplay.textContent = newName.trim();
+          await scanProfiles({ saveToBackend: true, showToasts: false });
+          await loadSelectedProfile();
+        } catch (err) {
+          console.error("Rename failed:", err);
+          showToast(err, "error");
+        }
+      }
+  }
+
+  // -----------------------------
+  // MOVE MODS LOGIC
+  // -----------------------------
+  async function handleMoveMods() {
+    if (!window.selectedProfilePath) {
+      showToast("No source profile selected!", "warning");
+      return;
+    }
+
+    try {
+      // 1. Get all profiles
+      const profiles = await invoke("find_ets2_profiles");
+      
+      // 2. Filter: exclude current profile & invalid ones
+      const currentPath = window.selectedProfilePath;
+      const targets = profiles.filter(p => p.success && p.path !== currentPath);
+
+      if (targets.length === 0) {
+        showToast("No other valid profiles found.", "warning");
+        return;
+      }
+
+      // 3. Prepare dropdown options
+      // Format: "ProfileName [Path]" to be unique and informative
+      const options = targets.map(p => `${p.name} [${p.path}]`);
+
+      // 4. Show Modal
+      const res = await openModalMulti("Move Mods", [
+        {
+          type: "dropdown",
+          id: "target",
+          label: "Target Profile",
+          value: options[0],
+          options: options,
+        },
+      ]);
+
+      if (!res || !res.target) return;
+
+      // 5. Find selected profile object
+      const selectedStr = res.target;
+      const selectedProfile = targets.find(p => `${p.name} [${p.path}]` === selectedStr);
+
+      if (!selectedProfile) {
+        showToast("Invalid profile selection.", "error");
+        return;
+      }
+
+      showToast("Moving mods... please wait", "info");
+
+      // 6. Execute Command
+      const resultMsg = await invoke("copy_mods_to_profile", {
+        targetProfilePath: selectedProfile.path,
+      });
+
+      showToast(resultMsg, "success");
+
+    } catch (err) {
+      console.error("Move mods error:", err);
+      showToast(typeof err === "string" ? err : "Failed to move mods.", "error");
+    }
+  }
+  window.handleMoveMods = handleMoveMods;
 
   // -----------------------------
   // PROFILE SCAN (AUTO & CACHE)

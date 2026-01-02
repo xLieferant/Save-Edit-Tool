@@ -1,9 +1,9 @@
-use crate::log;
+use crate::dev_log;
 use crate::models::save_game_data::SaveGameData;
 use crate::state::AppProfileState;
-use crate::utils::current_profile::require_current_profile;
-use crate::utils::decrypt::decrypt_if_needed;
-use crate::utils::paths::{autosave_path, ets2_base_config_path, game_sii_from_save};
+use crate::shared::current_profile::require_current_profile;
+use crate::shared::decrypt::decrypt_if_needed;
+use crate::shared::paths::{autosave_path, ets2_base_config_path, game_sii_from_save};
 use regex::Regex;
 use std::fs;
 use std::path::Path;
@@ -25,7 +25,7 @@ fn get_active_save_path(
 #[command]
 pub fn read_money(profile_state: State<'_, AppProfileState>) -> Result<i64, String> {
     let path = get_active_save_path(profile_state)?;
-    log!("Lese Geld aus: {:?}", path);
+    dev_log!("Lese Geld aus: {:?}", path);
 
     let content = decrypt_if_needed(&path)?;
 
@@ -49,7 +49,7 @@ pub fn read_money(profile_state: State<'_, AppProfileState>) -> Result<i64, Stri
 #[command]
 pub fn read_xp(profile_state: State<'_, AppProfileState>) -> Result<i64, String> {
     let path = get_active_save_path(profile_state)?;
-    log!("Lese XP aus: {:?}", path);
+    dev_log!("Lese XP aus: {:?}", path);
 
     let content = decrypt_if_needed(&path)?;
 
@@ -74,7 +74,7 @@ pub fn read_all_save_data(
     profile_state: State<'_, AppProfileState>,
 ) -> Result<SaveGameData, String> {
     let path = get_active_save_path(profile_state)?;
-    log!("Lese alle Speicherdaten aus: {:?}", path);
+    dev_log!("Lese alle Speicherdaten aus: {:?}", path);
 
     let content = decrypt_if_needed(&path)?;
 
@@ -111,7 +111,7 @@ pub fn read_all_save_data(
             .and_then(|c| c[1].parse().ok()),
     };
 
-    log!(
+    dev_log!(
         "Gefundene Daten: Geld: {:?}, XP: {:?}, Recruitments: {:?}, dealers: {:?}, visited_cities: {:?}",
         data.money,
         data.xp,
