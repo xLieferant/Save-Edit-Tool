@@ -40,7 +40,7 @@ fn main() {
             features::save_editor::commands::edit_xp,
             features::save_editor::commands::edit_level,
             features::save_editor::commands::edit_truck_odometer,
-            features::save_editor::commands::edit_truck_license_plate,
+
             features::save_editor::commands::edit_config_value,
             features::save_editor::commands::edit_save_config_value,
             features::save_editor::commands::edit_traffic_value,
@@ -51,18 +51,29 @@ fn main() {
             features::save_editor::commands::edit_player_money,
             features::save_editor::commands::edit_player_experience,
             features::save_editor::commands::edit_skill_value,
-            features::save_editor::commands::edit_truck_license_plate,
-            // Save Analysis
+            
+            // Save Analysis+
+            features::save_analysis::reader::read_all_save_data,
             features::save_analysis::reader::read_money,
             features::save_analysis::reader::read_xp,
-            features::save_analysis::reader::read_all_save_data,
             features::save_analysis::reader::read_traffic_value,
+
             features::save_analysis::quicksave::quicksave_game_info,
+
+
             // Vehicles and trailers
             features::vehicles::trucks::get_all_trucks,
             features::vehicles::trucks::get_player_truck,
             features::vehicles::trailers::get_all_trailers,
             features::vehicles::trailers::get_player_trailer,
+            features::vehicles::editor::set_player_truck_license_plate,
+            features::vehicles::editor::set_player_trailer_license_plate,
+            features::vehicles::editor::repair_player_truck,
+            features::vehicles::editor::refuel_player_truck,
+            features::vehicles::editor::set_player_truck_fuel,
+            features::vehicles::editor::set_player_truck_wear,
+            features::vehicles::editor::repair_player_trailer,
+            features::vehicles::editor::set_player_trailer_cargo_mass,
             
             // FEATURE: PROFILE CLONE + Rename
             features::profile_clone::commands::clone_profile_command,

@@ -744,3 +744,126 @@
 [2026-01-02 12:59:03] Lese Config aus Profilpfad: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\33302054616765204D422054455354
 [2026-01-02 12:59:03] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\33302054616765204D422054455354\config.cfg
 [2026-01-02 12:59:03] Gefundene Daten: uset g_simple_parking_doubles Some(1)
+[2026-01-02 22:08:14] Aktives Profil gesetzt & DecryptCache geleert: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F
+[2026-01-02 22:08:14] Aktiver Save gesetzt: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\save\quicksave\info.sii
+[2026-01-02 22:08:14] Profil geladen: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F | Save: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\save\quicksave\info.sii
+[2026-01-02 22:08:14] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\save\0\info.sii
+[2026-01-02 22:08:14] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\save\1\info.sii
+[2026-01-02 22:08:14] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\save\2\info.sii
+[2026-01-02 22:08:14] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\save\3\info.sii
+[2026-01-02 22:08:14] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\save\4\info.sii
+[2026-01-02 22:08:14] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\save\5\info.sii
+[2026-01-02 22:08:14] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\save\6\info.sii
+[2026-01-02 22:08:14] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\save\autosave\info.sii
+[2026-01-02 22:08:14] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\save\quicksave\info.sii
+[2026-01-02 22:08:14] Lese globale Config
+[2026-01-02 22:08:15] Gefundene Daten: max_convoy_size Some(128), traffic Some(1), developer Some(1), console Some(1)
+[2026-01-02 22:08:15] Lese Config aus Profilpfad: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F
+[2026-01-02 22:08:15] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\config.cfg
+[2026-01-02 22:08:15] Gefundene Daten: uset g_simple_parking_doubles Some(1)
+[2026-01-02 22:08:15] Starte Profil-Suche…
+[2026-01-02 22:08:15] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\3132\profile.sii
+[2026-01-02 22:08:15] Profil gefunden: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\3132 (12)
+[2026-01-02 22:08:15] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\33302054616765204D422054455354\profile.sii
+[2026-01-02 22:08:15] Profil gefunden: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\33302054616765204D422054455354 (30 Tage MB TEST)
+[2026-01-02 22:08:15] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\44616E6765726F7573526F616473\profile.sii
+[2026-01-02 22:08:15] Profil gefunden: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\44616E6765726F7573526F616473 (DangerousRoads)
+[2026-01-02 22:08:15] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\4475706C69636174652074657374\profile.sii
+[2026-01-02 22:08:15] Profil gefunden: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\4475706C69636174652074657374 (Duplicate test)
+[2026-01-02 22:08:15] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\4C657473506C6179\profile.sii
+[2026-01-02 22:08:15] Profil gefunden: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\4C657473506C6179 (LetsPlay)
+[2026-01-02 22:08:15] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\4D4F442054657374204163636F756E74\profile.sii
+[2026-01-02 22:08:15] Profil gefunden: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\4D4F442054657374204163636F756E74 (MOD Test Account)
+[2026-01-02 22:08:15] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\546F6F6C2074657374\profile.sii
+[2026-01-02 22:08:15] Profil gefunden: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\546F6F6C2074657374 (Tool test)
+[2026-01-02 22:08:15] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\547275636B20546F6F6C2054657374\profile.sii
+[2026-01-02 22:08:15] Profil gefunden: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\547275636B20546F6F6C2054657374 (Truck Tool Test)
+[2026-01-02 22:08:15] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\547275636B6572734D50204E4555\profile.sii
+[2026-01-02 22:08:15] Profil gefunden: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\547275636B6572734D50204E4555 (TruckersMP NEU)
+[2026-01-02 22:08:15] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\profile.sii
+[2026-01-02 22:08:15] Profil gefunden: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F (ZeroToHero)
+[2026-01-02 22:08:15] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\784465724C6965666572616E74\profile.sii
+[2026-01-02 22:08:15] Profil gefunden: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\784465724C6965666572616E74 (xDerLieferant)
+[2026-01-02 22:08:15] Profil-Suche abgeschlossen. Gefunden: 11
+[2026-01-02 22:08:15] Aktives Profil gesetzt & DecryptCache geleert: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F
+[2026-01-02 22:08:15] Aktiver Save gesetzt: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\save\quicksave\info.sii
+[2026-01-02 22:08:15] Profil geladen: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F | Save: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\save\quicksave\info.sii
+[2026-01-02 22:08:15] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\save\0\info.sii
+[2026-01-02 22:08:15] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\save\1\info.sii
+[2026-01-02 22:08:15] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\save\2\info.sii
+[2026-01-02 22:08:15] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\save\3\info.sii
+[2026-01-02 22:08:15] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\save\4\info.sii
+[2026-01-02 22:08:15] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\save\5\info.sii
+[2026-01-02 22:08:15] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\save\6\info.sii
+[2026-01-02 22:08:15] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\save\autosave\info.sii
+[2026-01-02 22:08:15] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\save\quicksave\info.sii
+[2026-01-02 22:08:15] Lese globale Config
+[2026-01-02 22:08:15] Gefundene Daten: max_convoy_size Some(128), traffic Some(1), developer Some(1), console Some(1)
+[2026-01-02 22:08:15] Lese Config aus Profilpfad: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F
+[2026-01-02 22:08:15] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\config.cfg
+[2026-01-02 22:08:15] Gefundene Daten: uset g_simple_parking_doubles Some(1)
+[2026-01-02 22:08:32] Starte Profil-Suche…
+[2026-01-02 22:08:32] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\3132\profile.sii
+[2026-01-02 22:08:32] Profil gefunden: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\3132 (12)
+[2026-01-02 22:08:32] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\33302054616765204D422054455354\profile.sii
+[2026-01-02 22:08:32] Profil gefunden: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\33302054616765204D422054455354 (30 Tage MB TEST)
+[2026-01-02 22:08:32] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\44616E6765726F7573526F616473\profile.sii
+[2026-01-02 22:08:32] Profil gefunden: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\44616E6765726F7573526F616473 (DangerousRoads)
+[2026-01-02 22:08:32] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\4475706C69636174652074657374\profile.sii
+[2026-01-02 22:08:32] Profil gefunden: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\4475706C69636174652074657374 (Duplicate test)
+[2026-01-02 22:08:32] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\4C657473506C6179\profile.sii
+[2026-01-02 22:08:32] Profil gefunden: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\4C657473506C6179 (LetsPlay)
+[2026-01-02 22:08:32] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\4D4F442054657374204163636F756E74\profile.sii
+[2026-01-02 22:08:32] Profil gefunden: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\4D4F442054657374204163636F756E74 (MOD Test Account)
+[2026-01-02 22:08:32] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\546F6F6C2074657374\profile.sii
+[2026-01-02 22:08:32] Profil gefunden: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\546F6F6C2074657374 (Tool test)
+[2026-01-02 22:08:32] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\547275636B20546F6F6C2054657374\profile.sii
+[2026-01-02 22:08:32] Profil gefunden: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\547275636B20546F6F6C2054657374 (Truck Tool Test)
+[2026-01-02 22:08:32] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\547275636B6572734D50204E4555\profile.sii
+[2026-01-02 22:08:32] Profil gefunden: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\547275636B6572734D50204E4555 (TruckersMP NEU)
+[2026-01-02 22:08:32] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\profile.sii
+[2026-01-02 22:08:32] Profil gefunden: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F (ZeroToHero)
+[2026-01-02 22:08:32] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\784465724C6965666572616E74\profile.sii
+[2026-01-02 22:08:32] Profil gefunden: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\784465724C6965666572616E74 (xDerLieferant)
+[2026-01-02 22:08:32] Profil-Suche abgeschlossen. Gefunden: 11
+[2026-01-02 22:08:32] Starte Profil-Suche…
+[2026-01-02 22:08:32] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\3132\profile.sii
+[2026-01-02 22:08:32] Profil gefunden: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\3132 (12)
+[2026-01-02 22:08:32] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\33302054616765204D422054455354\profile.sii
+[2026-01-02 22:08:32] Profil gefunden: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\33302054616765204D422054455354 (30 Tage MB TEST)
+[2026-01-02 22:08:32] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\44616E6765726F7573526F616473\profile.sii
+[2026-01-02 22:08:32] Profil gefunden: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\44616E6765726F7573526F616473 (DangerousRoads)
+[2026-01-02 22:08:32] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\4475706C69636174652074657374\profile.sii
+[2026-01-02 22:08:32] Profil gefunden: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\4475706C69636174652074657374 (Duplicate test)
+[2026-01-02 22:08:32] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\4C657473506C6179\profile.sii
+[2026-01-02 22:08:32] Profil gefunden: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\4C657473506C6179 (LetsPlay)
+[2026-01-02 22:08:32] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\4D4F442054657374204163636F756E74\profile.sii
+[2026-01-02 22:08:32] Profil gefunden: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\4D4F442054657374204163636F756E74 (MOD Test Account)
+[2026-01-02 22:08:32] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\546F6F6C2074657374\profile.sii
+[2026-01-02 22:08:32] Profil gefunden: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\546F6F6C2074657374 (Tool test)
+[2026-01-02 22:08:32] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\547275636B20546F6F6C2054657374\profile.sii
+[2026-01-02 22:08:32] Profil gefunden: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\547275636B20546F6F6C2054657374 (Truck Tool Test)
+[2026-01-02 22:08:32] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\547275636B6572734D50204E4555\profile.sii
+[2026-01-02 22:08:32] Profil gefunden: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\547275636B6572734D50204E4555 (TruckersMP NEU)
+[2026-01-02 22:08:32] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\profile.sii
+[2026-01-02 22:08:32] Profil gefunden: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F (ZeroToHero)
+[2026-01-02 22:08:32] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\784465724C6965666572616E74\profile.sii
+[2026-01-02 22:08:32] Profil gefunden: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\784465724C6965666572616E74 (xDerLieferant)
+[2026-01-02 22:08:32] Profil-Suche abgeschlossen. Gefunden: 11
+[2026-01-02 22:08:32] Aktives Profil gesetzt & DecryptCache geleert: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F
+[2026-01-02 22:08:32] Aktiver Save gesetzt: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\save\quicksave\info.sii
+[2026-01-02 22:08:32] Profil geladen: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F | Save: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\save\quicksave\info.sii
+[2026-01-02 22:08:32] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\save\0\info.sii
+[2026-01-02 22:08:32] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\save\1\info.sii
+[2026-01-02 22:08:32] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\save\2\info.sii
+[2026-01-02 22:08:32] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\save\3\info.sii
+[2026-01-02 22:08:32] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\save\4\info.sii
+[2026-01-02 22:08:32] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\save\5\info.sii
+[2026-01-02 22:08:32] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\save\6\info.sii
+[2026-01-02 22:08:32] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\save\autosave\info.sii
+[2026-01-02 22:08:32] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\save\quicksave\info.sii
+[2026-01-02 22:08:32] Lese globale Config
+[2026-01-02 22:08:32] Gefundene Daten: max_convoy_size Some(128), traffic Some(1), developer Some(1), console Some(1)
+[2026-01-02 22:08:32] Lese Config aus Profilpfad: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F
+[2026-01-02 22:08:32] decrypt_if_needed: C:\Users\alexa\Documents\Euro Truck Simulator 2\profiles\5A65726F546F4865726F\config.cfg
+[2026-01-02 22:08:32] Gefundene Daten: uset g_simple_parking_doubles Some(1)

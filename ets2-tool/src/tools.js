@@ -16,22 +16,98 @@ export const tools = {
       title: "Repair Truck",
       desc: "Repair your current truck",
       img: "images/repair.png",
-      //action: () => openModalSlider("Repair Truck", false),
-      action: () => {},
-      disabled: true,
+      action: async () => {
+        const shouldRepair = await openModalSlider("Repair all truck damage?", 0);
+        if (shouldRepair) {
+          await invoke("repair_player_truck");
+          await loadAllTrucks();
+          showToast("Truck successfully repaired!", "success");
+        }
+      },
+      disabled: false,
     },
     {
-      title: "Fuel Level - 'COMING SOON'",
+      title: "Advanced Repair",
+      desc: "Repair individual components of your truck",
+      img: "images/comingsoon.png",
+      action: async () => {
+        const res = await openModalMulti("Advanced Repair", [
+          {
+            type: "slider",
+            id: "engine_wear",
+            label: "Engine Wear",
+            value: window.playerTruck?.engine_wear || 0,
+            max: 1,
+            step: 0.01,
+          },
+          {
+            type: "slider",
+            id: "transmission_wear",
+            label: "Transmission Wear",
+            value: window.playerTruck?.transmission_wear || 0,
+            max: 1,
+            step: 0.01,
+          },
+          {
+            type: "slider",
+            id: "cabin_wear",
+            label: "Cabin Wear",
+            value: window.playerTruck?.cabin_wear || 0,
+            max: 1,
+            step: 0.01,
+          },
+          {
+            type: "slider",
+            id: "chassis_wear",
+            label: "Chassis Wear",
+            value: window.playerTruck?.chassis_wear || 0,
+            max: 1,
+            step: 0.01,
+          },
+        ]);
+
+        if (res) {
+          for (const key in res) {
+            await invoke("set_player_truck_wear", {
+              wearType: key,
+              level: res[key],
+            });
+          }
+          await loadAllTrucks();
+          showToast("Advanced repair successfully applied!", "success");
+        }
+      },
+    },
+    {
+      title: "Fuel Level",
       desc: "Change your fuel level at your current truck",
       img: "images/gasstation.jpg",
-      // action: () =>
-      //   openModalNumber(
-      //     "Change fuel level",
-      //     window.playerTruck?.trip_fuel_l || 0
-      //   ),
-
-      action: () => {},
-      disabled: true,
+      action: async () => {
+        const currentFuelPercent = (window.playerTruck?.fuel_relative || 0) * 100;
+        const newValue = await openModalNumber("Change fuel level (%)", currentFuelPercent.toFixed(0));
+        if (newValue !== null) {
+          const clampedValue = Math.max(0, Math.min(100, newValue));
+          const finalValue = clampedValue / 100.0;
+          await invoke("set_player_truck_fuel", { level: finalValue });
+          await loadAllTrucks();
+          showToast("Fuel level successfully changed!", "success");
+        }
+      },
+      disabled: false,
+    },
+    {
+      title: "Full Refuel",
+      desc: "Refuel your truck to 100%",
+      img: "images/gasstation.jpg",
+      action: async () => {
+        const shouldRefuel = await openModalSlider("Refuel the truck completely?", 0);
+        if (shouldRefuel) {
+          await invoke("refuel_player_truck");
+          await loadAllTrucks();
+          showToast("Truck successfully refueled!", "success");
+        }
+      },
+      disabled: false,
     },
     {
       title: "Truck Mileage",
@@ -58,7 +134,7 @@ export const tools = {
           window.extractPlateText(window.playerTruck?.license_plate)
         );
         if (newValue !== null) {
-          await invoke("edit_truck_license_plate", { value: newValue });
+          await invoke("set_player_truck_license_plate", { plate: newValue });
           await loadAllTrucks();
         }
       },
@@ -67,32 +143,52 @@ export const tools = {
 
   trailer: [
     {
-      // [] TO DO | Trailer HP finden
-      title: "Repair - 'COMING SOON'",
+      title: "Repair",
       desc: "Repair your Trailer",
       img: "images/trailerRepair.jpg",
-      action: () => {}, // keine Aktion
-      // action: () => openModalSlider("Repair Trailer", false),
-      disabled: true,
+      action: async () => {
+        const shouldRepair = await openModalSlider("Repair all trailer damage?", 0);
+        if (shouldRepair) {
+          await invoke("repair_player_trailer");
+          await loadAllTrailers();
+          showToast("Trailer successfully repaired!", "success");
+        }
+      },
+      disabled: false,
     },
     {
-      // [] TO DO. Kennzeichen angeben
-      title: "Change Trailer License Plate - 'COMING SOON'",
+      title: "Change Trailer License Plate",
       desc: "Modify your trailer license plate",
       img: "images/trailer_license.jpg",
-      // action: () =>
-      //   openModalText("Change trailer license", "New License Plate"),
-      action: () => {},
-      disabled: true,
+      action: async () => {
+        const newValue = await openModalText(
+          "Change trailer license",
+          window.extractPlateText(window.playerTrailer?.license_plate)
+        );
+        if (newValue !== null) {
+          await invoke("set_player_trailer_license_plate", { plate: newValue });
+          await loadAllTrailers();
+          showToast("Trailer license plate successfully changed!", "success");
+        }
+      },
+      disabled: false,
     },
     {
-      // [] TO DO Job Weight finden
-      title: "Modify Job Weight - 'COMING SOON'",
+      title: "Modify Job Weight",
       desc: "Adjust the job's cargo weight",
       img: "images/comingsoon.png",
-      //action: () => openModalNumber("Modify job weight", "Weight in kg"),
-      action: () => {},
-      disabled: true,
+      action: async () => {
+        const newValue = await openModalNumber(
+          "Modify job weight (kg)",
+          window.playerTrailer?.cargo_mass || 0
+        );
+        if (newValue !== null) {
+          await invoke("set_player_trailer_cargo_mass", { mass: newValue });
+          await loadAllTrailers();
+          showToast("Cargo mass successfully changed!", "success");
+        }
+      },
+      disabled: false,
     },
   ],
 
