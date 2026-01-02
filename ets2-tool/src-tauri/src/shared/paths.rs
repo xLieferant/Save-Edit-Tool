@@ -37,6 +37,14 @@ pub fn game_sii_from_save(save_path: &Path) -> PathBuf {
     }
 }
 
+pub fn info_sii_from_save(save_path: &Path) -> PathBuf {
+    if save_path.is_file(){
+        save_path.parent().unwrap().join("info.sii")
+    } else {
+        save_path.join("info.sii")
+    }
+}
+
 /* --------------------------------------------------
    WRAPPER FÜR APPLY_SETTING
 -------------------------------------------------- */

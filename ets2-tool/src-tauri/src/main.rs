@@ -64,10 +64,10 @@ fn main() {
             features::vehicles::trailers::get_all_trailers,
             features::vehicles::trailers::get_player_trailer,
             
-            // FEATURE: PROFILE CLONE (Jetzt aus dem neuen Ordner)
+            // FEATURE: PROFILE CLONE + Rename
             features::profile_clone::commands::clone_profile_command,
             features::profile_clone::commands::validate_clone_target,
-
+            features::profile_rename::commands::profile_rename,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -447,6 +447,37 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // -----------------------------
+  // RENAME PROFILE LOGIC
+  // -----------------------------
+  const renameProfileBtn = document.getElementById("renameProfileBtn");
+  if (renameProfileBtn) {
+    renameProfileBtn.addEventListener("click", async () => {
+      if (!window.selectedProfilePath) {
+        showToast("No profile selected!", "warning");
+        return;
+      }
+
+      const currentName = profileNameDisplay.textContent;
+      const newName = prompt("Enter new profile name:", currentName);
+
+      if (newName && newName.trim() !== "" && newName !== currentName) {
+        try {
+          const newPath = await invoke("profile_rename", { newName: newName.trim() });
+          showToast("Profile renamed successfully!", "success");
+          
+          // Update UI & Cache
+          window.selectedProfilePath = newPath;
+          profileNameDisplay.textContent = newName.trim();
+          await scanProfiles({ saveToBackend: true, showToasts: false });
+        } catch (err) {
+          console.error("Rename failed:", err);
+          showToast(err, "error");
+        }
+      }
+    });
+  }
+
+  // -----------------------------
   // PROFILE SCAN (AUTO & CACHE)
   // -----------------------------
   async function scanProfiles({
