@@ -1,4 +1,5 @@
 use crate::dev_log;
+use crate::shared::hex_float::float_to_hex;
 use crate::shared::current_profile::{require_current_profile, require_current_save};
 use crate::shared::decrypt::decrypt_if_needed;
 use crate::shared::paths::game_sii_from_save;
@@ -114,7 +115,7 @@ pub async fn repair_player_truck(profile_state: tauri::State<'_, AppProfileState
         );
         let re = Regex::new(&regex_str).map_err(|e| e.to_string())?;
         if re.is_match(&content) {
-            content = re.replace(&content, format!("$10.0$2")).to_string();
+            content = re.replace(&content, format!("$1{}$2", float_to_hex(0.0))).to_string();
         }
     }
     
@@ -133,7 +134,7 @@ pub async fn repair_player_truck(profile_state: tauri::State<'_, AppProfileState
                 let parts = caps[0].split("wear:").collect::<Vec<_>>();
                 let mut new_parts = vec![parts[0].to_string()];
                 for part in parts.iter().skip(1) {
-                    new_parts.push("wear: 0.0".to_string());
+                    new_parts.push(format!("wear: {}", float_to_hex(0.0)));
                     if let Some(index) = part.find('\n') {
                         new_parts.push(part[index..].to_string());
                     }
@@ -155,7 +156,7 @@ pub async fn refuel_player_truck(profile_state: tauri::State<'_, AppProfileState
         "vehicle",
         "my_truck",
         "fuel_relative",
-        |_| "1.0".to_string(),
+        |_| float_to_hex(1.0),
     )
 }
 
@@ -227,7 +228,7 @@ pub async fn repair_player_trailer(
         );
         let re = Regex::new(&regex_str).map_err(|e| e.to_string())?;
         if re.is_match(&content) {
-            content = re.replace(&content, format!("$10.0$2")).to_string();
+            content = re.replace(&content, format!("$1{}$2", float_to_hex(0.0))).to_string();
         }
     }
 
@@ -248,7 +249,7 @@ pub async fn repair_player_trailer(
                     let parts = caps[0].split("wear:").collect::<Vec<_>>();
                     let mut new_parts = vec![parts[0].to_string()];
                     for part in parts.iter().skip(1) {
-                        new_parts.push("wear: 0.0".to_string());
+                        new_parts.push(format!("wear: {}", float_to_hex(0.0)));
                         if let Some(index) = part.find('\n') {
                             new_parts.push(part[index..].to_string());
                         }

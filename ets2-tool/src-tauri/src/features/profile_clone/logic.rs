@@ -12,17 +12,17 @@ pub fn clone_profile(
     source: &Path,
     new_name: &str,
     options: CloneOptions,
-) -> Result<PathBuf, Box<dyn std::error::Error>> {
+) -> Result<PathBuf, String> {
     if !source.exists() {
-        return Err("Quellprofil existiert nicht".into());
+        return Err("Quellprofil existiert nicht".to_string());
     }
 
-    let parent = source.parent().ok_or("Kein Parent-Verzeichnis")?;
+    let parent = source.parent().ok_or("Kein Parent-Verzeichnis".to_string())?;
     let new_hex = hex_float::text_to_hex(new_name);
     let target_dir = parent.join(&new_hex);
 
     if target_dir.exists() {
-        return Err("Zielprofil existiert bereits".into());
+        return Err("Zielprofil existiert bereits".to_string());
     }
 
     // 1️⃣ ZIP-Backup
@@ -33,65 +33,65 @@ pub fn clone_profile(
     // 2️⃣ Temp kopieren
     let temp_dir = parent.join(format!("{}_tmp", new_hex));
     if temp_dir.exists() {
-        fs::remove_dir_all(&temp_dir)?;
+        fs::remove_dir_all(&temp_dir).map_err(|e| e.to_string())?;
     }
     copy_dir_recursive(source, &temp_dir)?;
 
     // 3️⃣ Alten Namen aus profile.sii lesen
     let profile_sii = temp_dir.join("profile.sii");
-    let decrypted = decrypt_if_needed(&profile_sii)?;
+    let decrypted = decrypt_if_needed(&profile_sii).map_err(|e| e.to_string())?;
     let old_name =
-        extract_profile_name(&decrypted).ok_or("Profilname konnte nicht gelesen werden")?;
+        extract_profile_name(&decrypted).ok_or("Profilname konnte nicht gelesen werden".to_string())?;
 
     // 4️⃣ Ersetzen
     replace_identifiers(&temp_dir, &old_name, new_name, options)?;
 
     // 5️⃣ Final umbenennen
-    fs::rename(&temp_dir, &target_dir)?;
+    fs::rename(&temp_dir, &target_dir).map_err(|e| e.to_string())?;
 
     Ok(target_dir)
 }
 
-fn create_zip_backup(source: &Path, parent: &Path) -> Result<(), Box<dyn std::error::Error>> {
+fn create_zip_backup(source: &Path, parent: &Path) -> Result<(), String> {
     let backup_root = parent.join("Save Edit Tool Profile Backups");
-    fs::create_dir_all(&backup_root)?;
+    fs::create_dir_all(&backup_root).map_err(|e| e.to_string())?;
 
     let profile_name = source.file_name().unwrap().to_string_lossy();
     let timestamp = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S");
     let zip_path = backup_root.join(format!("{}_{}.zip", profile_name, timestamp));
 
-    let file = File::create(zip_path)?;
+    let file = File::create(zip_path).map_err(|e| e.to_string())?;
     let mut zip = ZipWriter::new(file);
     let options: FileOptions<()> = 
         FileOptions::default().compression_method(CompressionMethod::Deflated);
 
     for entry in WalkDir::new(source) {
-        let entry = entry?;
+        let entry = entry.map_err(|e| e.to_string())?;
         let path = entry.path();
-        let name = path.strip_prefix(source)?.to_string_lossy();
+        let name = path.strip_prefix(source).map_err(|e| e.to_string())?.to_string_lossy();
 
         if path.is_file() {
-            zip.start_file(name, options)?;
-            let data = fs::read(path)?;
-            zip.write_all(&data)?;
+            zip.start_file(name, options).map_err(|e| e.to_string())?;
+            let data = fs::read(path).map_err(|e| e.to_string())?;
+            zip.write_all(&data).map_err(|e| e.to_string())?;
         }
     }
 
-    zip.finish()?;
+    zip.finish().map_err(|e| e.to_string())?;
     Ok(())
 }
 
 /// Rekursives Kopieren
-fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<(), Box<dyn std::error::Error>> {
+fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<(), String> {
     for entry in WalkDir::new(src) {
-        let entry = entry?;
-        let rel = entry.path().strip_prefix(src)?;
+        let entry = entry.map_err(|e| e.to_string())?;
+        let rel = entry.path().strip_prefix(src).map_err(|e| e.to_string())?;
         let dest = dst.join(rel);
 
         if entry.file_type().is_dir() {
-            fs::create_dir_all(&dest)?;
+            fs::create_dir_all(&dest).map_err(|e| e.to_string())?;
         } else {
-            fs::copy(entry.path(), &dest)?;
+            fs::copy(entry.path(), &dest).map_err(|e| e.to_string())?;
         }
     }
     Ok(())
@@ -113,19 +113,19 @@ fn replace_identifiers(
     old: &str,
     new: &str,
     options: CloneOptions,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), String> {
     let old_hex = hex_float::text_to_hex(old);
     let new_hex = hex_float::text_to_hex(new);
 
     for entry in WalkDir::new(dir) {
-        let entry = entry?;
+        let entry = entry.map_err(|e| e.to_string())?;
         let path = entry.path();
 
         if !path.is_file() {
             continue;
         }
 
-        let mut content = decrypt_if_needed(path)?;
+        let mut content = decrypt_if_needed(path).map_err(|e| e.to_string())?;
 
         if options.replace_text {
             content = content.replace(old, new);
@@ -135,7 +135,7 @@ fn replace_identifiers(
             content = content.replace(&old_hex, &new_hex);
         }
 
-        fs::write(path, content)?;
+        fs::write(path, content).map_err(|e| e.to_string())?;
     }
 
     Ok(())
