@@ -1,4 +1,4 @@
-import { loadTools, activeTab, openCloneProfileModal } from "./app.js";
+import { loadTools, activeTab, openCloneProfileModal, openModalMulti, openModalText } from "./app.js";
 import { applySetting } from "./js/applySetting.js";
 import { checkUpdaterOnStartup, manualUpdateCheck } from "./js/updater.js";
 
@@ -441,24 +441,36 @@ document.addEventListener("DOMContentLoaded", () => {
   // CLONE PROFILE LOGIC
   // -----------------------------
   const cloneBtn = document.getElementById("cloneProfileBtn");
-  cloneBtn?.addEventListener("click", () => {
-    // Ruft die zentrale Modal-Funktion aus app.js auf
-    openCloneProfileModal();
+  cloneBtn?.addEventListener("click", async () => {
+    if (!window.selectedProfilePath) {
+      showToast("No profile selected!", "warning");
+      return;
+    }
+
+    // 1. Auswahl-Modal: Rename oder Duplicate
+    const choice = await openModalMulti("Manage Profile", [
+      {
+        type: "dropdown",
+        id: "action",
+        label: "Action",
+        value: "Duplicate",
+        options: ["Duplicate", "Rename"],
+      },
+    ]);
+
+    if (!choice) return;
+
+    // 2. Aktion ausführen
+    if (choice.action === "Duplicate") {
+      openCloneProfileModal();
+    } else if (choice.action === "Rename") {
+      await handleProfileRename();
+    }
   });
 
-  // -----------------------------
-  // RENAME PROFILE LOGIC
-  // -----------------------------
-  const renameProfileBtn = document.getElementById("renameProfileBtn");
-  if (renameProfileBtn) {
-    renameProfileBtn.addEventListener("click", async () => {
-      if (!window.selectedProfilePath) {
-        showToast("No profile selected!", "warning");
-        return;
-      }
-
+  async function handleProfileRename() {
       const currentName = profileNameDisplay.textContent;
-      const newName = prompt("Enter new profile name:", currentName);
+      const newName = await openModalText("Rename Profile", "New Name", currentName);
 
       if (newName && newName.trim() !== "" && newName !== currentName) {
         try {
@@ -469,12 +481,12 @@ document.addEventListener("DOMContentLoaded", () => {
           window.selectedProfilePath = newPath;
           profileNameDisplay.textContent = newName.trim();
           await scanProfiles({ saveToBackend: true, showToasts: false });
+          await loadSelectedProfile();
         } catch (err) {
           console.error("Rename failed:", err);
           showToast(err, "error");
         }
       }
-    });
   }
 
   // -----------------------------
