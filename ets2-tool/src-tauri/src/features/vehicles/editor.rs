@@ -170,9 +170,8 @@ pub async fn set_player_truck_fuel(
         profile_state,
         "vehicle",
         "my_truck",
-        "fuel_relative",
-        |_| level.to_string(),
-    )
+                    "fuel_relative",
+                    |_| float_to_hex(level),    )
 }
 
 #[command]
@@ -187,7 +186,7 @@ pub async fn set_player_truck_wear(
         "vehicle",
         "my_truck",
         &wear_type,
-        |_| level.to_string(),
+        |_| float_to_hex(level),
     )
 }
 
@@ -274,6 +273,6 @@ pub async fn set_player_trailer_cargo_mass(
         "trailer",
         "my_trailer",
         "cargo_mass",
-        |_| mass.to_string(),
+        |_| float_to_hex(mass),
     )
 }
