@@ -1,21 +1,19 @@
 use crate::dev_log;
 use crate::models::trucks::ParsedTruck;
-use crate::shared::decrypt::decrypt_if_needed;
 use crate::shared::regex_helper::cragex;
 use crate::shared::sii_parser::parse_trucks_from_sii;
-use std::path::Path;
+use crate::state::AppProfileState;
+use super::load_save_content;
 use tauri::command;
 
 #[command]
-pub async fn get_all_trucks(profile_path: String) -> Result<Vec<ParsedTruck>, String> {
-    // dev_log!("get_all_trucks: Profil {}", profile_path);
+pub async fn get_all_trucks(
+    profile_path: String,
+    profile_state: tauri::State<'_, AppProfileState>
+) -> Result<Vec<ParsedTruck>, String> {
+    dev_log!("get_all_trucks: Profil {}", profile_path);
 
-    let path = format!("{}/save/quicksave/game.sii", profile_path);
-
-    let content = decrypt_if_needed(Path::new(&path)).map_err(|e| {
-        // dev_log!("Decrypt Fehler: {}", e);
-        e
-    })?;
+    let content = load_save_content(profile_state)?;
 
     let trucks = parse_trucks_from_sii(&content);
     dev_log!("{} Trucks gefunden", trucks.len());
@@ -24,15 +22,13 @@ pub async fn get_all_trucks(profile_path: String) -> Result<Vec<ParsedTruck>, St
 }
 
 #[command]
-pub async fn get_player_truck(profile_path: String) -> Result<ParsedTruck, String> {
-    // dev_log!("get_player_truck: Profil {}", profile_path);
+pub async fn get_player_truck(
+    profile_path: String,
+    profile_state: tauri::State<'_, AppProfileState>
+) -> Result<ParsedTruck, String> {
+    dev_log!("get_player_truck: Profil {}", profile_path);
 
-    let path = format!("{}/save/quicksave/game.sii", profile_path);
-
-    let content = decrypt_if_needed(Path::new(&path)).map_err(|e| {
-        // dev_log!("Decrypt Fehler: {}", e);
-        e
-    })?;
+    let content = load_save_content(profile_state)?;
 
     let trucks = parse_trucks_from_sii(&content);
 
@@ -53,46 +49,5 @@ pub async fn get_player_truck(profile_path: String) -> Result<ParsedTruck, Strin
         .find(|t| t.truck_id.to_lowercase() == id_clean)
         .ok_or("Player Truck nicht gefunden".to_string())?;
 
-    // vehicle block
-    let vehicle_regex = format!(
-        r"vehicle\s*:\s*{}\s*\{{([\s\S]*?)\}}",
-        regex::escape(&base_truck.truck_id)
-    );
-
-    let re_vehicle = cragex(&vehicle_regex).map_err(|e| format!("Regex Fehler Vehicle: {}", e))?;
-    let block = re_vehicle
-        .captures(&content)
-        .and_then(|c| c.get(1).map(|x| x.as_str()))
-        .unwrap_or("");
-
-    let extract_string = |pattern: &str| {
-        regex::Regex::new(pattern)
-            .ok()
-            .and_then(|re| re.captures(block))
-            .and_then(|c| c.get(1))
-            .map(|v| v.as_str().to_string())
-    };
-
-    let extract_i64 = |pattern: &str| {
-        regex::Regex::new(pattern)
-            .ok()
-            .and_then(|re| re.captures(block))
-            .and_then(|c| c.get(1))
-            .and_then(|v| v.as_str().parse::<i64>().ok())
-    };
-
-    let odometer = extract_i64(r"odometer:\s*(-?\d+)");
-    let trip_fuel_l = extract_i64(r"trip_fuel_l:\s*(-?\d+)");
-    let license_plate = extract_string(r#"license_plate:\s*"(.*?)""#);
-
-    Ok(ParsedTruck {
-        truck_id: base_truck.truck_id,
-        brand: base_truck.brand,
-        model: base_truck.model,
-        odometer,
-        mileage: None,
-        trip_fuel_l,
-        license_plate,
-        assigned_garage: None,
-    })
+    Ok(base_truck)
 }

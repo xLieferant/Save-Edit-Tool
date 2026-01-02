@@ -1,22 +1,9 @@
 use crate::dev_log;
 use crate::models::trucks::ParsedTruck;
-use crate::shared::hex_float::hex_to_float;
+use crate::models::trailers::{TrailerData, TrailerDefData};
+use crate::shared::hex_float::{hex_to_float, parse_value_auto};
 use regex::Regex;
 use std::collections::HashMap;
-
-/// Typ für Trailer-Daten
-#[derive(Debug, Clone)]
-pub struct TrailerData {
-    pub trailer_id: String,
-    pub brand: Option<String>,
-    pub model: Option<String>,
-    pub license_plate: Option<String>,
-    pub odometer: f32,
-    pub odometer_float: Option<f32>,
-    pub wear_float: Option<f32>,
-    pub wheels_float: Option<Vec<f32>>,
-    pub assigned_garage: Option<String>,
-}
 
 /// Hilfsfunktionen jetzt alle public
 pub fn extract_value(block: &str, key: &str) -> Option<String> {
@@ -55,6 +42,18 @@ pub fn extract_f32(block: &str, key: &str) -> Option<f32> {
     re.captures(block)
         .and_then(|c| c.get(1))
         .and_then(|m| m.as_str().parse::<f32>().ok())
+}
+
+/// Kombiniert einen Basiswert (Int/Float) und einen Hex-Float-Part
+/// z.B. odometer: 37619 + odometer_float_part: &3f0388f8
+fn extract_combined_float(block: &str, key_base: &str) -> f32 {
+    let val_base = extract_f32(block, key_base).unwrap_or(0.0);
+    let key_float = format!("{}_float_part", key_base);
+    let val_float = extract_raw(block, &key_float)
+        .and_then(|h| hex_to_float(h).ok())
+        .unwrap_or(0.0);
+    
+    val_base + val_float
 }
 
 /// Parsen von Trucks aus SII-Dateien
@@ -103,37 +102,115 @@ pub fn parse_trucks_from_sii(content: &str) -> Vec<ParsedTruck> {
             }
         }
 
-        let odometer = extract_i64(block, "odometer");
-        let trip_fuel_l = extract_i64(block, "trip_fuel_l");
+        // Helper to parse arrays like wheels_wear[0], wheels_wear[1]...
+        let parse_array = |key: &str| -> Vec<f32> {
+            let re_arr = Regex::new(&format!(r"{}\[\d+\]:\s*(&[0-9a-fA-F]+|[0-9\.\-]+)", key)).unwrap();
+            let mut vals = Vec::new();
+            for cap in re_arr.captures_iter(block) {
+                if let Ok(v) = parse_value_auto(&cap[1]) {
+                    vals.push(v);
+                }
+            }
+            vals
+        };
+
+        // Helper for single values that might be hex or float
+        let parse_val = |key: &str| -> f32 {
+            let re_val = Regex::new(&format!(r"{}\s*:\s*(&[0-9a-fA-F]+|[0-9\.\-]+)", key)).unwrap();
+            re_val.captures(block)
+                .and_then(|c| parse_value_auto(&c[1]).ok())
+                .unwrap_or(0.0)
+        };
+
+        let odometer = extract_combined_float(block, "odometer");
+        let integrity_odometer = extract_combined_float(block, "integrity_odometer");
+        
+        let fuel_relative = parse_val("fuel_relative");
+        let trip_fuel_l = extract_combined_float(block, "trip_fuel"); // trip_fuel + trip_fuel_l logic usually combined or separate? SII usually has trip_fuel (hex) and trip_fuel_l (int). We use combined logic if pattern matches, else parse_val.
+        // Actually trip_fuel is often the float part of trip_fuel_l or separate. Let's use combined for safety if keys exist.
+        let trip_fuel_val = extract_combined_float(block, "trip_fuel"); // trip_fuel is often the key for the float part in some versions, or separate.
+        // In the input: trip_fuel_l: 1128, trip_fuel: &3d8fa681. This looks like int + float part pattern but named differently.
+        // Let's just sum them as floats.
+        let trip_fuel_l_int = extract_f32(block, "trip_fuel_l").unwrap_or(0.0);
+        let trip_fuel_hex = parse_val("trip_fuel");
+        let trip_fuel_total = trip_fuel_l_int + trip_fuel_hex;
+
+        let trip_distance_km = extract_f32(block, "trip_distance_km").unwrap_or(0.0) + parse_val("trip_distance");
+        let trip_time_min = extract_f32(block, "trip_time_min").unwrap_or(0.0) + parse_val("trip_time");
+
         let license_plate = extract_value(block, "license_plate");
-        let mileage = extract_f32(block, "mileage");
         let assigned_garage = extract_value(block, "assigned_garage");
 
-        dev_log!(
-            "Parsed Truck -> ID: {}, Brand: {}, Model: {}, Odo: {:?}, Mileage: {:?}, Fuel: {:?}, Plate: {:?}, Garage: {:?}",
-            truck_id,
-            brand,
-            model,
-            odometer,
-            mileage,
-            trip_fuel_l,
-            license_plate,
-            assigned_garage
-        );
+        let engine_wear = parse_val("engine_wear");
+        let transmission_wear = parse_val("transmission_wear");
+        let cabin_wear = parse_val("cabin_wear");
+        let chassis_wear = parse_val("chassis_wear");
+        let wheels_wear = parse_array("wheels_wear");
+
+        let engine_wear_unfixable = parse_val("engine_wear_unfixable");
+        let transmission_wear_unfixable = parse_val("transmission_wear_unfixable");
+        let cabin_wear_unfixable = parse_val("cabin_wear_unfixable");
+        let chassis_wear_unfixable = parse_val("chassis_wear_unfixable");
+        let wheels_wear_unfixable = parse_array("wheels_wear_unfixable");
 
         trucks.push(ParsedTruck {
             truck_id,
             brand,
             model,
             odometer,
-            mileage,
-            trip_fuel_l,
+            integrity_odometer,
+            fuel_relative,
+            trip_fuel_l: trip_fuel_total,
+            trip_distance_km,
+            trip_time_min,
+            engine_wear,
+            transmission_wear,
+            cabin_wear,
+            chassis_wear,
+            wheels_wear,
+            engine_wear_unfixable,
+            transmission_wear_unfixable,
+            cabin_wear_unfixable,
+            chassis_wear_unfixable,
+            wheels_wear_unfixable,
             license_plate,
             assigned_garage,
         });
     }
 
     trucks
+}
+
+/// Parsen der Trailer-Definitionen (für Massen, Body-Type etc.)
+pub fn parse_trailer_defs_from_sii(content: &str) -> HashMap<String, TrailerDefData> {
+    let mut defs = HashMap::new();
+    // trailer_def : _nameless.230.0ea6.67b0 { ... }
+    let re_def = Regex::new(r"trailer_def\s*:\s*([a-zA-Z0-9._]+)\s*\{([^}]+)\}").unwrap();
+    
+    for cap in re_def.captures_iter(content) {
+        let id = cap[1].to_string();
+        let block = &cap[2];
+
+        let parse_val = |key: &str| -> f32 {
+            let re_val = Regex::new(&format!(r"{}\s*:\s*(&[0-9a-fA-F]+|[0-9\.\-]+)", key)).unwrap();
+            re_val.captures(block)
+                .and_then(|c| parse_value_auto(&c[1]).ok())
+                .unwrap_or(0.0)
+        };
+
+        let data = TrailerDefData {
+            id: id.clone(),
+            gross_trailer_weight_limit: parse_val("gross_trailer_weight_limit"),
+            chassis_mass: parse_val("chassis_mass"),
+            body_mass: parse_val("body_mass"),
+            length: parse_val("length"),
+            body_type: extract_value(block, "body_type"),
+            chain_type: extract_value(block, "chain_type"),
+            source_name: extract_value(block, "source_name"),
+        };
+        defs.insert(id, data);
+    }
+    defs
 }
 
 /// Parsen von Trailers aus SII-Dateien
@@ -144,11 +221,8 @@ pub fn parse_trailers_from_sii(text: &str) -> Vec<TrailerData> {
     let re_plate = Regex::new(r#"license_plate:\s*"([^"]+)""#).unwrap();
     let re_brand = Regex::new(r#"brand:\s*([a-zA-Z0-9/._-]+)"#).unwrap();
     let re_model = Regex::new(r#"model:\s*([a-zA-Z0-9/._-]+)"#).unwrap();
-    let re_odometer = Regex::new(r#"odometer:\s*([0-9.]+)"#).unwrap();
-    let re_odometer_float = Regex::new(r#"odometer_float_part:\s*(&[0-9a-fA-F]+)"#).unwrap();
-    let re_body_wear = Regex::new(r#"trailer_body_wear:\s*(&[0-9a-fA-F]+)"#).unwrap();
-    let re_wheel_entry = Regex::new(r#"wheels_wear\[(\d+)\]:\s*(&[0-9a-fA-F]+)"#).unwrap();
     let re_assigned = Regex::new(r#"assigned_garage:\s*([a-zA-Z0-9._-]+)"#).unwrap();
+    let re_def_ref = Regex::new(r"trailer_definition\s*:\s*([a-zA-Z0-9._]+)").unwrap();
 
     for cap in block_re.captures_iter(text) {
         let trailer_id = cap[1].to_string();
@@ -157,44 +231,69 @@ pub fn parse_trailers_from_sii(text: &str) -> Vec<TrailerData> {
         let brand = re_brand.captures(body).map(|c| c[1].to_string());
         let model = re_model.captures(body).map(|c| c[1].to_string());
         let license_plate = re_plate.captures(body).map(|c| c[1].to_string());
+        let trailer_definition = re_def_ref.captures(body).map(|c| c[1].to_string()).unwrap_or_default();
 
-        let odometer = re_odometer
-            .captures(body)
-            .and_then(|c| c[1].parse::<f32>().ok())
-            .unwrap_or(0.0);
+        let odometer = extract_combined_float(body, "odometer");
+        let integrity_odometer = extract_combined_float(body, "integrity_odometer");
 
-        let odometer_float = re_odometer_float
-            .captures(body)
-            .and_then(|c| hex_to_float(&c[1]).ok());
+        let parse_val = |key: &str| -> f32 {
+            let re_val = Regex::new(&format!(r"{}\s*:\s*(&[0-9a-fA-F]+|[0-9\.\-]+)", key)).unwrap();
+            re_val.captures(body)
+                .and_then(|c| parse_value_auto(&c[1]).ok())
+                .unwrap_or(0.0)
+        };
 
-        let wear_float = re_body_wear
-            .captures(body)
-            .and_then(|c| hex_to_float(&c[1]).ok());
-
-        let mut wheels = Vec::new();
-        for wheel_cap in re_wheel_entry.captures_iter(body) {
-            if let Ok(val) = hex_to_float(&wheel_cap[2]) {
-                wheels.push(val);
+        let parse_array = |key: &str| -> Vec<f32> {
+            let re_arr = Regex::new(&format!(r"{}\[\d+\]:\s*(&[0-9a-fA-F]+|[0-9\.\-]+)", key)).unwrap();
+            let mut vals = Vec::new();
+            for cap in re_arr.captures_iter(body) {
+                if let Ok(v) = parse_value_auto(&cap[1]) {
+                    vals.push(v);
+                }
             }
-        }
+            vals
+        };
+
+        let wear_float = Some(parse_val("trailer_body_wear")); // Legacy name in struct
+        let body_wear_unfixable = parse_val("trailer_body_wear_unfixable");
+        
+        let chassis_wear = parse_val("chassis_wear");
+        let chassis_wear_unfixable = parse_val("chassis_wear_unfixable");
+
+        let wheels = parse_array("wheels_wear");
         let wheels_float = if wheels.is_empty() {
             None
         } else {
             Some(wheels)
         };
+        let wheels_wear_unfixable = parse_array("wheels_wear_unfixable");
+
+        let cargo_mass = parse_val("cargo_mass");
+        let cargo_damage = parse_val("cargo_damage");
+        
+        let accessories = extract_string_array(body, "accessories");
 
         let assigned_garage = re_assigned.captures(body).map(|c| c[1].to_string());
 
         trailers.push(TrailerData {
             trailer_id,
+            trailer_definition,
             brand,
             model,
             license_plate,
             odometer,
-            odometer_float,
+            odometer_float: None, // Already combined
             wear_float,
             wheels_float,
             assigned_garage,
+            cargo_mass,
+            cargo_damage,
+            body_wear_unfixable,
+            chassis_wear,
+            chassis_wear_unfixable,
+            wheels_wear_unfixable,
+            integrity_odometer,
+            accessories,
         });
     }
 
