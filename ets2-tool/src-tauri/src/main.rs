@@ -68,6 +68,7 @@ fn main() {
             features::profile_clone::commands::clone_profile_command,
             features::profile_clone::commands::validate_clone_target,
             features::profile_rename::commands::profile_rename,
+            features::profile_move_mods::commands::copy_mods_to_profile,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
