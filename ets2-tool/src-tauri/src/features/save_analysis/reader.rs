@@ -3,7 +3,7 @@ use crate::models::save_game_data::SaveGameData;
 use crate::state::AppProfileState;
 use crate::shared::current_profile::require_current_profile;
 use crate::shared::decrypt::decrypt_if_needed;
-use crate::shared::paths::{autosave_path, ets2_base_config_path, game_sii_from_save};
+use crate::shared::paths::{autosave_path, ets2_base_config_path, info_sii_from_save};
 use regex::Regex;
 use std::fs;
 use std::path::Path;
@@ -15,36 +15,36 @@ fn get_active_save_path(
 ) -> Result<std::path::PathBuf, String> {
     let save_opt = profile_state.current_save.lock().unwrap().clone();
     if let Some(save) = save_opt {
-        return Ok(game_sii_from_save(Path::new(&save)));
+        return Ok(info_sii_from_save(Path::new(&save)));
     }
     // Fallback: Autosave, falls kein Save explizit geladen wurde
     let profile = require_current_profile(profile_state)?;
     Ok(autosave_path(&profile))
 }
 
-#[command]
-pub fn read_money(profile_state: State<'_, AppProfileState>) -> Result<i64, String> {
-    let path = get_active_save_path(profile_state)?;
-    dev_log!("Lese Geld aus: {:?}", path);
+// #[command]
+// pub fn read_money(profile_state: State<'_, AppProfileState>) -> Result<i64, String> {
+//     let path = get_active_save_path(profile_state)?;
+//     dev_log!("Lese Geld aus: {:?}", path);
 
-    let content = decrypt_if_needed(&path)?;
+//     let content = decrypt_if_needed(&path)?;
 
-    // 1. Versuch: Echtes Geld (money_account)
-    // (?m)^\s* verhindert, dass wir "info_money_account" matchen
-    let re_main = Regex::new(r"(?m)^\s*money_account:\s*(\d+)").unwrap();
-    if let Some(cap) = re_main.captures(&content) {
-        if let Ok(val) = cap[1].parse::<i64>() {
-            return Ok(val);
-        }
-    }
+//     // 1. Versuch: Echtes Geld (money_account)
+//     // (?m)^\s* verhindert, dass wir "info_money_account" matchen
+//     let re_main = Regex::new(r"(?m)^\s*money_account:\s*(\d+)").unwrap();
+//     if let Some(cap) = re_main.captures(&content) {
+//         if let Ok(val) = cap[1].parse::<i64>() {
+//             return Ok(val);
+//         }
+//     }
 
-    // 2. Versuch: Info-Geld (info_money_account)
-    let re_info = Regex::new(r"info_money_account:\s*(\d+)").unwrap();
-    Ok(re_info
-        .captures(&content)
-        .and_then(|c| c[1].parse().ok())
-        .unwrap_or(0))
-}
+//     // 2. Versuch: Info-Geld (info_money_account)
+//     let re_info = Regex::new(r"info_money_account:\s*(\d+)").unwrap();
+//     Ok(re_info
+//         .captures(&content)
+//         .and_then(|c| c[1].parse().ok())
+//         .unwrap_or(0))
+// }
 
 #[command]
 pub fn read_xp(profile_state: State<'_, AppProfileState>) -> Result<i64, String> {
@@ -106,7 +106,7 @@ pub fn read_all_save_data(
         dealers: re(r"info_unlocked_dealers:\s*(\d+)")
             .captures(&content)
             .and_then(|c| c[1].parse().ok()),
-        visited_cities: re(r"info_visited_cities:\s*(\d+)")
+        visited_cities: re(r"(?i)info_visited_cities:\s*(\d+)")
             .captures(&content)
             .and_then(|c| c[1].parse().ok()),
     };

@@ -54,8 +54,8 @@ fn main() {
             
             // Save Analysis+
             features::save_analysis::reader::read_all_save_data,
-            features::save_analysis::reader::read_money,
-            features::save_analysis::reader::read_xp,
+            // features::save_analysis::reader::read_money,
+            // features::save_analysis::reader::read_xp,
             features::save_analysis::reader::read_traffic_value,
 
             features::save_analysis::quicksave::quicksave_game_info,
