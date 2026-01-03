@@ -6,6 +6,7 @@ use crate::shared::paths::{
     autosave_path, ets2_base_config_path, game_sii_from_save, quicksave_config_path,
     quicksave_game_path,
 };
+use crate::shared::sii_parser;
 use crate::shared::regex_helper::cragex;
 use regex::Regex;
 use serde::Deserialize;
@@ -149,49 +150,6 @@ pub fn edit_player_experience(
     dev_log!("Experience erfolgreich geändert auf {}", value);
     dev_log!("--- edit_player_experience END ---");
 
-    Ok(())
-}
-
-#[command]
-pub fn edit_truck_odometer(
-    value: i64,
-    profile_state: State<'_, AppProfileState>,
-) -> Result<(), String> {
-    let profile = require_current_profile(profile_state)?;
-    let path = Path::new(&profile)
-        .join("save")
-        .join("quicksave")
-        .join("game.sii");
-    let content = decrypt_if_needed(&path)?;
-
-    // Finde zuerst den Truck des Spielers
-    let re_player_truck =
-        Regex::new(r"player\s*:\s*[A-Za-z0-9._]+\s*\{[^}]*?my_truck\s*:\s*([A-Za-z0-9._]+)")
-            .unwrap();
-    let player_truck_id = re_player_truck
-        .captures(&content)
-        .and_then(|c| c.get(1).map(|v| v.as_str()))
-        .ok_or("Player-Truck ID nicht gefunden".to_string())?;
-
-    // Finde den vehicle-Block des Trucks und ersetze den Odometer
-    let vehicle_regex_str = format!(
-        r"(vehicle\s*:\s*{}\s*\{{([\s\S]*?odometer:\s*)-?\d+([\s\S]*?)\}})",
-        regex::escape(player_truck_id)
-    );
-    let re_vehicle = Regex::new(&vehicle_regex_str).map_err(|e| e.to_string())?;
-
-    if !re_vehicle.is_match(&content) {
-        return Err(format!(
-            "Vehicle-Block für Truck {} nicht gefunden",
-            player_truck_id
-        ));
-    }
-
-    let new_content = re_vehicle
-        .replace(&content, format!("$1$2{}$3", value))
-        .to_string();
-    fs::write(&path, new_content).map_err(|e| e.to_string())?;
-    dev_log!("LKW-Odometer geändert: {}", value);
     Ok(())
 }
 
