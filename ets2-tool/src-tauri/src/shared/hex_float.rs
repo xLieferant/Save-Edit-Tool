@@ -1,5 +1,4 @@
-use crate::dev_log;
-
+// hex_float.rs
 /// Konvertiert einen SII-Wert wie "&3d086363" → f32 (IEEE 754)
 pub fn hex_to_float(token: &str) -> Result<f32, String> {
     let cleaned = token
