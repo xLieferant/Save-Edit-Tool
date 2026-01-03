@@ -46,28 +46,28 @@ fn get_active_save_path(
 //         .unwrap_or(0))
 // }
 
-#[command]
-pub fn read_xp(profile_state: State<'_, AppProfileState>) -> Result<i64, String> {
-    let path = get_active_save_path(profile_state)?;
-    dev_log!("Lese XP aus: {:?}", path);
+// #[command]
+// pub fn read_xp(profile_state: State<'_, AppProfileState>) -> Result<i64, String> {
+//     let path = get_active_save_path(profile_state)?;
+//     dev_log!("Lese XP aus: {:?}", path);
 
-    let content = decrypt_if_needed(&path)?;
+//     let content = decrypt_if_needed(&path)?;
 
-    // 1. Versuch: Echte XP
-    let re_main = Regex::new(r"(?m)^\s*experience_points:\s*(\d+)").unwrap();
-    if let Some(cap) = re_main.captures(&content) {
-        if let Ok(val) = cap[1].parse::<i64>() {
-            return Ok(val);
-        }
-    }
+//     // 1. Versuch: Echte XP
+//     let re_main = Regex::new(r"(?m)^\s*experience_points:\s*(\d+)").unwrap();
+//     if let Some(cap) = re_main.captures(&content) {
+//         if let Ok(val) = cap[1].parse::<i64>() {
+//             return Ok(val);
+//         }
+//     }
 
-    // 2. Versuch: Info-XP
-    let re_info = Regex::new(r"info_players_experience:\s*(\d+)").unwrap();
-    Ok(re_info
-        .captures(&content)
-        .and_then(|c| c[1].parse().ok())
-        .unwrap_or(0))
-}
+//     // 2. Versuch: Info-XP
+//     let re_info = Regex::new(r"info_players_experience:\s*(\d+)").unwrap();
+//     Ok(re_info
+//         .captures(&content)
+//         .and_then(|c| c[1].parse().ok())
+//         .unwrap_or(0))
+// }
 
 #[command]
 pub fn read_all_save_data(

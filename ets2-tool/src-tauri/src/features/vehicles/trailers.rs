@@ -10,7 +10,7 @@ use tauri::command;
 pub async fn get_player_trailer(
     profile_path: String,
     profile_state: tauri::State<'_, AppProfileState>
-) -> Result<ParsedTrailer, String> {
+) -> Result<Option<ParsedTrailer>, String> {  // ← CHANGED: Now returns Option<ParsedTrailer>
     dev_log!("get_player_trailer: Profil {}", profile_path);
 
     let content = load_save_content(profile_state)?;
@@ -22,7 +22,14 @@ pub async fn get_player_trailer(
     let player_id = get_player_id(&content).ok_or("Player ID nicht im economy block gefunden".to_string())?;
     let (player_truck_id_opt, player_trailer_id_opt) = get_vehicle_ids(&content, &player_id);
 
-    let trailer_id = player_trailer_id_opt.ok_or("my_trailer nicht im player block gefunden".to_string())?;
+    // ← CHANGED: Instead of erroring, return None if player has no trailer
+    let trailer_id = match player_trailer_id_opt {
+        Some(id) => id,
+        None => {
+            dev_log!("Player has no trailer attached - this is normal");
+            return Ok(None);  // ← Return None instead of error
+        }
+    };
 
     let id_clean = trailer_id.trim().to_lowercase();
 
@@ -62,7 +69,7 @@ pub async fn get_player_trailer(
         &parsed_trailer.wheels_wear
     );
 
-    Ok(parsed_trailer)
+    Ok(Some(parsed_trailer))  // ← CHANGED: Return Some(trailer)
 }
 
 #[command]
