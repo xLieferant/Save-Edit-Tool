@@ -72,6 +72,8 @@ fn extract_vehicle_block(content: &str, block_type: &str, vehicle_id: &str) -> R
     Ok((cap.get(0).unwrap().start(), end_pos + 1))
 }
 
+// #FIXME: Function needs to find and delete something inside the regex 
+// and at the end, it should look like this inside the game.sii; license_plate; "newNameID|countryID" (countryID is set, automatically, we're not deleting this info)
 // --------------------- 
 // Universal Editor
 // --------------------- 
@@ -126,7 +128,16 @@ pub async fn set_player_truck_license_plate(
         "vehicle",
         "my_truck",
         "license_plate",
-        |_| format!(r#""{}""#, plate),
+        |caps: &Captures| {
+            let old_value = &caps[2];
+            let old_value_unquoted = old_value.trim_matches('"');
+            if let Some(pipe_index) = old_value_unquoted.rfind('|') {
+                let country_part = &old_value_unquoted[pipe_index + 1..];
+                format!(r#""{}|{}""#, &plate, country_part)
+            } else {
+                format!(r#""{}""#, &plate)
+            }
+        },
     )
 }
 
@@ -223,7 +234,16 @@ pub async fn set_player_trailer_license_plate(
         "trailer",
         "my_trailer",
         "license_plate",
-        |_| format!(r#""{}""#, plate),
+        |caps: &Captures| {
+            let old_value = &caps[2];
+            let old_value_unquoted = old_value.trim_matches('"');
+            if let Some(pipe_index) = old_value_unquoted.rfind('|') {
+                let country_part = &old_value_unquoted[pipe_index + 1..];
+                format!(r#""{}|{}""#, &plate, country_part)
+            } else {
+                format!(r#""{}""#, &plate)
+            }
+        },
     )
 }
 
