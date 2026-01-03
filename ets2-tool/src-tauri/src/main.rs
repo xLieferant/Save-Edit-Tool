@@ -39,8 +39,6 @@ fn main() {
             features::save_editor::commands::edit_money,
             features::save_editor::commands::edit_xp,
             features::save_editor::commands::edit_level,
-            features::save_editor::commands::edit_truck_odometer,
-
             features::save_editor::commands::edit_config_value,
             features::save_editor::commands::edit_save_config_value,
             features::save_editor::commands::edit_traffic_value,
@@ -74,6 +72,7 @@ fn main() {
             features::vehicles::editor::set_player_truck_wear,
             features::vehicles::editor::repair_player_trailer,
             features::vehicles::editor::set_player_trailer_cargo_mass,
+            features::vehicles::editor::edit_truck_odometer,
             
             // FEATURE: PROFILE CLONE + Rename
             features::profile_clone::commands::clone_profile_command,

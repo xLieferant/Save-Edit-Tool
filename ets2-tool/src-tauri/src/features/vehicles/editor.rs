@@ -248,6 +248,21 @@ pub async fn set_player_trailer_license_plate(
 }
 
 #[command]
+pub async fn edit_truck_odometer(
+    value: i64,
+    profile_state: tauri::State<'_, AppProfileState>,
+) -> Result<(), String> {
+    dev_log!("Setting truck odometer to: {}", value);
+    generic_vehicle_attribute_edit(
+        profile_state,
+        "vehicle",
+        "my_truck",
+        "odometer",
+        |_| value.to_string(),
+    )
+}
+
+#[command]
 pub async fn repair_player_trailer(
     profile_state: tauri::State<'_, AppProfileState>,
 ) -> Result<(), String> {
