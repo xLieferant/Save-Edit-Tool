@@ -264,8 +264,9 @@ export function openModalMulti(title, config = []) {
           val.textContent = adrLevels[slider.value];
         });
       } else {
-        slider.min = 0;
-        slider.max = 6;
+        slider.min = item.min ?? 0;
+        slider.max = item.max ?? 6;
+        slider.step = item.step ?? 1;
         slider.value = item.value ?? 0;
 
         val.textContent = slider.value;

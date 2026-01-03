@@ -69,17 +69,42 @@ async function initVersionInfo() {
 }
 
 // -----------------------------
+// UPDATE UI WITH DATA
+// -----------------------------
+function updateUIWithCurrentQuicksave() {
+  // Update XP Display
+  const xpDisplay = document.querySelector("#xpShow");
+  if (xpDisplay && window.currentProfileData?.xp !== undefined) {
+    xpDisplay.textContent = `XP: ${window.currentProfileData.xp.toLocaleString()}`;
+  }
+
+  // Update Money Display
+  const moneyDisplay = document.querySelector("#moneyShow");
+  if (moneyDisplay && window.currentProfileData?.money !== undefined) {
+    moneyDisplay.textContent = `Geld: ${window.currentProfileData.money.toLocaleString()} €`;
+  }
+
+  // Update Skills Display (if needed)
+  // Add more UI updates as needed
+}
+
+// -----------------------------
 // DOM READY – ZENTRALE INIT
 // -----------------------------
 document.addEventListener("DOMContentLoaded", () => {
   console.log("[main.js] DOM vollständig geladen.");
 
+  // Periodic data refresh (every 5 minutes)
   setInterval(async () => {
     if (window.selectedSavePath) {
-      window.currentQuicksaveData = await invoke("quicksave_game_info");
-      updateUIWithCurrentQuicksave(); // Funktion, die DOM aktualisiert
+      try {
+        window.currentQuicksaveData = await invoke("quicksave_game_info");
+        updateUIWithCurrentQuicksave();
+      } catch (e) {
+        console.warn("Periodic refresh failed:", e);
+      }
     }
-  }, 500000); // alle 5 Min 
+  }, 300000); // 5 minutes
 
   // -----------------------------
   // BASIS INIT
@@ -144,8 +169,17 @@ document.addEventListener("DOMContentLoaded", () => {
   window.baseConfig = {};
   window.allTrucks = [];
   window.playerTruck = null;
+  window.allTrailers = [];
+  window.playerTrailer = null;
 
   window.applySetting = applySetting;
+
+  // Helper to extract plate text
+  window.extractPlateText = function(plate) {
+    if (!plate) return "";
+    // Remove quotes if present
+    return plate.replace(/^"|"$/g, '');
+  };
 
   // -----------------------------
   // DROPDOWN
@@ -164,13 +198,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // 🔹 FIX: Klick auf den gesamten Container (Text + Pfeil) öffnet das Menü
   const profilePicker = document.querySelector(".profile-picker");
   if (profilePicker) {
     profilePicker.addEventListener("click", (e) => {
-      // Verhindern, dass Klicks innerhalb der Liste das Menü sofort wieder schließen/togglen
       if (e.target.closest(".custom-dropdown-list")) return;
-
       e.stopPropagation();
       const wasOpen = profileDropdownList.classList.contains("show");
       closeAllDropdowns();
@@ -182,7 +213,6 @@ document.addEventListener("DOMContentLoaded", () => {
   if (savePicker) {
     savePicker.addEventListener("click", (e) => {
       if (e.target.closest(".dropdown-list")) return;
-
       e.stopPropagation();
       if (!window.selectedProfilePath) return;
       const wasOpen = saveDropdownList.classList.contains("show");
@@ -195,38 +225,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // PROFILE SCAN
   // -----------------------------
   scanBtn?.addEventListener("click", async () => {
-    profileStatus.textContent = "Scanning profiles...";
-    profileDropdownList.innerHTML = "";
-
-    try {
-      const profiles = await invoke("find_ets2_profiles");
-      profileStatus.textContent = `${profiles.length} profiles found`;
-      showToast("Profiles found!", "success");
-
-      profiles.forEach((p) => {
-        if (!p.success) return;
-
-        const item = document.createElement("div");
-        item.className = "dropdown-item";
-        item.textContent = `${p.name} (${p.path})`;
-
-        item.addEventListener("click", async () => {
-          window.selectedProfilePath = p.path;
-          profileNameDisplay.textContent = p.name;
-          profileDropdownList.classList.remove("show");
-          await invoke("switch_profile", {
-            new_profile_path: window.selectedProfilePath,
-          });
-          await loadSelectedProfile();
-        });
-
-        profileDropdownList.appendChild(item);
-      });
-    } catch (err) {
-      console.error(err);
-      profileStatus.textContent = "Scan fehlgeschlagen";
-      showToast("No profiles found!", "error");
-    }
+    await scanProfiles({ saveToBackend: true, showToasts: true });
   });
 
   // -----------------------------
@@ -238,7 +237,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       profileStatus.textContent = "Loading profile...";
 
-      // → Alte Saves entfernen
+      // Clear old saves
       saveDropdownList.innerHTML = "";
       window.selectedSavePath = null;
       window.currentSavePath = null;
@@ -246,20 +245,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
       await invoke("load_profile", { profilePath: window.selectedProfilePath });
 
-      // Scanne die neuen Saves
+      // Scan saves for this profile
       await scanSavesForProfile();
 
-      // Configs laden (unabhängig vom Save)
+      // Load configs (independent of save)
       try {
         await loadBaseConfig();
         await loadProfileSaveConfig();
-      } catch (e) { console.warn("Config load warning:", e); }
+      } catch (e) { 
+        console.warn("Config load warning:", e); 
+      }
 
-      // State bereinigen (kein Save geladen)
+      // Clear state (no save loaded yet)
       window.currentProfileData = {};
       window.currentQuicksaveData = {};
       window.allTrucks = [];
       window.playerTruck = null;
+      window.allTrailers = [];
+      window.playerTrailer = null;
 
       profileStatus.textContent = "Profile loaded. Please select a save.";
       showToast("Profile loaded. Please select a save game.", "info");
@@ -267,7 +270,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (err) {
       console.error(err);
       profileStatus.textContent = "Error loading profile";
-      showToast("Profile was not loaded!", "error");
+      showToast("Profile could not be loaded!", "error");
     }
   }
 
@@ -283,12 +286,10 @@ document.addEventListener("DOMContentLoaded", () => {
         profilePath: window.selectedProfilePath,
       });
 
-      // 🔹 Nur gültige Saves (Autosave, Quicksave, nummerierte Manual)
       const filteredSaves = saves.filter(
         (s) => s.success && s.kind !== "Invalid"
       );
 
-      // 🔹 Sortieren: Quicksave (0), Autosave (1), Manual (2 - absteigend/neuste zuerst)
       filteredSaves.sort((a, b) => {
         const fA = a.folder.toLowerCase();
         const fB = b.folder.toLowerCase();
@@ -304,7 +305,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (pA !== pB) return pA - pB;
 
-        // Manual saves: descending (newest/highest number first)
         return fB.localeCompare(fA, undefined, { numeric: true });
       });
 
@@ -318,7 +318,7 @@ document.addEventListener("DOMContentLoaded", () => {
         else displayName = `${displayName} [${s.folder}]`;
 
         item.textContent = displayName;
-        item.title = s.path; // Zeigt beim Drüberfahren den vollen Pfad an
+        item.title = s.path;
 
         item.addEventListener("click", async () => {
           window.selectedSavePath = s.path;
@@ -337,6 +337,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     } catch (e) {
       console.error(e);
+      showToast("Could not scan saves", "error");
     }
   }
 
@@ -349,9 +350,12 @@ document.addEventListener("DOMContentLoaded", () => {
       await loadProfileSaveConfig();
       await loadBaseConfig();
       await loadAllTrucks();
+      await loadAllTrailers();
 
-      profileStatus.textContent = "Save loaded";
-      showToast("Save loaded!", "success");
+      updateUIWithCurrentQuicksave();
+
+      profileStatus.textContent = "Save loaded successfully";
+      showToast("Save loaded successfully!", "success");
       loadTools(activeTab);
     } catch (e) {
       console.error(e);
@@ -360,28 +364,67 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function loadProfileData() {
-    window.currentProfileData = await invoke("read_all_save_data");
+    try {
+      window.currentProfileData = await invoke("read_all_save_data");
+    } catch (e) {
+      console.error("Failed to load profile data:", e);
+      throw e;
+    }
   }
 
   async function loadQuicksave() {
-    window.currentQuicksaveData = await invoke("quicksave_game_info");
+    try {
+      window.currentQuicksaveData = await invoke("quicksave_game_info");
+    } catch (e) {
+      console.error("Failed to load quicksave:", e);
+      throw e;
+    }
   }
 
   async function loadProfileSaveConfig() {
-    window.readSaveGameConfig = await invoke("read_save_config", {
-      profilePath: window.selectedProfilePath,
-    });
+    try {
+      window.readSaveGameConfig = await invoke("read_save_config", {
+        profilePath: window.selectedProfilePath,
+      });
+    } catch (e) {
+      console.error("Failed to load save config:", e);
+      throw e;
+    }
   }
 
   async function loadBaseConfig() {
-    window.baseConfig = await invoke("read_base_config");
+    try {
+      window.baseConfig = await invoke("read_base_config");
+    } catch (e) {
+      console.error("Failed to load base config:", e);
+      throw e;
+    }
   }
 
   async function loadAllTrucks() {
-    window.playerTruck = await invoke("get_player_truck", {
-      profilePath: window.selectedProfilePath,
-    });
-    window.allTrucks = [window.playerTruck];
+    try {
+      window.playerTruck = await invoke("get_player_truck", {
+        profilePath: window.selectedProfilePath,
+      });
+      window.allTrucks = [window.playerTruck];
+    } catch (e) {
+      console.error("Failed to load trucks:", e);
+      window.playerTruck = null;
+      window.allTrucks = [];
+    }
+  }
+
+  async function loadAllTrailers() {
+    try {
+      window.playerTrailer = await invoke("get_player_trailer", {
+        profilePath: window.selectedProfilePath,
+      });
+      window.allTrailers = [window.playerTrailer];
+    } catch (e) {
+      console.error("Failed to load trailers:", e);
+      window.playerTrailer = null;
+      window.allTrailers = [];
+    }
   }
 
   // -----------------------------
@@ -393,11 +436,14 @@ document.addEventListener("DOMContentLoaded", () => {
       editStatus.textContent = "Saving…";
       await invoke("edit_money", { amount });
       editStatus.textContent = "Money saved!";
+      showToast("Money successfully saved!", "success");
       await loadProfileData();
+      updateUIWithCurrentQuicksave();
       loadTools(activeTab);
     } catch (err) {
       console.error(err);
       editStatus.textContent = "Error saving money";
+      showToast("Failed to save money", "error");
     }
   });
 
@@ -407,11 +453,14 @@ document.addEventListener("DOMContentLoaded", () => {
       editStatus.textContent = "Saving…";
       await invoke("edit_level", { xp });
       editStatus.textContent = "XP saved!";
+      showToast("XP successfully saved!", "success");
       await loadProfileData();
+      updateUIWithCurrentQuicksave();
       loadTools(activeTab);
     } catch (err) {
       console.error(err);
       editStatus.textContent = "Error saving XP";
+      showToast("Failed to save XP", "error");
     }
   });
 
@@ -436,6 +485,7 @@ document.addEventListener("DOMContentLoaded", () => {
   window.loadProfileSaveConfig = loadProfileSaveConfig;
   window.loadBaseConfig = loadBaseConfig;
   window.loadAllTrucks = loadAllTrucks;
+  window.loadAllTrailers = loadAllTrailers;
 
   // -----------------------------
   // CLONE PROFILE LOGIC
@@ -447,7 +497,6 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // 1. Auswahl-Modal: Rename oder Duplicate
     const choice = await openModalMulti("Manage Profile", [
       {
         type: "dropdown",
@@ -460,7 +509,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!choice) return;
 
-    // 2. Aktion ausführen
     if (choice.action === "Duplicate") {
       openCloneProfileModal();
     } else if (choice.action === "Rename") {
@@ -469,24 +517,23 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   async function handleProfileRename() {
-      const currentName = profileNameDisplay.textContent;
-      const newName = await openModalText("Rename Profile", "New Name", currentName);
+    const currentName = profileNameDisplay.textContent;
+    const newName = await openModalText("Rename Profile", "New Name", currentName);
 
-      if (newName && newName.trim() !== "" && newName !== currentName) {
-        try {
-          const newPath = await invoke("profile_rename", { newName: newName.trim() });
-          showToast("Profile renamed successfully!", "success");
-          
-          // Update UI & Cache
-          window.selectedProfilePath = newPath;
-          profileNameDisplay.textContent = newName.trim();
-          await scanProfiles({ saveToBackend: true, showToasts: false });
-          await loadSelectedProfile();
-        } catch (err) {
-          console.error("Rename failed:", err);
-          showToast(err, "error");
-        }
+    if (newName && newName.trim() !== "" && newName !== currentName) {
+      try {
+        const newPath = await invoke("profile_rename", { newName: newName.trim() });
+        showToast("Profile renamed successfully!", "success");
+        
+        window.selectedProfilePath = newPath;
+        profileNameDisplay.textContent = newName.trim();
+        await scanProfiles({ saveToBackend: true, showToasts: false });
+        await loadSelectedProfile();
+      } catch (err) {
+        console.error("Rename failed:", err);
+        showToast(err.toString(), "error");
       }
+    }
   }
 
   // -----------------------------
@@ -499,10 +546,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      // 1. Get all profiles
       const profiles = await invoke("find_ets2_profiles");
       
-      // 2. Filter: exclude current profile & invalid ones
       const currentPath = window.selectedProfilePath;
       const targets = profiles.filter(p => p.success && p.path !== currentPath);
 
@@ -511,11 +556,8 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // 3. Prepare dropdown options
-      // Format: "ProfileName [Path]" to be unique and informative
       const options = targets.map(p => `${p.name} [${p.path}]`);
 
-      // 4. Show Modal
       const res = await openModalMulti("Move Mods", [
         {
           type: "dropdown",
@@ -528,7 +570,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (!res || !res.target) return;
 
-      // 5. Find selected profile object
       const selectedStr = res.target;
       const selectedProfile = targets.find(p => `${p.name} [${p.path}]` === selectedStr);
 
@@ -539,7 +580,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       showToast("Moving mods... please wait", "info");
 
-      // 6. Execute Command
       const resultMsg = await invoke("copy_mods_to_profile", {
         targetProfilePath: selectedProfile.path,
       });
@@ -568,7 +608,6 @@ document.addEventListener("DOMContentLoaded", () => {
       profileStatus.textContent = `${profiles.length} profiles found`;
       if (showToasts) showToast("Profiles found!", "success");
 
-      // Fill dropdown
       profiles.forEach((p) => {
         if (!p.success) return;
         const item = document.createElement("div");
@@ -580,7 +619,6 @@ document.addEventListener("DOMContentLoaded", () => {
           profileNameDisplay.textContent = p.name;
           profileDropdownList.classList.remove("show");
 
-          // Persist last profile (localStorage + backend)
           localStorage.setItem("ets2_last_profile", p.path);
           try {
             await invoke("save_last_profile", {
@@ -596,11 +634,9 @@ document.addEventListener("DOMContentLoaded", () => {
         profileDropdownList.appendChild(item);
       });
 
-      // Save cache to localStorage and backend cache
       try {
         localStorage.setItem("ets2_profiles_cache", JSON.stringify(profiles));
         if (saveToBackend) {
-          // Convert shapes to backend's expected shape: { path, name, success, message }
           const toSave = profiles.map((p) => ({
             path: p.path,
             name: p.name ?? null,
@@ -613,30 +649,25 @@ document.addEventListener("DOMContentLoaded", () => {
         console.warn("Could not save profile cache:", e);
       }
 
-      // Auto-load last profile if present
-      // Priority: backend last_profile -> localStorage last_profile -> none
       let last = null;
       try {
         const remoteLast = await invoke("read_last_profile");
         if (remoteLast) last = remoteLast;
       } catch (e) {
-        // ignore: backend may not have been created yet
+        // ignore
       }
       if (!last) {
         last = localStorage.getItem("ets2_last_profile");
       }
 
       if (last) {
-        // try to find matching profile in this scan
         const matched = profiles.find((p) => p.path === last && p.success);
         if (matched && matched.success) {
           window.selectedProfilePath = matched.path;
           profileNameDisplay.textContent = matched.name ?? "Unknown";
-          // load without further user action
           await loadSelectedProfile();
           return;
         } else {
-          // fallback: try to load last path directly (may still work)
           window.selectedProfilePath = last;
           profileNameDisplay.textContent = last;
           try {
@@ -649,25 +680,18 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     } catch (err) {
       console.error(err);
-      profileStatus.textContent = "Scan fehlgeschlagen";
+      profileStatus.textContent = "Scan failed";
       showToast("No profiles found!", "error");
     }
   }
-
-  // replace old scan button handler with:
-  scanBtn?.addEventListener("click", async () => {
-    await scanProfiles({ saveToBackend: true, showToasts: true });
-  });
 
   // -----------------------------
   // AUTO-SCAN ON STARTUP
   // -----------------------------
   (async function autoScanOnStartup() {
-    // Try to read backend cache first so we can show something instantly
     try {
       const cached = await invoke("read_profiles_cache");
       if (cached && cached.length) {
-        // populate dropdown from cache first (fast)
         profileDropdownList.innerHTML = "";
         cached.forEach((p) => {
           if (!p.success) return;
@@ -689,14 +713,12 @@ document.addEventListener("DOMContentLoaded", () => {
           profileDropdownList.appendChild(item);
         });
 
-        // If there is a last_profile saved, try to load it
         try {
           const last = await invoke("read_last_profile");
           if (last) {
             window.selectedProfilePath = last;
             profileNameDisplay.textContent = "loading last profile...";
             await loadSelectedProfile();
-            // After we've loaded, also perform background scan to refresh cache new profiles
             setTimeout(
               () => scanProfiles({ saveToBackend: true, showToasts: false }),
               500
@@ -708,10 +730,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
     } catch (e) {
-      // no cache available — continue to scanning
+      // no cache available
     }
 
-    // If we reach here: no cache/last found -> do a scan now (this will create the cache)
     await scanProfiles({ saveToBackend: true, showToasts: true });
   })();
 });

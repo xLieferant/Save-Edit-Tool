@@ -299,3 +299,47 @@ pub fn parse_trailers_from_sii(text: &str) -> Vec<TrailerData> {
 
     trailers
 }
+
+pub fn get_player_id(content: &str) -> Option<String> {
+    let mut in_economy = false;
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("economy :") {
+            in_economy = true;
+        }
+        if in_economy && trimmed.starts_with("player:") {
+            return trimmed.split_whitespace().nth(1).map(|s| s.to_string());
+        }
+        if in_economy && trimmed.starts_with('}') {
+            in_economy = false;
+        }
+    }
+    None
+}
+
+pub fn get_vehicle_ids(content: &str, player_id: &str) -> (Option<String>, Option<String>) {
+    let mut in_player = false;
+    let mut truck_id = None;
+    let mut trailer_id = None;
+
+    let player_block_start = format!("player : {}", player_id);
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with(&player_block_start) {
+            in_player = true;
+        }
+        if in_player {
+            if trimmed.starts_with("my_truck:") {
+                truck_id = trimmed.split_whitespace().nth(1).map(|s| s.to_string());
+            }
+            if trimmed.starts_with("my_trailer:") {
+                trailer_id = trimmed.split_whitespace().nth(1).map(|s| s.to_string());
+            }
+            if trimmed.starts_with("}") {
+                break;
+            }
+        }
+    }
+    (truck_id, trailer_id)
+}

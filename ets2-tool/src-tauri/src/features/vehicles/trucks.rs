@@ -1,7 +1,6 @@
 use crate::dev_log;
 use crate::models::trucks::ParsedTruck;
-use crate::shared::regex_helper::cragex;
-use crate::shared::sii_parser::parse_trucks_from_sii;
+use crate::shared::sii_parser::{parse_trucks_from_sii, get_player_id, get_vehicle_ids};
 use crate::state::AppProfileState;
 use super::load_save_content;
 use tauri::command;
@@ -32,22 +31,17 @@ pub async fn get_player_truck(
 
     let trucks = parse_trucks_from_sii(&content);
 
-    let re_player_truck =
-        cragex(r"player\s*:\s*[A-Za-z0-9._]+\s*\{[^}]*?my_truck\s*:\s*([A-Za-z0-9._]+)")
-            .map_err(|e| format!("Regex Fehler: {}", e))?;
+    let player_id = get_player_id(&content).ok_or("Player ID nicht im economy block gefunden".to_string())?;
+    let (player_truck_id_opt, _) = get_vehicle_ids(&content, &player_id);
 
-    let player_truck_id = re_player_truck
-        .captures(&content)
-        .and_then(|c| c.get(1))
-        .map(|v| v.as_str().to_string())
-        .ok_or("my_truck nicht gefunden".to_string())?;
+    let player_truck_id = player_truck_id_opt.ok_or("my_truck nicht im player block gefunden".to_string())?;
 
     let id_clean = player_truck_id.trim().to_lowercase();
 
     let base_truck = trucks
         .into_iter()
         .find(|t| t.truck_id.to_lowercase() == id_clean)
-        .ok_or("Player Truck nicht gefunden".to_string())?;
+        .ok_or(format!("Player Truck mit ID {} nicht gefunden", id_clean))?;
 
     Ok(base_truck)
 }

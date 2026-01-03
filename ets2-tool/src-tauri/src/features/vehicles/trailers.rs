@@ -1,8 +1,8 @@
 use crate::dev_log;
 use crate::models::trailers::{ParsedTrailer, TrailerData, TrailerDefData};
+use crate::models::trucks::ParsedTruck;
 use crate::state::AppProfileState;
-use crate::shared::regex_helper::cragex;
-use crate::shared::sii_parser::{parse_trailers_from_sii, parse_trailer_defs_from_sii};
+use crate::shared::sii_parser::{parse_trailers_from_sii, parse_trailer_defs_from_sii, parse_trucks_from_sii, get_player_id, get_vehicle_ids};
 use super::load_save_content;
 use tauri::command;
 
@@ -17,25 +17,52 @@ pub async fn get_player_trailer(
 
     let trailers_data = parse_trailers_from_sii(&content);
     let defs_data = parse_trailer_defs_from_sii(&content);
+    let trucks_data = parse_trucks_from_sii(&content);
 
-    let re_player_trailer =
-        cragex(r"player\s*:\s*[A-Za-z0-9._]+\s*\{[^}]*?my_trailer\s*:\s*([A-Za-z0-9._]+)")
-            .map_err(|e| format!("Regex Fehler: {}", e))?;
+    let player_id = get_player_id(&content).ok_or("Player ID nicht im economy block gefunden".to_string())?;
+    let (player_truck_id_opt, player_trailer_id_opt) = get_vehicle_ids(&content, &player_id);
 
-    let trailer_id = re_player_trailer
-        .captures(&content)
-        .and_then(|c| c.get(1))
-        .map(|m| m.as_str().to_string())
-        .ok_or("my_trailer nicht gefunden".to_string())?;
+    let trailer_id = player_trailer_id_opt.ok_or("my_trailer nicht im player block gefunden".to_string())?;
 
     let id_clean = trailer_id.trim().to_lowercase();
 
     let trailer_data = trailers_data
         .into_iter()
         .find(|t| t.trailer_id.to_lowercase() == id_clean)
-        .ok_or("Player Trailer nicht gefunden".to_string())?;
+        .ok_or(format!("Player Trailer mit ID {} nicht gefunden", id_clean))?;
 
-    Ok(parsed_trailer_from_data(&trailer_data, &defs_data))
+    let parsed_trailer = parsed_trailer_from_data(&trailer_data, &defs_data);
+
+    if let Some(player_truck_id) = player_truck_id_opt {
+        let truck_id_clean = player_truck_id.trim().to_lowercase();
+        if let Some(player_truck) = trucks_data
+            .into_iter()
+            .find(|t| t.truck_id.to_lowercase() == truck_id_clean)
+        {
+            dev_log!(
+                "Player Truck Data: Odometer: {}, Fuel: {}, Engine Wear: {}, Transmission Wear: {}, Cabin Wear: {}, Chassis Wear: {}, Wheels Wear: {:?}",
+                player_truck.odometer,
+                player_truck.fuel_relative,
+                player_truck.engine_wear,
+                player_truck.transmission_wear,
+                player_truck.cabin_wear,
+                player_truck.chassis_wear,
+                &player_truck.wheels_wear
+            );
+        }
+    }
+
+    dev_log!(
+        "Player Trailer Data: Odometer: {}, Cargo Mass: {}, Cargo Damage: {}, Body Wear: {}, Chassis Wear: {}, Wheels Wear: {:?}",
+        parsed_trailer.odometer,
+        parsed_trailer.cargo_mass,
+        parsed_trailer.cargo_damage,
+        parsed_trailer.body_wear,
+        parsed_trailer.chassis_wear,
+        &parsed_trailer.wheels_wear
+    );
+
+    Ok(parsed_trailer)
 }
 
 #[command]
