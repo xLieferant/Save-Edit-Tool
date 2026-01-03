@@ -29,7 +29,8 @@ fn write_save_content(path: &str, content: &str) -> Result<(), String> {
 }
 
 fn get_player_vehicle_id(content: &str, vehicle_type: &str) -> Result<String, String> {
-    let regex_str = format!(r"player\s*:\s*[A-Za-z0-9._]+\s*{{[^}}]*?{}\s*:\s*([A-Za-z0-9._]+)", vehicle_type);
+    // Fixed: removed unnecessary escaping, { } are not special in character class
+    let regex_str = format!(r"player\s*:\s*[A-Za-z0-9._]+\s*\{{\s*[^}}]*?{}\s*:\s*([A-Za-z0-9._]+)", vehicle_type);
     let re = cragex(&regex_str).map_err(|e| format!("Regex Fehler: {}", e))?;
     re.captures(content)
         .and_then(|c| c.get(1))
@@ -53,8 +54,9 @@ where
     let (content, path) = read_save_content(profile_state)?;
     let vehicle_id = get_player_vehicle_id(&content, player_vehicle_key)?;
 
+    // Fixed: proper brace escaping for format!
     let regex_str = format!(
-        r"{{({}\s*:\s*{}\s*{{[\s\S]*?{}:\s*)([^\r\n]+)([\s\S]*?{{}})",
+        r"({}\s*:\s*{}\s*\{{\s*[\s\S]*?{}:\s*)([^\r\n]+)([\s\S]*?\}})",
         unit_type,
         regex::escape(&vehicle_id),
         attribute_key
@@ -69,7 +71,7 @@ where
     }
 
     let new_content = re.replace(&content, |caps: &Captures| {
-        format!("{}{}{}", &caps[1], value_setter(caps), &caps[4])
+        format!("{}{}{}", &caps[1], value_setter(caps), &caps[3])
     });
 
     write_save_content(&path, &new_content)
@@ -108,19 +110,21 @@ pub async fn repair_player_truck(profile_state: tauri::State<'_, AppProfileState
     ];
 
     for attr in &wear_attributes {
+        // Fixed: proper brace escaping
         let regex_str = format!(
-            r"{{(vehicle\s*:\s*{}\s*{{[\s\S]*?{}\s*:\s*)[^ \r\n]+([\s\S]*?{{}})",
+            r"(vehicle\s*:\s*{}\s*\{{\s*[\s\S]*?{}:\s*)([^ \r\n]+)([\s\S]*?\}})",
             regex::escape(&truck_id),
             attr
         );
         let re = Regex::new(&regex_str).map_err(|e| e.to_string())?;
         if re.is_match(&content) {
-            content = re.replace(&content, format!("$1{}$2", float_to_hex(0.0))).to_string();
+            content = re.replace(&content, format!("$1{}$3", float_to_hex(0.0))).to_string();
         }
     }
     
+    // Fixed: proper brace escaping
     let re_wheels = Regex::new(&format!(
-            r"{{(vehicle\s*:\s*{}\s*{{[\s\S]*?wheels_wear\s*:\s*)\d+([\s\S]*?{{}})",
+            r"(vehicle\s*:\s*{}\s*\{{\s*[\s\S]*?wheels_wear\s*:\s*)(\d+)([\s\S]*?\}})",
             regex::escape(&truck_id)
     )).map_err(|e| e.to_string())?;
 
@@ -143,7 +147,6 @@ pub async fn repair_player_truck(profile_state: tauri::State<'_, AppProfileState
             }
         }).to_string();
     }
-
 
     write_save_content(&path, &content)
 }
@@ -170,8 +173,9 @@ pub async fn set_player_truck_fuel(
         profile_state,
         "vehicle",
         "my_truck",
-                    "fuel_relative",
-                    |_| float_to_hex(level),    )
+        "fuel_relative",
+        |_| float_to_hex(level),
+    )
 }
 
 #[command]
@@ -220,19 +224,21 @@ pub async fn repair_player_trailer(
     let wear_attributes = ["chassis_wear", "body_wear"];
 
     for attr in &wear_attributes {
+        // Fixed: proper brace escaping
         let regex_str = format!(
-            r#"(trailer\s*:\s*{}\s*\{{[\s\S]*?{}\s*:\s*)[^ \r\n]+([\s\S]*?\}})"#,
+            r"(trailer\s*:\s*{}\s*\{{\s*[\s\S]*?{}:\s*)([^ \r\n]+)([\s\S]*?\}})",
             regex::escape(&trailer_id),
             attr
         );
         let re = Regex::new(&regex_str).map_err(|e| e.to_string())?;
         if re.is_match(&content) {
-            content = re.replace(&content, format!("$1{}$2", float_to_hex(0.0))).to_string();
+            content = re.replace(&content, format!("$1{}$3", float_to_hex(0.0))).to_string();
         }
     }
 
+    // Fixed: proper brace escaping
     let re_wheels = Regex::new(&format!(
-        r#"(trailer\s*:\s*{}\s*\{{[\s\S]*?wheels_wear\s*:\s*)\d+([\s\S]*?\}})"#,
+        r"(trailer\s*:\s*{}\s*\{{\s*[\s\S]*?wheels_wear\s*:\s*)(\d+)([\s\S]*?\}})",
         regex::escape(&trailer_id)
     ))
     .map_err(|e| e.to_string())?;
