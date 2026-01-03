@@ -72,7 +72,7 @@ fn extract_vehicle_block(content: &str, block_type: &str, vehicle_id: &str) -> R
     Ok((cap.get(0).unwrap().start(), end_pos + 1))
 }
 
-// #FIXME: Function needs to find and delete something inside the regex 
+// #[x] : Function needs to find and delete something inside the regex 
 // and at the end, it should look like this inside the game.sii; license_plate; "newNameID|countryID" (countryID is set, automatically, we're not deleting this info)
 // --------------------- 
 // Universal Editor
