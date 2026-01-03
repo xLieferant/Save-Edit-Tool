@@ -29,13 +29,47 @@ fn write_save_content(path: &str, content: &str) -> Result<(), String> {
 }
 
 fn get_player_vehicle_id(content: &str, vehicle_type: &str) -> Result<String, String> {
-    // Fixed: removed unnecessary escaping, { } are not special in character class
     let regex_str = format!(r"player\s*:\s*[A-Za-z0-9._]+\s*\{{\s*[^}}]*?{}\s*:\s*([A-Za-z0-9._]+)", vehicle_type);
     let re = cragex(&regex_str).map_err(|e| format!("Regex Fehler: {}", e))?;
     re.captures(content)
         .and_then(|c| c.get(1))
         .map(|m| m.as_str().to_string())
         .ok_or_else(|| format!("{} nicht gefunden", vehicle_type))
+}
+
+// ← NEW: Extract complete vehicle/trailer block with proper brace matching
+fn extract_vehicle_block(content: &str, block_type: &str, vehicle_id: &str) -> Result<(usize, usize), String> {
+    let start_pattern = format!(r"{}\s*:\s*{}\s*\{{", block_type, regex::escape(vehicle_id));
+    let re_start = Regex::new(&start_pattern).map_err(|e| e.to_string())?;
+    
+    let cap = re_start.captures(content)
+        .ok_or(format!("{} block for {} not found", block_type, vehicle_id))?;
+    
+    let start_pos = cap.get(0).unwrap().end();
+    
+    // Count braces to find the matching closing brace
+    let mut brace_count = 1;
+    let mut end_pos = start_pos;
+    let chars: Vec<char> = content[start_pos..].chars().collect();
+    
+    for (i, ch) in chars.iter().enumerate() {
+        if *ch == '{' {
+            brace_count += 1;
+        } else if *ch == '}' {
+            brace_count -= 1;
+            if brace_count == 0 {
+                end_pos = start_pos + i;
+                break;
+            }
+        }
+    }
+    
+    if brace_count != 0 {
+        return Err(format!("Unmatched braces in {} block", block_type));
+    }
+    
+    // Return positions INCLUDING the opening brace position
+    Ok((cap.get(0).unwrap().start(), end_pos + 1))
 }
 
 // --------------------- 
@@ -54,26 +88,26 @@ where
     let (content, path) = read_save_content(profile_state)?;
     let vehicle_id = get_player_vehicle_id(&content, player_vehicle_key)?;
 
-    // Fixed: proper brace escaping for format!
-    let regex_str = format!(
-        r"({}\s*:\s*{}\s*\{{\s*[\s\S]*?{}:\s*)([^\r\n]+)([\s\S]*?\}})",
-        unit_type,
-        regex::escape(&vehicle_id),
-        attribute_key
-    );
-
+    // ← CHANGED: Use proper brace matching
+    let (block_start, block_end) = extract_vehicle_block(&content, unit_type, &vehicle_id)?;
+    let block = &content[block_start..block_end];
+    
+    // Search for attribute within this specific block
+    let regex_str = format!(r"({}:\s*)([^\r\n]+)", attribute_key);
     let re = Regex::new(&regex_str).map_err(|e| e.to_string())?;
-    if !re.is_match(&content) {
+    
+    if !re.is_match(block) {
         return Err(format!(
             "Attribut '{}' im {}-Block für {} nicht gefunden",
             attribute_key, unit_type, vehicle_id
         ));
     }
 
-    let new_content = re.replace(&content, |caps: &Captures| {
-        format!("{}{}{}", &caps[1], value_setter(caps), &caps[3])
+    let new_block = re.replace(block, |caps: &Captures| {
+        format!("{}{}", &caps[1], value_setter(caps))
     });
 
+    let new_content = format!("{}{}{}", &content[..block_start], new_block, &content[block_end..]);
     write_save_content(&path, &new_content)
 }
 
@@ -99,8 +133,12 @@ pub async fn set_player_truck_license_plate(
 #[command]
 pub async fn repair_player_truck(profile_state: tauri::State<'_, AppProfileState>) -> Result<(), String> {
     dev_log!("Repairing player truck");
-    let (mut content, path) = read_save_content(profile_state)?;
+    let (content, path) = read_save_content(profile_state)?;
     let truck_id = get_player_vehicle_id(&content, "my_truck")?;
+
+    // ← CHANGED: Use proper brace matching
+    let (block_start, block_end) = extract_vehicle_block(&content, "vehicle", &truck_id)?;
+    let mut block = content[block_start..block_end].to_string();
 
     let wear_attributes = [
         "engine_wear",
@@ -110,45 +148,21 @@ pub async fn repair_player_truck(profile_state: tauri::State<'_, AppProfileState
     ];
 
     for attr in &wear_attributes {
-        // Fixed: proper brace escaping
-        let regex_str = format!(
-            r"(vehicle\s*:\s*{}\s*\{{\s*[\s\S]*?{}:\s*)([^ \r\n]+)([\s\S]*?\}})",
-            regex::escape(&truck_id),
-            attr
-        );
+        let regex_str = format!(r"({}:\s*)([^ \r\n]+)", attr);
         let re = Regex::new(&regex_str).map_err(|e| e.to_string())?;
-        if re.is_match(&content) {
-            content = re.replace(&content, format!("$1{}$3", float_to_hex(0.0))).to_string();
+        if re.is_match(&block) {
+            block = re.replace(&block, format!("$1{}", float_to_hex(0.0))).to_string();
         }
     }
     
-    // Fixed: proper brace escaping
-    let re_wheels = Regex::new(&format!(
-            r"(vehicle\s*:\s*{}\s*\{{\s*[\s\S]*?wheels_wear\s*:\s*)(\d+)([\s\S]*?\}})",
-            regex::escape(&truck_id)
-    )).map_err(|e| e.to_string())?;
+    // Fix wheels_wear array
+    let re_wheels = Regex::new(r"wheels_wear\[\d+\]:\s*[^ \r\n]+").unwrap();
+    block = re_wheels.replace_all(&block, |_: &Captures| {
+        format!("wheels_wear[0]: {}", float_to_hex(0.0))
+    }).to_string();
 
-    if re_wheels.is_match(&content) {
-        let mut replacement_done = false;
-        content = re_wheels.replace_all(&content, |caps: &Captures| {
-            if replacement_done {
-                caps[0].to_string()
-            } else {
-                replacement_done = true;
-                let parts = caps[0].split("wear:").collect::<Vec<_>>();
-                let mut new_parts = vec![parts[0].to_string()];
-                for part in parts.iter().skip(1) {
-                    new_parts.push(format!("wear: {}", float_to_hex(0.0)));
-                    if let Some(index) = part.find('\n') {
-                        new_parts.push(part[index..].to_string());
-                    }
-                }
-                new_parts.join("")
-            }
-        }).to_string();
-    }
-
-    write_save_content(&path, &content)
+    let new_content = format!("{}{}{}", &content[..block_start], block, &content[block_end..]);
+    write_save_content(&path, &new_content)
 }
 
 #[command]
@@ -184,7 +198,7 @@ pub async fn set_player_truck_wear(
     wear_type: String,
     level: f32,
 ) -> Result<(), String> {
-    dev_log!("Set wear for player truck");
+    dev_log!("Set wear for player truck: {} = {}", wear_type, level);
     generic_vehicle_attribute_edit(
         profile_state,
         "vehicle",
@@ -218,54 +232,50 @@ pub async fn repair_player_trailer(
     profile_state: tauri::State<'_, AppProfileState>,
 ) -> Result<(), String> {
     dev_log!("Repairing player trailer");
-    let (mut content, path) = read_save_content(profile_state)?;
+    let (content, path) = read_save_content(profile_state)?;
     let trailer_id = get_player_vehicle_id(&content, "my_trailer")?;
 
-    let wear_attributes = ["chassis_wear", "body_wear"];
+    dev_log!("Found trailer ID: {}", trailer_id);
+
+    // ← CHANGED: Use proper brace matching to get complete block
+    let (block_start, block_end) = extract_vehicle_block(&content, "trailer", &trailer_id)?;
+    let mut block = content[block_start..block_end].to_string();
+
+    dev_log!("Extracted trailer block length: {}", block.len());
+
+    // Note: In SII files, trailer body wear is called "trailer_body_wear", not just "body_wear"
+    let wear_attributes = [
+        "chassis_wear",
+        "trailer_body_wear",  // ← IMPORTANT: Correct attribute name!
+    ];
 
     for attr in &wear_attributes {
-        // Fixed: proper brace escaping
-        let regex_str = format!(
-            r"(trailer\s*:\s*{}\s*\{{\s*[\s\S]*?{}:\s*)([^ \r\n]+)([\s\S]*?\}})",
-            regex::escape(&trailer_id),
-            attr
-        );
+        let regex_str = format!(r"({}:\s*)([^ \r\n]+)", attr);
         let re = Regex::new(&regex_str).map_err(|e| e.to_string())?;
-        if re.is_match(&content) {
-            content = re.replace(&content, format!("$1{}$3", float_to_hex(0.0))).to_string();
+        
+        if re.is_match(&block) {
+            dev_log!("Repairing {} to 0.0", attr);
+            block = re.replace(&block, format!("$1{}", float_to_hex(0.0))).to_string();
+        } else {
+            dev_log!("Warning: {} not found in trailer block", attr);
         }
     }
 
-    // Fixed: proper brace escaping
-    let re_wheels = Regex::new(&format!(
-        r"(trailer\s*:\s*{}\s*\{{\s*[\s\S]*?wheels_wear\s*:\s*)(\d+)([\s\S]*?\}})",
-        regex::escape(&trailer_id)
-    ))
-    .map_err(|e| e.to_string())?;
-
-    if re_wheels.is_match(&content) {
-        let mut replacement_done = false;
-        content = re_wheels
-            .replace_all(&content, |caps: &Captures| {
-                if replacement_done {
-                    caps[0].to_string()
-                } else {
-                    replacement_done = true;
-                    let parts = caps[0].split("wear:").collect::<Vec<_>>();
-                    let mut new_parts = vec![parts[0].to_string()];
-                    for part in parts.iter().skip(1) {
-                        new_parts.push(format!("wear: {}", float_to_hex(0.0)));
-                        if let Some(index) = part.find('\n') {
-                            new_parts.push(part[index..].to_string());
-                        }
-                    }
-                    new_parts.join("")
-                }
-            })
-            .to_string();
+    // Fix wheels_wear array - match each individual wheel
+    let re_wheels = Regex::new(r"(wheels_wear\[\d+\]:\s*)([^ \r\n]+)").unwrap();
+    if re_wheels.is_match(&block) {
+        dev_log!("Repairing trailer wheels");
+        block = re_wheels.replace_all(&block, |caps: &Captures| {
+            format!("{}{}", &caps[1], float_to_hex(0.0))
+        }).to_string();
+    } else {
+        dev_log!("Warning: wheels_wear not found in trailer block");
     }
 
-    write_save_content(&path, &content)
+    let new_content = format!("{}{}{}", &content[..block_start], block, &content[block_end..]);
+    
+    dev_log!("Writing repaired trailer back to file");
+    write_save_content(&path, &new_content)
 }
 
 #[command]

@@ -56,6 +56,42 @@ fn extract_combined_float(block: &str, key_base: &str) -> f32 {
     val_base + val_float
 }
 
+// ← NEW: Helper function to extract blocks with proper brace matching
+fn extract_blocks_with_braces(content: &str, block_type: &str) -> Vec<(String, String)> {
+    let mut blocks = Vec::new();
+    let start_pattern = format!(r"{}\s*:\s*([a-zA-Z0-9._]+)\s*\{{", block_type);
+    let re_start = Regex::new(&start_pattern).unwrap();
+    
+    for cap in re_start.captures_iter(content) {
+        let id = cap[1].to_string();
+        let start_pos = cap.get(0).unwrap().end();
+        
+        // Count braces to find the matching closing brace
+        let mut brace_count = 1;
+        let mut end_pos = start_pos;
+        let chars: Vec<char> = content[start_pos..].chars().collect();
+        
+        for (i, ch) in chars.iter().enumerate() {
+            if *ch == '{' {
+                brace_count += 1;
+            } else if *ch == '}' {
+                brace_count -= 1;
+                if brace_count == 0 {
+                    end_pos = start_pos + i;
+                    break;
+                }
+            }
+        }
+        
+        if brace_count == 0 {
+            let block_content = &content[start_pos..end_pos];
+            blocks.push((id, block_content.to_string()));
+        }
+    }
+    
+    blocks
+}
+
 /// Parsen von Trucks aus SII-Dateien
 pub fn parse_trucks_from_sii(content: &str) -> Vec<ParsedTruck> {
     let mut trucks = Vec::new();
@@ -70,20 +106,13 @@ pub fn parse_trucks_from_sii(content: &str) -> Vec<ParsedTruck> {
         }
     }
 
-    let re_block = Regex::new(r"(vehicle\s*:\s*[^\s]+)\s*\{([^}]+)\}").unwrap();
-    for caps in re_block.captures_iter(content) {
-        let truck_id_raw = caps.get(1).unwrap().as_str().trim().to_string();
-        let truck_id = truck_id_raw
-            .split(':')
-            .nth(1)
-            .unwrap_or("")
-            .trim()
-            .to_string();
-        let block = caps.get(2).unwrap().as_str();
-
+    // ← CHANGED: Use new brace-matching function
+    let vehicle_blocks = extract_blocks_with_braces(content, "vehicle");
+    
+    for (truck_id, block) in vehicle_blocks {
         let re_accessory = Regex::new(r"accessories\[\d+\]:\s*([^\s]+)").unwrap();
         let mut accessories = Vec::new();
-        for acc_cap in re_accessory.captures_iter(block) {
+        for acc_cap in re_accessory.captures_iter(&block) {
             accessories.push(acc_cap[1].to_string());
         }
 
@@ -106,7 +135,7 @@ pub fn parse_trucks_from_sii(content: &str) -> Vec<ParsedTruck> {
         let parse_array = |key: &str| -> Vec<f32> {
             let re_arr = Regex::new(&format!(r"{}\[\d+\]:\s*(&[0-9a-fA-F]+|[0-9\.\-]+)", key)).unwrap();
             let mut vals = Vec::new();
-            for cap in re_arr.captures_iter(block) {
+            for cap in re_arr.captures_iter(&block) {
                 if let Ok(v) = parse_value_auto(&cap[1]) {
                     vals.push(v);
                 }
@@ -117,29 +146,25 @@ pub fn parse_trucks_from_sii(content: &str) -> Vec<ParsedTruck> {
         // Helper for single values that might be hex or float
         let parse_val = |key: &str| -> f32 {
             let re_val = Regex::new(&format!(r"{}\s*:\s*(&[0-9a-fA-F]+|[0-9\.\-]+)", key)).unwrap();
-            re_val.captures(block)
+            re_val.captures(&block)
                 .and_then(|c| parse_value_auto(&c[1]).ok())
                 .unwrap_or(0.0)
         };
 
-        let odometer = extract_combined_float(block, "odometer");
-        let integrity_odometer = extract_combined_float(block, "integrity_odometer");
+        let odometer = extract_combined_float(&block, "odometer");
+        let integrity_odometer = extract_combined_float(&block, "integrity_odometer");
         
         let fuel_relative = parse_val("fuel_relative");
-        let trip_fuel_l = extract_combined_float(block, "trip_fuel"); // trip_fuel + trip_fuel_l logic usually combined or separate? SII usually has trip_fuel (hex) and trip_fuel_l (int). We use combined logic if pattern matches, else parse_val.
-        // Actually trip_fuel is often the float part of trip_fuel_l or separate. Let's use combined for safety if keys exist.
-        let trip_fuel_val = extract_combined_float(block, "trip_fuel"); // trip_fuel is often the key for the float part in some versions, or separate.
-        // In the input: trip_fuel_l: 1128, trip_fuel: &3d8fa681. This looks like int + float part pattern but named differently.
-        // Let's just sum them as floats.
-        let trip_fuel_l_int = extract_f32(block, "trip_fuel_l").unwrap_or(0.0);
+        
+        let trip_fuel_l_int = extract_f32(&block, "trip_fuel_l").unwrap_or(0.0);
         let trip_fuel_hex = parse_val("trip_fuel");
         let trip_fuel_total = trip_fuel_l_int + trip_fuel_hex;
 
-        let trip_distance_km = extract_f32(block, "trip_distance_km").unwrap_or(0.0) + parse_val("trip_distance");
-        let trip_time_min = extract_f32(block, "trip_time_min").unwrap_or(0.0) + parse_val("trip_time");
+        let trip_distance_km = extract_f32(&block, "trip_distance_km").unwrap_or(0.0) + parse_val("trip_distance");
+        let trip_time_min = extract_f32(&block, "trip_time_min").unwrap_or(0.0) + parse_val("trip_time");
 
-        let license_plate = extract_value(block, "license_plate");
-        let assigned_garage = extract_value(block, "assigned_garage");
+        let license_plate = extract_value(&block, "license_plate");
+        let assigned_garage = extract_value(&block, "assigned_garage");
 
         let engine_wear = parse_val("engine_wear");
         let transmission_wear = parse_val("transmission_wear");
@@ -184,16 +209,14 @@ pub fn parse_trucks_from_sii(content: &str) -> Vec<ParsedTruck> {
 /// Parsen der Trailer-Definitionen (für Massen, Body-Type etc.)
 pub fn parse_trailer_defs_from_sii(content: &str) -> HashMap<String, TrailerDefData> {
     let mut defs = HashMap::new();
-    // trailer_def : _nameless.230.0ea6.67b0 { ... }
-    let re_def = Regex::new(r"trailer_def\s*:\s*([a-zA-Z0-9._]+)\s*\{([^}]+)\}").unwrap();
     
-    for cap in re_def.captures_iter(content) {
-        let id = cap[1].to_string();
-        let block = &cap[2];
-
+    // ← CHANGED: Use new brace-matching function
+    let def_blocks = extract_blocks_with_braces(content, "trailer_def");
+    
+    for (id, block) in def_blocks {
         let parse_val = |key: &str| -> f32 {
             let re_val = Regex::new(&format!(r"{}\s*:\s*(&[0-9a-fA-F]+|[0-9\.\-]+)", key)).unwrap();
-            re_val.captures(block)
+            re_val.captures(&block)
                 .and_then(|c| parse_value_auto(&c[1]).ok())
                 .unwrap_or(0.0)
         };
@@ -204,9 +227,9 @@ pub fn parse_trailer_defs_from_sii(content: &str) -> HashMap<String, TrailerDefD
             chassis_mass: parse_val("chassis_mass"),
             body_mass: parse_val("body_mass"),
             length: parse_val("length"),
-            body_type: extract_value(block, "body_type"),
-            chain_type: extract_value(block, "chain_type"),
-            source_name: extract_value(block, "source_name"),
+            body_type: extract_value(&block, "body_type"),
+            chain_type: extract_value(&block, "chain_type"),
+            source_name: extract_value(&block, "source_name"),
         };
         defs.insert(id, data);
     }
@@ -217,28 +240,29 @@ pub fn parse_trailer_defs_from_sii(content: &str) -> HashMap<String, TrailerDefD
 pub fn parse_trailers_from_sii(text: &str) -> Vec<TrailerData> {
     let mut trailers = Vec::new();
 
-    let block_re = Regex::new(r#"trailer\s*:\s*([a-zA-Z0-9._]+)\s*\{(?P<body>.*?)\}"#).unwrap();
     let re_plate = Regex::new(r#"license_plate:\s*"([^"]+)""#).unwrap();
     let re_brand = Regex::new(r#"brand:\s*([a-zA-Z0-9/._-]+)"#).unwrap();
     let re_model = Regex::new(r#"model:\s*([a-zA-Z0-9/._-]+)"#).unwrap();
     let re_assigned = Regex::new(r#"assigned_garage:\s*([a-zA-Z0-9._-]+)"#).unwrap();
     let re_def_ref = Regex::new(r"trailer_definition\s*:\s*([a-zA-Z0-9._]+)").unwrap();
 
-    for cap in block_re.captures_iter(text) {
-        let trailer_id = cap[1].to_string();
-        let body = cap.name("body").unwrap().as_str();
+    // ← CHANGED: Use new brace-matching function
+    let trailer_blocks = extract_blocks_with_braces(text, "trailer");
 
-        let brand = re_brand.captures(body).map(|c| c[1].to_string());
-        let model = re_model.captures(body).map(|c| c[1].to_string());
-        let license_plate = re_plate.captures(body).map(|c| c[1].to_string());
-        let trailer_definition = re_def_ref.captures(body).map(|c| c[1].to_string()).unwrap_or_default();
+    for (trailer_id, body) in trailer_blocks {
+        dev_log!("Parsing trailer: {}", trailer_id);
 
-        let odometer = extract_combined_float(body, "odometer");
-        let integrity_odometer = extract_combined_float(body, "integrity_odometer");
+        let brand = re_brand.captures(&body).map(|c| c[1].to_string());
+        let model = re_model.captures(&body).map(|c| c[1].to_string());
+        let license_plate = re_plate.captures(&body).map(|c| c[1].to_string());
+        let trailer_definition = re_def_ref.captures(&body).map(|c| c[1].to_string()).unwrap_or_default();
+
+        let odometer = extract_combined_float(&body, "odometer");
+        let integrity_odometer = extract_combined_float(&body, "integrity_odometer");
 
         let parse_val = |key: &str| -> f32 {
             let re_val = Regex::new(&format!(r"{}\s*:\s*(&[0-9a-fA-F]+|[0-9\.\-]+)", key)).unwrap();
-            re_val.captures(body)
+            re_val.captures(&body)
                 .and_then(|c| parse_value_auto(&c[1]).ok())
                 .unwrap_or(0.0)
         };
@@ -246,7 +270,7 @@ pub fn parse_trailers_from_sii(text: &str) -> Vec<TrailerData> {
         let parse_array = |key: &str| -> Vec<f32> {
             let re_arr = Regex::new(&format!(r"{}\[\d+\]:\s*(&[0-9a-fA-F]+|[0-9\.\-]+)", key)).unwrap();
             let mut vals = Vec::new();
-            for cap in re_arr.captures_iter(body) {
+            for cap in re_arr.captures_iter(&body) {
                 if let Ok(v) = parse_value_auto(&cap[1]) {
                     vals.push(v);
                 }
@@ -254,7 +278,7 @@ pub fn parse_trailers_from_sii(text: &str) -> Vec<TrailerData> {
             vals
         };
 
-        let wear_float = Some(parse_val("trailer_body_wear")); // Legacy name in struct
+        let wear_float = Some(parse_val("trailer_body_wear"));
         let body_wear_unfixable = parse_val("trailer_body_wear_unfixable");
         
         let chassis_wear = parse_val("chassis_wear");
@@ -271,9 +295,9 @@ pub fn parse_trailers_from_sii(text: &str) -> Vec<TrailerData> {
         let cargo_mass = parse_val("cargo_mass");
         let cargo_damage = parse_val("cargo_damage");
         
-        let accessories = extract_string_array(body, "accessories");
+        let accessories = extract_string_array(&body, "accessories");
 
-        let assigned_garage = re_assigned.captures(body).map(|c| c[1].to_string());
+        let assigned_garage = re_assigned.captures(&body).map(|c| c[1].to_string());
 
         trailers.push(TrailerData {
             trailer_id,
@@ -282,7 +306,7 @@ pub fn parse_trailers_from_sii(text: &str) -> Vec<TrailerData> {
             model,
             license_plate,
             odometer,
-            odometer_float: None, // Already combined
+            odometer_float: None,
             wear_float,
             wheels_float,
             assigned_garage,
@@ -297,6 +321,7 @@ pub fn parse_trailers_from_sii(text: &str) -> Vec<TrailerData> {
         });
     }
 
+    dev_log!("Total trailers parsed: {}", trailers.len());
     trailers
 }
 

@@ -19,7 +19,13 @@ export const tools = {
         try {
           const shouldRepair = await openModalSlider("Repair all truck damage?", 0);
           if (shouldRepair) {
-            await invoke("repair_player_truck");
+            const wearTypes = ["engine_wear", "transmission_wear", "cabin_wear", "chassis_wear"];
+            for (const wearType of wearTypes) {
+              await invoke("set_player_truck_wear", {
+                wearType: wearType,
+                level: 0.0,
+              });
+            }
             await loadAllTrucks();
             showToast("Truck successfully repaired!", "success");
           }

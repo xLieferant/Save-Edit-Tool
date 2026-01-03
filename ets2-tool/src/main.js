@@ -415,17 +415,30 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function loadAllTrailers() {
-    try {
-      window.playerTrailer = await invoke("get_player_trailer", {
-        profilePath: window.selectedProfilePath,
-      });
-      window.allTrailers = [window.playerTrailer];
-    } catch (e) {
-      console.error("Failed to load trailers:", e);
+  try {
+    // ← CHANGED: Now expecting Option<ParsedTrailer> from Rust
+    const trailer = await invoke("get_player_trailer", {
+      profilePath: window.selectedProfilePath,
+    });
+    
+    // ← CHANGED: Check if trailer exists (could be null if player has no trailer)
+    if (trailer) {
+      window.playerTrailer = trailer;
+      window.allTrailers = [trailer];
+      console.log("✓ Player trailer loaded successfully");
+    } else {
+      // ← CHANGED: This is normal - player just doesn't have a trailer attached
       window.playerTrailer = null;
       window.allTrailers = [];
+      console.log("ℹ Player has no trailer attached (this is normal)");
     }
+  } catch (e) {
+    // ← This should only catch actual errors now (not "no trailer" situations)
+    console.error("Failed to load trailers:", e);
+    window.playerTrailer = null;
+    window.allTrailers = [];
   }
+}
 
   // -----------------------------
   // SAVE MONEY / XP
