@@ -6,6 +6,7 @@ use crate::shared::paths::{
     autosave_path, ets2_base_config_path, game_sii_from_save, quicksave_config_path,
     quicksave_game_path,
 };
+use crate::shared::sii_parser;
 use crate::shared::regex_helper::cragex;
 use regex::Regex;
 use serde::Deserialize;
@@ -103,9 +104,8 @@ pub fn edit_player_money(
 ) -> Result<(), String> {
     dev_log!("--- edit_player_money START ---");
 
-    let profile = require_current_profile(profile_state)?;
-
-    let path = quicksave_game_path(&profile);
+    // ✅ Use the helper - respects current_save if set
+    let path = get_active_save_path(profile_state)?;
     let content = decrypt_if_needed(&path)?;
 
     let re_money = Regex::new(r"money_account:\s*(\d+)").map_err(|e| e.to_string())?;
@@ -131,9 +131,8 @@ pub fn edit_player_experience(
 ) -> Result<(), String> {
     dev_log!("--- edit_player_experience START ---");
 
-    let profile = require_current_profile(profile_state)?;
-
-    let path = quicksave_game_path(&profile);
+    // ✅ Use the helper - respects current_save if set
+    let path = get_active_save_path(profile_state)?;
     let content = decrypt_if_needed(&path)?;
 
     let re_experience = Regex::new(r"experience_points:\s*(\d+)").map_err(|e| e.to_string())?;
@@ -153,45 +152,33 @@ pub fn edit_player_experience(
 }
 
 #[command]
-pub fn edit_truck_odometer(
+pub fn edit_skill_value(
+    skill: String,
     value: i64,
     profile_state: State<'_, AppProfileState>,
 ) -> Result<(), String> {
-    let profile = require_current_profile(profile_state)?;
-    let path = Path::new(&profile)
-        .join("save")
-        .join("quicksave")
-        .join("game.sii");
+    dev_log!("--- edit_skill START ---");
+    dev_log!("Skill: {}, Wert: {}", skill, value);
+
+    // ✅ Use the helper - respects current_save if set
+    let path = get_active_save_path(profile_state)?;
     let content = decrypt_if_needed(&path)?;
 
-    // Finde zuerst den Truck des Spielers
-    let re_player_truck =
-        Regex::new(r"player\s*:\s*[A-Za-z0-9._]+\s*\{[^}]*?my_truck\s*:\s*([A-Za-z0-9._]+)")
-            .unwrap();
-    let player_truck_id = re_player_truck
-        .captures(&content)
-        .and_then(|c| c.get(1).map(|v| v.as_str()))
-        .ok_or("Player-Truck ID nicht gefunden".to_string())?;
+    // Regex dynamisch je Skill
+    let re = Regex::new(&format!(r"\b{}\s*:\s*\d+", regex::escape(&skill)))
+        .map_err(|e| e.to_string())?;
 
-    // Finde den vehicle-Block des Trucks und ersetze den Odometer
-    let vehicle_regex_str = format!(
-        r"(vehicle\s*:\s*{}\s*\{{([\s\S]*?odometer:\s*)-?\d+([\s\S]*?)\}})",
-        regex::escape(player_truck_id)
-    );
-    let re_vehicle = Regex::new(&vehicle_regex_str).map_err(|e| e.to_string())?;
-
-    if !re_vehicle.is_match(&content) {
-        return Err(format!(
-            "Vehicle-Block für Truck {} nicht gefunden",
-            player_truck_id
-        ));
+    if !re.is_match(&content) {
+        return Err(format!("Skill '{}' nicht gefunden", skill));
     }
 
-    let new_content = re_vehicle
-        .replace(&content, format!("$1$2{}$3", value))
-        .to_string();
-    fs::write(&path, new_content).map_err(|e| e.to_string())?;
-    dev_log!("LKW-Odometer geändert: {}", value);
+    let new_content = re.replace(&content, format!("{}: {}", skill, value));
+
+    fs::write(&path, new_content.as_bytes()).map_err(|e| e.to_string())?;
+
+    dev_log!("Skill '{}' erfolgreich geändert auf {}", skill, value);
+    dev_log!("--- edit_skill END ---");
+
     Ok(())
 }
 
@@ -256,38 +243,6 @@ pub fn edit_console_value(
     }
 
     dev_log!("Dev erfolgreich geändert auf {}", value);
-    Ok(())
-}
-
-#[command]
-pub fn edit_skill_value(
-    skill: String,
-    value: i64,
-    profile_state: State<'_, AppProfileState>,
-) -> Result<(), String> {
-    dev_log!("--- edit_skill START ---");
-    dev_log!("Skill: {}, Wert: {}", skill, value);
-
-    let profile = require_current_profile(profile_state)?;
-
-    let path = quicksave_game_path(&profile);
-    let content = decrypt_if_needed(&path)?;
-
-    // Regex dynamisch je Skill
-    let re = Regex::new(&format!(r"\b{}\s*:\s*\d+", regex::escape(&skill)))
-        .map_err(|e| e.to_string())?;
-
-    if !re.is_match(&content) {
-        return Err(format!("Skill '{}' nicht gefunden", skill));
-    }
-
-    let new_content = re.replace(&content, format!("{}: {}", skill, value));
-
-    fs::write(&path, new_content.as_bytes()).map_err(|e| e.to_string())?;
-
-    dev_log!("Skill '{}' erfolgreich geändert auf {}", skill, value);
-    dev_log!("--- edit_skill END ---");
-
     Ok(())
 }
 

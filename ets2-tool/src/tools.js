@@ -6,6 +6,15 @@ import {
   openCloneProfileModal,
 } from "./app.js";
 
+// Helper function to guard trailer actions
+const trailerActionGuard = (actionFunction) => async (...args) => {
+  if (!window.playerTrailer) {
+    showToast("No trailer assigned to you", "warning");
+    return;
+  }
+  await actionFunction(...args);
+};
+
 // --------------------------------------------------------------
 // TOOL DEFINITIONS
 // --------------------------------------------------------------
@@ -183,7 +192,7 @@ export const tools = {
       title: "Repair",
       desc: "Repair your Trailer",
       img: "images/trailerRepair.jpg",
-      action: async () => {
+      action: trailerActionGuard(async () => {
         try {
           const shouldRepair = await openModalSlider("Repair all trailer damage?", 0);
           if (shouldRepair) {
@@ -195,14 +204,14 @@ export const tools = {
           console.error("Repair trailer error:", err);
           showToast("Failed to repair trailer!", "error");
         }
-      },
+      }),
       disabled: false,
     },
     {
       title: "Change Trailer License Plate",
       desc: "Modify your trailer license plate",
       img: "images/trailer_license.jpg",
-      action: async () => {
+      action: trailerActionGuard(async () => {
         try {
           const newValue = await openModalText(
             "Change trailer license",
@@ -217,14 +226,14 @@ export const tools = {
           console.error("Trailer license plate error:", err);
           showToast("Failed to change trailer license plate!", "error");
         }
-      },
+      }),
       disabled: false,
     },
     {
       title: "Modify Job Weight",
       desc: "Adjust the job's cargo weight",
       img: "images/comingsoon.png",
-      action: async () => {
+      action: trailerActionGuard(async () => {
         try {
           const newValue = await openModalNumber(
             "Modify job weight (kg)",
@@ -239,7 +248,7 @@ export const tools = {
           console.error("Cargo mass error:", err);
           showToast("Failed to change cargo mass!", "error");
         }
-      },
+      }),
       disabled: false,
     },
   ],
