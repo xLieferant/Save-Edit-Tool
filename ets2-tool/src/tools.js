@@ -48,7 +48,7 @@ export const tools = {
     {
       title: "Advanced Repair",
       desc: "Repair individual components of your truck",
-      img: "images/comingsoon.png",
+      img: "images/advancedRepair.png",
       action: async () => {
         try {
           const res = await openModalMulti("Advanced Repair", [
@@ -416,7 +416,7 @@ export const tools = {
     {
       title: "Move modifications",
       desc: "Move your active Modifications from Acc1 to Acc2",
-      img: "images/comingsoon.png",
+      img: "images/moveMods.png",
       action: async () => {
         try {
           if (window.handleMoveMods) {
