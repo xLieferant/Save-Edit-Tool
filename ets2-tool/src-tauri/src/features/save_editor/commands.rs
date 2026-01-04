@@ -104,9 +104,8 @@ pub fn edit_player_money(
 ) -> Result<(), String> {
     dev_log!("--- edit_player_money START ---");
 
-    let profile = require_current_profile(profile_state)?;
-
-    let path = quicksave_game_path(&profile);
+    // ✅ Use the helper - respects current_save if set
+    let path = get_active_save_path(profile_state)?;
     let content = decrypt_if_needed(&path)?;
 
     let re_money = Regex::new(r"money_account:\s*(\d+)").map_err(|e| e.to_string())?;
@@ -132,9 +131,8 @@ pub fn edit_player_experience(
 ) -> Result<(), String> {
     dev_log!("--- edit_player_experience START ---");
 
-    let profile = require_current_profile(profile_state)?;
-
-    let path = quicksave_game_path(&profile);
+    // ✅ Use the helper - respects current_save if set
+    let path = get_active_save_path(profile_state)?;
     let content = decrypt_if_needed(&path)?;
 
     let re_experience = Regex::new(r"experience_points:\s*(\d+)").map_err(|e| e.to_string())?;
@@ -149,6 +147,37 @@ pub fn edit_player_experience(
 
     dev_log!("Experience erfolgreich geändert auf {}", value);
     dev_log!("--- edit_player_experience END ---");
+
+    Ok(())
+}
+
+#[command]
+pub fn edit_skill_value(
+    skill: String,
+    value: i64,
+    profile_state: State<'_, AppProfileState>,
+) -> Result<(), String> {
+    dev_log!("--- edit_skill START ---");
+    dev_log!("Skill: {}, Wert: {}", skill, value);
+
+    // ✅ Use the helper - respects current_save if set
+    let path = get_active_save_path(profile_state)?;
+    let content = decrypt_if_needed(&path)?;
+
+    // Regex dynamisch je Skill
+    let re = Regex::new(&format!(r"\b{}\s*:\s*\d+", regex::escape(&skill)))
+        .map_err(|e| e.to_string())?;
+
+    if !re.is_match(&content) {
+        return Err(format!("Skill '{}' nicht gefunden", skill));
+    }
+
+    let new_content = re.replace(&content, format!("{}: {}", skill, value));
+
+    fs::write(&path, new_content.as_bytes()).map_err(|e| e.to_string())?;
+
+    dev_log!("Skill '{}' erfolgreich geändert auf {}", skill, value);
+    dev_log!("--- edit_skill END ---");
 
     Ok(())
 }
@@ -214,38 +243,6 @@ pub fn edit_console_value(
     }
 
     dev_log!("Dev erfolgreich geändert auf {}", value);
-    Ok(())
-}
-
-#[command]
-pub fn edit_skill_value(
-    skill: String,
-    value: i64,
-    profile_state: State<'_, AppProfileState>,
-) -> Result<(), String> {
-    dev_log!("--- edit_skill START ---");
-    dev_log!("Skill: {}, Wert: {}", skill, value);
-
-    let profile = require_current_profile(profile_state)?;
-
-    let path = quicksave_game_path(&profile);
-    let content = decrypt_if_needed(&path)?;
-
-    // Regex dynamisch je Skill
-    let re = Regex::new(&format!(r"\b{}\s*:\s*\d+", regex::escape(&skill)))
-        .map_err(|e| e.to_string())?;
-
-    if !re.is_match(&content) {
-        return Err(format!("Skill '{}' nicht gefunden", skill));
-    }
-
-    let new_content = re.replace(&content, format!("{}: {}", skill, value));
-
-    fs::write(&path, new_content.as_bytes()).map_err(|e| e.to_string())?;
-
-    dev_log!("Skill '{}' erfolgreich geändert auf {}", skill, value);
-    dev_log!("--- edit_skill END ---");
-
     Ok(())
 }
 
