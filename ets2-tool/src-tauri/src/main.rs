@@ -79,6 +79,12 @@ fn main() {
             features::profile_clone::commands::validate_clone_target,
             features::profile_rename::commands::profile_rename,
             features::profile_move_mods::commands::copy_mods_to_profile,
+
+            // Language Management
+            features::language::commands::get_available_languages_command,
+            features::language::commands::get_current_language_command,
+            features::language::commands::set_language_command,
+            features::language::commands::translate_command,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

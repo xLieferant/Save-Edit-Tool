@@ -267,7 +267,7 @@ export const tools = {
 
           if (newValue !== null) {
             await invoke("edit_player_experience", { value: newValue });
-            
+
             window.currentProfileData.xp = newValue;
 
             const xpDisplay = document.querySelector("#xpShow");
@@ -296,7 +296,7 @@ export const tools = {
 
           if (newValue !== null) {
             await invoke("edit_player_money", { value: newValue });
-            
+
             window.currentProfileData.money = newValue;
 
             const moneyDisplay = document.querySelector("#moneyShow");
@@ -364,7 +364,7 @@ export const tools = {
             await invoke("edit_skill_value", { skill: "fragile", value: res.skill_fragile });
             await invoke("edit_skill_value", { skill: "urgent", value: res.skill_urgent });
             await invoke("edit_skill_value", { skill: "mechanical", value: res.skill_eco });
-            
+
             await loadQuicksave();
             showToast("Skills successfully updated!", "success");
           }
@@ -457,7 +457,7 @@ export const tools = {
           document.body.classList.remove("theme-dark", "theme-light", "theme-neon");
           document.body.classList.add(`theme-${newTheme}`);
           localStorage.setItem("theme", newTheme);
-          
+
           showToast(`Theme changed to ${newTheme}!`, "success");
         } catch (err) {
           console.error("Theme change error:", err);
@@ -489,13 +489,62 @@ export const tools = {
       },
     },
     {
-      title: "Language - 'COMING SOON'",
+      title: "Language",
       desc: "Change your language",
       img: "images/language.png",
-      action: () => {
-        showToast("Language selection coming soon!", "info");
+      action: async () => {
+        try {
+          // Daten aus Backend holen
+          const languages = await invoke("get_available_languages_command");
+          const currentLang = await invoke("get_current_language_command");
+
+          if (!languages || languages.length === 0) {
+            showToast("No languages available!", "error");
+            return;
+          }
+
+          // Dropdown-Optionen vorbereiten
+          const options = languages.map(l => ({
+            value: l.code,
+            label: l.name,
+          }));
+
+          const res = await openModalMulti("Change Language", [
+            {
+              type: "dropdown",
+              id: "language",
+              label: "Language",
+              value: currentLang,
+              options: options.map(o => o.value),
+              optionLabels: options.reduce((acc, o) => {
+                acc[o.value] = o.label;
+                return acc;
+              }, {}),
+            },
+          ]);
+
+          if (!res || !res.language) return;
+
+          if (res.language === currentLang) {
+            showToast("Language already active.", "info");
+            return;
+          }
+
+          // Sprache setzen
+          const message = await invoke("set_language_command", {
+            language: res.language,
+          });
+
+          showToast(message, "success");
+
+          // OPTIONAL (empfohlen, wenn UI statisch übersetzt ist)
+          location.reload();
+
+        } catch (err) {
+          console.error("Language modal error:", err);
+          showToast("Failed to change language!", "error");
+        }
       },
-      disabled: true,
     },
     {
       title: "Traffic value",

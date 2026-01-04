@@ -116,6 +116,17 @@ document.addEventListener("DOMContentLoaded", () => {
     checkUpdaterOnStartup(showToast);
   }, 2000);
 
+  // Load and display current language
+  (async function initLanguage() {
+    try {
+      const lang = await invoke('get_current_language_command');
+      const message = await invoke('translate_command', { key: 'toasts.language_loaded' });
+      console.log(message); // Will show "Language loaded: English" or "Sprache geladen: Deutsch"
+    } catch (e) {
+      console.warn('Could not load language:', e);
+    }
+  })();
+
   // -----------------------------
   // UPDATE BUTTONS
   // -----------------------------
@@ -748,4 +759,94 @@ document.addEventListener("DOMContentLoaded", () => {
 
     await scanProfiles({ saveToBackend: true, showToasts: true });
   })();
+  // -----------------------------
+// LANGUAGE PICKER
+// -----------------------------
+async function showLanguagePicker() {
+  try {
+    const languages = await invoke('get_available_languages_command');
+    const currentLang = await invoke('get_current_language_command');
+    
+    const modal = document.createElement('div');
+    modal.className = 'language-modal';
+    modal.innerHTML = `
+      <div class="language-modal-content">
+        <h2>Select Language</h2>
+        <div class="language-options">
+          ${languages.map(lang => `
+            <div class="language-option ${lang.code === currentLang ? 'active' : ''}" data-lang="${lang.code}">
+              <span class="language-flag">${getFlagEmoji(lang.code)}</span>
+              <span class="language-name">${lang.name}</span>
+              ${lang.code === currentLang ? '<span class="checkmark">✓</span>' : ''}
+            </div>
+          `).join('')}
+        </div>
+        <button class="close-modal">Close</button>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    const options = modal.querySelectorAll('.language-option');
+    options.forEach(option => {
+      option.addEventListener('click', async () => {
+        const selectedLang = option.dataset.lang;
+        
+        if (selectedLang !== currentLang) {
+          try {
+            const message = await invoke('set_language_command', { 
+              language: selectedLang 
+            });
+            
+            showToast(message, "success");
+            modal.remove();
+            
+            // Optionally reload to apply translations everywhere
+            // location.reload();
+          } catch (error) {
+            showToast(`Error: ${error}`, "error");
+          }
+        } else {
+          modal.remove();
+        }
+      });
+    });
+    
+    modal.querySelector('.close-modal').addEventListener('click', () => {
+      modal.remove();
+    });
+    
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.remove();
+      }
+    });
+    
+  } catch (error) {
+    showToast(`Failed to load languages: ${error}`, "error");
+  }
+}
+
+function getFlagEmoji(langCode) {
+  const flags = {
+    'en': '🇬🇧',
+    'de': '🇩🇪',
+    'es': '🇪🇸'
+  };
+  return flags[langCode] || '🌐';
+}
+
+// Helper function to get translations in JavaScript
+async function t(key) {
+  try {
+    return await invoke('translate_command', { key });
+  } catch (error) {
+    console.error('Translation error:', error);
+    return key;
+  }
+}
+
+// Make functions globally available
+window.showLanguagePicker = showLanguagePicker;
+window.t = t;
 });

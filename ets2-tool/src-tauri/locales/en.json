@@ -1,0 +1,51 @@
+{
+      "app": {
+            "name": "ETS2 Save Editor"
+      },
+      "toasts": {
+            "language_updated": "Language changed to English",
+            "language_loaded": "Language loaded: English",
+            "money_updated": "Money successfully updated",
+            "xp_updated": "XP successfully updated",
+            "skill_points_updated": "Skill points successfully updated",
+            "save_successful": "Save successful",
+            "save_failed": "Save failed"
+      },
+      "tools": {
+            "language_picker": {
+                  "title": "Language",
+                  "desc": "Change your language"
+            },
+            "money": {
+                  "title": "Money Editor",
+                  "desc": "Edit your in-game money"
+            },
+            "xp": {
+                  "title": "XP Editor",
+                  "desc": "Edit your experience points"
+            },
+            "skill_points": {
+                  "title": "Skill Points",
+                  "desc": "Edit your skill points"
+            },
+            "repair": {
+                  "title": "Repair Vehicle",
+                  "desc": "Repair your vehicle"
+            },
+            "advanced_repair": {
+                  "title": "Advanced Repair",
+                  "desc": "Advanced repair options"
+            }
+      },
+      "errors": {
+            "failed_to_load_translations": "Failed to load translations",
+            "failed_to_save_language": "Failed to save language preference",
+            "failed_to_load_language": "Failed to load language preference",
+            "invalid_language": "Invalid language selected"
+      },
+      "modals": {
+            "confirm": "Confirm",
+            "cancel": "Cancel",
+            "close": "Close"
+      }
+}

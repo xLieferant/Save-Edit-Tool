@@ -1,0 +1,51 @@
+{
+      "app": {
+            "name": "ETS2 Speicherdaten-Editor"
+      },
+      "toasts": {
+            "language_updated": "Sprache auf Deutsch geändert",
+            "language_loaded": "Sprache geladen: Deutsch",
+            "money_updated": "Geld erfolgreich aktualisiert",
+            "xp_updated": "XP erfolgreich aktualisiert",
+            "skill_points_updated": "Fähigkeitspunkte erfolgreich aktualisiert",
+            "save_successful": "Erfolgreich gespeichert",
+            "save_failed": "Speichern fehlgeschlagen"
+      },
+      "tools": {
+            "language_picker": {
+                  "title": "Sprache",
+                  "desc": "Ändere deine Sprache"
+            },
+            "money": {
+                  "title": "Geld-Editor",
+                  "desc": "Bearbeite dein Spielgeld"
+            },
+            "xp": {
+                  "title": "XP-Editor",
+                  "desc": "Bearbeite deine Erfahrungspunkte"
+            },
+            "skill_points": {
+                  "title": "Fähigkeitspunkte",
+                  "desc": "Bearbeite deine Fähigkeitspunkte"
+            },
+            "repair": {
+                  "title": "Fahrzeug reparieren",
+                  "desc": "Repariere dein Fahrzeug"
+            },
+            "advanced_repair": {
+                  "title": "Erweiterte Reparatur",
+                  "desc": "Erweiterte Reparaturoptionen"
+            }
+      },
+      "errors": {
+            "failed_to_load_translations": "Übersetzungen konnten nicht geladen werden",
+            "failed_to_save_language": "Spracheinstellung konnte nicht gespeichert werden",
+            "failed_to_load_language": "Spracheinstellung konnte nicht geladen werden",
+            "invalid_language": "Ungültige Sprache ausgewählt"
+      },
+      "modals": {
+            "confirm": "Bestätigen",
+            "cancel": "Abbrechen",
+            "close": "Schließen"
+      }
+}
