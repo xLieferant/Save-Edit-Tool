@@ -2,15 +2,13 @@ use tauri::command;
 use std::path::Path;
 use std::fs;
 use fs_extra::dir::copy;
-use crate::state::AppProfileState;
 use crate::dev_log;
 
 
 #[command]
-pub fn profile_controls(
+pub fn copy_profile_controls(
     source_profile_path: String,
     target_profile_path: String,
-    profile_state: tauri::State<'_, crate::state::AppProfileState>
 ) -> Result<String, String> {
     let source_path = Path::new(&source_profile_path);
     let target_path = Path::new(&target_profile_path);
