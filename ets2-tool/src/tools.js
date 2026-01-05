@@ -284,7 +284,7 @@ export const tools = {
       },
     },
     {
-      title: "Money",
+      title: "tools.money.title",
       desc: "Modify users Money",
       img: "images/money.jpg",
       action: async () => {
