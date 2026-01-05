@@ -18,7 +18,7 @@
       "profile": {
             "select_profile": "Select a profile",
             "select_save": "Select a save",
-            "clone_profile": "Clone Profile",
+            "clone_profile": "🧑‍🤝‍🧑",
             "refresh": "⟳"
       },
       "game": {
@@ -38,29 +38,98 @@
             "coming_soon": "Coming Soon"
       },
       "tools": {
+            "truck": {
+                  "repair_truck": {
+                        "title": "Repair Truck",
+                        "desc": "Repair your truck"
+                  },
+                  "advanced_repair": {
+                        "title": "Advanced Repair",
+                        "desc": "Advanced repair options"
+                  },
+                  "fuel_level": {
+                        "title": "Fuel Level",
+                        "desc": "Edit your fuel level"
+                  },
+                  "full_refuel": {
+                        "title": "Full Refuel",
+                        "desc": "Refuel your truck to full"
+                  },
+                  "truck_mileage": {
+                        "title": "Truck Mileage",
+                        "desc": "Edit your truck mileage"
+                  },
+                  "truck_license_plate": {
+                        "title": "Truck License Plate",
+                        "desc": "Edit your truck license plate"
+                  }
+            },
+
+            "trailer": {
+                  "repair_trailer": {
+                        "title": "Repair Trailer",
+                        "desc": "Repair your trailer"
+                  },
+                  "trailer_license_plate": {
+                        "title": "Trailer License Plate",
+                        "desc": "Edit your trailer license plate"
+                  },
+                  "modify_job_weight": {
+                        "title": "Modify Job Weight",
+                        "desc": "Edit your current job weight"
+                  }
+            },
+            "profile": {
+                  "change_xp": {
+                        "title": "XP Editor",
+                        "desc": "Edit your experience points"
+                  },
+                  "change_money": {
+                        "title": "Money Editor",
+                        "desc": "Edit your in-game money"
+                  },
+                  "change_skill_points": {
+                        "title": "Skill Points",
+                        "desc": "Edit your skill points"
+                  },
+                  "profile_stats": {
+                        "title": "Profile Stats",
+                        "desc": "View your profile statistics"
+                  },
+                  "move_mods": {
+                        "title": "Move Mods",
+                        "desc": "Move mods between profiles"
+                  }
+            },
+            "settings": {
+                  "color_scheme": {
+                        "title": "Color Scheme",
+                        "desc": "Change the app color scheme"
+                  },
+                  "convoy": {
+                        "title": "Convoy Settings",
+                        "desc": "Configure Convoy integration"
+                  },
+                  "language": {
+                        "title": "Language",
+                        "desc": "Change your language"
+                  },
+                  "traffic_values": {
+                        "title": "Traffic Values",
+                        "desc": "Edit traffic density and speed"
+                  },
+                  "parking_doubles": {
+                        "title": "Parking Doubles",
+                        "desc": "Enable or disable parking doubles"
+                  },
+                  "dev_tools": {
+                        "title": "Developer Tools",
+                        "desc": "Access developer tools"
+                  }
+            },
             "language_picker": {
                   "title": "Language",
                   "desc": "Change your language"
-            },
-            "money": {
-                  "title": "Money Editor",
-                  "desc": "Edit your in-game money"
-            },
-            "xp": {
-                  "title": "XP Editor",
-                  "desc": "Edit your experience points"
-            },
-            "skill_points": {
-                  "title": "Skill Points",
-                  "desc": "Edit your skill points"
-            },
-            "repair": {
-                  "title": "Repair Vehicle",
-                  "desc": "Repair your vehicle"
-            },
-            "advanced_repair": {
-                  "title": "Advanced Repair",
-                  "desc": "Advanced repair options"
             }
       },
       "errors": {
