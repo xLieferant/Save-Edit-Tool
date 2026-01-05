@@ -6,3 +6,4 @@ pub mod profile_manager;
 pub mod save_analysis;
 pub mod save_editor;
 pub mod settings;
+pub mod profile_controls;
