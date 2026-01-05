@@ -21,8 +21,8 @@ const trailerActionGuard = (actionFunction) => async (...args) => {
 export const tools = {
   truck: [
     {
-      title: "Repair Truck",
-      desc: "Repair your current truck",
+      title: "tools.truck.repair_truck.title",
+      desc: "tools.truck.repair_truck.desc",
       img: "images/repair.png",
       action: async () => {
         try {
@@ -46,8 +46,8 @@ export const tools = {
       disabled: false,
     },
     {
-      title: "Advanced Repair",
-      desc: "Repair individual components of your truck",
+      title: "tools.truck.advanced_repair.title",
+      desc: "tools.truck.advanced_repair.desc",
       img: "images/advancedRepair.png",
       action: async () => {
         try {
@@ -103,8 +103,8 @@ export const tools = {
       },
     },
     {
-      title: "Fuel Level",
-      desc: "Change your fuel level at your current truck",
+      title: "tools.truck.fuel_level.title",
+      desc: "tools.truck.fuel_level.desc",
       img: "images/gasstation.jpg",
       action: async () => {
         try {
@@ -125,8 +125,8 @@ export const tools = {
       disabled: false,
     },
     {
-      title: "Full Refuel",
-      desc: "Refuel your truck to 100%",
+      title: "tools.truck.full_refuel.title",
+      desc: "tools.truck.full_refuel.desc",
       img: "images/gasstation.jpg",
       action: async () => {
         try {
@@ -144,8 +144,8 @@ export const tools = {
       disabled: false,
     },
     {
-      title: "Truck Mileage",
-      desc: "Change your Mileage at your current truck",
+      title: "tools.truck.mileage.title",
+      desc: "tools.truck.mileage.desc",
       img: "images/odometer.png",
       action: async () => {
         try {
@@ -165,8 +165,8 @@ export const tools = {
       },
     },
     {
-      title: "Truck License Plate",
-      desc: "Change your license plate",
+      title: "tools.truck.license_plate.title",
+      desc: "tools.truck.license_plate.desc",
       img: "images/trailer_license.jpg",
       action: async () => {
         try {
@@ -189,8 +189,8 @@ export const tools = {
 
   trailer: [
     {
-      title: "Repair",
-      desc: "Repair your Trailer",
+      title: "tools.trailer.repair.title",
+      desc: "tools.trailer.repair.desc",
       img: "images/trailerRepair.jpg",
       action: trailerActionGuard(async () => {
         try {
@@ -208,8 +208,8 @@ export const tools = {
       disabled: false,
     },
     {
-      title: "Change Trailer License Plate",
-      desc: "Modify your trailer license plate",
+      title: "tools.trailer.license_plate.title",
+      desc: "tools.trailer.license_plate.desc",
       img: "images/trailer_license.jpg",
       action: trailerActionGuard(async () => {
         try {
@@ -230,8 +230,8 @@ export const tools = {
       disabled: false,
     },
     {
-      title: "Modify Job Weight",
-      desc: "Adjust the job's cargo weight",
+      title: "tools.trailer.job_weight.title",
+      desc: "tools.trailer.job_weight.desc",
       img: "images/comingsoon.png",
       action: trailerActionGuard(async () => {
         try {
@@ -255,8 +255,8 @@ export const tools = {
 
   profile: [
     {
-      title: "Change XP",
-      desc: "Modify profile XP",
+      title: "tools.profile.xp.title",
+      desc: "tools.profile.xp.desc",
       img: "images/xp.jpg",
       action: async () => {
         try {
@@ -284,8 +284,8 @@ export const tools = {
       },
     },
     {
-      title: "tools.money.title",
-      desc: "Modify users Money",
+      title: "tools.profile.money.title",
+      desc: "tools.proifile.money.desc",
       img: "images/money.jpg",
       action: async () => {
         try {
@@ -313,8 +313,8 @@ export const tools = {
       },
     },
     {
-      title: "Experience Skills",
-      desc: "Set skill points",
+      title: "tools.profile.change_skill_points.title",
+      desc: "tools.profile.change_skill_points.desc",
       img: "images/skillPoint.jpg",
       action: async () => {
         try {
@@ -375,8 +375,8 @@ export const tools = {
       },
     },
     {
-      title: "Stats",
-      desc: "Account informations",
+      title: "tools.profile.profile_stats.title",
+      desc: "tools.profile.profile_stats.desc",
       img: "images/skillPoint.jpg",
       action: async () => {
         try {
@@ -414,8 +414,8 @@ export const tools = {
       },
     },
     {
-      title: "Move modifications",
-      desc: "Move your active Modifications from Acc1 to Acc2",
+      title: "tools.profile.move_mods.title",
+      desc: "tools.profile.move_mods.desc",
       img: "images/moveMods.png",
       action: async () => {
         try {
@@ -433,8 +433,8 @@ export const tools = {
 
   settings: [
     {
-      title: "Color Theme",
-      desc: "Change the UI theme",
+      title: "tools.settings.color_theme.title",
+      desc: "tools.settings.color_theme.desc",
       img: "images/themeChooser.png",
       action: async () => {
         try {
@@ -467,8 +467,8 @@ export const tools = {
       disabled: false,
     },
     {
-      title: "Convoy 128",
-      desc: "Change convoy size",
+      title: "tools.settings.convoy.title",
+      desc: "tools.settings.convoy.desc",
       img: "images/convoy.jpg",
       action: async () => {
         try {
@@ -489,8 +489,8 @@ export const tools = {
       },
     },
     {
-      title: "Language",
-      desc: "Change your language",
+      title: "tools.settings.language.title",
+      desc: "tools.settings.language.desc",
       img: "images/language.png",
       action: async () => {
         try {
@@ -547,8 +547,8 @@ export const tools = {
       },
     },
     {
-      title: "Traffic value",
-      desc: "Change the traffic factor",
+      title: "tools.settings.traffic_values.title",
+      desc: "tools.settings.traffic_values.desc",
       img: "images/traffic_value.png",
       action: async () => {
         try {
@@ -576,8 +576,8 @@ export const tools = {
       },
     },
     {
-      title: "Parking Doubles",
-      desc: "Do you want to park double trailer?",
+      title: "tools.settings.parking_doubles.title",
+      desc: "tools.settings.parking_doubles.desc",
       img: "images/parking_double.png",
       action: async () => {
         try {
@@ -597,8 +597,8 @@ export const tools = {
       },
     },
     {
-      title: "Dev Mode",
-      desc: "Developer & Console Mode",
+      title: "tools.settings.dev_tools.title",
+      desc: "tools.settings.dev_tools.desc",
       img: "images/dev.jpg",
       action: async () => {
         try {
