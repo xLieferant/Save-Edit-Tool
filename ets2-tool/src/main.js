@@ -767,29 +767,12 @@ document.addEventListener("DOMContentLoaded", () => {
   // -----------------------------
 // LANGUAGE PICKER
 // -----------------------------
-async function showLanguagePicker() {
+async function showLanguagePicker() { // #FIXME <-- Remove this code, we're using a diffrent Modal in tools.js! 
   try {
     const languages = await invoke('get_available_languages_command');
     const currentLang = await invoke('get_current_language_command');
     
-    const modal = document.createElement('div');
-    modal.className = 'language-modal';
-    modal.innerHTML = `
-      <div class="language-modal-content">
-        <h2>Select Language</h2>
-        <div class="language-options">
-          ${languages.map(lang => `
-            <div class="language-option ${lang.code === currentLang ? 'active' : ''}" data-lang="${lang.code}">
-              <span class="language-flag">${getFlagEmoji(lang.code)}</span>
-              <span class="language-name">${lang.name}</span>
-              ${lang.code === currentLang ? '<span class="checkmark">✓</span>' : ''}
-            </div>
-          `).join('')}
-        </div>
-        <button class="close-modal">Close</button>
-      </div>
-    `;
-    
+    const modal = document.createElement('div');    
     document.body.appendChild(modal);
     
     const options = modal.querySelectorAll('.language-option');
@@ -833,14 +816,14 @@ async function showLanguagePicker() {
   }
 }
 
-function getFlagEmoji(langCode) {
-  const flags = {
-    'en': '🇬🇧',
-    'de': '🇩🇪',
-    'es': '🇪🇸'
-  };
-  return flags[langCode] || '🌐';
-}
+// function getFlagEmoji(langCode) { // #TODO Optional: Use flag emojis in language picker
+//   const flags = {
+//     'en': '🇬🇧',
+//     'de': '🇩🇪',
+//     'es': '🇪🇸'
+//   };
+//   return flags[langCode] || '🌐';
+// }
 
 // Helper function to get translations in JavaScript
 async function t(key) {
