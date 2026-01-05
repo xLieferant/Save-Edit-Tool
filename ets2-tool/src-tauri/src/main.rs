@@ -78,7 +78,7 @@ fn main() {
             features::profile_move_mods::commands::copy_mods_to_profile,
                 
                 //Feature: Profile Controls move around
-                features::profile_controls::commands::profile_controls,
+                features::profile_controls::commands::copy_profile_controls,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
