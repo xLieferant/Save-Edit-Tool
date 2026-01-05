@@ -102,7 +102,7 @@
                   }
             },
             "settings": {
-                  "color_scheme": {
+                  "color_theme": {
                         "title": "Color Scheme",
                         "desc": "Change the app color scheme"
                   },
