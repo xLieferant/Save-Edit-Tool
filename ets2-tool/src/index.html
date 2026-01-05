@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ETS2 Save Editor U+002d Alex Edition</title>
+    <title data-translate="app.name">ETS2 Save Editor - Alex Edition</title>
     <link rel="stylesheet" href="styles.css" />
     <!-- Hier kann optional ein Favicon oder Preconnects eingefügt werden -->
   </head>
@@ -12,23 +12,23 @@
       <div class="logo">
         <img src="images/xlLogo.png" alt="ets2Logo" />
         <div class="logo-text">
-          <span class="logo-title">SAVE EDITOR</span>
-          <span class="logo-subtitle">for SCS - xLieferant</span>
+          <span class="logo-title" data-translate="app.title">SAVE EDITOR</span>
+          <span class="logo-subtitle" data-translate="app.subtitle">for SCS - xLieferant</span>
         </div>
       </div>
       <nav class="nav-wrapper">
         <div class="nav-main">
-          <button class="nav-btn" data-tab="truck">🚛Truck</button>
-          <button class="nav-btn" data-tab="trailer">🚚Trailer</button>
-          <button class="nav-btn active" data-tab="profile">💠Profile</button>
-          <button class="nav-btn" data-tab="settings">⚙️Settings</button>
+          <button class="nav-btn" data-tab="truck" data-translate="tabs.truck">🚛Truck</button>
+          <button class="nav-btn" data-tab="trailer" data-translate="tabs.trailer">🚚Trailer</button>
+          <button class="nav-btn active" data-tab="profile" data-translate="tabs.profile">💠Profile</button>
+          <button class="nav-btn" data-tab="settings" data-translate="tabs.settings">⚙️Settings</button>
           <div id="updateStatus" class="update-status"></div>
         </div>
 
         <div class="nav-bottom">
-          <button id="youtubeBtn" class="nav-action youtube">🔴 YouTube</button>
-          <button id="patreonBtn" class="nav-action patreon">⚠️ Patreon</button>
-          <button id="githubBtn" class="nav-action github">⚠️ GitHub</button>
+          <button id="youtubeBtn" class="nav-action youtube" data-translate="buttons.youtube">🔴 YouTube</button>
+          <button id="patreonBtn" class="nav-action patreon" data-translate="buttons.patreon">⚠️ Patreon</button>
+          <button id="githubBtn" class="nav-action github" data-translate="buttons.github">⚠️ GitHub</button>
           <button id="versionBtn" class="version-btn">0.3.1</button>
         </div>
       </nav>
@@ -48,7 +48,7 @@
       <div class="game-switch">
         <button id="ets2Btn" class="active">
           <img src="images/ets2_32x32.png" alt="ets2Logo" sizes="15px" />
-          <span>ETS2</span>
+          <span data-translate="game.ets2">ETS2</span>
         </button>
         <button id="atsBtn" disabled>
           <img
@@ -56,13 +56,13 @@
             alt="ats Logo"
             class="switchButtonLogo"
           />
-          <span>ATS</span>
+          <span data-translate="game.ats">ATS</span>
         </button>
       </div>
 
       <!-- Die Struktur für das benutzerdefinierte Dropdown-Menü -->
       <div class="profile-picker">
-        <span id="profileNameDisplay">Select a profile</span>
+        <span id="profileNameDisplay" data-translate="profile.select_profile">Select a profile</span>
         <button id="openProfileModal">▼</button>
         <!-- Container für die dynamisch generierte Dropdown-Liste -->
         <div id="profileDropdownList" class="custom-dropdown-list">
@@ -71,7 +71,7 @@
       </div>
 
       <div class="save-picker">
-        <span id="saveName">Select a save</span>
+        <span id="saveName" data-translate="profile.select_save">Select a save</span>
         <button id="openSaveModal">▼</button>
 
         <div id="saveDropdownList" class="dropdown-list"></div>
@@ -82,10 +82,11 @@
         class="refresh-btn"
         title="Clone Profile"
         style="margin-right: 5px"
+        data-translate="profile.clone_profile"
       >
         👯
       </button>
-      <button id="refreshBtn" class="refresh-btn">⟳</button>
+      <button id="refreshBtn" class="refresh-btn" data-translate="profile.refresh">⟳</button>
     </footer>
 
     <!-- MODAL: Text-Input -->
@@ -94,8 +95,8 @@
         <h2 id="modalTextTitle">Modal Title</h2>
         <input id="modalTextInput" type="text" placeholder="" />
         <div class="modal-actions">
-          <button id="modalTextCancel">Close</button>
-          <button id="modalTextApply" class="apply">Apply</button>
+          <button id="modalTextCancel" data-translate="modals.cancel">Close</button>
+          <button id="modalTextApply" class="apply" data-translate="modals.apply">Apply</button>
         </div>
       </div>
     </div>
@@ -106,8 +107,8 @@
         <h2 id="modalNumberTitle">Modal Title</h2>
         <input id="modalNumberInput" type="number" placeholder="" />
         <div class="modal-actions">
-          <button id="modalNumberCancel">Close</button>
-          <button id="modalNumberApply" class="apply">Apply</button>
+          <button id="modalNumberCancel" data-translate="modals.cancel">Close</button>
+          <button id="modalNumberApply" class="apply" data-translate="modals.apply">Apply</button>
         </div>
       </div>
     </div>
@@ -119,8 +120,8 @@
         <input id="modalSliderInput" type="checkbox" class="toggle-checkbox" />
         <label for="modalSliderInput" class="checkboxSlider"></label>
         <div class="modal-actions">
-          <button id="modalSliderCancel">Close</button>
-          <button id="modalSliderApply" class="apply">Apply</button>
+          <button id="modalSliderCancel" data-translate="modals.cancel">Close</button>
+          <button id="modalSliderApply" class="apply" data-translate="modals.apply">Apply</button>
         </div>
       </div>
     </div>
@@ -131,8 +132,8 @@
         <h2 id="modalMultiTitle"></h2>
         <div id="modalMultiContent"></div>
         <div class="modal-actions">
-          <button id="modalMultiCancel">Close</button>
-          <button id="modalMultiApply" class="apply">Apply</button>
+          <button id="modalMultiCancel" data-translate="modals.cancel">Close</button>
+          <button id="modalMultiApply" class="apply" data-translate="modals.apply">Apply</button>
         </div>
       </div>
     </div>
@@ -140,7 +141,7 @@
     <!-- MODAL: Clone Profile -->
     <div class="modal-backdrop" id="modalClone">
       <div class="modal-box">
-        <h2 id="modalCloneTitle">Clone Profile</h2>
+        <h2 id="modalCloneTitle" data-translate="modals.clone_profile.title">Clone Profile</h2>
 
         <p id="cloneSourceDisplay"></p>
 
@@ -150,23 +151,23 @@
         <div class="clone-options">
           <label class="checkbox-row">
             <input type="checkbox" id="cloneBackup" checked />
-            <span>Create Backup (.zip)</span>
+            <span data-translate="modals.clone_profile.create_backup">Create Backup (.zip)</span>
           </label>
 
           <label class="checkbox-row">
             <input type="checkbox" id="cloneReplaceHex" checked />
-            <span>Replace Hex Identifiers (Recommended)</span>
+            <span data-translate="modals.clone_profile.replace_hex">Replace Hex Identifiers (Recommended)</span>
           </label>
 
           <label class="checkbox-row">
             <input type="checkbox" id="cloneReplaceText" checked />
-            <span>Replace Text Names</span>
+            <span data-translate="modals.clone_profile.replace_text">Replace Text Names</span>
           </label>
         </div>
 
         <div class="modal-actions">
-          <button id="modalCloneCancel">Cancel</button>
-          <button id="modalCloneApply" class="apply">Clone</button>
+          <button id="modalCloneCancel" data-translate="modals.cancel">Cancel</button>
+          <button id="modalCloneApply" class="apply" data-translate="modals.clone_profile.clone_button">Clone</button>
         </div>
       </div>
     </div>

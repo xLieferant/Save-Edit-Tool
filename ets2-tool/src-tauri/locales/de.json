@@ -1,6 +1,29 @@
 {
       "app": {
-            "name": "ETS2 Speicherdaten-Editor"
+            "name": "ETS2 Speicherdaten-Editor - Alex Edition",
+            "title": "SPEICHEREDITOR",
+            "subtitle": "für SCS - xLieferant"
+      },
+      "tabs": {
+            "truck": "🚛Truck",
+            "trailer": "🚚Anhänger",
+            "profile": "💠Profil",
+            "settings": "⚙️Einstellungen"
+      },
+      "buttons": {
+            "youtube": "🔴 YouTube",
+            "patreon": "⚠️ Patreon",
+            "github": "⚠️ GitHub"
+      },
+      "profile": {
+            "select_profile": "Wähle ein Profil",
+            "select_save": "Wähle einen Spielstand",
+            "clone_profile": "Profil klonen",
+            "refresh": "⟳"
+      },
+      "game": {
+            "ets2": "ETS2",
+            "ats": "ATS"
       },
       "toasts": {
             "language_updated": "Sprache auf Deutsch geändert",
@@ -9,7 +32,10 @@
             "xp_updated": "XP erfolgreich aktualisiert",
             "skill_points_updated": "Fähigkeitspunkte erfolgreich aktualisiert",
             "save_successful": "Erfolgreich gespeichert",
-            "save_failed": "Speichern fehlgeschlagen"
+            "save_failed": "Speichern fehlgeschlagen",
+            "profile_not_selected": "Bitte wähle zuerst ein Profil aus!",
+            "clone_failed": "Klonen fehlgeschlagen: {error}",
+            "coming_soon": "Kommt bald"
       },
       "tools": {
             "language_picker": {
@@ -44,8 +70,23 @@
             "invalid_language": "Ungültige Sprache ausgewählt"
       },
       "modals": {
+            "open": "Öffnen",
             "confirm": "Bestätigen",
             "cancel": "Abbrechen",
-            "close": "Schließen"
+            "close": "Schließen",
+            "apply": "Anwenden",
+            "clone_profile": {
+                  "title": "Profil klonen",
+                  "source": "Quelle: {profileName}",
+                  "new_name_placeholder": "Neuer Profilname",
+                  "create_backup": "Backup erstellen (.zip)",
+                  "replace_hex": "Hex-Identifikatoren ersetzen (Empfohlen)",
+                  "replace_text": "Textnamen ersetzen",
+                  "clone_button": "Klonen",
+                  "cloning_button": "Klonen...",
+                  "validation_checking": "Prüfen...",
+                  "validation_valid": "✔ {message}",
+                  "validation_invalid": "❌ {message}"
+            }
       }
 }

@@ -10,7 +10,9 @@ window.invoke = invoke; // global verfügbar
 // -----------------------------
 // TOAST-FUNKTION
 // -----------------------------
-window.showToast = function (message, type = "info") {
+window.showToast = async function (messageOrKey, type = "info") {
+  const message = await t(messageOrKey); // Translate the key
+
   const toast = document.createElement("div");
   toast.className = `toast toast-${type}`;
 
@@ -93,6 +95,9 @@ function updateUIWithCurrentQuicksave() {
 // -----------------------------
 document.addEventListener("DOMContentLoaded", () => {
   console.log("[main.js] DOM vollständig geladen.");
+
+  // Initial UI translation
+  translateUI();
 
   // Periodic data refresh (every 5 minutes)
   setInterval(async () => {
@@ -801,8 +806,9 @@ async function showLanguagePicker() {
             showToast(message, "success");
             modal.remove();
             
-            // Optionally reload to apply translations everywhere
-            // location.reload();
+            // Translate the UI again
+            translateUI();
+
           } catch (error) {
             showToast(`Error: ${error}`, "error");
           }
@@ -846,7 +852,17 @@ async function t(key) {
   }
 }
 
+// Function to translate all elements with data-translate attribute
+async function translateUI() {
+  const elements = document.querySelectorAll('[data-translate]');
+  for (const el of elements) {
+    const key = el.getAttribute('data-translate');
+    el.textContent = await t(key);
+  }
+}
+
 // Make functions globally available
 window.showLanguagePicker = showLanguagePicker;
 window.t = t;
+window.translateUI = translateUI; // Make it global so you can call it from anywhere
 });

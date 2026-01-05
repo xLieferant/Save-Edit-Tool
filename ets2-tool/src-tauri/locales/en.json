@@ -1,6 +1,29 @@
 {
       "app": {
-            "name": "ETS2 Save Editor"
+            "name": "ETS2 Save Editor - Alex Edition",
+            "title": "SAVE EDITOR",
+            "subtitle": "for SCS - xLieferant"
+      },
+      "tabs": {
+            "truck": "🚛Truck",
+            "trailer": "🚚Trailer",
+            "profile": "💠Profile",
+            "settings": "⚙️Settings"
+      },
+      "buttons": {
+            "youtube": "🔴 YouTube",
+            "patreon": "⚠️ Patreon",
+            "github": "⚠️ GitHub"
+      },
+      "profile": {
+            "select_profile": "Select a profile",
+            "select_save": "Select a save",
+            "clone_profile": "Clone Profile",
+            "refresh": "⟳"
+      },
+      "game": {
+            "ets2": "ETS2",
+            "ats": "ATS"
       },
       "toasts": {
             "language_updated": "Language changed to English",
@@ -9,7 +32,10 @@
             "xp_updated": "XP successfully updated",
             "skill_points_updated": "Skill points successfully updated",
             "save_successful": "Save successful",
-            "save_failed": "Save failed"
+            "save_failed": "Save failed",
+            "profile_not_selected": "Please select a profile first!",
+            "clone_failed": "Clone failed: {error}",
+            "coming_soon": "Coming Soon"
       },
       "tools": {
             "language_picker": {
@@ -44,8 +70,23 @@
             "invalid_language": "Invalid language selected"
       },
       "modals": {
+            "open": "Open",
             "confirm": "Confirm",
             "cancel": "Cancel",
-            "close": "Close"
+            "close": "Close",
+            "apply": "Apply",
+            "clone_profile": {
+                  "title": "Clone Profile",
+                  "source": "Source: {profileName}",
+                  "new_name_placeholder": "New Profile Name",
+                  "create_backup": "Create Backup (.zip)",
+                  "replace_hex": "Replace Hex Identifiers (Recommended)",
+                  "replace_text": "Replace Text Names",
+                  "clone_button": "Clone",
+                  "cloning_button": "Cloning...",
+                  "validation_checking": "Checking...",
+                  "validation_valid": "✔ {message}",
+                  "validation_invalid": "❌ {message}"
+            }
       }
 }
