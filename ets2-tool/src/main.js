@@ -538,10 +538,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!choice) return;
 
-    if (choice.action === "Duplicate") {
-      openCloneProfileModal();
-    } else if (choice.action === "Rename") {
-      await handleProfileRename();
+    switch (choice?.action) {
+      case "Duplicate":
+        openCloneProfileModal();
+        break;
+
+      case "Rename":
+        await handleProfileRename();
+        break;
     }
   });
 
@@ -564,6 +568,69 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
   }
+
+  async function handleCopyControls() {
+    if (!window.selectedProfilePath) {
+      showToast("No source profile selected!", "warning");
+      return;
+    }
+
+    try {
+      const profiles = await invoke("find_ets2_profiles");
+
+      const sourcePath = window.selectedProfilePath;
+      const targets = profiles.filter(
+          (p) => p.success && p.path !== sourcePath
+      );
+
+      if (targets.length === 0) {
+        showToast("No other profiles available.", "warning");
+        return;
+      }
+
+      const options = targets.map(
+          (p) => `${p.name} [${p.path}]`
+      );
+
+      const res = await openModalMulti("Copy Controls", [
+        {
+          type: "dropdown",
+          id: "target",
+          label: "Target Profile",
+          value: options[0],
+          options: options,
+        },
+      ]);
+
+      if (!res || !res.target) return;
+
+      const selectedProfile = targets.find(
+          (p) => `${p.name} [${p.path}]` === res.target
+      );
+
+      if (!selectedProfile) {
+        showToast("Invalid profile selected.", "error");
+        return;
+      }
+
+      showToast("Copying controls…", "info");
+
+      const msg = await invoke("copy_profile_controls", {
+        sourceProfilePath: sourcePath,
+        targetProfilePath: selectedProfile.path,
+      });
+
+      showToast(msg, "success");
+
+    } catch (err) {
+      console.error("Copy controls failed:", err);
+      showToast(
+          typeof err === "string" ? err : "Failed to copy controls.",
+          "error"
+      );
+    }
+  }
+  window.handleCopyControls = handleCopyControls;
 
   // -----------------------------
   // MOVE MODS LOGIC

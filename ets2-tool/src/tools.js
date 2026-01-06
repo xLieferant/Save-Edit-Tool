@@ -418,18 +418,39 @@ export const tools = {
       title: "tools.profile.move_mods.title",
       desc: "tools.profile.move_mods.desc",
       img: "images/moveMods.png",
+      disabled: false,
+
       action: async () => {
-        try {
-          if (window.handleMoveMods) {
-            await window.handleMoveMods();
-          }
-        } catch (err) {
-          console.error("Move mods error:", err);
-          showToast("Failed to move modifications!", "error");
+        const choice = await openModalMulti("Move Modifications", [
+          {
+            type: "dropdown",
+            id: "action",
+            label: "Action",
+            value: "Move Modifications",
+            options: ["Move Modifications", "Move controls"],
+          },
+        ]);
+
+        if (!choice) return;
+
+        switch (choice.action) {
+          case "Move Modifications":
+            if (window.handleMoveMods) {
+              await window.handleMoveMods();
+            }
+          break;
+
+          case "Move controls":
+            if (window.handleCopyControls) {
+              await window.handleCopyControls();
+            }
+          break;
+
+          default:
+            console.warn("Unknown action:", choice.action);
         }
       },
-      disabled: false,
-    }
+    },
   ],
 
   settings: [

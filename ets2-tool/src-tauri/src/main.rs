@@ -55,10 +55,7 @@ fn main() {
             // features::save_analysis::reader::read_money,
             // features::save_analysis::reader::read_xp,
             features::save_analysis::reader::read_traffic_value,
-
             features::save_analysis::quicksave::quicksave_game_info,
-
-
             // Vehicles and trailers
             features::vehicles::trucks::get_all_trucks,
             features::vehicles::trucks::get_player_truck,
@@ -85,6 +82,9 @@ fn main() {
             features::language::commands::get_current_language_command,
             features::language::commands::set_language_command,
             features::language::commands::translate_command,
+                
+                //Feature: Profile Controls move around
+                features::profile_controls::commands::copy_profile_controls,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
