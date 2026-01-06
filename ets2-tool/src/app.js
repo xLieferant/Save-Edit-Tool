@@ -7,24 +7,28 @@ const container = document.querySelector("#tool-container");
 const navButtons = document.querySelectorAll(".nav-btn");
 export let activeTab = "profile";
 
-export function loadTools(tab) {
+export async function loadTools(tab) {
   console.log(`[app.js] Lade Tools für Tab: ${tab}`);
 
   activeTab = tab;
   container.innerHTML = "";
 
-  tools[tab].forEach((t) => {
-    if (t.hidden) return; // unsichtbare Tools überspringen
+  for (const t of tools[tab]) {
+    if (t.hidden) continue; // unsichtbare Tools überspringen
 
     const card = document.createElement("div");
     card.classList.add("tool-card");
 
+    const title = await window.t(t.title);
+    const desc = await window.t(t.desc);
+    const open = await window.t("modals.open");
+
     card.innerHTML = `
       <img src="${t.img}">
       <div class="tool-content">
-          <h3>${t.title}</h3>
-          <p>${t.desc}</p>
-          <button>Open</button>
+          <h3>${title}</h3>
+          <p>${desc}</p>
+          <button>${open}</button>
       </div>
     `;
 
@@ -33,13 +37,13 @@ export function loadTools(tab) {
     if (t.disabled) {
       btn.disabled = true;
       btn.classList.add("modal-disabled"); // CSS: rot + cursornot-allowed
-      btn.textContent = "Coming Soon";
+      btn.textContent = await window.t("coming_soon");
     } else {
       btn.addEventListener("click", t.action);
     }
 
     container.appendChild(card);
-  });
+  }
 }
 
 navButtons.forEach((btn) => {
@@ -103,13 +107,13 @@ const modalCloneCancel = document.getElementById("modalCloneCancel");
 /* --------------------------------------------------------------
    TEXT MODAL
 -------------------------------------------------------------- */
-export function openModalText(title, placeholder, initialValue = "") {
-  modalTextTitle.textContent = title;
-  modalTextInput.placeholder = placeholder;
+export async function openModalText(titleKey, placeholderKey, initialValue = "") {
+  modalTextTitle.textContent = await window.t(titleKey);
+  modalTextInput.placeholder = await window.t(placeholderKey);
   modalText.value = initialValue;
   modalText.style.display = "flex";
 
-  console.log(`[app.js] Öffne Text-Modal: "${title}"`);
+  console.log(`[app.js] Öffne Text-Modal: "${titleKey}"`);
   return new Promise((resolve) => {
     function apply() {
       const val = modalTextInput.value;
@@ -134,12 +138,12 @@ export function openModalText(title, placeholder, initialValue = "") {
 /* --------------------------------------------------------------
    NUMBER MODAL
 -------------------------------------------------------------- */
-export function openModalNumber(title, value = 0) {
-  modalNumberTitle.textContent = title;
+export async function openModalNumber(titleKey, value = 0) {
+  modalNumberTitle.textContent = await window.t(titleKey);
   modalNumberInput.value = value;
   modalNumber.style.display = "flex";
 
-  console.log(`[app.js] Öffne Number-Modal: "${title}" mit Wert ${value}`);
+  console.log(`[app.js] Öffne Number-Modal: "${titleKey}" mit Wert ${value}`);
   return new Promise((resolve) => {
     function apply() {
       const val = Number(modalNumberInput.value);
@@ -165,12 +169,12 @@ export function openModalNumber(title, value = 0) {
 /* --------------------------------------------------------------
    SLIDER MODAL (Single 0/1)
 -------------------------------------------------------------- */
-export function openModalSlider(title, isChecked = 0) {
-  modalSliderTitle.textContent = title;
+export async function openModalSlider(titleKey, isChecked = 0) {
+  modalSliderTitle.textContent = await window.t(titleKey);
   modalSliderInput.checked = Boolean(isChecked);
   modalSlider.style.display = "flex";
 
-  console.log(`[app.js] Öffne Slider-Modal: "${title}" mit Wert ${isChecked}`);
+  console.log(`[app.js] Öffne Slider-Modal: "${titleKey}" mit Wert ${isChecked}`);
   return new Promise((resolve) => {
     function apply() {
       const val = modalSliderInput.checked ? 1 : 0;
@@ -196,22 +200,22 @@ export function openModalSlider(title, isChecked = 0) {
 /* --------------------------------------------------------------
    MULTI-MODAL (NUMBER, SLIDER, DROPDOWN, ADR, CHECKBOX)
 -------------------------------------------------------------- */
-export function openModalMulti(title, config = []) {
-  modalMultiTitle.textContent = title;
+export async function openModalMulti(titleKey, config = []) {
+  modalMultiTitle.textContent = await window.t(titleKey);
   modalMultiContent.innerHTML = "";
 
-  console.log(`[app.js] Öffne Multi-Modal: "${title}"`);
+  console.log(`[app.js] Öffne Multi-Modal: "${titleKey}"`);
   const adrLevels = [1, 3, 7, 15, 31, 63];
 
   const inputs = [];
 
-  config.forEach((item, index) => {
+  for (const item of config) {
     const row = document.createElement("div");
     row.className = "modal-row";
 
     const label = document.createElement("div");
     label.className = "modal-label";
-    label.textContent = item.label;
+    label.textContent = await window.t(item.label);
 
     const control = document.createElement("div");
     control.className = "modal-control";
@@ -233,13 +237,13 @@ export function openModalMulti(title, config = []) {
       select.id = item.id;
       select.className = "modal-dropdown";
 
-      item.options.forEach((o) => {
+      for (const o of item.options) {
         const opt = document.createElement("option");
         opt.value = o;
-        opt.textContent = o;
+        opt.textContent = await window.t(o);
         if (String(o) === String(item.value)) opt.selected = true;
         select.appendChild(opt);
-      });
+      }
 
       control.appendChild(select);
       inputs.push(select);
@@ -298,7 +302,7 @@ export function openModalMulti(title, config = []) {
     row.appendChild(label);
     row.appendChild(control);
     modalMultiContent.appendChild(row);
-  });
+  }
 
   modalMulti.style.display = "flex";
 
@@ -342,9 +346,9 @@ export function openModalMulti(title, config = []) {
 /* --------------------------------------------------------------
    CLONE PROFILE MODAL
 -------------------------------------------------------------- */
-export function openCloneProfileModal() {
+export async function openCloneProfileModal() {
   if (!window.selectedProfilePath) {
-    window.showToast("Please select a profile first!", "warning");
+    window.showToast("toasts.profile_not_selected", "warning");
     return;
   }
 
@@ -352,20 +356,20 @@ export function openCloneProfileModal() {
   cloneNameInput.value = "";
   cloneValidationMsg.textContent = "";
   modalCloneApply.disabled = true;
-  modalCloneApply.textContent = "Clone";
+  modalCloneApply.textContent = await window.t("modals.clone_profile.clone_button");
   
   const profileName = document.querySelector("#profileNameDisplay")?.textContent || "Unknown";
-  cloneSourceDisplay.textContent = `Source: ${profileName}`;
+  cloneSourceDisplay.textContent = (await window.t("modals.clone_profile.source")).replace('{profileName}', profileName);
 
   modalClone.style.display = "flex";
   cloneNameInput.focus();
 
   let debounceTimer;
 
-  function validate() {
+  async function validate() {
     const newName = cloneNameInput.value.trim();
     modalCloneApply.disabled = true;
-    cloneValidationMsg.textContent = "Checking...";
+    cloneValidationMsg.textContent = await window.t("modals.clone_profile.validation_checking");
     cloneValidationMsg.style.color = "#aaa";
 
     clearTimeout(debounceTimer);
@@ -382,11 +386,11 @@ export function openCloneProfileModal() {
         });
 
         if (status.valid) {
-          cloneValidationMsg.textContent = `✔ ${status.message}`;
+          cloneValidationMsg.textContent = (await window.t("modals.clone_profile.validation_valid")).replace('{message}', status.message);
           cloneValidationMsg.style.color = "#4caf50";
           modalCloneApply.disabled = false;
         } else {
-          cloneValidationMsg.textContent = `❌ ${status.message}`;
+          cloneValidationMsg.textContent = (await window.t("modals.clone_profile.validation_invalid")).replace('{message}', status.message);
           cloneValidationMsg.style.color = "#f44336";
         }
       } catch (e) {
@@ -401,7 +405,7 @@ export function openCloneProfileModal() {
     if (!newName) return;
 
     modalCloneApply.disabled = true;
-    modalCloneApply.textContent = "Cloning...";
+    modalCloneApply.textContent = await window.t("modals.clone_profile.cloning_button");
 
     try {
       const msg = await window.invoke("clone_profile_command", {
@@ -420,10 +424,10 @@ export function openCloneProfileModal() {
 
       cleanup();
     } catch (e) {
-      window.showToast(`Clone failed: ${e}`, "error");
+      window.showToast((await window.t("toasts.clone_failed")).replace('{error}', e), "error");
       console.error(e);
       modalCloneApply.disabled = false;
-      modalCloneApply.textContent = "Clone";
+      modalCloneApply.textContent = await window.t("modals.clone_profile.clone_button");
     }
   }
 

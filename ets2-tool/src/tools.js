@@ -9,7 +9,7 @@ import {
 // Helper function to guard trailer actions
 const trailerActionGuard = (actionFunction) => async (...args) => {
   if (!window.playerTrailer) {
-    showToast("No trailer assigned to you", "warning");
+    showToast("toasts.no_trailer_assigned_error", "warning");
     return;
   }
   await actionFunction(...args);
@@ -21,12 +21,12 @@ const trailerActionGuard = (actionFunction) => async (...args) => {
 export const tools = {
   truck: [
     {
-      title: "Repair Truck",
-      desc: "Repair your current truck",
+      title: "tools.truck.repair_truck.title",
+      desc: "tools.truck.repair_truck.desc",
       img: "images/repair.png",
       action: async () => {
         try {
-          const shouldRepair = await openModalSlider("Repair all truck damage?", 0);
+          const shouldRepair = await openModalSlider("tools.truck.repair_truck.modalSliderText", 0);
           if (shouldRepair) {
             const wearTypes = ["engine_wear", "transmission_wear", "cabin_wear", "chassis_wear"];
             for (const wearType of wearTypes) {
@@ -36,26 +36,26 @@ export const tools = {
               });
             }
             await loadAllTrucks();
-            showToast("Truck successfully repaired!", "success");
+            showToast("toasts.repair_truck_success", "success");
           }
         } catch (err) {
-          console.error("Repair truck error:", err);
-          showToast("Failed to repair truck!", "error");
+          console.error("errors.repair_truck", err);
+          showToast("toasts.repair_truck_error", "error");
         }
       },
       disabled: false,
     },
     {
-      title: "Advanced Repair",
-      desc: "Repair individual components of your truck",
+      title: "tools.truck.advanced_repair.title",
+      desc: "tools.truck.advanced_repair.desc",
       img: "images/advancedRepair.png",
       action: async () => {
         try {
-          const res = await openModalMulti("Advanced Repair", [
+          const res = await openModalMulti("tools.truck.advanced_repair.modalSliderText", [
             {
               type: "slider",
               id: "engine_wear",
-              label: "Engine Wear",
+              label: "label.engine_wear",
               value: window.playerTruck?.engine_wear || 0,
               max: 1,
               step: 0.01,
@@ -63,7 +63,7 @@ export const tools = {
             {
               type: "slider",
               id: "transmission_wear",
-              label: "Transmission Wear",
+              label: "label.transmission_wear",
               value: window.playerTruck?.transmission_wear || 0,
               max: 1,
               step: 0.01,
@@ -71,7 +71,7 @@ export const tools = {
             {
               type: "slider",
               id: "cabin_wear",
-              label: "Cabin Wear",
+              label: "label.cabin_wear",
               value: window.playerTruck?.cabin_wear || 0,
               max: 1,
               step: 0.01,
@@ -79,7 +79,7 @@ export const tools = {
             {
               type: "slider",
               id: "chassis_wear",
-              label: "Chassis Wear",
+              label: "label.chassis_wear",
               value: window.playerTruck?.chassis_wear || 0,
               max: 1,
               step: 0.01,
@@ -94,94 +94,95 @@ export const tools = {
               });
             }
             await loadAllTrucks();
-            showToast("Advanced repair successfully applied!", "success");
+            showToast("toasts.advanced_repair_success", "success");
           }
         } catch (err) {
           console.error("Advanced repair error:", err);
-          showToast("Failed to apply advanced repair!", "error");
+          showToast("toasts.advanced_repair_error", "error");
         }
       },
     },
     {
-      title: "Fuel Level",
-      desc: "Change your fuel level at your current truck",
+      title: "tools.truck.fuel_level.title",
+      desc: "tools.truck.fuel_level.desc",
       img: "images/gasstation.jpg",
       action: async () => {
         try {
           const currentFuelPercent = (window.playerTruck?.fuel_relative || 0) * 100;
-          const newValue = await openModalNumber("Change fuel level (%)", currentFuelPercent.toFixed(0));
+          const newValue = await openModalNumber("tools.truck.fuel_level.modalNumberText", currentFuelPercent.toFixed(0));
           if (newValue !== null) {
             const clampedValue = Math.max(0, Math.min(100, newValue));
             const finalValue = clampedValue / 100.0;
             await invoke("set_player_truck_fuel", { level: finalValue });
             await loadAllTrucks();
-            showToast(`Fuel level set to ${clampedValue}%!`, "success");
+            // showToast(`Fuel level set to ${clampedValue}%!`, "success");
+            showToast("toasts.fuel_level_updated", { clampedValue }, "success");
           }
         } catch (err) {
-          console.error("Fuel level error:", err);
-          showToast("Failed to change fuel level!", "error");
+          console.error("errors.fuel_level", err);
+          showToast("toasts.fuel_level_error", "error");
         }
       },
       disabled: false,
     },
     {
-      title: "Full Refuel",
-      desc: "Refuel your truck to 100%",
+      title: "tools.truck.full_refuel.title",
+      desc: "tools.truck.full_refuel.desc",
       img: "images/gasstation.jpg",
       action: async () => {
         try {
-          const shouldRefuel = await openModalSlider("Refuel the truck completely?", 0);
+          const shouldRefuel = await openModalSlider("tools.truck.full_refuel.modalSliderText", 0);
           if (shouldRefuel) {
             await invoke("refuel_player_truck");
             await loadAllTrucks();
-            showToast("Truck successfully refueled to 100%!", "success");
+            showToast("toasts.fuel_refuel_success", "success");
           }
         } catch (err) {
           console.error("Refuel error:", err);
-          showToast("Failed to refuel truck!", "error");
+          showToast("toasts.fuel_refuel_error", "error");
         }
       },
       disabled: false,
     },
     {
-      title: "Truck Mileage",
-      desc: "Change your Mileage at your current truck",
+      title: "tools.truck.truck_mileage.title",
+      desc: "tools.truck.truck_mileage.desc",
       img: "images/odometer.png",
       action: async () => {
         try {
           const newValue = await openModalNumber(
-            "Change your odometer",
+            "tools.truck.truck_mileage.modalNumberText",
             window.playerTruck?.odometer || 0
           );
           if (newValue !== null) {
             await invoke("edit_truck_odometer", { value: newValue });
             await loadAllTrucks();
-            showToast(`Odometer set to ${newValue.toLocaleString()} km!`, "success");
+            showToast("toasts.truck_mileage_success", { newValue }, "success");
           }
         } catch (err) {
           console.error("Odometer error:", err);
-          showToast("Failed to change odometer!", "error");
+          showToast("toasts.truck_mileage_error", "error");
         }
       },
     },
     {
-      title: "Truck License Plate",
-      desc: "Change your license plate",
+      title: "tools.truck.truck_license_plate.title",
+      desc: "tools.truck.truck_license_plate.desc",
       img: "images/trailer_license.jpg",
       action: async () => {
         try {
           const newValue = await openModalText(
-            "Change your license plate",
+            "tools.truck.truck_license_plate.modalTextTitle",
             window.extractPlateText(window.playerTruck?.license_plate)
           );
           if (newValue !== null) {
             await invoke("set_player_truck_license_plate", { plate: newValue });
             await loadAllTrucks();
-            showToast(`License plate changed to "${newValue}"!`, "success");
+            showToast("toasts.truck_license_plate_success", { newValue }, "success");
           }
         } catch (err) {
           console.error("License plate error:", err);
-          showToast("Failed to change license plate!", "error");
+          showToast("toasts.truck_license_plate_error", "error");
         }
       },
     },
@@ -189,64 +190,64 @@ export const tools = {
 
   trailer: [
     {
-      title: "Repair",
-      desc: "Repair your Trailer",
+      title: "tools.trailer.repair_trailer.title",
+      desc: "tools.trailer.repair_trailer.desc",
       img: "images/trailerRepair.jpg",
       action: trailerActionGuard(async () => {
         try {
-          const shouldRepair = await openModalSlider("Repair all trailer damage?", 0);
+          const shouldRepair = await openModalSlider("tools.trailer.repair_trailer.modalSliderText", 0);
           if (shouldRepair) {
             await invoke("repair_player_trailer");
             await loadAllTrailers();
-            showToast("Trailer successfully repaired!", "success");
+            showToast("toasts.repair_trailer_success", "success");
           }
         } catch (err) {
           console.error("Repair trailer error:", err);
-          showToast("Failed to repair trailer!", "error");
+          showToast("toasts.repair_trailer_error", "error");
         }
       }),
       disabled: false,
     },
     {
-      title: "Change Trailer License Plate",
-      desc: "Modify your trailer license plate",
+      title: "tools.trailer.trailer_license_plate.title",
+      desc: "tools.trailer.trailer_license_plate.desc",
       img: "images/trailer_license.jpg",
       action: trailerActionGuard(async () => {
         try {
           const newValue = await openModalText(
-            "Change trailer license",
+            "tools.trailer.trailer_license_plate.modalTextTitle",
             window.extractPlateText(window.playerTrailer?.license_plate)
           );
           if (newValue !== null) {
             await invoke("set_player_trailer_license_plate", { plate: newValue });
             await loadAllTrailers();
-            showToast(`Trailer license plate changed to "${newValue}"!`, "success");
+            showToast("toasts.trailer_license_plate_success", { newValue }, "success");
           }
         } catch (err) {
           console.error("Trailer license plate error:", err);
-          showToast("Failed to change trailer license plate!", "error");
+          showToast("toasts.trailer_license_plate_error", "error");
         }
       }),
       disabled: false,
     },
     {
-      title: "Modify Job Weight",
-      desc: "Adjust the job's cargo weight",
+      title: "tools.trailer.modify_job_weight.title",
+      desc: "tools.trailer.modify_job_weight.desc",
       img: "images/comingsoon.png",
       action: trailerActionGuard(async () => {
         try {
           const newValue = await openModalNumber(
-            "Modify job weight (kg)",
+            "tools.trailer.modify_job_weight.modalNumberText",
             window.playerTrailer?.cargo_mass || 0
           );
           if (newValue !== null) {
             await invoke("set_player_trailer_cargo_mass", { mass: newValue });
             await loadAllTrailers();
-            showToast(`Cargo mass set to ${newValue.toLocaleString()} kg!`, "success");
+            showToast("toasts.modify_job_weight_success", { newValue }, "success");
           }
         } catch (err) {
           console.error("Cargo mass error:", err);
-          showToast("Failed to change cargo mass!", "error");
+          showToast("toasts.modify_job_weight_error", "error");
         }
       }),
       disabled: false,
@@ -255,19 +256,19 @@ export const tools = {
 
   profile: [
     {
-      title: "Change XP",
-      desc: "Modify profile XP",
+      title: "tools.profile.change_xp.title",
+      desc: "tools.profile.change_xp.desc",
       img: "images/xp.jpg",
       action: async () => {
         try {
           const newValue = await openModalNumber(
-            "Change experience",
+            "tools.profile.change_xp.modalNumberText",
             window.currentProfileData?.xp || 0
           );
 
           if (newValue !== null) {
             await invoke("edit_player_experience", { value: newValue });
-            
+
             window.currentProfileData.xp = newValue;
 
             const xpDisplay = document.querySelector("#xpShow");
@@ -275,28 +276,28 @@ export const tools = {
               xpDisplay.textContent = `XP: ${newValue.toLocaleString()}`;
             }
 
-            showToast(`XP set to ${newValue.toLocaleString()}!`, "success");
+            showToast("toasts.change_xp_success", { newValue }, "success");
           }
         } catch (err) {
           console.error("XP change error:", err);
-          showToast("Failed to change XP!", "error");
+          showToast("toasts.change_xp_error", "error");
         }
       },
     },
     {
-      title: "Money",
-      desc: "Modify users Money",
+      title: "tools.profile.change_money.title",
+      desc: "tools.profile.change_money.desc",
       img: "images/money.jpg",
       action: async () => {
         try {
           const newValue = await openModalNumber(
-            "Change money",
+            "tools.profile.change_money.modalNumberText",
             window.currentProfileData?.money || 0
           );
 
           if (newValue !== null) {
             await invoke("edit_player_money", { value: newValue });
-            
+
             window.currentProfileData.money = newValue;
 
             const moneyDisplay = document.querySelector("#moneyShow");
@@ -304,55 +305,55 @@ export const tools = {
               moneyDisplay.textContent = `Geld: ${newValue.toLocaleString()} €`;
             }
 
-            showToast(`Money set to ${newValue.toLocaleString()} €!`, "success");
+            showToast("toasts.change_money_success", { newValue }, "success");
           }
         } catch (err) {
           console.error("Money change error:", err);
-          showToast("Failed to change money!", "error");
+          showToast("toasts.change_money_error", "error");
         }
       },
     },
     {
-      title: "Experience Skills",
-      desc: "Set skill points",
+      title: "tools.profile.change_skill_points.title",
+      desc: "tools.profile.change_skill_points.desc",
       img: "images/skillPoint.jpg",
       action: async () => {
         try {
-          const res = await openModalMulti("Set Experience Skills", [
+          const res = await openModalMulti("tools.profile.change_skill_points.modalTextTitle", [
             {
               type: "adr",
               id: "skill_adr",
-              label: "ADR",
+              label: "label.adr",
               value: window.currentQuicksaveData?.adr || 0,
             },
             {
               type: "slider",
               id: "skill_long",
-              label: "Long Distance",
+              label: "label.long_distance",
               value: window.currentQuicksaveData?.long_dist || 0,
             },
             {
               type: "slider",
               id: "skill_heavy",
-              label: "High Value Cargo",
+              label: "label.heavy_cargo",
               value: window.currentQuicksaveData?.heavy || 0,
             },
             {
               type: "slider",
               id: "skill_fragile",
-              label: "Fragile Cargo",
+              label: "label.fragile_cargo",
               value: window.currentQuicksaveData?.fragile || 0,
             },
             {
               type: "slider",
               id: "skill_urgent",
-              label: "Just in Time Delivery",
+              label: "label.just_in_time_delivery",
               value: window.currentQuicksaveData?.urgent || 0,
             },
             {
               type: "slider",
               id: "skill_eco",
-              label: "Eco Driving",
+              label: "label.eco_driving",
               value: window.currentQuicksaveData?.mechanical || 0,
             },
           ]);
@@ -364,39 +365,39 @@ export const tools = {
             await invoke("edit_skill_value", { skill: "fragile", value: res.skill_fragile });
             await invoke("edit_skill_value", { skill: "urgent", value: res.skill_urgent });
             await invoke("edit_skill_value", { skill: "mechanical", value: res.skill_eco });
-            
+
             await loadQuicksave();
-            showToast("Skills successfully updated!", "success");
+            showToast("toasts.change_skill_points_success", "success");
           }
         } catch (err) {
           console.error("Skills update error:", err);
-          showToast("Failed to update skills!", "error");
+          showToast("toasts.change_skill_points_error", "error");
         }
       },
     },
     {
-      title: "Stats",
-      desc: "Account informations",
+      title: "tools.profile.profile_stats.title",
+      desc: "tools.profile.profile_stats.desc",
       img: "images/skillPoint.jpg",
       action: async () => {
         try {
-          const res = await openModalMulti("Show different stats!", [
+          const res = await openModalMulti("tools.profile.profile_stats.modalTextTitle", [
             {
               type: "number",
               id: "stat_recruitments",
-              label: "Recruitment Centers",
+              label: "label.recruitment_centers",
               value: window.currentProfileData?.recruitments || 0,
             },
             {
               type: "number",
               id: "stat_dealers",
-              label: "Dealers",
+              label: "label.dealers_visited",
               value: window.currentProfileData?.dealers || 0,
             },
             {
               type: "number",
               id: "stat_visited_cities",
-              label: "Visited cities",
+              label: "label.visited_cities",
               value: window.currentProfileData?.visited_cities || 0,
             },
           ]);
@@ -405,41 +406,41 @@ export const tools = {
             for (const key in res) {
               await window.applySetting(key, res[key]);
             }
-            showToast("Stats successfully updated!", "success");
+            showToast("toasts.profile_stats_success", "success");
           }
         } catch (err) {
           console.error("Stats update error:", err);
-          showToast("Failed to update stats!", "error");
+          showToast("toasts.profile_stats_error", "error");
         }
       },
     },
     {
-      title: "Move modifications",
-      desc: "Move your active Modifications from Acc1 to Acc2",
+      title: "tools.profile.move_mods.title",
+      desc: "tools.profile.move_mods.desc",
       img: "images/moveMods.png",
       disabled: false,
 
       action: async () => {
-        const choice = await openModalMulti("Move Modifications", [
+        const choice = await openModalMulti("tools.profile.move_mods.modalTextTitle", [
           {
             type: "dropdown",
             id: "action",
-            label: "Action",
-            value: "Move Modifications",
-            options: ["Move Modifications", "Move controls"],
+            label: "label.action_move_mods",
+            value: "label.value_move_mods",
+            options: ["label.label_move_mods", "label.label_move_controls"],
           },
         ]);
 
         if (!choice) return;
 
         switch (choice.action) {
-          case "Move Modifications":
+          case "label.label_move_mods":
             if (window.handleMoveMods) {
               await window.handleMoveMods();
             }
           break;
 
-          case "Move controls":
+          case "label.label_move_controls":
             if (window.handleCopyControls) {
               await window.handleCopyControls();
             }
@@ -454,20 +455,22 @@ export const tools = {
 
   settings: [
     {
-      title: "Color Theme",
-      desc: "Change the UI theme",
+      title: "tools.settings.color_theme.title",
+      desc: "tools.settings.color_theme.desc",
       img: "images/themeChooser.png",
       action: async () => {
         try {
           const currentTheme = localStorage.getItem("theme") || "dark";
 
-          const res = await openModalMulti("Choose Color Theme", [
+          const res = await openModalMulti("tools.settings.color_theme.modalTextTitle", [
             {
               type: "dropdown",
               id: "theme",
-              label: "Theme",
+              label: "label.label_theme",
               value: currentTheme,
-              options: ["dark", "light", "neon"],
+              options: ["label.label_color_theme_dark",
+                "label.label_color_theme_light",
+                "label.label_color_theme_neon"],
             },
           ]);
 
@@ -478,55 +481,104 @@ export const tools = {
           document.body.classList.remove("theme-dark", "theme-light", "theme-neon");
           document.body.classList.add(`theme-${newTheme}`);
           localStorage.setItem("theme", newTheme);
-          
-          showToast(`Theme changed to ${newTheme}!`, "success");
+
+          showToast("toasts.color_theme_success", { newTheme }, "success");
         } catch (err) {
           console.error("Theme change error:", err);
-          showToast("Failed to change theme!", "error");
+          showToast("toasts.color_theme_error", "error");
         }
       },
       disabled: false,
     },
     {
-      title: "Convoy 128",
-      desc: "Change convoy size",
+      title: "tools.settings.convoy.title",
+      desc: "tools.settings.convoy.desc",
       img: "images/convoy.jpg",
       action: async () => {
         try {
           const isActive = window.baseConfig?.max_convoy_size === 128 ? 1 : 0;
 
-          const res = await openModalSlider("Enable 128 Convoy?", isActive);
+          const res = await openModalSlider("tools.settings.convoy.modalTextTitle", isActive);
 
           if (res !== null) {
             const value = res === 1 ? 128 : 8;
             await invoke("edit_convoy_value", { value });
             await loadBaseConfig();
-            showToast(`Convoy size set to ${value}!`, "success");
+            showToast("toasts.convoy_settings_success", { newValue: value }, "success");
           }
         } catch (err) {
           console.error("Convoy change error:", err);
-          showToast("Failed to change convoy size!", "error");
+          showToast("toasts.convoy_settings_error", "error");
         }
       },
     },
     {
-      title: "Language - 'COMING SOON'",
-      desc: "Change your language",
+      title: "tools.settings.language.title",
+      desc: "tools.settings.language.desc",
       img: "images/language.png",
-      action: () => {
-        showToast("Language selection coming soon!", "info");
+      action: async () => {
+        try {
+          // Daten aus Backend holen
+          const languages = await invoke("get_available_languages_command");
+          const currentLang = await invoke("get_current_language_command");
+
+          if (!languages || languages.length === 0) {
+            showToast("No languages available!", "error");
+            return;
+          }
+
+          // Dropdown-Optionen vorbereiten
+          const options = languages.map(l => ({
+            value: l.code,
+            label: l.name,
+          }));
+
+          const res = await openModalMulti("tools.settings.language.modalTextTitle", [
+            {
+              type: "dropdown",
+              id: "language",
+              label: "label.label_language",
+              value: currentLang,
+              options: options.map(o => o.value),
+              optionLabels: options.reduce((acc, o) => {
+                acc[o.value] = o.label;
+                return acc;
+              }, {}),
+            },
+          ]);
+
+          if (!res || !res.language) return;
+
+          if (res.language === currentLang) {
+            showToast("Language already active.", "info");
+            return;
+          }
+
+          // Sprache setzen
+          const message = await invoke("set_language_command", {
+            language: res.language,
+          });
+
+          showToast(message, "success");
+
+          // OPTIONAL (empfohlen, wenn UI statisch übersetzt ist)
+          location.reload();
+
+        } catch (err) {
+          console.error("Language modal error:", err);
+          showToast("toasts.language_update_error", "error");
+        }
       },
-      disabled: true,
     },
     {
-      title: "Traffic value",
-      desc: "Change the traffic factor",
+      title: "tools.settings.traffic_values.title",
+      desc: "tools.settings.traffic_values.desc",
       img: "images/traffic_value.png",
       action: async () => {
         try {
           const currentTraffic = await invoke("read_traffic_value");
 
-          const newValue = await openModalNumber("g_traffic (0–10)", currentTraffic);
+          const newValue = await openModalNumber("tools.settings.traffic_values.modalTextTitle", currentTraffic);
 
           if (newValue === null) return;
 
@@ -540,51 +592,51 @@ export const tools = {
 
           await invoke("edit_traffic_value", { value: clamped });
           window.baseConfig.traffic = clamped;
-          showToast(`Traffic value set to ${clamped}!`, "success");
+          showToast("toasts.traffic_values_success", { newValue: clamped }, "success");
         } catch (err) {
           console.error("Traffic Modal Error:", err);
-          showToast("Failed to change traffic value!", "error");
+          showToast("toasts.traffic_values_error", "error");
         }
       },
     },
     {
-      title: "Parking Doubles",
-      desc: "Do you want to park double trailer?",
+      title: "tools.settings.parking_doubles.title",
+      desc: "tools.settings.parking_doubles.desc",
       img: "images/parking_double.png",
       action: async () => {
         try {
           const newValue = await openModalSlider(
-            "Do you want to park doubles?",
+            "tools.settings.parking_doubles.modalTextTitle",
             window.readSaveGameConfig?.factor_parking_doubles || 0
           );
           if (newValue !== null) {
             await invoke("edit_parking_doubles_value", { value: newValue });
             await loadProfileSaveConfig();
-            showToast(`Parking doubles ${newValue ? 'enabled' : 'disabled'}!`, "success");
+            showToast("toasts.parking_doubles_success", { newValue: newValue ? "enabled" : "disabled" }, "success");
           }
         } catch (err) {
           console.error("Parking doubles error:", err);
-          showToast("Failed to change parking doubles setting!", "error");
+          showToast("toasts.parking_doubles_error", "error");
         }
       },
     },
     {
-      title: "Dev Mode",
-      desc: "Developer & Console Mode",
+      title: "tools.settings.dev_tools.title",
+      desc: "tools.settings.dev_tools.desc",
       img: "images/dev.jpg",
       action: async () => {
         try {
-          const res = await openModalMulti("Developer Settings", [
+          const res = await openModalMulti("tools.settings.dev_tools.modalTextTitle", [
             {
               type: "checkbox",
               id: "developer",
-              label: "Developer",
+              label: "label.label_developer",
               value: window.baseConfig?.developer,
             },
             {
               type: "checkbox",
               id: "console",
-              label: "Console",
+              label: "label.label_console",
               value: window.baseConfig?.console,
             },
           ]);
@@ -593,11 +645,11 @@ export const tools = {
             await invoke("edit_developer_value", { value: res.developer });
             await invoke("edit_console_value", { value: res.console });
             await loadBaseConfig();
-            showToast("Developer settings successfully updated!", "success");
+            showToast("toasts.dev_tools_success", "success");
           }
         } catch (err) {
           console.error("Dev mode error:", err);
-          showToast("Failed to update developer settings!", "error");
+          showToast("toasts.dev_tools_error", "error");
         }
       },
     },

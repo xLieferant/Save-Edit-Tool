@@ -10,7 +10,9 @@ window.invoke = invoke; // global verfügbar
 // -----------------------------
 // TOAST-FUNKTION
 // -----------------------------
-window.showToast = function (message, type = "info") {
+window.showToast = async function (messageOrKey, options = {}, type = "info") {
+  const message = await t(messageOrKey, options); // Translate the key
+
   const toast = document.createElement("div");
   toast.className = `toast toast-${type}`;
 
@@ -94,6 +96,9 @@ function updateUIWithCurrentQuicksave() {
 document.addEventListener("DOMContentLoaded", () => {
   console.log("[main.js] DOM vollständig geladen.");
 
+  // Initial UI translation
+  translateUI();
+
   // Periodic data refresh (every 5 minutes)
   setInterval(async () => {
     if (window.selectedSavePath) {
@@ -115,6 +120,17 @@ document.addEventListener("DOMContentLoaded", () => {
   setTimeout(() => {
     checkUpdaterOnStartup(showToast);
   }, 2000);
+
+  // Load and display current language
+  (async function initLanguage() {
+    try {
+      const lang = await invoke('get_current_language_command');
+      const message = await invoke('translate_command', { key: 'toasts.language_loaded' });
+      console.log(message); // Will show "Language loaded: English" or "Sprache geladen: Deutsch"
+    } catch (e) {
+      console.warn('Could not load language:', e);
+    }
+  })();
 
   // -----------------------------
   // UPDATE BUTTONS
@@ -265,12 +281,12 @@ document.addEventListener("DOMContentLoaded", () => {
       window.playerTrailer = null;
 
       profileStatus.textContent = "Profile loaded. Please select a save.";
-      showToast("Profile loaded. Please select a save game.", "info");
+      showToast("toasts.profile_loaded_select_save", {}, "info");
       loadTools(activeTab);
     } catch (err) {
       console.error(err);
       profileStatus.textContent = "Error loading profile";
-      showToast("Profile could not be loaded!", "error");
+      showToast("toasts.profile_load_error", {}, "error");
     }
   }
 
@@ -337,7 +353,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     } catch (e) {
       console.error(e);
-      showToast("Could not scan saves", "error");
+      showToast("toasts.scan_saves_error", {}, "error");
     }
   }
 
@@ -355,11 +371,11 @@ document.addEventListener("DOMContentLoaded", () => {
       updateUIWithCurrentQuicksave();
 
       profileStatus.textContent = "Save loaded successfully";
-      showToast("Save loaded successfully!", "success");
+      showToast("toasts.save_loaded_success", {}, "success");
       loadTools(activeTab);
     } catch (e) {
       console.error(e);
-      showToast("Failed to load save", "error");
+      showToast("toasts.save_load_error", {}, "error");
     }
   }
 
@@ -449,14 +465,14 @@ document.addEventListener("DOMContentLoaded", () => {
       editStatus.textContent = "Saving…";
       await invoke("edit_money", { amount });
       editStatus.textContent = "Money saved!";
-      showToast("Money successfully saved!", "success");
+      showToast("toasts.money_saved_success", {}, "success");
       await loadProfileData();
       updateUIWithCurrentQuicksave();
       loadTools(activeTab);
     } catch (err) {
       console.error(err);
       editStatus.textContent = "Error saving money";
-      showToast("Failed to save money", "error");
+      showToast("toasts.money_save_error", {}, "error");
     }
   });
 
@@ -466,14 +482,14 @@ document.addEventListener("DOMContentLoaded", () => {
       editStatus.textContent = "Saving…";
       await invoke("edit_level", { xp });
       editStatus.textContent = "XP saved!";
-      showToast("XP successfully saved!", "success");
+      showToast("toasts.xp_saved_success", {}, "success");
       await loadProfileData();
       updateUIWithCurrentQuicksave();
       loadTools(activeTab);
     } catch (err) {
       console.error(err);
       editStatus.textContent = "Error saving XP";
-      showToast("Failed to save XP", "error");
+      showToast("toasts.xp_save_error", {}, "error");
     }
   });
 
@@ -506,7 +522,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const cloneBtn = document.getElementById("cloneProfileBtn");
   cloneBtn?.addEventListener("click", async () => {
     if (!window.selectedProfilePath) {
-      showToast("No profile selected!", "warning");
+      showToast("toasts.no_profile_selected", {}, "warning");
       return;
     }
 
@@ -540,7 +556,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (newName && newName.trim() !== "" && newName !== currentName) {
       try {
         const newPath = await invoke("profile_rename", { newName: newName.trim() });
-        showToast("Profile renamed successfully!", "success");
+        showToast("toasts.profile_renamed_success", {}, "success");
         
         window.selectedProfilePath = newPath;
         profileNameDisplay.textContent = newName.trim();
@@ -548,14 +564,14 @@ document.addEventListener("DOMContentLoaded", () => {
         await loadSelectedProfile();
       } catch (err) {
         console.error("Rename failed:", err);
-        showToast(err.toString(), "error");
+        showToast("toasts.profile_rename_error", { error: err.toString() }, "error");
       }
     }
   }
 
   async function handleCopyControls() {
     if (!window.selectedProfilePath) {
-      showToast("No source profile selected!", "warning");
+      showToast("toasts.no_source_profile_selected", {}, "warning");
       return;
     }
 
@@ -568,7 +584,7 @@ document.addEventListener("DOMContentLoaded", () => {
       );
 
       if (targets.length === 0) {
-        showToast("No other profiles available.", "warning");
+        showToast("toasts.no_other_profiles", {}, "warning");
         return;
       }
 
@@ -593,25 +609,23 @@ document.addEventListener("DOMContentLoaded", () => {
       );
 
       if (!selectedProfile) {
-        showToast("Invalid profile selected.", "error");
+        showToast("toasts.invalid_profile_selected", {}, "error");
         return;
       }
 
-      showToast("Copying controls…", "info");
+      showToast("toasts.copying_controls", {}, "info");
 
       const msg = await invoke("copy_profile_controls", {
         sourceProfilePath: sourcePath,
         targetProfilePath: selectedProfile.path,
       });
 
-      showToast(msg, "success");
+      // Backend currently returns a hardcoded string, but we can try to translate it or override
+      showToast("toasts.copy_controls_success", {}, "success");
 
     } catch (err) {
       console.error("Copy controls failed:", err);
-      showToast(
-          typeof err === "string" ? err : "Failed to copy controls.",
-          "error"
-      );
+      showToast("toasts.copy_controls_error", {}, "error");
     }
   }
   window.handleCopyControls = handleCopyControls;
@@ -621,7 +635,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // -----------------------------
   async function handleMoveMods() {
     if (!window.selectedProfilePath) {
-      showToast("No source profile selected!", "warning");
+      showToast("toasts.no_source_profile_selected", {}, "warning");
       return;
     }
 
@@ -632,7 +646,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const targets = profiles.filter(p => p.success && p.path !== currentPath);
 
       if (targets.length === 0) {
-        showToast("No other valid profiles found.", "warning");
+        showToast("toasts.no_other_valid_profiles", {}, "warning");
         return;
       }
 
@@ -654,21 +668,26 @@ document.addEventListener("DOMContentLoaded", () => {
       const selectedProfile = targets.find(p => `${p.name} [${p.path}]` === selectedStr);
 
       if (!selectedProfile) {
-        showToast("Invalid profile selection.", "error");
+        showToast("toasts.invalid_profile_selection", {}, "error");
         return;
       }
 
-      showToast("Moving mods... please wait", "info");
+      showToast("toasts.moving_mods_wait", {}, "info");
 
       const resultMsg = await invoke("copy_mods_to_profile", {
         targetProfilePath: selectedProfile.path,
       });
 
-      showToast(resultMsg, "success");
+      // resultMsg contains a dynamic count from backend, but we use a key with placeholder
+      // Extract number from "Erfolgreich X Mods übertragen." or "Successfully transferred X mods."
+      const countMatch = resultMsg.match(/\d+/);
+      const count = countMatch ? countMatch[0] : "?";
+      
+      showToast("toasts.move_mods_success", { count }, "success");
 
     } catch (err) {
       console.error("Move mods error:", err);
-      showToast(typeof err === "string" ? err : "Failed to move mods.", "error");
+      showToast("toasts.move_mods_error", {}, "error");
     }
   }
   window.handleMoveMods = handleMoveMods;
@@ -686,7 +705,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const profiles = await invoke("find_ets2_profiles");
       profileStatus.textContent = `${profiles.length} profiles found`;
-      if (showToasts) showToast("Profiles found!", "success");
+      if (showToasts) showToast("toasts.profiles_found", {}, "success");
 
       profiles.forEach((p) => {
         if (!p.success) return;
@@ -761,7 +780,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (err) {
       console.error(err);
       profileStatus.textContent = "Scan failed";
-      showToast("No profiles found!", "error");
+      showToast("toasts.no_profiles_found", {}, "error");
     }
   }
 
@@ -815,4 +834,95 @@ document.addEventListener("DOMContentLoaded", () => {
 
     await scanProfiles({ saveToBackend: true, showToasts: true });
   })();
+  // -----------------------------
+// LANGUAGE PICKER
+// -----------------------------
+async function showLanguagePicker() { // #FIXME <-- Remove this code, we're using a diffrent Modal in tools.js! 
+  try {
+    const languages = await invoke('get_available_languages_command');
+    const currentLang = await invoke('get_current_language_command');
+    
+    const modal = document.createElement('div');    
+    document.body.appendChild(modal);
+    
+    const options = modal.querySelectorAll('.language-option');
+    options.forEach(option => {
+      option.addEventListener('click', async () => {
+        const selectedLang = option.dataset.lang;
+        
+        if (selectedLang !== currentLang) {
+          try {
+            const message = await invoke('set_language_command', { 
+              language: selectedLang 
+            });
+            
+            showToast(message, "success");
+            modal.remove();
+            
+            // Translate the UI again
+            translateUI();
+
+          } catch (error) {
+            showToast("toasts.generic_error_prefix", { error: error.toString() }, "error");
+          }
+        } else {
+          modal.remove();
+        }
+      });
+    });
+    
+    modal.querySelector('.close-modal').addEventListener('click', () => {
+      modal.remove();
+    });
+    
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.remove();
+      }
+    });
+    
+  } catch (error) {
+    showToast("toasts.load_languages_error", { error: error.toString() }, "error");
+  }
+}
+
+// function getFlagEmoji(langCode) { // #TODO Optional: Use flag emojis in language picker
+//   const flags = {
+//     'en': '🇬🇧',
+//     'de': '🇩🇪',
+//     'es': '🇪🇸'
+//   };
+//   return flags[langCode] || '🌐';
+// }
+
+// Helper function to get translations in JavaScript
+async function t(key, params = {}) {
+  try {
+    let text = await invoke('translate_command', { key });
+
+    // einfache Platzhalter-Ersetzung
+    for (const [k, v] of Object.entries(params)) {
+      text = text.replaceAll(`{${k}}`, String(v));
+    }
+
+    return text;
+  } catch (error) {
+    console.error('Translation error:', error);
+    return key;
+  }
+}
+
+// Function to translate all elements with data-translate attribute
+async function translateUI() {
+  const elements = document.querySelectorAll('[data-translate]');
+  for (const el of elements) {
+    const key = el.getAttribute('data-translate');
+    el.textContent = await t(key);
+  }
+}
+
+// Make functions globally available
+window.showLanguagePicker = showLanguagePicker;
+window.t = t;
+window.translateUI = translateUI; // Make it global so you can call it from anywhere
 });

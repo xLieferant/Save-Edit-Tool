@@ -1,0 +1,273 @@
+{
+      "app": {
+            "name": "ETS2 Save Editor - Alex Edition",
+            "title": "SAVE EDITOR",
+            "subtitle": "for SCS - xLieferant"
+      },
+      "tabs": {
+            "truck": "🚛Truck",
+            "trailer": "🚚Trailer",
+            "profile": "💠Profile",
+            "settings": "⚙️Settings"
+      },
+      "buttons": {
+            "youtube": "🔴 YouTube",
+            "patreon": "⚠️ Patreon",
+            "github": "⚠️ GitHub"
+      },
+      "profile": {
+            "select_profile": "Select a profile",
+            "select_save": "Select a save",
+            "clone_profile": "🧑‍🤝‍🧑",
+            "refresh": "⟳"
+      },
+      "game": {
+            "ets2": "ETS2",
+            "ats": "ATS"
+      },
+      "toasts": {
+            "language_updated": "Language changed to English",
+            "language_loaded": "Language loaded: English",
+            "money_updated": "Money successfully updated",
+            "xp_updated": "XP successfully updated",
+            "skill_points_updated": "Skill points successfully updated",
+            "save_successful": "Save successful",
+            "save_failed": "Save failed",
+            "profile_not_selected": "Please select a profile first!",
+            "clone_failed": "Clone failed: {error}",
+            "coming_soon": "Coming Soon",
+            "no_trailer_assigned_error": "No trailer assigned to you",
+            "repair_truck_success": "Truck repaired successfully",
+            "repair_truck_error": "Failed to repair truck!",
+            "advanced_repair_success": "Advanced repair applied successfully",
+            "advanced_repair_error": "Failed to apply advanced repair",
+            "fuel_level_updated": "Fuel level set to {clampedValue}% !",
+            "fuel_level_error": "Failed to set fuel level",
+            "fuel_refuel_success": "Truck successfully refueled to 100%!",
+            "fuel_refuel_error": "Failed to refuel truck",
+            "truck_mileage_success": "Truck mileage set to {newValue} km!",
+            "truck_mileage_error": "Failed to set truck odometer",
+            "truck_license_plate_success": "Truck license plate changed to {newValue}!",
+            "truck_license_plate_error": "Failed to change truck license plate",
+            "trailer_repair_success": "Trailer repaired successfully",
+            "trailer_repair_error": "Failed to repair trailer",
+            "trailer_license_plate_success": "Trailer license plate changed to {newValue}!",
+            "trailer_license_plate_error": "Failed to change trailer license plate",
+            "modify_job_weight_success": "Job weight set to {newValue} kg!",
+            "modify_job_weight_error": "Failed to set job weight",
+            "change_xp_success": "XP changed to {newValue}!",
+            "change_xp_error": "Failed to change XP",
+            "change_money_success": "Money changed to {newValue}€!",
+            "change_money_error": "Failed to change money",
+            "change_skill_points_success": "Skill points changed successfully!",
+            "change_skill_points_error": "Failed to change skill points",
+            "profile_stats_success": "Profile statistics updated successfully!",
+            "profile_stats_error": "Failed to update profile statistics",
+            "color_theme_success": "Color theme changed to {newTheme}!",
+            "color_theme_error": "Failed to change color theme",
+            "convoy_settings_success": "Convoy settings updated successfully to {newValue}!",
+            "convoy_settings_error": "Failed to update convoy settings",
+            "language_update_error": "Failed to change language",
+            "traffic_values_success": "Traffic values updated to {newValue}!",
+            "traffic_values_error": "Failed to update traffic values",
+            "parking_doubles_success": "Parking doubles updated to {newValue}!",
+            "parking_doubles_error": "Failed to update parking doubles",
+            "dev_tools_success": "Developer tools updated successfully!",
+            "dev_tools_error": "Failed to update developer tools",
+            "profile_loaded_select_save": "Profile loaded. Please select a save game.",
+            "profile_load_error": "Profile could not be loaded!",
+            "scan_saves_error": "Could not scan saves",
+            "save_loaded_success": "Save loaded successfully!",
+            "save_load_error": "Failed to load save",
+            "money_saved_success": "Money successfully saved!",
+            "money_save_error": "Failed to save money",
+            "xp_saved_success": "XP successfully saved!",
+            "xp_save_error": "Failed to save XP",
+            "no_profile_selected": "No profile selected!",
+            "profile_renamed_success": "Profile renamed successfully!",
+            "profile_rename_error": "Rename failed: {error}",
+            "no_source_profile_selected": "No source profile selected!",
+            "no_other_profiles": "No other profiles available.",
+            "invalid_profile_selected": "Invalid profile selected.",
+            "copying_controls": "Copying controls…",
+            "copy_controls_success": "controls.sii successfully copied",
+            "copy_controls_error": "Failed to copy controls.",
+            "no_other_valid_profiles": "No other valid profiles found.",
+            "invalid_profile_selection": "Invalid profile selection.",
+            "moving_mods_wait": "Moving mods... please wait",
+            "move_mods_success": "Successfully transferred {count} mods.",
+            "move_mods_error": "Failed to move mods.",
+            "profiles_found": "Profiles found!",
+            "no_profiles_found": "No profiles found!",
+            "generic_error_prefix": "Error: {error}",
+            "load_languages_error": "Failed to load languages: {error}"
+      },
+      "tools": {
+            "truck": {
+                  "repair_truck": {
+                        "title": "Repair Truck",
+                        "desc": "Repair your truck",
+                        "modalSliderText": "Repair all truck damage?"
+                  },
+                  "advanced_repair": {
+                        "title": "Advanced Repair",
+                        "desc": "Advanced repair options",
+                        "modalSliderText": "Set wear levels for truck components"
+                  },
+                  "fuel_level": {
+                        "title": "Fuel Level",
+                        "desc": "Edit your fuel level",
+                        "modalNumberText": "Set fuel level (0 to 100)%"
+                  },
+                  "full_refuel": {
+                        "title": "Full Refuel",
+                        "desc": "Refuel your truck to full",
+                        "modalSliderText": "Refuel truck to 100%?"
+                  },
+                  "truck_mileage": {
+                        "title": "Truck Mileage",
+                        "desc": "Edit your truck mileage",
+                        "modalNumberText": "Set odometer value in kilometers"
+                  },
+                  "truck_license_plate": {
+                        "title": "Truck License Plate",
+                        "desc": "Edit your truck license plate",
+                        "modalTextTitle": "Enter new license plate"
+                  }
+            },
+            "trailer": {
+                  "repair_trailer": {
+                        "title": "Repair Trailer",
+                        "desc": "Repair your trailer",
+                        "modalSliderText": "Repair all trailer damage?"
+                  },
+                  "trailer_license_plate": {
+                        "title": "Trailer License Plate",
+                        "desc": "Edit your trailer license plate",
+                        "modalTextTitle": "Enter new license plate"
+                  },
+                  "modify_job_weight": {
+                        "title": "Modify Job Weight",
+                        "desc": "Edit your current job weight",
+                        "modalNumberText": "Set job weight in kilograms"
+                  }
+            },
+            "profile": {
+                  "change_xp": {
+                        "title": "XP Editor",
+                        "desc": "Edit your experience points",
+                        "modalNumberText": "Set new XP value"
+                  },
+                  "change_money": {
+                        "title": "Money Editor",
+                        "desc": "Edit your in-game money",
+                        "modalNumberText": "Set new money value"
+                  },
+                  "change_skill_points": {
+                        "title": "Skill Points",
+                        "desc": "Edit your skill points",
+                        "modalTextTitle": "Set experience points"
+                  },
+                  "profile_stats": {
+                        "title": "Profile Stats",
+                        "desc": "View your profile statistics",
+                        "modalTextTitle": "Profile Statistics shown"
+                  },
+                  "move_mods": {
+                        "title": "Move Modifications or Controls",
+                        "desc": "Move mods and controls between profiles",
+                        "modalTextTitle": "Move Mods/Controls"
+                  }
+            },
+            "settings": {
+                  "color_theme": {
+                        "title": "Color theme",
+                        "desc": "Change the app color theme",
+                        "modalTextTitle": "Select a color theme"
+                  },
+                  "convoy": {
+                        "title": "Convoy Settings",
+                        "desc": "Configure Convoy integration",
+                        "modalTextTitle": "Enable '128' Convoy support"
+                  },
+                  "language": {
+                        "title": "Language",
+                        "desc": "Change your language",
+                        "modalTextTitle": "Select your language"
+                  },
+                  "traffic_values": {
+                        "title": "Traffic Values",
+                        "desc": "Edit traffic density and speed",
+                        "modalTextTitle": "Set traffic density (0-10)"
+                  },
+                  "parking_doubles": {
+                        "title": "Parking Doubles",
+                        "desc": "Enable or disable parking doubles",
+                        "modalTextTitle": "Toggle parking doubles feature"
+                  },
+                  "dev_tools": {
+                        "title": "Developer Tools",
+                        "desc": "Access developer tools",
+                        "modalTextTitle": "Set Developer Settings"
+                  }
+            },
+            "language_picker": {
+                  "title": "Language",
+                  "desc": "Change your language"
+            }
+      },
+      "errors": {
+            "failed_to_load_translations": "Failed to load translations",
+            "failed_to_save_language": "Failed to save language preference",
+            "failed_to_load_language": "Failed to load language preference",
+            "invalid_language": "Invalid language selected",
+            "repair_truck": "Repair truck error: {error}",
+            "fuel_level": "Fuel level error:"
+      },
+      "modals": {
+            "open": "Open",
+            "confirm": "Confirm",
+            "cancel": "Cancel",
+            "close": "Close",
+            "apply": "Apply",
+            "clone_profile": {
+                  "title": "Clone Profile",
+                  "source": "Source: {profileName}",
+                  "new_name_placeholder": "New Profile Name",
+                  "create_backup": "Create Backup (.zip)",
+                  "replace_hex": "Replace Hex Identifiers (Recommended)",
+                  "replace_text": "Replace Text Names",
+                  "clone_button": "Clone",
+                  "cloning_button": "Cloning...",
+                  "validation_checking": "Checking...",
+                  "validation_valid": "✔ {message}",
+                  "validation_invalid": "❌ {message}"
+            }
+      },
+      "label": {
+            "engine_wear": "Engine Wear",
+            "transmission_wear": "Transmission Wear",
+            "cabin_wear": "Cabin Wear",
+            "chassis_wear": "Chassis Wear",
+            "adr": "ADR",
+            "long_distance": "Long Distance",
+            "heavy_cargo": "Heavy Cargo",
+            "fragile_cargo": "Fragile Cargo",
+            "just_in_time_delivery": "Just-in-Time Delivery",
+            "eco_driving": "Eco Driving",
+            "recruitment_centers": "Recruitment Centers",
+            "dealers_visited": "Dealers",
+            "visited_cities": "Visited cities",
+            "action_move_mods": "Action",
+            "value_move_mods": "Move Modifications or Controls",
+            "label_move_mods": "Move Modifications",
+            "label_move_controls": "Move controls",
+            "label_theme": "Theme",
+            "label_color_theme_dark": "dark",
+            "label_color_theme_light": "light",
+            "label_color_theme_neon": "neon",
+            "label_language": "Language",
+            "label_developer": "Developer",
+            "label_console": "Console"
+      }
+}
