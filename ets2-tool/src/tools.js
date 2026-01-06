@@ -256,13 +256,13 @@ export const tools = {
 
   profile: [
     {
-      title: "tools.profile.xp.title",
-      desc: "tools.profile.xp.desc",
+      title: "tools.profile.change_xp.title",
+      desc: "tools.profile.change_xp.desc",
       img: "images/xp.jpg",
       action: async () => {
         try {
           const newValue = await openModalNumber(
-            "Change experience",
+            "tools.profile.change_xp.modalNumberText",
             window.currentProfileData?.xp || 0
           );
 
@@ -276,22 +276,22 @@ export const tools = {
               xpDisplay.textContent = `XP: ${newValue.toLocaleString()}`;
             }
 
-            showToast(`XP set to ${newValue.toLocaleString()}!`, "success");
+            showToast("toasts.change_xp_success", { newValue }, "success");
           }
         } catch (err) {
           console.error("XP change error:", err);
-          showToast("Failed to change XP!", "error");
+          showToast("toasts.change_xp_error", "error");
         }
       },
     },
     {
-      title: "tools.profile.money.title",
-      desc: "tools.proifile.money.desc",
+      title: "tools.profile.change_money.title",
+      desc: "tools.profile.change_money.desc",
       img: "images/money.jpg",
       action: async () => {
         try {
           const newValue = await openModalNumber(
-            "Change money",
+            "tools.profile.change_money.modalNumberText",
             window.currentProfileData?.money || 0
           );
 
@@ -305,11 +305,11 @@ export const tools = {
               moneyDisplay.textContent = `Geld: ${newValue.toLocaleString()} €`;
             }
 
-            showToast(`Money set to ${newValue.toLocaleString()} €!`, "success");
+            showToast("toasts.change_money_success", { newValue }, "success");
           }
         } catch (err) {
           console.error("Money change error:", err);
-          showToast("Failed to change money!", "error");
+          showToast("toasts.change_money_error", "error");
         }
       },
     },
@@ -319,41 +319,41 @@ export const tools = {
       img: "images/skillPoint.jpg",
       action: async () => {
         try {
-          const res = await openModalMulti("Set Experience Skills", [
+          const res = await openModalMulti("tools.profile.change_skill_points.modalTextTitle", [
             {
               type: "adr",
               id: "skill_adr",
-              label: "ADR",
+              label: "label.adr",
               value: window.currentQuicksaveData?.adr || 0,
             },
             {
               type: "slider",
               id: "skill_long",
-              label: "Long Distance",
+              label: "label.long_distance",
               value: window.currentQuicksaveData?.long_dist || 0,
             },
             {
               type: "slider",
               id: "skill_heavy",
-              label: "High Value Cargo",
+              label: "label.heavy_cargo",
               value: window.currentQuicksaveData?.heavy || 0,
             },
             {
               type: "slider",
               id: "skill_fragile",
-              label: "Fragile Cargo",
+              label: "label.fragile_cargo",
               value: window.currentQuicksaveData?.fragile || 0,
             },
             {
               type: "slider",
               id: "skill_urgent",
-              label: "Just in Time Delivery",
+              label: "label.just_in_time_delivery",
               value: window.currentQuicksaveData?.urgent || 0,
             },
             {
               type: "slider",
               id: "skill_eco",
-              label: "Eco Driving",
+              label: "label.eco_driving",
               value: window.currentQuicksaveData?.mechanical || 0,
             },
           ]);
@@ -367,11 +367,11 @@ export const tools = {
             await invoke("edit_skill_value", { skill: "mechanical", value: res.skill_eco });
 
             await loadQuicksave();
-            showToast("Skills successfully updated!", "success");
+            showToast("toasts.change_skill_points_success", "success");
           }
         } catch (err) {
           console.error("Skills update error:", err);
-          showToast("Failed to update skills!", "error");
+          showToast("toasts.change_skill_points_error", "error");
         }
       },
     },
@@ -381,23 +381,23 @@ export const tools = {
       img: "images/skillPoint.jpg",
       action: async () => {
         try {
-          const res = await openModalMulti("Show different stats!", [
+          const res = await openModalMulti("tools.profile.profile_stats.modalTextTitle", [
             {
               type: "number",
               id: "stat_recruitments",
-              label: "Recruitment Centers",
+              label: "label.recruitment_centers",
               value: window.currentProfileData?.recruitments || 0,
             },
             {
               type: "number",
               id: "stat_dealers",
-              label: "Dealers",
+              label: "label.dealers_visited",
               value: window.currentProfileData?.dealers || 0,
             },
             {
               type: "number",
               id: "stat_visited_cities",
-              label: "Visited cities",
+              label: "label.visited_cities",
               value: window.currentProfileData?.visited_cities || 0,
             },
           ]);
@@ -406,11 +406,11 @@ export const tools = {
             for (const key in res) {
               await window.applySetting(key, res[key]);
             }
-            showToast("Stats successfully updated!", "success");
+            showToast("toasts.profile_stats_success", "success");
           }
         } catch (err) {
           console.error("Stats update error:", err);
-          showToast("Failed to update stats!", "error");
+          showToast("toasts.profile_stats_error", "error");
         }
       },
     },

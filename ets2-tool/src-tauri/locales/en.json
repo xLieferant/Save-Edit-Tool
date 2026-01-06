@@ -54,7 +54,15 @@
             "trailer_license_plate_success": "Trailer license plate changed to {newValue}!",
             "trailer_license_plate_error": "Failed to change trailer license plate",
             "modify_job_weight_success": "Job weight set to {newValue} kg!",
-            "modify_job_weight_error": "Failed to set job weight"
+            "modify_job_weight_error": "Failed to set job weight",
+            "change_xp_success": "XP changed to {newValue}!",
+            "change_xp_error": "Failed to change XP",
+            "change_money_success": "Money changed to {newValue}!",
+            "change_money_error": "Failed to change money",
+            "change_skill_points_success": "Skill points changed successfully!",
+            "change_skill_points_error": "Failed to change skill points",
+            "profile_stats_success": "Profile statistics updated successfully!",
+            "profile_stats_error": "Failed to update profile statistics"
 
             
       },
@@ -112,19 +120,23 @@
             "profile": {
                   "change_xp": {
                         "title": "XP Editor",
-                        "desc": "Edit your experience points"
+                        "desc": "Edit your experience points",
+                        "modalNumberText": "Set new XP value"
                   },
                   "change_money": {
                         "title": "Money Editor",
-                        "desc": "Edit your in-game money"
+                        "desc": "Edit your in-game money",
+                        "modalNumberText": "Set new money value"
                   },
                   "change_skill_points": {
                         "title": "Skill Points",
-                        "desc": "Edit your skill points"
+                        "desc": "Edit your skill points",
+                        "modalTextTitle": "Set experience points"
                   },
                   "profile_stats": {
                         "title": "Profile Stats",
-                        "desc": "View your profile statistics"
+                        "desc": "View your profile statistics",
+                        "modalTextTitle": "Profile Statistics shown"
                   },
                   "move_mods": {
                         "title": "Move Mods",
@@ -194,6 +206,15 @@
             "engine_wear": "Engine Wear",
             "transmission_wear": "Transmission Wear",
             "cabin_wear": "Cabin Wear",
-            "chassis_wear": "Chassis Wear"
+            "chassis_wear": "Chassis Wear",
+            "adr": "ADR",
+            "long_distance": "Long Distance",
+            "heavy_cargo": "Heavy Cargo",
+            "fragile_cargo": "Fragile Cargo",
+            "just_in_time_delivery": "Just-in-Time Delivery",
+            "eco_driving": "Eco Driving",
+            "recruitment_centers": "Recruitment Centers",
+            "dealers_visited": "Dealers",
+            "visited_cities": "Visited cities"
       }
 }
