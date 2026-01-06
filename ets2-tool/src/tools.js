@@ -414,7 +414,6 @@ export const tools = {
       },
     },
     {
-      // #TODO: Convert this to a multi-modal with multiple options
       title: "Move modifications",
       desc: "Move your active Modifications from Acc1 to Acc2",
       img: "images/moveMods.png",
@@ -433,18 +432,18 @@ export const tools = {
 
         if (!choice) return;
 
-        switch (choice.action) { // TODO [X] - Right Options
+        switch (choice.action) {
           case "Move Modifications":
             if (window.handleMoveMods) {
               await window.handleMoveMods();
             }
+          break;
 
-
-          case "Move controls": // TODO [] - Not working, is not opening an Modal!
+          case "Move controls":
             if (window.handleCopyControls) {
               await window.handleCopyControls();
             }
-
+          break;
 
           default:
             console.warn("Unknown action:", choice.action);
