@@ -582,7 +582,7 @@ document.addEventListener("DOMContentLoaded", () => {
           id: "target",
           label: "Target Profile",
           value: options[0],
-          options,
+          options: options,
         },
       ]);
 
@@ -614,7 +614,7 @@ document.addEventListener("DOMContentLoaded", () => {
       );
     }
   }
-  window.handleCopyControls = handleCopyControls();
+  window.handleCopyControls = handleCopyControls;
 
   // -----------------------------
   // MOVE MODS LOGIC
