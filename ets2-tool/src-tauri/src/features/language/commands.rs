@@ -16,6 +16,8 @@ pub fn get_available_languages_command() -> Vec<LanguageInfo> {
             "en" => "English".to_string(),
             "de" => "Deutsch".to_string(),
             "es" => "Español".to_string(),
+            "fr" => "Français".to_string(),
+            "it" => "Italiano".to_string(),
             _ => code.clone(), // Clone for the fallback case
         };
         

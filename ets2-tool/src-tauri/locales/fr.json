@@ -1,0 +1,273 @@
+{
+      "app": {
+            "name": "Éditeur de sauvegarde ETS2 - Édition Alex",
+            "title": "ÉDITEUR DE SAUVEGARDE",
+            "subtitle": "pour SCS-Simulateurs"
+      },
+      "tabs": {
+            "truck": "🚛 Camion",
+            "trailer": "🚚 Remorque",
+            "profile": "💠 Profil",
+            "settings": "⚙️ Paramètres"
+      },
+      "buttons": {
+            "youtube": "🔴 YouTube",
+            "patreon": "⚠️ Patreon",
+            "github": "⚠️ GitHub"
+      },
+      "profile": {
+            "select_profile": "Sélectionner un profil",
+            "select_save": "Sélectionner une sauvegarde",
+            "clone_profile": "🧑‍🤝‍🧑",
+            "refresh": "⟳"
+      },
+      "game": {
+            "ets2": "ETS2",
+            "ats": "ATS"
+      },
+      "toasts": {
+            "language_updated": "Langue changée en français",
+            "language_loaded": "Langue chargée : français",
+            "money_updated": "Argent mis à jour avec succès",
+            "xp_updated": "XP mis à jour avec succès",
+            "skill_points_updated": "Points de compétence mis à jour avec succès",
+            "save_successful": "Sauvegarde réussie",
+            "save_failed": "Échec de la sauvegarde",
+            "profile_not_selected": "Veuillez d'abord sélectionner un profil !",
+            "clone_failed": "Échec du clonage : {error}",
+            "coming_soon": "Bientôt disponible",
+            "no_trailer_assigned_error": "Aucune remorque assignée",
+            "repair_truck_success": "Camion réparé avec succès",
+            "repair_truck_error": "Échec de la réparation du camion !",
+            "advanced_repair_success": "Réparation avancée appliquée avec succès",
+            "advanced_repair_error": "Échec de l'application de la réparation avancée",
+            "fuel_level_updated": "Niveau de carburant réglé sur {clampedValue} % !",
+            "fuel_level_error": "Échec du réglage du niveau de carburant",
+            "fuel_refuel_success": "Camion ravitaillé à 100 % !",
+            "fuel_refuel_error": "Échec du ravitaillement du camion",
+            "truck_mileage_success": "Kilométrage du camion défini à {newValue} km !",
+            "truck_mileage_error": "Échec de la modification du kilométrage du camion",
+            "truck_license_plate_success": "Plaque d'immatriculation du camion changée en {newValue} !",
+            "truck_license_plate_error": "Échec du changement de plaque d'immatriculation du camion",
+            "trailer_repair_success": "Remorque réparée avec succès",
+            "trailer_repair_error": "Échec de la réparation de la remorque",
+            "trailer_license_plate_success": "Plaque d'immatriculation de la remorque changée en {newValue} !",
+            "trailer_license_plate_error": "Échec du changement de plaque d'immatriculation de la remorque",
+            "modify_job_weight_success": "Poids de la cargaison défini à {newValue} kg !",
+            "modify_job_weight_error": "Échec de la modification du poids de la cargaison",
+            "change_xp_success": "XP changé en {newValue} !",
+            "change_xp_error": "Échec du changement d'XP",
+            "change_money_success": "Argent changé en {newValue} € !",
+            "change_money_error": "Échec du changement d'argent",
+            "change_skill_points_success": "Points de compétence modifiés avec succès !",
+            "change_skill_points_error": "Échec de la modification des points de compétence",
+            "profile_stats_success": "Statistiques du profil mises à jour avec succès !",
+            "profile_stats_error": "Échec de la mise à jour des statistiques du profil",
+            "color_theme_success": "Thème de couleur changé en {newTheme} !",
+            "color_theme_error": "Échec du changement de thème de couleur",
+            "convoy_settings_success": "Paramètres du convoi mis à jour avec succès à {newValue} !",
+            "convoy_settings_error": "Échec de la mise à jour des paramètres du convoi",
+            "language_update_error": "Échec du changement de langue",
+            "traffic_values_success": "Valeurs de trafic mises à jour : {newValue} !",
+            "traffic_values_error": "Échec de la mise à jour des valeurs de trafic",
+            "parking_doubles_success": "Stationnement double mis à jour à {newValue} !",
+            "parking_doubles_error": "Échec de la mise à jour du stationnement double",
+            "dev_tools_success": "Outils de développement mis à jour avec succès !",
+            "dev_tools_error": "Échec de la mise à jour des outils de développement",
+            "profile_loaded_select_save": "Profil chargé. Veuillez sélectionner une sauvegarde.",
+            "profile_load_error": "Le profil n'a pas pu être chargé !",
+            "scan_saves_error": "Impossible d'analyser les sauvegardes",
+            "save_loaded_success": "Sauvegarde chargée avec succès !",
+            "save_load_error": "Échec du chargement de la sauvegarde",
+            "money_saved_success": "Argent enregistré avec succès !",
+            "money_save_error": "Échec de l'enregistrement de l'argent",
+            "xp_saved_success": "XP enregistré avec succès !",
+            "xp_save_error": "Échec de l'enregistrement de l'XP",
+            "no_profile_selected": "Aucun profil sélectionné !",
+            "profile_renamed_success": "Profil renommé avec succès !",
+            "profile_rename_error": "Échec du renommage : {error}",
+            "no_source_profile_selected": "Aucun profil source sélectionné !",
+            "no_other_profiles": "Aucun autre profil disponible.",
+            "invalid_profile_selected": "Profil sélectionné invalide.",
+            "copying_controls": "Copie des contrôles en cours…",
+            "copy_controls_success": "controls.sii copié avec succès",
+            "copy_controls_error": "Échec de la copie des contrôles.",
+            "no_other_valid_profiles": "Aucun autre profil valide trouvé.",
+            "invalid_profile_selection": "Sélection de profil invalide.",
+            "moving_mods_wait": "Déplacement des mods en cours... veuillez patienter",
+            "move_mods_success": "{count} mods transférés avec succès.",
+            "move_mods_error": "Échec du déplacement des mods.",
+            "profiles_found": "Profils trouvés !",
+            "no_profiles_found": "Aucun profil trouvé !",
+            "generic_error_prefix": "Erreur : {error}",
+            "load_languages_error": "Échec du chargement des langues : {error}"
+      },
+      "tools": {
+            "truck": {
+                  "repair_truck": {
+                        "title": "Réparer le camion",
+                        "desc": "Réparez votre camion",
+                        "modalSliderText": "Réparer tous les dommages du camion ?"
+                  },
+                  "advanced_repair": {
+                        "title": "Réparation avancée",
+                        "desc": "Options de réparation avancées",
+                        "modalSliderText": "Définir les niveaux d'usure des composants du camion"
+                  },
+                  "fuel_level": {
+                        "title": "Niveau de carburant",
+                        "desc": "Modifiez votre niveau de carburant",
+                        "modalNumberText": "Régler le niveau de carburant (0 à 100) %"
+                  },
+                  "full_refuel": {
+                        "title": "Faire le plein",
+                        "desc": "Faites le plein de votre camion",
+                        "modalSliderText": "Faire le plein du camion à 100 % ?"
+                  },
+                  "truck_mileage": {
+                        "title": "Kilométrage du camion",
+                        "desc": "Modifiez le kilométrage de votre camion",
+                        "modalNumberText": "Définir la valeur du compteur kilométrique en kilomètres"
+                  },
+                  "truck_license_plate": {
+                        "title": "Plaque d'immatriculation du camion",
+                        "desc": "Modifier la plaque d'immatriculation de votre camion",
+                        "modalTextTitle": "Entrez la nouvelle plaque d'immatriculation"
+                  }
+            },
+            "trailer": {
+                  "repair_trailer": {
+                        "title": "Réparer la remorque",
+                        "desc": "Réparez votre remorque",
+                        "modalSliderText": "Réparer tous les dommages de la remorque ?"
+                  },
+                  "trailer_license_plate": {
+                        "title": "Plaque d'immatriculation de la remorque",
+                        "desc": "Modifier la plaque d'immatriculation de votre remorque",
+                        "modalTextTitle": "Entrez la nouvelle plaque d'immatriculation"
+                  },
+                  "modify_job_weight": {
+                        "title": "Modifier le poids de la cargaison",
+                        "desc": "Modifier le poids de votre cargaison actuelle",
+                        "modalNumberText": "Définir le poids de la cargaison en kilogrammes"
+                  }
+            },
+            "profile": {
+                  "change_xp": {
+                        "title": "Éditeur d'XP",
+                        "desc": "Modifiez vos points d'expérience",
+                        "modalNumberText": "Définir une nouvelle valeur d'XP"
+                  },
+                  "change_money": {
+                        "title": "Éditeur d'argent",
+                        "desc": "Modifiez votre argent dans le jeu",
+                        "modalNumberText": "Définir une nouvelle valeur d'argent"
+                  },
+                  "change_skill_points": {
+                        "title": "Points de compétence",
+                        "desc": "Modifiez vos points de compétence",
+                        "modalTextTitle": "Définir les points de compétence"
+                  },
+                  "profile_stats": {
+                        "title": "Statistiques du profil",
+                        "desc": "Afficher les statistiques de votre profil",
+                        "modalTextTitle": "Statistiques du profil"
+                  },
+                  "move_mods": {
+                        "title": "Déplacer des mods ou contrôles",
+                        "desc": "Déplacer les mods et les contrôles entre profils",
+                        "modalTextTitle": "Déplacer les mods/contrôles"
+                  }
+            },
+            "settings": {
+                  "color_theme": {
+                        "title": "Thème de couleur",
+                        "desc": "Changer le thème de couleur de l'application",
+                        "modalTextTitle": "Sélectionner un thème de couleur"
+                  },
+                  "convoy": {
+                        "title": "Paramètres du convoi",
+                        "desc": "Configurer l'intégration de Convoy",
+                        "modalTextTitle": "Activer la prise en charge du convoi « 128 »"
+                  },
+                  "language": {
+                        "title": "Langue",
+                        "desc": "Changez votre langue",
+                        "modalTextTitle": "Sélectionner votre langue"
+                  },
+                  "traffic_values": {
+                        "title": "Valeurs du trafic",
+                        "desc": "Modifier la densité et la vitesse du trafic",
+                        "modalTextTitle": "Définir la densité du trafic (0-10)"
+                  },
+                  "parking_doubles": {
+                        "title": "Stationnement double",
+                        "desc": "Activer ou désactiver le stationnement double",
+                        "modalTextTitle": "Activer/désactiver la fonctionnalité de stationnement double"
+                  },
+                  "dev_tools": {
+                        "title": "Outils de développement",
+                        "desc": "Accéder aux outils de développement",
+                        "modalTextTitle": "Définir les paramètres de développement"
+                  }
+            },
+            "language_picker": {
+                  "title": "Langue",
+                  "desc": "Changez votre langue"
+            }
+      },
+      "errors": {
+            "failed_to_load_translations": "Échec du chargement des traductions",
+            "failed_to_save_language": "Échec de l'enregistrement des préférences de langue",
+            "failed_to_load_language": "Échec du chargement des préférences de langue",
+            "invalid_language": "Langue sélectionnée invalide",
+            "repair_truck": "Erreur de réparation du camion : {error}",
+            "fuel_level": "Erreur de niveau de carburant : {error}"
+      },
+      "modals": {
+            "open": "Ouvrir",
+            "confirm": "Confirmer",
+            "cancel": "Annuler",
+            "close": "Fermer",
+            "apply": "Appliquer",
+            "clone_profile": {
+                  "title": "Cloner le profil",
+                  "source": "Source : {profileName}",
+                  "new_name_placeholder": "Nouveau nom de profil",
+                  "create_backup": "Créer une sauvegarde (.zip)",
+                  "replace_hex": "Remplacer les identifiants hexadécimaux (recommandé)",
+                  "replace_text": "Remplacer les noms de texte",
+                  "clone_button": "Cloner",
+                  "cloning_button": "Clonage en cours...",
+                  "validation_checking": "Vérification en cours...",
+                  "validation_valid": "✔ {message}",
+                  "validation_invalid": "❌ {message}"
+            }
+      },
+      "label": {
+            "engine_wear": "Usure du moteur",
+            "transmission_wear": "Usure de la transmission",
+            "cabin_wear": "Usure de la cabine",
+            "chassis_wear": "Usure du châssis",
+            "adr": "ADR",
+            "long_distance": "Longue distance",
+            "heavy_cargo": "Cargaison lourde",
+            "fragile_cargo": "Cargaison fragile",
+            "just_in_time_delivery": "Livraison juste-à-temps",
+            "eco_driving": "Conduite écologique",
+            "recruitment_centers": "Centres de recrutement",
+            "dealers_visited": "Concessionnaires visités",
+            "visited_cities": "Villes visitées",
+            "action_move_mods": "Action",
+            "value_move_mods": "Déplacer des mods ou contrôles",
+            "label_move_mods": "Déplacer les mods",
+            "label_move_controls": "Déplacer les contrôles",
+            "label_theme": "Thème",
+            "label_color_theme_dark": "Sombre",
+            "label_color_theme_light": "Clair",
+            "label_color_theme_neon": "Néon",
+            "label_language": "Langue",
+            "label_developer": "Développeur",
+            "label_console": "Console"
+      }
+}
