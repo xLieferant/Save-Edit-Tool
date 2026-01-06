@@ -62,7 +62,18 @@
             "change_skill_points_success": "Skill points changed successfully!",
             "change_skill_points_error": "Failed to change skill points",
             "profile_stats_success": "Profile statistics updated successfully!",
-            "profile_stats_error": "Failed to update profile statistics"
+            "profile_stats_error": "Failed to update profile statistics",
+            "color_theme_success": "Color theme changed to {newTheme}!",
+            "color_theme_error": "Failed to change color theme",
+            "convoy_settings_success": "Convoy settings updated successfully to {newValue}!",
+            "convoy_settings_error": "Failed to update convoy settings",
+            "language_update_error": "Failed to change language",
+            "traffic_values_success": "Traffic values updated to {newValue}!",
+            "traffic_values_error": "Failed to update traffic values",
+            "parking_doubles_success": "Parking doubles updated to {newValue}!",
+            "parking_doubles_error": "Failed to update parking doubles",
+            "dev_tools_success": "Developer tools updated successfully!",
+            "dev_tools_error": "Failed to update developer tools"
 
             
       },
@@ -139,34 +150,41 @@
                         "modalTextTitle": "Profile Statistics shown"
                   },
                   "move_mods": {
-                        "title": "Move Mods",
-                        "desc": "Move mods between profiles"
+                        "title": "Move Modifications or Controls",
+                        "desc": "Move mods and controls between profiles",
+                        "modalTextTitle": "Move Mods/Controls"
                   }
             },
             "settings": {
                   "color_theme": {
-                        "title": "Color Scheme",
-                        "desc": "Change the app color scheme"
+                        "title": "Color theme",
+                        "desc": "Change the app color theme",
+                        "modalTextTitle": "Select a color theme"
                   },
                   "convoy": {
                         "title": "Convoy Settings",
-                        "desc": "Configure Convoy integration"
+                        "desc": "Configure Convoy integration",
+                        "modalTextTitle": "Enable '128' Convoy support"
                   },
                   "language": {
                         "title": "Language",
-                        "desc": "Change your language"
+                        "desc": "Change your language",
+                        "modalTextTitle": "Select your language"
                   },
                   "traffic_values": {
                         "title": "Traffic Values",
-                        "desc": "Edit traffic density and speed"
+                        "desc": "Edit traffic density and speed",
+                        "modalTextTitle": "Set traffic density (0-10)"
                   },
                   "parking_doubles": {
                         "title": "Parking Doubles",
-                        "desc": "Enable or disable parking doubles"
+                        "desc": "Enable or disable parking doubles",
+                        "modalTextTitle": "Toggle parking doubles feature"
                   },
                   "dev_tools": {
                         "title": "Developer Tools",
-                        "desc": "Access developer tools"
+                        "desc": "Access developer tools",
+                        "modalTextTitle": "Set Developer Settings"
                   }
             },
             "language_picker": {
@@ -215,6 +233,17 @@
             "eco_driving": "Eco Driving",
             "recruitment_centers": "Recruitment Centers",
             "dealers_visited": "Dealers",
-            "visited_cities": "Visited cities"
+            "visited_cities": "Visited cities",
+            "action_move_mods": "Action",
+            "value_move_mods": "Move Modifications or Controls",
+            "label_move_mods": "Move Modifications",
+            "label_move_controls": "Move controls",
+            "label_theme": "Theme",
+            "label_color_theme_dark": "dark",
+            "label_color_theme_light": "light",
+            "label_color_theme_neon": "neon",
+            "label_language": "Language",
+            "label_developer": "Developer",
+            "label_console": "Console"
       }
 }
