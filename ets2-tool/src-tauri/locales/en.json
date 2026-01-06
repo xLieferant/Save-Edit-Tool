@@ -35,21 +35,31 @@
             "save_failed": "Save failed",
             "profile_not_selected": "Please select a profile first!",
             "clone_failed": "Clone failed: {error}",
-            "coming_soon": "Coming Soon"
+            "coming_soon": "Coming Soon",
+            "no_trailer_assigned_error": "No trailer assigned to you",
+            "repair_truck_success": "Truck repaired successfully",
+            "repair_truck_error": "Failed to repair truck!",
+            "advanced_repair_success": "Advanced repair applied successfully",
+            "advanced_repair_error": "Failed to apply advanced repair",
+            "fuel_level_updated": "Fuel level set to ${clampedValue}%!",
+            "full_refuel_success": "Refuel successfully"
       },
       "tools": {
             "truck": {
                   "repair_truck": {
                         "title": "Repair Truck",
-                        "desc": "Repair your truck"
+                        "desc": "Repair your truck",
+                        "modalSliderText": "Repair all truck damage?" 
                   },
                   "advanced_repair": {
                         "title": "Advanced Repair",
-                        "desc": "Advanced repair options"
+                        "desc": "Advanced repair options",
+                        "modalSliderText": "Set wear levels for truck components"
                   },
                   "fuel_level": {
                         "title": "Fuel Level",
-                        "desc": "Edit your fuel level"
+                        "desc": "Edit your fuel level",
+                        "modalNumberText": "Set fuel level (0 to max)%"
                   },
                   "full_refuel": {
                         "title": "Full Refuel",
@@ -136,7 +146,8 @@
             "failed_to_load_translations": "Failed to load translations",
             "failed_to_save_language": "Failed to save language preference",
             "failed_to_load_language": "Failed to load language preference",
-            "invalid_language": "Invalid language selected"
+            "invalid_language": "Invalid language selected",
+            "repair_truck": "Repair truck error: {error}"
       },
       "modals": {
             "open": "Open",
@@ -157,5 +168,11 @@
                   "validation_valid": "✔ {message}",
                   "validation_invalid": "❌ {message}"
             }
+      },
+      "label": {
+            "engine_wear": "Engine Wear",
+            "transmission_wear": "Transmission Wear",
+            "cabin_wear": "Cabin Wear",
+            "chassis_wear": "Chassis Wear"
       }
 }
