@@ -1,14 +1,14 @@
 {
       "app": {
-            "name": "ETS2 Speicherdaten-Editor - Alex Edition",
-            "title": "SPEICHEREDITOR",
-            "subtitle": "für SCS - xLieferant"
+            "name": "ETS2 Save Editor – Alex Edition",
+            "title": "SAVE EDITOR",
+            "subtitle": "für SCS – xLieferant"
       },
       "tabs": {
-            "truck": "🚛Truck",
-            "trailer": "🚚Anhänger",
-            "profile": "💠Profil",
-            "settings": "⚙️Einstellungen"
+            "truck": "🚛 LKW",
+            "trailer": "🚚 Anhänger",
+            "profile": "💠 Profil",
+            "settings": "⚙️ Einstellungen"
       },
       "buttons": {
             "youtube": "🔴 YouTube",
@@ -16,8 +16,8 @@
             "github": "⚠️ GitHub"
       },
       "profile": {
-            "select_profile": "Wähle ein Profil",
-            "select_save": "Wähle einen Spielstand",
+            "select_profile": "Profil auswählen",
+            "select_save": "Spielstand auswählen",
             "clone_profile": "🧑‍🤝‍🧑",
             "refresh": "⟳"
       },
@@ -26,48 +26,176 @@
             "ats": "ATS"
       },
       "toasts": {
-            "language_updated": "Sprache auf Deutsch geändert",
+            "language_updated": "Sprache wurde auf Deutsch geändert",
             "language_loaded": "Sprache geladen: Deutsch",
             "money_updated": "Geld erfolgreich aktualisiert",
             "xp_updated": "XP erfolgreich aktualisiert",
             "skill_points_updated": "Fähigkeitspunkte erfolgreich aktualisiert",
-            "save_successful": "Erfolgreich gespeichert",
+            "save_successful": "Speichern erfolgreich",
             "save_failed": "Speichern fehlgeschlagen",
-            "profile_not_selected": "Bitte wähle zuerst ein Profil aus!",
+            "profile_not_selected": "Bitte zuerst ein Profil auswählen!",
             "clone_failed": "Klonen fehlgeschlagen: {error}",
-            "coming_soon": "Kommt bald"
+            "coming_soon": "Kommt bald",
+            "no_trailer_assigned_error": "Dir ist kein Anhänger zugewiesen",
+            "repair_truck_success": "LKW erfolgreich repariert",
+            "repair_truck_error": "LKW konnte nicht repariert werden!",
+            "advanced_repair_success": "Erweiterte Reparatur erfolgreich angewendet",
+            "advanced_repair_error": "Erweiterte Reparatur fehlgeschlagen",
+            "fuel_level_updated": "Tankfüllstand auf {clampedValue}% gesetzt!",
+            "fuel_level_error": "Tankfüllstand konnte nicht gesetzt werden",
+            "fuel_refuel_success": "LKW erfolgreich auf 100% betankt!",
+            "fuel_refuel_error": "Betanken des LKWs fehlgeschlagen",
+            "truck_mileage_success": "Kilometerstand auf {newValue} km gesetzt!",
+            "truck_mileage_error": "Kilometerstand konnte nicht geändert werden",
+            "truck_license_plate_success": "Kennzeichen des LKWs auf {newValue} geändert!",
+            "truck_license_plate_error": "Kennzeichen des LKWs konnte nicht geändert werden",
+            "trailer_repair_success": "Anhänger erfolgreich repariert",
+            "trailer_repair_error": "Anhänger konnte nicht repariert werden",
+            "trailer_license_plate_success": "Kennzeichen des Anhängers auf {newValue} geändert!",
+            "trailer_license_plate_error": "Kennzeichen des Anhängers konnte nicht geändert werden",
+            "modify_job_weight_success": "Auftragsgewicht auf {newValue} kg gesetzt!",
+            "modify_job_weight_error": "Auftragsgewicht konnte nicht geändert werden",
+            "change_xp_success": "XP auf {newValue} geändert!",
+            "change_xp_error": "XP konnten nicht geändert werden",
+            "change_money_success": "Geld auf {newValue} geändert!",
+            "change_money_error": "Geld konnte nicht geändert werden",
+            "change_skill_points_success": "Fähigkeitspunkte erfolgreich geändert!",
+            "change_skill_points_error": "Fähigkeitspunkte konnten nicht geändert werden",
+            "profile_stats_success": "Profilstatistiken erfolgreich aktualisiert!",
+            "profile_stats_error": "Profilstatistiken konnten nicht aktualisiert werden",
+            "color_theme_success": "Farbtheme auf {newTheme} geändert!",
+            "color_theme_error": "Farbtheme konnte nicht geändert werden",
+            "convoy_settings_success": "Konvoi-Einstellungen erfolgreich auf {newValue} gesetzt!",
+            "convoy_settings_error": "Konvoi-Einstellungen konnten nicht aktualisiert werden",
+            "language_update_error": "Sprache konnte nicht geändert werden",
+            "traffic_values_success": "Verkehrswerte auf {newValue} gesetzt!",
+            "traffic_values_error": "Verkehrswerte konnten nicht geändert werden",
+            "parking_doubles_success": "Doppelte Parkplätze auf {newValue} gesetzt!",
+            "parking_doubles_error": "Doppelte Parkplätze konnten nicht geändert werden",
+            "dev_tools_success": "Entwicklertools erfolgreich aktualisiert!",
+            "dev_tools_error": "Entwicklertools konnten nicht aktualisiert werden"
       },
       "tools": {
+            "truck": {
+                  "repair_truck": {
+                        "title": "LKW reparieren",
+                        "desc": "Repariere deinen LKW",
+                        "modalSliderText": "Alle Schäden am LKW reparieren?"
+                  },
+                  "advanced_repair": {
+                        "title": "Erweiterte Reparatur",
+                        "desc": "Erweiterte Reparaturoptionen",
+                        "modalSliderText": "Verschleißwerte der Komponenten festlegen"
+                  },
+                  "fuel_level": {
+                        "title": "Tankfüllstand",
+                        "desc": "Tankfüllstand bearbeiten",
+                        "modalNumberText": "Tankfüllstand festlegen (0 bis 100)%"
+                  },
+                  "full_refuel": {
+                        "title": "Volltanken",
+                        "desc": "LKW vollständig auftanken",
+                        "modalSliderText": "LKW auf 100% auftanken?"
+                  },
+                  "truck_mileage": {
+                        "title": "Kilometerstand",
+                        "desc": "Kilometerstand bearbeiten",
+                        "modalNumberText": "Kilometerstand in Kilometern festlegen"
+                  },
+                  "truck_license_plate": {
+                        "title": "LKW-Kennzeichen",
+                        "desc": "Kennzeichen des LKWs bearbeiten",
+                        "modalTextTitle": "Neues Kennzeichen eingeben"
+                  }
+            },
+            "trailer": {
+                  "repair_trailer": {
+                        "title": "Anhänger reparieren",
+                        "desc": "Repariere deinen Anhänger",
+                        "modalSliderText": "Alle Schäden am Anhänger reparieren?"
+                  },
+                  "trailer_license_plate": {
+                        "title": "Anhänger-Kennzeichen",
+                        "desc": "Kennzeichen des Anhängers bearbeiten",
+                        "modalTextTitle": "Neues Kennzeichen eingeben"
+                  },
+                  "modify_job_weight": {
+                        "title": "Auftragsgewicht ändern",
+                        "desc": "Aktuelles Auftragsgewicht bearbeiten",
+                        "modalNumberText": "Auftragsgewicht in Kilogramm festlegen"
+                  }
+            },
+            "profile": {
+                  "change_xp": {
+                        "title": "EP-Editor",
+                        "desc": "Erfahrungspunkte bearbeiten",
+                        "modalNumberText": "Neuen EP-Wert festlegen"
+                  },
+                  "change_money": {
+                        "title": "Geld-Editor",
+                        "desc": "Ingame-Geld bearbeiten",
+                        "modalNumberText": "Neuen Geldbetrag festlegen"
+                  },
+                  "change_skill_points": {
+                        "title": "Fähigkeitspunkte",
+                        "desc": "Fähigkeitspunkte bearbeiten",
+                        "modalTextTitle": "Fähigkeitspunkte festlegen"
+                  },
+                  "profile_stats": {
+                        "title": "Profilstatistiken",
+                        "desc": "Profilstatistiken anzeigen",
+                        "modalTextTitle": "Profilstatistiken"
+                  },
+                  "move_mods": {
+                        "title": "Mods oder Steuerung verschieben",
+                        "desc": "Mods und Steuerungen zwischen Profilen verschieben",
+                        "modalTextTitle": "Mods / Steuerung verschieben"
+                  }
+            },
+            "settings": {
+                  "color_theme": {
+                        "title": "Farbtheme",
+                        "desc": "Farbtheme der App ändern",
+                        "modalTextTitle": "Farbtheme auswählen"
+                  },
+                  "convoy": {
+                        "title": "Konvoi-Einstellungen",
+                        "desc": "Konvoi-Integration konfigurieren",
+                        "modalTextTitle": "„128“-Konvoi-Unterstützung aktivieren"
+                  },
+                  "language": {
+                        "title": "Sprache",
+                        "desc": "Sprache ändern",
+                        "modalTextTitle": "Sprache auswählen"
+                  },
+                  "traffic_values": {
+                        "title": "Verkehrswerte",
+                        "desc": "Verkehrsdichte und -geschwindigkeit anpassen",
+                        "modalTextTitle": "Verkehrsdichte festlegen (0–10)"
+                  },
+                  "parking_doubles": {
+                        "title": "Doppelte Parkplätze",
+                        "desc": "Doppelte Parkplätze aktivieren oder deaktivieren",
+                        "modalTextTitle": "Funktion für doppelte Parkplätze umschalten"
+                  },
+                  "dev_tools": {
+                        "title": "Entwicklertools",
+                        "desc": "Zugriff auf Entwicklertools",
+                        "modalTextTitle": "Entwicklereinstellungen festlegen"
+                  }
+            },
             "language_picker": {
                   "title": "Sprache",
-                  "desc": "Ändere deine Sprache"
-            },
-            "money": {
-                  "title": "Geld-Editor",
-                  "desc": "Bearbeite dein Spielgeld"
-            },
-            "xp": {
-                  "title": "XP-Editor",
-                  "desc": "Bearbeite deine Erfahrungspunkte"
-            },
-            "skill_points": {
-                  "title": "Fähigkeitspunkte",
-                  "desc": "Bearbeite deine Fähigkeitspunkte"
-            },
-            "repair": {
-                  "title": "Fahrzeug reparieren",
-                  "desc": "Repariere dein Fahrzeug"
-            },
-            "advanced_repair": {
-                  "title": "Erweiterte Reparatur",
-                  "desc": "Erweiterte Reparaturoptionen"
+                  "desc": "Sprache ändern"
             }
       },
       "errors": {
             "failed_to_load_translations": "Übersetzungen konnten nicht geladen werden",
             "failed_to_save_language": "Spracheinstellung konnte nicht gespeichert werden",
             "failed_to_load_language": "Spracheinstellung konnte nicht geladen werden",
-            "invalid_language": "Ungültige Sprache ausgewählt"
+            "invalid_language": "Ungültige Sprache ausgewählt",
+            "repair_truck": "Fehler beim Reparieren des LKWs: {error}",
+            "fuel_level": "Fehler beim Tankfüllstand:"
       },
       "modals": {
             "open": "Öffnen",
@@ -80,13 +208,39 @@
                   "source": "Quelle: {profileName}",
                   "new_name_placeholder": "Neuer Profilname",
                   "create_backup": "Backup erstellen (.zip)",
-                  "replace_hex": "Hex-Identifikatoren ersetzen (Empfohlen)",
+                  "replace_hex": "Hex-IDs ersetzen (empfohlen)",
                   "replace_text": "Textnamen ersetzen",
                   "clone_button": "Klonen",
                   "cloning_button": "Klonen...",
-                  "validation_checking": "Prüfen...",
+                  "validation_checking": "Überprüfung...",
                   "validation_valid": "✔ {message}",
                   "validation_invalid": "❌ {message}"
             }
+      },
+      "label": {
+            "engine_wear": "Motorverschleiß",
+            "transmission_wear": "Getriebeverschleiß",
+            "cabin_wear": "Kabinenverschleiß",
+            "chassis_wear": "Fahrgestellverschleiß",
+            "adr": "ADR",
+            "long_distance": "Langstrecke",
+            "heavy_cargo": "Schwergut",
+            "fragile_cargo": "Empfindliche Fracht",
+            "just_in_time_delivery": "Just-in-Time-Lieferung",
+            "eco_driving": "Ökologisches Fahren",
+            "recruitment_centers": "Personalagenturen",
+            "dealers_visited": "Händler",
+            "visited_cities": "Besuchte Städte",
+            "action_move_mods": "Aktion",
+            "value_move_mods": "Mods oder Steuerung verschieben",
+            "label_move_mods": "Mods verschieben",
+            "label_move_controls": "Steuerung verschieben",
+            "label_theme": "Thema",
+            "label_color_theme_dark": "dunkel",
+            "label_color_theme_light": "hell",
+            "label_color_theme_neon": "neon",
+            "label_language": "Sprache",
+            "label_developer": "Entwickler",
+            "label_console": "Konsole"
       }
 }
