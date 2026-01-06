@@ -57,7 +57,7 @@
             "modify_job_weight_error": "Failed to set job weight",
             "change_xp_success": "XP changed to {newValue}!",
             "change_xp_error": "Failed to change XP",
-            "change_money_success": "Money changed to {newValue}!",
+            "change_money_success": "Money changed to {newValue}€!",
             "change_money_error": "Failed to change money",
             "change_skill_points_success": "Skill points changed successfully!",
             "change_skill_points_error": "Failed to change skill points",
