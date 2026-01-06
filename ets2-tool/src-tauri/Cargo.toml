@@ -1,6 +1,6 @@
 [package]
 name = "ets2-tool"
-version = "0.3.2"
+version = "0.4.0"
 description = "Save-Edit Tool for ETS2"
 authors = ["xLieferant"]
 edition = "2024"
