@@ -413,43 +413,45 @@ export const tools = {
         }
       },
     },
-    { // #TODO! I need to convert this as an multiModal! Where I can select diff. Options
+    {
+      // #TODO: Convert this to a multi-modal with multiple options
       title: "Move modifications",
       desc: "Move your active Modifications from Acc1 to Acc2",
       img: "images/moveMods.png",
+      disabled: false,
+
       action: async () => {
         const choice = await openModalMulti("Move Modifications", [
           {
             type: "dropdown",
             id: "action",
             label: "Action",
-            value: "Move",
+            value: "Move Modifications",
             options: ["Move Modifications", "Move controls"],
           },
         ]);
-          if (!choice) return;
 
-          switch (choice.action) {
-            case "Move Modifications":
+        if (!choice) return;
+
+        switch (choice.action) { // TODO [X] - Right Options
+          case "Move Modifications":
+            if (window.handleMoveMods) {
               await window.handleMoveMods();
-              break;
+            }
 
-            case "Move controls":
+
+          case "Move controls": // TODO [] - Not working, is not opening an Modal!
+            if (window.handleCopyControls) {
               await window.handleCopyControls();
-              break;
-          }
-        });
-        // try {
-        //   if (window.handleMoveMods) {
-        //     await window.handleMoveMods();
-        //   }
-        // } catch (err) {
-        //   console.error("Move mods error:", err);
-        //   showToast("Failed to move modifications!", "error");
-        // }
-      }
-      disabled: false,
-    }
+            }
+
+
+          default:
+            console.warn("Unknown action:", choice.action);
+        }
+      },
+    },
+  ],
 
   settings: [
     {
