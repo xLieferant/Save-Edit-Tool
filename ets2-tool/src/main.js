@@ -516,7 +516,7 @@ document.addEventListener("DOMContentLoaded", () => {
         id: "action",
         label: "Action",
         value: "Duplicate",
-        options: ["Duplicate", "Rename", "Copy controls"],
+        options: ["Duplicate", "Rename"],
       },
     ]);
 
@@ -529,10 +529,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       case "Rename":
         await handleProfileRename();
-        break;
-
-      case "Copy controls":
-        await handleCopyControls();
         break;
     }
   });
@@ -618,7 +614,7 @@ document.addEventListener("DOMContentLoaded", () => {
       );
     }
   }
-
+  window.handleCopyControls = handleCopyControls();
 
   // -----------------------------
   // MOVE MODS LOGIC
