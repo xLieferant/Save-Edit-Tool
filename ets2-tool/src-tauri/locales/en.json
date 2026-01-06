@@ -41,8 +41,22 @@
             "repair_truck_error": "Failed to repair truck!",
             "advanced_repair_success": "Advanced repair applied successfully",
             "advanced_repair_error": "Failed to apply advanced repair",
-            "fuel_level_updated": "Fuel level set to ${clampedValue}%!",
-            "full_refuel_success": "Refuel successfully"
+            "fuel_level_updated": "Fuel level set to {clampedValue}% !",
+            "fuel_level_error": "Failed to set fuel level",
+            "fuel_refuel_success": "Truck successfully refueled to 100%!",
+            "fuel_refuel_error": "Failed to refuel truck",
+            "truck_mileage_success": "Truck mileage set to {newValue} km!",
+            "truck_mileage_error": "Failed to set truck odometer",
+            "truck_license_plate_success": "Truck license plate changed to {newValue}!",
+            "truck_license_plate_error": "Failed to change truck license plate",
+            "trailer_repair_success": "Trailer repaired successfully",
+            "trailer_repair_error": "Failed to repair trailer",
+            "trailer_license_plate_success": "Trailer license plate changed to {newValue}!",
+            "trailer_license_plate_error": "Failed to change trailer license plate",
+            "modify_job_weight_success": "Job weight set to {newValue} kg!",
+            "modify_job_weight_error": "Failed to set job weight"
+
+            
       },
       "tools": {
             "truck": {
@@ -59,34 +73,40 @@
                   "fuel_level": {
                         "title": "Fuel Level",
                         "desc": "Edit your fuel level",
-                        "modalNumberText": "Set fuel level (0 to max)%"
+                        "modalNumberText": "Set fuel level (0 to 100)%"
                   },
                   "full_refuel": {
                         "title": "Full Refuel",
-                        "desc": "Refuel your truck to full"
+                        "desc": "Refuel your truck to full",
+                        "modalSliderText": "Refuel truck to 100%?"
                   },
                   "truck_mileage": {
                         "title": "Truck Mileage",
-                        "desc": "Edit your truck mileage"
+                        "desc": "Edit your truck mileage",
+                        "modalNumberText": "Set odometer value in kilometers"
                   },
                   "truck_license_plate": {
                         "title": "Truck License Plate",
-                        "desc": "Edit your truck license plate"
+                        "desc": "Edit your truck license plate",
+                        "modalTextTitle": "Enter new license plate"
                   }
             },
 
             "trailer": {
                   "repair_trailer": {
                         "title": "Repair Trailer",
-                        "desc": "Repair your trailer"
+                        "desc": "Repair your trailer",
+                        "modalSliderText": "Repair all trailer damage?"
                   },
                   "trailer_license_plate": {
                         "title": "Trailer License Plate",
-                        "desc": "Edit your trailer license plate"
+                        "desc": "Edit your trailer license plate",
+                        "modalTextTitle": "Enter new license plate"
                   },
                   "modify_job_weight": {
                         "title": "Modify Job Weight",
-                        "desc": "Edit your current job weight"
+                        "desc": "Edit your current job weight",
+                        "modalNumberText": "Set job weight in kilograms"
                   }
             },
             "profile": {
@@ -147,7 +167,8 @@
             "failed_to_save_language": "Failed to save language preference",
             "failed_to_load_language": "Failed to load language preference",
             "invalid_language": "Invalid language selected",
-            "repair_truck": "Repair truck error: {error}"
+            "repair_truck": "Repair truck error: {error}",
+            "fuel_level": "Fuel level error:"
       },
       "modals": {
             "open": "Open",

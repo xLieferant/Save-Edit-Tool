@@ -116,11 +116,11 @@ export const tools = {
             await invoke("set_player_truck_fuel", { level: finalValue });
             await loadAllTrucks();
             // showToast(`Fuel level set to ${clampedValue}%!`, "success");
-            showToast("toasts.fuel_level_updated", "success");
+            showToast("toasts.fuel_level_updated", { clampedValue }, "success");
           }
         } catch (err) {
-          console.error("Fuel level error:", err);
-          showToast("Failed to change fuel level!", "error");
+          console.error("errors.fuel_level", err);
+          showToast("toasts.fuel_level_error", "error");
         }
       },
       disabled: false,
@@ -131,58 +131,58 @@ export const tools = {
       img: "images/gasstation.jpg",
       action: async () => {
         try {
-          const shouldRefuel = await openModalSlider("Refuel the truck completely?", 0);
+          const shouldRefuel = await openModalSlider("tools.truck.fuel_refuel.modalSliderText", 0);
           if (shouldRefuel) {
             await invoke("refuel_player_truck");
             await loadAllTrucks();
-            showToast("Truck successfully refueled to 100%!", "success");
+            showToast("toasts.fuel_refuel_success", "success");
           }
         } catch (err) {
           console.error("Refuel error:", err);
-          showToast("Failed to refuel truck!", "error");
+          showToast("toasts.fuel_refuel_error", "error");
         }
       },
       disabled: false,
     },
     {
-      title: "tools.truck.mileage.title",
-      desc: "tools.truck.mileage.desc",
+      title: "tools.truck.truck_mileage.title",
+      desc: "tools.truck.truck_mileage.desc",
       img: "images/odometer.png",
       action: async () => {
         try {
           const newValue = await openModalNumber(
-            "Change your odometer",
+            "tools.truck.truck_mileage.modalNumberText",
             window.playerTruck?.odometer || 0
           );
           if (newValue !== null) {
             await invoke("edit_truck_odometer", { value: newValue });
             await loadAllTrucks();
-            showToast(`Odometer set to ${newValue.toLocaleString()} km!`, "success");
+            showToast("toasts.truck_mileage_success", { newValue }, "success");
           }
         } catch (err) {
           console.error("Odometer error:", err);
-          showToast("Failed to change odometer!", "error");
+          showToast("toasts.truck_mileage_error", "error");
         }
       },
     },
     {
-      title: "tools.truck.license_plate.title",
-      desc: "tools.truck.license_plate.desc",
+      title: "tools.truck.truck_license_plate.title",
+      desc: "tools.truck.truck_license_plate.desc",
       img: "images/trailer_license.jpg",
       action: async () => {
         try {
           const newValue = await openModalText(
-            "Change your license plate",
+            "tools.truck.truck_license_plate.modalTextTitle",
             window.extractPlateText(window.playerTruck?.license_plate)
           );
           if (newValue !== null) {
             await invoke("set_player_truck_license_plate", { plate: newValue });
             await loadAllTrucks();
-            showToast(`License plate changed to "${newValue}"!`, "success");
+            showToast("toasts.truck_license_plate_success", { newValue }, "success");
           }
         } catch (err) {
           console.error("License plate error:", err);
-          showToast("Failed to change license plate!", "error");
+          showToast("toasts.truck_license_plate_error", "error");
         }
       },
     },
@@ -190,20 +190,20 @@ export const tools = {
 
   trailer: [
     {
-      title: "tools.trailer.repair.title",
-      desc: "tools.trailer.repair.desc",
+      title: "tools.trailer.repair_trailer.title",
+      desc: "tools.trailer.repair_trailer.desc",
       img: "images/trailerRepair.jpg",
       action: trailerActionGuard(async () => {
         try {
-          const shouldRepair = await openModalSlider("Repair all trailer damage?", 0);
+          const shouldRepair = await openModalSlider("tools.trailer.repair_trailer.modalSliderText", 0);
           if (shouldRepair) {
             await invoke("repair_player_trailer");
             await loadAllTrailers();
-            showToast("Trailer successfully repaired!", "success");
+            showToast("toasts.repair_trailer_success", "success");
           }
         } catch (err) {
           console.error("Repair trailer error:", err);
-          showToast("Failed to repair trailer!", "error");
+          showToast("toasts.repair_trailer_error", "error");
         }
       }),
       disabled: false,
@@ -215,39 +215,39 @@ export const tools = {
       action: trailerActionGuard(async () => {
         try {
           const newValue = await openModalText(
-            "Change trailer license",
+            "tools.trailer.trailer_license_plate.modalTextTitle",
             window.extractPlateText(window.playerTrailer?.license_plate)
           );
           if (newValue !== null) {
             await invoke("set_player_trailer_license_plate", { plate: newValue });
             await loadAllTrailers();
-            showToast(`Trailer license plate changed to "${newValue}"!`, "success");
+            showToast("toasts.trailer_license_plate_success", { newValue }, "success");
           }
         } catch (err) {
           console.error("Trailer license plate error:", err);
-          showToast("Failed to change trailer license plate!", "error");
+          showToast("toasts.trailer_license_plate_error", "error");
         }
       }),
       disabled: false,
     },
     {
-      title: "tools.trailer.job_weight.title",
-      desc: "tools.trailer.job_weight.desc",
+      title: "tools.trailer.modify_job_weight.title",
+      desc: "tools.trailer.modify_job_weight.desc",
       img: "images/comingsoon.png",
       action: trailerActionGuard(async () => {
         try {
           const newValue = await openModalNumber(
-            "Modify job weight (kg)",
+            "tools.trailer.modify_job_weight.modalNumberText",
             window.playerTrailer?.cargo_mass || 0
           );
           if (newValue !== null) {
             await invoke("set_player_trailer_cargo_mass", { mass: newValue });
             await loadAllTrailers();
-            showToast(`Cargo mass set to ${newValue.toLocaleString()} kg!`, "success");
+            showToast("toasts.modify_job_weight_success", { newValue }, "success");
           }
         } catch (err) {
           console.error("Cargo mass error:", err);
-          showToast("Failed to change cargo mass!", "error");
+          showToast("toasts.modify_job_weight_error", "error");
         }
       }),
       disabled: false,
