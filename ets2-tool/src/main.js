@@ -10,8 +10,8 @@ window.invoke = invoke; // global verfügbar
 // -----------------------------
 // TOAST-FUNKTION
 // -----------------------------
-window.showToast = async function (messageOrKey, type = "info") {
-  const message = await t(messageOrKey); // Translate the key
+window.showToast = async function (messageOrKey, options = {}, type = "info") {
+  const message = await t(messageOrKey, options); // Translate the key
 
   const toast = document.createElement("div");
   toast.className = `toast toast-${type}`;
@@ -826,9 +826,16 @@ async function showLanguagePicker() { // #FIXME <-- Remove this code, we're usin
 // }
 
 // Helper function to get translations in JavaScript
-async function t(key) {
+async function t(key, params = {}) {
   try {
-    return await invoke('translate_command', { key });
+    let text = await invoke('translate_command', { key });
+
+    // einfache Platzhalter-Ersetzung
+    for (const [k, v] of Object.entries(params)) {
+      text = text.replaceAll(`{${k}}`, String(v));
+    }
+
+    return text;
   } catch (error) {
     console.error('Translation error:', error);
     return key;
