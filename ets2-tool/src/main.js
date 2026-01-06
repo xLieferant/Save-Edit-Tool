@@ -281,12 +281,12 @@ document.addEventListener("DOMContentLoaded", () => {
       window.playerTrailer = null;
 
       profileStatus.textContent = "Profile loaded. Please select a save.";
-      showToast("Profile loaded. Please select a save game.", "info");
+      showToast("toasts.profile_loaded_select_save", {}, "info");
       loadTools(activeTab);
     } catch (err) {
       console.error(err);
       profileStatus.textContent = "Error loading profile";
-      showToast("Profile could not be loaded!", "error");
+      showToast("toasts.profile_load_error", {}, "error");
     }
   }
 
@@ -353,7 +353,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     } catch (e) {
       console.error(e);
-      showToast("Could not scan saves", "error");
+      showToast("toasts.scan_saves_error", {}, "error");
     }
   }
 
@@ -371,11 +371,11 @@ document.addEventListener("DOMContentLoaded", () => {
       updateUIWithCurrentQuicksave();
 
       profileStatus.textContent = "Save loaded successfully";
-      showToast("Save loaded successfully!", "success");
+      showToast("toasts.save_loaded_success", {}, "success");
       loadTools(activeTab);
     } catch (e) {
       console.error(e);
-      showToast("Failed to load save", "error");
+      showToast("toasts.save_load_error", {}, "error");
     }
   }
 
@@ -465,14 +465,14 @@ document.addEventListener("DOMContentLoaded", () => {
       editStatus.textContent = "Saving…";
       await invoke("edit_money", { amount });
       editStatus.textContent = "Money saved!";
-      showToast("Money successfully saved!", "success");
+      showToast("toasts.money_saved_success", {}, "success");
       await loadProfileData();
       updateUIWithCurrentQuicksave();
       loadTools(activeTab);
     } catch (err) {
       console.error(err);
       editStatus.textContent = "Error saving money";
-      showToast("Failed to save money", "error");
+      showToast("toasts.money_save_error", {}, "error");
     }
   });
 
@@ -482,14 +482,14 @@ document.addEventListener("DOMContentLoaded", () => {
       editStatus.textContent = "Saving…";
       await invoke("edit_level", { xp });
       editStatus.textContent = "XP saved!";
-      showToast("XP successfully saved!", "success");
+      showToast("toasts.xp_saved_success", {}, "success");
       await loadProfileData();
       updateUIWithCurrentQuicksave();
       loadTools(activeTab);
     } catch (err) {
       console.error(err);
       editStatus.textContent = "Error saving XP";
-      showToast("Failed to save XP", "error");
+      showToast("toasts.xp_save_error", {}, "error");
     }
   });
 
@@ -522,7 +522,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const cloneBtn = document.getElementById("cloneProfileBtn");
   cloneBtn?.addEventListener("click", async () => {
     if (!window.selectedProfilePath) {
-      showToast("No profile selected!", "warning");
+      showToast("toasts.no_profile_selected", {}, "warning");
       return;
     }
 
@@ -556,7 +556,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (newName && newName.trim() !== "" && newName !== currentName) {
       try {
         const newPath = await invoke("profile_rename", { newName: newName.trim() });
-        showToast("Profile renamed successfully!", "success");
+        showToast("toasts.profile_renamed_success", {}, "success");
         
         window.selectedProfilePath = newPath;
         profileNameDisplay.textContent = newName.trim();
@@ -564,14 +564,14 @@ document.addEventListener("DOMContentLoaded", () => {
         await loadSelectedProfile();
       } catch (err) {
         console.error("Rename failed:", err);
-        showToast(err.toString(), "error");
+        showToast("toasts.profile_rename_error", { error: err.toString() }, "error");
       }
     }
   }
 
   async function handleCopyControls() {
     if (!window.selectedProfilePath) {
-      showToast("No source profile selected!", "warning");
+      showToast("toasts.no_source_profile_selected", {}, "warning");
       return;
     }
 
@@ -584,7 +584,7 @@ document.addEventListener("DOMContentLoaded", () => {
       );
 
       if (targets.length === 0) {
-        showToast("No other profiles available.", "warning");
+        showToast("toasts.no_other_profiles", {}, "warning");
         return;
       }
 
@@ -609,25 +609,23 @@ document.addEventListener("DOMContentLoaded", () => {
       );
 
       if (!selectedProfile) {
-        showToast("Invalid profile selected.", "error");
+        showToast("toasts.invalid_profile_selected", {}, "error");
         return;
       }
 
-      showToast("Copying controls…", "info");
+      showToast("toasts.copying_controls", {}, "info");
 
       const msg = await invoke("copy_profile_controls", {
         sourceProfilePath: sourcePath,
         targetProfilePath: selectedProfile.path,
       });
 
-      showToast(msg, "success");
+      // Backend currently returns a hardcoded string, but we can try to translate it or override
+      showToast("toasts.copy_controls_success", {}, "success");
 
     } catch (err) {
       console.error("Copy controls failed:", err);
-      showToast(
-          typeof err === "string" ? err : "Failed to copy controls.",
-          "error"
-      );
+      showToast("toasts.copy_controls_error", {}, "error");
     }
   }
   window.handleCopyControls = handleCopyControls;
@@ -637,7 +635,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // -----------------------------
   async function handleMoveMods() {
     if (!window.selectedProfilePath) {
-      showToast("No source profile selected!", "warning");
+      showToast("toasts.no_source_profile_selected", {}, "warning");
       return;
     }
 
@@ -648,7 +646,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const targets = profiles.filter(p => p.success && p.path !== currentPath);
 
       if (targets.length === 0) {
-        showToast("No other valid profiles found.", "warning");
+        showToast("toasts.no_other_valid_profiles", {}, "warning");
         return;
       }
 
@@ -670,21 +668,26 @@ document.addEventListener("DOMContentLoaded", () => {
       const selectedProfile = targets.find(p => `${p.name} [${p.path}]` === selectedStr);
 
       if (!selectedProfile) {
-        showToast("Invalid profile selection.", "error");
+        showToast("toasts.invalid_profile_selection", {}, "error");
         return;
       }
 
-      showToast("Moving mods... please wait", "info");
+      showToast("toasts.moving_mods_wait", {}, "info");
 
       const resultMsg = await invoke("copy_mods_to_profile", {
         targetProfilePath: selectedProfile.path,
       });
 
-      showToast(resultMsg, "success");
+      // resultMsg contains a dynamic count from backend, but we use a key with placeholder
+      // Extract number from "Erfolgreich X Mods übertragen." or "Successfully transferred X mods."
+      const countMatch = resultMsg.match(/\d+/);
+      const count = countMatch ? countMatch[0] : "?";
+      
+      showToast("toasts.move_mods_success", { count }, "success");
 
     } catch (err) {
       console.error("Move mods error:", err);
-      showToast(typeof err === "string" ? err : "Failed to move mods.", "error");
+      showToast("toasts.move_mods_error", {}, "error");
     }
   }
   window.handleMoveMods = handleMoveMods;
@@ -702,7 +705,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const profiles = await invoke("find_ets2_profiles");
       profileStatus.textContent = `${profiles.length} profiles found`;
-      if (showToasts) showToast("Profiles found!", "success");
+      if (showToasts) showToast("toasts.profiles_found", {}, "success");
 
       profiles.forEach((p) => {
         if (!p.success) return;
@@ -777,7 +780,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (err) {
       console.error(err);
       profileStatus.textContent = "Scan failed";
-      showToast("No profiles found!", "error");
+      showToast("toasts.no_profiles_found", {}, "error");
     }
   }
 
@@ -860,7 +863,7 @@ async function showLanguagePicker() { // #FIXME <-- Remove this code, we're usin
             translateUI();
 
           } catch (error) {
-            showToast(`Error: ${error}`, "error");
+            showToast("toasts.generic_error_prefix", { error: error.toString() }, "error");
           }
         } else {
           modal.remove();
@@ -879,7 +882,7 @@ async function showLanguagePicker() { // #FIXME <-- Remove this code, we're usin
     });
     
   } catch (error) {
-    showToast(`Failed to load languages: ${error}`, "error");
+    showToast("toasts.load_languages_error", { error: error.toString() }, "error");
   }
 }
 

@@ -73,7 +73,34 @@
             "parking_doubles_success": "Doppelte Parkplätze auf {newValue} gesetzt!",
             "parking_doubles_error": "Doppelte Parkplätze konnten nicht geändert werden",
             "dev_tools_success": "Entwicklertools erfolgreich aktualisiert!",
-            "dev_tools_error": "Entwicklertools konnten nicht aktualisiert werden"
+            "dev_tools_error": "Entwicklertools konnten nicht aktualisiert werden",
+            "profile_loaded_select_save": "Profil geladen. Bitte einen Spielstand auswählen.",
+            "profile_load_error": "Profil konnte nicht geladen werden!",
+            "scan_saves_error": "Spielstände konnten nicht gescannt werden",
+            "save_loaded_success": "Spielstand erfolgreich geladen!",
+            "save_load_error": "Laden des Spielstands fehlgeschlagen",
+            "money_saved_success": "Geld erfolgreich gespeichert!",
+            "money_save_error": "Speichern des Geldes fehlgeschlagen",
+            "xp_saved_success": "XP erfolgreich gespeichert!",
+            "xp_save_error": "Speichern der XP fehlgeschlagen",
+            "no_profile_selected": "Kein Profil ausgewählt!",
+            "profile_renamed_success": "Profil erfolgreich umbenannt!",
+            "profile_rename_error": "Umbenennen fehlgeschlagen: {error}",
+            "no_source_profile_selected": "Kein Quellprofil ausgewählt!",
+            "no_other_profiles": "Keine anderen Profile verfügbar.",
+            "invalid_profile_selected": "Ungültiges Profil ausgewählt.",
+            "copying_controls": "Steuerung wird kopiert…",
+            "copy_controls_success": "controls.sii erfolgreich kopiert",
+            "copy_controls_error": "Kopieren der Steuerung fehlgeschlagen.",
+            "no_other_valid_profiles": "Keine anderen gültigen Profile gefunden.",
+            "invalid_profile_selection": "Ungültige Profilauswahl.",
+            "moving_mods_wait": "Mods werden verschoben... bitte warten",
+            "move_mods_success": "Erfolgreich {count} Mods übertragen.",
+            "move_mods_error": "Verschieben der Mods fehlgeschlagen.",
+            "profiles_found": "Profile gefunden!",
+            "no_profiles_found": "Keine Profile gefunden!",
+            "generic_error_prefix": "Fehler: {error}",
+            "load_languages_error": "Laden der Sprachen fehlgeschlagen: {error}"
       },
       "tools": {
             "truck": {
@@ -169,14 +196,14 @@
                         "modalTextTitle": "Sprache auswählen"
                   },
                   "traffic_values": {
-                        "title": "Verkehrswerte",
+                        "title": "Verkehrsdichte",
                         "desc": "Verkehrsdichte und -geschwindigkeit anpassen",
                         "modalTextTitle": "Verkehrsdichte festlegen (0–10)"
                   },
                   "parking_doubles": {
-                        "title": "Doppelte Parkplätze",
-                        "desc": "Doppelte Parkplätze aktivieren oder deaktivieren",
-                        "modalTextTitle": "Funktion für doppelte Parkplätze umschalten"
+                        "title": "HTC Rückwärtsparken",
+                        "desc": "HTC Parken aktivieren oder deaktivieren",
+                        "modalTextTitle": "Funktion für HTC umschalten"
                   },
                   "dev_tools": {
                         "title": "Entwicklertools",

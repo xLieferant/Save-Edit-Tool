@@ -73,16 +73,41 @@
             "parking_doubles_success": "Parking doubles updated to {newValue}!",
             "parking_doubles_error": "Failed to update parking doubles",
             "dev_tools_success": "Developer tools updated successfully!",
-            "dev_tools_error": "Failed to update developer tools"
-
-            
+            "dev_tools_error": "Failed to update developer tools",
+            "profile_loaded_select_save": "Profile loaded. Please select a save game.",
+            "profile_load_error": "Profile could not be loaded!",
+            "scan_saves_error": "Could not scan saves",
+            "save_loaded_success": "Save loaded successfully!",
+            "save_load_error": "Failed to load save",
+            "money_saved_success": "Money successfully saved!",
+            "money_save_error": "Failed to save money",
+            "xp_saved_success": "XP successfully saved!",
+            "xp_save_error": "Failed to save XP",
+            "no_profile_selected": "No profile selected!",
+            "profile_renamed_success": "Profile renamed successfully!",
+            "profile_rename_error": "Rename failed: {error}",
+            "no_source_profile_selected": "No source profile selected!",
+            "no_other_profiles": "No other profiles available.",
+            "invalid_profile_selected": "Invalid profile selected.",
+            "copying_controls": "Copying controls…",
+            "copy_controls_success": "controls.sii successfully copied",
+            "copy_controls_error": "Failed to copy controls.",
+            "no_other_valid_profiles": "No other valid profiles found.",
+            "invalid_profile_selection": "Invalid profile selection.",
+            "moving_mods_wait": "Moving mods... please wait",
+            "move_mods_success": "Successfully transferred {count} mods.",
+            "move_mods_error": "Failed to move mods.",
+            "profiles_found": "Profiles found!",
+            "no_profiles_found": "No profiles found!",
+            "generic_error_prefix": "Error: {error}",
+            "load_languages_error": "Failed to load languages: {error}"
       },
       "tools": {
             "truck": {
                   "repair_truck": {
                         "title": "Repair Truck",
                         "desc": "Repair your truck",
-                        "modalSliderText": "Repair all truck damage?" 
+                        "modalSliderText": "Repair all truck damage?"
                   },
                   "advanced_repair": {
                         "title": "Advanced Repair",
@@ -110,7 +135,6 @@
                         "modalTextTitle": "Enter new license plate"
                   }
             },
-
             "trailer": {
                   "repair_trailer": {
                         "title": "Repair Trailer",
