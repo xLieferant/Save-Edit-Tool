@@ -9,7 +9,7 @@ import {
 // Helper function to guard trailer actions
 const trailerActionGuard = (actionFunction) => async (...args) => {
   if (!window.playerTrailer) {
-    showToast("No trailer assigned to you", "warning");
+    showToast("toasts.no_trailer_assigned_error", "warning");
     return;
   }
   await actionFunction(...args);
@@ -26,7 +26,7 @@ export const tools = {
       img: "images/repair.png",
       action: async () => {
         try {
-          const shouldRepair = await openModalSlider("Repair all truck damage?", 0);
+          const shouldRepair = await openModalSlider("tools.truck.repair_truck.modalSliderText", 0);
           if (shouldRepair) {
             const wearTypes = ["engine_wear", "transmission_wear", "cabin_wear", "chassis_wear"];
             for (const wearType of wearTypes) {
@@ -36,11 +36,11 @@ export const tools = {
               });
             }
             await loadAllTrucks();
-            showToast("Truck successfully repaired!", "success");
+            showToast("toasts.repair_truck_success", "success");
           }
         } catch (err) {
-          console.error("Repair truck error:", err);
-          showToast("Failed to repair truck!", "error");
+          console.error("errors.repair_truck", err);
+          showToast("toasts.repair_truck_error", "error");
         }
       },
       disabled: false,
@@ -51,11 +51,11 @@ export const tools = {
       img: "images/advancedRepair.png",
       action: async () => {
         try {
-          const res = await openModalMulti("Advanced Repair", [
+          const res = await openModalMulti("tools.truck.advanced_repair.modalSliderText", [
             {
               type: "slider",
               id: "engine_wear",
-              label: "Engine Wear",
+              label: "label.engine_wear",
               value: window.playerTruck?.engine_wear || 0,
               max: 1,
               step: 0.01,
@@ -63,7 +63,7 @@ export const tools = {
             {
               type: "slider",
               id: "transmission_wear",
-              label: "Transmission Wear",
+              label: "label.transmission_wear",
               value: window.playerTruck?.transmission_wear || 0,
               max: 1,
               step: 0.01,
@@ -71,7 +71,7 @@ export const tools = {
             {
               type: "slider",
               id: "cabin_wear",
-              label: "Cabin Wear",
+              label: "label.cabin_wear",
               value: window.playerTruck?.cabin_wear || 0,
               max: 1,
               step: 0.01,
@@ -79,7 +79,7 @@ export const tools = {
             {
               type: "slider",
               id: "chassis_wear",
-              label: "Chassis Wear",
+              label: "label.chassis_wear",
               value: window.playerTruck?.chassis_wear || 0,
               max: 1,
               step: 0.01,
@@ -94,11 +94,11 @@ export const tools = {
               });
             }
             await loadAllTrucks();
-            showToast("Advanced repair successfully applied!", "success");
+            showToast("toasts.advanced_repair_success", "success");
           }
         } catch (err) {
           console.error("Advanced repair error:", err);
-          showToast("Failed to apply advanced repair!", "error");
+          showToast("toasts.advanced_repair_error", "error");
         }
       },
     },
@@ -109,13 +109,14 @@ export const tools = {
       action: async () => {
         try {
           const currentFuelPercent = (window.playerTruck?.fuel_relative || 0) * 100;
-          const newValue = await openModalNumber("Change fuel level (%)", currentFuelPercent.toFixed(0));
+          const newValue = await openModalNumber("tools.truck.fuel_level.modalNumberText", currentFuelPercent.toFixed(0));
           if (newValue !== null) {
             const clampedValue = Math.max(0, Math.min(100, newValue));
             const finalValue = clampedValue / 100.0;
             await invoke("set_player_truck_fuel", { level: finalValue });
             await loadAllTrucks();
-            showToast(`Fuel level set to ${clampedValue}%!`, "success");
+            // showToast(`Fuel level set to ${clampedValue}%!`, "success");
+            showToast("toasts.fuel_level_updated", "success");
           }
         } catch (err) {
           console.error("Fuel level error:", err);
