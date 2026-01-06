@@ -131,7 +131,7 @@ export const tools = {
       img: "images/gasstation.jpg",
       action: async () => {
         try {
-          const shouldRefuel = await openModalSlider("tools.truck.fuel_refuel.modalSliderText", 0);
+          const shouldRefuel = await openModalSlider("tools.truck.full_refuel.modalSliderText", 0);
           if (shouldRefuel) {
             await invoke("refuel_player_truck");
             await loadAllTrucks();
@@ -209,8 +209,8 @@ export const tools = {
       disabled: false,
     },
     {
-      title: "tools.trailer.license_plate.title",
-      desc: "tools.trailer.license_plate.desc",
+      title: "tools.trailer.trailer_license_plate.title",
+      desc: "tools.trailer.trailer_license_plate.desc",
       img: "images/trailer_license.jpg",
       action: trailerActionGuard(async () => {
         try {
@@ -498,7 +498,7 @@ export const tools = {
         try {
           const isActive = window.baseConfig?.max_convoy_size === 128 ? 1 : 0;
 
-          const res = await openModalSlider("tools.settings.convoy.modalSliderText", isActive);
+          const res = await openModalSlider("tools.settings.convoy.modalTextTitle", isActive);
 
           if (res !== null) {
             const value = res === 1 ? 128 : 8;
@@ -578,7 +578,7 @@ export const tools = {
         try {
           const currentTraffic = await invoke("read_traffic_value");
 
-          const newValue = await openModalNumber("tools.settings.traffic_values.modalNumberText", currentTraffic);
+          const newValue = await openModalNumber("tools.settings.traffic_values.modalTextTitle", currentTraffic);
 
           if (newValue === null) return;
 
