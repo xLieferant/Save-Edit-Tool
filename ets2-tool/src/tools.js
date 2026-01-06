@@ -421,26 +421,26 @@ export const tools = {
       disabled: false,
 
       action: async () => {
-        const choice = await openModalMulti("Move Modifications", [
+        const choice = await openModalMulti("tools.profile.move_mods.modalTextTitle", [
           {
             type: "dropdown",
             id: "action",
-            label: "Action",
-            value: "Move Modifications",
-            options: ["Move Modifications", "Move controls"],
+            label: "label.action_move_mods",
+            value: "label.value_move_mods",
+            options: ["label.label_move_mods", "label.label_move_controls"],
           },
         ]);
 
         if (!choice) return;
 
         switch (choice.action) {
-          case "Move Modifications":
+          case "label.label_move_mods":
             if (window.handleMoveMods) {
               await window.handleMoveMods();
             }
           break;
 
-          case "Move controls":
+          case "label.label_move_controls":
             if (window.handleCopyControls) {
               await window.handleCopyControls();
             }
@@ -462,13 +462,15 @@ export const tools = {
         try {
           const currentTheme = localStorage.getItem("theme") || "dark";
 
-          const res = await openModalMulti("Choose Color Theme", [
+          const res = await openModalMulti("tools.settings.color_theme.modalTextTitle", [
             {
               type: "dropdown",
               id: "theme",
-              label: "Theme",
+              label: "label.label_theme",
               value: currentTheme,
-              options: ["dark", "light", "neon"],
+              options: ["label.label_color_theme_dark",
+                "label.label_color_theme_light",
+                "label.label_color_theme_neon"],
             },
           ]);
 
@@ -480,10 +482,10 @@ export const tools = {
           document.body.classList.add(`theme-${newTheme}`);
           localStorage.setItem("theme", newTheme);
 
-          showToast(`Theme changed to ${newTheme}!`, "success");
+          showToast("toasts.color_theme_success", { newTheme }, "success");
         } catch (err) {
           console.error("Theme change error:", err);
-          showToast("Failed to change theme!", "error");
+          showToast("toasts.color_theme_error", "error");
         }
       },
       disabled: false,
@@ -496,17 +498,17 @@ export const tools = {
         try {
           const isActive = window.baseConfig?.max_convoy_size === 128 ? 1 : 0;
 
-          const res = await openModalSlider("Enable 128 Convoy?", isActive);
+          const res = await openModalSlider("tools.settings.convoy.modalSliderText", isActive);
 
           if (res !== null) {
             const value = res === 1 ? 128 : 8;
             await invoke("edit_convoy_value", { value });
             await loadBaseConfig();
-            showToast(`Convoy size set to ${value}!`, "success");
+            showToast("toasts.convoy_settings_success", { newValue: value }, "success");
           }
         } catch (err) {
           console.error("Convoy change error:", err);
-          showToast("Failed to change convoy size!", "error");
+          showToast("toasts.convoy_settings_error", "error");
         }
       },
     },
@@ -531,11 +533,11 @@ export const tools = {
             label: l.name,
           }));
 
-          const res = await openModalMulti("Change Language", [
+          const res = await openModalMulti("tools.settings.language.modalTextTitle", [
             {
               type: "dropdown",
               id: "language",
-              label: "Language",
+              label: "label.label_language",
               value: currentLang,
               options: options.map(o => o.value),
               optionLabels: options.reduce((acc, o) => {
@@ -564,7 +566,7 @@ export const tools = {
 
         } catch (err) {
           console.error("Language modal error:", err);
-          showToast("Failed to change language!", "error");
+          showToast("toasts.language_update_error", "error");
         }
       },
     },
@@ -576,7 +578,7 @@ export const tools = {
         try {
           const currentTraffic = await invoke("read_traffic_value");
 
-          const newValue = await openModalNumber("g_traffic (0–10)", currentTraffic);
+          const newValue = await openModalNumber("tools.settings.traffic_values.modalNumberText", currentTraffic);
 
           if (newValue === null) return;
 
@@ -590,10 +592,10 @@ export const tools = {
 
           await invoke("edit_traffic_value", { value: clamped });
           window.baseConfig.traffic = clamped;
-          showToast(`Traffic value set to ${clamped}!`, "success");
+          showToast("toasts.traffic_values_success", { newValue: clamped }, "success");
         } catch (err) {
           console.error("Traffic Modal Error:", err);
-          showToast("Failed to change traffic value!", "error");
+          showToast("toasts.traffic_values_error", "error");
         }
       },
     },
@@ -604,17 +606,17 @@ export const tools = {
       action: async () => {
         try {
           const newValue = await openModalSlider(
-            "Do you want to park doubles?",
+            "tools.settings.parking_doubles.modalTextTitle",
             window.readSaveGameConfig?.factor_parking_doubles || 0
           );
           if (newValue !== null) {
             await invoke("edit_parking_doubles_value", { value: newValue });
             await loadProfileSaveConfig();
-            showToast(`Parking doubles ${newValue ? 'enabled' : 'disabled'}!`, "success");
+            showToast("toasts.parking_doubles_success", { newValue: newValue ? "enabled" : "disabled" }, "success");
           }
         } catch (err) {
           console.error("Parking doubles error:", err);
-          showToast("Failed to change parking doubles setting!", "error");
+          showToast("toasts.parking_doubles_error", "error");
         }
       },
     },
@@ -624,17 +626,17 @@ export const tools = {
       img: "images/dev.jpg",
       action: async () => {
         try {
-          const res = await openModalMulti("Developer Settings", [
+          const res = await openModalMulti("tools.settings.dev_tools.modalTextTitle", [
             {
               type: "checkbox",
               id: "developer",
-              label: "Developer",
+              label: "label.label_developer",
               value: window.baseConfig?.developer,
             },
             {
               type: "checkbox",
               id: "console",
-              label: "Console",
+              label: "label.label_console",
               value: window.baseConfig?.console,
             },
           ]);
@@ -643,11 +645,11 @@ export const tools = {
             await invoke("edit_developer_value", { value: res.developer });
             await invoke("edit_console_value", { value: res.console });
             await loadBaseConfig();
-            showToast("Developer settings successfully updated!", "success");
+            showToast("toasts.dev_tools_success", "success");
           }
         } catch (err) {
           console.error("Dev mode error:", err);
-          showToast("Failed to update developer settings!", "error");
+          showToast("toasts.dev_tools_error", "error");
         }
       },
     },
