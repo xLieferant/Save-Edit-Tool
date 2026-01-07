@@ -138,6 +138,14 @@ fn get_locales_dir() -> PathBuf {
         return resources_path;
     }
 
+    // Check for Linux/AppImage structure (../lib/ets2-tool/locales)
+    if let Some(parent) = exe_dir.parent() {
+        let linux_path = parent.join("lib/ets2-tool/locales");
+        if linux_path.exists() {
+            return linux_path;
+        }
+    }
+
     // Default fallback
     prod_path
 }
