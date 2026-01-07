@@ -17,6 +17,8 @@
     "updater:allow-download-and-install",
     "updater:allow-install",
     "core:app:allow-version",
-    "core:app:default"
+    "core:app:default",
+    "fs:default",
+    "fs:allow-home-read-recursive"
   ]
 }

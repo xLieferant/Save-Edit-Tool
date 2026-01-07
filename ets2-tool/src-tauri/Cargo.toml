@@ -1,6 +1,6 @@
 [package]
 name = "ets2-tool"
-version = "0.4.0"
+version = "0.4.1"
 description = "Save-Edit Tool for ETS2"
 authors = ["xLieferant"]
 edition = "2024"
@@ -43,3 +43,4 @@ uuid = "1.19.0"
 zip = "7.0.0"
 rust-i18n = "3.1.5"
 fs_extra = "1.3.0"
+base64 = "0.22"

@@ -4,6 +4,7 @@ use serde::Serialize;
 pub struct ProfileInfo {
     pub path: String,
     pub name: Option<String>,
+    pub avatar: Option<String>,
     pub success: bool,
     pub message: Option<String>,
 }

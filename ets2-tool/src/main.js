@@ -4,8 +4,57 @@ import { checkUpdaterOnStartup, manualUpdateCheck } from "./js/updater.js";
 
 const { app } = window.__TAURI__;
 const { openUrl } = window.__TAURI__.opener;
-const { invoke } = window.__TAURI__.core;
+const { invoke, convertFileSrc } = window.__TAURI__.core;
 window.invoke = invoke; // global verfügbar
+
+// -----------------------------
+// ICON & THEME LOGIC
+// -----------------------------
+function getThemeFallbackIcon() {
+  const isLight = document.body.classList.contains("theme-light");
+  return isLight ? "images/icon_Black.png" : "images/icon_White.png";
+}
+
+function resolveProfileIcon(profile) {
+  if (profile && profile.avatar) {
+    if (profile.avatar.startsWith("data:")) {
+      return profile.avatar;
+    }
+    return convertFileSrc(profile.avatar);
+  }
+  return getThemeFallbackIcon();
+}
+
+function handleIconError(img) {
+  img.onerror = null; // Prevent infinite loop
+  img.src = getThemeFallbackIcon();
+  img.removeAttribute("data-has-avatar");
+}
+
+function updateAllProfileIcons() {
+  const fallbackIcon = getThemeFallbackIcon();
+  
+  // Update Dropdown Items that use fallback
+  document.querySelectorAll(".profile-icon-dropdown").forEach(img => {
+    if (!img.dataset.hasAvatar) {
+      img.src = fallbackIcon;
+    }
+  });
+
+  // Update Active Profile Icons (Footer & Sidebar)
+  const activeHasAvatar = window.selectedProfileHasAvatar;
+  if (!activeHasAvatar) {
+     const activeIcons = document.querySelectorAll("#activeProfileIcon, .nav-icon-profile");
+     activeIcons.forEach(img => img.src = fallbackIcon);
+  }
+}
+
+// Watch for theme changes
+const themeObserver = new MutationObserver(() => {
+  updateAllProfileIcons();
+});
+themeObserver.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+
 
 // -----------------------------
 // TOAST-FUNKTION
@@ -279,6 +328,25 @@ document.addEventListener("DOMContentLoaded", () => {
       window.playerTruck = null;
       window.allTrailers = [];
       window.playerTrailer = null;
+
+      // Update Icons
+      const cached = JSON.parse(localStorage.getItem("ets2_profiles_cache") || "[]");
+      const profileInfo = cached.find(p => p.path === window.selectedProfilePath);
+      
+      window.selectedProfileHasAvatar = !!(profileInfo && profileInfo.avatar);
+      const iconSrc = resolveProfileIcon(profileInfo);
+      
+      const footerIcon = document.getElementById("activeProfileIcon");
+      if (footerIcon) {
+        footerIcon.src = iconSrc;
+        if (window.selectedProfileHasAvatar) footerIcon.onerror = () => handleIconError(footerIcon);
+      }
+      
+      const navIcon = document.querySelector(".nav-icon-profile");
+      if (navIcon) {
+        navIcon.src = iconSrc;
+        if (window.selectedProfileHasAvatar) navIcon.onerror = () => handleIconError(navIcon);
+      }
 
       profileStatus.textContent = "Profile loaded. Please select a save.";
       showToast("toasts.profile_loaded_select_save", {}, "info");
@@ -711,7 +779,22 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!p.success) return;
         const item = document.createElement("div");
         item.className = "dropdown-item";
-        item.textContent = `${p.name} (${p.path})`;
+
+        // Icon
+        const img = document.createElement("img");
+        img.src = resolveProfileIcon(p);
+        img.className = "profile-icon-dropdown";
+        if (p.avatar) {
+          img.dataset.hasAvatar = "true";
+          img.onerror = () => handleIconError(img);
+        }
+
+        // Text
+        const textSpan = document.createElement("span");
+        textSpan.textContent = `${p.name} (${p.path})`;
+
+        item.appendChild(img);
+        item.appendChild(textSpan);
 
         item.addEventListener("click", async () => {
           window.selectedProfilePath = p.path;
@@ -739,6 +822,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const toSave = profiles.map((p) => ({
             path: p.path,
             name: p.name ?? null,
+            avatar: p.avatar ?? null,
             success: !!p.success,
             message: p.message ?? null,
           }));
@@ -796,7 +880,23 @@ document.addEventListener("DOMContentLoaded", () => {
           if (!p.success) return;
           const item = document.createElement("div");
           item.className = "dropdown-item";
-          item.textContent = `${p.name} (${p.path})`;
+          
+          // Icon
+          const img = document.createElement("img");
+          img.src = resolveProfileIcon(p); 
+          img.className = "profile-icon-dropdown";
+          if (p.avatar) {
+            img.dataset.hasAvatar = "true";
+            img.onerror = () => handleIconError(img);
+          }
+          
+          // Text
+          const textSpan = document.createElement("span");
+          textSpan.textContent = `${p.name} (${p.path})`;
+
+          item.appendChild(img);
+          item.appendChild(textSpan);
+
           item.addEventListener("click", async () => {
             window.selectedProfilePath = p.path;
             profileNameDisplay.textContent = p.name;

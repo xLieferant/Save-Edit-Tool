@@ -240,10 +240,25 @@ pub fn find_ets2_profiles() -> Vec<ProfileInfo> {
                         continue;
                     }
 
+                    // Check for online avatar
+                    let avatar_path = path.join("online_avatar.png");
+                    let avatar = if avatar_path.exists() {
+                        if let Ok(bytes) = std::fs::read(&avatar_path) {
+                            use base64::{Engine as _, engine::general_purpose};
+                            let b64 = general_purpose::STANDARD.encode(&bytes);
+                            Some(format!("data:image/png;base64,{}", b64))
+                        } else {
+                            None
+                        }
+                    } else {
+                        None
+                    };
+
                     let text = decrypt_if_needed(&sii).ok();
                     let mut info = ProfileInfo {
                         path: path.display().to_string(),
                         name: None,
+                        avatar,
                         success: false,
                         message: None,
                     };
