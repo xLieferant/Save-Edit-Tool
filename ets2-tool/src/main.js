@@ -187,7 +187,7 @@ document.addEventListener("DOMContentLoaded", () => {
   window.playerTruck = null;
   window.allTrailers = [];
   window.playerTrailer = null;
-
+  window.translateUI = translateUI;
   window.applySetting = applySetting;
 
   // Helper to extract plate text
@@ -860,7 +860,7 @@ async function showLanguagePicker() { // #FIXME <-- Remove this code, we're usin
             modal.remove();
             
             // Translate the UI again
-            translateUI();
+            await translateUI();
 
           } catch (error) {
             showToast("toasts.generic_error_prefix", { error: error.toString() }, "error");
@@ -885,15 +885,6 @@ async function showLanguagePicker() { // #FIXME <-- Remove this code, we're usin
     showToast("toasts.load_languages_error", { error: error.toString() }, "error");
   }
 }
-
-// function getFlagEmoji(langCode) { // #TODO Optional: Use flag emojis in language picker
-//   const flags = {
-//     'en': '🇬🇧',
-//     'de': '🇩🇪',
-//     'es': '🇪🇸'
-//   };
-//   return flags[langCode] || '🌐';
-// }
 
 // Helper function to get translations in JavaScript
 async function t(key, params = {}) {
