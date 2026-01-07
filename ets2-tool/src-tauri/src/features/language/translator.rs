@@ -127,8 +127,19 @@ fn get_locales_dir() -> PathBuf {
         return dev_path;
     }
 
-    // Production path (adjust based on your Tauri config)
-    exe_dir.join("locales")
+    // Production path checks
+    let prod_path = exe_dir.join("locales");
+    if prod_path.exists() {
+        return prod_path;
+    }
+
+    let resources_path = exe_dir.join("resources/locales");
+    if resources_path.exists() {
+        return resources_path;
+    }
+
+    // Default fallback
+    prod_path
 }
 
 fn get_language_config_path() -> PathBuf {
