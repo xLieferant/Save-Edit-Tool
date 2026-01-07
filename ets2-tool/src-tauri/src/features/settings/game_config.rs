@@ -65,7 +65,8 @@ pub fn read_base_config() -> Result<BaseGameConfig, String> {
     Ok(data)
 }
 
-//* Hiermit wird die config.cfg im Basis-Ordner des Profils gelesen (z.B. .../Euro Truck Simulator 2/profiles/12345/config.cfg) *//
+// Hiermit wird die config.cfg im Basis-Ordner des Profils gelesen
+// (z.B. .../Euro Truck Simulator 2/profiles/12345/config.cfg)
 #[command]
 // Der Funktionskopf akzeptiert den Pfad direkt
 pub fn read_save_config(profile_path: &str) -> Result<SaveGameConfig, String> {

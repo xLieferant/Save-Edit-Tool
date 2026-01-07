@@ -220,6 +220,43 @@ document.addEventListener("DOMContentLoaded", () => {
   const patreonBtn = document.querySelector("#patreonBtn");
   const githubBtn = document.querySelector("#githubBtn");
 
+  // GAME SWITCHER
+  const ets2Btn = document.getElementById("ets2Btn");
+  const atsBtn = document.getElementById("atsBtn");
+
+  async function switchGame(game) {
+    try {
+      await invoke("set_selected_game", { game });
+      
+      // Clear current profile selection
+      window.selectedProfilePath = null;
+      window.selectedSavePath = null;
+      window.currentSavePath = null;
+      window.currentProfileData = {};
+      window.playerTruck = null;
+      window.playerTrailer = null;
+      
+      profileNameDisplay.textContent = "Select Profile";
+      saveNameDisplay.textContent = "Select Save";
+      document.getElementById("activeProfileIcon").src = getThemeFallbackIcon();
+      
+      // Refresh
+      await scanProfiles({ saveToBackend: true, showToasts: true });
+      loadTools(activeTab); // Reload tools (icons might need update if game-specific)
+      
+    } catch (e) {
+      console.error("Failed to switch game:", e);
+      showToast("toasts.generic_error_prefix", { error: e.toString() }, "error");
+    }
+  }
+
+  if (ets2Btn) {
+    ets2Btn.addEventListener("click", () => switchGame("ets2"));
+  }
+  if (atsBtn) {
+    atsBtn.addEventListener("click", () => switchGame("ats"));
+  }
+
   // Global state for selected paths
   window.selectedProfilePath = null;
   window.selectedSavePath = null;
@@ -771,6 +808,27 @@ document.addEventListener("DOMContentLoaded", () => {
     profileDropdownList.innerHTML = "";
 
     try {
+      // Get current game to update UI
+      try {
+        const game = await invoke("get_selected_game");
+        const ets2Btn = document.getElementById("ets2Btn");
+        const atsBtn = document.getElementById("atsBtn");
+        
+        if (game === "ats") {
+          ets2Btn.classList.remove("active");
+          ets2Btn.disabled = false;
+          atsBtn.classList.add("active");
+          atsBtn.disabled = true;
+        } else {
+          atsBtn.classList.remove("active");
+          atsBtn.disabled = false;
+          ets2Btn.classList.add("active");
+          ets2Btn.disabled = true;
+        }
+      } catch (e) {
+        console.warn("Could not sync game buttons:", e);
+      }
+
       const profiles = await invoke("find_ets2_profiles");
       profileStatus.textContent = `${profiles.length} profiles found`;
       if (showToasts) showToast("toasts.profiles_found", {}, "success");

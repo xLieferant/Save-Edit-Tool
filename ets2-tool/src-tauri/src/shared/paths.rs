@@ -5,6 +5,17 @@ pub fn ets2_base_path() -> Option<PathBuf> {
     dirs::document_dir().map(|d| d.join("Euro Truck Simulator 2"))
 }
 
+pub fn ats_base_path() -> Option<PathBuf> {
+    dirs::document_dir().map(|d|d.join("American Truck Simulator"))
+}
+
+pub fn get_base_path(game: &str) -> Option<PathBuf> {
+    match game {
+        "ats" => ats_base_path(),
+        _ => ets2_base_path(),
+    }
+}
+
 pub fn autosave_path(profile_path: &str) -> PathBuf {
     Path::new(profile_path)
         .join("save")
