@@ -461,28 +461,41 @@ export const tools = {
       action: async () => {
         try {
           const currentTheme = localStorage.getItem("theme") || "dark";
+          
+          // Internal values map
+          const themeMap = {
+            "label.label_color_theme_dark": "dark",
+            "label.label_color_theme_light": "light",
+            "label.label_color_theme_neon": "neon"
+          };
+          
+          // Reverse map to find key for current theme
+          const currentKey = Object.keys(themeMap).find(key => themeMap[key] === currentTheme) || "label.label_color_theme_dark";
 
           const res = await openModalMulti("tools.settings.color_theme.modalTextTitle", [
             {
               type: "dropdown",
               id: "theme",
               label: "label.label_theme",
-              value: currentTheme,
-              options: ["label.label_color_theme_dark",
-                "label.label_color_theme_light",
-                "label.label_color_theme_neon"],
+              value: currentKey,
+              options: Object.keys(themeMap),
             },
           ]);
 
           if (!res) return;
 
-          const newTheme = res.theme;
+          // Lookup internal value from selected key
+          const newTheme = themeMap[res.theme];
 
-          document.body.classList.remove("theme-dark", "theme-light", "theme-neon");
-          document.body.classList.add(`theme-${newTheme}`);
-          localStorage.setItem("theme", newTheme);
-
-          showToast("toasts.color_theme_success", { newTheme }, "success");
+          if (newTheme) {
+            document.body.classList.remove("theme-dark", "theme-light", "theme-neon");
+            document.body.classList.add(`theme-${newTheme}`);
+            localStorage.setItem("theme", newTheme);
+            showToast("toasts.color_theme_success", { newTheme }, "success");
+          } else {
+             console.error("Unknown theme selected:", res.theme);
+             showToast("toasts.color_theme_error", "error");
+          }
         } catch (err) {
           console.error("Theme change error:", err);
           showToast("toasts.color_theme_error", "error");
