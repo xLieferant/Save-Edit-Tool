@@ -10,6 +10,8 @@ use crate::shared::extract::extract_profile_name;
 use crate::shared::extract_save_name::extract_save_name;
 use crate::shared::hex_float::decode_hex_folder_name;
 use crate::shared::paths::ets2_base_path;
+use crate::shared::paths::ats_base_path;
+use crate::shared::paths::get_base_path;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use tauri::Manager;
@@ -31,6 +33,23 @@ fn app_cache_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     } else {
         Err("Konnte Config-Verzeichnis nicht bestimmen".into())
     }
+}
+
+#[command]
+pub fn set_selected_game(
+    game: String,
+    state: State<'_, AppProfileState>,
+) -> Result<String, String> {
+    let mut g = state.selected_game.lock().unwrap();
+    *g = game.clone();
+    dev_log!("Game changed to: {}", game);
+    Ok(game)
+}
+
+#[command]
+pub fn get_selected_game(state: State<'_, AppProfileState>) -> Result<String, String> {
+    let g = state.selected_game.lock().unwrap();
+    Ok(g.clone())
 }
 
 #[command]
@@ -213,11 +232,14 @@ fn classify_save_folder(folder: &str) -> SaveKind {
 }
 
 #[command]
-pub fn find_ets2_profiles() -> Vec<ProfileInfo> {
+pub fn find_ets2_profiles(state: State<'_, AppProfileState>) -> Vec<ProfileInfo> {
     dev_log!("Starte Profil-Suche…");
     let mut found_profiles = Vec::new();
 
-    if let Some(base) = ets2_base_path() {
+    let game_key = state.selected_game.lock().unwrap().clone();
+    let base_opt = get_base_path(&game_key);
+
+    if let Some(base) = base_opt {
         let folders = vec![
             base.join("profiles"),
             base.join("profiles.backup"),

@@ -220,6 +220,31 @@ document.addEventListener("DOMContentLoaded", () => {
   const patreonBtn = document.querySelector("#patreonBtn");
   const githubBtn = document.querySelector("#githubBtn");
 
+  // GAME SWITCHER
+  const ets2Btn = document.getElementById("ets2Btn");
+  const atsBtn = document.getElementById("atsBtn");
+
+  async function switchGame(game) {
+    try {
+      await invoke("set_selected_game", { game });
+      
+      // Full reload avoids duplicated tabs/modals after game switch
+      localStorage.setItem("ets2_force_profile_picker_open", "1");
+      location.reload();
+      
+    } catch (e) {
+      console.error("Failed to switch game:", e);
+      showToast("toasts.generic_error_prefix", { error: e.toString() }, "error");
+    }
+  }
+
+  if (ets2Btn) {
+    ets2Btn.addEventListener("click", () => switchGame("ets2"));
+  }
+  if (atsBtn) {
+    atsBtn.addEventListener("click", () => switchGame("ats"));
+  }
+
   // Global state for selected paths
   window.selectedProfilePath = null;
   window.selectedSavePath = null;
@@ -252,6 +277,13 @@ document.addEventListener("DOMContentLoaded", () => {
   function closeAllDropdowns() {
     profileDropdownList.classList.remove("show");
     saveDropdownList.classList.remove("show");
+  }
+
+  const forceProfilePickerOpen = localStorage.getItem("ets2_force_profile_picker_open") === "1";
+  if (forceProfilePickerOpen) {
+    localStorage.removeItem("ets2_force_profile_picker_open");
+    closeAllDropdowns();
+    profileDropdownList.classList.add("show");
   }
 
   document.addEventListener("click", (e) => {
@@ -362,7 +394,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!window.selectedProfilePath) return;
 
     saveDropdownList.innerHTML = "";
-    saveDropdownList.classList.add("show");
     openSaveModalBtn.disabled = false;
 
     try {
@@ -771,6 +802,27 @@ document.addEventListener("DOMContentLoaded", () => {
     profileDropdownList.innerHTML = "";
 
     try {
+      // Get current game to update UI
+      try {
+        const game = await invoke("get_selected_game");
+        const ets2Btn = document.getElementById("ets2Btn");
+        const atsBtn = document.getElementById("atsBtn");
+        
+        if (game === "ats") {
+          ets2Btn.classList.remove("active");
+          ets2Btn.disabled = false;
+          atsBtn.classList.add("active");
+          atsBtn.disabled = true;
+        } else {
+          atsBtn.classList.remove("active");
+          atsBtn.disabled = false;
+          ets2Btn.classList.add("active");
+          ets2Btn.disabled = true;
+        }
+      } catch (e) {
+        console.warn("Could not sync game buttons:", e);
+      }
+
       const profiles = await invoke("find_ets2_profiles");
       profileStatus.textContent = `${profiles.length} profiles found`;
       if (showToasts) showToast("toasts.profiles_found", {}, "success");
@@ -791,7 +843,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Text
         const textSpan = document.createElement("span");
-        textSpan.textContent = `${p.name} (${p.path})`;
+        textSpan.textContent = p.name;
 
         item.appendChild(img);
         item.appendChild(textSpan);
@@ -852,7 +904,7 @@ document.addEventListener("DOMContentLoaded", () => {
           return;
         } else {
           window.selectedProfilePath = last;
-          profileNameDisplay.textContent = last;
+          profileNameDisplay.textContent = "Select Profile";
           try {
             await loadSelectedProfile();
             return;
@@ -892,7 +944,7 @@ document.addEventListener("DOMContentLoaded", () => {
           
           // Text
           const textSpan = document.createElement("span");
-          textSpan.textContent = `${p.name} (${p.path})`;
+          textSpan.textContent = p.name;
 
           item.appendChild(img);
           item.appendChild(textSpan);

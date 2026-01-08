@@ -19,8 +19,10 @@ pub async fn get_player_trailer(
     let defs_data = parse_trailer_defs_from_sii(&content);
     let trucks_data = parse_trucks_from_sii(&content);
 
-    let player_id = get_player_id(&content).ok_or("Player ID nicht im economy block gefunden".to_string())?;
-    let (player_truck_id_opt, player_trailer_id_opt) = get_vehicle_ids(&content, &player_id);
+    let player_id = get_player_id(&content).ok_or("Player ID nicht im economy block gefunden"
+        .to_string())?;
+    let (player_truck_id_opt, player_trailer_id_opt) = get_vehicle_ids(
+        &content, &player_id);
 
     // ← CHANGED: Instead of erroring, return None if player has no trailer
     let trailer_id = match player_trailer_id_opt {
@@ -47,7 +49,8 @@ pub async fn get_player_trailer(
             .find(|t| t.truck_id.to_lowercase() == truck_id_clean)
         {
             dev_log!(
-                "Player Truck Data: Odometer: {}, Fuel: {}, Engine Wear: {}, Transmission Wear: {}, Cabin Wear: {}, Chassis Wear: {}, Wheels Wear: {:?}",
+                "Player Truck Data: Odometer: {}, Fuel: {}, Engine Wear: {}, Transmission Wear: {},\
+                Cabin Wear: {}, Chassis Wear: {}, Wheels Wear: {:?}",
                 player_truck.odometer,
                 player_truck.fuel_relative,
                 player_truck.engine_wear,
@@ -60,7 +63,8 @@ pub async fn get_player_trailer(
     }
 
     dev_log!(
-        "Player Trailer Data: Odometer: {}, Cargo Mass: {}, Cargo Damage: {}, Body Wear: {}, Chassis Wear: {}, Wheels Wear: {:?}",
+        "Player Trailer Data: Odometer: {}, Cargo Mass: {}, Cargo Damage: {}, Body Wear: {},\
+        Chassis Wear: {}, Wheels Wear: {:?}",
         parsed_trailer.odometer,
         parsed_trailer.cargo_mass,
         parsed_trailer.cargo_damage,
@@ -94,7 +98,8 @@ pub async fn get_all_trailers(
 }
 
 // Hilfsfunktion: ParsedTrailer aus TrailerData
-fn parsed_trailer_from_data(tr: &TrailerData, defs: &std::collections::HashMap<String, TrailerDefData>) -> ParsedTrailer {
+fn parsed_trailer_from_data(tr: &TrailerData, defs: &std::collections::HashMap<String,
+    TrailerDefData>) -> ParsedTrailer {
     // Alle Floats über parse_value_auto (Hex oder Float)
     // odometer (f32) + odometer_float (Option<f32>)
     let odometer = tr.odometer + tr.odometer_float.unwrap_or(0.0);

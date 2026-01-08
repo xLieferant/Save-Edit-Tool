@@ -35,6 +35,8 @@ fn main() {
             features::profile_manager::commands::switch_profile,
             features::profile_manager::commands::set_active_profile,
             features::profile_manager::commands::set_current_save,
+            features::profile_manager::commands::set_selected_game,
+            features::profile_manager::commands::get_selected_game,
             // Profile Editing
             features::save_editor::commands::edit_money,
             features::save_editor::commands::edit_xp,
