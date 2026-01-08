@@ -228,21 +228,9 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       await invoke("set_selected_game", { game });
       
-      // Clear current profile selection
-      window.selectedProfilePath = null;
-      window.selectedSavePath = null;
-      window.currentSavePath = null;
-      window.currentProfileData = {};
-      window.playerTruck = null;
-      window.playerTrailer = null;
-      
-      profileNameDisplay.textContent = "Select Profile";
-      saveNameDisplay.textContent = "Select Save";
-      document.getElementById("activeProfileIcon").src = getThemeFallbackIcon();
-      
-      // Refresh
-      await scanProfiles({ saveToBackend: true, showToasts: true });
-      loadTools(activeTab); // Reload tools (icons might need update if game-specific)
+      // Full reload avoids duplicated tabs/modals after game switch
+      localStorage.setItem("ets2_force_profile_picker_open", "1");
+      location.reload();
       
     } catch (e) {
       console.error("Failed to switch game:", e);
@@ -289,6 +277,13 @@ document.addEventListener("DOMContentLoaded", () => {
   function closeAllDropdowns() {
     profileDropdownList.classList.remove("show");
     saveDropdownList.classList.remove("show");
+  }
+
+  const forceProfilePickerOpen = localStorage.getItem("ets2_force_profile_picker_open") === "1";
+  if (forceProfilePickerOpen) {
+    localStorage.removeItem("ets2_force_profile_picker_open");
+    closeAllDropdowns();
+    profileDropdownList.classList.add("show");
   }
 
   document.addEventListener("click", (e) => {
@@ -399,7 +394,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!window.selectedProfilePath) return;
 
     saveDropdownList.innerHTML = "";
-    saveDropdownList.classList.add("show");
     openSaveModalBtn.disabled = false;
 
     try {
@@ -849,7 +843,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Text
         const textSpan = document.createElement("span");
-        textSpan.textContent = `${p.name} (${p.path})`;
+        textSpan.textContent = p.name;
 
         item.appendChild(img);
         item.appendChild(textSpan);
@@ -910,7 +904,7 @@ document.addEventListener("DOMContentLoaded", () => {
           return;
         } else {
           window.selectedProfilePath = last;
-          profileNameDisplay.textContent = last;
+          profileNameDisplay.textContent = "Select Profile";
           try {
             await loadSelectedProfile();
             return;
@@ -950,7 +944,7 @@ document.addEventListener("DOMContentLoaded", () => {
           
           // Text
           const textSpan = document.createElement("span");
-          textSpan.textContent = `${p.name} (${p.path})`;
+          textSpan.textContent = p.name;
 
           item.appendChild(img);
           item.appendChild(textSpan);
