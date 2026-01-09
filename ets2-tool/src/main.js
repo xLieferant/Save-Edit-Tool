@@ -343,7 +343,7 @@ document.addEventListener("DOMContentLoaded", () => {
       window.currentSavePath = null;
       saveNameDisplay.textContent = "Select a save";
 
-      await invoke("load_profile", { profilePath: window.selectedProfilePath });
+      await invoke("set_active_profile", { profilePath: window.selectedProfilePath });
 
       // Scan saves for this profile
       await scanSavesForProfile();
@@ -444,7 +444,8 @@ document.addEventListener("DOMContentLoaded", () => {
           saveNameDisplay.textContent = s.name ?? s.folder;
           saveDropdownList.classList.remove("show");
 
-          await invoke("set_current_save", {
+          await invoke("load_profile", {
+            profilePath: window.selectedProfilePath,
             savePath: s.path,
           });
 
