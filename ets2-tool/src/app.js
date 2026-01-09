@@ -110,8 +110,6 @@ const cloneSourceDisplay = document.getElementById("cloneSourceDisplay");
 const cloneNameInput = document.getElementById("cloneNameInput");
 const cloneValidationMsg = document.getElementById("cloneValidationMsg");
 const cloneBackup = document.getElementById("cloneBackup");
-const cloneReplaceHex = document.getElementById("cloneReplaceHex");
-const cloneReplaceText = document.getElementById("cloneReplaceText");
 const modalCloneApply = document.getElementById("modalCloneApply");
 const modalCloneCancel = document.getElementById("modalCloneCancel");
 
@@ -368,6 +366,7 @@ export async function openCloneProfileModal() {
   // Reset UI
   cloneNameInput.value = "";
   cloneValidationMsg.textContent = "";
+  cloneBackup.checked = true;
   modalCloneApply.disabled = true;
   modalCloneApply.textContent = await window.t("modals.clone_profile.clone_button");
   
@@ -424,9 +423,9 @@ export async function openCloneProfileModal() {
       const msg = await window.invoke("clone_profile_command", {
         sourceProfile: window.selectedProfilePath,
         newName,
-        backup: cloneBackup.checked,
-        replaceHex: cloneReplaceHex.checked,
-        replaceText: cloneReplaceText.checked,
+        backup: true,
+        replaceHex: true,
+        replaceText: true,
       });
 
       window.showToast(msg, "success");
