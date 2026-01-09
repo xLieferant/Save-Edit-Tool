@@ -1,5 +1,6 @@
 use crate::models::clone_profiles_info::CloneOptions;
 use crate::shared::{decrypt::decrypt_if_needed, hex_float};
+use regex::Regex;
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
@@ -25,29 +26,36 @@ pub fn clone_profile(
         return Err("Zielprofil existiert bereits".to_string());
     }
 
-    // 1️⃣ ZIP-Backup
+    // 1. ZIP-Backup
     if options.backup {
         create_zip_backup(source, parent)?;
     }
 
-    // 2️⃣ Temp kopieren
-    let temp_dir = parent.join(format!("{}_tmp", new_hex));
-    if temp_dir.exists() {
-        fs::remove_dir_all(&temp_dir).map_err(|e| e.to_string())?;
+    // 2. Profilname aus profile.sii lesen und neuen Inhalt vorbereiten
+    let source_profile_sii = source.join("profile.sii");
+    if !source_profile_sii.exists() {
+        return Err("profile.sii nicht gefunden".to_string());
     }
-    copy_dir_recursive(source, &temp_dir)?;
 
-    // 3️⃣ Alten Namen aus profile.sii lesen
-    let profile_sii = temp_dir.join("profile.sii");
-    let decrypted = decrypt_if_needed(&profile_sii).map_err(|e| e.to_string())?;
-    let old_name =
-        extract_profile_name(&decrypted).ok_or("Profilname konnte nicht gelesen werden".to_string())?;
+    let decrypted = decrypt_if_needed(&source_profile_sii).map_err(|e| e.to_string())?;
+    let updated_profile_sii = change_profile_name_in_sii(&decrypted, new_name)?;
 
-    // 4️⃣ Ersetzen
-    replace_identifiers(&temp_dir, &old_name, new_name, options)?;
+    // 3. Profil kopieren und profile.sii aktualisieren
+    if let Err(e) = copy_dir_recursive(source, &target_dir) {
+        let _ = fs::remove_dir_all(&target_dir);
+        return Err(e);
+    }
 
-    // 5️⃣ Final umbenennen
-    fs::rename(&temp_dir, &target_dir).map_err(|e| e.to_string())?;
+    let target_profile_sii = target_dir.join("profile.sii");
+    if !target_profile_sii.exists() {
+        let _ = fs::remove_dir_all(&target_dir);
+        return Err("profile.sii nicht gefunden".to_string());
+    }
+
+    if let Err(e) = fs::write(&target_profile_sii, updated_profile_sii) {
+        let _ = fs::remove_dir_all(&target_dir);
+        return Err(e.to_string());
+    }
 
     Ok(target_dir)
 }
@@ -97,46 +105,17 @@ fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<(), String> {
     Ok(())
 }
 
-/// Profilname aus profile.sii extrahieren
-fn extract_profile_name(content: &str) -> Option<String> {
-    for line in content.lines() {
-        if line.trim_start().starts_with("profile_name:") {
-            return line.split('"').nth(1).map(|s| s.to_string());
-        }
-    }
-    None
-}
+fn change_profile_name_in_sii(content: &str, new_name: &str) -> Result<String, String> {
+    let re = Regex::new(r#"(?m)^(?P<indent>\s*)profile_name\s*:\s*"?[^"\r\n]*"?"#)
+        .map_err(|e| e.to_string())?;
 
-/// Ersetzungen durchführen
-fn replace_identifiers(
-    dir: &Path,
-    old: &str,
-    new: &str,
-    options: CloneOptions,
-) -> Result<(), String> {
-    let old_hex = hex_float::text_to_hex(old);
-    let new_hex = hex_float::text_to_hex(new);
-
-    for entry in WalkDir::new(dir) {
-        let entry = entry.map_err(|e| e.to_string())?;
-        let path = entry.path();
-
-        if !path.is_file() {
-            continue;
-        }
-
-        let mut content = decrypt_if_needed(path).map_err(|e| e.to_string())?;
-
-        if options.replace_text {
-            content = content.replace(old, new);
-        }
-
-        if options.replace_hex {
-            content = content.replace(&old_hex, &new_hex);
-        }
-
-        fs::write(path, content).map_err(|e| e.to_string())?;
+    if !re.is_match(content) {
+        return Err("Profilname konnte nicht gelesen werden".to_string());
     }
 
-    Ok(())
+    Ok(re
+        .replace(content, |caps: &regex::Captures| {
+            format!("{}profile_name: \"{}\"", &caps["indent"], new_name)
+        })
+        .to_string())
 }
