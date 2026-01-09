@@ -342,11 +342,8 @@ pub fn load_profile(
     profile_state: State<'_, AppProfileState>,
     cache: State<'_, DecryptCache>,
 ) -> Result<String, String> {
-    let save_to_load = if let Some(path_str) = save_path {
-        PathBuf::from(path_str)
-    } else {
-        crate::shared::paths::autosave_path(&profile_path)
-    };
+    let save_path_str = save_path.ok_or_else(|| "Kein Save angegeben".to_string())?;
+    let save_to_load = PathBuf::from(save_path_str);
 
     if !save_to_load.exists() {
         return Err(format!("Save nicht gefunden: {}", save_to_load.display()));
