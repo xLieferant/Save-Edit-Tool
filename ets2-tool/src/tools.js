@@ -15,6 +15,20 @@ const trailerActionGuard = (actionFunction) => async (...args) => {
   await actionFunction(...args);
 };
 
+const GAME_IMAGE_CATEGORIES = ["truck", "trailer", "profile"];
+const BASE_IMAGE_PREFIX = "images/";
+const ATS_IMAGE_PREFIX = "images/ATS/";
+
+function resolveGameToolImage(baseImg, game) {
+  if (game !== "ats") return baseImg;
+  if (!baseImg || typeof baseImg !== "string") return baseImg;
+  if (baseImg.startsWith(ATS_IMAGE_PREFIX)) return baseImg;
+  if (baseImg.startsWith(BASE_IMAGE_PREFIX)) {
+    return `${ATS_IMAGE_PREFIX}${baseImg.slice(BASE_IMAGE_PREFIX.length)}`;
+  }
+  return baseImg;
+}
+
 // --------------------------------------------------------------
 // TOOL DEFINITIONS
 // --------------------------------------------------------------
@@ -668,3 +682,14 @@ export const tools = {
     },
   ],
 };
+
+export function updateToolImagesForGame(game) {
+  GAME_IMAGE_CATEGORIES.forEach((category) => {
+    tools[category].forEach((tool) => {
+      if (!tool.baseImg) {
+        tool.baseImg = tool.img;
+      }
+      tool.img = resolveGameToolImage(tool.baseImg, game);
+    });
+  });
+}

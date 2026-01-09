@@ -1,10 +1,12 @@
 import { loadTools, activeTab, openCloneProfileModal, openModalMulti, openModalText } from "./app.js";
+import { updateToolImagesForGame } from "./tools.js";
 import { applySetting } from "./js/applySetting.js";
 import { checkUpdaterOnStartup, manualUpdateCheck } from "./js/updater.js";
 
 const { app } = window.__TAURI__;
 const { openUrl } = window.__TAURI__.opener;
 const { invoke, convertFileSrc } = window.__TAURI__.core;
+let lastSelectedGame = null;
 window.invoke = invoke; // global verfügbar
 
 // -----------------------------
@@ -823,6 +825,12 @@ document.addEventListener("DOMContentLoaded", () => {
           ets2Btn.classList.add("active");
           ets2Btn.disabled = true;
         }
+
+        if (game !== lastSelectedGame) {
+          lastSelectedGame = game;
+          updateToolImagesForGame(game);
+          loadTools(activeTab);
+        }
       } catch (e) {
         console.warn("Could not sync game buttons:", e);
       }
@@ -1072,4 +1080,5 @@ async function translateUI() {
 window.showLanguagePicker = showLanguagePicker;
 window.t = t;
 window.translateUI = translateUI; // Make it global so you can call it from anywhere
+window.dispatchEvent(new Event("translations-ready"));
 });

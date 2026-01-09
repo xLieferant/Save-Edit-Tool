@@ -6,12 +6,14 @@ import { tools } from "./tools.js";
 const container = document.querySelector("#tool-container");
 const navButtons = document.querySelectorAll(".nav-btn");
 export let activeTab = "profile";
+let loadToolsRenderId = 0;
 
 export async function loadTools(tab) {
   console.log(`[app.js] Lade Tools für Tab: ${tab}`);
 
   activeTab = tab;
   container.innerHTML = "";
+  const renderId = ++loadToolsRenderId;
 
   for (const t of tools[tab]) {
     if (t.hidden) continue; // unsichtbare Tools überspringen
@@ -22,6 +24,7 @@ export async function loadTools(tab) {
     const title = await window.t(t.title);
     const desc = await window.t(t.desc);
     const open = await window.t("modals.open");
+    if (renderId !== loadToolsRenderId) return;
 
     card.innerHTML = `
       <img src="${t.img}">
@@ -56,7 +59,17 @@ navButtons.forEach((btn) => {
 
 // Default Tab
 const defaultTabBtn = document.querySelector(".nav-btn.active");
-if (defaultTabBtn) loadTools(defaultTabBtn.dataset.tab);
+if (defaultTabBtn) {
+  if (typeof window.t === "function") {
+    loadTools(defaultTabBtn.dataset.tab);
+  } else {
+    window.addEventListener(
+      "translations-ready",
+      () => loadTools(defaultTabBtn.dataset.tab),
+      { once: true }
+    );
+  }
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   const savedTheme = localStorage.getItem("theme") || "neon";
