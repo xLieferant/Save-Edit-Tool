@@ -216,6 +216,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const levelBtn = document.querySelector("#save-level-btn");
   const editStatus = document.querySelector("#edit-status");
 
+  const websiteBtn = document.querySelector("#websiteBtn");
   const youtubeBtn = document.querySelector("#youtubeBtn");
   const patreonBtn = document.querySelector("#patreonBtn");
   const githubBtn = document.querySelector("#githubBtn");
@@ -595,6 +596,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // -----------------------------
   // EXTERNE LINKS
   // -----------------------------
+  websiteBtn?.addEventListener("click", () =>
+    openUrl("https://www.xlieferant.dev/")
+  );
   youtubeBtn?.addEventListener("click", () =>
     openUrl("https://www.youtube.com/@xLieferant")
   );

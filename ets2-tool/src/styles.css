@@ -240,6 +240,18 @@ body {
   transition: all 0.25s ease;
 }
 
+.nav-action.website {
+  color: #4fc3ff;
+  border-color: rgba(79,195,255,0.45);
+  background: rgba(79,195,255,0.06);
+}
+
+.nav-action.website:hover {
+  background: rgba(79,195,255,0.15);
+  box-shadow: 0 0 25px rgba(79,195,255,0.35);
+  transform: translateY(-2px);
+}
+
 .nav-action.youtube {
   color: #ff4d4f;
   border-color: rgba(255,77,79,0.45);
