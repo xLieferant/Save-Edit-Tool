@@ -11,6 +11,7 @@
             "settings": "⚙️ Einstellungen"
       },
       "buttons": {
+            "website": "Website",
             "youtube": "🔴 YouTube",
             "patreon": "⚠️ Patreon",
             "github": "⚠️ GitHub"
@@ -63,8 +64,8 @@
             "change_skill_points_error": "Fähigkeitspunkte konnten nicht geändert werden",
             "profile_stats_success": "Profilstatistiken erfolgreich aktualisiert!",
             "profile_stats_error": "Profilstatistiken konnten nicht aktualisiert werden",
-            "color_theme_success": "Farbtheme auf {newTheme} geändert!",
-            "color_theme_error": "Farbtheme konnte nicht geändert werden",
+            "color_theme_success": "Farbthema auf {newTheme} geändert!",
+            "color_theme_error": "Farbthema konnte nicht geändert werden",
             "convoy_settings_success": "Konvoi-Einstellungen erfolgreich auf {newValue} gesetzt!",
             "convoy_settings_error": "Konvoi-Einstellungen konnten nicht aktualisiert werden",
             "language_update_error": "Sprache konnte nicht geändert werden",

@@ -11,6 +11,7 @@
             "settings": "⚙️Settings"
       },
       "buttons": {
+            "website": "Website",
             "youtube": "🔴 YouTube",
             "patreon": "⚠️ Patreon",
             "github": "⚠️ GitHub"

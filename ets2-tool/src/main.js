@@ -1,10 +1,12 @@
 import { loadTools, activeTab, openCloneProfileModal, openModalMulti, openModalText } from "./app.js";
+import { updateToolImagesForGame } from "./tools.js";
 import { applySetting } from "./js/applySetting.js";
 import { checkUpdaterOnStartup, manualUpdateCheck } from "./js/updater.js";
 
 const { app } = window.__TAURI__;
 const { openUrl } = window.__TAURI__.opener;
 const { invoke, convertFileSrc } = window.__TAURI__.core;
+let lastSelectedGame = null;
 window.invoke = invoke; // global verfügbar
 
 // -----------------------------
@@ -216,6 +218,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const levelBtn = document.querySelector("#save-level-btn");
   const editStatus = document.querySelector("#edit-status");
 
+  const websiteBtn = document.querySelector("#websiteBtn");
   const youtubeBtn = document.querySelector("#youtubeBtn");
   const patreonBtn = document.querySelector("#patreonBtn");
   const githubBtn = document.querySelector("#githubBtn");
@@ -340,7 +343,7 @@ document.addEventListener("DOMContentLoaded", () => {
       window.currentSavePath = null;
       saveNameDisplay.textContent = "Select a save";
 
-      await invoke("load_profile", { profilePath: window.selectedProfilePath });
+      await invoke("set_active_profile", { profilePath: window.selectedProfilePath });
 
       // Scan saves for this profile
       await scanSavesForProfile();
@@ -441,7 +444,8 @@ document.addEventListener("DOMContentLoaded", () => {
           saveNameDisplay.textContent = s.name ?? s.folder;
           saveDropdownList.classList.remove("show");
 
-          await invoke("set_current_save", {
+          await invoke("load_profile", {
+            profilePath: window.selectedProfilePath,
             savePath: s.path,
           });
 
@@ -595,6 +599,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // -----------------------------
   // EXTERNE LINKS
   // -----------------------------
+  websiteBtn?.addEventListener("click", () =>
+    openUrl("https://www.xlieferant.dev/")
+  );
   youtubeBtn?.addEventListener("click", () =>
     openUrl("https://www.youtube.com/@xLieferant")
   );
@@ -818,6 +825,12 @@ document.addEventListener("DOMContentLoaded", () => {
           atsBtn.disabled = false;
           ets2Btn.classList.add("active");
           ets2Btn.disabled = true;
+        }
+
+        if (game !== lastSelectedGame) {
+          lastSelectedGame = game;
+          updateToolImagesForGame(game);
+          loadTools(activeTab);
         }
       } catch (e) {
         console.warn("Could not sync game buttons:", e);
@@ -1068,4 +1081,5 @@ async function translateUI() {
 window.showLanguagePicker = showLanguagePicker;
 window.t = t;
 window.translateUI = translateUI; // Make it global so you can call it from anywhere
+window.dispatchEvent(new Event("translations-ready"));
 });
