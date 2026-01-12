@@ -8,3 +8,4 @@ pub mod save_editor;
 pub mod settings;
 pub mod language;
 pub mod profile_controls;
+pub mod logging;

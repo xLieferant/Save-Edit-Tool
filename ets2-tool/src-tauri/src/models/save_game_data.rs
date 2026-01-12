@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct SaveGameData {
     pub money: Option<i64>,
     pub xp: Option<i64>,

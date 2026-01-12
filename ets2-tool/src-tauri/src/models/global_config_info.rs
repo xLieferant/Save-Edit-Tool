@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct BaseGameConfig {
     pub max_convoy_size: Option<i64>,
     pub traffic: Option<i64>,

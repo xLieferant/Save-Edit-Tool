@@ -1,6 +1,6 @@
 use crate::dev_log;
-use crate::state::AppProfileState;
-use crate::shared::current_profile::{get_current_profile, require_current_profile};
+use crate::state::{AppProfileState, ProfileCache};
+use crate::shared::current_profile::require_current_profile;
 use crate::shared::decrypt::decrypt_if_needed;
 use crate::shared::paths::{autosave_path, ets2_base_config_path};
 use regex::Regex;
@@ -37,6 +37,7 @@ fn value_to_string(v: &Value) -> String {
 pub fn apply_setting(
     payload: ApplyPayload,
     profile_state: State<'_, AppProfileState>,
+    profile_cache: State<'_, ProfileCache>,
 ) -> Result<(), String> {
     let val_str = value_to_string(&payload.value);
     dev_log!(
@@ -92,6 +93,7 @@ pub fn apply_setting(
             fs::write(&path, new_content)
                 .map_err(|e| format!("Fehler beim Schreiben der Config: {}", e))?;
 
+            profile_cache.invalidate_base_config();
             dev_log!(
                 "Global Config '{}' erfolgreich geändert auf: {}",
                 config_key,
@@ -137,6 +139,7 @@ pub fn apply_setting(
             fs::write(&path, new_content.as_bytes())
                 .map_err(|e| format!("Fehler beim Schreiben des Savegames: {}", e))?;
 
+            profile_cache.invalidate_save_data();
             dev_log!(
                 "Savegame '{}' erfolgreich geändert auf: {}",
                 payload.key,

@@ -1,13 +1,10 @@
 use crate::dev_log;
-use crate::state::{AppProfileState, DecryptCache};
-use crate::shared::current_profile::{get_current_profile, require_current_profile};
+use crate::state::{AppProfileState, ProfileCache};
+use crate::shared::current_profile::require_current_profile;
 use crate::shared::decrypt::decrypt_if_needed;
 use crate::shared::paths::{
     autosave_path, ets2_base_config_path, game_sii_from_save, quicksave_config_path,
-    quicksave_game_path,
 };
-use crate::shared::sii_parser;
-use crate::shared::regex_helper::cragex;
 use regex::Regex;
 use serde::Deserialize;
 use std::fs;
@@ -27,7 +24,11 @@ fn get_active_save_path(
 }
 
 #[command]
-pub fn edit_money(amount: i64, profile_state: State<'_, AppProfileState>) -> Result<(), String> {
+pub fn edit_money(
+    amount: i64,
+    profile_state: State<'_, AppProfileState>,
+    profile_cache: State<'_, ProfileCache>,
+) -> Result<(), String> {
     let path = get_active_save_path(profile_state)?;
     let content = decrypt_if_needed(&path)?;
 
@@ -44,12 +45,17 @@ pub fn edit_money(amount: i64, profile_state: State<'_, AppProfileState>) -> Res
         .to_string();
 
     fs::write(&path, content.as_bytes()).map_err(|e| e.to_string())?;
+    profile_cache.invalidate_save_data();
     dev_log!("Geld geändert: {}", amount);
     Ok(())
 }
 
 #[command]
-pub fn edit_xp(xp: i64, profile_state: State<'_, AppProfileState>) -> Result<(), String> {
+pub fn edit_xp(
+    xp: i64,
+    profile_state: State<'_, AppProfileState>,
+    profile_cache: State<'_, ProfileCache>,
+) -> Result<(), String> {
     let path = get_active_save_path(profile_state)?;
     let content = decrypt_if_needed(&path)?;
 
@@ -66,12 +72,17 @@ pub fn edit_xp(xp: i64, profile_state: State<'_, AppProfileState>) -> Result<(),
         .to_string();
 
     fs::write(&path, content.as_bytes()).map_err(|e| e.to_string())?;
+    profile_cache.invalidate_save_data();
     dev_log!("XP geändert: {}", xp);
     Ok(())
 }
 
 #[command]
-pub fn edit_level(xp: i64, profile_state: State<'_, AppProfileState>) -> Result<(), String> {
+pub fn edit_level(
+    xp: i64,
+    profile_state: State<'_, AppProfileState>,
+    profile_cache: State<'_, ProfileCache>,
+) -> Result<(), String> {
     let path = get_active_save_path(profile_state)?;
     let content = decrypt_if_needed(&path)?;
 
@@ -88,6 +99,7 @@ pub fn edit_level(xp: i64, profile_state: State<'_, AppProfileState>) -> Result<
         .to_string();
 
     fs::write(&path, content.as_bytes()).map_err(|e| e.to_string())?;
+    profile_cache.invalidate_save_data();
     dev_log!("XP (via edit_level) geändert: {}", xp);
     Ok(())
 }
@@ -101,6 +113,7 @@ pub struct EditValuePayload {
 pub fn edit_player_money(
     value: i64,
     profile_state: State<'_, AppProfileState>,
+    profile_cache: State<'_, ProfileCache>,
 ) -> Result<(), String> {
     dev_log!("--- edit_player_money START ---");
 
@@ -117,6 +130,7 @@ pub fn edit_player_money(
     let new_content = re_money.replace(&content, format!("money_account: {}", value));
 
     fs::write(&path, new_content.as_bytes()).map_err(|e| e.to_string())?;
+    profile_cache.invalidate_save_data();
 
     dev_log!("Money erfolgreich geändert auf {}", value);
     dev_log!("--- edit_player_money END ---");
@@ -128,6 +142,7 @@ pub fn edit_player_money(
 pub fn edit_player_experience(
     value: i64,
     profile_state: State<'_, AppProfileState>,
+    profile_cache: State<'_, ProfileCache>,
 ) -> Result<(), String> {
     dev_log!("--- edit_player_experience START ---");
 
@@ -144,6 +159,7 @@ pub fn edit_player_experience(
     let new_content = re_experience.replace(&content, format!("experience_points: {}", value));
 
     fs::write(&path, new_content.as_bytes()).map_err(|e| e.to_string())?;
+    profile_cache.invalidate_save_data();
 
     dev_log!("Experience erfolgreich geändert auf {}", value);
     dev_log!("--- edit_player_experience END ---");
@@ -156,6 +172,7 @@ pub fn edit_skill_value(
     skill: String,
     value: i64,
     profile_state: State<'_, AppProfileState>,
+    profile_cache: State<'_, ProfileCache>,
 ) -> Result<(), String> {
     dev_log!("--- edit_skill START ---");
     dev_log!("Skill: {}, Wert: {}", skill, value);
@@ -175,6 +192,7 @@ pub fn edit_skill_value(
     let new_content = re.replace(&content, format!("{}: {}", skill, value));
 
     fs::write(&path, new_content.as_bytes()).map_err(|e| e.to_string())?;
+    profile_cache.invalidate_save_data();
 
     dev_log!("Skill '{}' erfolgreich geändert auf {}", skill, value);
     dev_log!("--- edit_skill END ---");
@@ -187,7 +205,8 @@ pub fn edit_skill_value(
 #[command]
 pub fn edit_developer_value(
     value: i64,
-    profile_state: State<'_, AppProfileState>,
+    _profile_state: State<'_, AppProfileState>,
+    profile_cache: State<'_, ProfileCache>,
 ) -> Result<(), String> {
     let path = ets2_base_config_path().ok_or("Globaler Config-Pfad nicht gefunden".to_string())?;
 
@@ -211,6 +230,7 @@ pub fn edit_developer_value(
         return Err("Developer-Wert konnte nicht verifiziert werden".into());
     }
 
+    profile_cache.invalidate_base_config();
     dev_log!("Dev erfolgreich geändert auf {}", value);
     Ok(())
 }
@@ -218,7 +238,8 @@ pub fn edit_developer_value(
 #[command]
 pub fn edit_console_value(
     value: i64,
-    profile_state: State<'_, AppProfileState>,
+    _profile_state: State<'_, AppProfileState>,
+    profile_cache: State<'_, ProfileCache>,
 ) -> Result<(), String> {
     let path = ets2_base_config_path().ok_or("Globaler Config-Pfad nicht gefunden".to_string())?;
 
@@ -242,6 +263,7 @@ pub fn edit_console_value(
         return Err("Console-Wert konnte nicht verifiziert werden".into());
     }
 
+    profile_cache.invalidate_base_config();
     dev_log!("Dev erfolgreich geändert auf {}", value);
     Ok(())
 }
@@ -249,7 +271,8 @@ pub fn edit_console_value(
 #[command]
 pub fn edit_convoy_value(
     value: i64,
-    profile_state: State<'_, AppProfileState>,
+    _profile_state: State<'_, AppProfileState>,
+    profile_cache: State<'_, ProfileCache>,
 ) -> Result<(), String> {
     let path = ets2_base_config_path().ok_or("Globaler Config-Pfad nicht gefunden".to_string())?;
 
@@ -273,6 +296,7 @@ pub fn edit_convoy_value(
         return Err("Convoy-Wert konnte nicht verifiziert werden".into());
     }
 
+    profile_cache.invalidate_base_config();
     dev_log!("Convoy erfolgreich geändert auf {}", value);
     Ok(())
 }
@@ -280,7 +304,8 @@ pub fn edit_convoy_value(
 #[command]
 pub fn edit_traffic_value(
     value: i64,
-    profile_state: State<'_, AppProfileState>,
+    _profile_state: State<'_, AppProfileState>,
+    profile_cache: State<'_, ProfileCache>,
 ) -> Result<(), String> {
     // 🔒 Clamping: garantiert 0–10
     let value = value.clamp(0, 10);
@@ -301,6 +326,7 @@ pub fn edit_traffic_value(
 
     fs::write(&path, new_content.as_bytes()).map_err(|e| e.to_string())?;
 
+    profile_cache.invalidate_base_config();
     dev_log!("Traffic erfolgreich geändert auf {}", value);
     Ok(())
 }
@@ -309,6 +335,7 @@ pub fn edit_traffic_value(
 pub fn edit_parking_doubles_value(
     value: i64,
     profile_state: State<'_, AppProfileState>,
+    profile_cache: State<'_, ProfileCache>,
 ) -> Result<(), String> {
     let profile = require_current_profile(profile_state)?;
 
@@ -337,6 +364,7 @@ pub fn edit_parking_doubles_value(
         return Err("Simple Parking Doubles-Wert konnte nicht verifiziert werden".into());
     }
 
+    profile_cache.invalidate_save_config();
     dev_log!("Parking Doubles erfolgreich geändert auf {}", value);
     Ok(())
 }
@@ -350,7 +378,8 @@ pub struct KeyValuePayload {
 #[command]
 pub fn edit_config_value(
     payload: KeyValuePayload,
-    profile_state: State<'_, AppProfileState>,
+    _profile_state: State<'_, AppProfileState>,
+    profile_cache: State<'_, ProfileCache>,
 ) -> Result<(), String> {
     let path = ets2_base_config_path().ok_or("Globaler Config-Pfad nicht gefunden".to_string())?;
     let content = fs::read_to_string(&path).map_err(|e| e.to_string())?;
@@ -360,6 +389,7 @@ pub fn edit_config_value(
         format!(r#"uset {} "{}""#, payload.key, payload.value),
     );
     fs::write(&path, new_content.as_bytes()).map_err(|e| e.to_string())?;
+    profile_cache.invalidate_base_config();
     dev_log!(
         "Globalen Config-Wert geändert: {} -> {}",
         payload.key,
@@ -372,6 +402,7 @@ pub fn edit_config_value(
 pub fn edit_save_config_value(
     payload: KeyValuePayload,
     profile_state: State<'_, AppProfileState>,
+    profile_cache: State<'_, ProfileCache>,
 ) -> Result<(), String> {
     let profile = require_current_profile(profile_state)?;
     let path = quicksave_config_path(&profile);
@@ -382,6 +413,7 @@ pub fn edit_save_config_value(
         format!(r#"uset {} "{}""#, payload.key, payload.value),
     );
     fs::write(&path, new_content.as_bytes()).map_err(|e| e.to_string())?;
+    profile_cache.invalidate_save_config();
     dev_log!(
         "Profil-Config-Wert geändert: {} -> {}",
         payload.key,
