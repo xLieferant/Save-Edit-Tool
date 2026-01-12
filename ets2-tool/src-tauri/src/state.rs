@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use crate::models::global_config_info::BaseGameConfig;
@@ -12,6 +12,12 @@ use crate::models::trucks::ParsedTruck;
 #[derive(Default)]
 pub struct DecryptCache {
     pub files: Mutex<HashMap<PathBuf, String>>,
+}
+
+impl DecryptCache {
+    pub fn invalidate_path(&self, path: &Path) {
+        self.files.lock().unwrap().remove(path);
+    }
 }
 
 #[derive(Default)]

@@ -1,5 +1,5 @@
 use crate::dev_log;
-use crate::state::{AppProfileState, ProfileCache};
+use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 use crate::shared::current_profile::require_current_profile;
 use crate::shared::decrypt::decrypt_if_needed;
 use crate::shared::paths::{
@@ -28,6 +28,7 @@ pub fn edit_money(
     amount: i64,
     profile_state: State<'_, AppProfileState>,
     profile_cache: State<'_, ProfileCache>,
+    decrypt_cache: State<'_, DecryptCache>,
 ) -> Result<(), String> {
     let path = get_active_save_path(profile_state)?;
     let content = decrypt_if_needed(&path)?;
@@ -45,6 +46,7 @@ pub fn edit_money(
         .to_string();
 
     fs::write(&path, content.as_bytes()).map_err(|e| e.to_string())?;
+    decrypt_cache.invalidate_path(&path);
     profile_cache.invalidate_save_data();
     dev_log!("Geld geändert: {}", amount);
     Ok(())
@@ -55,6 +57,7 @@ pub fn edit_xp(
     xp: i64,
     profile_state: State<'_, AppProfileState>,
     profile_cache: State<'_, ProfileCache>,
+    decrypt_cache: State<'_, DecryptCache>,
 ) -> Result<(), String> {
     let path = get_active_save_path(profile_state)?;
     let content = decrypt_if_needed(&path)?;
@@ -72,6 +75,7 @@ pub fn edit_xp(
         .to_string();
 
     fs::write(&path, content.as_bytes()).map_err(|e| e.to_string())?;
+    decrypt_cache.invalidate_path(&path);
     profile_cache.invalidate_save_data();
     dev_log!("XP geändert: {}", xp);
     Ok(())
@@ -82,6 +86,7 @@ pub fn edit_level(
     xp: i64,
     profile_state: State<'_, AppProfileState>,
     profile_cache: State<'_, ProfileCache>,
+    decrypt_cache: State<'_, DecryptCache>,
 ) -> Result<(), String> {
     let path = get_active_save_path(profile_state)?;
     let content = decrypt_if_needed(&path)?;
@@ -99,6 +104,7 @@ pub fn edit_level(
         .to_string();
 
     fs::write(&path, content.as_bytes()).map_err(|e| e.to_string())?;
+    decrypt_cache.invalidate_path(&path);
     profile_cache.invalidate_save_data();
     dev_log!("XP (via edit_level) geändert: {}", xp);
     Ok(())
@@ -114,6 +120,7 @@ pub fn edit_player_money(
     value: i64,
     profile_state: State<'_, AppProfileState>,
     profile_cache: State<'_, ProfileCache>,
+    decrypt_cache: State<'_, DecryptCache>,
 ) -> Result<(), String> {
     dev_log!("--- edit_player_money START ---");
 
@@ -130,6 +137,7 @@ pub fn edit_player_money(
     let new_content = re_money.replace(&content, format!("money_account: {}", value));
 
     fs::write(&path, new_content.as_bytes()).map_err(|e| e.to_string())?;
+    decrypt_cache.invalidate_path(&path);
     profile_cache.invalidate_save_data();
 
     dev_log!("Money erfolgreich geändert auf {}", value);
@@ -143,6 +151,7 @@ pub fn edit_player_experience(
     value: i64,
     profile_state: State<'_, AppProfileState>,
     profile_cache: State<'_, ProfileCache>,
+    decrypt_cache: State<'_, DecryptCache>,
 ) -> Result<(), String> {
     dev_log!("--- edit_player_experience START ---");
 
@@ -159,6 +168,7 @@ pub fn edit_player_experience(
     let new_content = re_experience.replace(&content, format!("experience_points: {}", value));
 
     fs::write(&path, new_content.as_bytes()).map_err(|e| e.to_string())?;
+    decrypt_cache.invalidate_path(&path);
     profile_cache.invalidate_save_data();
 
     dev_log!("Experience erfolgreich geändert auf {}", value);
@@ -173,6 +183,7 @@ pub fn edit_skill_value(
     value: i64,
     profile_state: State<'_, AppProfileState>,
     profile_cache: State<'_, ProfileCache>,
+    decrypt_cache: State<'_, DecryptCache>,
 ) -> Result<(), String> {
     dev_log!("--- edit_skill START ---");
     dev_log!("Skill: {}, Wert: {}", skill, value);
@@ -192,6 +203,7 @@ pub fn edit_skill_value(
     let new_content = re.replace(&content, format!("{}: {}", skill, value));
 
     fs::write(&path, new_content.as_bytes()).map_err(|e| e.to_string())?;
+    decrypt_cache.invalidate_path(&path);
     profile_cache.invalidate_save_data();
 
     dev_log!("Skill '{}' erfolgreich geändert auf {}", skill, value);
@@ -207,6 +219,7 @@ pub fn edit_developer_value(
     value: i64,
     _profile_state: State<'_, AppProfileState>,
     profile_cache: State<'_, ProfileCache>,
+    decrypt_cache: State<'_, DecryptCache>,
 ) -> Result<(), String> {
     let path = ets2_base_config_path().ok_or("Globaler Config-Pfad nicht gefunden".to_string())?;
 
@@ -231,6 +244,7 @@ pub fn edit_developer_value(
     }
 
     profile_cache.invalidate_base_config();
+    decrypt_cache.invalidate_path(&path);
     dev_log!("Dev erfolgreich geändert auf {}", value);
     Ok(())
 }
@@ -240,6 +254,7 @@ pub fn edit_console_value(
     value: i64,
     _profile_state: State<'_, AppProfileState>,
     profile_cache: State<'_, ProfileCache>,
+    decrypt_cache: State<'_, DecryptCache>,
 ) -> Result<(), String> {
     let path = ets2_base_config_path().ok_or("Globaler Config-Pfad nicht gefunden".to_string())?;
 
@@ -264,6 +279,7 @@ pub fn edit_console_value(
     }
 
     profile_cache.invalidate_base_config();
+    decrypt_cache.invalidate_path(&path);
     dev_log!("Dev erfolgreich geändert auf {}", value);
     Ok(())
 }
@@ -273,6 +289,7 @@ pub fn edit_convoy_value(
     value: i64,
     _profile_state: State<'_, AppProfileState>,
     profile_cache: State<'_, ProfileCache>,
+    decrypt_cache: State<'_, DecryptCache>,
 ) -> Result<(), String> {
     let path = ets2_base_config_path().ok_or("Globaler Config-Pfad nicht gefunden".to_string())?;
 
@@ -297,6 +314,7 @@ pub fn edit_convoy_value(
     }
 
     profile_cache.invalidate_base_config();
+    decrypt_cache.invalidate_path(&path);
     dev_log!("Convoy erfolgreich geändert auf {}", value);
     Ok(())
 }
@@ -306,6 +324,7 @@ pub fn edit_traffic_value(
     value: i64,
     _profile_state: State<'_, AppProfileState>,
     profile_cache: State<'_, ProfileCache>,
+    decrypt_cache: State<'_, DecryptCache>,
 ) -> Result<(), String> {
     // 🔒 Clamping: garantiert 0–10
     let value = value.clamp(0, 10);
@@ -327,6 +346,7 @@ pub fn edit_traffic_value(
     fs::write(&path, new_content.as_bytes()).map_err(|e| e.to_string())?;
 
     profile_cache.invalidate_base_config();
+    decrypt_cache.invalidate_path(&path);
     dev_log!("Traffic erfolgreich geändert auf {}", value);
     Ok(())
 }
@@ -336,6 +356,7 @@ pub fn edit_parking_doubles_value(
     value: i64,
     profile_state: State<'_, AppProfileState>,
     profile_cache: State<'_, ProfileCache>,
+    decrypt_cache: State<'_, DecryptCache>,
 ) -> Result<(), String> {
     let profile = require_current_profile(profile_state)?;
 
@@ -365,6 +386,7 @@ pub fn edit_parking_doubles_value(
     }
 
     profile_cache.invalidate_save_config();
+    decrypt_cache.invalidate_path(&path);
     dev_log!("Parking Doubles erfolgreich geändert auf {}", value);
     Ok(())
 }
@@ -380,6 +402,7 @@ pub fn edit_config_value(
     payload: KeyValuePayload,
     _profile_state: State<'_, AppProfileState>,
     profile_cache: State<'_, ProfileCache>,
+    decrypt_cache: State<'_, DecryptCache>,
 ) -> Result<(), String> {
     let path = ets2_base_config_path().ok_or("Globaler Config-Pfad nicht gefunden".to_string())?;
     let content = fs::read_to_string(&path).map_err(|e| e.to_string())?;
@@ -390,6 +413,7 @@ pub fn edit_config_value(
     );
     fs::write(&path, new_content.as_bytes()).map_err(|e| e.to_string())?;
     profile_cache.invalidate_base_config();
+    decrypt_cache.invalidate_path(&path);
     dev_log!(
         "Globalen Config-Wert geändert: {} -> {}",
         payload.key,
@@ -403,6 +427,7 @@ pub fn edit_save_config_value(
     payload: KeyValuePayload,
     profile_state: State<'_, AppProfileState>,
     profile_cache: State<'_, ProfileCache>,
+    decrypt_cache: State<'_, DecryptCache>,
 ) -> Result<(), String> {
     let profile = require_current_profile(profile_state)?;
     let path = quicksave_config_path(&profile);
@@ -414,6 +439,7 @@ pub fn edit_save_config_value(
     );
     fs::write(&path, new_content.as_bytes()).map_err(|e| e.to_string())?;
     profile_cache.invalidate_save_config();
+    decrypt_cache.invalidate_path(&path);
     dev_log!(
         "Profil-Config-Wert geändert: {} -> {}",
         payload.key,

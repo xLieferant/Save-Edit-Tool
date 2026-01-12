@@ -92,7 +92,7 @@ fn generic_vehicle_attribute_edit<F>(
 where
     F: Fn(&Captures) -> String,
 {
-    let (content, path) = read_save_content(profile_state, decrypt_cache)?;
+    let (content, path) = read_save_content(profile_state, decrypt_cache.clone())?;
     let vehicle_id = get_player_vehicle_id(&content, player_vehicle_key)?;
 
     // ← CHANGED: Use proper brace matching
@@ -117,6 +117,7 @@ where
     let new_content = format!("{}{}{}", &content[..block_start], new_block, &content[block_end..]);
     write_save_content(&path, &new_content)?;
 
+    decrypt_cache.invalidate_path(Path::new(&path));
     profile_cache.invalidate_save_data();
     profile_cache.invalidate_vehicle_data();
 
@@ -162,7 +163,7 @@ pub async fn repair_player_truck(
     profile_cache: tauri::State<'_, ProfileCache>,
 ) -> Result<(), String> {
     dev_log!("Repairing player truck");
-    let (content, path) = read_save_content(profile_state, decrypt_cache)?;
+    let (content, path) = read_save_content(profile_state, decrypt_cache.clone())?;
     let truck_id = get_player_vehicle_id(&content, "my_truck")?;
 
     // ← CHANGED: Use proper brace matching
@@ -193,6 +194,7 @@ pub async fn repair_player_truck(
     let new_content = format!("{}{}{}", &content[..block_start], block, &content[block_end..]);
     write_save_content(&path, &new_content)?;
 
+    decrypt_cache.invalidate_path(Path::new(&path));
     profile_cache.invalidate_save_data();
     profile_cache.invalidate_vehicle_data();
 
@@ -314,7 +316,7 @@ pub async fn repair_player_trailer(
     profile_cache: tauri::State<'_, ProfileCache>,
 ) -> Result<(), String> {
     dev_log!("Repairing player trailer");
-    let (content, path) = read_save_content(profile_state, decrypt_cache)?;
+    let (content, path) = read_save_content(profile_state, decrypt_cache.clone())?;
     let trailer_id = get_player_vehicle_id(&content, "my_trailer")?;
 
     dev_log!("Found trailer ID: {}", trailer_id);
@@ -359,6 +361,7 @@ pub async fn repair_player_trailer(
     dev_log!("Writing repaired trailer back to file");
     write_save_content(&path, &new_content)?;
 
+    decrypt_cache.invalidate_path(Path::new(&path));
     profile_cache.invalidate_save_data();
     profile_cache.invalidate_vehicle_data();
 
