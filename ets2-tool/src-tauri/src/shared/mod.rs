@@ -8,3 +8,4 @@ pub mod extract_save_name;
 pub mod game_loader;
 pub mod hex_float;
 pub mod regex_helper;
+pub mod user_log;

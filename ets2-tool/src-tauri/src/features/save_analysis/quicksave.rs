@@ -1,11 +1,9 @@
 use crate::dev_log;
 use crate::models::quicksave_game_info::GameDataQuicksave;
-use crate::state::{AppProfileState, DecryptCache};
-use crate::shared::current_profile::{
-    get_current_profile, require_current_profile, require_current_save,
-};
-use crate::shared::decrypt::decrypt_if_needed;
-use crate::shared::paths::{game_sii_from_save, quicksave_game_path};
+use crate::state::{AppProfileState, DecryptCache, ProfileCache};
+use crate::shared::current_profile::require_current_profile;
+use crate::shared::decrypt::decrypt_cached;
+use crate::shared::paths::game_sii_from_save;
 use crate::shared::regex_helper::cragex;
 use crate::shared::sii_parser::{parse_trailers_from_sii, parse_trucks_from_sii};
 use std::path::Path;
@@ -15,7 +13,8 @@ use tauri::command;
 #[command]
 pub async fn quicksave_game_info(
     profile_state: State<'_, AppProfileState>,
-    cache: State<'_, DecryptCache>,
+    profile_cache: State<'_, ProfileCache>,
+    decrypt_cache: State<'_, DecryptCache>,
 ) -> Result<GameDataQuicksave, String> {
     dev_log!("-------------------------------------------");
     dev_log!("Starte quicksave_game_info()");
@@ -33,9 +32,15 @@ pub async fn quicksave_game_info(
     dev_log!("Save: {}", save);
 
     let path = game_sii_from_save(Path::new(&save));
+    let path_key = path.display().to_string();
     dev_log!("Pfad: {:?}", path);
 
-    let content = decrypt_if_needed(&path).map_err(|e| {
+    if let Some(cached) = profile_cache.get_quicksave_data(&path_key) {
+        dev_log!("quicksave_game_info aus Cache geliefert");
+        return Ok(cached);
+    }
+
+    let content = decrypt_cached(&path, &decrypt_cache).map_err(|e| {
         dev_log!("Decrypt Fehler: {}", e);
         e
     })?;
@@ -192,7 +197,7 @@ pub async fn quicksave_game_info(
         }
     }
 
-    Ok(GameDataQuicksave {
+    let result = GameDataQuicksave {
         player_id,
         bank_id,
         player_xp,
@@ -218,5 +223,8 @@ pub async fn quicksave_game_info(
         trailer_odometer_float,
         trailer_wear_float,
         trailer_wheels_float,
-    })
+    };
+
+    profile_cache.cache_quicksave_data(path_key, result.clone());
+    Ok(result)
 }

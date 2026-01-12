@@ -3,7 +3,7 @@ use crate::models::cached_profile::CachedProfile;
 use crate::models::profile_info::ProfileInfo;
 use crate::models::profile_info::SaveKind;
 use crate::models::save_info::SaveInfo;
-use crate::state::{AppProfileState, DecryptCache};
+use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 use crate::shared::current_profile::set_current_profile;
 use crate::shared::decrypt::decrypt_if_needed;
 use crate::shared::extract::extract_profile_name;
@@ -110,12 +110,14 @@ pub fn set_active_profile(
     profile_path: String,
     profile_state: State<'_, AppProfileState>,
     cache: State<'_, DecryptCache>,
+    profile_cache: State<'_, ProfileCache>,
 ) -> Result<(), String> {
     // Profil setzen
     *profile_state.current_profile.lock().unwrap() = Some(profile_path.clone());
 
     // 🔥 Cache vollständig leeren
     cache.files.lock().unwrap().clear();
+    profile_cache.reset_profile(Some(profile_path.clone()));
 
     dev_log!(
         "Aktives Profil gesetzt & DecryptCache geleert: {}",
@@ -129,18 +131,25 @@ pub fn set_current_save(
     save_path: String,
     state: State<'_, AppProfileState>,
     cache: State<'_, DecryptCache>,
+    profile_cache: State<'_, ProfileCache>,
 ) -> Result<(), String> {
     *state.current_save.lock().unwrap() = Some(save_path.clone());
     // Cache leeren
     cache.files.lock().unwrap().clear();
+    profile_cache.set_save_path(Some(save_path.clone()));
     dev_log!("Aktiver Save gesetzt: {}", save_path);
     Ok(())
 }
 
 #[tauri::command]
-pub fn switch_profile(cache: State<DecryptCache>, new_profile_path: String) -> Result<(), String> {
+pub fn switch_profile(
+    cache: State<DecryptCache>,
+    new_profile_path: String,
+    profile_cache: State<'_, ProfileCache>,
+) -> Result<(), String> {
     // 🔥 Cache vollständig leeren
     cache.files.lock().unwrap().clear();
+    profile_cache.reset_profile(Some(new_profile_path.clone()));
 
     dev_log!("Profil gewechselt: {} → Cache geleert", new_profile_path);
 
@@ -341,6 +350,7 @@ pub fn load_profile(
     save_path: Option<String>,
     profile_state: State<'_, AppProfileState>,
     cache: State<'_, DecryptCache>,
+    profile_cache: State<'_, ProfileCache>,
 ) -> Result<String, String> {
     let save_path_str = save_path.ok_or_else(|| "Kein Save angegeben".to_string())?;
     let save_to_load = PathBuf::from(save_path_str);
@@ -350,13 +360,19 @@ pub fn load_profile(
     }
 
     // Profil setzen
-    set_active_profile(profile_path.clone(), profile_state.clone(), cache.clone())?;
+    set_active_profile(
+        profile_path.clone(),
+        profile_state.clone(),
+        cache.clone(),
+        profile_cache.clone(),
+    )?;
 
     // 🔥 SAVE SETZEN (Entweder übergeben oder Autosave)
     set_current_save(
         save_to_load.to_string_lossy().to_string(),
         profile_state,
         cache,
+        profile_cache,
     )?;
 
     dev_log!(

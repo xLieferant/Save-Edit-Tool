@@ -9,6 +9,16 @@ const { invoke, convertFileSrc } = window.__TAURI__.core;
 let lastSelectedGame = null;
 window.invoke = invoke; // global verfügbar
 
+async function logUserAction(action, stage = "start") {
+  try {
+    await invoke("log_user_action", { action, stage });
+  } catch (err) {
+    console.warn("User log failed:", err);
+  }
+}
+
+window.logUserAction = logUserAction;
+
 // -----------------------------
 // ICON & THEME LOGIC
 // -----------------------------
@@ -334,6 +344,8 @@ document.addEventListener("DOMContentLoaded", () => {
   async function loadSelectedProfile() {
     if (!window.selectedProfilePath) return;
 
+    window.logUserAction("load_profile", "start");
+
     try {
       profileStatus.textContent = "Loading profile...";
 
@@ -386,10 +398,12 @@ document.addEventListener("DOMContentLoaded", () => {
       profileStatus.textContent = "Profile loaded. Please select a save.";
       showToast("toasts.profile_loaded_select_save", {}, "info");
       loadTools(activeTab);
+      window.logUserAction("load_profile", "success");
     } catch (err) {
       console.error(err);
       profileStatus.textContent = "Error loading profile";
       showToast("toasts.profile_load_error", {}, "error");
+      window.logUserAction("load_profile", "error");
     }
   }
 
@@ -461,6 +475,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function loadSelectedSave() {
+    window.logUserAction("load_save", "start");
     try {
       profileStatus.textContent = "Loading save...";
 
@@ -476,9 +491,11 @@ document.addEventListener("DOMContentLoaded", () => {
       profileStatus.textContent = "Save loaded successfully";
       showToast("toasts.save_loaded_success", {}, "success");
       loadTools(activeTab);
+      window.logUserAction("load_save", "success");
     } catch (e) {
       console.error(e);
       showToast("toasts.save_load_error", {}, "error");
+      window.logUserAction("load_save", "error");
     }
   }
 
@@ -681,6 +698,8 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    window.logUserAction("copy_controls", "start");
+
     try {
       const profiles = await invoke("find_ets2_profiles");
 
@@ -728,8 +747,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Backend currently returns a hardcoded string, but we can try to translate it or override
       showToast("toasts.copy_controls_success", {}, "success");
+      window.logUserAction("copy_controls", "success");
 
     } catch (err) {
+      window.logUserAction("copy_controls", "error");
       console.error("Copy controls failed:", err);
       showToast("toasts.copy_controls_error", {}, "error");
     }
@@ -744,6 +765,8 @@ document.addEventListener("DOMContentLoaded", () => {
       showToast("toasts.no_source_profile_selected", {}, "warning");
       return;
     }
+
+    window.logUserAction("move_mods", "start");
 
     try {
       const profiles = await invoke("find_ets2_profiles");
@@ -790,8 +813,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const count = countMatch ? countMatch[0] : "?";
       
       showToast("toasts.move_mods_success", { count }, "success");
+      window.logUserAction("move_mods", "success");
 
     } catch (err) {
+      window.logUserAction("move_mods", "error");
       console.error("Move mods error:", err);
       showToast("toasts.move_mods_error", {}, "error");
     }
@@ -807,6 +832,7 @@ document.addEventListener("DOMContentLoaded", () => {
   } = {}) {
     profileStatus.textContent = "Scanning profiles...";
     profileDropdownList.innerHTML = "";
+    window.logUserAction("scan_profiles", "start");
 
     try {
       // Get current game to update UI
@@ -926,10 +952,12 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         }
       }
+      window.logUserAction("scan_profiles", "success");
     } catch (err) {
       console.error(err);
       profileStatus.textContent = "Scan failed";
       showToast("toasts.no_profiles_found", {}, "error");
+      window.logUserAction("scan_profiles", "error");
     }
   }
 

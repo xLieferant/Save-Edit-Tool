@@ -413,6 +413,7 @@ export async function openCloneProfileModal() {
   }
 
   async function apply() {
+    if (window.logUserAction) window.logUserAction("clone_profile", "start");
     const newName = cloneNameInput.value.trim();
     if (!newName) return;
 
@@ -429,6 +430,7 @@ export async function openCloneProfileModal() {
       });
 
       window.showToast(msg, "success");
+      if (window.logUserAction) window.logUserAction("clone_profile", "success");
       
       // Refresh list
       const refreshBtn = document.querySelector("#refreshBtn");
@@ -436,6 +438,7 @@ export async function openCloneProfileModal() {
 
       cleanup();
     } catch (e) {
+      if (window.logUserAction) window.logUserAction("clone_profile", "error");
       window.showToast((await window.t("toasts.clone_failed")).replace('{error}', e), "error");
       console.error(e);
       modalCloneApply.disabled = false;

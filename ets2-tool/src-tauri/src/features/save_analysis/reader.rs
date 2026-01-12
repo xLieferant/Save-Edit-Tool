@@ -1,8 +1,8 @@
 use crate::dev_log;
 use crate::models::save_game_data::SaveGameData;
-use crate::state::AppProfileState;
+use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 use crate::shared::current_profile::require_current_profile;
-use crate::shared::decrypt::decrypt_if_needed;
+use crate::shared::decrypt::decrypt_cached;
 use crate::shared::paths::{autosave_path, ets2_base_config_path, info_sii_from_save};
 use regex::Regex;
 use std::fs;
@@ -72,11 +72,20 @@ fn get_active_save_path(
 #[command]
 pub fn read_all_save_data(
     profile_state: State<'_, AppProfileState>,
+    cache: State<'_, ProfileCache>,
+    decrypt_cache: State<'_, DecryptCache>,
 ) -> Result<SaveGameData, String> {
     let path = get_active_save_path(profile_state)?;
+    let path_key = path.display().to_string();
+
+    if let Some(cached) = cache.get_save_game_data(&path_key) {
+        dev_log!("Lese alle Speicherdaten aus Cache: {:?}", path);
+        return Ok(cached);
+    }
+
     dev_log!("Lese alle Speicherdaten aus: {:?}", path);
 
-    let content = decrypt_if_needed(&path)?;
+    let content = decrypt_cached(&path, &decrypt_cache)?;
 
     // Hilfsfunktion: Sucht erst nach Hauptwert, dann nach Info-Wert
     let find_val = |main_pat: &str, info_pat: &str| -> Option<i64> {
@@ -120,6 +129,7 @@ pub fn read_all_save_data(
         data.visited_cities
     );
 
+    cache.cache_save_game_data(path_key, data.clone());
     Ok(data)
 }
 

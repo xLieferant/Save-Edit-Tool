@@ -1,20 +1,24 @@
 // Make sure these imports match your project structure
-use crate::shared::paths::ets2_base_config_path;
-// Import the new struct from models
 use crate::dev_log;
 use crate::models::global_config_info::BaseGameConfig;
+use crate::models::save_game_config::SaveGameConfig;
+use crate::shared::decrypt::decrypt_if_needed;
+use crate::shared::paths::ets2_base_config_path;
+use crate::shared::paths::quicksave_config_path;
+use crate::state::ProfileCache;
 use regex::Regex;
 use std::fs;
-use tauri::command;
-// Wird für path.exists() benötigt
-use crate::shared::paths::quicksave_config_path;
-use crate::shared::decrypt::decrypt_if_needed;
-use crate::models::save_game_config::SaveGameConfig;
+use tauri::{command, State};
 
 //* Liest die globale config.cfg im Basis-Verzeichnis des Spiels *//
 #[command]
-pub fn read_base_config() -> Result<BaseGameConfig, String> {
+pub fn read_base_config(cache: State<'_, ProfileCache>) -> Result<BaseGameConfig, String> {
     dev_log!("Lese globale Config");
+
+    if let Some(cached) = cache.get_base_config() {
+        dev_log!("Base config aus Cache geliefert");
+        return Ok(cached);
+    }
 
     // Pfad zur globalen config.cfg ermitteln
     let path = match ets2_base_config_path() {
@@ -62,6 +66,8 @@ pub fn read_base_config() -> Result<BaseGameConfig, String> {
         data.console,
     );
 
+    cache.cache_base_config(data.clone());
+
     Ok(data)
 }
 
@@ -69,10 +75,18 @@ pub fn read_base_config() -> Result<BaseGameConfig, String> {
 // (z.B. .../Euro Truck Simulator 2/profiles/12345/config.cfg)
 #[command]
 // Der Funktionskopf akzeptiert den Pfad direkt
-pub fn read_save_config(profile_path: &str) -> Result<SaveGameConfig, String> {
+pub fn read_save_config(
+    profile_path: &str,
+    cache: State<'_, ProfileCache>,
+) -> Result<SaveGameConfig, String> {
     // Wir nehmen den übergebenen profile_path direkt.
 
     dev_log!("Lese Config aus Profilpfad: {}", profile_path);
+
+    if let Some(cached) = cache.get_save_config() {
+        dev_log!("Save config aus Cache geliefert");
+        return Ok(cached);
+    }
 
     // Verwende die korrekte Hilfsfunktion, um den vollen Pfad zur config.cfg innerhalb des Profilordners zu erhalten
     let path = quicksave_config_path(profile_path);
@@ -99,5 +113,7 @@ pub fn read_save_config(profile_path: &str) -> Result<SaveGameConfig, String> {
         "Gefundene Daten: uset g_simple_parking_doubles {:?}",
         data.factor_parking_doubles,
     );
+
+    cache.cache_save_config(data.clone());
     Ok(data)
 }

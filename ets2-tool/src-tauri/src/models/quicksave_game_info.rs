@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct GameDataQuicksave {
     pub player_id: Option<String>,
     pub bank_id: Option<String>,

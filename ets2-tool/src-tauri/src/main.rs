@@ -3,7 +3,7 @@
     windows_subsystem = "windows"
 )]
 
-use crate::state::{AppProfileState, DecryptCache};
+use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 
 mod models;
 mod state;
@@ -15,6 +15,7 @@ fn main() {
         .plugin(tauri_plugin_fs::init())
         .manage(DecryptCache::default())
         .manage(AppProfileState::default())
+        .manage(ProfileCache::default())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
@@ -84,6 +85,8 @@ fn main() {
             features::language::commands::get_current_language_command,
             features::language::commands::set_language_command,
             features::language::commands::translate_command,
+            // User action logging
+            features::logging::commands::log_user_action,
                 
                 //Feature: Profile Controls move around
                 features::profile_controls::commands::copy_profile_controls,

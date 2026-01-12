@@ -1,10 +1,10 @@
 use crate::dev_log;
 use crate::shared::hex_float::float_to_hex;
 use crate::shared::current_profile::{require_current_profile, require_current_save};
-use crate::shared::decrypt::decrypt_if_needed;
+use crate::shared::decrypt::decrypt_cached;
 use crate::shared::paths::game_sii_from_save;
 use crate::shared::regex_helper::cragex;
-use crate::state::AppProfileState;
+use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 use regex::{Captures, Regex};
 use std::fs;
 use std::path::Path;
@@ -14,13 +14,16 @@ use tauri::command;
 // Helpers
 // --------- 
 
-fn read_save_content(profile_state: tauri::State<'_, AppProfileState>) -> Result<(String, String), String> {
+fn read_save_content(
+    profile_state: tauri::State<'_, AppProfileState>,
+    decrypt_cache: tauri::State<'_, DecryptCache>,
+) -> Result<(String, String), String> {
     let save_path_str = require_current_save(profile_state.clone()).or_else(|_| {
         let profile = require_current_profile(profile_state)?;
         Ok::<String, String>(format!("{}/save/quicksave", profile))
     })?;
     let path = game_sii_from_save(Path::new(&save_path_str));
-    let content = decrypt_if_needed(&path)?;
+    let content = decrypt_cached(&path, &decrypt_cache)?;
     Ok((content, path.to_str().unwrap().to_string()))
 }
 
@@ -79,6 +82,8 @@ fn extract_vehicle_block(content: &str, block_type: &str, vehicle_id: &str) -> R
 // --------------------- 
 fn generic_vehicle_attribute_edit<F>(
     profile_state: tauri::State<'_, AppProfileState>,
+    decrypt_cache: tauri::State<'_, DecryptCache>,
+    profile_cache: tauri::State<'_, ProfileCache>,
     unit_type: &str,      // "vehicle" or "trailer"
     player_vehicle_key: &str, // "my_truck" or "my_trailer"
     attribute_key: &str,
@@ -87,7 +92,7 @@ fn generic_vehicle_attribute_edit<F>(
 where
     F: Fn(&Captures) -> String,
 {
-    let (content, path) = read_save_content(profile_state)?;
+    let (content, path) = read_save_content(profile_state, decrypt_cache.clone())?;
     let vehicle_id = get_player_vehicle_id(&content, player_vehicle_key)?;
 
     // ← CHANGED: Use proper brace matching
@@ -110,7 +115,13 @@ where
     });
 
     let new_content = format!("{}{}{}", &content[..block_start], new_block, &content[block_end..]);
-    write_save_content(&path, &new_content)
+    write_save_content(&path, &new_content)?;
+
+    decrypt_cache.invalidate_path(Path::new(&path));
+    profile_cache.invalidate_save_data();
+    profile_cache.invalidate_vehicle_data();
+
+    Ok(())
 }
 
 // --------------------- 
@@ -121,10 +132,14 @@ where
 pub async fn set_player_truck_license_plate(
     plate: String,
     profile_state: tauri::State<'_, AppProfileState>,
+    decrypt_cache: tauri::State<'_, DecryptCache>,
+    profile_cache: tauri::State<'_, ProfileCache>,
 ) -> Result<(), String> {
     dev_log!("Setting truck license plate to: {}", plate);
     generic_vehicle_attribute_edit(
         profile_state,
+        decrypt_cache,
+        profile_cache,
         "vehicle",
         "my_truck",
         "license_plate",
@@ -142,9 +157,13 @@ pub async fn set_player_truck_license_plate(
 }
 
 #[command]
-pub async fn repair_player_truck(profile_state: tauri::State<'_, AppProfileState>) -> Result<(), String> {
+pub async fn repair_player_truck(
+    profile_state: tauri::State<'_, AppProfileState>,
+    decrypt_cache: tauri::State<'_, DecryptCache>,
+    profile_cache: tauri::State<'_, ProfileCache>,
+) -> Result<(), String> {
     dev_log!("Repairing player truck");
-    let (content, path) = read_save_content(profile_state)?;
+    let (content, path) = read_save_content(profile_state, decrypt_cache.clone())?;
     let truck_id = get_player_vehicle_id(&content, "my_truck")?;
 
     // ← CHANGED: Use proper brace matching
@@ -173,14 +192,26 @@ pub async fn repair_player_truck(profile_state: tauri::State<'_, AppProfileState
     }).to_string();
 
     let new_content = format!("{}{}{}", &content[..block_start], block, &content[block_end..]);
-    write_save_content(&path, &new_content)
+    write_save_content(&path, &new_content)?;
+
+    decrypt_cache.invalidate_path(Path::new(&path));
+    profile_cache.invalidate_save_data();
+    profile_cache.invalidate_vehicle_data();
+
+    Ok(())
 }
 
 #[command]
-pub async fn refuel_player_truck(profile_state: tauri::State<'_, AppProfileState>) -> Result<(), String> {
+pub async fn refuel_player_truck(
+    profile_state: tauri::State<'_, AppProfileState>,
+    decrypt_cache: tauri::State<'_, DecryptCache>,
+    profile_cache: tauri::State<'_, ProfileCache>,
+) -> Result<(), String> {
     dev_log!("Refueling player truck");
     generic_vehicle_attribute_edit(
         profile_state,
+        decrypt_cache,
+        profile_cache,
         "vehicle",
         "my_truck",
         "fuel_relative",
@@ -191,11 +222,15 @@ pub async fn refuel_player_truck(profile_state: tauri::State<'_, AppProfileState
 #[command]
 pub async fn set_player_truck_fuel(
     profile_state: tauri::State<'_, AppProfileState>,
+    decrypt_cache: tauri::State<'_, DecryptCache>,
+    profile_cache: tauri::State<'_, ProfileCache>,
     level: f32,
 ) -> Result<(), String> {
     dev_log!("Set Fuel player truck");
     generic_vehicle_attribute_edit(
         profile_state,
+        decrypt_cache,
+        profile_cache,
         "vehicle",
         "my_truck",
         "fuel_relative",
@@ -206,12 +241,16 @@ pub async fn set_player_truck_fuel(
 #[command]
 pub async fn set_player_truck_wear(
     profile_state: tauri::State<'_, AppProfileState>,
+    decrypt_cache: tauri::State<'_, DecryptCache>,
+    profile_cache: tauri::State<'_, ProfileCache>,
     wear_type: String,
     level: f32,
 ) -> Result<(), String> {
     dev_log!("Set wear for player truck: {} = {}", wear_type, level);
     generic_vehicle_attribute_edit(
         profile_state,
+        decrypt_cache,
+        profile_cache,
         "vehicle",
         "my_truck",
         &wear_type,
@@ -227,10 +266,14 @@ pub async fn set_player_truck_wear(
 pub async fn set_player_trailer_license_plate(
     plate: String,
     profile_state: tauri::State<'_, AppProfileState>,
+    decrypt_cache: tauri::State<'_, DecryptCache>,
+    profile_cache: tauri::State<'_, ProfileCache>,
 ) -> Result<(), String> {
     dev_log!("Setting trailer license plate to: {}", plate);
     generic_vehicle_attribute_edit(
         profile_state,
+        decrypt_cache,
+        profile_cache,
         "trailer",
         "my_trailer",
         "license_plate",
@@ -251,10 +294,14 @@ pub async fn set_player_trailer_license_plate(
 pub async fn edit_truck_odometer(
     value: i64,
     profile_state: tauri::State<'_, AppProfileState>,
+    decrypt_cache: tauri::State<'_, DecryptCache>,
+    profile_cache: tauri::State<'_, ProfileCache>,
 ) -> Result<(), String> {
     dev_log!("Setting truck odometer to: {}", value);
     generic_vehicle_attribute_edit(
         profile_state,
+        decrypt_cache,
+        profile_cache,
         "vehicle",
         "my_truck",
         "odometer",
@@ -265,9 +312,11 @@ pub async fn edit_truck_odometer(
 #[command]
 pub async fn repair_player_trailer(
     profile_state: tauri::State<'_, AppProfileState>,
+    decrypt_cache: tauri::State<'_, DecryptCache>,
+    profile_cache: tauri::State<'_, ProfileCache>,
 ) -> Result<(), String> {
     dev_log!("Repairing player trailer");
-    let (content, path) = read_save_content(profile_state)?;
+    let (content, path) = read_save_content(profile_state, decrypt_cache.clone())?;
     let trailer_id = get_player_vehicle_id(&content, "my_trailer")?;
 
     dev_log!("Found trailer ID: {}", trailer_id);
@@ -310,17 +359,27 @@ pub async fn repair_player_trailer(
     let new_content = format!("{}{}{}", &content[..block_start], block, &content[block_end..]);
     
     dev_log!("Writing repaired trailer back to file");
-    write_save_content(&path, &new_content)
+    write_save_content(&path, &new_content)?;
+
+    decrypt_cache.invalidate_path(Path::new(&path));
+    profile_cache.invalidate_save_data();
+    profile_cache.invalidate_vehicle_data();
+
+    Ok(())
 }
 
 #[command]
 pub async fn set_player_trailer_cargo_mass(
     mass: f32,
     profile_state: tauri::State<'_, AppProfileState>,
+    decrypt_cache: tauri::State<'_, DecryptCache>,
+    profile_cache: tauri::State<'_, ProfileCache>,
 ) -> Result<(), String> {
     dev_log!("Setting trailer cargo mass to: {}", mass);
     generic_vehicle_attribute_edit(
         profile_state,
+        decrypt_cache,
+        profile_cache,
         "trailer",
         "my_trailer",
         "cargo_mass",
