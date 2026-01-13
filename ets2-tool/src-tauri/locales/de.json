@@ -113,7 +113,7 @@
                   "advanced_repair": {
                         "title": "Erweiterte Reparatur",
                         "desc": "Erweiterte Reparaturoptionen",
-                        "modalSliderText": "Verschleißwerte der Komponenten festlegen"
+                        "modalSliderText": "Verschleißwerte festlegen"
                   },
                   "fuel_level": {
                         "title": "Tankfüllstand",
@@ -182,9 +182,9 @@
             },
             "settings": {
                   "color_theme": {
-                        "title": "Farbtheme",
-                        "desc": "Farbtheme der App ändern",
-                        "modalTextTitle": "Farbtheme auswählen"
+                        "title": "UI Thema",
+                        "desc": "Thema der App ändern",
+                        "modalTextTitle": "Thema auswählen"
                   },
                   "convoy": {
                         "title": "Konvoi-Einstellungen",
