@@ -1,0 +1,274 @@
+{
+      "app": {
+            "name": "Edytor zapisów ETS2 - wersja Alex",
+            "title": "EDYTOR ZAPISÓW",
+            "subtitle": "dla SCS - xLieferant"
+      },
+      "tabs": {
+            "truck": "\uD83D\uDE9BCiężarówka",
+            "trailer": "\uD83D\uDE9APrzyczepa",
+            "profile": "\uD83D\uDCA0Profil",
+            "settings": "⚙\uFE0FUstawienia"
+      },
+      "buttons": {
+            "website": "Strona internetowa",
+            "youtube": "\uD83D\uDD34 YouTube",
+            "patreon": "⚠\uFE0F Patreon",
+            "github": "⚠\uFE0F GitHub"
+      },
+      "profile": {
+            "select_profile": "Wybierz profil",
+            "select_save": "Wybierz zapis",
+            "clone_profile": "\uD83E\uDDD1\u200D\uD83E\uDD1D",
+            "refresh": "⟳"
+      },
+      "game": {
+            "ets2": "ETS2",
+            "ats": "ATS"
+      },
+      "toasts": {
+            "language_updated": "Język zmieniony na polski",
+            "language_loaded": "Załadowano język: polski",
+            "money_updated": "Pieniądze pomyślnie zaktualizowane",
+            "xp_updated": "XP pomyślnie zaktualizowane",
+            "skill_points_updated": "Punkty umiejętności pomyślnie zaktualizowane",
+            "save_successful": "Zapis zakończony sukcesem",
+            "save_failed": "Zapis nieudany",
+            "profile_not_selected": "Wybierz najpierw profil!",
+            "clone_failed": "Klonowanie nie powiodło się: {error}",
+            "coming_soon": "Wkrótce",
+            "no_trailer_assigned_error": "Nie masz przypisanej przyczepy",
+            "repair_truck_success": "Ciężarówka naprawiona pomyślnie",
+            "repair_truck_error": "Nie udało się naprawić ciężarówki!",
+            "advanced_repair_success": "Zaawansowana naprawa zastosowana pomyślnie",
+            "advanced_repair_error": "Nie udało się zastosować zaawansowanej naprawy",
+            "fuel_level_updated": "Poziom paliwa ustawiony na {clampedValue}%!",
+            "fuel_level_error": "Nie udało się ustawić poziomu paliwa",
+            "fuel_refuel_success": "Ciężarówka zatankowana do 100%!",
+            "fuel_refuel_error": "Nie udało się zatankować ciężarówki",
+            "truck_mileage_success": "Przebieg ciężarówki ustawiony na {newValue} km!",
+            "truck_mileage_error": "Nie udało się ustawić licznika kilometrów ciężarówki",
+            "truck_license_plate_success": "Tablica ciężarówki zmieniona na {newValue}!",
+            "truck_license_plate_error": "Nie udało się zmienić tablicy ciężarówki",
+            "trailer_repair_success": "Przyczepa naprawiona pomyślnie",
+            "trailer_repair_error": "Nie udało się naprawić przyczepy",
+            "trailer_license_plate_success": "Tablica przyczepy zmieniona na {newValue}!",
+            "trailer_license_plate_error": "Nie udało się zmienić tablicy przyczepy",
+            "modify_job_weight_success": "Masa zlecenia ustawiona na {newValue} kg!",
+            "modify_job_weight_error": "Nie udało się ustawić masy zlecenia",
+            "change_xp_success": "XP zmienione na {newValue}!",
+            "change_xp_error": "Nie udało się zmienić XP",
+            "change_money_success": "Pieniądze zmienione na {newValue}€!",
+            "change_money_error": "Nie udało się zmienić pieniędzy",
+            "change_skill_points_success": "Punkty umiejętności zmienione pomyślnie!",
+            "change_skill_points_error": "Nie udało się zmienić punktów umiejętności",
+            "profile_stats_success": "Statystyki profilu zaktualizowano pomyślnie!",
+            "profile_stats_error": "Nie udało się zaktualizować statystyk profilu",
+            "color_theme_success": "Motyw kolorystyczny zmieniony na {newTheme}!",
+            "color_theme_error": "Nie udało się zmienić motywu kolorystycznego",
+            "convoy_settings_success": "Ustawienia konwoju zaktualizowane pomyślnie do {newValue}!",
+            "convoy_settings_error": "Nie udało się zaktualizować ustawień konwoju",
+            "language_update_error": "Nie udało się zmienić języka",
+            "traffic_values_success": "Parametry ruchu zaktualizowane do {newValue}!",
+            "traffic_values_error": "Nie udało się zaktualizować parametrów ruchu",
+            "parking_doubles_success": "Parkowanie podwójne zaktualizowane do {newValue}!",
+            "parking_doubles_error": "Nie udało się zaktualizować parkowania podwójnego",
+            "dev_tools_success": "Narzędzia deweloperskie zaktualizowane pomyślnie!",
+            "dev_tools_error": "Nie udało się zaktualizować narzędzi deweloperskich",
+            "profile_loaded_select_save": "Profil załadowany. Wybierz zapis gry.",
+            "profile_load_error": "Nie udało się załadować profilu!",
+            "scan_saves_error": "Nie udało się zeskanować zapisów",
+            "save_loaded_success": "Zapis załadowany pomyślnie!",
+            "save_load_error": "Nie udało się załadować zapisu",
+            "money_saved_success": "Pieniądze zapisane pomyślnie!",
+            "money_save_error": "Nie udało się zapisać pieniędzy",
+            "xp_saved_success": "XP zapisane pomyślnie!",
+            "xp_save_error": "Nie udało się zapisać XP",
+            "no_profile_selected": "Nie wybrano profilu!",
+            "profile_renamed_success": "Profil przemianowany pomyślnie!",
+            "profile_rename_error": "Zmiana nazwy nieudana: {error}",
+            "no_source_profile_selected": "Nie wybrano profilu źródłowego!",
+            "no_other_profiles": "Brak innych dostępnych profili.",
+            "invalid_profile_selected": "Wybrano nieprawidłowy profil.",
+            "copying_controls": "Kopiowanie sterowania…",
+            "copy_controls_success": "controls.sii skopiowany pomyślnie",
+            "copy_controls_error": "Nie udało się skopiować sterowania.",
+            "no_other_valid_profiles": "Nie znaleziono innych prawidłowych profili.",
+            "invalid_profile_selection": "Nieprawidłowy wybór profilu.",
+            "moving_mods_wait": "Przenoszenie modów... proszę czekać",
+            "move_mods_success": "Pomyślnie przeniesiono {count} modów.",
+            "move_mods_error": "Nie udało się przenieść modów.",
+            "profiles_found": "Znaleziono profile!",
+            "no_profiles_found": "Nie znaleziono profili!",
+            "generic_error_prefix": "Błąd: {error}",
+            "load_languages_error": "Nie udało się załadować języków: {error}"
+      },
+      "tools": {
+            "truck": {
+                  "repair_truck": {
+                        "title": "Naprawa ciężarówki",
+                        "desc": "Napraw swoją ciężarówkę",
+                        "modalSliderText": "Naprawić wszystkie uszkodzenia ciężarówki?"
+                  },
+                  "advanced_repair": {
+                        "title": "Zaawansowana naprawa",
+                        "desc": "Opcje zaawansowanej naprawy",
+                        "modalSliderText": "Ustaw poziomy zużycia elementów ciężarówki"
+                  },
+                  "fuel_level": {
+                        "title": "Poziom paliwa",
+                        "desc": "Edytuj swój poziom paliwa",
+                        "modalNumberText": "Ustaw poziom paliwa (0 do 100)%"
+                  },
+                  "full_refuel": {
+                        "title": "Pełne tankowanie",
+                        "desc": "Zatankuj ciężarówkę do pełna",
+                        "modalSliderText": "Zatankować ciężarówkę do 100%?"
+                  },
+                  "truck_mileage": {
+                        "title": "Przebieg ciężarówki",
+                        "desc": "Edytuj przebieg swojej ciężarówki",
+                        "modalNumberText": "Ustaw wartość licznika w kilometrach"
+                  },
+                  "truck_license_plate": {
+                        "title": "Tablica ciężarówki",
+                        "desc": "Edytuj tablicę rejestracyjną ciężarówki",
+                        "modalTextTitle": "Wprowadź nową tablicę"
+                  }
+            },
+            "trailer": {
+                  "repair_trailer": {
+                        "title": "Naprawa przyczepy",
+                        "desc": "Napraw swoją przyczepę",
+                        "modalSliderText": "Naprawić wszystkie uszkodzenia przyczepy?"
+                  },
+                  "trailer_license_plate": {
+                        "title": "Tablica przyczepy",
+                        "desc": "Edytuj tablicę rejestracyjną przyczepy",
+                        "modalTextTitle": "Wprowadź nową tablicę"
+                  },
+                  "modify_job_weight": {
+                        "title": "Modyfikuj masę zlecenia",
+                        "desc": "Edytuj obecną masę zlecenia",
+                        "modalNumberText": "Ustaw masę zlecenia w kilogramach"
+                  }
+            },
+            "profile": {
+                  "change_xp": {
+                        "title": "Edytor XP",
+                        "desc": "Edytuj punkty doświadczenia",
+                        "modalNumberText": "Ustaw nową wartość XP"
+                  },
+                  "change_money": {
+                        "title": "Edytor pieniędzy",
+                        "desc": "Edytuj pieniądze w grze",
+                        "modalNumberText": "Ustaw nową wartość pieniędzy"
+                  },
+                  "change_skill_points": {
+                        "title": "Punkty umiejętności",
+                        "desc": "Edytuj swoje punkty umiejętności",
+                        "modalTextTitle": "Ustaw punkty umiejętności"
+                  },
+                  "profile_stats": {
+                        "title": "Statystyki profilu",
+                        "desc": "Wyświetl statystyki profilu",
+                        "modalTextTitle": "Wyświetlono statystyki profilu"
+                  },
+                  "move_mods": {
+                        "title": "Przenieś modyfikacje lub sterowanie",
+                        "desc": "Przenieś mody i sterowanie między profilami",
+                        "modalTextTitle": "Przenieś Mody/Sterowanie"
+                  }
+            },
+            "settings": {
+                  "color_theme": {
+                        "title": "Motyw kolorystyczny",
+                        "desc": "Zmień motyw kolorystyczny aplikacji",
+                        "modalTextTitle": "Wybierz motyw kolorystyczny"
+                  },
+                  "convoy": {
+                        "title": "Ustawienia konwoju",
+                        "desc": "Skonfiguruj integrację Convoy",
+                        "modalTextTitle": "Włącz wsparcie Convoy '128'"
+                  },
+                  "language": {
+                        "title": "Język",
+                        "desc": "Zmień swój język",
+                        "modalTextTitle": "Wybierz swój język"
+                  },
+                  "traffic_values": {
+                        "title": "Parametry ruchu",
+                        "desc": "Edytuj gęstość i prędkość ruchu",
+                        "modalTextTitle": "Ustaw gęstość ruchu (0-10)"
+                  },
+                  "parking_doubles": {
+                        "title": "Parkowanie podwójne",
+                        "desc": "Włącz lub wyłącz parkowanie podwójne",
+                        "modalTextTitle": "Przełącz funkcję parkowania podwójnego"
+                  },
+                  "dev_tools": {
+                        "title": "Narzędzia deweloperskie",
+                        "desc": "Uzyskaj dostęp do narzędzi deweloperskich",
+                        "modalTextTitle": "Ustawienia narzędzi deweloperskich"
+                  }
+            },
+            "language_picker": {
+                  "title": "Język",
+                  "desc": "Zmień swój język"
+            }
+      },
+      "errors": {
+            "failed_to_load_translations": "Nie udało się załadować tłumaczeń",
+            "failed_to_save_language": "Nie udało się zapisać preferencji języka",
+            "failed_to_load_language": "Nie udało się załadować preferencji języka",
+            "invalid_language": "Wybrano nieprawidłowy język",
+            "repair_truck": "Błąd naprawy ciężarówki: {error}",
+            "fuel_level": "Błąd poziomu paliwa: {error}"
+      },
+      "modals": {
+            "open": "Otwórz",
+            "confirm": "Potwierdź",
+            "cancel": "Anuluj",
+            "close": "Zamknij",
+            "apply": "Zastosuj",
+            "clone_profile": {
+                  "title": "Klonuj profil",
+                  "source": "Źródło: {profileName}",
+                  "new_name_placeholder": "Nazwa nowego profilu",
+                  "create_backup": "Utwórz kopię zapasową (.zip)",
+                  "replace_hex": "Zastąp identyfikatory szesnastkowe (zalecane)",
+                  "replace_text": "Zastąp nazwy tekstowe",
+                  "clone_button": "Klonuj",
+                  "cloning_button": "Klonowanie...",
+                  "validation_checking": "Sprawdzanie...",
+                  "validation_valid": "✔ {message}",
+                  "validation_invalid": "❌ {message}"
+            }
+      },
+      "label": {
+            "engine_wear": "Zużycie silnika",
+            "transmission_wear": "Zużycie skrzyni biegów",
+            "cabin_wear": "Zużycie kabiny",
+            "chassis_wear": "Zużycie podwozia",
+            "adr": "ADR",
+            "long_distance": "Długie dystanse",
+            "heavy_cargo": "Ciężkie ładunki",
+            "fragile_cargo": "Ładunki delikatne",
+            "just_in_time_delivery": "Dostawa just-in-time",
+            "eco_driving": "Jazda ekologiczna",
+            "recruitment_centers": "Centra rekrutacji",
+            "dealers_visited": "Odwiedzeni dealerzy",
+            "visited_cities": "Odwiedzone miasta",
+            "action_move_mods": "Akcja",
+            "value_move_mods": "Przenieś modyfikacje lub sterowanie",
+            "label_move_mods": "Przenieś modyfikacje",
+            "label_move_controls": "Przenieś sterowanie",
+            "label_theme": "Motyw",
+            "label_color_theme_dark": "ciemny",
+            "label_color_theme_light": "jasny",
+            "label_color_theme_neon": "neon",
+            "label_language": "Język",
+            "label_developer": "Deweloper",
+            "label_console": "Konsola"
+      }
+}

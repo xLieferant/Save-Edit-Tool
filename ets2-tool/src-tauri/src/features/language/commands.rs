@@ -15,9 +15,10 @@ pub fn get_available_languages_command() -> Vec<LanguageInfo> {
         let name = match code.as_str() {
             "en" => "English".to_string(),
             "de" => "Deutsch".to_string(),
-            "es" => "Español".to_string(),
-            "fr" => "Français".to_string(),
+            "es" => "EspaÃ±ol".to_string(),
+            "fr" => "FranÃ§ais".to_string(),
             "it" => "Italiano".to_string(),
+            "pl" => "Polski".to_string(),
             _ => code.clone(), // Clone for the fallback case
         };
         

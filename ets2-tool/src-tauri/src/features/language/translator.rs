@@ -37,7 +37,7 @@ impl Translator {
         let locales_dir = get_locales_dir();
 
         // List of supported languages
-        let languages = vec!["en", "de", "es", "fr", "it"];
+        let languages = vec!["en", "de", "es", "fr", "it", "pl"];
 
         for lang in languages {
             let file_path = locales_dir.join(format!("{}.json", lang));

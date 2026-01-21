@@ -1,0 +1,274 @@
+{
+      "app": {
+            "name": "Editor salvataggi ETS2 - Edizione Alex",
+            "title": "EDITOR SALVATAGGI",
+            "subtitle": "per SCS - xLieferant"
+      },
+      "tabs": {
+            "truck": "\uD83D\uDE9BCamion",
+            "trailer": "\uD83D\uDE9ARimorchio",
+            "profile": "\uD83D\uDCA0Profilo",
+            "settings": "⚙\uFE0FImpostazioni"
+      },
+      "buttons": {
+            "website": "Sito web",
+            "youtube": "\uD83D\uDD34 YouTube",
+            "patreon": "⚠\uFE0F Patreon",
+            "github": "⚠\uFE0F GitHub"
+      },
+      "profile": {
+            "select_profile": "Seleziona un profilo",
+            "select_save": "Seleziona un salvataggio",
+            "clone_profile": "\uD83E\uDDD1\u200D\uD83E\uDD1D\u200D",
+            "refresh": "⟳"
+      },
+      "game": {
+            "ets2": "ETS2",
+            "ats": "ATS"
+      },
+      "toasts": {
+            "language_updated": "Lingua cambiata in italiano",
+            "language_loaded": "Lingua caricata: italiano",
+            "money_updated": "Denaro aggiornato con successo",
+            "xp_updated": "XP aggiornati con successo",
+            "skill_points_updated": "Punti abilità aggiornati con successo",
+            "save_successful": "Salvataggio riuscito",
+            "save_failed": "Salvataggio non riuscito",
+            "profile_not_selected": "Seleziona prima un profilo!",
+            "clone_failed": "Clonazione non riuscita: {error}",
+            "coming_soon": "Prossimamente",
+            "no_trailer_assigned_error": "Nessun rimorchio assegnato",
+            "repair_truck_success": "Camion riparato con successo",
+            "repair_truck_error": "Impossibile riparare il camion!",
+            "advanced_repair_success": "Riparazione avanzata applicata con successo",
+            "advanced_repair_error": "Impossibile applicare la riparazione avanzata",
+            "fuel_level_updated": "Livello carburante impostato a {clampedValue}%!",
+            "fuel_level_error": "Impossibile impostare il livello carburante",
+            "fuel_refuel_success": "Camion rifornito al 100%!",
+            "fuel_refuel_error": "Impossibile rifornire il camion",
+            "truck_mileage_success": "Chilometraggio del camion impostato a {newValue} km!",
+            "truck_mileage_error": "Impossibile impostare il contachilometri del camion",
+            "truck_license_plate_success": "Targa del camion cambiata in {newValue}!",
+            "truck_license_plate_error": "Impossibile cambiare la targa del camion",
+            "trailer_repair_success": "Rimorchio riparato con successo",
+            "trailer_repair_error": "Impossibile riparare il rimorchio",
+            "trailer_license_plate_success": "Targa del rimorchio cambiata in {newValue}!",
+            "trailer_license_plate_error": "Impossibile cambiare la targa del rimorchio",
+            "modify_job_weight_success": "Peso del carico impostato a {newValue} kg!",
+            "modify_job_weight_error": "Impossibile impostare il peso del carico",
+            "change_xp_success": "XP cambiato a {newValue}!",
+            "change_xp_error": "Impossibile cambiare gli XP",
+            "change_money_success": "Denaro cambiato a {newValue}€!",
+            "change_money_error": "Impossibile cambiare il denaro",
+            "change_skill_points_success": "Punti abilità cambiati con successo!",
+            "change_skill_points_error": "Impossibile cambiare i punti abilità",
+            "profile_stats_success": "Statistiche del profilo aggiornate con successo!",
+            "profile_stats_error": "Impossibile aggiornare le statistiche del profilo",
+            "color_theme_success": "Tema colore cambiato in {newTheme}!",
+            "color_theme_error": "Impossibile cambiare il tema colore",
+            "convoy_settings_success": "Impostazioni del convoglio aggiornate con successo a {newValue}!",
+            "convoy_settings_error": "Impossibile aggiornare le impostazioni del convoglio",
+            "language_update_error": "Impossibile cambiare lingua",
+            "traffic_values_success": "Valori del traffico aggiornati a {newValue}!",
+            "traffic_values_error": "Impossibile aggiornare i valori del traffico",
+            "parking_doubles_success": "Parcheggio doppio aggiornato a {newValue}!",
+            "parking_doubles_error": "Impossibile aggiornare il parcheggio doppio",
+            "dev_tools_success": "Strumenti sviluppatore aggiornati con successo!",
+            "dev_tools_error": "Impossibile aggiornare gli strumenti sviluppatore",
+            "profile_loaded_select_save": "Profilo caricato. Seleziona un salvataggio.",
+            "profile_load_error": "Impossibile caricare il profilo!",
+            "scan_saves_error": "Impossibile analizzare i salvataggi",
+            "save_loaded_success": "Salvataggio caricato con successo!",
+            "save_load_error": "Impossibile caricare il salvataggio",
+            "money_saved_success": "Denaro salvato con successo!",
+            "money_save_error": "Impossibile salvare il denaro",
+            "xp_saved_success": "XP salvati con successo!",
+            "xp_save_error": "Impossibile salvare gli XP",
+            "no_profile_selected": "Nessun profilo selezionato!",
+            "profile_renamed_success": "Profilo rinominato con successo!",
+            "profile_rename_error": "Rinomina non riuscita: {error}",
+            "no_source_profile_selected": "Nessun profilo sorgente selezionato!",
+            "no_other_profiles": "Nessun altro profilo disponibile.",
+            "invalid_profile_selected": "Profilo selezionato non valido.",
+            "copying_controls": "Copia dei controlli in corso…",
+            "copy_controls_success": "controls.sii copiato con successo",
+            "copy_controls_error": "Impossibile copiare i controlli.",
+            "no_other_valid_profiles": "Nessun altro profilo valido trovato.",
+            "invalid_profile_selection": "Selezione del profilo non valida.",
+            "moving_mods_wait": "Spostamento mod... attendere",
+            "move_mods_success": "Trasferiti {count} mod con successo.",
+            "move_mods_error": "Impossibile spostare i mod.",
+            "profiles_found": "Profili trovati!",
+            "no_profiles_found": "Nessun profilo trovato!",
+            "generic_error_prefix": "Errore: {error}",
+            "load_languages_error": "Impossibile caricare le lingue: {error}"
+      },
+      "tools": {
+            "truck": {
+                  "repair_truck": {
+                        "title": "Ripara il camion",
+                        "desc": "Ripara il tuo camion",
+                        "modalSliderText": "Riparare tutti i danni del camion?"
+                  },
+                  "advanced_repair": {
+                        "title": "Riparazione avanzata",
+                        "desc": "Opzioni di riparazione avanzata",
+                        "modalSliderText": "Imposta i livelli di usura dei componenti del camion"
+                  },
+                  "fuel_level": {
+                        "title": "Livello carburante",
+                        "desc": "Modifica il livello del carburante",
+                        "modalNumberText": "Imposta il livello carburante (0 a 100)%"
+                  },
+                  "full_refuel": {
+                        "title": "Rifornimento completo",
+                        "desc": "Rifornisci il camion al massimo",
+                        "modalSliderText": "Rifornire il camion al 100%?"
+                  },
+                  "truck_mileage": {
+                        "title": "Chilometraggio camion",
+                        "desc": "Modifica il chilometraggio del camion",
+                        "modalNumberText": "Imposta il valore del contachilometri in chilometri"
+                  },
+                  "truck_license_plate": {
+                        "title": "Targa camion",
+                        "desc": "Modifica la targa del camion",
+                        "modalTextTitle": "Inserisci la nuova targa"
+                  }
+            },
+            "trailer": {
+                  "repair_trailer": {
+                        "title": "Ripara il rimorchio",
+                        "desc": "Ripara il tuo rimorchio",
+                        "modalSliderText": "Riparare tutti i danni del rimorchio?"
+                  },
+                  "trailer_license_plate": {
+                        "title": "Targa rimorchio",
+                        "desc": "Modifica la targa del rimorchio",
+                        "modalTextTitle": "Inserisci la nuova targa"
+                  },
+                  "modify_job_weight": {
+                        "title": "Modifica peso carico",
+                        "desc": "Modifica il peso del carico attuale",
+                        "modalNumberText": "Imposta il peso del carico in chilogrammi"
+                  }
+            },
+            "profile": {
+                  "change_xp": {
+                        "title": "Editor XP",
+                        "desc": "Modifica i tuoi punti esperienza",
+                        "modalNumberText": "Imposta il nuovo valore XP"
+                  },
+                  "change_money": {
+                        "title": "Editor denaro",
+                        "desc": "Modifica il denaro di gioco",
+                        "modalNumberText": "Imposta un nuovo valore di denaro"
+                  },
+                  "change_skill_points": {
+                        "title": "Punti abilità",
+                        "desc": "Modifica i tuoi punti abilità",
+                        "modalTextTitle": "Imposta i punti abilità"
+                  },
+                  "profile_stats": {
+                        "title": "Statistiche profilo",
+                        "desc": "Visualizza le statistiche del profilo",
+                        "modalTextTitle": "Statistiche del profilo mostrate"
+                  },
+                  "move_mods": {
+                        "title": "Sposta mod o controlli",
+                        "desc": "Sposta mod e controlli tra profili",
+                        "modalTextTitle": "Sposta Mod/Controlli"
+                  }
+            },
+            "settings": {
+                  "color_theme": {
+                        "title": "Tema colore",
+                        "desc": "Cambia il tema colore dell'app",
+                        "modalTextTitle": "Seleziona un tema colore"
+                  },
+                  "convoy": {
+                        "title": "Impostazioni convoglio",
+                        "desc": "Configura l'integrazione Convoy",
+                        "modalTextTitle": "Abilita supporto Convoy '128'"
+                  },
+                  "language": {
+                        "title": "Lingua",
+                        "desc": "Cambia la tua lingua",
+                        "modalTextTitle": "Seleziona la tua lingua"
+                  },
+                  "traffic_values": {
+                        "title": "Valori traffico",
+                        "desc": "Modifica densità e velocità del traffico",
+                        "modalTextTitle": "Imposta densità del traffico (0-10)"
+                  },
+                  "parking_doubles": {
+                        "title": "Parcheggi doppi",
+                        "desc": "Abilita o disabilita i parcheggi doppi",
+                        "modalTextTitle": "Attiva/disattiva parcheggi doppi"
+                  },
+                  "dev_tools": {
+                        "title": "Strumenti sviluppatore",
+                        "desc": "Accedi agli strumenti sviluppatore",
+                        "modalTextTitle": "Imposta le impostazioni sviluppatore"
+                  }
+            },
+            "language_picker": {
+                  "title": "Lingua",
+                  "desc": "Cambia la tua lingua"
+            }
+      },
+      "errors": {
+            "failed_to_load_translations": "Impossibile caricare le traduzioni",
+            "failed_to_save_language": "Impossibile salvare la preferenza della lingua",
+            "failed_to_load_language": "Impossibile caricare la preferenza della lingua",
+            "invalid_language": "Lingua selezionata non valida",
+            "repair_truck": "Errore riparazione camion: {error}",
+            "fuel_level": "Errore livello carburante: {error}"
+      },
+      "modals": {
+            "open": "Apri",
+            "confirm": "Conferma",
+            "cancel": "Annulla",
+            "close": "Chiudi",
+            "apply": "Applica",
+            "clone_profile": {
+                  "title": "Clona profilo",
+                  "source": "Sorgente: {profileName}",
+                  "new_name_placeholder": "Nuovo nome profilo",
+                  "create_backup": "Crea backup (.zip)",
+                  "replace_hex": "Sostituisci identificatori esadecimali (consigliato)",
+                  "replace_text": "Sostituisci nomi di testo",
+                  "clone_button": "Clona",
+                  "cloning_button": "Clonazione...",
+                  "validation_checking": "Verifica in corso...",
+                  "validation_valid": "✔ {message}",
+                  "validation_invalid": "❌ {message}"
+            }
+      },
+      "label": {
+            "engine_wear": "Usura motore",
+            "transmission_wear": "Usura trasmissione",
+            "cabin_wear": "Usura cabina",
+            "chassis_wear": "Usura telaio",
+            "adr": "ADR",
+            "long_distance": "Lunga distanza",
+            "heavy_cargo": "Carico pesante",
+            "fragile_cargo": "Carico fragile",
+            "just_in_time_delivery": "Consegna just-in-time",
+            "eco_driving": "Guida ecologica",
+            "recruitment_centers": "Centri di reclutamento",
+            "dealers_visited": "Concessionari visitati",
+            "visited_cities": "Città visitate",
+            "action_move_mods": "Azione",
+            "value_move_mods": "Sposta mod o controlli",
+            "label_move_mods": "Sposta mod",
+            "label_move_controls": "Sposta controlli",
+            "label_theme": "Tema",
+            "label_color_theme_dark": "scuro",
+            "label_color_theme_light": "chiaro",
+            "label_color_theme_neon": "neon",
+            "label_language": "Lingua",
+            "label_developer": "Sviluppatore",
+            "label_console": "Console"
+      }
+}
