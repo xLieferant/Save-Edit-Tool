@@ -16,3 +16,15 @@ cargo tauri dev
 
 For Android development, run:
 cargo tauri android dev
+
+## Troubleshooting
+
+### Linux (KDE Plasma / Wayland)
+
+If the app window is blank on Wayland, run with:
+
+```sh
+GDK_BACKEND=x11 WEBKIT_DISABLE_DMABUF_RENDERER=1 cargo tauri dev
+```
+
+You can prefix the same environment variables to the app launch command outside of dev as well.
