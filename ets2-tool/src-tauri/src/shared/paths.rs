@@ -2,11 +2,19 @@ use std::env;
 use std::path::{Path, PathBuf};
 
 pub fn ets2_base_path() -> Option<PathBuf> {
-    dirs::document_dir().map(|d| d.join("Euro Truck Simulator 2"))
+    if cfg!(target_os = "linux") {
+        dirs::data_local_dir().map(|d| d.join("Euro Truck Simulator 2"))
+    } else {
+        dirs::document_dir().map(|d| d.join("Euro Truck Simulator 2"))
+    }
 }
 
 pub fn ats_base_path() -> Option<PathBuf> {
-    dirs::document_dir().map(|d|d.join("American Truck Simulator"))
+    if cfg!(target_os = "linux") {
+        dirs::data_local_dir().map(|d| d.join("American Truck Simulator"))
+    } else {
+        dirs::document_dir().map(|d| d.join("American Truck Simulator"))
+    }
 }
 
 pub fn get_base_path(game: &str) -> Option<PathBuf> {
