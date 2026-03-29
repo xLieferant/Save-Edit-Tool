@@ -4,6 +4,8 @@
 )]
 
 use crate::state::{AppProfileState, DecryptCache, ProfileCache};
+use crate::state::{CareerState, HubState};
+use tauri::Manager;
 
 mod models;
 mod state;
@@ -16,9 +18,17 @@ fn main() {
         .manage(DecryptCache::default())
         .manage(AppProfileState::default())
         .manage(ProfileCache::default())
+        .manage(HubState::default())
+        .manage(CareerState::default())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
+        .setup(|app| {
+            let handle = app.handle().clone();
+            let runtime = app.state::<CareerState>().runtime.clone();
+            features::career::service::start_background(handle, runtime);
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             // Apply Settings
             features::settings::apply_settings::apply_setting,
@@ -90,6 +100,14 @@ fn main() {
                 
                 //Feature: Profile Controls move around
                 features::profile_controls::commands::copy_profile_controls,
+
+            // Hub (UI navigation)
+            features::hub::commands::hub_get_mode,
+            features::hub::commands::hub_set_mode,
+
+            // Career (background + logbook)
+            features::career::commands::career_get_status,
+            features::career::commands::career_list_trips,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

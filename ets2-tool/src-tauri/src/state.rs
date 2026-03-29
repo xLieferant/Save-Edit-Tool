@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::atomic::AtomicBool;
+use std::sync::{Arc, Mutex, RwLock};
+
+use serde::{Deserialize, Serialize};
 
 use crate::models::global_config_info::BaseGameConfig;
 use crate::models::quicksave_game_info::GameDataQuicksave;
@@ -219,6 +222,59 @@ impl Default for AppProfileState {
             current_profile: Mutex::new(None),
             current_save: Mutex::new(None),
             selected_game: Mutex::new("ets2".to_string()),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum AppMode {
+    Utility,
+    Career,
+}
+
+pub struct HubState {
+    pub mode: RwLock<AppMode>,
+}
+
+impl Default for HubState {
+    fn default() -> Self {
+        Self {
+            mode: RwLock::new(AppMode::Utility),
+        }
+    }
+}
+
+pub struct CareerRuntime {
+    pub stop_all: AtomicBool,
+    pub telemetry_stop: AtomicBool,
+    pub telemetry_running: AtomicBool,
+    pub ets2_running: AtomicBool,
+    pub ats_running: AtomicBool,
+    pub db_path: Mutex<Option<PathBuf>>,
+}
+
+impl Default for CareerRuntime {
+    fn default() -> Self {
+        Self {
+            stop_all: AtomicBool::new(false),
+            telemetry_stop: AtomicBool::new(false),
+            telemetry_running: AtomicBool::new(false),
+            ets2_running: AtomicBool::new(false),
+            ats_running: AtomicBool::new(false),
+            db_path: Mutex::new(None),
+        }
+    }
+}
+
+pub struct CareerState {
+    pub runtime: Arc<CareerRuntime>,
+}
+
+impl Default for CareerState {
+    fn default() -> Self {
+        Self {
+            runtime: Arc::new(CareerRuntime::default()),
         }
     }
 }
