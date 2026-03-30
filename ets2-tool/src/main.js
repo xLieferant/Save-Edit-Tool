@@ -6,266 +6,273 @@ import { checkUpdaterOnStartup, manualUpdateCheck } from "./js/updater.js";
 const { app } = window.__TAURI__;
 const { openUrl } = window.__TAURI__.opener;
 const { invoke, convertFileSrc } = window.__TAURI__.core;
-let lastSelectedGame = null;
-window.invoke = invoke; // global verfügbar
+const { listen } = window.__TAURI__.event;
 
-async function logUserAction(action, stage = "start") {
-  try {
-    await invoke("log_user_action", { action, stage });
-  } catch (err) {
-    console.warn("User log failed:", err);
-  }
+let lastSelectedGame = null;
+window.invoke = invoke;
+window.applySetting = applySetting;
+
+function formatTelemetryNumber(value, digits = 0) {
+  return Number(value ?? 0).toLocaleString(undefined, {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  });
 }
 
-window.logUserAction = logUserAction;
-
-// -----------------------------
-// ICON & THEME LOGIC
-// -----------------------------
 function getThemeFallbackIcon() {
-  const isLight = document.body.classList.contains("theme-light");
-  return isLight ? "images/icon_Black.png" : "images/icon_White.png";
+  return document.body.classList.contains("theme-light")
+    ? "images/icon_Black.png"
+    : "images/icon_White.png";
 }
 
 function resolveProfileIcon(profile) {
-  if (profile && profile.avatar) {
-    if (profile.avatar.startsWith("data:")) {
-      return profile.avatar;
-    }
-    return convertFileSrc(profile.avatar);
+  if (profile?.avatar) {
+    return profile.avatar.startsWith("data:")
+      ? profile.avatar
+      : convertFileSrc(profile.avatar);
   }
   return getThemeFallbackIcon();
 }
 
 function handleIconError(img) {
-  img.onerror = null; // Prevent infinite loop
+  img.onerror = null;
   img.src = getThemeFallbackIcon();
   img.removeAttribute("data-has-avatar");
 }
 
 function updateAllProfileIcons() {
-  const fallbackIcon = getThemeFallbackIcon();
-  
-  // Update Dropdown Items that use fallback
-  document.querySelectorAll(".profile-icon-dropdown").forEach(img => {
+  const fallback = getThemeFallbackIcon();
+  document.querySelectorAll(".profile-icon-dropdown").forEach((img) => {
     if (!img.dataset.hasAvatar) {
-      img.src = fallbackIcon;
+      img.src = fallback;
     }
   });
-
-  // Update Active Profile Icons (Footer & Sidebar)
-  const activeHasAvatar = window.selectedProfileHasAvatar;
-  if (!activeHasAvatar) {
-     const activeIcons = document.querySelectorAll("#activeProfileIcon, .nav-icon-profile");
-     activeIcons.forEach(img => img.src = fallbackIcon);
+  if (!window.selectedProfileHasAvatar) {
+    document
+      .querySelectorAll("#activeProfileIcon, .nav-icon-profile")
+      .forEach((img) => (img.src = fallback));
   }
 }
 
-// Watch for theme changes
-const themeObserver = new MutationObserver(() => {
-  updateAllProfileIcons();
+new MutationObserver(updateAllProfileIcons).observe(document.body, {
+  attributes: true,
+  attributeFilter: ["class"],
 });
-themeObserver.observe(document.body, { attributes: true, attributeFilter: ["class"] });
 
+async function t(key, params = {}) {
+  try {
+    let text = await invoke("translate_command", { key });
+    for (const [k, v] of Object.entries(params)) {
+      text = text.replaceAll(`{${k}}`, String(v));
+    }
+    return text;
+  } catch (error) {
+    console.error("Translation error:", error);
+    return key;
+  }
+}
 
-// -----------------------------
-// TOAST-FUNKTION
-// -----------------------------
+async function translateUI() {
+  const elements = document.querySelectorAll("[data-translate]");
+  for (const el of elements) {
+    const key = el.getAttribute("data-translate");
+    el.textContent = await t(key);
+  }
+}
+
+window.t = t;
+window.translateUI = translateUI;
+
 window.showToast = async function (messageOrKey, options = {}, type = "info") {
-  const message = await t(messageOrKey, options); // Translate the key
-
+  const resolvedOptions = typeof options === "string" ? {} : options;
+  const resolvedType = typeof options === "string" ? options : type;
+  const message = await t(messageOrKey, resolvedOptions);
   const toast = document.createElement("div");
-  toast.className = `toast toast-${type}`;
-
-  const icon = document.createElement("span");
-  icon.className = "toast-icon";
-  icon.innerHTML = getToastIcon(type);
-
-  const text = document.createElement("span");
-  text.className = "toast-text";
-  text.textContent = message;
-
-  toast.appendChild(icon);
-  toast.appendChild(text);
+  toast.className = `toast toast-${resolvedType}`;
+  toast.innerHTML = `<span class="toast-icon">${resolvedType === "success" ? "✓" : resolvedType === "error" ? "✕" : resolvedType === "warning" ? "⚠" : "ℹ"}</span><span class="toast-text"></span>`;
+  toast.querySelector(".toast-text").textContent = message;
   document.body.appendChild(toast);
-
   requestAnimationFrame(() => toast.classList.add("show"));
-
   setTimeout(() => {
     toast.classList.remove("show");
     setTimeout(() => toast.remove(), 300);
   }, 4500);
 };
 
-function getToastIcon(type) {
-  switch (type) {
-    case "success":
-      return "✔";
-    case "error":
-      return "✖";
-    case "warning":
-      return "⚠";
-    case "info":
-    default:
-      return "ℹ";
-  }
-}
-
-// -----------------------------
-// APP VERSION
-// -----------------------------
 async function appVersion() {
   try {
     return await app.getVersion();
-  } catch (err) {
-    console.error("Version konnte nicht geladen werden:", err);
+  } catch (error) {
+    console.error("Version load failed:", error);
     return "0.0.0";
   }
 }
 
-async function initVersionInfo() {
-  const version = await appVersion();
-  const versionElement = document.querySelector(".version-info");
-  if (versionElement) {
-    versionElement.textContent = `v${version}`;
+async function logUserAction(action, stage = "start") {
+  try {
+    await invoke("log_user_action", { action, stage });
+  } catch (error) {
+    console.warn("User log failed:", error);
   }
 }
 
-// -----------------------------
-// UPDATE UI WITH DATA
-// -----------------------------
-function updateUIWithCurrentQuicksave() {
-  // Update XP Display
-  const xpDisplay = document.querySelector("#xpShow");
-  if (xpDisplay && window.currentProfileData?.xp !== undefined) {
-    xpDisplay.textContent = `XP: ${window.currentProfileData.xp.toLocaleString()}`;
-  }
+window.logUserAction = logUserAction;
 
-  // Update Money Display
-  const moneyDisplay = document.querySelector("#moneyShow");
-  if (moneyDisplay && window.currentProfileData?.money !== undefined) {
-    moneyDisplay.textContent = `Geld: ${window.currentProfileData.money.toLocaleString()} €`;
-  }
+document.addEventListener("DOMContentLoaded", async () => {
+  await translateUI();
+  document.body.classList.add("mode-editor");
 
-  // Update Skills Display (if needed)
-  // Add more UI updates as needed
-}
+  const refs = {
+    profileStatus: document.getElementById("profile-status"),
+    profileNameDisplay: document.getElementById("profileNameDisplay"),
+    profileDropdownList: document.getElementById("profileDropdownList"),
+    saveNameDisplay: document.getElementById("saveName"),
+    saveDropdownList: document.getElementById("saveDropdownList"),
+    openSaveModalBtn: document.getElementById("openSaveModal"),
+    ets2Btn: document.getElementById("ets2Btn"),
+    atsBtn: document.getElementById("atsBtn"),
+    editorModeBtn: document.getElementById("editorModeBtn"),
+    careerModeBtn: document.getElementById("careerModeBtn"),
+    statusGameRunning: document.getElementById("statusGameRunning"),
+    statusPluginInstalled: document.getElementById("statusPluginInstalled"),
+    statusSdkConnected: document.getElementById("statusSdkConnected"),
+    careerHeroTitle: document.getElementById("careerHeroTitle"),
+    careerGameLabel: document.getElementById("careerGameLabel"),
+    careerConnectionNote: document.getElementById("careerConnectionNote"),
+    careerSpeedDial: document.getElementById("careerSpeedDial"),
+    careerSpeedValue: document.getElementById("careerSpeedValue"),
+    careerGearValue: document.getElementById("careerGearValue"),
+    careerFuelValue: document.getElementById("careerFuelValue"),
+    careerFuelPercent: document.getElementById("careerFuelPercent"),
+    careerFuelBarFill: document.getElementById("careerFuelBarFill"),
+    careerRpmValue: document.getElementById("careerRpmValue"),
+    careerOdometerValue: document.getElementById("careerOdometerValue"),
+    careerMapScaleValue: document.getElementById("careerMapScaleValue"),
+    versionBtn: document.getElementById("versionBtn"),
+    websiteBtn: document.getElementById("websiteBtn"),
+    youtubeBtn: document.getElementById("youtubeBtn"),
+    patreonBtn: document.getElementById("patreonBtn"),
+    githubBtn: document.getElementById("githubBtn"),
+    refreshBtn: document.getElementById("refreshBtn"),
+    cloneBtn: document.getElementById("cloneProfileBtn"),
+  };
 
-// -----------------------------
-// DOM READY – ZENTRALE INIT
-// -----------------------------
-document.addEventListener("DOMContentLoaded", () => {
-  console.log("[main.js] DOM vollständig geladen.");
+  const careerText = {
+    waiting: await t("career.status.awaiting_signal"),
+    live: await t("career.status.sdk_live"),
+    paused: await t("career.status.sdk_paused"),
+    missingPlugin: await t("career.status.plugin_missing"),
+    gameStopped: await t("career.status.game_stopped"),
+  };
 
-  // Initial UI translation
-  translateUI();
+  const setLamp = (element, active) => element?.classList.toggle("is-active", Boolean(active));
+  const setCareerGame = (game) => {
+    const label = (game || "ets2").toUpperCase();
+    if (refs.careerHeroTitle) refs.careerHeroTitle.textContent = label;
+    if (refs.careerGameLabel) refs.careerGameLabel.textContent = label;
+  };
 
-  // Periodic data refresh (every 5 minutes)
-  setInterval(async () => {
-    if (window.selectedSavePath) {
-      try {
-        window.currentQuicksaveData = await invoke("quicksave_game_info");
-        updateUIWithCurrentQuicksave();
-      } catch (e) {
-        console.warn("Periodic refresh failed:", e);
-      }
+  const applyHubMode = (mode) => {
+    const isCareer = mode === "career";
+    document.body.classList.toggle("mode-career", isCareer);
+    document.body.classList.toggle("mode-editor", !isCareer);
+    refs.editorModeBtn?.classList.toggle("active", !isCareer);
+    refs.careerModeBtn?.classList.toggle("active", isCareer);
+  };
+
+  const renderTelemetry = (data) => {
+    const speed = Number(data?.speed_kph ?? 0);
+    const fuel = Number(data?.fuel_liters ?? 0);
+    const capacity = Number(data?.fuel_capacity_liters ?? 0);
+    const ratio = capacity > 0 ? Math.max(0, Math.min(fuel / capacity, 1)) : 0;
+    if (refs.careerSpeedDial) refs.careerSpeedDial.style.setProperty("--dial-progress", String(Math.min(speed / 180, 1)));
+    if (refs.careerSpeedValue) refs.careerSpeedValue.textContent = String(Math.round(speed));
+    if (refs.careerGearValue) {
+      const gear = Number(data?.gear ?? 0);
+      refs.careerGearValue.textContent = gear === 0 ? "N" : gear > 0 ? String(gear) : `R${Math.abs(gear)}`;
     }
-  }, 300000); // 5 minutes
-
-  // -----------------------------
-  // BASIS INIT
-  // -----------------------------
-  initVersionInfo();
-
-  // Auto-Updater (verzögert, stabil)
-  setTimeout(() => {
-    checkUpdaterOnStartup(showToast);
-  }, 2000);
-
-  // Load and display current language
-  (async function initLanguage() {
-    try {
-      const lang = await invoke('get_current_language_command');
-      const message = await invoke('translate_command', { key: 'toasts.language_loaded' });
-      console.log(message); // Will show "Language loaded: English" or "Sprache geladen: Deutsch"
-    } catch (e) {
-      console.warn('Could not load language:', e);
+    if (refs.careerFuelValue) {
+      refs.careerFuelValue.textContent =
+        capacity > 0
+          ? `${formatTelemetryNumber(fuel, 1)} / ${formatTelemetryNumber(capacity, 1)} L`
+          : `${formatTelemetryNumber(fuel, 1)} L`;
     }
-  })();
+    if (refs.careerFuelPercent) refs.careerFuelPercent.textContent = `${Math.round(ratio * 100)}%`;
+    if (refs.careerFuelBarFill) refs.careerFuelBarFill.style.setProperty("--fuel-progress", String(ratio));
+    if (refs.careerRpmValue) refs.careerRpmValue.textContent = formatTelemetryNumber(data?.engine_rpm ?? 0, 0);
+    if (refs.careerOdometerValue) refs.careerOdometerValue.textContent = `${formatTelemetryNumber(data?.odometer_km ?? 0, 1)} km`;
+    if (refs.careerMapScaleValue) refs.careerMapScaleValue.textContent = formatTelemetryNumber(data?.map_scale ?? 0, 2);
+    if (refs.careerConnectionNote) refs.careerConnectionNote.textContent = Number(data?.paused ?? 0) === 1 ? careerText.paused : careerText.live;
+  };
 
-  // -----------------------------
-  // UPDATE BUTTONS
-  // -----------------------------
-  const versionBtn = document.getElementById("versionBtn");
-  if (versionBtn) {
-    versionBtn.addEventListener("click", () => {
-      manualUpdateCheck(showToast);
-    });
+  const renderCareerStatus = (status) => {
+    const gameRunning = Boolean(status?.ets2_running || status?.ats_running);
+    setLamp(refs.statusGameRunning, gameRunning);
+    setLamp(refs.statusPluginInstalled, status?.plugin_installed);
+    setLamp(refs.statusSdkConnected, status?.bridge_connected);
+    setCareerGame(status?.active_game || lastSelectedGame || "ets2");
+    if (!refs.careerConnectionNote) return;
+    if (status?.bridge_connected) refs.careerConnectionNote.textContent = careerText.live;
+    else if (!status?.plugin_installed) refs.careerConnectionNote.textContent = careerText.missingPlugin;
+    else if (!gameRunning) refs.careerConnectionNote.textContent = careerText.gameStopped;
+    else refs.careerConnectionNote.textContent = careerText.waiting;
+  };
+
+  refs.editorModeBtn?.addEventListener("click", () => invoke("hub_set_mode", { mode: "utility" }).catch(console.error));
+  refs.careerModeBtn?.addEventListener("click", () => invoke("hub_set_mode", { mode: "career" }).catch(console.error));
+
+  listen("hub://mode_changed", (event) => applyHubMode(event.payload.mode)).catch(console.error);
+  listen("career://status", (event) => renderCareerStatus(event.payload)).catch(console.error);
+  listen("career://telemetry_tick", (event) => renderTelemetry(event.payload)).catch(console.error);
+
+  try {
+    applyHubMode(await invoke("hub_get_mode"));
+  } catch {
+    applyHubMode("utility");
   }
 
-  const checkUpdateBtn = document.getElementById("checkUpdateBtn");
-  if (checkUpdateBtn) {
-    checkUpdateBtn.addEventListener("click", () => {
-      manualUpdateCheck(showToast);
-    });
+  try {
+    const selectedGame = await invoke("get_selected_game");
+    setCareerGame(selectedGame);
+    lastSelectedGame = selectedGame;
+  } catch {}
+
+  try {
+    renderCareerStatus(await invoke("career_get_status"));
+  } catch {}
+
+  try {
+    setLamp(refs.statusPluginInstalled, await invoke("get_plugin_status"));
+  } catch {}
+
+  if (refs.versionBtn) {
+    refs.versionBtn.textContent = `v${await appVersion()}`;
+    refs.versionBtn.addEventListener("click", () => manualUpdateCheck(showToast));
   }
 
-  // -----------------------------
-  // DOM ELEMENTE
-  // -----------------------------
-  const scanBtn = document.querySelector("#refreshBtn");
-  const profileNameDisplay = document.querySelector("#profileNameDisplay");
-  const profileDropdownList = document.querySelector("#profileDropdownList");
-  const openProfileModalBtn = document.querySelector("#openProfileModal");
-  const profileStatus = document.querySelector("#profile-status");
+  setTimeout(() => checkUpdaterOnStartup(showToast), 2000);
 
-  // SAVE PICKER
-  const saveNameDisplay = document.querySelector("#saveName");
-  const saveDropdownList = document.querySelector("#saveDropdownList");
-  const openSaveModalBtn = document.querySelector("#openSaveModal");
+  refs.websiteBtn?.addEventListener("click", () => openUrl("https://www.xlieferant.dev/"));
+  refs.youtubeBtn?.addEventListener("click", () => openUrl("https://www.youtube.com/@xLieferant"));
+  refs.patreonBtn?.addEventListener("click", () => openUrl("https://www.patreon.com/cw/xLieferant"));
+  refs.githubBtn?.addEventListener("click", () => openUrl("https://github.com/xLieferant/Save-Edit-Tool"));
 
-  const moneyBtn = document.querySelector("#save-money-btn");
-  const levelBtn = document.querySelector("#save-level-btn");
-  const editStatus = document.querySelector("#edit-status");
-
-  const websiteBtn = document.querySelector("#websiteBtn");
-  const youtubeBtn = document.querySelector("#youtubeBtn");
-  const patreonBtn = document.querySelector("#patreonBtn");
-  const githubBtn = document.querySelector("#githubBtn");
-
-  // GAME SWITCHER
-  const ets2Btn = document.getElementById("ets2Btn");
-  const atsBtn = document.getElementById("atsBtn");
-
-  async function switchGame(game) {
+  const switchGame = async (game) => {
     try {
       await invoke("set_selected_game", { game });
-      
-      // Full reload avoids duplicated tabs/modals after game switch
       localStorage.setItem("ets2_force_profile_picker_open", "1");
       location.reload();
-      
-    } catch (e) {
-      console.error("Failed to switch game:", e);
-      showToast("toasts.generic_error_prefix", { error: e.toString() }, "error");
+    } catch (error) {
+      showToast("toasts.generic_error_prefix", { error: error.toString() }, "error");
     }
-  }
+  };
 
-  if (ets2Btn) {
-    ets2Btn.addEventListener("click", () => switchGame("ets2"));
-  }
-  if (atsBtn) {
-    atsBtn.addEventListener("click", () => switchGame("ats"));
-  }
+  refs.ets2Btn?.addEventListener("click", () => switchGame("ets2"));
+  refs.atsBtn?.addEventListener("click", () => switchGame("ats"));
 
-  // Global state for selected paths
   window.selectedProfilePath = null;
   window.selectedSavePath = null;
   window.currentSavePath = null;
-
-  // -----------------------------
-  // GLOBAL STATE
-  // -----------------------------
   window.currentProfileData = {};
   window.currentQuicksaveData = {};
   window.readSaveGameConfig = {};
@@ -274,840 +281,415 @@ document.addEventListener("DOMContentLoaded", () => {
   window.playerTruck = null;
   window.allTrailers = [];
   window.playerTrailer = null;
-  window.translateUI = translateUI;
-  window.applySetting = applySetting;
+  window.extractPlateText = (plate) => (plate ? plate.replace(/^"|"$/g, "") : "");
 
-  // Helper to extract plate text
-  window.extractPlateText = function(plate) {
-    if (!plate) return "";
-    // Remove quotes if present
-    return plate.replace(/^"|"$/g, '');
+  const closeDropdowns = () => {
+    refs.profileDropdownList.classList.remove("show");
+    refs.saveDropdownList.classList.remove("show");
   };
 
-  // -----------------------------
-  // DROPDOWN
-  // -----------------------------
-  function closeAllDropdowns() {
-    profileDropdownList.classList.remove("show");
-    saveDropdownList.classList.remove("show");
-  }
+  document.addEventListener("click", (event) => {
+    if (!event.target.closest(".profile-picker")) refs.profileDropdownList.classList.remove("show");
+    if (!event.target.closest(".save-picker")) refs.saveDropdownList.classList.remove("show");
+  });
 
-  const forceProfilePickerOpen = localStorage.getItem("ets2_force_profile_picker_open") === "1";
-  if (forceProfilePickerOpen) {
+  document.querySelector(".profile-picker")?.addEventListener("click", (event) => {
+    if (event.target.closest(".custom-dropdown-list")) return;
+    event.stopPropagation();
+    const open = refs.profileDropdownList.classList.contains("show");
+    closeDropdowns();
+    if (!open) refs.profileDropdownList.classList.add("show");
+  });
+
+  document.querySelector(".save-picker")?.addEventListener("click", (event) => {
+    if (event.target.closest(".dropdown-list") || !window.selectedProfilePath) return;
+    event.stopPropagation();
+    const open = refs.saveDropdownList.classList.contains("show");
+    closeDropdowns();
+    if (!open) refs.saveDropdownList.classList.add("show");
+  });
+
+  if (localStorage.getItem("ets2_force_profile_picker_open") === "1") {
     localStorage.removeItem("ets2_force_profile_picker_open");
-    closeAllDropdowns();
-    profileDropdownList.classList.add("show");
+    refs.profileDropdownList.classList.add("show");
   }
 
-  document.addEventListener("click", (e) => {
-    if (!e.target.closest(".profile-picker")) {
-      profileDropdownList.classList.remove("show");
-    }
-    if (!e.target.closest(".save-picker")) {
-      saveDropdownList.classList.remove("show");
-    }
-  });
-
-  const profilePicker = document.querySelector(".profile-picker");
-  if (profilePicker) {
-    profilePicker.addEventListener("click", (e) => {
-      if (e.target.closest(".custom-dropdown-list")) return;
-      e.stopPropagation();
-      const wasOpen = profileDropdownList.classList.contains("show");
-      closeAllDropdowns();
-      if (!wasOpen) profileDropdownList.classList.add("show");
-    });
-  }
-
-  const savePicker = document.querySelector(".save-picker");
-  if (savePicker) {
-    savePicker.addEventListener("click", (e) => {
-      if (e.target.closest(".dropdown-list")) return;
-      e.stopPropagation();
-      if (!window.selectedProfilePath) return;
-      const wasOpen = saveDropdownList.classList.contains("show");
-      closeAllDropdowns();
-      if (!wasOpen) saveDropdownList.classList.add("show");
-    });
-  }
-
-  // -----------------------------
-  // PROFILE SCAN
-  // -----------------------------
-  scanBtn?.addEventListener("click", async () => {
-    await scanProfiles({ saveToBackend: true, showToasts: true });
-  });
-
-  // -----------------------------
-  // PROFILE LADEN
-  // ----------------------------- 
-  async function loadSelectedProfile() {
-    if (!window.selectedProfilePath) return;
-
-    window.logUserAction("load_profile", "start");
-
+  const loadProfileData = async () => {
+    window.currentProfileData = await invoke("read_all_save_data");
+  };
+  const loadQuicksave = async () => {
+    window.currentQuicksaveData = await invoke("quicksave_game_info");
+  };
+  const loadProfileSaveConfig = async () => {
+    window.readSaveGameConfig = await invoke("read_save_config", { profilePath: window.selectedProfilePath });
+  };
+  const loadBaseConfig = async () => {
+    window.baseConfig = await invoke("read_base_config");
+  };
+  const loadAllTrucks = async () => {
     try {
-      profileStatus.textContent = "Loading profile...";
-
-      // Clear old saves
-      saveDropdownList.innerHTML = "";
-      window.selectedSavePath = null;
-      window.currentSavePath = null;
-      saveNameDisplay.textContent = "Select a save";
-
-      await invoke("set_active_profile", { profilePath: window.selectedProfilePath });
-
-      // Scan saves for this profile
-      await scanSavesForProfile();
-
-      // Load configs (independent of save)
-      try {
-        await loadBaseConfig();
-        await loadProfileSaveConfig();
-      } catch (e) { 
-        console.warn("Config load warning:", e); 
-      }
-
-      // Clear state (no save loaded yet)
-      window.currentProfileData = {};
-      window.currentQuicksaveData = {};
-      window.allTrucks = [];
+      window.playerTruck = await invoke("get_player_truck", { profilePath: window.selectedProfilePath });
+      window.allTrucks = [window.playerTruck];
+    } catch {
       window.playerTruck = null;
-      window.allTrailers = [];
-      window.playerTrailer = null;
-
-      // Update Icons
-      const cached = JSON.parse(localStorage.getItem("ets2_profiles_cache") || "[]");
-      const profileInfo = cached.find(p => p.path === window.selectedProfilePath);
-      
-      window.selectedProfileHasAvatar = !!(profileInfo && profileInfo.avatar);
-      const iconSrc = resolveProfileIcon(profileInfo);
-      
-      const footerIcon = document.getElementById("activeProfileIcon");
-      if (footerIcon) {
-        footerIcon.src = iconSrc;
-        if (window.selectedProfileHasAvatar) footerIcon.onerror = () => handleIconError(footerIcon);
-      }
-      
-      const navIcon = document.querySelector(".nav-icon-profile");
-      if (navIcon) {
-        navIcon.src = iconSrc;
-        if (window.selectedProfileHasAvatar) navIcon.onerror = () => handleIconError(navIcon);
-      }
-
-      profileStatus.textContent = "Profile loaded. Please select a save.";
-      showToast("toasts.profile_loaded_select_save", {}, "info");
-      loadTools(activeTab);
-      window.logUserAction("load_profile", "success");
-    } catch (err) {
-      console.error(err);
-      profileStatus.textContent = "Error loading profile";
-      showToast("toasts.profile_load_error", {}, "error");
-      window.logUserAction("load_profile", "error");
+      window.allTrucks = [];
     }
-  }
-
-  async function scanSavesForProfile() {
-    if (!window.selectedProfilePath) return;
-
-    saveDropdownList.innerHTML = "";
-    openSaveModalBtn.disabled = false;
-
+  };
+  const loadAllTrailers = async () => {
     try {
-      const saves = await invoke("find_profile_saves", {
-        profilePath: window.selectedProfilePath,
-      });
-
-      const filteredSaves = saves.filter(
-        (s) => s.success && s.kind !== "Invalid"
-      );
-
-      filteredSaves.sort((a, b) => {
-        const fA = a.folder.toLowerCase();
-        const fB = b.folder.toLowerCase();
-
-        const getPriority = (folder) => {
-          if (folder === 'quicksave') return 0;
-          if (folder === 'autosave') return 1;
-          return 2;
-        };
-
-        const pA = getPriority(fA);
-        const pB = getPriority(fB);
-
-        if (pA !== pB) return pA - pB;
-
-        return fB.localeCompare(fA, undefined, { numeric: true });
-      });
-
-      filteredSaves.forEach((s) => {
-        const item = document.createElement("div");
-        item.className = "dropdown-item";
-        
-        let displayName = s.name ?? s.folder;
-        if (s.folder.toLowerCase() === 'quicksave') displayName = "~ Quicksave ~";
-        else if (s.folder.toLowerCase() === 'autosave') displayName = "~ Autosave ~";
-        else displayName = `${displayName} [${s.folder}]`;
-
-        item.textContent = displayName;
-        item.title = s.path;
-
-        item.addEventListener("click", async () => {
-          window.selectedSavePath = s.path;
-          window.currentSavePath = s.path;
-          saveNameDisplay.textContent = s.name ?? s.folder;
-          saveDropdownList.classList.remove("show");
-
-          await invoke("load_profile", {
-            profilePath: window.selectedProfilePath,
-            savePath: s.path,
-          });
-
-          await loadSelectedSave();
-        });
-
-        saveDropdownList.appendChild(item);
-      });
-    } catch (e) {
-      console.error(e);
-      showToast("toasts.scan_saves_error", {}, "error");
+      const trailer = await invoke("get_player_trailer", { profilePath: window.selectedProfilePath });
+      window.playerTrailer = trailer || null;
+      window.allTrailers = trailer ? [trailer] : [];
+    } catch {
+      window.playerTrailer = null;
+      window.allTrailers = [];
     }
-  }
+  };
 
-  async function loadSelectedSave() {
+  window.loadProfileData = loadProfileData;
+  window.loadQuicksave = loadQuicksave;
+  window.loadProfileSaveConfig = loadProfileSaveConfig;
+  window.loadBaseConfig = loadBaseConfig;
+  window.loadAllTrucks = loadAllTrucks;
+  window.loadAllTrailers = loadAllTrailers;
+
+  const syncSelectedGameUi = async () => {
+    try {
+      const game = await invoke("get_selected_game");
+      const previousGame = lastSelectedGame;
+      lastSelectedGame = game;
+      setCareerGame(game);
+      setLamp(refs.statusPluginInstalled, await invoke("get_plugin_status"));
+      refs.ets2Btn.classList.toggle("active", game !== "ats");
+      refs.ets2Btn.disabled = game !== "ats";
+      refs.atsBtn.classList.toggle("active", game === "ats");
+      refs.atsBtn.disabled = game === "ats";
+      if (game !== previousGame) {
+        updateToolImagesForGame(game);
+        loadTools(activeTab);
+      } else {
+        updateToolImagesForGame(game);
+      }
+    } catch (error) {
+      console.warn("Game sync failed:", error);
+    }
+  };
+
+  const loadSelectedSave = async () => {
     window.logUserAction("load_save", "start");
     try {
-      profileStatus.textContent = "Loading save...";
-
+      refs.profileStatus.textContent = "Loading save...";
       await loadProfileData();
       await loadQuicksave();
       await loadProfileSaveConfig();
       await loadBaseConfig();
       await loadAllTrucks();
       await loadAllTrailers();
-
       updateUIWithCurrentQuicksave();
-
-      profileStatus.textContent = "Save loaded successfully";
+      refs.profileStatus.textContent = "Save loaded successfully";
       showToast("toasts.save_loaded_success", {}, "success");
       loadTools(activeTab);
       window.logUserAction("load_save", "success");
-    } catch (e) {
-      console.error(e);
+    } catch (error) {
+      console.error(error);
       showToast("toasts.save_load_error", {}, "error");
       window.logUserAction("load_save", "error");
     }
-  }
+  };
 
-  async function loadProfileData() {
+  const scanSavesForProfile = async () => {
+    if (!window.selectedProfilePath) return;
+    refs.saveDropdownList.innerHTML = "";
+    refs.openSaveModalBtn.disabled = false;
     try {
-      window.currentProfileData = await invoke("read_all_save_data");
-    } catch (e) {
-      console.error("Failed to load profile data:", e);
-      throw e;
-    }
-  }
-
-  async function loadQuicksave() {
-    try {
-      window.currentQuicksaveData = await invoke("quicksave_game_info");
-    } catch (e) {
-      console.error("Failed to load quicksave:", e);
-      throw e;
-    }
-  }
-
-  async function loadProfileSaveConfig() {
-    try {
-      window.readSaveGameConfig = await invoke("read_save_config", {
-        profilePath: window.selectedProfilePath,
+      const saves = (await invoke("find_profile_saves", { profilePath: window.selectedProfilePath }))
+        .filter((save) => save.success && save.kind !== "Invalid")
+        .sort((a, b) => {
+          const priority = (folder) => folder === "quicksave" ? 0 : folder === "autosave" ? 1 : 2;
+          const pA = priority(a.folder.toLowerCase());
+          const pB = priority(b.folder.toLowerCase());
+          return pA !== pB ? pA - pB : b.folder.localeCompare(a.folder, undefined, { numeric: true });
+        });
+      saves.forEach((save) => {
+        const item = document.createElement("div");
+        item.className = "dropdown-item";
+        item.textContent =
+          save.folder.toLowerCase() === "quicksave"
+            ? "~ Quicksave ~"
+            : save.folder.toLowerCase() === "autosave"
+              ? "~ Autosave ~"
+              : `${save.name ?? save.folder} [${save.folder}]`;
+        item.addEventListener("click", async () => {
+          window.selectedSavePath = save.path;
+          window.currentSavePath = save.path;
+          refs.saveNameDisplay.textContent = save.name ?? save.folder;
+          refs.saveDropdownList.classList.remove("show");
+          await invoke("load_profile", { profilePath: window.selectedProfilePath, savePath: save.path });
+          await loadSelectedSave();
+        });
+        refs.saveDropdownList.appendChild(item);
       });
-    } catch (e) {
-      console.error("Failed to load save config:", e);
-      throw e;
+    } catch (error) {
+      console.error(error);
+      showToast("toasts.scan_saves_error", {}, "error");
     }
-  }
+  };
 
-  async function loadBaseConfig() {
+  const loadSelectedProfile = async () => {
+    if (!window.selectedProfilePath) return;
+    window.logUserAction("load_profile", "start");
     try {
-      window.baseConfig = await invoke("read_base_config");
-    } catch (e) {
-      console.error("Failed to load base config:", e);
-      throw e;
-    }
-  }
-
-  async function loadAllTrucks() {
-    try {
-      window.playerTruck = await invoke("get_player_truck", {
-        profilePath: window.selectedProfilePath,
-      });
-      window.allTrucks = [window.playerTruck];
-    } catch (e) {
-      console.error("Failed to load trucks:", e);
-      window.playerTruck = null;
+      refs.profileStatus.textContent = "Loading profile...";
+      refs.saveDropdownList.innerHTML = "";
+      window.selectedSavePath = null;
+      window.currentSavePath = null;
+      refs.saveNameDisplay.textContent = "Select a save";
+      await invoke("set_active_profile", { profilePath: window.selectedProfilePath });
+      await scanSavesForProfile();
+      try {
+        await loadBaseConfig();
+        await loadProfileSaveConfig();
+      } catch {}
+      window.currentProfileData = {};
+      window.currentQuicksaveData = {};
       window.allTrucks = [];
-    }
-  }
-
-  async function loadAllTrailers() {
-  try {
-    // ← CHANGED: Now expecting Option<ParsedTrailer> from Rust
-    const trailer = await invoke("get_player_trailer", {
-      profilePath: window.selectedProfilePath,
-    });
-    
-    // ← CHANGED: Check if trailer exists (could be null if player has no trailer)
-    if (trailer) {
-      window.playerTrailer = trailer;
-      window.allTrailers = [trailer];
-      console.log("✓ Player trailer loaded successfully");
-    } else {
-      // ← CHANGED: This is normal - player just doesn't have a trailer attached
-      window.playerTrailer = null;
+      window.playerTruck = null;
       window.allTrailers = [];
-      console.log("ℹ Player has no trailer attached (this is normal)");
-    }
-  } catch (e) {
-    // ← This should only catch actual errors now (not "no trailer" situations)
-    console.error("Failed to load trailers:", e);
-    window.playerTrailer = null;
-    window.allTrailers = [];
-  }
-}
-
-  // -----------------------------
-  // SAVE MONEY / XP
-  // -----------------------------
-  moneyBtn?.addEventListener("click", async () => {
-    try {
-      const amount = Number(document.querySelector("#money-input").value);
-      editStatus.textContent = "Saving…";
-      await invoke("edit_money", { amount });
-      editStatus.textContent = "Money saved!";
-      showToast("toasts.money_saved_success", {}, "success");
-      await loadProfileData();
-      updateUIWithCurrentQuicksave();
+      window.playerTrailer = null;
+      const cached = JSON.parse(localStorage.getItem("ets2_profiles_cache") || "[]");
+      const profileInfo = cached.find((profile) => profile.path === window.selectedProfilePath);
+      window.selectedProfileHasAvatar = !!profileInfo?.avatar;
+      const iconSrc = resolveProfileIcon(profileInfo);
+      const footerIcon = document.getElementById("activeProfileIcon");
+      if (footerIcon) {
+        footerIcon.src = iconSrc;
+        if (window.selectedProfileHasAvatar) footerIcon.onerror = () => handleIconError(footerIcon);
+      }
+      refs.profileStatus.textContent = "Profile loaded. Please select a save.";
+      showToast("toasts.profile_loaded_select_save", {}, "info");
       loadTools(activeTab);
-    } catch (err) {
-      console.error(err);
-      editStatus.textContent = "Error saving money";
-      showToast("toasts.money_save_error", {}, "error");
+      window.logUserAction("load_profile", "success");
+    } catch (error) {
+      console.error(error);
+      refs.profileStatus.textContent = "Error loading profile";
+      showToast("toasts.profile_load_error", {}, "error");
+      window.logUserAction("load_profile", "error");
     }
-  });
+  };
 
-  levelBtn?.addEventListener("click", async () => {
+  const createProfileItem = (profile) => {
+    const item = document.createElement("div");
+    item.className = "dropdown-item";
+    const img = document.createElement("img");
+    img.src = resolveProfileIcon(profile);
+    img.className = "profile-icon-dropdown";
+    if (profile.avatar) {
+      img.dataset.hasAvatar = "true";
+      img.onerror = () => handleIconError(img);
+    }
+    const label = document.createElement("span");
+    label.textContent = profile.name;
+    item.appendChild(img);
+    item.appendChild(label);
+    item.addEventListener("click", async () => {
+      window.selectedProfilePath = profile.path;
+      refs.profileNameDisplay.textContent = profile.name;
+      refs.profileDropdownList.classList.remove("show");
+      localStorage.setItem("ets2_last_profile", profile.path);
+      try {
+        await invoke("save_last_profile", { profilePath: profile.path });
+      } catch {}
+      await loadSelectedProfile();
+    });
+    return item;
+  };
+
+  const scanProfiles = async ({ saveToBackend = true, showToasts = true } = {}) => {
+    refs.profileStatus.textContent = "Scanning profiles...";
+    refs.profileDropdownList.innerHTML = "";
+    window.logUserAction("scan_profiles", "start");
     try {
-      const xp = Number(document.querySelector("#level-input").value);
-      editStatus.textContent = "Saving…";
-      await invoke("edit_level", { xp });
-      editStatus.textContent = "XP saved!";
-      showToast("toasts.xp_saved_success", {}, "success");
-      await loadProfileData();
-      updateUIWithCurrentQuicksave();
-      loadTools(activeTab);
-    } catch (err) {
-      console.error(err);
-      editStatus.textContent = "Error saving XP";
-      showToast("toasts.xp_save_error", {}, "error");
+      await syncSelectedGameUi();
+      const profiles = await invoke("find_ets2_profiles");
+      refs.profileStatus.textContent = `${profiles.length} profiles found`;
+      if (showToasts) showToast("toasts.profiles_found", {}, "success");
+      profiles.filter((profile) => profile.success).forEach((profile) => {
+        refs.profileDropdownList.appendChild(createProfileItem(profile));
+      });
+      localStorage.setItem("ets2_profiles_cache", JSON.stringify(profiles));
+      if (saveToBackend) {
+        await invoke("save_profiles_cache", {
+          profiles: profiles.map((profile) => ({
+            path: profile.path,
+            name: profile.name ?? null,
+            avatar: profile.avatar ?? null,
+            success: !!profile.success,
+            message: profile.message ?? null,
+          })),
+        });
+      }
+      const remoteLast = await invoke("read_last_profile").catch(() => null);
+      const last = remoteLast || localStorage.getItem("ets2_last_profile");
+      if (last) {
+        const matched = profiles.find((profile) => profile.path === last && profile.success);
+        if (matched) {
+          window.selectedProfilePath = matched.path;
+          refs.profileNameDisplay.textContent = matched.name ?? "Unknown";
+          await loadSelectedProfile();
+          return;
+        }
+      }
+      window.logUserAction("scan_profiles", "success");
+    } catch (error) {
+      console.error(error);
+      refs.profileStatus.textContent = "Scan failed";
+      showToast("toasts.no_profiles_found", {}, "error");
+      window.logUserAction("scan_profiles", "error");
     }
-  });
+  };
 
-  // -----------------------------
-  // EXTERNE LINKS
-  // -----------------------------
-  websiteBtn?.addEventListener("click", () =>
-    openUrl("https://www.xlieferant.dev/")
-  );
-  youtubeBtn?.addEventListener("click", () =>
-    openUrl("https://www.youtube.com/@xLieferant")
-  );
-  patreonBtn?.addEventListener("click", () =>
-    openUrl("https://www.patreon.com/cw/xLieferant")
-  );
-  githubBtn?.addEventListener("click", () =>
-    openUrl("https://github.com/xLieferant/Save-Edit-Tool")
-  );
+  refs.refreshBtn?.addEventListener("click", () => scanProfiles({ saveToBackend: true, showToasts: true }));
 
-  // -----------------------------
-  // EXPOSE GLOBAL FUNCTIONS
-  // -----------------------------
-  window.loadQuicksave = loadQuicksave;
-  window.loadProfileData = loadProfileData;
-  window.loadProfileSaveConfig = loadProfileSaveConfig;
-  window.loadBaseConfig = loadBaseConfig;
-  window.loadAllTrucks = loadAllTrucks;
-  window.loadAllTrailers = loadAllTrailers;
-
-  // -----------------------------
-  // CLONE PROFILE LOGIC
-  // -----------------------------
-  const cloneBtn = document.getElementById("cloneProfileBtn");
-  cloneBtn?.addEventListener("click", async () => {
+  refs.cloneBtn?.addEventListener("click", async () => {
     if (!window.selectedProfilePath) {
       showToast("toasts.no_profile_selected", {}, "warning");
       return;
     }
-
-    const choice = await openModalMulti("Manage Profile", [
-      {
-        type: "dropdown",
-        id: "action",
-        label: "Action",
-        value: "Duplicate",
-        options: ["Duplicate", "Rename"],
-      },
-    ]);
-
+    const choice = await openModalMulti("Manage Profile", [{
+      type: "dropdown",
+      id: "action",
+      label: "Action",
+      value: "Duplicate",
+      options: ["Duplicate", "Rename"],
+    }]);
     if (!choice) return;
-
-    switch (choice?.action) {
-      case "Duplicate":
-        openCloneProfileModal();
-        break;
-
-      case "Rename":
-        await handleProfileRename();
-        break;
+    if (choice.action === "Duplicate") return openCloneProfileModal();
+    const currentName = refs.profileNameDisplay.textContent;
+    const newName = await openModalText("Rename Profile", "New Name", currentName);
+    if (newName && newName.trim() !== "" && newName !== currentName) {
+      try {
+        window.selectedProfilePath = await invoke("profile_rename", { newName: newName.trim() });
+        refs.profileNameDisplay.textContent = newName.trim();
+        showToast("toasts.profile_renamed_success", {}, "success");
+        await scanProfiles({ saveToBackend: true, showToasts: false });
+        await loadSelectedProfile();
+      } catch (error) {
+        showToast("toasts.profile_rename_error", { error: error.toString() }, "error");
+      }
     }
   });
 
-  async function handleProfileRename() {
-    const currentName = profileNameDisplay.textContent;
-    const newName = await openModalText("Rename Profile", "New Name", currentName);
-
-    if (newName && newName.trim() !== "" && newName !== currentName) {
-      try {
-        const newPath = await invoke("profile_rename", { newName: newName.trim() });
-        showToast("toasts.profile_renamed_success", {}, "success");
-        
-        window.selectedProfilePath = newPath;
-        profileNameDisplay.textContent = newName.trim();
-        await scanProfiles({ saveToBackend: true, showToasts: false });
-        await loadSelectedProfile();
-      } catch (err) {
-        console.error("Rename failed:", err);
-        showToast("toasts.profile_rename_error", { error: err.toString() }, "error");
-      }
-    }
-  }
-
-  async function handleCopyControls() {
+  window.handleCopyControls = async function () {
     if (!window.selectedProfilePath) {
       showToast("toasts.no_source_profile_selected", {}, "warning");
       return;
     }
-
-    window.logUserAction("copy_controls", "start");
-
-    try {
-      const profiles = await invoke("find_ets2_profiles");
-
-      const sourcePath = window.selectedProfilePath;
-      const targets = profiles.filter(
-          (p) => p.success && p.path !== sourcePath
-      );
-
-      if (targets.length === 0) {
-        showToast("toasts.no_other_profiles", {}, "warning");
-        return;
-      }
-
-      const options = targets.map(
-          (p) => `${p.name} [${p.path}]`
-      );
-
-      const res = await openModalMulti("Copy Controls", [
-        {
-          type: "dropdown",
-          id: "target",
-          label: "Target Profile",
-          value: options[0],
-          options: options,
-        },
-      ]);
-
-      if (!res || !res.target) return;
-
-      const selectedProfile = targets.find(
-          (p) => `${p.name} [${p.path}]` === res.target
-      );
-
-      if (!selectedProfile) {
-        showToast("toasts.invalid_profile_selected", {}, "error");
-        return;
-      }
-
-      showToast("toasts.copying_controls", {}, "info");
-
-      const msg = await invoke("copy_profile_controls", {
-        sourceProfilePath: sourcePath,
-        targetProfilePath: selectedProfile.path,
-      });
-
-      // Backend currently returns a hardcoded string, but we can try to translate it or override
-      showToast("toasts.copy_controls_success", {}, "success");
-      window.logUserAction("copy_controls", "success");
-
-    } catch (err) {
-      window.logUserAction("copy_controls", "error");
-      console.error("Copy controls failed:", err);
-      showToast("toasts.copy_controls_error", {}, "error");
+    const profiles = await invoke("find_ets2_profiles");
+    const targets = profiles.filter((profile) => profile.success && profile.path !== window.selectedProfilePath);
+    if (!targets.length) {
+      showToast("toasts.no_other_profiles", {}, "warning");
+      return;
     }
-  }
-  window.handleCopyControls = handleCopyControls;
+    const result = await openModalMulti("Copy Controls", [{
+      type: "dropdown",
+      id: "target",
+      label: "Target Profile",
+      value: `${targets[0].name} [${targets[0].path}]`,
+      options: targets.map((profile) => `${profile.name} [${profile.path}]`),
+    }]);
+    if (!result?.target) return;
+    const target = targets.find((profile) => `${profile.name} [${profile.path}]` === result.target);
+    if (!target) return;
+    await invoke("copy_profile_controls", {
+      sourceProfilePath: window.selectedProfilePath,
+      targetProfilePath: target.path,
+    });
+    showToast("toasts.copy_controls_success", {}, "success");
+  };
 
-  // -----------------------------
-  // MOVE MODS LOGIC
-  // -----------------------------
-  async function handleMoveMods() {
+  window.handleMoveMods = async function () {
     if (!window.selectedProfilePath) {
       showToast("toasts.no_source_profile_selected", {}, "warning");
       return;
     }
+    const profiles = await invoke("find_ets2_profiles");
+    const targets = profiles.filter((profile) => profile.success && profile.path !== window.selectedProfilePath);
+    if (!targets.length) {
+      showToast("toasts.no_other_valid_profiles", {}, "warning");
+      return;
+    }
+    const result = await openModalMulti("Move Mods", [{
+      type: "dropdown",
+      id: "target",
+      label: "Target Profile",
+      value: `${targets[0].name} [${targets[0].path}]`,
+      options: targets.map((profile) => `${profile.name} [${profile.path}]`),
+    }]);
+    if (!result?.target) return;
+    const target = targets.find((profile) => `${profile.name} [${profile.path}]` === result.target);
+    if (!target) return;
+    const message = await invoke("copy_mods_to_profile", { targetProfilePath: target.path });
+    const count = message.match(/\d+/)?.[0] ?? "?";
+    showToast("toasts.move_mods_success", { count }, "success");
+  };
 
-    window.logUserAction("move_mods", "start");
-
+  window.showLanguagePicker = async function () {
     try {
-      const profiles = await invoke("find_ets2_profiles");
-      
-      const currentPath = window.selectedProfilePath;
-      const targets = profiles.filter(p => p.success && p.path !== currentPath);
+      const languages = await invoke("get_available_languages_command");
+      const currentLanguage = await invoke("get_current_language_command");
 
-      if (targets.length === 0) {
-        showToast("toasts.no_other_valid_profiles", {}, "warning");
+      if (!languages?.length) {
+        showToast("toasts.load_languages_error", { error: "No languages available" }, "error");
         return;
       }
 
-      const options = targets.map(p => `${p.name} [${p.path}]`);
+      const optionLabels = languages.reduce((acc, language) => {
+        acc[language.code] = language.name;
+        return acc;
+      }, {});
 
-      const res = await openModalMulti("Move Mods", [
+      const result = await openModalMulti("tools.settings.language.modalTextTitle", [
         {
           type: "dropdown",
-          id: "target",
-          label: "Target Profile",
-          value: options[0],
-          options: options,
+          id: "language",
+          label: "label.label_language",
+          value: currentLanguage,
+          options: languages.map((language) => language.code),
+          optionLabels,
         },
       ]);
 
-      if (!res || !res.target) return;
-
-      const selectedStr = res.target;
-      const selectedProfile = targets.find(p => `${p.name} [${p.path}]` === selectedStr);
-
-      if (!selectedProfile) {
-        showToast("toasts.invalid_profile_selection", {}, "error");
+      if (!result?.language || result.language === currentLanguage) {
         return;
       }
 
-      showToast("toasts.moving_mods_wait", {}, "info");
-
-      const resultMsg = await invoke("copy_mods_to_profile", {
-        targetProfilePath: selectedProfile.path,
-      });
-
-      // resultMsg contains a dynamic count from backend, but we use a key with placeholder
-      // Extract number from "Erfolgreich X Mods übertragen." or "Successfully transferred X mods."
-      const countMatch = resultMsg.match(/\d+/);
-      const count = countMatch ? countMatch[0] : "?";
-      
-      showToast("toasts.move_mods_success", { count }, "success");
-      window.logUserAction("move_mods", "success");
-
-    } catch (err) {
-      window.logUserAction("move_mods", "error");
-      console.error("Move mods error:", err);
-      showToast("toasts.move_mods_error", {}, "error");
+      const message = await invoke("set_language_command", { language: result.language });
+      showToast(message, {}, "success");
+      location.reload();
+    } catch (error) {
+      console.error("Language picker failed:", error);
+      showToast("toasts.load_languages_error", { error: error.toString() }, "error");
     }
-  }
-  window.handleMoveMods = handleMoveMods;
+  };
 
-  // -----------------------------
-  // PROFILE SCAN (AUTO & CACHE)
-  // -----------------------------
-  async function scanProfiles({
-    saveToBackend = true,
-    showToasts = true,
-  } = {}) {
-    profileStatus.textContent = "Scanning profiles...";
-    profileDropdownList.innerHTML = "";
-    window.logUserAction("scan_profiles", "start");
-
+  setInterval(async () => {
+    if (!window.selectedSavePath) return;
     try {
-      // Get current game to update UI
-      try {
-        const game = await invoke("get_selected_game");
-        const ets2Btn = document.getElementById("ets2Btn");
-        const atsBtn = document.getElementById("atsBtn");
-        
-        if (game === "ats") {
-          ets2Btn.classList.remove("active");
-          ets2Btn.disabled = false;
-          atsBtn.classList.add("active");
-          atsBtn.disabled = true;
-        } else {
-          atsBtn.classList.remove("active");
-          atsBtn.disabled = false;
-          ets2Btn.classList.add("active");
-          ets2Btn.disabled = true;
-        }
+      await loadQuicksave();
+      updateUIWithCurrentQuicksave();
+    } catch {}
+  }, 300000);
 
-        if (game !== lastSelectedGame) {
-          lastSelectedGame = game;
-          updateToolImagesForGame(game);
-          loadTools(activeTab);
-        }
-      } catch (e) {
-        console.warn("Could not sync game buttons:", e);
-      }
-
-      const profiles = await invoke("find_ets2_profiles");
-      profileStatus.textContent = `${profiles.length} profiles found`;
-      if (showToasts) showToast("toasts.profiles_found", {}, "success");
-
-      profiles.forEach((p) => {
-        if (!p.success) return;
-        const item = document.createElement("div");
-        item.className = "dropdown-item";
-
-        // Icon
-        const img = document.createElement("img");
-        img.src = resolveProfileIcon(p);
-        img.className = "profile-icon-dropdown";
-        if (p.avatar) {
-          img.dataset.hasAvatar = "true";
-          img.onerror = () => handleIconError(img);
-        }
-
-        // Text
-        const textSpan = document.createElement("span");
-        textSpan.textContent = p.name;
-
-        item.appendChild(img);
-        item.appendChild(textSpan);
-
-        item.addEventListener("click", async () => {
-          window.selectedProfilePath = p.path;
-          profileNameDisplay.textContent = p.name;
-          profileDropdownList.classList.remove("show");
-
-          localStorage.setItem("ets2_last_profile", p.path);
-          try {
-            await invoke("save_last_profile", {
-              profilePath: p.path,
-            });
-          } catch (e) {
-            console.warn("save_last_profile failed", e);
-          }
-
-          await loadSelectedProfile();
-        });
-
-        profileDropdownList.appendChild(item);
-      });
-
-      try {
-        localStorage.setItem("ets2_profiles_cache", JSON.stringify(profiles));
-        if (saveToBackend) {
-          const toSave = profiles.map((p) => ({
-            path: p.path,
-            name: p.name ?? null,
-            avatar: p.avatar ?? null,
-            success: !!p.success,
-            message: p.message ?? null,
-          }));
-          await invoke("save_profiles_cache", { profiles: toSave });
-        }
-      } catch (e) {
-        console.warn("Could not save profile cache:", e);
-      }
-
-      let last = null;
-      try {
-        const remoteLast = await invoke("read_last_profile");
-        if (remoteLast) last = remoteLast;
-      } catch (e) {
-        // ignore
-      }
-      if (!last) {
-        last = localStorage.getItem("ets2_last_profile");
-      }
-
-      if (last) {
-        const matched = profiles.find((p) => p.path === last && p.success);
-        if (matched && matched.success) {
-          window.selectedProfilePath = matched.path;
-          profileNameDisplay.textContent = matched.name ?? "Unknown";
-          await loadSelectedProfile();
-          return;
-        } else {
-          window.selectedProfilePath = last;
-          profileNameDisplay.textContent = "Select Profile";
-          try {
-            await loadSelectedProfile();
-            return;
-          } catch (e) {
-            console.warn("Autoload of last profile failed", e);
-          }
-        }
-      }
-      window.logUserAction("scan_profiles", "success");
-    } catch (err) {
-      console.error(err);
-      profileStatus.textContent = "Scan failed";
-      showToast("toasts.no_profiles_found", {}, "error");
-      window.logUserAction("scan_profiles", "error");
-    }
-  }
-
-  // -----------------------------
-  // AUTO-SCAN ON STARTUP
-  // -----------------------------
-  (async function autoScanOnStartup() {
-    try {
-      const cached = await invoke("read_profiles_cache");
-      if (cached && cached.length) {
-        profileDropdownList.innerHTML = "";
-        cached.forEach((p) => {
-          if (!p.success) return;
-          const item = document.createElement("div");
-          item.className = "dropdown-item";
-          
-          // Icon
-          const img = document.createElement("img");
-          img.src = resolveProfileIcon(p); 
-          img.className = "profile-icon-dropdown";
-          if (p.avatar) {
-            img.dataset.hasAvatar = "true";
-            img.onerror = () => handleIconError(img);
-          }
-          
-          // Text
-          const textSpan = document.createElement("span");
-          textSpan.textContent = p.name;
-
-          item.appendChild(img);
-          item.appendChild(textSpan);
-
-          item.addEventListener("click", async () => {
-            window.selectedProfilePath = p.path;
-            profileNameDisplay.textContent = p.name;
-            profileDropdownList.classList.remove("show");
-            localStorage.setItem("ets2_last_profile", p.path);
-            try {
-              await invoke("save_last_profile", {
-                profilePath: p.path,
-              });
-            } catch (e) {}
-            await loadSelectedProfile();
-          });
-          profileDropdownList.appendChild(item);
-        });
-
-        try {
-          const last = await invoke("read_last_profile");
-          if (last) {
-            window.selectedProfilePath = last;
-            profileNameDisplay.textContent = "loading last profile...";
-            await loadSelectedProfile();
-            setTimeout(
-              () => scanProfiles({ saveToBackend: true, showToasts: false }),
-              500
-            );
-            return;
-          }
-        } catch (e) {
-          // ignore
-        }
-      }
-    } catch (e) {
-      // no cache available
-    }
-
-    await scanProfiles({ saveToBackend: true, showToasts: true });
-  })();
-  // -----------------------------
-// LANGUAGE PICKER
-// -----------------------------
-async function showLanguagePicker() { // #FIXME <-- Remove this code, we're using a diffrent Modal in tools.js! 
   try {
-    const languages = await invoke('get_available_languages_command');
-    const currentLang = await invoke('get_current_language_command');
-    
-    const modal = document.createElement('div');    
-    document.body.appendChild(modal);
-    
-    const options = modal.querySelectorAll('.language-option');
-    options.forEach(option => {
-      option.addEventListener('click', async () => {
-        const selectedLang = option.dataset.lang;
-        
-        if (selectedLang !== currentLang) {
-          try {
-            const message = await invoke('set_language_command', { 
-              language: selectedLang 
-            });
-            
-            showToast(message, "success");
-            modal.remove();
-            
-            // Translate the UI again
-            await translateUI();
-
-          } catch (error) {
-            showToast("toasts.generic_error_prefix", { error: error.toString() }, "error");
-          }
-        } else {
-          modal.remove();
-        }
+    const cached = await invoke("read_profiles_cache");
+    if (cached?.length) {
+      refs.profileDropdownList.innerHTML = "";
+      cached.filter((profile) => profile.success).forEach((profile) => {
+        refs.profileDropdownList.appendChild(createProfileItem(profile));
       });
-    });
-    
-    modal.querySelector('.close-modal').addEventListener('click', () => {
-      modal.remove();
-    });
-    
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) {
-        modal.remove();
-      }
-    });
-    
-  } catch (error) {
-    showToast("toasts.load_languages_error", { error: error.toString() }, "error");
-  }
-}
-
-// Helper function to get translations in JavaScript
-async function t(key, params = {}) {
-  try {
-    let text = await invoke('translate_command', { key });
-
-    // einfache Platzhalter-Ersetzung
-    for (const [k, v] of Object.entries(params)) {
-      text = text.replaceAll(`{${k}}`, String(v));
     }
+  } catch {}
 
-    return text;
-  } catch (error) {
-    console.error('Translation error:', error);
-    return key;
-  }
-}
-
-// Function to translate all elements with data-translate attribute
-async function translateUI() {
-  const elements = document.querySelectorAll('[data-translate]');
-  for (const el of elements) {
-    const key = el.getAttribute('data-translate');
-    el.textContent = await t(key);
-  }
-}
-
-// Make functions globally available
-window.showLanguagePicker = showLanguagePicker;
-window.t = t;
-window.translateUI = translateUI; // Make it global so you can call it from anywhere
-window.dispatchEvent(new Event("translations-ready"));
+  await scanProfiles({ saveToBackend: true, showToasts: true });
+  window.dispatchEvent(new Event("translations-ready"));
 });

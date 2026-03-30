@@ -25,6 +25,23 @@ fn main() {
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             let handle = app.handle().clone();
+            for game in [
+                features::career::plugin_installer::ScsGame::Ets2,
+                features::career::plugin_installer::ScsGame::Ats,
+            ] {
+                match features::career::plugin_installer::ensure_plugin_files(&handle, game) {
+                    Ok(path) => crate::dev_log!(
+                        "[career] plugin installed for {:?}: {}",
+                        game,
+                        path.display()
+                    ),
+                    Err(error) => crate::dev_log!(
+                        "[career] plugin install skipped for {:?}: {}",
+                        game,
+                        error
+                    ),
+                }
+            }
             let runtime = app.state::<CareerState>().runtime.clone();
             features::career::service::start_background(handle, runtime);
             Ok(())
@@ -108,6 +125,7 @@ fn main() {
             // Career (background + logbook)
             features::career::commands::career_get_status,
             features::career::commands::career_list_trips,
+            features::career::commands::get_plugin_status,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

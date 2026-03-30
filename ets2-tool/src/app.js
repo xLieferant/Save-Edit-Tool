@@ -251,7 +251,7 @@ export async function openModalMulti(titleKey, config = []) {
       for (const o of item.options) {
         const opt = document.createElement("option");
         opt.value = o;
-        opt.textContent = await window.t(o);
+        opt.textContent = item.optionLabels?.[String(o)] ?? await window.t(o);
         if (String(o) === String(item.value)) opt.selected = true;
         select.appendChild(opt);
       }

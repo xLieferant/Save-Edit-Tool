@@ -5,95 +5,190 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title data-translate="app.name">ETS2 Save Editor - Alex Edition</title>
     <link rel="stylesheet" href="styles.css" />
-    <!-- Hier kann optional ein Favicon oder Preconnects eingefügt werden -->
   </head>
   <body>
-    <header class="main-header">
-      <div class="logo">
-        <img src="images/xlLogo.png" alt="ets2Logo" />
-        <div class="logo-text">
-          <span class="logo-title" data-translate="app.title">SAVE EDITOR</span>
-          <span class="logo-subtitle" data-translate="app.subtitle">for SCS - xLieferant</span>
+    <div class="app-shell">
+      <header class="command-header">
+        <div class="logo">
+          <img src="images/xlLogo.png" alt="ets2Logo" />
+          <div class="logo-text">
+            <span class="logo-title" data-translate="app.title">SAVE EDITOR</span>
+            <span class="logo-subtitle" data-translate="app.subtitle">for SCS - xLieferant</span>
+          </div>
         </div>
+
+        <div class="command-center-head">
+          <div class="mode-switch" id="hubModeSwitch">
+            <button id="editorModeBtn" class="mode-btn active">
+              <span data-translate="hub.mode_editor">Editor</span>
+            </button>
+            <button id="careerModeBtn" class="mode-btn">
+              <span data-translate="hub.mode_career">Career</span>
+            </button>
+          </div>
+
+          <div class="command-copy">
+            <span class="command-label" data-translate="career.command_center">Command Center</span>
+            <span class="command-subtitle" data-translate="career.live_subtitle">Live telemetry and install state</span>
+          </div>
+        </div>
+
+        <div class="status-cluster">
+          <div id="statusGameRunning" class="status-pill">
+            <span class="status-lamp"></span>
+            <span class="status-text" data-translate="career.status.game_running">Game Running</span>
+          </div>
+          <div id="statusPluginInstalled" class="status-pill">
+            <span class="status-lamp"></span>
+            <span class="status-text" data-translate="career.status.plugin_installed">Plugin Installed</span>
+          </div>
+          <div id="statusSdkConnected" class="status-pill">
+            <span class="status-lamp"></span>
+            <span class="status-text" data-translate="career.status.sdk_connected">SDK Connected</span>
+          </div>
+        </div>
+      </header>
+
+      <div class="workspace-shell">
+        <nav class="nav-wrapper">
+          <div class="nav-main">
+            <button class="nav-btn" data-tab="truck" data-translate="tabs.truck">Truck</button>
+            <button class="nav-btn" data-tab="trailer" data-translate="tabs.trailer">Trailer</button>
+            <button class="nav-btn active" data-tab="profile">
+              <span data-translate="tabs.profile">Profile</span>
+            </button>
+            <button class="nav-btn" data-tab="settings" data-translate="tabs.settings">Settings</button>
+            <div id="updateStatus" class="update-status"></div>
+          </div>
+
+          <div class="nav-bottom">
+            <button id="websiteBtn" class="nav-action website" data-translate="buttons.website">Website</button>
+            <button id="youtubeBtn" class="nav-action youtube" data-translate="buttons.youtube">YouTube</button>
+            <button id="patreonBtn" class="nav-action patreon" data-translate="buttons.patreon">Patreon</button>
+            <button id="githubBtn" class="nav-action github" data-translate="buttons.github">GitHub</button>
+            <button id="versionBtn" class="version-btn">0.6.0</button>
+          </div>
+        </nav>
+
+        <section class="workspace-main">
+          <section id="editorView" class="workspace-view is-active">
+            <div id="tool-container"></div>
+          </section>
+
+          <section id="careerView" class="workspace-view career-view">
+            <div class="career-hero panel-surface">
+              <div class="career-hero-copy">
+                <span class="eyebrow" data-translate="career.command_center">Command Center</span>
+                <h1 class="career-title" id="careerHeroTitle">ETS2</h1>
+                <p
+                  class="career-summary"
+                  id="careerConnectionNote"
+                  data-translate="career.status.awaiting_signal"
+                >
+                  Waiting for shared memory bridge
+                </p>
+              </div>
+              <div class="career-hero-meta">
+                <div class="hero-stat">
+                  <span class="hero-stat-label" data-translate="career.widget.odometer">Odometer</span>
+                  <strong id="careerOdometerValue">0 km</strong>
+                </div>
+                <div class="hero-stat">
+                  <span class="hero-stat-label" data-translate="career.widget.map_scale">Map Scale</span>
+                  <strong id="careerMapScaleValue">0.00</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="telemetry-grid">
+              <article class="metric-card speed-card panel-surface">
+                <div class="metric-card-head">
+                  <span class="metric-label" data-translate="career.widget.speed">Speed</span>
+                  <span class="metric-unit">KM/H</span>
+                </div>
+                <div class="speed-dial" id="careerSpeedDial" style="--dial-progress: 0;">
+                  <div class="speed-dial-core">
+                    <strong id="careerSpeedValue">0</strong>
+                  </div>
+                </div>
+              </article>
+
+              <article class="metric-card gear-card panel-surface">
+                <div class="metric-card-head">
+                  <span class="metric-label" data-translate="career.widget.gear">Gear</span>
+                </div>
+                <div class="gear-display" id="careerGearValue">N</div>
+                <div class="gear-caption" id="careerGameLabel">ETS2</div>
+              </article>
+
+              <article class="metric-card fuel-card panel-surface">
+                <div class="metric-card-head">
+                  <span class="metric-label" data-translate="career.widget.fuel">Fuel</span>
+                  <span id="careerFuelPercent">0%</span>
+                </div>
+                <strong class="fuel-value" id="careerFuelValue">0.0 L</strong>
+                <div class="fuel-bar">
+                  <span id="careerFuelBarFill" class="fuel-bar-fill" style="--fuel-progress: 0;"></span>
+                </div>
+              </article>
+
+              <article class="metric-card rpm-card panel-surface">
+                <div class="metric-card-head">
+                  <span class="metric-label" data-translate="career.widget.rpm">RPM</span>
+                </div>
+                <strong class="rpm-value" id="careerRpmValue">0</strong>
+                <p class="rpm-subtext" data-translate="career.live_subtitle">Live telemetry and install state</p>
+              </article>
+            </div>
+          </section>
+        </section>
       </div>
-      <nav class="nav-wrapper">
-        <div class="nav-main">
-          <button class="nav-btn" data-tab="truck" data-translate="tabs.truck">🚛Truck</button>
-          <button class="nav-btn" data-tab="trailer" data-translate="tabs.trailer">🚚Trailer</button>
-          <button class="nav-btn active" data-tab="profile">
-            <span data-translate="tabs.profile">Profile</span>
+
+      <p id="profile-status" class="profile-status"></p>
+
+      <footer class="profile-bar">
+        <div class="game-switch">
+          <button id="ets2Btn" class="active">
+            <img src="images/ets2_32x32.png" alt="ets2Logo" sizes="15px" />
+            <span data-translate="game.ets2">ETS2</span>
           </button>
-          <button class="nav-btn" data-tab="settings" data-translate="tabs.settings">⚙️Settings</button>
-          <div id="updateStatus" class="update-status"></div>
+          <button id="atsBtn" disabled>
+            <img src="images/ats_32x32.png" alt="ats Logo" class="switchButtonLogo" />
+            <span data-translate="game.ats">ATS</span>
+          </button>
         </div>
 
-        <div class="nav-bottom">
-          <button id="websiteBtn" class="nav-action website" data-translate="buttons.website">🆕Website</button>
-          <button id="youtubeBtn" class="nav-action youtube" data-translate="buttons.youtube">🔴 YouTube</button>
-          <button id="patreonBtn" class="nav-action patreon" data-translate="buttons.patreon">⚠️ Patreon</button>
-          <button id="githubBtn" class="nav-action github" data-translate="buttons.github">⚠️ GitHub</button>
-          <button id="versionBtn" class="version-btn">0.6.0</button>
-        </div>
-      </nav>
-    </header>
-
-    <main id="tool-container">
-      <!-- Tools werden per JS geladen (standardmäßig 'truck') -->
-    </main>
-
-    <!-- Statusmeldung für Profile (außerhalb des Footers positioniert, damit sie Platz hat) -->
-    <p
-      id="profile-status"
-      style="margin: 10px 25px 0; font-size: 0.8em; color: #0ff"
-    ></p>
-
-    <footer class="profile-bar">
-      <div class="game-switch">
-        <button id="ets2Btn" class="active">
-          <img src="images/ets2_32x32.png" alt="ets2Logo" sizes="15px" />
-          <span data-translate="game.ets2">ETS2</span>
-        </button>
-        <button id="atsBtn" disabled>
+        <div class="profile-picker">
           <img
-            src="images/ats_32x32.png"
-            alt="ats Logo"
-            class="switchButtonLogo"
+            id="activeProfileIcon"
+            src="images/icon_White.png"
+            alt="Profile"
+            class="profile-icon-footer"
           />
-          <span data-translate="game.ats">ATS</span>
-        </button>
-      </div>
-
-      <!-- Die Struktur für das benutzerdefinierte Dropdown-Menü -->
-      <div class="profile-picker">
-        <img id="activeProfileIcon" src="images/icon_White.png" alt="Profile" class="profile-icon-footer">
-        <span id="profileNameDisplay" data-translate="profile.select_profile"></span>
-        <button id="openProfileModal">▼</button>
-        <!-- Container für die dynamisch generierte Dropdown-Liste -->
-        <div id="profileDropdownList" class="custom-dropdown-list">
-          <!-- Profile werden hier durch JS eingefügt -->
+          <span id="profileNameDisplay" data-translate="profile.select_profile"></span>
+          <button id="openProfileModal">▼</button>
+          <div id="profileDropdownList" class="custom-dropdown-list"></div>
         </div>
-      </div>
 
-      <div class="save-picker">
-        <span id="saveName" data-translate="profile.select_save"></span>
-        <button id="openSaveModal">▼</button>
+        <div class="save-picker">
+          <span id="saveName" data-translate="profile.select_save"></span>
+          <button id="openSaveModal">▼</button>
+          <div id="saveDropdownList" class="dropdown-list"></div>
+        </div>
 
-        <div id="saveDropdownList" class="dropdown-list"></div>
-      </div>
+        <button
+          id="cloneProfileBtn"
+          class="refresh-btn"
+          title="Clone Profile"
+          style="margin-right: 5px"
+          data-translate="profile.clone_profile"
+        >
+          👯
+        </button>
+        <button id="refreshBtn" class="refresh-btn" data-translate="profile.refresh">⟳</button>
+      </footer>
+    </div>
 
-      <button
-        id="cloneProfileBtn"
-        class="refresh-btn"
-        title="Clone Profile"
-        style="margin-right: 5px"
-        data-translate="profile.clone_profile"
-      >
-        👯
-      </button>
-      <button id="refreshBtn" class="refresh-btn" data-translate="profile.refresh">⟳</button>
-    </footer>
-
-    <!-- MODAL: Text-Input -->
     <div class="modal-backdrop" id="modalText">
       <div class="modal-box">
         <h2 id="modalTextTitle">Modal Title</h2>
@@ -105,7 +200,6 @@
       </div>
     </div>
 
-    <!-- MODAL: Number-Input -->
     <div class="modal-backdrop" id="modalNumber">
       <div class="modal-box">
         <h2 id="modalNumberTitle">Modal Title</h2>
@@ -117,7 +211,6 @@
       </div>
     </div>
 
-    <!-- MODAL: Slider/Checkbox Input -->
     <div class="modal-backdrop" id="modalSlider">
       <div class="modal-box">
         <h2 id="modalSliderTitle">Modal Title</h2>
@@ -130,7 +223,6 @@
       </div>
     </div>
 
-    <!-- MODAL: Multi Input (Dropdown, Slider, Number) -->
     <div class="modal-backdrop" id="modalMulti">
       <div class="modal-box">
         <h2 id="modalMultiTitle"></h2>
@@ -142,7 +234,6 @@
       </div>
     </div>
 
-    <!-- MODAL: Clone Profile -->
     <div class="modal-backdrop" id="modalClone">
       <div class="modal-box">
         <h2 id="modalCloneTitle" data-translate="modals.clone_profile.title">Clone Profile</h2>
@@ -166,7 +257,6 @@
       </div>
     </div>
 
-    <!-- Nur noch main.js als Modul laden. Es kümmert sich um den Import der anderen Skripte. -->
     <script type="module" src="main.js" defer></script>
   </body>
 </html>

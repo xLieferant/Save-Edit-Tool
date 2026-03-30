@@ -1,0 +1,4 @@
+LIBRARY input
+EXPORTS
+scs_input_init=scs_input_init
+scs_input_shutdown=scs_input_shutdown

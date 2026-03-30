@@ -54,7 +54,7 @@
   "bundle": {
     "active": true,
     "targets": ["nsis"],
-    "resources": ["locales"],
+    "resources": ["locales", "resources/plugins"],
     "createUpdaterArtifacts": true,
     "icon": [
       "icons/32x32.png",

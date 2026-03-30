@@ -4,8 +4,9 @@ use std::sync::atomic::Ordering;
 use tauri::command;
 use tauri::State;
 
+use crate::features::career::plugin_installer::{self, ScsGame};
 use crate::features::hub::events::CareerStatus;
-use crate::state::CareerState;
+use crate::state::{AppProfileState, CareerState};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct TripSummary {
@@ -25,6 +26,7 @@ pub fn career_get_status(career: State<'_, CareerState>) -> Result<CareerStatus,
         ets2_running: runtime.ets2_running.load(Ordering::Relaxed),
         ats_running: runtime.ats_running.load(Ordering::Relaxed),
         telemetry_running: runtime.telemetry_running.load(Ordering::Relaxed),
+        plugin_installed: runtime.plugin_installed.load(Ordering::Relaxed),
         bridge_connected: runtime.bridge_connected.load(Ordering::Relaxed),
         active_game: runtime
             .active_game
@@ -32,6 +34,18 @@ pub fn career_get_status(career: State<'_, CareerState>) -> Result<CareerStatus,
             .map_err(|_| "Career active_game lock poisoned".to_string())?
             .clone(),
     })
+}
+
+#[command]
+pub fn get_plugin_status(profile: State<'_, AppProfileState>) -> Result<bool, String> {
+    let selected_game = profile
+        .selected_game
+        .lock()
+        .map_err(|_| "AppProfileState selected_game lock poisoned".to_string())?
+        .clone();
+
+    let game = ScsGame::try_from(selected_game.as_str())?;
+    Ok(plugin_installer::plugin_file_installed(game).unwrap_or(false))
 }
 
 #[command]

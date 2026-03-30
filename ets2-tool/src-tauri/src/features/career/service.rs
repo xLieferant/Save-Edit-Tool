@@ -1,12 +1,13 @@
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::Duration;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 
+use crate::features::career::plugin_installer::{self, ScsGame};
 use crate::features::career::telemetry::GameId;
 use crate::features::career::{db, overlay, telemetry};
 use crate::features::hub::events::CareerStatus;
-use crate::state::CareerRuntime;
+use crate::state::{AppProfileState, CareerRuntime};
 
 fn choose_game(ets2_running: bool, ats_running: bool, previous: Option<&str>) -> Option<GameId> {
     match (ets2_running, ats_running, previous) {
@@ -14,6 +15,19 @@ fn choose_game(ets2_running: bool, ats_running: bool, previous: Option<&str>) ->
         (true, _, _) => Some(GameId::Ets2),
         (false, true, _) => Some(GameId::Ats),
         _ => None,
+    }
+}
+
+fn selected_game(app: &AppHandle) -> Option<GameId> {
+    let profile_state = app.state::<AppProfileState>();
+    let selected = profile_state.selected_game.lock().ok()?.clone();
+    GameId::try_from(selected.as_str()).ok()
+}
+
+fn to_scs_game(game: GameId) -> ScsGame {
+    match game {
+        GameId::Ets2 => ScsGame::Ets2,
+        GameId::Ats => ScsGame::Ats,
     }
 }
 
@@ -46,6 +60,14 @@ pub fn start_background(app: AppHandle, runtime: Arc<CareerRuntime>) {
             *runtime.active_game.lock().unwrap() =
                 active_game.map(|game| game.as_str().to_string());
 
+            let status_game = active_game.or_else(|| selected_game(&app));
+            let plugin_installed = status_game
+                .map(|game| plugin_installer::plugin_file_installed(to_scs_game(game)).unwrap_or(false))
+                .unwrap_or(false);
+            runtime
+                .plugin_installed
+                .store(plugin_installed, Ordering::Relaxed);
+
             if let Some(game) = active_game {
                 telemetry::ensure_running(app.clone(), runtime.clone(), game);
                 let _ = overlay::ensure_overlay(&app);
@@ -59,6 +81,7 @@ pub fn start_background(app: AppHandle, runtime: Arc<CareerRuntime>) {
                 ets2_running,
                 ats_running,
                 telemetry_running: runtime.telemetry_running.load(Ordering::Relaxed),
+                plugin_installed,
                 bridge_connected: runtime.bridge_connected.load(Ordering::Relaxed),
                 active_game: runtime.active_game.lock().unwrap().clone(),
             };

@@ -26,6 +26,32 @@
             "ets2": "ETS2",
             "ats": "ATS"
       },
+      "hub": {
+            "mode_editor": "Editor",
+            "mode_career": "Karriere"
+      },
+      "career": {
+            "command_center": "Command Center",
+            "live_subtitle": "[NEEDS TRANSLATION] Live telemetry and install state",
+            "widget": {
+                  "speed": "Geschwindigkeit",
+                  "gear": "Gang",
+                  "fuel": "Sprit",
+                  "rpm": "RPM",
+                  "odometer": "Kilometerstand",
+                  "map_scale": "KartenmaÃŸstab"
+            },
+            "status": {
+                  "game_running": "Spiel lÃ¤uft",
+                  "plugin_installed": "Plugin installiert",
+                  "sdk_connected": "SDK verbunden",
+                  "awaiting_signal": "[NEEDS TRANSLATION] Waiting for shared memory bridge",
+                  "sdk_live": "[NEEDS TRANSLATION] Shared memory connected",
+                  "sdk_paused": "[NEEDS TRANSLATION] Telemetry stream paused",
+                  "plugin_missing": "[NEEDS TRANSLATION] Plugin file is not installed for the selected game",
+                  "game_stopped": "[NEEDS TRANSLATION] Game process not detected"
+            }
+      },
       "toasts": {
             "language_updated": "Sprache wurde auf Deutsch geändert",
             "language_loaded": "Sprache geladen: Deutsch",

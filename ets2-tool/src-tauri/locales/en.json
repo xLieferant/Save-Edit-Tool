@@ -26,6 +26,32 @@
             "ets2": "ETS2",
             "ats": "ATS"
       },
+      "hub": {
+            "mode_editor": "Editor",
+            "mode_career": "Career"
+      },
+      "career": {
+            "command_center": "Command Center",
+            "live_subtitle": "Live telemetry and install state",
+            "widget": {
+                  "speed": "Speed",
+                  "gear": "Gear",
+                  "fuel": "Fuel",
+                  "rpm": "RPM",
+                  "odometer": "Odometer",
+                  "map_scale": "Map Scale"
+            },
+            "status": {
+                  "game_running": "Game Running",
+                  "plugin_installed": "Plugin Installed",
+                  "sdk_connected": "SDK Connected",
+                  "awaiting_signal": "Waiting for shared memory bridge",
+                  "sdk_live": "Shared memory connected",
+                  "sdk_paused": "Telemetry stream paused",
+                  "plugin_missing": "Plugin file is not installed for the selected game",
+                  "game_stopped": "Game process not detected"
+            }
+      },
       "toasts": {
             "language_updated": "Language changed to English",
             "language_loaded": "Language loaded: English",

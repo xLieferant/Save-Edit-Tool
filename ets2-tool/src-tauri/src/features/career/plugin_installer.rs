@@ -1,11 +1,16 @@
 #![allow(dead_code)]
 
+use std::fs;
 use std::path::{Path, PathBuf};
 
 #[cfg(target_os = "windows")]
 use regex::Regex;
+use tauri::{AppHandle, Manager, Runtime};
 #[cfg(target_os = "windows")]
 use winreg::{enums::*, RegKey};
+
+pub const PLUGIN_DLL_NAME: &str = "simnexus_sdk.dll";
+pub const PLUGIN_RESOURCE_RELATIVE_PATH: &str = "plugins/simnexus_sdk.dll";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ScsGame {
@@ -40,6 +45,18 @@ impl ScsGame {
     }
 }
 
+impl TryFrom<&str> for ScsGame {
+    type Error = String;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value {
+            "ets2" => Ok(Self::Ets2),
+            "ats" => Ok(Self::Ats),
+            _ => Err(format!("Unsupported game id: {value}")),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct GameInstall {
     pub game: ScsGame,
@@ -47,6 +64,88 @@ pub struct GameInstall {
     pub binary_dir: PathBuf,
     pub exe_path: PathBuf,
     pub plugin_dir: PathBuf,
+}
+
+pub fn plugin_target_path(install: &GameInstall) -> PathBuf {
+    install.plugin_dir.join(PLUGIN_DLL_NAME)
+}
+
+pub fn plugin_file_installed(game: ScsGame) -> Result<bool, String> {
+    let install = find_game_installation(game)?;
+    Ok(plugin_target_path(&install).is_file())
+}
+
+pub fn install_plugin_files<R: Runtime>(
+    app: &AppHandle<R>,
+    game: ScsGame,
+) -> Result<PathBuf, String> {
+    let install = find_game_installation(game)?;
+    let source = resolve_plugin_resource(app)?;
+    let target = plugin_target_path(&install);
+
+    if let Some(parent) = target.parent() {
+        fs::create_dir_all(parent).map_err(|e| {
+            format!(
+                "Failed to create plugin directory {}: {}",
+                parent.display(),
+                e
+            )
+        })?;
+    }
+
+    if target.is_file() {
+        let source_meta = fs::metadata(&source).map_err(|e| e.to_string())?;
+        let target_meta = fs::metadata(&target).map_err(|e| e.to_string())?;
+        if source_meta.len() == target_meta.len() {
+            return Ok(target);
+        }
+    }
+
+    fs::copy(&source, &target).map_err(|e| {
+        format!(
+            "Failed to copy plugin DLL to {}. This may require administrator rights: {}",
+            target.display(),
+            e
+        )
+    })?;
+
+    Ok(target)
+}
+
+pub fn ensure_plugin_files<R: Runtime>(
+    app: &AppHandle<R>,
+    game: ScsGame,
+) -> Result<PathBuf, String> {
+    match plugin_file_installed(game) {
+        Ok(true) => {
+            let install = find_game_installation(game)?;
+            Ok(plugin_target_path(&install))
+        }
+        Ok(false) => install_plugin_files(app, game),
+        Err(_) => install_plugin_files(app, game),
+    }
+}
+
+fn resolve_plugin_resource<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, String> {
+    if let Ok(resource_dir) = app.path().resource_dir() {
+        let bundled = resource_dir.join(PLUGIN_RESOURCE_RELATIVE_PATH);
+        if bundled.is_file() {
+            return Ok(bundled);
+        }
+    }
+
+    let dev_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("resources")
+        .join("plugins")
+        .join(PLUGIN_DLL_NAME);
+    if dev_path.is_file() {
+        return Ok(dev_path);
+    }
+
+    Err(format!(
+        "Bundled plugin DLL not found. Expected {} inside the Tauri resources directory.",
+        PLUGIN_RESOURCE_RELATIVE_PATH
+    ))
 }
 
 #[cfg(target_os = "windows")]
