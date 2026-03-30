@@ -32,7 +32,7 @@
       },
       "career": {
             "command_center": "Command Center",
-            "live_subtitle": "[NEEDS TRANSLATION] Live telemetry and install state",
+            "live_subtitle": "Live-Telemetrie und Installationsstatus",
             "widget": {
                   "speed": "Geschwindigkeit",
                   "gear": "Gang",
@@ -45,11 +45,11 @@
                   "game_running": "Spiel lÃ¤uft",
                   "plugin_installed": "Plugin installiert",
                   "sdk_connected": "SDK verbunden",
-                  "awaiting_signal": "[NEEDS TRANSLATION] Waiting for shared memory bridge",
-                  "sdk_live": "[NEEDS TRANSLATION] Shared memory connected",
-                  "sdk_paused": "[NEEDS TRANSLATION] Telemetry stream paused",
-                  "plugin_missing": "[NEEDS TRANSLATION] Plugin file is not installed for the selected game",
-                  "game_stopped": "[NEEDS TRANSLATION] Game process not detected"
+                  "awaiting_signal": "Warte auf Shared-Memory-Bruecke",
+                  "sdk_live": "Shared Memory verbunden",
+                  "sdk_paused": "Telemetrie-Stream pausiert",
+                  "plugin_missing": "Die Plugin-Datei ist fuer das ausgewaehlte Spiel nicht installiert",
+                  "game_stopped": "Spielprozess nicht erkannt"
             }
       },
       "toasts": {

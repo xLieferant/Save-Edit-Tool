@@ -42,6 +42,11 @@ pub fn start_background(app: AppHandle, runtime: Arc<CareerRuntime>) {
         *runtime.db_path.lock().unwrap() = Some(db_path);
 
         let mut last_status: Option<CareerStatus> = None;
+        let mut last_game_running: Option<bool> = None;
+        let mut last_plugin_installed: Option<bool> = None;
+        let mut last_bridge_connected: Option<bool> = None;
+        let mut ets2_install_attempted = false;
+        let mut ats_install_attempted = false;
 
         loop {
             if runtime.stop_all.load(Ordering::Relaxed) {
@@ -62,7 +67,52 @@ pub fn start_background(app: AppHandle, runtime: Arc<CareerRuntime>) {
 
             let status_game = active_game.or_else(|| selected_game(&app));
             let plugin_installed = status_game
-                .map(|game| plugin_installer::plugin_file_installed(to_scs_game(game)).unwrap_or(false))
+                .map(|game| {
+                    let scs_game = to_scs_game(game);
+                    let installed_now =
+                        plugin_installer::plugin_file_installed(scs_game).unwrap_or(false);
+
+                    match scs_game {
+                        ScsGame::Ets2 => {
+                            if installed_now {
+                                ets2_install_attempted = false;
+                                true
+                            } else {
+                                if !ets2_install_attempted {
+                                    ets2_install_attempted = true;
+                                    if let Err(error) =
+                                        plugin_installer::ensure_plugin_files(&app, scs_game)
+                                    {
+                                        crate::dev_log!(
+                                            "[career] plugin auto-install failed for ETS2: {}",
+                                            error
+                                        );
+                                    }
+                                }
+                                plugin_installer::plugin_file_installed(scs_game).unwrap_or(false)
+                            }
+                        }
+                        ScsGame::Ats => {
+                            if installed_now {
+                                ats_install_attempted = false;
+                                true
+                            } else {
+                                if !ats_install_attempted {
+                                    ats_install_attempted = true;
+                                    if let Err(error) =
+                                        plugin_installer::ensure_plugin_files(&app, scs_game)
+                                    {
+                                        crate::dev_log!(
+                                            "[career] plugin auto-install failed for ATS: {}",
+                                            error
+                                        );
+                                    }
+                                }
+                                plugin_installer::plugin_file_installed(scs_game).unwrap_or(false)
+                            }
+                        }
+                    }
+                })
                 .unwrap_or(false);
             runtime
                 .plugin_installed
@@ -77,12 +127,30 @@ pub fn start_background(app: AppHandle, runtime: Arc<CareerRuntime>) {
                 let _ = overlay::hide_overlay(&app);
             }
 
+            let game_running = ets2_running || ats_running;
+            let bridge_connected = runtime.bridge_connected.load(Ordering::Relaxed);
+
+            if last_game_running != Some(game_running) {
+                last_game_running = Some(game_running);
+                let _ = app.emit("career://game_running", game_running);
+            }
+
+            if last_plugin_installed != Some(plugin_installed) {
+                last_plugin_installed = Some(plugin_installed);
+                let _ = app.emit("career://plugin_installed", plugin_installed);
+            }
+
+            if last_bridge_connected != Some(bridge_connected) {
+                last_bridge_connected = Some(bridge_connected);
+                let _ = app.emit("career://bridge_connected", bridge_connected);
+            }
+
             let status = CareerStatus {
                 ets2_running,
                 ats_running,
                 telemetry_running: runtime.telemetry_running.load(Ordering::Relaxed),
                 plugin_installed,
-                bridge_connected: runtime.bridge_connected.load(Ordering::Relaxed),
+                bridge_connected,
                 active_game: runtime.active_game.lock().unwrap().clone(),
             };
 
@@ -91,7 +159,7 @@ pub fn start_background(app: AppHandle, runtime: Arc<CareerRuntime>) {
                 let _ = app.emit("career://status", status);
             }
 
-            std::thread::sleep(Duration::from_millis(1000));
+            std::thread::sleep(Duration::from_millis(500));
         }
     });
 }

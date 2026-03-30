@@ -164,12 +164,43 @@ document.addEventListener("DOMContentLoaded", async () => {
     missingPlugin: await t("career.status.plugin_missing"),
     gameStopped: await t("career.status.game_stopped"),
   };
+  const careerState = {
+    gameRunning: false,
+    pluginInstalled: false,
+    bridgeConnected: false,
+    paused: false,
+    activeGame: "ets2",
+  };
 
   const setLamp = (element, active) => element?.classList.toggle("is-active", Boolean(active));
   const setCareerGame = (game) => {
     const label = (game || "ets2").toUpperCase();
     if (refs.careerHeroTitle) refs.careerHeroTitle.textContent = label;
     if (refs.careerGameLabel) refs.careerGameLabel.textContent = label;
+  };
+  const applyCareerState = () => {
+    setLamp(refs.statusGameRunning, careerState.gameRunning);
+    setLamp(refs.statusPluginInstalled, careerState.pluginInstalled);
+    setLamp(refs.statusSdkConnected, careerState.bridgeConnected);
+    setCareerGame(careerState.activeGame || lastSelectedGame || "ets2");
+    if (!refs.careerConnectionNote) return;
+    if (careerState.bridgeConnected && careerState.paused) {
+      refs.careerConnectionNote.textContent = careerText.paused;
+      return;
+    }
+    if (careerState.bridgeConnected) {
+      refs.careerConnectionNote.textContent = careerText.live;
+      return;
+    }
+    if (!careerState.pluginInstalled) {
+      refs.careerConnectionNote.textContent = careerText.missingPlugin;
+      return;
+    }
+    if (!careerState.gameRunning) {
+      refs.careerConnectionNote.textContent = careerText.gameStopped;
+      return;
+    }
+    refs.careerConnectionNote.textContent = careerText.waiting;
   };
 
   const applyHubMode = (mode) => {
@@ -185,6 +216,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const fuel = Number(data?.fuel_liters ?? 0);
     const capacity = Number(data?.fuel_capacity_liters ?? 0);
     const ratio = capacity > 0 ? Math.max(0, Math.min(fuel / capacity, 1)) : 0;
+    careerState.bridgeConnected = true;
+    careerState.paused = Number(data?.paused ?? 0) === 1;
     if (refs.careerSpeedDial) refs.careerSpeedDial.style.setProperty("--dial-progress", String(Math.min(speed / 180, 1)));
     if (refs.careerSpeedValue) refs.careerSpeedValue.textContent = String(Math.round(speed));
     if (refs.careerGearValue) {
@@ -202,26 +235,34 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (refs.careerRpmValue) refs.careerRpmValue.textContent = formatTelemetryNumber(data?.engine_rpm ?? 0, 0);
     if (refs.careerOdometerValue) refs.careerOdometerValue.textContent = `${formatTelemetryNumber(data?.odometer_km ?? 0, 1)} km`;
     if (refs.careerMapScaleValue) refs.careerMapScaleValue.textContent = formatTelemetryNumber(data?.map_scale ?? 0, 2);
-    if (refs.careerConnectionNote) refs.careerConnectionNote.textContent = Number(data?.paused ?? 0) === 1 ? careerText.paused : careerText.live;
+    applyCareerState();
   };
 
   const renderCareerStatus = (status) => {
-    const gameRunning = Boolean(status?.ets2_running || status?.ats_running);
-    setLamp(refs.statusGameRunning, gameRunning);
-    setLamp(refs.statusPluginInstalled, status?.plugin_installed);
-    setLamp(refs.statusSdkConnected, status?.bridge_connected);
-    setCareerGame(status?.active_game || lastSelectedGame || "ets2");
-    if (!refs.careerConnectionNote) return;
-    if (status?.bridge_connected) refs.careerConnectionNote.textContent = careerText.live;
-    else if (!status?.plugin_installed) refs.careerConnectionNote.textContent = careerText.missingPlugin;
-    else if (!gameRunning) refs.careerConnectionNote.textContent = careerText.gameStopped;
-    else refs.careerConnectionNote.textContent = careerText.waiting;
+    careerState.gameRunning = Boolean(status?.ets2_running || status?.ats_running);
+    careerState.pluginInstalled = Boolean(status?.plugin_installed);
+    careerState.bridgeConnected = Boolean(status?.bridge_connected);
+    careerState.activeGame = status?.active_game || careerState.activeGame || lastSelectedGame || "ets2";
+    if (!careerState.bridgeConnected) {
+      careerState.paused = false;
+    }
+    applyCareerState();
+  };
+  const updateCareerFlag = (key, value) => {
+    careerState[key] = Boolean(value);
+    if (key === "bridgeConnected" && !careerState.bridgeConnected) {
+      careerState.paused = false;
+    }
+    applyCareerState();
   };
 
   refs.editorModeBtn?.addEventListener("click", () => invoke("hub_set_mode", { mode: "utility" }).catch(console.error));
   refs.careerModeBtn?.addEventListener("click", () => invoke("hub_set_mode", { mode: "career" }).catch(console.error));
 
   listen("hub://mode_changed", (event) => applyHubMode(event.payload.mode)).catch(console.error);
+  listen("career://game_running", (event) => updateCareerFlag("gameRunning", event.payload)).catch(console.error);
+  listen("career://plugin_installed", (event) => updateCareerFlag("pluginInstalled", event.payload)).catch(console.error);
+  listen("career://bridge_connected", (event) => updateCareerFlag("bridgeConnected", event.payload)).catch(console.error);
   listen("career://status", (event) => renderCareerStatus(event.payload)).catch(console.error);
   listen("career://telemetry_tick", (event) => renderTelemetry(event.payload)).catch(console.error);
 
@@ -233,6 +274,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   try {
     const selectedGame = await invoke("get_selected_game");
+    careerState.activeGame = selectedGame;
     setCareerGame(selectedGame);
     lastSelectedGame = selectedGame;
   } catch {}
@@ -242,7 +284,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   } catch {}
 
   try {
-    setLamp(refs.statusPluginInstalled, await invoke("get_plugin_status"));
+    updateCareerFlag("pluginInstalled", await invoke("get_plugin_status"));
   } catch {}
 
   if (refs.versionBtn) {
@@ -663,8 +705,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
 
-      const message = await invoke("set_language_command", { language: result.language });
-      showToast(message, {}, "success");
+      await invoke("set_language_command", { language: result.language });
+      showToast("toasts.language_updated", {}, "success");
       location.reload();
     } catch (error) {
       console.error("Language picker failed:", error);

@@ -19,6 +19,8 @@
   --success: #63c768;
   --surface-shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
   --surface-glow: 0 0 30px rgba(var(--accent-rgb), 0.24);
+  --status-glow: 0 0 22px rgba(var(--accent-rgb), 0.52);
+  --status-glow-soft: 0 0 36px rgba(var(--accent-rgb), 0.22);
   --radius-xl: 28px;
   --radius-lg: 20px;
   --radius-md: 16px;
@@ -285,10 +287,11 @@ body::after {
 .status-pill.is-active {
   background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.14), rgba(255, 255, 255, 0.04));
   border-color: rgba(var(--accent-rgb), 0.34);
-  box-shadow: var(--surface-glow);
+  box-shadow: var(--status-glow-soft);
 }
 
 .status-lamp {
+  position: relative;
   width: 12px;
   height: 12px;
   border-radius: 50%;
@@ -297,9 +300,56 @@ body::after {
   transition: 180ms ease;
 }
 
+.status-lamp::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  opacity: 0;
+  transform: scale(0.4);
+}
+
 .status-pill.is-active .status-lamp {
   background: var(--accent);
-  box-shadow: 0 0 18px rgba(var(--accent-rgb), 0.75);
+  box-shadow: var(--status-glow);
+}
+
+.status-pill.is-active .status-lamp::after {
+  background: radial-gradient(circle, rgba(var(--accent-rgb), 0.34) 0%, rgba(var(--accent-rgb), 0.12) 48%, transparent 74%);
+  opacity: 1;
+  animation: status-led-pulse 2.2s ease-out infinite;
+}
+
+.status-text {
+  white-space: nowrap;
+}
+
+.speed-dial-core strong,
+.gear-display,
+.fuel-value,
+.rpm-value,
+.hero-stat strong,
+#careerFuelPercent,
+#careerSpeedValue,
+#careerRpmValue,
+#careerOdometerValue,
+#careerMapScaleValue {
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes status-led-pulse {
+  0% {
+    opacity: 0.15;
+    transform: scale(0.45);
+  }
+  55% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.35);
+  }
 }
 
 .workspace-shell {
