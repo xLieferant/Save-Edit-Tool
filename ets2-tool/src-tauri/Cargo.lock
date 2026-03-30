@@ -1091,6 +1091,8 @@ dependencies = [
  "tauri-plugin-updater",
  "uuid",
  "walkdir",
+ "windows-sys 0.59.0",
+ "winreg",
  "zip 7.0.0",
 ]
 

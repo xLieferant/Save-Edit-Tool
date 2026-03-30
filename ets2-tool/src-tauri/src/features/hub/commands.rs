@@ -1,5 +1,5 @@
 use tauri::command;
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, Emitter, State};
 
 use crate::features::hub::events::ModeChanged;
 use crate::state::{AppMode, HubState};
@@ -26,7 +26,7 @@ pub fn hub_set_mode(mode: AppMode, app: AppHandle, hub: State<'_, HubState>) -> 
         *guard = mode;
     }
 
-    app.emit_all("hub://mode_changed", ModeChanged { mode })
+    app.emit("hub://mode_changed", ModeChanged { mode })
         .map_err(|e| e.to_string())?;
 
     Ok(mode)

@@ -251,6 +251,8 @@ pub struct CareerRuntime {
     pub telemetry_running: AtomicBool,
     pub ets2_running: AtomicBool,
     pub ats_running: AtomicBool,
+    pub bridge_connected: AtomicBool,
+    pub active_game: Mutex<Option<String>>,
     pub db_path: Mutex<Option<PathBuf>>,
 }
 
@@ -262,6 +264,8 @@ impl Default for CareerRuntime {
             telemetry_running: AtomicBool::new(false),
             ets2_running: AtomicBool::new(false),
             ats_running: AtomicBool::new(false),
+            bridge_connected: AtomicBool::new(false),
+            active_game: Mutex::new(None),
             db_path: Mutex::new(None),
         }
     }

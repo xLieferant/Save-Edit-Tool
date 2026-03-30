@@ -25,6 +25,12 @@ pub fn career_get_status(career: State<'_, CareerState>) -> Result<CareerStatus,
         ets2_running: runtime.ets2_running.load(Ordering::Relaxed),
         ats_running: runtime.ats_running.load(Ordering::Relaxed),
         telemetry_running: runtime.telemetry_running.load(Ordering::Relaxed),
+        bridge_connected: runtime.bridge_connected.load(Ordering::Relaxed),
+        active_game: runtime
+            .active_game
+            .lock()
+            .map_err(|_| "Career active_game lock poisoned".to_string())?
+            .clone(),
     })
 }
 

@@ -12,4 +12,6 @@ pub struct CareerStatus {
     pub ets2_running: bool,
     pub ats_running: bool,
     pub telemetry_running: bool,
+    pub bridge_connected: bool,
+    pub active_game: Option<String>,
 }
