@@ -13,6 +13,9 @@ mod shared;   // ehemals utils
 mod features; // ehemals commands (aufgeteilt)
 
 fn main() {
+    features::career::scs_sdk_telemetry::start_terminal_telemetry_loop();
+    features::career::telemetry_debug::start_telemetry_debug_thread();
+
     tauri::Builder::default()
         .plugin(tauri_plugin_fs::init())
         .manage(DecryptCache::default())
