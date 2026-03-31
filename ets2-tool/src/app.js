@@ -4,7 +4,7 @@ import { tools } from "./tools.js";
    TOOL LOADER UND TAB HANDLING
 -------------------------------------------------------------- */
 const container = document.querySelector("#tool-container");
-const navButtons = document.querySelectorAll(".nav-btn");
+const navButtons = document.querySelectorAll(".editor-tabs .nav-btn");
 export let activeTab = "profile";
 let loadToolsRenderId = 0;
 
@@ -12,10 +12,33 @@ export async function loadTools(tab) {
   console.log(`[app.js] Lade Tools für Tab: ${tab}`);
 
   activeTab = tab;
+  if (!container) return;
   container.innerHTML = "";
   const renderId = ++loadToolsRenderId;
+  const toolList = tools[tab] || [];
+  const tabLabelKeyMap = {
+    truck: "editor.tab.truck",
+    trailer: "editor.tab.trailer",
+    profile: "editor.tab.profile",
+    settings: "editor.tab.settings",
+  };
 
-  for (const t of tools[tab]) {
+  document.dispatchEvent(new CustomEvent("editor-tab-changed", { detail: { tab } }));
+
+  if (!toolList.length) {
+    container.innerHTML = `
+      <article class="tool-card">
+        <div class="tool-content">
+          <span class="overview-label">${await window.t("editor.stage_label")}</span>
+          <h3>${await window.t("editor.empty_title")}</h3>
+          <p>${await window.t("editor.empty_desc")}</p>
+        </div>
+      </article>
+    `;
+    return;
+  }
+
+  for (const t of toolList) {
     if (t.hidden) continue; // unsichtbare Tools überspringen
 
     const card = document.createElement("div");
@@ -24,11 +47,13 @@ export async function loadTools(tab) {
     const title = await window.t(t.title);
     const desc = await window.t(t.desc);
     const open = await window.t("modals.open");
+    const category = await window.t(tabLabelKeyMap[tab] || "editor.tab.profile");
     if (renderId !== loadToolsRenderId) return;
 
     card.innerHTML = `
-      <img src="${t.img}">
+      <img src="${t.img}" alt="${title}">
       <div class="tool-content">
+          <span class="overview-label">${category}</span>
           <h3>${title}</h3>
           <p>${desc}</p>
           <button>${open}</button>
@@ -40,7 +65,7 @@ export async function loadTools(tab) {
     if (t.disabled) {
       btn.disabled = true;
       btn.classList.add("modal-disabled"); // CSS: rot + cursornot-allowed
-      btn.textContent = await window.t("coming_soon");
+      btn.textContent = await window.t("toasts.coming_soon");
     } else {
       btn.addEventListener("click", t.action);
     }
@@ -51,14 +76,14 @@ export async function loadTools(tab) {
 
 navButtons.forEach((btn) => {
   btn.addEventListener("click", () => {
-    document.querySelector(".nav-btn.active")?.classList.remove("active");
+    document.querySelector(".editor-tabs .nav-btn.active")?.classList.remove("active");
     btn.classList.add("active");
     loadTools(btn.dataset.tab);
   });
 });
 
 // Default Tab
-const defaultTabBtn = document.querySelector(".nav-btn.active");
+const defaultTabBtn = document.querySelector(".editor-tabs .nav-btn.active");
 if (defaultTabBtn) {
   if (typeof window.t === "function") {
     loadTools(defaultTabBtn.dataset.tab);
@@ -121,7 +146,7 @@ const modalCloneCancel = document.getElementById("modalCloneCancel");
 export async function openModalText(titleKey, placeholderKey, initialValue = "") {
   modalTextTitle.textContent = await window.t(titleKey);
   modalTextInput.placeholder = await window.t(placeholderKey);
-  modalText.value = initialValue;
+  modalTextInput.value = initialValue;
   modalText.style.display = "flex";
 
   console.log(`[app.js] Öffne Text-Modal: "${titleKey}"`);
@@ -365,6 +390,7 @@ export async function openCloneProfileModal() {
 
   // Reset UI
   cloneNameInput.value = "";
+  cloneNameInput.placeholder = await window.t("modals.clone_profile.new_name_placeholder");
   cloneValidationMsg.textContent = "";
   cloneBackup.checked = true;
   modalCloneApply.disabled = true;

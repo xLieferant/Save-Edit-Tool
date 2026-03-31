@@ -28,11 +28,57 @@
       },
       "hub": {
             "mode_editor": "Editor",
-            "mode_career": "Career"
+            "mode_career": "Career",
+            "eyebrow": "Next-generation operations platform",
+            "title": "One platform. Two realities.",
+            "summary": "Launch a logistics simulation workspace or enter the save editing environment with full awareness of impact.",
+            "metric_realtime": "Realtime telemetry",
+            "metric_realtime_desc": "Shared memory, plugin state and live vehicle signals in one command layer.",
+            "metric_platform": "Platform architecture",
+            "metric_platform_desc": "Separated simulation and utility flows inside the same desktop platform.",
+            "metric_scale": "Scalable modules",
+            "metric_scale_desc": "Career systems, installers, finance, fleet control and advanced save operations.",
+            "career_tag": "Simulation layer",
+            "editor_tag": "Utility layer",
+            "launch": "Enter",
+            "mode_editor_full": "Save Edit Tool",
+            "mode_career_full": "Career Mode",
+            "career_desc": "Company growth, dispatching, income streams, fleet supervision and live operational awareness.",
+            "editor_desc": "Direct control over money, XP, vehicles, garages and profile values in a separate workspace.",
+            "footer": "Choose the operating context first. Simulation and save manipulation remain visually and structurally separated.",
+            "home": "Open Hub",
+            "home_copy": "Return to the central launcher"
       },
       "career": {
             "command_center": "Command Center",
             "live_subtitle": "Live telemetry and install state",
+            "nav": {
+                  "dashboard": "Dashboard",
+                  "members": "Members",
+                  "orders": "Orders",
+                  "freight": "Freight Market",
+                  "dispatcher": "Dispatcher",
+                  "livemap": "Livemap",
+                  "fleet": "Fleet",
+                  "balance": "Balance",
+                  "insurance": "Insurance",
+                  "statistics": "Statistics",
+                  "achievements": "Achievements",
+                  "company": "My Company",
+                  "store": "Store",
+                  "plugin": "Plugin Installer",
+                  "settings": "Settings"
+            },
+            "hero": {
+                  "eyebrow": "Career simulation",
+                  "title": "Operations Backbone",
+                  "summary": "Coordinate company growth, fleet usage and live logistics data from one central workspace.",
+                  "company_label": "Company",
+                  "balance_label": "Balance",
+                  "reputation_label": "Reputation",
+                  "fleet_label": "Fleet",
+                  "no_company": "No company selected"
+            },
             "widget": {
                   "speed": "Speed",
                   "gear": "Gear",
@@ -40,6 +86,151 @@
                   "rpm": "RPM",
                   "odometer": "Odometer",
                   "map_scale": "Map Scale"
+            },
+            "dashboard": {
+                  "telemetry": "Live telemetry feed from the active vehicle session.",
+                  "live_income": "Live Income",
+                  "live_income_desc": "Projected rolling revenue across player and dispatched drivers.",
+                  "active_trip": "Active Trip",
+                  "active_trip_desc": "Medical supplies, priority corridor, 5h 40m remaining.",
+                  "cost_stack": "Realtime Costs",
+                  "fuel_cost": "Diesel",
+                  "repair_cost": "Repairs",
+                  "toll_cost": "Tolls",
+                  "drivers_overview": "Drivers",
+                  "driver_online": "On duty",
+                  "driver_resting": "Resting",
+                  "profit_chart": "Profit Trend",
+                  "distance_chart": "Distance Coverage",
+                  "efficiency_chart": "Efficiency Rating",
+                  "efficiency_desc": "High delivery precision with controlled fuel and maintenance overhead.",
+                  "alerts": "Operational Warnings",
+                  "delayed_jobs": "Delayed jobs",
+                  "damage_risk": "Damage risk"
+            },
+            "members": {
+                  "title": "Driver and Staff Network",
+                  "summary": "Coordinate active drivers, dispatch personnel and recruitment pipeline from a single roster.",
+                  "lead_driver": "Lead Driver",
+                  "dispatchers": "Dispatchers",
+                  "recruiters": "Recruiters"
+            },
+            "orders": {
+                  "title": "Contract Command Board",
+                  "summary": "Review active and queued orders with destination, ETA and payout visibility.",
+                  "origin": "Origin",
+                  "destination": "Destination",
+                  "eta": "ETA",
+                  "payout": "Payout"
+            },
+            "freight": {
+                  "title": "Table and Route Preview",
+                  "summary": "Evaluate contracts by revenue, risk, deadline and route quality before dispatching.",
+                  "filters_distance": "Distance",
+                  "filters_profit": "Profit",
+                  "filters_risk": "Risk",
+                  "filters_time": "Time Limit",
+                  "route": "Route",
+                  "revenue": "Revenue",
+                  "cost_breakdown": "Costs",
+                  "accept": "Accept Order"
+            },
+            "dispatcher": {
+                  "title": "Priority Assignment Engine",
+                  "summary": "Surface intelligent job suggestions based on level, location and demand pressure.",
+                  "priority_high": "High Priority",
+                  "priority_medium": "Medium Priority",
+                  "reason_level": "Optimized for high-level drivers with ADR capabilities.",
+                  "reason_location": "Short repositioning required from the current location.",
+                  "reason_demand": "Demand spike detected in the central corridor."
+            },
+            "livemap": {
+                  "title": "Route Visibility",
+                  "summary": "Track active locations, corridor flow and current driver state in one operational map.",
+                  "tracking": "Live Tracking",
+                  "route_signal": "Signal stable and route trace updated.",
+                  "convoy_status": "Driver Status"
+            },
+            "fleet": {
+                  "title": "Vehicle Control Grid",
+                  "summary": "Inspect truck condition, assignments and maintenance readiness across the fleet.",
+                  "truck": "Truck",
+                  "condition": "Condition",
+                  "assigned_driver": "Assigned Driver",
+                  "maintenance": "Maintenance"
+            },
+            "balance": {
+                  "title": "Cashflow Control",
+                  "summary": "Follow account balance, revenue streams and operational spending in a finance-first view.",
+                  "cash_balance": "Cash Balance",
+                  "fuel": "Fuel",
+                  "repairs": "Repairs",
+                  "salaries": "Salaries"
+            },
+            "insurance": {
+                  "title": "Coverage Plans",
+                  "summary": "Select the balance between cost control, repair speed and member-specific bonuses.",
+                  "basic": "Basic",
+                  "basic_pro": "Basic Pro",
+                  "supporter": "Supporter",
+                  "feature_damage": "Damage reduction for standard claims.",
+                  "feature_repair": "Faster repair turnaround and improved workshop priority.",
+                  "feature_bonus": "Access member bonus mechanics and advanced support conditions."
+            },
+            "statistics": {
+                  "title": "Performance Metrics",
+                  "summary": "Measure profitability, distance, utilization and company-wide efficiency.",
+                  "profit": "Profit",
+                  "kilometers": "Kilometers",
+                  "efficiency": "Efficiency",
+                  "utilization": "Utilization"
+            },
+            "achievements": {
+                  "title": "XP and Reputation",
+                  "summary": "Track level progress, reputation and earned milestones across the company journey.",
+                  "level": "Level",
+                  "xp": "XP",
+                  "reputation": "Reputation"
+            },
+            "company": {
+                  "title": "Company Identity",
+                  "summary": "Define headquarters, capacity and expansion focus for the business simulation layer.",
+                  "headquarters": "Headquarters",
+                  "staff_capacity": "Staff Capacity",
+                  "growth": "Growth"
+            },
+            "store": {
+                  "title": "Driver Equipment Store",
+                  "summary": "Offer small but meaningful upgrades for comfort, alertness and daily efficiency.",
+                  "phone": "Phone",
+                  "care": "Cleaning",
+                  "food": "Food",
+                  "accessories": "Accessories",
+                  "efficiency_bonus": "Small efficiency boost for navigation and communication.",
+                  "comfort_bonus": "Improves comfort and reduces routine fatigue pressure.",
+                  "fatigue_bonus": "Helps stabilize stamina on long-haul sessions."
+            },
+            "plugin": {
+                  "title": "Telemetry Bootstrap",
+                  "summary": "Detect the ETS2 installation, surface plugin status and expose the telemetry connection state.",
+                  "auto_detect": "Automatic Detection",
+                  "install_help": "Guided installation flow for the telemetry plugin and bridge layer.",
+                  "status_label": "Plugin Status",
+                  "connected": "Connected",
+                  "disconnected": "Disconnected",
+                  "installed_detail": "Plugin files detected for the selected game.",
+                  "missing_detail": "Plugin installation is still pending.",
+                  "bridge_online": "Bridge Online",
+                  "bridge_offline": "Bridge Offline",
+                  "bridge_online_detail": "Shared memory bridge is streaming live data.",
+                  "bridge_offline_detail": "Shared memory bridge is waiting for a session."
+            },
+            "settings": {
+                  "title": "Platform Controls",
+                  "summary": "Manage theme, language and module-level preferences for the desktop workspace.",
+                  "theme": "Theme",
+                  "language": "Language",
+                  "modules": "Modules"
             },
             "status": {
                   "game_running": "Game Running",
@@ -51,6 +242,61 @@
                   "plugin_missing": "Plugin file is not installed for the selected game",
                   "game_stopped": "Game process not detected"
             }
+      },
+      "editor": {
+            "eyebrow": "Save utility workspace",
+            "title": "High-control save editing",
+            "summary": "Separate utility mode for direct save manipulation with a clear warning barrier between simulation and editing.",
+            "warning_label": "Critical note",
+            "warning_title": "Editing can permanently disrupt progression and balance.",
+            "safe_desc": "Safe Mode emphasizes guided actions and lowers the visual intensity of risky operations.",
+            "advanced_desc": "Advanced Mode surfaces direct manipulation areas and assumes you understand the balance impact.",
+            "safe_mode": "Safe Mode",
+            "advanced_mode": "Advanced Mode",
+            "import": "Import Saves",
+            "export": "Export Saves",
+            "actions_label": "Tool Categories",
+            "quick_actions": "Workspace Actions",
+            "status_label": "Workspace Status",
+            "profile_card": "Active Profile",
+            "save_card": "Active Save",
+            "balance_card": "Balance",
+            "xp_card": "XP",
+            "level_card": "Level",
+            "fleet_card": "Fleet Assets",
+            "clone_button": "Clone Profile",
+            "refresh_button": "Scan Profiles",
+            "no_profile": "No profile selected",
+            "no_save": "No save selected",
+            "empty_title": "No tools available",
+            "empty_desc": "This category does not expose tools in the current workspace state.",
+            "tab": {
+                  "truck": "Truck",
+                  "trailer": "Trailer",
+                  "profile": "Profile",
+                  "settings": "Settings"
+            },
+            "stage_label": "Current Module",
+            "stage": {
+                  "truck": "Truck Editing",
+                  "truck_desc": "Repair, fuel, mileage and registration changes for the active truck profile.",
+                  "trailer": "Trailer Editing",
+                  "trailer_desc": "Adjust trailer condition, cargo weight and trailer identity data.",
+                  "profile": "Profile Editing",
+                  "profile_desc": "Update money, XP, skills and save-bound profile values in a dedicated editing flow.",
+                  "settings": "Settings Editing",
+                  "settings_desc": "Control language, convoy, traffic and advanced configuration switches."
+            }
+      },
+      "status_text": {
+            "loading_profile": "Loading profile...",
+            "loading_save": "Loading save...",
+            "profile_loaded": "Profile loaded. Please select a save.",
+            "save_loaded": "Save loaded successfully.",
+            "profile_error": "Error loading profile.",
+            "scanning_profiles": "Scanning profiles...",
+            "profiles_found": "{count} profiles found",
+            "scan_failed": "Scan failed."
       },
       "toasts": {
             "language_updated": "Language changed to English",

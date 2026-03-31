@@ -28,11 +28,57 @@
       },
       "hub": {
             "mode_editor": "Editor",
-            "mode_career": "Karriere"
+            "mode_career": "Karriere",
+            "eyebrow": "[NEEDS TRANSLATION]",
+            "title": "[NEEDS TRANSLATION]",
+            "summary": "[NEEDS TRANSLATION]",
+            "metric_realtime": "[NEEDS TRANSLATION]",
+            "metric_realtime_desc": "[NEEDS TRANSLATION]",
+            "metric_platform": "[NEEDS TRANSLATION]",
+            "metric_platform_desc": "[NEEDS TRANSLATION]",
+            "metric_scale": "[NEEDS TRANSLATION]",
+            "metric_scale_desc": "[NEEDS TRANSLATION]",
+            "career_tag": "[NEEDS TRANSLATION]",
+            "editor_tag": "[NEEDS TRANSLATION]",
+            "launch": "[NEEDS TRANSLATION]",
+            "mode_editor_full": "[NEEDS TRANSLATION]",
+            "mode_career_full": "[NEEDS TRANSLATION]",
+            "career_desc": "[NEEDS TRANSLATION]",
+            "editor_desc": "[NEEDS TRANSLATION]",
+            "footer": "[NEEDS TRANSLATION]",
+            "home": "[NEEDS TRANSLATION]",
+            "home_copy": "[NEEDS TRANSLATION]"
       },
       "career": {
             "command_center": "Command Center",
             "live_subtitle": "Live-Telemetrie und Installationsstatus",
+            "nav": {
+                  "dashboard": "[NEEDS TRANSLATION]",
+                  "members": "[NEEDS TRANSLATION]",
+                  "orders": "[NEEDS TRANSLATION]",
+                  "freight": "[NEEDS TRANSLATION]",
+                  "dispatcher": "[NEEDS TRANSLATION]",
+                  "livemap": "[NEEDS TRANSLATION]",
+                  "fleet": "[NEEDS TRANSLATION]",
+                  "balance": "[NEEDS TRANSLATION]",
+                  "insurance": "[NEEDS TRANSLATION]",
+                  "statistics": "[NEEDS TRANSLATION]",
+                  "achievements": "[NEEDS TRANSLATION]",
+                  "company": "[NEEDS TRANSLATION]",
+                  "store": "[NEEDS TRANSLATION]",
+                  "plugin": "[NEEDS TRANSLATION]",
+                  "settings": "[NEEDS TRANSLATION]"
+            },
+            "hero": {
+                  "eyebrow": "[NEEDS TRANSLATION]",
+                  "title": "[NEEDS TRANSLATION]",
+                  "summary": "[NEEDS TRANSLATION]",
+                  "company_label": "[NEEDS TRANSLATION]",
+                  "balance_label": "[NEEDS TRANSLATION]",
+                  "reputation_label": "[NEEDS TRANSLATION]",
+                  "fleet_label": "[NEEDS TRANSLATION]",
+                  "no_company": "[NEEDS TRANSLATION]"
+            },
             "widget": {
                   "speed": "Geschwindigkeit",
                   "gear": "Gang",
@@ -40,6 +86,151 @@
                   "rpm": "RPM",
                   "odometer": "Kilometerstand",
                   "map_scale": "KartenmaÃŸstab"
+            },
+            "dashboard": {
+                  "telemetry": "[NEEDS TRANSLATION]",
+                  "live_income": "[NEEDS TRANSLATION]",
+                  "live_income_desc": "[NEEDS TRANSLATION]",
+                  "active_trip": "[NEEDS TRANSLATION]",
+                  "active_trip_desc": "[NEEDS TRANSLATION]",
+                  "cost_stack": "[NEEDS TRANSLATION]",
+                  "fuel_cost": "[NEEDS TRANSLATION]",
+                  "repair_cost": "[NEEDS TRANSLATION]",
+                  "toll_cost": "[NEEDS TRANSLATION]",
+                  "drivers_overview": "[NEEDS TRANSLATION]",
+                  "driver_online": "[NEEDS TRANSLATION]",
+                  "driver_resting": "[NEEDS TRANSLATION]",
+                  "profit_chart": "[NEEDS TRANSLATION]",
+                  "distance_chart": "[NEEDS TRANSLATION]",
+                  "efficiency_chart": "[NEEDS TRANSLATION]",
+                  "efficiency_desc": "[NEEDS TRANSLATION]",
+                  "alerts": "[NEEDS TRANSLATION]",
+                  "delayed_jobs": "[NEEDS TRANSLATION]",
+                  "damage_risk": "[NEEDS TRANSLATION]"
+            },
+            "members": {
+                  "title": "[NEEDS TRANSLATION]",
+                  "summary": "[NEEDS TRANSLATION]",
+                  "lead_driver": "[NEEDS TRANSLATION]",
+                  "dispatchers": "[NEEDS TRANSLATION]",
+                  "recruiters": "[NEEDS TRANSLATION]"
+            },
+            "orders": {
+                  "title": "[NEEDS TRANSLATION]",
+                  "summary": "[NEEDS TRANSLATION]",
+                  "origin": "[NEEDS TRANSLATION]",
+                  "destination": "[NEEDS TRANSLATION]",
+                  "eta": "[NEEDS TRANSLATION]",
+                  "payout": "[NEEDS TRANSLATION]"
+            },
+            "freight": {
+                  "title": "[NEEDS TRANSLATION]",
+                  "summary": "[NEEDS TRANSLATION]",
+                  "filters_distance": "[NEEDS TRANSLATION]",
+                  "filters_profit": "[NEEDS TRANSLATION]",
+                  "filters_risk": "[NEEDS TRANSLATION]",
+                  "filters_time": "[NEEDS TRANSLATION]",
+                  "route": "[NEEDS TRANSLATION]",
+                  "revenue": "[NEEDS TRANSLATION]",
+                  "cost_breakdown": "[NEEDS TRANSLATION]",
+                  "accept": "[NEEDS TRANSLATION]"
+            },
+            "dispatcher": {
+                  "title": "[NEEDS TRANSLATION]",
+                  "summary": "[NEEDS TRANSLATION]",
+                  "priority_high": "[NEEDS TRANSLATION]",
+                  "priority_medium": "[NEEDS TRANSLATION]",
+                  "reason_level": "[NEEDS TRANSLATION]",
+                  "reason_location": "[NEEDS TRANSLATION]",
+                  "reason_demand": "[NEEDS TRANSLATION]"
+            },
+            "livemap": {
+                  "title": "[NEEDS TRANSLATION]",
+                  "summary": "[NEEDS TRANSLATION]",
+                  "tracking": "[NEEDS TRANSLATION]",
+                  "route_signal": "[NEEDS TRANSLATION]",
+                  "convoy_status": "[NEEDS TRANSLATION]"
+            },
+            "fleet": {
+                  "title": "[NEEDS TRANSLATION]",
+                  "summary": "[NEEDS TRANSLATION]",
+                  "truck": "[NEEDS TRANSLATION]",
+                  "condition": "[NEEDS TRANSLATION]",
+                  "assigned_driver": "[NEEDS TRANSLATION]",
+                  "maintenance": "[NEEDS TRANSLATION]"
+            },
+            "balance": {
+                  "title": "[NEEDS TRANSLATION]",
+                  "summary": "[NEEDS TRANSLATION]",
+                  "cash_balance": "[NEEDS TRANSLATION]",
+                  "fuel": "[NEEDS TRANSLATION]",
+                  "repairs": "[NEEDS TRANSLATION]",
+                  "salaries": "[NEEDS TRANSLATION]"
+            },
+            "insurance": {
+                  "title": "[NEEDS TRANSLATION]",
+                  "summary": "[NEEDS TRANSLATION]",
+                  "basic": "[NEEDS TRANSLATION]",
+                  "basic_pro": "[NEEDS TRANSLATION]",
+                  "supporter": "[NEEDS TRANSLATION]",
+                  "feature_damage": "[NEEDS TRANSLATION]",
+                  "feature_repair": "[NEEDS TRANSLATION]",
+                  "feature_bonus": "[NEEDS TRANSLATION]"
+            },
+            "statistics": {
+                  "title": "[NEEDS TRANSLATION]",
+                  "summary": "[NEEDS TRANSLATION]",
+                  "profit": "[NEEDS TRANSLATION]",
+                  "kilometers": "[NEEDS TRANSLATION]",
+                  "efficiency": "[NEEDS TRANSLATION]",
+                  "utilization": "[NEEDS TRANSLATION]"
+            },
+            "achievements": {
+                  "title": "[NEEDS TRANSLATION]",
+                  "summary": "[NEEDS TRANSLATION]",
+                  "level": "[NEEDS TRANSLATION]",
+                  "xp": "[NEEDS TRANSLATION]",
+                  "reputation": "[NEEDS TRANSLATION]"
+            },
+            "company": {
+                  "title": "[NEEDS TRANSLATION]",
+                  "summary": "[NEEDS TRANSLATION]",
+                  "headquarters": "[NEEDS TRANSLATION]",
+                  "staff_capacity": "[NEEDS TRANSLATION]",
+                  "growth": "[NEEDS TRANSLATION]"
+            },
+            "store": {
+                  "title": "[NEEDS TRANSLATION]",
+                  "summary": "[NEEDS TRANSLATION]",
+                  "phone": "[NEEDS TRANSLATION]",
+                  "care": "[NEEDS TRANSLATION]",
+                  "food": "[NEEDS TRANSLATION]",
+                  "accessories": "[NEEDS TRANSLATION]",
+                  "efficiency_bonus": "[NEEDS TRANSLATION]",
+                  "comfort_bonus": "[NEEDS TRANSLATION]",
+                  "fatigue_bonus": "[NEEDS TRANSLATION]"
+            },
+            "plugin": {
+                  "title": "[NEEDS TRANSLATION]",
+                  "summary": "[NEEDS TRANSLATION]",
+                  "auto_detect": "[NEEDS TRANSLATION]",
+                  "install_help": "[NEEDS TRANSLATION]",
+                  "status_label": "[NEEDS TRANSLATION]",
+                  "connected": "[NEEDS TRANSLATION]",
+                  "disconnected": "[NEEDS TRANSLATION]",
+                  "installed_detail": "[NEEDS TRANSLATION]",
+                  "missing_detail": "[NEEDS TRANSLATION]",
+                  "bridge_online": "[NEEDS TRANSLATION]",
+                  "bridge_offline": "[NEEDS TRANSLATION]",
+                  "bridge_online_detail": "[NEEDS TRANSLATION]",
+                  "bridge_offline_detail": "[NEEDS TRANSLATION]"
+            },
+            "settings": {
+                  "title": "[NEEDS TRANSLATION]",
+                  "summary": "[NEEDS TRANSLATION]",
+                  "theme": "[NEEDS TRANSLATION]",
+                  "language": "[NEEDS TRANSLATION]",
+                  "modules": "[NEEDS TRANSLATION]"
             },
             "status": {
                   "game_running": "Spiel lÃ¤uft",
@@ -51,6 +242,61 @@
                   "plugin_missing": "Die Plugin-Datei ist fuer das ausgewaehlte Spiel nicht installiert",
                   "game_stopped": "Spielprozess nicht erkannt"
             }
+      },
+      "editor": {
+            "eyebrow": "[NEEDS TRANSLATION]",
+            "title": "[NEEDS TRANSLATION]",
+            "summary": "[NEEDS TRANSLATION]",
+            "warning_label": "[NEEDS TRANSLATION]",
+            "warning_title": "[NEEDS TRANSLATION]",
+            "safe_desc": "[NEEDS TRANSLATION]",
+            "advanced_desc": "[NEEDS TRANSLATION]",
+            "safe_mode": "[NEEDS TRANSLATION]",
+            "advanced_mode": "[NEEDS TRANSLATION]",
+            "import": "[NEEDS TRANSLATION]",
+            "export": "[NEEDS TRANSLATION]",
+            "actions_label": "[NEEDS TRANSLATION]",
+            "quick_actions": "[NEEDS TRANSLATION]",
+            "status_label": "[NEEDS TRANSLATION]",
+            "profile_card": "[NEEDS TRANSLATION]",
+            "save_card": "[NEEDS TRANSLATION]",
+            "balance_card": "[NEEDS TRANSLATION]",
+            "xp_card": "[NEEDS TRANSLATION]",
+            "level_card": "[NEEDS TRANSLATION]",
+            "fleet_card": "[NEEDS TRANSLATION]",
+            "clone_button": "[NEEDS TRANSLATION]",
+            "refresh_button": "[NEEDS TRANSLATION]",
+            "no_profile": "[NEEDS TRANSLATION]",
+            "no_save": "[NEEDS TRANSLATION]",
+            "empty_title": "[NEEDS TRANSLATION]",
+            "empty_desc": "[NEEDS TRANSLATION]",
+            "tab": {
+                  "truck": "[NEEDS TRANSLATION]",
+                  "trailer": "[NEEDS TRANSLATION]",
+                  "profile": "[NEEDS TRANSLATION]",
+                  "settings": "[NEEDS TRANSLATION]"
+            },
+            "stage_label": "[NEEDS TRANSLATION]",
+            "stage": {
+                  "truck": "[NEEDS TRANSLATION]",
+                  "truck_desc": "[NEEDS TRANSLATION]",
+                  "trailer": "[NEEDS TRANSLATION]",
+                  "trailer_desc": "[NEEDS TRANSLATION]",
+                  "profile": "[NEEDS TRANSLATION]",
+                  "profile_desc": "[NEEDS TRANSLATION]",
+                  "settings": "[NEEDS TRANSLATION]",
+                  "settings_desc": "[NEEDS TRANSLATION]"
+            }
+      },
+      "status_text": {
+            "loading_profile": "[NEEDS TRANSLATION]",
+            "loading_save": "[NEEDS TRANSLATION]",
+            "profile_loaded": "[NEEDS TRANSLATION]",
+            "save_loaded": "[NEEDS TRANSLATION]",
+            "profile_error": "[NEEDS TRANSLATION]",
+            "scanning_profiles": "[NEEDS TRANSLATION]",
+            "profiles_found": "[NEEDS TRANSLATION]",
+            "scan_failed": "[NEEDS TRANSLATION]"
       },
       "toasts": {
             "language_updated": "Sprache wurde auf Deutsch geändert",
