@@ -54,8 +54,9 @@
             "live_subtitle": "Live-Telemetrie und Installationsstatus",
             "nav": {
                   "dashboard": "[NEEDS TRANSLATION]",
+                  "logbook": "[NEEDS TRANSLATION] Logbuch",
                   "members": "[NEEDS TRANSLATION]",
-                  "orders": "[NEEDS TRANSLATION]",
+                  "orders": "[NEEDS TRANSLATION] Auftraege",
                   "freight": "[NEEDS TRANSLATION]",
                   "dispatcher": "[NEEDS TRANSLATION]",
                   "livemap": "[NEEDS TRANSLATION]",
@@ -93,6 +94,8 @@
                   "live_income_desc": "[NEEDS TRANSLATION]",
                   "active_trip": "[NEEDS TRANSLATION]",
                   "active_trip_desc": "[NEEDS TRANSLATION]",
+                  "no_active_trip": "[NEEDS TRANSLATION]",
+                  "trip_waiting": "[NEEDS TRANSLATION]",
                   "cost_stack": "[NEEDS TRANSLATION]",
                   "fuel_cost": "[NEEDS TRANSLATION]",
                   "repair_cost": "[NEEDS TRANSLATION]",
@@ -113,15 +116,29 @@
                   "summary": "[NEEDS TRANSLATION]",
                   "lead_driver": "[NEEDS TRANSLATION]",
                   "dispatchers": "[NEEDS TRANSLATION]",
-                  "recruiters": "[NEEDS TRANSLATION]"
+                  "recruiters": "[NEEDS TRANSLATION]",
+                  "total_staff": "[NEEDS TRANSLATION]"
             },
             "orders": {
-                  "title": "[NEEDS TRANSLATION]",
-                  "summary": "[NEEDS TRANSLATION]",
+                  "title": "[NEEDS TRANSLATION] Auftragsboard",
+                  "summary": "[NEEDS TRANSLATION] Generierte Auftraege ansehen, aktiven Auftrag annehmen und Fortschritt aus der Live-Telemetrie verfolgen.",
                   "origin": "[NEEDS TRANSLATION]",
                   "destination": "[NEEDS TRANSLATION]",
+                  "cargo": "[NEEDS TRANSLATION]",
                   "eta": "[NEEDS TRANSLATION]",
-                  "payout": "[NEEDS TRANSLATION]"
+                  "payout": "[NEEDS TRANSLATION]",
+                  "none": "[NEEDS TRANSLATION]"
+            },
+            "jobs": {
+                  "none": "[NEEDS TRANSLATION] Keine Auftraege verfuegbar",
+                  "current": "[NEEDS TRANSLATION] Aktiver Auftrag",
+                  "progress": "[NEEDS TRANSLATION] Fortschritt",
+                  "refresh": "[NEEDS TRANSLATION] Auftraege aktualisieren",
+                  "accept": "[NEEDS TRANSLATION] Annehmen",
+                  "accepted": "[NEEDS TRANSLATION] Angenommen",
+                  "refresh_failed": "[NEEDS TRANSLATION] Auftragsgenerierung fehlgeschlagen",
+                  "accept_success": "[NEEDS TRANSLATION] Auftrag angenommen",
+                  "accept_failed": "[NEEDS TRANSLATION] Auftrag konnte nicht angenommen werden"
             },
             "freight": {
                   "title": "[NEEDS TRANSLATION]",
@@ -133,7 +150,8 @@
                   "route": "[NEEDS TRANSLATION]",
                   "revenue": "[NEEDS TRANSLATION]",
                   "cost_breakdown": "[NEEDS TRANSLATION]",
-                  "accept": "[NEEDS TRANSLATION]"
+                  "accept": "[NEEDS TRANSLATION]",
+                  "none": "[NEEDS TRANSLATION]"
             },
             "dispatcher": {
                   "title": "[NEEDS TRANSLATION]",
@@ -142,7 +160,8 @@
                   "priority_medium": "[NEEDS TRANSLATION]",
                   "reason_level": "[NEEDS TRANSLATION]",
                   "reason_location": "[NEEDS TRANSLATION]",
-                  "reason_demand": "[NEEDS TRANSLATION]"
+                  "reason_demand": "[NEEDS TRANSLATION]",
+                  "no_events": "[NEEDS TRANSLATION]"
             },
             "livemap": {
                   "title": "[NEEDS TRANSLATION]",
@@ -183,7 +202,9 @@
                   "profit": "[NEEDS TRANSLATION]",
                   "kilometers": "[NEEDS TRANSLATION]",
                   "efficiency": "[NEEDS TRANSLATION]",
-                  "utilization": "[NEEDS TRANSLATION]"
+                  "utilization": "[NEEDS TRANSLATION]",
+                  "speeding": "[NEEDS TRANSLATION]",
+                  "company_value": "[NEEDS TRANSLATION]"
             },
             "achievements": {
                   "title": "[NEEDS TRANSLATION]",
@@ -197,7 +218,8 @@
                   "summary": "[NEEDS TRANSLATION]",
                   "headquarters": "[NEEDS TRANSLATION]",
                   "staff_capacity": "[NEEDS TRANSLATION]",
-                  "growth": "[NEEDS TRANSLATION]"
+                  "growth": "[NEEDS TRANSLATION]",
+                  "active_contracts": "[NEEDS TRANSLATION]"
             },
             "store": {
                   "title": "[NEEDS TRANSLATION]",
@@ -230,7 +252,25 @@
                   "summary": "[NEEDS TRANSLATION]",
                   "theme": "[NEEDS TRANSLATION]",
                   "language": "[NEEDS TRANSLATION]",
-                  "modules": "[NEEDS TRANSLATION]"
+                  "modules": "[NEEDS TRANSLATION]",
+                  "system_controlled": "[NEEDS TRANSLATION]",
+                  "modules_value": "[NEEDS TRANSLATION]"
+            },
+            "logbook": {
+                  "eyebrow": "[NEEDS TRANSLATION]",
+                  "title": "[NEEDS TRANSLATION]",
+                  "summary": "[NEEDS TRANSLATION]",
+                  "started": "[NEEDS TRANSLATION]",
+                  "route": "[NEEDS TRANSLATION]",
+                  "cargo": "[NEEDS TRANSLATION]",
+                  "distance": "[NEEDS TRANSLATION]",
+                  "income": "[NEEDS TRANSLATION]",
+                  "status": "[NEEDS TRANSLATION]",
+                  "empty": "[NEEDS TRANSLATION]"
+            },
+            "shared": {
+                  "none": "[NEEDS TRANSLATION]",
+                  "player": "[NEEDS TRANSLATION]"
             },
             "status": {
                   "game_running": "Spiel lÃ¤uft",

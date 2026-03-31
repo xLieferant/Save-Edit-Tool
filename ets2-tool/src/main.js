@@ -5,10 +5,108 @@ import { checkUpdaterOnStartup, manualUpdateCheck } from "./js/updater.js";
 
 const { app } = window.__TAURI__;
 const { openUrl } = window.__TAURI__.opener;
-const { invoke, convertFileSrc } = window.__TAURI__.core;
+const { invoke: tauriInvoke, convertFileSrc } = window.__TAURI__.core;
 const { listen } = window.__TAURI__.event;
 
 let lastSelectedGame = null;
+const CAREER_LOAD_ERROR = "Career Mode failed to load";
+
+function ensureUiErrorBanner() {
+  let banner = document.getElementById("careerLoadFallback");
+  if (!banner && document.body) {
+    banner = document.createElement("div");
+    banner.id = "careerLoadFallback";
+    banner.style.cssText = [
+      "position: fixed",
+      "top: 16px",
+      "right: 16px",
+      "z-index: 5000",
+      "padding: 12px 16px",
+      "border-radius: 14px",
+      "background: rgba(255, 77, 79, 0.94)",
+      "color: #ffffff",
+      "font: 600 14px/1.4 Bahnschrift, Segoe UI, sans-serif",
+      "box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28)",
+      "display: none",
+    ].join("; ");
+    document.body.appendChild(banner);
+  }
+  return banner;
+}
+
+function showCareerLoadFailure(error) {
+  console.error("[career] fallback activated", error);
+  const banner = ensureUiErrorBanner();
+  if (banner) {
+    banner.textContent = CAREER_LOAD_ERROR;
+    banner.style.display = "block";
+  }
+  document.body?.classList.remove("mode-career");
+  document.body?.classList.add("mode-editor");
+  document.getElementById("hubScreen")?.classList.add("is-hidden");
+  const profileStatus = document.getElementById("profile-status");
+  if (profileStatus) profileStatus.textContent = CAREER_LOAD_ERROR;
+  const careerConnectionNote = document.getElementById("careerConnectionNote");
+  if (careerConnectionNote) careerConnectionNote.textContent = CAREER_LOAD_ERROR;
+}
+
+function clearCareerLoadFailure() {
+  const banner = document.getElementById("careerLoadFallback");
+  if (banner) {
+    banner.style.display = "none";
+  }
+  const profileStatus = document.getElementById("profile-status");
+  if (profileStatus?.textContent === CAREER_LOAD_ERROR) {
+    profileStatus.textContent = "";
+  }
+  const careerConnectionNote = document.getElementById("careerConnectionNote");
+  if (careerConnectionNote?.textContent === CAREER_LOAD_ERROR) {
+    careerConnectionNote.textContent = "";
+  }
+}
+
+async function safeInvoke(command, args = {}, options = {}) {
+  const {
+    fallback = null,
+    rethrow = false,
+    silent = false,
+  } = options;
+
+  try {
+    console.log("[invoke:start]", command, args);
+    const result = await tauriInvoke(command, args);
+    console.log("[invoke:ok]", command, result);
+    return result;
+  } catch (error) {
+    console.error("[invoke:fail]", command, error);
+    if (!silent && ["hub_get_mode", "career_get_status", "career_get_overview"].includes(command)) {
+      showCareerLoadFailure(error);
+    }
+    if (rethrow) throw error;
+    return fallback;
+  }
+}
+
+const invokeStrict = (command, args = {}) => safeInvoke(command, args, { rethrow: true, silent: true });
+const invoke = (command, args = {}) =>
+  safeInvoke(command, args, {
+    rethrow: true,
+    silent: !["hub_get_mode", "career_get_status", "career_get_overview"].includes(command),
+  });
+
+window.addEventListener("error", (event) => {
+  const error = event.error || (typeof event.message === "string" && event.message ? event.message : null);
+  console.error("[ui:error]", error || event);
+  if (error) {
+    showCareerLoadFailure(error);
+  }
+});
+
+window.addEventListener("unhandledrejection", (event) => {
+  console.error("[ui:rejection]", event.reason);
+  showCareerLoadFailure(event.reason);
+});
+
 window.invoke = invoke;
 window.applySetting = applySetting;
 
@@ -21,6 +119,50 @@ function formatTelemetryNumber(value, digits = 0) {
 
 function formatCurrency(value) {
   return `EUR ${formatTelemetryNumber(value ?? 0, 0)}`;
+}
+
+function formatDistance(value) {
+  return `${formatTelemetryNumber(value ?? 0, 1)} km`;
+}
+
+function formatDurationCompact(value) {
+  const totalSeconds = Math.max(0, Number(value ?? 0));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  if (hours > 0) {
+    return `${hours}h ${String(minutes).padStart(2, "0")}m`;
+  }
+  return `${minutes}m`;
+}
+
+function formatDateTime(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleString(undefined, {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function humanizeToken(value) {
+  return String(value ?? "")
+    .replaceAll(/[_-]+/g, " ")
+    .replaceAll(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (match) => match.toUpperCase());
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll("\"", "&quot;")
+    .replaceAll("'", "&#39;");
 }
 
 function deriveLevel(xp) {
@@ -69,7 +211,7 @@ new MutationObserver(updateAllProfileIcons).observe(document.body, {
 
 async function t(key, params = {}) {
   try {
-    let text = await invoke("translate_command", { key });
+    let text = await tauriInvoke("translate_command", { key });
     for (const [k, v] of Object.entries(params)) {
       text = text.replaceAll(`{${k}}`, String(v));
     }
@@ -124,7 +266,7 @@ async function appVersion() {
 
 async function logUserAction(action, stage = "start") {
   try {
-    await invoke("log_user_action", { action, stage });
+    await safeInvoke("log_user_action", { action, stage }, { silent: true });
   } catch (error) {
     console.warn("User log failed:", error);
   }
@@ -133,8 +275,10 @@ async function logUserAction(action, stage = "start") {
 window.logUserAction = logUserAction;
 
 document.addEventListener("DOMContentLoaded", async () => {
-  await translateUI();
-  document.body.classList.add("mode-editor");
+  try {
+    console.log("[ui] boot start");
+    await translateUI();
+    document.body.classList.add("mode-editor");
 
   const refs = {
     hubScreen: document.getElementById("hubScreen"),
@@ -189,6 +333,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     careerCostTollValue: document.getElementById("careerCostTollValue"),
     careerDriversOnlineValue: document.getElementById("careerDriversOnlineValue"),
     careerDriversRestingValue: document.getElementById("careerDriversRestingValue"),
+    careerActiveTripValue: document.getElementById("careerActiveTripValue"),
+    careerActiveTripSummary: document.getElementById("careerActiveTripSummary"),
+    careerLogbookTable: document.getElementById("careerLogbookTable"),
+    careerLogbookEmpty: document.getElementById("careerLogbookEmpty"),
     versionBtn: document.getElementById("versionBtn"),
     websiteBtn: document.getElementById("websiteBtn"),
     youtubeBtn: document.getElementById("youtubeBtn"),
@@ -237,6 +385,29 @@ document.addEventListener("DOMContentLoaded", async () => {
     engineOn: await t("career.status.engine_on"),
     engineOff: await t("career.status.engine_off"),
   };
+  const careerUi = {
+    noActiveTrip: await t("career.dashboard.no_active_trip"),
+    tripWaiting: await t("career.dashboard.trip_waiting"),
+    noLogbook: await t("career.logbook.empty"),
+    noContracts: await t("career.orders.none"),
+    noJobs: await t("career.jobs.none"),
+    currentJob: await t("career.jobs.current"),
+    progress: await t("career.jobs.progress"),
+    refreshJobs: await t("career.jobs.refresh"),
+    acceptJob: await t("career.jobs.accept"),
+    acceptedJob: await t("career.jobs.accepted"),
+    noFreight: await t("career.freight.none"),
+    noDispatcherEvents: await t("career.dispatcher.no_events"),
+    totalStaff: await t("career.members.total_staff"),
+    systemControlled: await t("career.settings.system_controlled"),
+    modulesValue: await t("career.settings.modules_value"),
+    activeContracts: await t("career.company.active_contracts"),
+    companyValue: await t("career.statistics.company_value"),
+    speeding: await t("career.statistics.speeding"),
+    noData: await t("career.shared.none"),
+    player: await t("career.shared.player"),
+  };
+  let careerOverview = null;
   const editorStageMeta = {
     truck: {
       title: "editor.stage.truck",
@@ -280,13 +451,93 @@ document.addEventListener("DOMContentLoaded", async () => {
     </div>
   `;
 
+  const renderLogbookRows = (trips) => trips.slice(0, 12).map((trip) => `
+    <div class="table-row career-logbook-row">
+      <span>${escapeHtml(formatDateTime(trip.startedAtUtc))}</span>
+      <span>${escapeHtml(`${trip.origin || "--"} - ${trip.destination || "--"}`)}</span>
+      <span>${escapeHtml(trip.cargo || careerUi.noData)}</span>
+      <span>${escapeHtml(formatDistance(trip.distanceKm))}</span>
+      <span>${escapeHtml(formatCurrency(trip.income ?? 0))}</span>
+      <span>${escapeHtml(humanizeToken(trip.status))}</span>
+    </div>
+  `).join("");
+
+  const renderCareerLogbook = () => {
+    if (!refs.careerLogbookTable || !refs.careerLogbookEmpty) return;
+    const trips = careerOverview?.recentTrips || [];
+
+    refs.careerLogbookEmpty.hidden = trips.length > 0;
+    refs.careerLogbookEmpty.textContent = careerUi.noLogbook;
+    refs.careerLogbookTable.innerHTML = renderLogbookRows(trips.slice(0, 6));
+  };
+
+  const renderActiveTripCard = () => {
+    if (!refs.careerActiveTripValue || !refs.careerActiveTripSummary) return;
+    const activeTrip = careerOverview?.activeTrip;
+    const currentJob = careerOverview?.currentJob;
+
+    if (activeTrip) {
+      refs.careerActiveTripValue.textContent = `${activeTrip.origin} - ${activeTrip.destination}`;
+      refs.careerActiveTripSummary.textContent =
+        `${activeTrip.cargo} | ${formatDistance(activeTrip.distanceKm)} | ${formatDurationCompact(activeTrip.durationSeconds)}`;
+      return;
+    }
+
+    if (currentJob) {
+      refs.careerActiveTripValue.textContent = `${currentJob.source} - ${currentJob.destination}`;
+      refs.careerActiveTripSummary.textContent =
+        `${currentJob.cargo} | ${formatDistance(currentJob.progressKm)} / ${formatDistance(currentJob.distanceKm)} | ${formatCurrency(currentJob.estimatedPayout)}`;
+      return;
+    }
+
+    if (!activeTrip) {
+      refs.careerActiveTripValue.textContent = careerUi.noActiveTrip;
+      refs.careerActiveTripSummary.textContent = careerUi.tripWaiting;
+      return;
+    }
+  };
+
   const renderCareerDetailPanel = async (panel) => {
-    const money = Number(window.currentProfileData?.money ?? 0);
-    const xp = Number(window.currentProfileData?.xp ?? 0);
-    const level = deriveLevel(xp);
-    const companyName = refs.profileNameDisplay?.textContent?.trim() || uiText.noCompany;
-    const truckCount = window.allTrucks?.length || 0;
-    const trailerCount = window.allTrailers?.length || 0;
+    const overview = careerOverview;
+    const fallbackCompanyName = refs.profileNameDisplay?.textContent?.trim() || uiText.noCompany;
+    const companyName = overview?.economy?.companyName || fallbackCompanyName;
+    const money = overview?.bank?.cashBalance ?? Number(window.currentProfileData?.money ?? 0);
+    const xp = overview?.reputation?.xpPoints ?? Number(window.currentProfileData?.xp ?? 0);
+    const level = overview?.reputation?.level ?? deriveLevel(xp);
+    const staff = overview?.employees || [];
+    const totalSalary = staff.reduce((sum, member) => sum + Number(member.salary ?? 0), 0);
+    const leadDriver = staff.find((member) => String(member.role).toLowerCase() === "driver") || staff[0] || null;
+    const employeeOverview = overview?.employeeOverview || {
+      total: staff.length,
+      onDuty: 0,
+      resting: 0,
+      dispatchers: 0,
+    };
+    const fleetAssets = overview?.fleet || [];
+    const fleetOverview = overview?.fleetOverview || {
+      trucks: window.allTrucks?.length || 0,
+      trailers: window.allTrailers?.length || 0,
+      playerCondition: 0,
+    };
+    const contractRows = (overview?.contracts || []).filter((contract) => contract.active);
+    const jobs = overview?.jobs || [];
+    const currentJob = overview?.currentJob || null;
+    const freightOffers = overview?.freightOffers || [];
+    const dispatcherEvents = overview?.dispatcherEvents || [];
+    const trips = overview?.recentTrips || [];
+    const dashboard = overview?.dashboard || {
+      fuelCost: 0,
+      repairCost: 0,
+      tollCost: 0,
+      driversOnline: 0,
+      driversResting: 0,
+    };
+    const statistics = overview?.statistics || {
+      totalIncome: 0,
+      totalKilometers: 0,
+      speedingEvents: 0,
+      companyValue: money,
+    };
 
     switch (panel) {
       case "members":
@@ -295,9 +546,25 @@ document.addEventListener("DOMContentLoaded", async () => {
           "career.members.title",
           "career.members.summary",
           buildDetailCards([
-            { label: await t("career.members.lead_driver"), value: "Elena Hoffmann", copy: "Level 24 / ADR specialist" },
-            { label: await t("career.members.dispatchers"), value: "03", copy: "Routing coverage across EU corridors" },
-            { label: await t("career.members.recruiters"), value: "02", copy: "Expansion pipeline ready" },
+            {
+              label: await t("career.members.lead_driver"),
+              value: leadDriver?.name || careerUi.noData,
+              copy: leadDriver ? `${humanizeToken(leadDriver.status)} | ${formatCurrency(leadDriver.salary)}` : "",
+            },
+            {
+              label: await t("career.members.dispatchers"),
+              value: String(employeeOverview.dispatchers ?? 0).padStart(2, "0"),
+              copy: formatCurrency(
+                staff
+                  .filter((member) => String(member.role).toLowerCase() === "dispatcher")
+                  .reduce((sum, member) => sum + Number(member.salary ?? 0), 0)
+              ),
+            },
+            {
+              label: careerUi.totalStaff,
+              value: String(employeeOverview.total ?? staff.length).padStart(2, "0"),
+              copy: formatCurrency(totalSalary),
+            },
           ])
         );
       case "orders":
@@ -306,16 +573,72 @@ document.addEventListener("DOMContentLoaded", async () => {
           "career.orders.title",
           "career.orders.summary",
           `
+            <div class="filters-row">
+              <button class="table-action" data-career-action="generate-jobs">${careerUi.refreshJobs}</button>
+            </div>
+            <div class="detail-grid">
+              <article class="detail-card">
+                <span>${careerUi.currentJob}</span>
+                <strong>${escapeHtml(currentJob ? `${currentJob.source} - ${currentJob.destination}` : careerUi.noJobs)}</strong>
+                <p>${escapeHtml(currentJob ? `${currentJob.cargo} | ${formatDistance(currentJob.progressKm)} / ${formatDistance(currentJob.distanceKm)}` : careerUi.tripWaiting)}</p>
+              </article>
+            </div>
             <div class="table-shell">
               <div class="table-row table-head">
                 <span>${await t("career.orders.origin")}</span>
                 <span>${await t("career.orders.destination")}</span>
-                <span>${await t("career.orders.eta")}</span>
+                <span>${await t("career.orders.cargo")}</span>
                 <span>${await t("career.orders.payout")}</span>
+                <span>${careerUi.progress}</span>
+                <span>${await t("career.freight.accept")}</span>
               </div>
-              <div class="table-row"><span>Berlin</span><span>Prague</span><span>05h 40m</span><span>EUR 18,200</span></div>
-              <div class="table-row"><span>Hamburg</span><span>Lyon</span><span>12h 15m</span><span>EUR 31,980</span></div>
-              <div class="table-row"><span>Warsaw</span><span>Vienna</span><span>09h 05m</span><span>EUR 22,460</span></div>
+              ${(jobs.length ? jobs : [null]).map((job) => job
+                ? `
+                  <div class="table-row">
+                    <span>${escapeHtml(job.source)}</span>
+                    <span>${escapeHtml(job.destination)}</span>
+                    <span>${escapeHtml(job.cargo)}</span>
+                    <span>${escapeHtml(formatCurrency(job.estimatedPayout))}</span>
+                    <span>${escapeHtml(`${formatDistance(job.progressKm)} / ${formatDistance(job.distanceKm)}`)}</span>
+                    <button
+                      class="table-action"
+                      data-career-action="accept-job"
+                      data-job-id="${escapeHtml(job.id)}"
+                      ${job.accepted ? "disabled" : ""}
+                    >
+                      ${job.accepted ? careerUi.acceptedJob : careerUi.acceptJob}
+                    </button>
+                  </div>
+                `
+                : `
+                  <div class="table-row">
+                    <span>${escapeHtml(careerUi.noJobs)}</span>
+                    <span>-</span>
+                    <span>-</span>
+                    <span>-</span>
+                    <span>-</span>
+                    <button class="table-action" disabled>${careerUi.acceptJob}</button>
+                  </div>
+                `).join("")}
+            </div>
+          `
+        );
+      case "logbook":
+        return buildSectionFrame(
+          "career.nav.logbook",
+          "career.logbook.title",
+          "career.logbook.summary",
+          `
+            <div class="table-shell career-logbook-table">
+              <div class="table-row table-head career-logbook-head">
+                <span>${await t("career.logbook.started")}</span>
+                <span>${await t("career.logbook.route")}</span>
+                <span>${await t("career.logbook.cargo")}</span>
+                <span>${await t("career.logbook.distance")}</span>
+                <span>${await t("career.logbook.income")}</span>
+                <span>${await t("career.logbook.status")}</span>
+              </div>
+              ${trips.length ? renderLogbookRows(trips) : `<p class="career-logbook-empty">${escapeHtml(careerUi.noLogbook)}</p>`}
             </div>
           `
         );
@@ -340,8 +663,23 @@ document.addEventListener("DOMContentLoaded", async () => {
                     <span>${await t("career.freight.cost_breakdown")}</span>
                     <span>${await t("career.freight.accept")}</span>
                   </div>
-                  <div class="table-row"><span>Rotterdam - Basel</span><span>EUR 24,600</span><span>Fuel / Toll / Insurance</span><button class="table-action">${await t("career.freight.accept")}</button></div>
-                  <div class="table-row"><span>Oslo - Malmo</span><span>EUR 11,980</span><span>Fuel / Ferry / Repair</span><button class="table-action">${await t("career.freight.accept")}</button></div>
+                  ${(freightOffers.length ? freightOffers : [null]).slice(0, 3).map((offer) => offer
+                    ? `
+                      <div class="table-row">
+                        <span>${escapeHtml(`${offer.origin} - ${offer.destination}`)}</span>
+                        <span>${escapeHtml(formatCurrency(offer.payout))}</span>
+                        <span>${escapeHtml(`${humanizeToken(offer.risk)} | ${offer.etaHours}h`)}</span>
+                        <button class="table-action" disabled>${await t("career.freight.accept")}</button>
+                      </div>
+                    `
+                    : `
+                      <div class="table-row">
+                        <span>${escapeHtml(careerUi.noFreight)}</span>
+                        <span>-</span>
+                        <span>-</span>
+                        <button class="table-action" disabled>${await t("career.freight.accept")}</button>
+                      </div>
+                    `).join("")}
                 </div>
               </div>
               <div class="map-preview"><div class="map-grid"><span></span></div></div>
@@ -349,16 +687,26 @@ document.addEventListener("DOMContentLoaded", async () => {
           `
         );
       case "dispatcher":
+        {
+          const eventCards = [];
+          for (const event of dispatcherEvents.slice(0, 3)) {
+            eventCards.push({
+              label: await t(event.severity === "high" ? "career.dispatcher.priority_high" : "career.dispatcher.priority_medium"),
+              value: event.title,
+              copy: event.impact,
+            });
+          }
         return buildSectionFrame(
           "career.nav.dispatcher",
           "career.dispatcher.title",
           "career.dispatcher.summary",
-          buildDetailCards([
-            { label: await t("career.dispatcher.priority_high"), value: "Medical route / Berlin", copy: await t("career.dispatcher.reason_level") },
-            { label: await t("career.dispatcher.priority_medium"), value: "Retail freight / Hamburg", copy: await t("career.dispatcher.reason_location") },
-            { label: await t("career.dispatcher.priority_high"), value: "Industrial steel / Prague", copy: await t("career.dispatcher.reason_demand") },
-          ])
+          buildDetailCards(
+            eventCards.length
+              ? eventCards
+              : [{ label: await t("career.dispatcher.priority_medium"), value: careerUi.noDispatcherEvents, copy: careerUi.tripWaiting }]
+          )
         );
+        }
       case "livemap":
         return buildSectionFrame(
           "career.nav.livemap",
@@ -370,13 +718,13 @@ document.addEventListener("DOMContentLoaded", async () => {
               <div class="detail-grid">
                 <article class="detail-card">
                   <span>${await t("career.livemap.tracking")}</span>
-                  <strong>North Axis 014</strong>
-                  <p>${await t("career.livemap.route_signal")}</p>
+                  <strong>${escapeHtml(careerOverview?.activeTrip ? `${careerOverview.activeTrip.origin} - ${careerOverview.activeTrip.destination}` : careerUi.noActiveTrip)}</strong>
+                  <p>${escapeHtml(careerOverview?.activeTrip ? `${formatDistance(careerOverview.activeTrip.distanceKm)} | ${formatDurationCompact(careerOverview.activeTrip.durationSeconds)}` : careerUi.tripWaiting)}</p>
                 </article>
                 <article class="detail-card">
                   <span>${await t("career.livemap.convoy_status")}</span>
-                  <strong>On route</strong>
-                  <p>Fuel and rest windows are inside target thresholds.</p>
+                  <strong>${escapeHtml(careerState.bridgeConnected ? uiText.bridgeOnline : uiText.bridgeOffline)}</strong>
+                  <p>${escapeHtml(careerState.bridgeConnected ? careerText.live : careerText.waiting)}</p>
                 </article>
               </div>
             </div>
@@ -395,8 +743,23 @@ document.addEventListener("DOMContentLoaded", async () => {
                 <span>${await t("career.fleet.assigned_driver")}</span>
                 <span>${await t("career.fleet.maintenance")}</span>
               </div>
-              <div class="table-row"><span>${window.playerTruck?.name || "Primary Truck"}</span><span>92%</span><span>Player</span><span>Routine check in 1,250 km</span></div>
-              <div class="table-row"><span>Fleet Summary</span><span>${truckCount} / ${trailerCount}</span><span>${companyName}</span><span>Monitoring active</span></div>
+              ${(fleetAssets.length ? fleetAssets : [null]).slice(0, 4).map((asset) => asset
+                ? `
+                  <div class="table-row">
+                    <span>${escapeHtml(`${asset.brand} ${asset.model}`)}</span>
+                    <span>${escapeHtml(`${formatTelemetryNumber(asset.conditionPercent, 0)}%`)}</span>
+                    <span>${escapeHtml(asset.status === "player" ? careerUi.player : humanizeToken(asset.status))}</span>
+                    <span>${escapeHtml(formatDistance(asset.serviceDueKm))}</span>
+                  </div>
+                `
+                : `
+                  <div class="table-row">
+                    <span>${escapeHtml(careerUi.noData)}</span>
+                    <span>-</span>
+                    <span>-</span>
+                    <span>-</span>
+                  </div>
+                `).join("")}
             </div>
           `
         );
@@ -408,9 +771,9 @@ document.addEventListener("DOMContentLoaded", async () => {
           `
             ${buildDetailCards([
               { label: await t("career.balance.cash_balance"), value: formatCurrency(money), copy: companyName },
-              { label: await t("career.balance.fuel"), value: "EUR 5,820", copy: "Rolling fuel exposure" },
-              { label: await t("career.balance.repairs"), value: "EUR 1,740", copy: "Current workshop demand" },
-              { label: await t("career.balance.salaries"), value: "EUR 12,480", copy: "Driver payroll stack" },
+              { label: await t("career.balance.fuel"), value: formatCurrency(dashboard.fuelCost) },
+              { label: await t("career.balance.repairs"), value: formatCurrency(dashboard.repairCost) },
+              { label: await t("career.balance.salaries"), value: formatCurrency(totalSalary) },
             ], "four-up")}
             <div class="finance-chart"><span></span></div>
           `
@@ -434,10 +797,10 @@ document.addEventListener("DOMContentLoaded", async () => {
           "career.statistics.title",
           "career.statistics.summary",
           buildDetailCards([
-            { label: await t("career.statistics.profit"), value: "EUR 284,000" },
-            { label: await t("career.statistics.kilometers"), value: "48,920 km" },
-            { label: await t("career.statistics.efficiency"), value: "92%" },
-            { label: await t("career.statistics.utilization"), value: "81%" },
+            { label: await t("career.statistics.profit"), value: formatCurrency(statistics.totalIncome) },
+            { label: await t("career.statistics.kilometers"), value: formatDistance(statistics.totalKilometers) },
+            { label: careerUi.speeding, value: String(statistics.speedingEvents ?? 0) },
+            { label: careerUi.companyValue, value: formatCurrency(statistics.companyValue ?? 0) },
           ], "four-up")
         );
       case "achievements":
@@ -448,7 +811,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           buildDetailCards([
             { label: await t("career.achievements.level"), value: String(level) },
             { label: await t("career.achievements.xp"), value: formatTelemetryNumber(xp, 0) },
-            { label: await t("career.achievements.reputation"), value: `L${level}` },
+            { label: await t("career.achievements.reputation"), value: overview?.reputation?.label || `L${level}` },
           ])
         );
       case "company":
@@ -458,8 +821,8 @@ document.addEventListener("DOMContentLoaded", async () => {
           "career.company.summary",
           buildDetailCards([
             { label: await t("career.company.headquarters"), value: companyName },
-            { label: await t("career.company.staff_capacity"), value: "24 members" },
-            { label: await t("career.company.growth"), value: "Central Europe expansion" },
+            { label: await t("career.company.staff_capacity"), value: String(employeeOverview.total ?? 0) },
+            { label: careerUi.activeContracts, value: String(contractRows.length) },
           ])
         );
       case "store":
@@ -507,8 +870,8 @@ document.addEventListener("DOMContentLoaded", async () => {
           "career.settings.summary",
           buildDetailCards([
             { label: await t("career.settings.theme"), value: localStorage.getItem("theme") || "neon" },
-            { label: await t("career.settings.language"), value: "System controlled" },
-            { label: await t("career.settings.modules"), value: "Career / Utility / Telemetry" },
+            { label: await t("career.settings.language"), value: careerUi.systemControlled },
+            { label: await t("career.settings.modules"), value: careerUi.modulesValue },
           ])
         );
     }
@@ -565,7 +928,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
 
   const applyHubMode = (mode) => {
-    const isCareer = mode === "career";
+    const normalizedMode = mode === "utility" ? "editor" : mode;
+    const isCareer = normalizedMode === "career";
     document.body.classList.toggle("mode-career", isCareer);
     document.body.classList.toggle("mode-editor", !isCareer);
     refs.editorModeBtn?.classList.toggle("active", !isCareer);
@@ -579,6 +943,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
 
   const updateOperationalOverview = () => {
+    const overview = careerOverview;
     const money = Number(window.currentProfileData?.money ?? 0);
     const xp = Number(window.currentProfileData?.xp ?? 0);
     const level = deriveLevel(xp);
@@ -590,7 +955,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     const saveLabel = window.selectedSavePath
       ? refs.saveNameDisplay?.textContent?.trim() || uiText.noSave
       : uiText.noSave;
-    const companyLabel = window.selectedProfilePath ? profileLabel : uiText.noCompany;
+    const companyLabel =
+      overview?.economy?.companyName || (window.selectedProfilePath ? profileLabel : uiText.noCompany);
+    const careerBalance = overview?.bank?.cashBalance ?? money;
+    const careerLevel = overview?.reputation?.level ?? level;
+    const careerReputation = overview?.reputation?.label
+      ? `${overview.reputation.label} / L${overview.reputation.level}`
+      : `L${careerLevel}`;
+    const careerFleet =
+      overview?.fleetOverview
+        ? `${overview.fleetOverview.trucks} / ${overview.fleetOverview.trailers}`
+        : `${truckCount} / ${trailerCount}`;
+    const dashboard = overview?.dashboard;
+    const employeeOverview = overview?.employeeOverview;
 
     if (refs.editorProfileValue) refs.editorProfileValue.textContent = profileLabel;
     if (refs.editorSaveValue) refs.editorSaveValue.textContent = saveLabel;
@@ -601,16 +978,32 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (refs.careerCompanyValue) refs.careerCompanyValue.textContent = companyLabel;
     if (refs.careerSidebarCompany) refs.careerSidebarCompany.textContent = companyLabel;
-    if (refs.careerSidebarBalance) refs.careerSidebarBalance.textContent = formatCurrency(money);
-    if (refs.careerBalanceValue) refs.careerBalanceValue.textContent = formatCurrency(money);
-    if (refs.careerReputationValue) refs.careerReputationValue.textContent = `L${level}`;
-    if (refs.careerFleetStatusValue) refs.careerFleetStatusValue.textContent = `${truckCount} / ${trailerCount}`;
-    if (refs.careerLiveRevenueValue) refs.careerLiveRevenueValue.textContent = formatCurrency(Math.max(12480, level * 3200));
-    if (refs.careerCostFuelValue) refs.careerCostFuelValue.textContent = formatCurrency(80 + truckCount * 48);
-    if (refs.careerCostRepairValue) refs.careerCostRepairValue.textContent = formatCurrency(24 + trailerCount * 50);
-    if (refs.careerCostTollValue) refs.careerCostTollValue.textContent = formatCurrency(18 + level * 6);
-    if (refs.careerDriversOnlineValue) refs.careerDriversOnlineValue.textContent = String(Math.max(1, Math.min(level, 9))).padStart(2, "0");
-    if (refs.careerDriversRestingValue) refs.careerDriversRestingValue.textContent = String(Math.max(1, Math.min(Math.ceil(level / 3), 4))).padStart(2, "0");
+    if (refs.careerSidebarBalance) refs.careerSidebarBalance.textContent = formatCurrency(careerBalance);
+    if (refs.careerBalanceValue) refs.careerBalanceValue.textContent = formatCurrency(careerBalance);
+    if (refs.careerReputationValue) refs.careerReputationValue.textContent = careerReputation;
+    if (refs.careerFleetStatusValue) refs.careerFleetStatusValue.textContent = careerFleet;
+    if (refs.careerLiveRevenueValue) refs.careerLiveRevenueValue.textContent = formatCurrency(dashboard?.liveIncome ?? Math.max(12480, level * 3200));
+    if (refs.careerCostFuelValue) refs.careerCostFuelValue.textContent = formatCurrency(dashboard?.fuelCost ?? (80 + truckCount * 48));
+    if (refs.careerCostRepairValue) refs.careerCostRepairValue.textContent = formatCurrency(dashboard?.repairCost ?? (24 + trailerCount * 50));
+    if (refs.careerCostTollValue) refs.careerCostTollValue.textContent = formatCurrency(dashboard?.tollCost ?? (18 + level * 6));
+    if (refs.careerDriversOnlineValue) refs.careerDriversOnlineValue.textContent = String(employeeOverview?.onDuty ?? Math.max(1, Math.min(level, 9))).padStart(2, "0");
+    if (refs.careerDriversRestingValue) refs.careerDriversRestingValue.textContent = String(employeeOverview?.resting ?? Math.max(1, Math.min(Math.ceil(level / 3), 4))).padStart(2, "0");
+    renderActiveTripCard();
+    renderCareerLogbook();
+  };
+
+  const renderCareerOverview = async (overview) => {
+    careerOverview = overview;
+    clearCareerLoadFailure();
+    updateOperationalOverview();
+    if (overview?.lastTelemetry) {
+      renderTelemetry(overview.lastTelemetry);
+    }
+    if (activeCareerPanel !== "dashboard") {
+      await showCareerPanel(activeCareerPanel);
+      return;
+    }
+    applyCareerState();
   };
 
   const showCareerPanel = async (panel) => {
@@ -687,6 +1080,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
 
   const renderCareerStatus = (status) => {
+    clearCareerLoadFailure();
     careerState.gameRunning = Boolean(status?.ets2_running || status?.ats_running);
     careerState.pluginInstalled = Boolean(status?.plugin_installed);
     careerState.bridgeConnected = Boolean(status?.bridge_connected);
@@ -729,9 +1123,45 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   });
 
-  refs.editorModeBtn?.addEventListener("click", () => activateMode("utility"));
+  refs.careerDetailHost?.addEventListener("click", async (event) => {
+    const actionButton = event.target.closest("[data-career-action]");
+    if (!actionButton) return;
+
+    const { careerAction, jobId } = actionButton.dataset;
+    if (actionButton.disabled) return;
+
+    if (careerAction === "generate-jobs") {
+      actionButton.disabled = true;
+      try {
+        await invoke("career_generate_jobs");
+        await renderCareerOverview(await invoke("career_get_overview"));
+      } catch (error) {
+        console.error("[career] job generation failed", error);
+        window.showToast("career.jobs.refresh_failed", "error");
+      } finally {
+        actionButton.disabled = false;
+      }
+      return;
+    }
+
+    if (careerAction === "accept-job" && jobId) {
+      actionButton.disabled = true;
+      try {
+        await invoke("career_accept_job", { jobId });
+        await renderCareerOverview(await invoke("career_get_overview"));
+        window.showToast("career.jobs.accept_success", "success");
+      } catch (error) {
+        console.error("[career] job accept failed", error);
+        window.showToast("career.jobs.accept_failed", "error");
+      } finally {
+        actionButton.disabled = false;
+      }
+    }
+  });
+
+  refs.editorModeBtn?.addEventListener("click", () => activateMode("editor"));
   refs.careerModeBtn?.addEventListener("click", () => activateMode("career"));
-  refs.hubEditorCard?.addEventListener("click", () => activateMode("utility"));
+  refs.hubEditorCard?.addEventListener("click", () => activateMode("editor"));
   refs.hubCareerCard?.addEventListener("click", () => activateMode("career"));
   refs.hubHomeBtn?.addEventListener("click", () => setHubVisibility(true));
   refs.saveSafeModeBtn?.addEventListener("click", () => setEditorPresentationMode("safe"));
@@ -743,24 +1173,39 @@ document.addEventListener("DOMContentLoaded", async () => {
   listen("career://plugin_installed", (event) => updateCareerFlag("pluginInstalled", event.payload)).catch(console.error);
   listen("career://bridge_connected", (event) => updateCareerFlag("bridgeConnected", event.payload)).catch(console.error);
   listen("career://status", (event) => renderCareerStatus(event.payload)).catch(console.error);
+  listen("career://overview", (event) => {
+    void renderCareerOverview(event.payload);
+  }).catch(console.error);
   listen("career://telemetry_tick", (event) => renderTelemetry(event.payload)).catch(console.error);
 
-  try {
-    applyHubMode(await invoke("hub_get_mode"));
-  } catch {
-    applyHubMode("utility");
-  }
+  const initialMode = await safeInvoke("hub_get_mode", {}, { fallback: "editor", silent: true });
+  console.log("[ui] initial mode", initialMode);
+  applyHubMode(initialMode || "editor");
+  setHubVisibility(false);
 
   try {
     const selectedGame = await invoke("get_selected_game");
     careerState.activeGame = selectedGame;
     setCareerGame(selectedGame);
     lastSelectedGame = selectedGame;
-  } catch {}
+    console.log("[ui] selected game", selectedGame);
+  } catch (error) {
+    console.warn("[ui] selected game load failed", error);
+  }
 
   try {
     renderCareerStatus(await invoke("career_get_status"));
-  } catch {}
+    console.log("[ui] career status loaded");
+  } catch (error) {
+    console.warn("[ui] career status load failed", error);
+  }
+
+  try {
+    await renderCareerOverview(await invoke("career_get_overview"));
+    console.log("[ui] career overview loaded");
+  } catch (error) {
+    console.warn("[ui] career overview load failed", error);
+  }
 
   setEditorPresentationMode(localStorage.getItem("ets2_editor_mode") || "safe");
   await updateEditorStage(activeTab);
@@ -1215,6 +1660,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   } catch {}
 
-  await scanProfiles({ saveToBackend: true, showToasts: true });
-  window.dispatchEvent(new Event("translations-ready"));
+    await scanProfiles({ saveToBackend: true, showToasts: true });
+    window.dispatchEvent(new Event("translations-ready"));
+  clearCareerLoadFailure();
+  console.log("[ui] boot complete");
+  } catch (error) {
+    console.error("[ui] boot failed", error);
+    showCareerLoadFailure(error);
+  }
 });

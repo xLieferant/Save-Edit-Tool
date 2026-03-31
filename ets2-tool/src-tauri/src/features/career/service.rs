@@ -5,7 +5,7 @@ use tauri::{AppHandle, Emitter, Manager};
 
 use crate::features::career::plugin_installer::{self, ScsGame};
 use crate::features::career::telemetry::GameId;
-use crate::features::career::{db, overlay, telemetry};
+use crate::features::career::{db, overlay, overview, telemetry};
 use crate::features::hub::events::CareerStatus;
 use crate::state::{AppProfileState, CareerRuntime};
 
@@ -42,6 +42,7 @@ pub fn start_background(app: AppHandle, runtime: Arc<CareerRuntime>) {
         *runtime.db_path.lock().unwrap() = Some(db_path);
 
         let mut last_status: Option<CareerStatus> = None;
+        let mut last_overview: Option<overview::CareerOverview> = None;
         let mut last_game_running: Option<bool> = None;
         let mut last_plugin_installed: Option<bool> = None;
         let mut last_bridge_connected: Option<bool> = None;
@@ -156,6 +157,23 @@ pub fn start_background(app: AppHandle, runtime: Arc<CareerRuntime>) {
             if last_status.as_ref() != Some(&status) {
                 last_status = Some(status.clone());
                 let _ = app.emit("career://status", status);
+            }
+
+            let should_emit_overview =
+                runtime.overview_dirty.swap(false, Ordering::Relaxed) || last_overview.is_none();
+
+            if should_emit_overview {
+                match overview::load_overview(runtime.as_ref()) {
+                    Ok(next_overview) => {
+                        if last_overview.as_ref() != Some(&next_overview) {
+                            last_overview = Some(next_overview.clone());
+                            let _ = app.emit("career://overview", next_overview);
+                        }
+                    }
+                    Err(error) => {
+                        crate::dev_log!("[career] overview refresh failed: {}", error);
+                    }
+                }
             }
 
             std::thread::sleep(Duration::from_millis(500));

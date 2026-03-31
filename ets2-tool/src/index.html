@@ -123,6 +123,7 @@
 
           <nav class="career-nav">
             <button class="career-nav-btn active" data-career-panel="dashboard" data-translate="career.nav.dashboard">Dashboard</button>
+            <button class="career-nav-btn" data-career-panel="logbook" data-translate="career.nav.logbook">Logbook</button>
             <button class="career-nav-btn" data-career-panel="members" data-translate="career.nav.members">Members</button>
             <button class="career-nav-btn" data-career-panel="orders" data-translate="career.nav.orders">Orders</button>
             <button class="career-nav-btn" data-career-panel="freight" data-translate="career.nav.freight">Freight Market</button>
@@ -332,8 +333,8 @@
                   </article>
                   <article class="info-card panel-surface">
                     <span class="card-label" data-translate="career.dashboard.active_trip">Active Trip</span>
-                    <strong>BER - PRG</strong>
-                    <p data-translate="career.dashboard.active_trip_desc">Medical supplies, priority corridor, 5h 40m remaining.</p>
+                    <strong id="careerActiveTripValue" data-translate="career.dashboard.no_active_trip">No active trip</strong>
+                    <p id="careerActiveTripSummary" data-translate="career.dashboard.trip_waiting">Waiting for telemetry session start.</p>
                   </article>
                   <article class="info-card panel-surface">
                     <span class="card-label" data-translate="career.dashboard.cost_stack">Realtime Costs</span>
@@ -366,6 +367,28 @@
                     </div>
                   </article>
                 </div>
+
+                <section class="career-logbook-shell panel-surface">
+                  <div class="section-head">
+                    <div>
+                      <span class="eyebrow" data-translate="career.logbook.eyebrow">Trip history</span>
+                      <h2 data-translate="career.logbook.title">Recent Logbook</h2>
+                    </div>
+                    <p data-translate="career.logbook.summary">Completed telemetry-driven sessions are stored here automatically.</p>
+                  </div>
+                  <div class="table-shell career-logbook-table">
+                    <div class="table-row table-head career-logbook-head">
+                      <span data-translate="career.logbook.started">Started</span>
+                      <span data-translate="career.logbook.route">Route</span>
+                      <span data-translate="career.logbook.cargo">Cargo</span>
+                      <span data-translate="career.logbook.distance">Distance</span>
+                      <span data-translate="career.logbook.income">Income</span>
+                      <span data-translate="career.logbook.status">Status</span>
+                    </div>
+                    <div id="careerLogbookTable"></div>
+                    <p id="careerLogbookEmpty" class="career-logbook-empty" data-translate="career.logbook.empty">No trips logged yet.</p>
+                  </div>
+                </section>
               </div>
 
               <div id="careerDetailHost" class="career-detail-host panel-surface"></div>

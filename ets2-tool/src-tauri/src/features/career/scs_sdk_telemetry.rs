@@ -12,6 +12,7 @@ mod platform {
         FILE_MAP_READ, MEMORY_MAPPED_VIEW_ADDRESS, MapViewOfFile, OpenFileMappingW,
         UnmapViewOfFile,
     };
+    use crate::features::career::logbook::{self, TelemetrySample};
     use crate::state::CareerRuntime;
 
     const SHARED_MEMORY_NAME: &str = "Local\\SCSTelemetry";
@@ -87,18 +88,6 @@ mod platform {
         engine_enabled: u8,
     }
 
-    #[derive(Clone, Copy)]
-    struct TelemetrySnapshot {
-        timestamp: u64,
-        speed_kph: f32,
-        rpm: f32,
-        gear: i32,
-        fuel_liters: f32,
-        fuel_capacity_liters: f32,
-        engine_enabled: bool,
-        paused: bool,
-    }
-
     #[derive(Debug, Clone, Serialize, PartialEq)]
     #[serde(rename_all = "camelCase")]
     struct FrontendTelemetryPayload {
@@ -114,7 +103,7 @@ mod platform {
         sdk_connected: bool,
     }
 
-    impl TelemetrySnapshot {
+    impl TelemetrySample {
         fn format_line(self) -> String {
             format!(
                 "Speed: {} km/h | RPM: {} | Gear: {} | Fuel: {}L | Engine: {}",
@@ -166,7 +155,7 @@ mod platform {
             Ok(Self { handle, view })
         }
 
-        fn read_snapshot(&self) -> Result<Option<TelemetrySnapshot>, String> {
+        fn read_snapshot(&self) -> Result<Option<TelemetrySample>, String> {
             let zone1_before = unsafe { self.read_zone::<Zone1>(ZONE1_OFFSET) };
             if zone1_before.sdk_active == 0 {
                 return Ok(None);
@@ -193,7 +182,7 @@ mod platform {
                 zone3.selected_gear
             };
 
-            Ok(Some(TelemetrySnapshot {
+            Ok(Some(TelemetrySample {
                 timestamp: token_after,
                 speed_kph: zone4.speed_mps * 3.6,
                 rpm: zone4.rpm,
@@ -338,6 +327,9 @@ mod platform {
             match shared_map.as_ref().unwrap().read_snapshot() {
                 Ok(Some(snapshot)) => {
                     runtime.plugin_installed.store(true, Ordering::Relaxed);
+                    if let Err(error) = logbook::process_snapshot(runtime.as_ref(), snapshot) {
+                        crate::dev_log!("[career] telemetry logbook sync failed: {}", error);
+                    }
 
                     let sdk_connected =
                         last_timestamp.is_some() && last_timestamp != Some(snapshot.timestamp);

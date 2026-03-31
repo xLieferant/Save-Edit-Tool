@@ -28,6 +28,33 @@ fn main() {
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             let handle = app.handle().clone();
+            let career = app.state::<CareerState>();
+            let runtime = career.runtime.clone();
+
+            let db_path = features::career::db::default_db_path();
+            match features::career::db::init_logbook(&db_path) {
+                Ok(()) => {
+                    crate::dev_log!("[career] setup db ready: {}", db_path.display());
+                    if let Ok(mut guard) = runtime.db_path.lock() {
+                        *guard = Some(db_path);
+                    }
+                }
+                Err(error) => {
+                    crate::dev_log!("[career] setup db init failed: {}", error);
+                }
+            }
+
+            match features::hub::config::load_mode() {
+                Ok(mode) => {
+                    let hub = app.state::<HubState>();
+                    if let Ok(mut guard) = hub.mode.write() {
+                        *guard = mode;
+                    }
+                }
+                Err(error) => {
+                    crate::dev_log!("[hub] config load failed: {}", error);
+                }
+            }
             for game in [
                 features::career::plugin_installer::ScsGame::Ets2,
                 features::career::plugin_installer::ScsGame::Ats,
@@ -45,7 +72,6 @@ fn main() {
                     ),
                 }
             }
-            let runtime = app.state::<CareerState>().runtime.clone();
             features::career::scs_sdk_telemetry::start_frontend_telemetry_bridge(
                 handle.clone(),
                 runtime.clone(),
@@ -131,7 +157,11 @@ fn main() {
 
             // Career (background + logbook)
             features::career::commands::career_get_status,
+            features::career::commands::career_get_overview,
             features::career::commands::career_list_trips,
+            features::career::commands::career_generate_jobs,
+            features::career::commands::career_accept_job,
+            features::career::commands::career_complete_job,
             features::career::commands::get_plugin_status,
         ])
         .run(tauri::generate_context!())

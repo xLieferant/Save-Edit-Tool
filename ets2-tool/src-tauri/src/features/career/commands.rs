@@ -1,27 +1,19 @@
 use rusqlite::Connection;
-use serde::Serialize;
 use std::sync::atomic::Ordering;
 use tauri::command;
 use tauri::State;
 
+use crate::features::career::dispatcher::{self, Job};
+use crate::features::career::logbook::TripSummary;
+use crate::features::career::overview::CareerOverview;
 use crate::features::career::plugin_installer::{self, ScsGame};
 use crate::features::hub::events::CareerStatus;
-use crate::state::{AppProfileState, CareerState};
-
-#[derive(Debug, Clone, Serialize)]
-pub struct TripSummary {
-    pub id: i64,
-    pub started_at_utc: String,
-    pub ended_at_utc: Option<String>,
-    pub origin: Option<String>,
-    pub destination: Option<String>,
-    pub distance_km: Option<f64>,
-    pub income: Option<i64>,
-}
+use crate::state::{AppProfileState, CareerRuntime, CareerState};
 
 #[command]
 pub fn career_get_status(career: State<'_, CareerState>) -> Result<CareerStatus, String> {
     let runtime = career.runtime.as_ref();
+    crate::dev_log!("[career] command: career_get_status");
     Ok(CareerStatus {
         ets2_running: runtime.ets2_running.load(Ordering::Relaxed),
         ats_running: runtime.ats_running.load(Ordering::Relaxed),
@@ -49,8 +41,15 @@ pub fn get_plugin_status(profile: State<'_, AppProfileState>) -> Result<bool, St
 }
 
 #[command]
+pub fn career_get_overview(career: State<'_, CareerState>) -> Result<CareerOverview, String> {
+    crate::dev_log!("[career] command: career_get_overview");
+    crate::features::career::overview::load_overview(career.runtime.as_ref())
+}
+
+#[command]
 pub fn career_list_trips(career: State<'_, CareerState>) -> Result<Vec<TripSummary>, String> {
     let runtime = career.runtime.as_ref();
+    crate::dev_log!("[career] command: career_list_trips");
     let db_path = runtime
         .db_path
         .lock()
@@ -58,36 +57,49 @@ pub fn career_list_trips(career: State<'_, CareerState>) -> Result<Vec<TripSumma
         .clone()
         .ok_or_else(|| "Career database path not initialized".to_string())?;
 
-    let conn = Connection::open(db_path).map_err(|e| e.to_string())?;
-    let mut stmt = conn
-        .prepare(
-            r#"
-            SELECT id, started_at_utc, ended_at_utc, origin, destination, distance_km, income
-            FROM trips
-            ORDER BY id DESC
-            LIMIT 200
-            "#,
-        )
-        .map_err(|e| e.to_string())?;
+    crate::features::career::logbook::list_trips(&db_path, 200)
+}
 
-    let rows = stmt
-        .query_map([], |row| {
-            Ok(TripSummary {
-                id: row.get(0)?,
-                started_at_utc: row.get(1)?,
-                ended_at_utc: row.get(2)?,
-                origin: row.get(3)?,
-                destination: row.get(4)?,
-                distance_km: row.get(5)?,
-                income: row.get(6)?,
-            })
-        })
-        .map_err(|e| e.to_string())?;
+#[command]
+pub fn career_generate_jobs(career: State<'_, CareerState>) -> Result<Vec<Job>, String> {
+    crate::dev_log!("[career] command: career_generate_jobs");
+    let runtime = career.runtime.as_ref();
+    let conn = open_connection(runtime)?;
+    let jobs = dispatcher::generate_jobs(&conn)?;
+    runtime.overview_dirty.store(true, Ordering::Relaxed);
+    Ok(jobs)
+}
 
-    let mut out = Vec::new();
-    for row in rows {
-        out.push(row.map_err(|e| e.to_string())?);
-    }
+#[command]
+pub fn career_accept_job(job_id: String, career: State<'_, CareerState>) -> Result<Job, String> {
+    crate::dev_log!("[career] command: career_accept_job -> {}", job_id);
+    let runtime = career.runtime.as_ref();
+    let conn = open_connection(runtime)?;
+    let job = dispatcher::accept_job(&conn, &job_id)?;
+    runtime.overview_dirty.store(true, Ordering::Relaxed);
+    Ok(job)
+}
 
-    Ok(out)
+#[command]
+pub fn career_complete_job(
+    job_id: String,
+    career: State<'_, CareerState>,
+) -> Result<Job, String> {
+    crate::dev_log!("[career] command: career_complete_job -> {}", job_id);
+    let runtime = career.runtime.as_ref();
+    let conn = open_connection(runtime)?;
+    let job = dispatcher::complete_job(&conn, &job_id)?;
+    runtime.overview_dirty.store(true, Ordering::Relaxed);
+    Ok(job)
+}
+
+fn open_connection(runtime: &CareerRuntime) -> Result<Connection, String> {
+    let db_path = runtime
+        .db_path
+        .lock()
+        .map_err(|_| "Career db_path lock poisoned".to_string())?
+        .clone()
+        .ok_or_else(|| "Career database path not initialized".to_string())?;
+
+    Connection::open(db_path).map_err(|e| e.to_string())
 }

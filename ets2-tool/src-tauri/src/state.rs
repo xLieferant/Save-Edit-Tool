@@ -227,9 +227,10 @@ impl Default for AppProfileState {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
 pub enum AppMode {
+    #[serde(rename = "editor", alias = "utility")]
     Utility,
+    #[serde(rename = "career")]
     Career,
 }
 
@@ -249,11 +250,15 @@ pub struct CareerRuntime {
     pub stop_all: AtomicBool,
     pub telemetry_stop: AtomicBool,
     pub telemetry_running: AtomicBool,
+    pub trip_start_blocked: AtomicBool,
     pub ets2_running: AtomicBool,
     pub ats_running: AtomicBool,
     pub plugin_installed: AtomicBool,
     pub bridge_connected: AtomicBool,
+    pub overview_dirty: AtomicBool,
     pub active_game: Mutex<Option<String>>,
+    pub last_telemetry: Mutex<Option<LiveTelemetryState>>,
+    pub active_trip: Mutex<Option<ActiveTripState>>,
     pub db_path: Mutex<Option<PathBuf>>,
 }
 
@@ -263,14 +268,57 @@ impl Default for CareerRuntime {
             stop_all: AtomicBool::new(false),
             telemetry_stop: AtomicBool::new(false),
             telemetry_running: AtomicBool::new(false),
+            trip_start_blocked: AtomicBool::new(false),
             ets2_running: AtomicBool::new(false),
             ats_running: AtomicBool::new(false),
             plugin_installed: AtomicBool::new(false),
             bridge_connected: AtomicBool::new(false),
+            overview_dirty: AtomicBool::new(true),
             active_game: Mutex::new(None),
+            last_telemetry: Mutex::new(None),
+            active_trip: Mutex::new(None),
             db_path: Mutex::new(None),
         }
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct LiveTelemetryState {
+    pub speed_kph: f32,
+    pub rpm: f32,
+    pub gear: String,
+    pub fuel_liters: f32,
+    pub fuel_capacity_liters: f32,
+    pub engine_on: bool,
+    pub timestamp: u64,
+    pub paused: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct ActiveTripState {
+    pub trip_id: i64,
+    pub job_id: String,
+    pub contract_id: Option<String>,
+    pub job_progress_base_km: f64,
+    pub job_target_distance_km: Option<f64>,
+    pub job_price_per_km: Option<f64>,
+    pub started_at_utc_ms: i64,
+    pub last_update_utc_ms: i64,
+    pub origin: String,
+    pub destination: String,
+    pub cargo: String,
+    pub bonus_payout: i64,
+    pub distance_km: f64,
+    pub duration_seconds: i64,
+    pub max_speed_kph: f32,
+    pub speed_sum_kph: f64,
+    pub speed_samples: u32,
+    pub speeding_events: i64,
+    pub was_speeding: bool,
+    pub fuel_used_liters: f64,
+    pub last_fuel_liters: f32,
+    pub last_speed_kph: f32,
 }
 
 pub struct CareerState {

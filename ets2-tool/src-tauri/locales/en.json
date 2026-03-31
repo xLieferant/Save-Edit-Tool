@@ -54,8 +54,9 @@
             "live_subtitle": "Live telemetry and install state",
             "nav": {
                   "dashboard": "Dashboard",
+                  "logbook": "Logbook",
                   "members": "Members",
-                  "orders": "Orders",
+                  "orders": "Jobs",
                   "freight": "Freight Market",
                   "dispatcher": "Dispatcher",
                   "livemap": "Livemap",
@@ -93,6 +94,8 @@
                   "live_income_desc": "Projected rolling revenue across player and dispatched drivers.",
                   "active_trip": "Active Trip",
                   "active_trip_desc": "Medical supplies, priority corridor, 5h 40m remaining.",
+                  "no_active_trip": "No active trip",
+                  "trip_waiting": "Waiting for telemetry session start.",
                   "cost_stack": "Realtime Costs",
                   "fuel_cost": "Diesel",
                   "repair_cost": "Repairs",
@@ -113,15 +116,29 @@
                   "summary": "Coordinate active drivers, dispatch personnel and recruitment pipeline from a single roster.",
                   "lead_driver": "Lead Driver",
                   "dispatchers": "Dispatchers",
-                  "recruiters": "Recruiters"
+                  "recruiters": "Recruiters",
+                  "total_staff": "Total Staff"
             },
             "orders": {
-                  "title": "Contract Command Board",
-                  "summary": "Review active and queued orders with destination, ETA and payout visibility.",
+                  "title": "Dispatch Job Board",
+                  "summary": "Review generated jobs, accept the active assignment and track progress from the live telemetry stream.",
                   "origin": "Origin",
                   "destination": "Destination",
+                  "cargo": "Cargo",
                   "eta": "ETA",
-                  "payout": "Payout"
+                  "payout": "Payout",
+                  "none": "No active contracts"
+            },
+            "jobs": {
+                  "none": "No jobs available",
+                  "current": "Current Job",
+                  "progress": "Progress",
+                  "refresh": "Refresh Jobs",
+                  "accept": "Accept",
+                  "accepted": "Accepted",
+                  "refresh_failed": "Job generation failed",
+                  "accept_success": "Job accepted",
+                  "accept_failed": "Job accept failed"
             },
             "freight": {
                   "title": "Table and Route Preview",
@@ -133,7 +150,8 @@
                   "route": "Route",
                   "revenue": "Revenue",
                   "cost_breakdown": "Costs",
-                  "accept": "Accept Order"
+                  "accept": "Accept Order",
+                  "none": "No freight offers"
             },
             "dispatcher": {
                   "title": "Priority Assignment Engine",
@@ -142,7 +160,8 @@
                   "priority_medium": "Medium Priority",
                   "reason_level": "Optimized for high-level drivers with ADR capabilities.",
                   "reason_location": "Short repositioning required from the current location.",
-                  "reason_demand": "Demand spike detected in the central corridor."
+                  "reason_demand": "Demand spike detected in the central corridor.",
+                  "no_events": "No dispatcher events"
             },
             "livemap": {
                   "title": "Route Visibility",
@@ -183,7 +202,9 @@
                   "profit": "Profit",
                   "kilometers": "Kilometers",
                   "efficiency": "Efficiency",
-                  "utilization": "Utilization"
+                  "utilization": "Utilization",
+                  "speeding": "Speeding",
+                  "company_value": "Company Value"
             },
             "achievements": {
                   "title": "XP and Reputation",
@@ -197,7 +218,8 @@
                   "summary": "Define headquarters, capacity and expansion focus for the business simulation layer.",
                   "headquarters": "Headquarters",
                   "staff_capacity": "Staff Capacity",
-                  "growth": "Growth"
+                  "growth": "Growth",
+                  "active_contracts": "Active Contracts"
             },
             "store": {
                   "title": "Driver Equipment Store",
@@ -230,7 +252,25 @@
                   "summary": "Manage theme, language and module-level preferences for the desktop workspace.",
                   "theme": "Theme",
                   "language": "Language",
-                  "modules": "Modules"
+                  "modules": "Modules",
+                  "system_controlled": "System controlled",
+                  "modules_value": "Career / Editor / Telemetry"
+            },
+            "logbook": {
+                  "eyebrow": "Trip history",
+                  "title": "Recent Logbook",
+                  "summary": "Completed telemetry-driven sessions are stored here automatically.",
+                  "started": "Started",
+                  "route": "Route",
+                  "cargo": "Cargo",
+                  "distance": "Distance",
+                  "income": "Income",
+                  "status": "Status",
+                  "empty": "No trips logged yet."
+            },
+            "shared": {
+                  "none": "No data",
+                  "player": "Player"
             },
             "status": {
                   "game_running": "Game Running",

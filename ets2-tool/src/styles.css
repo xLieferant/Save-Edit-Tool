@@ -1605,6 +1605,12 @@ body {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.career-logbook-shell {
+  padding: 24px;
+  display: grid;
+  gap: 16px;
+}
+
 .detail-grid.three-up {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -1768,6 +1774,17 @@ body {
   background: rgba(255, 255, 255, 0.03);
 }
 
+.career-logbook-head,
+.career-logbook-row {
+  grid-template-columns: 1.2fr 1.2fr 1fr 0.8fr 0.8fr 0.8fr;
+}
+
+.career-logbook-empty {
+  margin: 0;
+  padding: 16px 4px 4px;
+  color: var(--text-muted);
+}
+
 .table-head {
   color: var(--text-muted);
   font-size: 12px;
@@ -1780,6 +1797,11 @@ body {
   justify-self: end;
   background: rgba(var(--accent-rgb), 0.18);
   color: var(--accent);
+}
+
+.table-action:disabled {
+  opacity: 0.52;
+  cursor: not-allowed;
 }
 
 .filters-row {
