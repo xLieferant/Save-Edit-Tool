@@ -236,6 +236,8 @@
                   "game_running": "Spiel lÃ¤uft",
                   "plugin_installed": "Plugin installiert",
                   "sdk_connected": "SDK verbunden",
+                  "engine_on": "[NEEDS TRANSLATION]",
+                  "engine_off": "[NEEDS TRANSLATION]",
                   "awaiting_signal": "Warte auf Shared-Memory-Bruecke",
                   "sdk_live": "Shared Memory verbunden",
                   "sdk_paused": "Telemetrie-Stream pausiert",

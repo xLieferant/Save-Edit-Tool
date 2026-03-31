@@ -46,6 +46,10 @@ fn main() {
                 }
             }
             let runtime = app.state::<CareerState>().runtime.clone();
+            features::career::scs_sdk_telemetry::start_frontend_telemetry_bridge(
+                handle.clone(),
+                runtime.clone(),
+            );
             features::career::service::start_background(handle, runtime);
             Ok(())
         })

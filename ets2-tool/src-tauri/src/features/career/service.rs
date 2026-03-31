@@ -66,7 +66,7 @@ pub fn start_background(app: AppHandle, runtime: Arc<CareerRuntime>) {
                 active_game.map(|game| game.as_str().to_string());
 
             let status_game = active_game.or_else(|| selected_game(&app));
-            let plugin_installed = status_game
+            let _plugin_files_ready = status_game
                 .map(|game| {
                     let scs_game = to_scs_game(game);
                     let installed_now =
@@ -114,20 +114,19 @@ pub fn start_background(app: AppHandle, runtime: Arc<CareerRuntime>) {
                     }
                 })
                 .unwrap_or(false);
-            runtime
-                .plugin_installed
-                .store(plugin_installed, Ordering::Relaxed);
 
             if let Some(game) = active_game {
                 telemetry::ensure_running(app.clone(), runtime.clone(), game);
                 let _ = overlay::ensure_overlay(&app);
             } else {
                 runtime.telemetry_stop.store(true, Ordering::Relaxed);
+                runtime.plugin_installed.store(false, Ordering::Relaxed);
                 runtime.bridge_connected.store(false, Ordering::Relaxed);
                 let _ = overlay::hide_overlay(&app);
             }
 
             let game_running = ets2_running || ats_running;
+            let plugin_installed = runtime.plugin_installed.load(Ordering::Relaxed);
             let bridge_connected = runtime.bridge_connected.load(Ordering::Relaxed);
 
             if last_game_running != Some(game_running) {

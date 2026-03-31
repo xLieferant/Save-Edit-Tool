@@ -194,14 +194,12 @@ pub fn ensure_running(app: AppHandle, runtime: Arc<CareerRuntime>, game: GameId)
                 match SharedBridge::connect() {
                     Ok(client) => {
                         bridge = Some(client);
-                        runtime.bridge_connected.store(true, Ordering::Relaxed);
                         crate::dev_log!(
                             "[career] connected shared memory: {}",
                             SHARED_MEMORY_NAME
                         );
                     }
                     Err(_) => {
-                        runtime.bridge_connected.store(false, Ordering::Relaxed);
                         std::thread::sleep(Duration::from_millis(500));
                         continue;
                     }
@@ -210,7 +208,6 @@ pub fn ensure_running(app: AppHandle, runtime: Arc<CareerRuntime>, game: GameId)
 
             match bridge.as_ref().unwrap().read_snapshot() {
                 Ok(Some(snapshot)) => {
-                    runtime.bridge_connected.store(true, Ordering::Relaxed);
                     let _ = app.emit("career://telemetry_tick", snapshot);
                     std::thread::sleep(Duration::from_millis(100));
                 }
@@ -219,14 +216,12 @@ pub fn ensure_running(app: AppHandle, runtime: Arc<CareerRuntime>, game: GameId)
                 }
                 Err(error) => {
                     crate::dev_log!("[career] shared memory read failed: {}", error);
-                    runtime.bridge_connected.store(false, Ordering::Relaxed);
                     bridge = None;
                     std::thread::sleep(Duration::from_millis(500));
                 }
             }
         }
 
-        runtime.bridge_connected.store(false, Ordering::Relaxed);
         runtime.telemetry_running.store(false, Ordering::Relaxed);
         crate::dev_log!("[career] telemetry reader thread stopped");
     });

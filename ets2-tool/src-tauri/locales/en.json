@@ -236,6 +236,8 @@
                   "game_running": "Game Running",
                   "plugin_installed": "Plugin Installed",
                   "sdk_connected": "SDK Connected",
+                  "engine_on": "Engine ON",
+                  "engine_off": "Engine OFF",
                   "awaiting_signal": "Waiting for shared memory bridge",
                   "sdk_live": "Shared memory connected",
                   "sdk_paused": "Telemetry stream paused",

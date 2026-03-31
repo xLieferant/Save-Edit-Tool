@@ -210,6 +210,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     pluginInstalled: false,
     bridgeConnected: false,
     paused: false,
+    engineOn: false,
     activeGame: "ets2",
   };
   const uiText = {
@@ -233,6 +234,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     bridgeOffline: await t("career.plugin.bridge_offline"),
     bridgeOnlineDetail: await t("career.plugin.bridge_online_detail"),
     bridgeOfflineDetail: await t("career.plugin.bridge_offline_detail"),
+    engineOn: await t("career.status.engine_on"),
+    engineOff: await t("career.status.engine_off"),
   };
   const editorStageMeta = {
     truck: {
@@ -515,7 +518,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   const setCareerGame = (game) => {
     const label = (game || "ets2").toUpperCase();
     if (refs.careerHeroTitle) refs.careerHeroTitle.textContent = label;
-    if (refs.careerGameLabel) refs.careerGameLabel.textContent = label;
+    if (refs.careerGameLabel) {
+      refs.careerGameLabel.textContent = `${label} | ${careerState.engineOn ? uiText.engineOn : uiText.engineOff}`;
+    }
   };
   let activeCareerPanel = "dashboard";
 
@@ -548,12 +553,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       refs.careerConnectionNote.textContent = careerText.live;
       return;
     }
-    if (!careerState.pluginInstalled) {
-      refs.careerConnectionNote.textContent = careerText.missingPlugin;
-      return;
-    }
     if (!careerState.gameRunning) {
       refs.careerConnectionNote.textContent = careerText.gameStopped;
+      return;
+    }
+    if (!careerState.pluginInstalled) {
+      refs.careerConnectionNote.textContent = careerText.missingPlugin;
       return;
     }
     refs.careerConnectionNote.textContent = careerText.waiting;
@@ -649,17 +654,25 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
 
   const renderTelemetry = (data) => {
-    const speed = Number(data?.speed_kph ?? 0);
-    const fuel = Number(data?.fuel_liters ?? 0);
-    const capacity = Number(data?.fuel_capacity_liters ?? 0);
+    const speed = Number(data?.speed ?? data?.speed_kph ?? 0);
+    const fuel = Number(data?.fuel ?? data?.fuel_liters ?? 0);
+    const capacity = Number(data?.fuelCapacity ?? data?.fuel_capacity_liters ?? 0);
     const ratio = capacity > 0 ? Math.max(0, Math.min(fuel / capacity, 1)) : 0;
-    careerState.bridgeConnected = true;
+    careerState.pluginInstalled =
+      typeof data?.pluginInstalled === "boolean" ? data.pluginInstalled : careerState.pluginInstalled;
+    careerState.bridgeConnected =
+      typeof data?.sdkConnected === "boolean" ? data.sdkConnected : careerState.bridgeConnected;
     careerState.paused = Number(data?.paused ?? 0) === 1;
+    careerState.engineOn = Boolean(data?.engineOn ?? careerState.engineOn);
     if (refs.careerSpeedDial) refs.careerSpeedDial.style.setProperty("--dial-progress", String(Math.min(speed / 180, 1)));
     if (refs.careerSpeedValue) refs.careerSpeedValue.textContent = String(Math.round(speed));
     if (refs.careerGearValue) {
-      const gear = Number(data?.gear ?? 0);
-      refs.careerGearValue.textContent = gear === 0 ? "N" : gear > 0 ? String(gear) : `R${Math.abs(gear)}`;
+      if (typeof data?.gear === "string") {
+        refs.careerGearValue.textContent = data.gear;
+      } else {
+        const gear = Number(data?.gear ?? 0);
+        refs.careerGearValue.textContent = gear === 0 ? "N" : gear > 0 ? String(gear) : `R${Math.abs(gear)}`;
+      }
     }
     if (refs.careerFuelValue) {
       refs.careerFuelValue.textContent =
@@ -669,7 +682,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     if (refs.careerFuelPercent) refs.careerFuelPercent.textContent = `${Math.round(ratio * 100)}%`;
     if (refs.careerFuelBarFill) refs.careerFuelBarFill.style.setProperty("--fuel-progress", String(ratio));
-    if (refs.careerRpmValue) refs.careerRpmValue.textContent = formatTelemetryNumber(data?.engine_rpm ?? 0, 0);
+    if (refs.careerRpmValue) refs.careerRpmValue.textContent = formatTelemetryNumber(data?.rpm ?? data?.engine_rpm ?? 0, 0);
     applyCareerState();
   };
 
@@ -680,6 +693,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     careerState.activeGame = status?.active_game || careerState.activeGame || lastSelectedGame || "ets2";
     if (!careerState.bridgeConnected) {
       careerState.paused = false;
+      careerState.engineOn = false;
     }
     applyCareerState();
   };
@@ -687,6 +701,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     careerState[key] = Boolean(value);
     if (key === "bridgeConnected" && !careerState.bridgeConnected) {
       careerState.paused = false;
+      careerState.engineOn = false;
+    }
+    if (key === "pluginInstalled" && !careerState.pluginInstalled) {
+      careerState.engineOn = false;
     }
     applyCareerState();
   };
@@ -720,6 +738,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   refs.saveAdvancedModeBtn?.addEventListener("click", () => setEditorPresentationMode("advanced"));
 
   listen("hub://mode_changed", (event) => applyHubMode(event.payload.mode ?? event.payload)).catch(console.error);
+  listen("telemetry:update", (event) => renderTelemetry(event.payload)).catch(console.error);
   listen("career://game_running", (event) => updateCareerFlag("gameRunning", event.payload)).catch(console.error);
   listen("career://plugin_installed", (event) => updateCareerFlag("pluginInstalled", event.payload)).catch(console.error);
   listen("career://bridge_connected", (event) => updateCareerFlag("bridgeConnected", event.payload)).catch(console.error);
@@ -741,10 +760,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   try {
     renderCareerStatus(await invoke("career_get_status"));
-  } catch {}
-
-  try {
-    updateCareerFlag("pluginInstalled", await invoke("get_plugin_status"));
   } catch {}
 
   setEditorPresentationMode(localStorage.getItem("ets2_editor_mode") || "safe");
@@ -866,7 +881,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       const previousGame = lastSelectedGame;
       lastSelectedGame = game;
       setCareerGame(game);
-      setLamp(refs.statusPluginInstalled, await invoke("get_plugin_status"));
       refs.ets2Btn.classList.toggle("active", game !== "ats");
       refs.ets2Btn.disabled = game !== "ats";
       refs.atsBtn.classList.toggle("active", game === "ats");

@@ -1,13 +1,18 @@
 #[cfg(target_os = "windows")]
 mod platform {
     use std::ptr;
+    use std::sync::atomic::Ordering;
+    use std::sync::Arc;
     use std::thread;
     use std::time::Duration;
+    use serde::Serialize;
+    use tauri::{AppHandle, Emitter};
     use windows_sys::Win32::Foundation::{CloseHandle, HANDLE};
     use windows_sys::Win32::System::Memory::{
         FILE_MAP_READ, MEMORY_MAPPED_VIEW_ADDRESS, MapViewOfFile, OpenFileMappingW,
         UnmapViewOfFile,
     };
+    use crate::state::CareerRuntime;
 
     const SHARED_MEMORY_NAME: &str = "Local\\SCSTelemetry";
     const SHARED_MEMORY_SIZE: usize = 32 * 1024;
@@ -84,12 +89,29 @@ mod platform {
 
     #[derive(Clone, Copy)]
     struct TelemetrySnapshot {
-        change_token: u64,
+        timestamp: u64,
         speed_kph: f32,
         rpm: f32,
         gear: i32,
         fuel_liters: f32,
+        fuel_capacity_liters: f32,
         engine_enabled: bool,
+        paused: bool,
+    }
+
+    #[derive(Debug, Clone, Serialize, PartialEq)]
+    #[serde(rename_all = "camelCase")]
+    struct FrontendTelemetryPayload {
+        speed: f32,
+        rpm: f32,
+        gear: String,
+        fuel: f32,
+        fuel_capacity: f32,
+        engine_on: bool,
+        timestamp: u64,
+        paused: bool,
+        plugin_installed: bool,
+        sdk_connected: bool,
     }
 
     impl TelemetrySnapshot {
@@ -102,6 +124,21 @@ mod platform {
                 self.fuel_liters.round() as i32,
                 if self.engine_enabled { "ON" } else { "OFF" }
             )
+        }
+
+        fn into_frontend_payload(self, plugin_installed: bool, sdk_connected: bool) -> FrontendTelemetryPayload {
+            FrontendTelemetryPayload {
+                speed: self.speed_kph,
+                rpm: self.rpm,
+                gear: format_gear(self.gear),
+                fuel: self.fuel_liters,
+                fuel_capacity: self.fuel_capacity_liters,
+                engine_on: self.engine_enabled,
+                timestamp: self.timestamp,
+                paused: self.paused,
+                plugin_installed,
+                sdk_connected,
+            }
         }
     }
 
@@ -157,12 +194,14 @@ mod platform {
             };
 
             Ok(Some(TelemetrySnapshot {
-                change_token: token_after,
+                timestamp: token_after,
                 speed_kph: zone4.speed_mps * 3.6,
                 rpm: zone4.rpm,
                 gear,
                 fuel_liters: zone4.fuel_liters,
+                fuel_capacity_liters: zone4._prefix[1],
                 engine_enabled: zone5.engine_enabled != 0,
+                paused: zone1_after.paused != 0,
             }))
         }
 
@@ -195,9 +234,18 @@ mod platform {
         }
     }
 
+    pub fn start_frontend_telemetry_bridge(app: AppHandle, runtime: Arc<CareerRuntime>) {
+        if let Err(error) = thread::Builder::new()
+            .name("scs-sdk-telemetry-frontend".to_string())
+            .spawn(move || frontend_telemetry_loop(app, runtime))
+        {
+            eprintln!("Failed to start telemetry frontend thread: {error}");
+        }
+    }
+
     fn telemetry_loop() {
         let mut shared_map: Option<SharedTelemetryMap> = None;
-        let mut last_change_token: Option<u64> = None;
+        let mut last_timestamp: Option<u64> = None;
         let mut unavailable_logged = false;
 
         loop {
@@ -205,7 +253,7 @@ mod platform {
                 match SharedTelemetryMap::connect() {
                     Ok(map) => {
                         shared_map = Some(map);
-                        last_change_token = None;
+                        last_timestamp = None;
                         unavailable_logged = false;
                     }
                     Err(message) => {
@@ -222,8 +270,8 @@ mod platform {
             match shared_map.as_ref().unwrap().read_snapshot() {
                 Ok(Some(snapshot)) => {
                     unavailable_logged = false;
-                    if last_change_token != Some(snapshot.change_token) {
-                        last_change_token = Some(snapshot.change_token);
+                    if last_timestamp != Some(snapshot.timestamp) {
+                        last_timestamp = Some(snapshot.timestamp);
                         println!("{}", snapshot.format_line());
                     }
                 }
@@ -232,11 +280,11 @@ mod platform {
                         println!("{NOT_AVAILABLE_MESSAGE}");
                         unavailable_logged = true;
                     }
-                    last_change_token = None;
+                    last_timestamp = None;
                 }
                 Err(message) => {
                     shared_map = None;
-                    last_change_token = None;
+                    last_timestamp = None;
                     if !unavailable_logged {
                         println!("{message}");
                         unavailable_logged = true;
@@ -246,6 +294,110 @@ mod platform {
 
             thread::sleep(POLL_INTERVAL);
         }
+    }
+
+    fn frontend_telemetry_loop(app: AppHandle, runtime: Arc<CareerRuntime>) {
+        let mut shared_map: Option<SharedTelemetryMap> = None;
+        let mut last_timestamp: Option<u64> = None;
+        let mut last_payload: Option<FrontendTelemetryPayload> = None;
+
+        while !runtime.stop_all.load(Ordering::Relaxed) {
+            if shared_map.is_none() {
+                match SharedTelemetryMap::connect() {
+                    Ok(map) => {
+                        shared_map = Some(map);
+                        runtime.plugin_installed.store(true, Ordering::Relaxed);
+                        runtime.bridge_connected.store(false, Ordering::Relaxed);
+                        last_timestamp = None;
+                    }
+                    Err(_) => {
+                        runtime.plugin_installed.store(false, Ordering::Relaxed);
+                        runtime.bridge_connected.store(false, Ordering::Relaxed);
+                        emit_frontend_payload(
+                            &app,
+                            &mut last_payload,
+                            FrontendTelemetryPayload {
+                                speed: 0.0,
+                                rpm: 0.0,
+                                gear: "N".to_string(),
+                                fuel: 0.0,
+                                fuel_capacity: 0.0,
+                                engine_on: false,
+                                timestamp: 0,
+                                paused: false,
+                                plugin_installed: false,
+                                sdk_connected: false,
+                            },
+                        );
+                        thread::sleep(RECONNECT_INTERVAL);
+                        continue;
+                    }
+                }
+            }
+
+            match shared_map.as_ref().unwrap().read_snapshot() {
+                Ok(Some(snapshot)) => {
+                    runtime.plugin_installed.store(true, Ordering::Relaxed);
+
+                    let sdk_connected =
+                        last_timestamp.is_some() && last_timestamp != Some(snapshot.timestamp);
+                    runtime.bridge_connected.store(sdk_connected, Ordering::Relaxed);
+
+                    emit_frontend_payload(
+                        &app,
+                        &mut last_payload,
+                        snapshot.into_frontend_payload(true, sdk_connected),
+                    );
+
+                    last_timestamp = Some(snapshot.timestamp);
+                    thread::sleep(POLL_INTERVAL);
+                }
+                Ok(None) => {
+                    thread::sleep(Duration::from_millis(16));
+                }
+                Err(_) => {
+                    shared_map = None;
+                    last_timestamp = None;
+                    runtime.plugin_installed.store(false, Ordering::Relaxed);
+                    runtime.bridge_connected.store(false, Ordering::Relaxed);
+
+                    emit_frontend_payload(
+                        &app,
+                        &mut last_payload,
+                        FrontendTelemetryPayload {
+                            speed: 0.0,
+                            rpm: 0.0,
+                            gear: "N".to_string(),
+                            fuel: 0.0,
+                            fuel_capacity: 0.0,
+                            engine_on: false,
+                            timestamp: 0,
+                            paused: false,
+                            plugin_installed: false,
+                            sdk_connected: false,
+                        },
+                    );
+
+                    thread::sleep(RECONNECT_INTERVAL);
+                }
+            }
+        }
+
+        runtime.plugin_installed.store(false, Ordering::Relaxed);
+        runtime.bridge_connected.store(false, Ordering::Relaxed);
+    }
+
+    fn emit_frontend_payload(
+        app: &AppHandle,
+        last_payload: &mut Option<FrontendTelemetryPayload>,
+        payload: FrontendTelemetryPayload,
+    ) {
+        if last_payload.as_ref() == Some(&payload) {
+            return;
+        }
+
+        *last_payload = Some(payload.clone());
+        let _ = app.emit("telemetry:update", payload);
     }
 
     fn change_token(zone: Zone1) -> u64 {
@@ -272,7 +424,14 @@ mod platform {
 }
 
 #[cfg(target_os = "windows")]
-pub use platform::start_terminal_telemetry_loop;
+pub use platform::{start_frontend_telemetry_bridge, start_terminal_telemetry_loop};
 
 #[cfg(not(target_os = "windows"))]
 pub fn start_terminal_telemetry_loop() {}
+
+#[cfg(not(target_os = "windows"))]
+pub fn start_frontend_telemetry_bridge(
+    _app: tauri::AppHandle,
+    _runtime: std::sync::Arc<crate::state::CareerRuntime>,
+) {
+}
