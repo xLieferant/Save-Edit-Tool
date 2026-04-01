@@ -2,6 +2,7 @@ use rusqlite::Connection;
 use serde::Serialize;
 
 use crate::features::career::dispatcher::{self, Job};
+use crate::features::career::job_log::{self, JobLogEntry, JobStats};
 use crate::features::career::logbook::{self, ActiveTripView, TripSummary};
 use crate::features::{bank, contracts, economy, employees, events, fleet, reputation};
 use crate::state::{CareerRuntime, LiveTelemetryState};
@@ -45,6 +46,9 @@ pub struct CareerOverview {
     pub current_job: Option<Job>,
     pub active_trip: Option<ActiveTripView>,
     pub recent_trips: Vec<TripSummary>,
+    pub active_job: Option<JobLogEntry>,
+    pub recent_jobs: Vec<JobLogEntry>,
+    pub job_stats: JobStats,
     pub last_telemetry: Option<LiveTelemetryState>,
     pub dashboard: CareerDashboardMetrics,
     pub statistics: CareerStatistics,
@@ -71,6 +75,9 @@ pub fn load_overview(runtime: &CareerRuntime) -> Result<CareerOverview, String> 
     let freight_offers = economy::list_freight_offers(&conn, 6)?;
     let recent_trips = logbook::list_trips_from_connection(&conn, 8)?;
     let active_trip = logbook::current_active_trip(runtime)?;
+    job_log::ensure_tables(&conn)?;
+    let recent_jobs = job_log::list_recent_jobs(&conn, 8)?;
+    let job_stats = job_log::load_job_stats(&conn)?;
     let mut jobs = dispatcher::list_jobs(&conn, 8)?;
     let mut current_job = dispatcher::current_job(&conn)?;
     let last_telemetry = runtime
@@ -80,6 +87,32 @@ pub fn load_overview(runtime: &CareerRuntime) -> Result<CareerOverview, String> 
         .clone();
 
     apply_live_job_progress(&mut jobs, current_job.as_mut(), active_trip.as_ref());
+
+    let active_job = runtime
+        .active_job
+        .lock()
+        .map_err(|_| "Career active_job lock poisoned".to_string())?
+        .as_ref()
+        .map(|active| JobLogEntry {
+            job_id: active.job_id.clone(),
+            started_at_utc: active.started_at_utc.clone(),
+            ended_at_utc: None,
+            origin_city: active.origin_city.clone(),
+            destination_city: active.destination_city.clone(),
+            source_company: active.source_company.clone(),
+            destination_company: active.destination_company.clone(),
+            cargo: active.cargo.clone(),
+            planned_distance_km: active.planned_distance_km,
+            income: active.income,
+            delivery_time_min: active.delivery_time_min,
+            game_time_min: Some(active.game_time_min),
+            remaining_time_min: Some(active.delivery_time_min as i64 - active.game_time_min as i64),
+            last_seen_at_utc: active.last_seen_at_utc.clone(),
+            status: "active".to_string(),
+            cargo_damage: active.cargo_damage as f64,
+            job_market: active.job_market.clone(),
+            special_job: active.special_job,
+        });
 
     let statistics = load_statistics(&conn, &bank_state)?;
     let dashboard = build_dashboard(
@@ -104,6 +137,9 @@ pub fn load_overview(runtime: &CareerRuntime) -> Result<CareerOverview, String> 
         current_job,
         active_trip,
         recent_trips,
+        active_job,
+        recent_jobs,
+        job_stats,
         last_telemetry,
         dashboard,
         statistics,

@@ -138,7 +138,34 @@
                   "accepted": "[NEEDS TRANSLATION] Angenommen",
                   "refresh_failed": "[NEEDS TRANSLATION] Auftragsgenerierung fehlgeschlagen",
                   "accept_success": "[NEEDS TRANSLATION] Auftrag angenommen",
-                  "accept_failed": "[NEEDS TRANSLATION] Auftrag konnte nicht angenommen werden"
+                  "accept_failed": "[NEEDS TRANSLATION] Auftrag konnte nicht angenommen werden",
+                  "active": {
+                        "eyebrow": "[NEEDS TRANSLATION] Current job",
+                        "title": "[NEEDS TRANSLATION] Active Job",
+                        "none": "[NEEDS TRANSLATION] No active job",
+                        "status_active": "[NEEDS TRANSLATION] Job active",
+                        "status_none": "[NEEDS TRANSLATION] No job"
+                  },
+                  "fields": {
+                        "cargo": "[NEEDS TRANSLATION] Cargo",
+                        "distance": "[NEEDS TRANSLATION] Planned distance",
+                        "income": "[NEEDS TRANSLATION] Expected income",
+                        "time_remaining": "[NEEDS TRANSLATION] Time remaining",
+                        "job_id": "[NEEDS TRANSLATION] Job ID"
+                  },
+                  "history": {
+                        "eyebrow": "[NEEDS TRANSLATION] History",
+                        "title": "[NEEDS TRANSLATION] Last Jobs",
+                        "summary": "[NEEDS TRANSLATION] Recent contracts captured from the active telemetry session.",
+                        "empty": "[NEEDS TRANSLATION] No jobs logged yet."
+                  },
+                  "stats": {
+                        "title": "[NEEDS TRANSLATION] Career Overview",
+                        "total_jobs": "[NEEDS TRANSLATION] Total jobs",
+                        "total_income": "[NEEDS TRANSLATION] Total income",
+                        "average_distance": "[NEEDS TRANSLATION] Average distance",
+                        "success_rate": "[NEEDS TRANSLATION] Success rate"
+                  }
             },
             "freight": {
                   "title": "[NEEDS TRANSLATION]",
@@ -267,6 +294,18 @@
                   "income": "[NEEDS TRANSLATION]",
                   "status": "[NEEDS TRANSLATION]",
                   "empty": "[NEEDS TRANSLATION]"
+            },
+            "jobs_logbook": {
+                  "eyebrow": "[NEEDS TRANSLATION] Job history",
+                  "title": "[NEEDS TRANSLATION] Job Logbook",
+                  "summary": "[NEEDS TRANSLATION] Active jobs are detected and stored automatically.",
+                  "started": "[NEEDS TRANSLATION] Started",
+                  "route": "[NEEDS TRANSLATION] Route",
+                  "cargo": "[NEEDS TRANSLATION] Cargo",
+                  "distance": "[NEEDS TRANSLATION] Planned distance",
+                  "income": "[NEEDS TRANSLATION] Income",
+                  "status": "[NEEDS TRANSLATION] Status",
+                  "empty": "[NEEDS TRANSLATION] No jobs logged yet."
             },
             "shared": {
                   "none": "[NEEDS TRANSLATION]",

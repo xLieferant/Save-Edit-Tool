@@ -2,6 +2,7 @@
 
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::time::SystemTime;
 
 #[cfg(target_os = "windows")]
 use regex::Regex;
@@ -96,7 +97,27 @@ pub fn install_plugin_files<R: Runtime>(
     if target.is_file() {
         let source_meta = fs::metadata(&source).map_err(|e| e.to_string())?;
         let target_meta = fs::metadata(&target).map_err(|e| e.to_string())?;
-        if source_meta.len() == target_meta.len() {
+        let source_mtime = source_meta
+            .modified()
+            .unwrap_or(SystemTime::UNIX_EPOCH)
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+        let target_mtime = target_meta
+            .modified()
+            .unwrap_or(SystemTime::UNIX_EPOCH)
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs();
+
+        if source_meta.len() == target_meta.len() && source_mtime <= target_mtime {
+            crate::dev_log!(
+                "[career] plugin DLL unchanged ({} bytes, source_mtime={}, target_mtime={}): {}",
+                target_meta.len(),
+                source_mtime,
+                target_mtime,
+                target.display()
+            );
             return Ok(target);
         }
     }
@@ -108,6 +129,24 @@ pub fn install_plugin_files<R: Runtime>(
             e
         )
     })?;
+
+    let source_meta = fs::metadata(&source).map_err(|e| e.to_string())?;
+    let target_meta = fs::metadata(&target).map_err(|e| e.to_string())?;
+    let modified = target_meta
+        .modified()
+        .unwrap_or(SystemTime::UNIX_EPOCH)
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+
+    crate::dev_log!(
+        "[career] plugin DLL copied: source={} ({} bytes) -> target={} ({} bytes, mtime={})",
+        source.display(),
+        source_meta.len(),
+        target.display(),
+        target_meta.len(),
+        modified
+    );
 
     Ok(target)
 }
@@ -130,6 +169,25 @@ fn resolve_plugin_resource<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, St
     if let Ok(resource_dir) = app.path().resource_dir() {
         let bundled = resource_dir.join(PLUGIN_RESOURCE_RELATIVE_PATH);
         if bundled.is_file() {
+            if let Ok(meta) = fs::metadata(&bundled) {
+                let modified = meta
+                    .modified()
+                    .unwrap_or(SystemTime::UNIX_EPOCH)
+                    .duration_since(SystemTime::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs();
+                crate::dev_log!(
+                    "[career] plugin DLL resource resolved: {} ({} bytes, mtime={})",
+                    bundled.display(),
+                    meta.len(),
+                    modified
+                );
+            } else {
+                crate::dev_log!(
+                    "[career] plugin DLL resource resolved: {}",
+                    bundled.display()
+                );
+            }
             return Ok(bundled);
         }
     }
@@ -139,6 +197,25 @@ fn resolve_plugin_resource<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, St
         .join("plugins")
         .join(PLUGIN_DLL_NAME);
     if dev_path.is_file() {
+        if let Ok(meta) = fs::metadata(&dev_path) {
+            let modified = meta
+                .modified()
+                .unwrap_or(SystemTime::UNIX_EPOCH)
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs();
+            crate::dev_log!(
+                "[career] plugin DLL dev resource resolved: {} ({} bytes, mtime={})",
+                dev_path.display(),
+                meta.len(),
+                modified
+            );
+        } else {
+            crate::dev_log!(
+                "[career] plugin DLL dev resource resolved: {}",
+                dev_path.display()
+            );
+        }
         return Ok(dev_path);
     }
 

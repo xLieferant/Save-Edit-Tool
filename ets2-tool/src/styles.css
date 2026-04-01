@@ -101,7 +101,8 @@ body {
     radial-gradient(circle at 12% 18%, rgba(var(--accent-rgb), 0.15), transparent 22%),
     radial-gradient(circle at 88% 12%, rgba(var(--accent-rgb), 0.08), transparent 24%),
     linear-gradient(160deg, var(--bg-elevated) 0%, var(--bg-main) 58%, #040506 100%);
-  overflow: hidden;
+  overflow-x: hidden;
+overflow-y: auto;
 }
 
 body::before,
@@ -534,6 +535,111 @@ body.mode-career .nav-wrapper {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 18px;
+}
+
+body.mode-career .telemetry-grid {
+  display: none;
+}
+
+.job-focus-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.job-status-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid rgba(var(--accent-rgb), 0.22);
+  background: rgba(var(--accent-rgb), 0.12);
+  color: var(--accent);
+}
+
+.job-route {
+  font-size: clamp(26px, 4vw, 44px);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.05;
+  margin-top: 6px;
+}
+
+.job-companies {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.job-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.job-metric {
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 14px 16px;
+  display: grid;
+  gap: 6px;
+}
+
+.job-metric-label {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.job-id-row {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.job-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  color: var(--text-muted);
+  font-size: 12px;
+  word-break: break-all;
+  text-align: right;
+}
+
+.job-history-list {
+  display: grid;
+  gap: 10px;
+}
+
+.job-history-item {
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 14px 16px;
+  display: grid;
+  gap: 6px;
+}
+
+.job-history-item strong {
+  font-size: 16px;
+}
+
+.job-history-item p {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.4;
 }
 
 .metric-card {
@@ -1081,6 +1187,10 @@ input[type="checkbox"]:checked + .checkboxSlider::before {
     grid-template-columns: 1fr;
   }
 
+  .job-focus-grid {
+    grid-template-columns: 1fr;
+  }
+
   .profile-bar {
     width: 100%;
     justify-content: center;
@@ -1385,7 +1495,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  overflow: hidden;
+  overflow-x: hidden;
+overflow-y: auto;
   transition: opacity 200ms ease, transform 200ms ease;
 }
 

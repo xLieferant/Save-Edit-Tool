@@ -1,12 +1,22 @@
 import { loadTools, activeTab, openCloneProfileModal, openModalMulti, openModalText } from "./app.js";
 import { updateToolImagesForGame } from "./tools.js";
-import { applySetting } from "./js/applySetting.js";
-import { checkUpdaterOnStartup, manualUpdateCheck } from "./js/updater.js";
 
-const { app } = window.__TAURI__;
-const { openUrl } = window.__TAURI__.opener;
-const { invoke: tauriInvoke, convertFileSrc } = window.__TAURI__.core;
-const { listen } = window.__TAURI__.event;
+// Allow loading the UI in a normal browser (no Tauri APIs) so the HTML preview
+// still has working click handlers and basic navigation.
+const tauri = window.__TAURI__;
+const hasTauri = Boolean(tauri?.core?.invoke);
+
+const app = hasTauri ? tauri.app : null;
+const openUrl = hasTauri ? tauri.opener.openUrl : async () => {};
+const tauriInvoke = hasTauri ? tauri.core.invoke : async () => {
+  throw new Error("Tauri API not available");
+};
+const convertFileSrc = hasTauri ? tauri.core.convertFileSrc : (path) => path;
+const listen = hasTauri ? tauri.event.listen : async () => () => {};
+
+let applySetting = () => {};
+let checkUpdaterOnStartup = () => {};
+let manualUpdateCheck = () => {};
 
 let lastSelectedGame = null;
 const CAREER_LOAD_ERROR = "Career Mode failed to load";
@@ -108,7 +118,7 @@ window.addEventListener("unhandledrejection", (event) => {
 });
 
 window.invoke = invoke;
-window.applySetting = applySetting;
+window.applySetting = (...args) => applySetting(...args);
 
 function formatTelemetryNumber(value, digits = 0) {
   return Number(value ?? 0).toLocaleString(undefined, {
@@ -210,6 +220,13 @@ new MutationObserver(updateAllProfileIcons).observe(document.body, {
 });
 
 async function t(key, params = {}) {
+  if (!hasTauri) {
+    let text = String(key ?? "");
+    for (const [k, v] of Object.entries(params)) {
+      text = text.replaceAll(`{${k}}`, String(v));
+    }
+    return text;
+  }
   try {
     let text = await tauriInvoke("translate_command", { key });
     for (const [k, v] of Object.entries(params)) {
@@ -277,6 +294,21 @@ window.logUserAction = logUserAction;
 document.addEventListener("DOMContentLoaded", async () => {
   try {
     console.log("[ui] boot start");
+
+    if (hasTauri) {
+      try {
+        ({ applySetting } = await import("./js/applySetting.js"));
+      } catch (error) {
+        console.warn("[ui] applySetting module load failed", error);
+      }
+
+      try {
+        ({ checkUpdaterOnStartup, manualUpdateCheck } = await import("./js/updater.js"));
+      } catch (error) {
+        console.warn("[ui] updater module load failed", error);
+      }
+    }
+
     await translateUI();
     document.body.classList.add("mode-editor");
 
@@ -327,6 +359,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     careerFuelPercent: document.getElementById("careerFuelPercent"),
     careerFuelBarFill: document.getElementById("careerFuelBarFill"),
     careerRpmValue: document.getElementById("careerRpmValue"),
+    careerJobCard: document.getElementById("careerJobCard"),
+    careerJobStatusPill: document.getElementById("careerJobStatusPill"),
+    careerJobRoute: document.getElementById("careerJobRoute"),
+    careerJobCompanies: document.getElementById("careerJobCompanies"),
+    careerJobCargo: document.getElementById("careerJobCargo"),
+    careerJobDistance: document.getElementById("careerJobDistance"),
+    careerJobIncome: document.getElementById("careerJobIncome"),
+    careerJobTimeRemaining: document.getElementById("careerJobTimeRemaining"),
+    careerJobId: document.getElementById("careerJobId"),
+    careerRecentJobsList: document.getElementById("careerRecentJobsList"),
+    careerRecentJobsEmpty: document.getElementById("careerRecentJobsEmpty"),
+    careerJobsTotalValue: document.getElementById("careerJobsTotalValue"),
+    careerJobsTotalIncomeValue: document.getElementById("careerJobsTotalIncomeValue"),
+    careerJobsAverageDistanceValue: document.getElementById("careerJobsAverageDistanceValue"),
+    careerJobsSuccessRateValue: document.getElementById("careerJobsSuccessRateValue"),
     careerLiveRevenueValue: document.getElementById("careerLiveRevenueValue"),
     careerCostFuelValue: document.getElementById("careerCostFuelValue"),
     careerCostRepairValue: document.getElementById("careerCostRepairValue"),
@@ -388,7 +435,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   const careerUi = {
     noActiveTrip: await t("career.dashboard.no_active_trip"),
     tripWaiting: await t("career.dashboard.trip_waiting"),
-    noLogbook: await t("career.logbook.empty"),
+    noLogbook: await t("career.jobs_logbook.empty"),
+    noActiveJob: await t("career.jobs.active.none"),
+    jobActive: await t("career.jobs.active.status_active"),
+    jobNone: await t("career.jobs.active.status_none"),
     noContracts: await t("career.orders.none"),
     noJobs: await t("career.jobs.none"),
     currentJob: await t("career.jobs.current"),
@@ -451,50 +501,69 @@ document.addEventListener("DOMContentLoaded", async () => {
     </div>
   `;
 
-  const renderLogbookRows = (trips) => trips.slice(0, 12).map((trip) => `
+  const renderLogbookRows = (jobs) => jobs.slice(0, 12).map((job) => `
     <div class="table-row career-logbook-row">
-      <span>${escapeHtml(formatDateTime(trip.startedAtUtc))}</span>
-      <span>${escapeHtml(`${trip.origin || "--"} - ${trip.destination || "--"}`)}</span>
-      <span>${escapeHtml(trip.cargo || careerUi.noData)}</span>
-      <span>${escapeHtml(formatDistance(trip.distanceKm))}</span>
-      <span>${escapeHtml(formatCurrency(trip.income ?? 0))}</span>
-      <span>${escapeHtml(humanizeToken(trip.status))}</span>
+      <span>${escapeHtml(formatDateTime(job.startedAtUtc))}</span>
+      <span>${escapeHtml(`${job.originCity || "--"} - ${job.destinationCity || "--"}`)}</span>
+      <span>${escapeHtml(job.cargo || careerUi.noData)}</span>
+      <span>${escapeHtml(formatDistance(job.plannedDistanceKm || 0))}</span>
+      <span>${escapeHtml(formatCurrency(job.income ?? 0))}</span>
+      <span>${escapeHtml(humanizeToken(job.status))}</span>
     </div>
   `).join("");
 
   const renderCareerLogbook = () => {
     if (!refs.careerLogbookTable || !refs.careerLogbookEmpty) return;
-    const trips = careerOverview?.recentTrips || [];
+    const jobs = careerOverview?.recentJobs || [];
 
-    refs.careerLogbookEmpty.hidden = trips.length > 0;
+    refs.careerLogbookEmpty.hidden = jobs.length > 0;
     refs.careerLogbookEmpty.textContent = careerUi.noLogbook;
-    refs.careerLogbookTable.innerHTML = renderLogbookRows(trips.slice(0, 6));
+    refs.careerLogbookTable.innerHTML = renderLogbookRows(jobs.slice(0, 6));
   };
 
-  const renderActiveTripCard = () => {
-    if (!refs.careerActiveTripValue || !refs.careerActiveTripSummary) return;
-    const activeTrip = careerOverview?.activeTrip;
-    const currentJob = careerOverview?.currentJob;
+  const renderActiveJobCard = () => {
+    if (!refs.careerJobRoute || !refs.careerJobCompanies || !refs.careerJobCargo) return;
+    const job = careerOverview?.activeJob;
 
-    if (activeTrip) {
-      refs.careerActiveTripValue.textContent = `${activeTrip.origin} - ${activeTrip.destination}`;
-      refs.careerActiveTripSummary.textContent =
-        `${activeTrip.cargo} | ${formatDistance(activeTrip.distanceKm)} | ${formatDurationCompact(activeTrip.durationSeconds)}`;
+    if (!job) {
+      if (refs.careerJobStatusPill) refs.careerJobStatusPill.textContent = careerUi.jobNone;
+      refs.careerJobRoute.textContent = careerUi.noActiveJob;
+      refs.careerJobCompanies.textContent = "";
+      if (refs.careerJobCargo) refs.careerJobCargo.textContent = "-";
+      if (refs.careerJobDistance) refs.careerJobDistance.textContent = "-";
+      if (refs.careerJobIncome) refs.careerJobIncome.textContent = "-";
+      if (refs.careerJobTimeRemaining) refs.careerJobTimeRemaining.textContent = "-";
+      if (refs.careerJobId) refs.careerJobId.textContent = "-";
       return;
     }
 
-    if (currentJob) {
-      refs.careerActiveTripValue.textContent = `${currentJob.source} - ${currentJob.destination}`;
-      refs.careerActiveTripSummary.textContent =
-        `${currentJob.cargo} | ${formatDistance(currentJob.progressKm)} / ${formatDistance(currentJob.distanceKm)} | ${formatCurrency(currentJob.estimatedPayout)}`;
-      return;
-    }
+    if (refs.careerJobStatusPill) refs.careerJobStatusPill.textContent = careerUi.jobActive;
+    refs.careerJobRoute.textContent = `${job.originCity || careerUi.noData} -> ${job.destinationCity || careerUi.noData}`;
+    refs.careerJobCompanies.textContent = `${job.sourceCompany || careerUi.noData} -> ${job.destinationCompany || careerUi.noData}`;
+    if (refs.careerJobCargo) refs.careerJobCargo.textContent = job.cargo || careerUi.noData;
+    if (refs.careerJobDistance) refs.careerJobDistance.textContent = formatDistance(job.plannedDistanceKm || 0);
+    if (refs.careerJobIncome) refs.careerJobIncome.textContent = formatCurrency(job.income ?? 0);
 
-    if (!activeTrip) {
-      refs.careerActiveTripValue.textContent = careerUi.noActiveTrip;
-      refs.careerActiveTripSummary.textContent = careerUi.tripWaiting;
-      return;
+    const remainingMin = typeof job.remainingTimeMin === "number" ? Math.max(0, job.remainingTimeMin) : null;
+    if (refs.careerJobTimeRemaining) {
+      refs.careerJobTimeRemaining.textContent = remainingMin === null ? "-" : formatDurationCompact(remainingMin * 60);
     }
+    if (refs.careerJobId) refs.careerJobId.textContent = job.jobId || "-";
+  };
+
+  const renderRecentJobs = () => {
+    if (!refs.careerRecentJobsList || !refs.careerRecentJobsEmpty) return;
+    const jobs = careerOverview?.recentJobs || [];
+
+    refs.careerRecentJobsEmpty.hidden = jobs.length > 0;
+    refs.careerRecentJobsEmpty.textContent = careerUi.noLogbook;
+    refs.careerRecentJobsList.innerHTML = jobs.slice(0, 6).map((job) => `
+      <div class="job-history-item">
+        <span class="job-metric-label">${escapeHtml(formatDateTime(job.startedAtUtc))}</span>
+        <strong>${escapeHtml(`${job.originCity || "--"} -> ${job.destinationCity || "--"}`)}</strong>
+        <p>${escapeHtml(`${job.cargo || careerUi.noData} | ${formatDistance(job.plannedDistanceKm || 0)} | ${formatCurrency(job.income ?? 0)} | ${humanizeToken(job.status)}`)}</p>
+      </div>
+    `).join("");
   };
 
   const renderCareerDetailPanel = async (panel) => {
@@ -643,11 +712,13 @@ document.addEventListener("DOMContentLoaded", async () => {
           `
         );
       case "freight":
-        return buildSectionFrame(
-          "career.nav.freight",
-          "career.freight.title",
-          "career.freight.summary",
-          `
+        {
+          const freightAcceptLabel = await t("career.freight.accept");
+          return buildSectionFrame(
+            "career.nav.freight",
+            "career.freight.title",
+            "career.freight.summary",
+            `
             <div class="filters-row">
               <span class="filter-chip">${await t("career.freight.filters_distance")}</span>
               <span class="filter-chip">${await t("career.freight.filters_profit")}</span>
@@ -661,7 +732,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     <span>${await t("career.freight.route")}</span>
                     <span>${await t("career.freight.revenue")}</span>
                     <span>${await t("career.freight.cost_breakdown")}</span>
-                    <span>${await t("career.freight.accept")}</span>
+                    <span>${freightAcceptLabel}</span>
                   </div>
                   ${(freightOffers.length ? freightOffers : [null]).slice(0, 3).map((offer) => offer
                     ? `
@@ -669,7 +740,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                         <span>${escapeHtml(`${offer.origin} - ${offer.destination}`)}</span>
                         <span>${escapeHtml(formatCurrency(offer.payout))}</span>
                         <span>${escapeHtml(`${humanizeToken(offer.risk)} | ${offer.etaHours}h`)}</span>
-                        <button class="table-action" disabled>${await t("career.freight.accept")}</button>
+                        <button class="table-action" disabled>${freightAcceptLabel}</button>
                       </div>
                     `
                     : `
@@ -677,7 +748,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                         <span>${escapeHtml(careerUi.noFreight)}</span>
                         <span>-</span>
                         <span>-</span>
-                        <button class="table-action" disabled>${await t("career.freight.accept")}</button>
+                        <button class="table-action" disabled>${freightAcceptLabel}</button>
                       </div>
                     `).join("")}
                 </div>
@@ -685,7 +756,8 @@ document.addEventListener("DOMContentLoaded", async () => {
               <div class="map-preview"><div class="map-grid"><span></span></div></div>
             </div>
           `
-        );
+          );
+        }
       case "dispatcher":
         {
           const eventCards = [];
@@ -968,6 +1040,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         : `${truckCount} / ${trailerCount}`;
     const dashboard = overview?.dashboard;
     const employeeOverview = overview?.employeeOverview;
+    const jobStats = overview?.jobStats;
 
     if (refs.editorProfileValue) refs.editorProfileValue.textContent = profileLabel;
     if (refs.editorSaveValue) refs.editorSaveValue.textContent = saveLabel;
@@ -982,13 +1055,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (refs.careerBalanceValue) refs.careerBalanceValue.textContent = formatCurrency(careerBalance);
     if (refs.careerReputationValue) refs.careerReputationValue.textContent = careerReputation;
     if (refs.careerFleetStatusValue) refs.careerFleetStatusValue.textContent = careerFleet;
+
+    if (refs.careerJobsTotalValue) refs.careerJobsTotalValue.textContent = String(jobStats?.totalJobs ?? 0);
+    if (refs.careerJobsTotalIncomeValue) refs.careerJobsTotalIncomeValue.textContent = formatCurrency(jobStats?.totalIncome ?? 0);
+    if (refs.careerJobsAverageDistanceValue) refs.careerJobsAverageDistanceValue.textContent = formatDistance(jobStats?.averageDistanceKm ?? 0);
+    if (refs.careerJobsSuccessRateValue) refs.careerJobsSuccessRateValue.textContent = `${Math.round((jobStats?.successRate ?? 0) * 100)}%`;
+
     if (refs.careerLiveRevenueValue) refs.careerLiveRevenueValue.textContent = formatCurrency(dashboard?.liveIncome ?? Math.max(12480, level * 3200));
     if (refs.careerCostFuelValue) refs.careerCostFuelValue.textContent = formatCurrency(dashboard?.fuelCost ?? (80 + truckCount * 48));
     if (refs.careerCostRepairValue) refs.careerCostRepairValue.textContent = formatCurrency(dashboard?.repairCost ?? (24 + trailerCount * 50));
     if (refs.careerCostTollValue) refs.careerCostTollValue.textContent = formatCurrency(dashboard?.tollCost ?? (18 + level * 6));
     if (refs.careerDriversOnlineValue) refs.careerDriversOnlineValue.textContent = String(employeeOverview?.onDuty ?? Math.max(1, Math.min(level, 9))).padStart(2, "0");
     if (refs.careerDriversRestingValue) refs.careerDriversRestingValue.textContent = String(employeeOverview?.resting ?? Math.max(1, Math.min(Math.ceil(level / 3), 4))).padStart(2, "0");
-    renderActiveTripCard();
+    renderActiveJobCard();
+    renderRecentJobs();
     renderCareerLogbook();
   };
 
@@ -1079,6 +1159,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     applyCareerState();
   };
 
+  let lastTelemetryRenderAt = 0;
+  let lastVehicleTelemetryAt = 0;
+  let telemetryRenderTimer = 0;
+  let pendingTelemetryPayload = null;
+
+  const scheduleTelemetryRender = (payload) => {
+    pendingTelemetryPayload = payload;
+    if (telemetryRenderTimer) return;
+    const now = Date.now();
+    const waitMs = Math.max(0, 100 - (now - lastTelemetryRenderAt));
+    telemetryRenderTimer = window.setTimeout(() => {
+      telemetryRenderTimer = 0;
+      lastTelemetryRenderAt = Date.now();
+      renderTelemetry(pendingTelemetryPayload);
+    }, waitMs);
+  };
+
   const renderCareerStatus = (status) => {
     clearCareerLoadFailure();
     careerState.gameRunning = Boolean(status?.ets2_running || status?.ats_running);
@@ -1166,22 +1263,62 @@ document.addEventListener("DOMContentLoaded", async () => {
   refs.hubHomeBtn?.addEventListener("click", () => setHubVisibility(true));
   refs.saveSafeModeBtn?.addEventListener("click", () => setEditorPresentationMode("safe"));
   refs.saveAdvancedModeBtn?.addEventListener("click", () => setEditorPresentationMode("advanced"));
+  let pendingCareerOverview = null;
+  let careerOverviewRenderScheduled = false;
 
-  listen("hub://mode_changed", (event) => applyHubMode(event.payload.mode ?? event.payload)).catch(console.error);
-  listen("telemetry:update", (event) => renderTelemetry(event.payload)).catch(console.error);
-  listen("career://game_running", (event) => updateCareerFlag("gameRunning", event.payload)).catch(console.error);
-  listen("career://plugin_installed", (event) => updateCareerFlag("pluginInstalled", event.payload)).catch(console.error);
-  listen("career://bridge_connected", (event) => updateCareerFlag("bridgeConnected", event.payload)).catch(console.error);
-  listen("career://status", (event) => renderCareerStatus(event.payload)).catch(console.error);
-  listen("career://overview", (event) => {
-    void renderCareerOverview(event.payload);
-  }).catch(console.error);
-  listen("career://telemetry_tick", (event) => renderTelemetry(event.payload)).catch(console.error);
+  const scheduleCareerOverviewRender = (overview) => {
+    pendingCareerOverview = overview;
+    if (careerOverviewRenderScheduled) return;
+    careerOverviewRenderScheduled = true;
+    window.requestAnimationFrame(() => {
+      careerOverviewRenderScheduled = false;
+      try {
+        void renderCareerOverview(pendingCareerOverview);
+      } catch (error) {
+        console.warn("[career] overview render failed", error);
+      }
+    });
+  };
 
-  const initialMode = await safeInvoke("hub_get_mode", {}, { fallback: "editor", silent: true });
-  console.log("[ui] initial mode", initialMode);
-  applyHubMode(initialMode || "editor");
-  setHubVisibility(false);
+  if (!window.__ets2_tool_listeners_registered) {
+    window.__ets2_tool_listeners_registered = true;
+
+    listen("hub://mode_changed", (event) => applyHubMode(event.payload.mode ?? event.payload)).catch(console.error);
+    listen("telemetry:update", (event) => {
+      lastVehicleTelemetryAt = Date.now();
+      scheduleTelemetryRender(event.payload);
+    }).catch(console.error);
+    listen("career://game_running", (event) => updateCareerFlag("gameRunning", event.payload)).catch(console.error);
+    listen("career://plugin_installed", (event) => updateCareerFlag("pluginInstalled", event.payload)).catch(console.error);
+    listen("career://bridge_connected", (event) => updateCareerFlag("bridgeConnected", event.payload)).catch(console.error);
+    listen("career://status", (event) => renderCareerStatus(event.payload)).catch(console.error);
+    listen("career://overview", (event) => {
+      try {
+        if (localStorage.getItem("career_job_debug") === "1") {
+          console.log("[career_job_debug] overview.activeJob:", event.payload?.activeJob);
+          console.log("[career_job_debug] overview.recentJobs:", event.payload?.recentJobs);
+          console.log("[career_job_debug] overview.jobStats:", event.payload?.jobStats);
+        }
+      } catch (error) {
+        console.warn("[career_job_debug] logging failed", error);
+      }
+      scheduleCareerOverviewRender(event.payload);
+    }).catch(console.error);
+    listen("career://telemetry_tick", (event) => {
+      if (Date.now() - lastVehicleTelemetryAt < 1000) return;
+      scheduleTelemetryRender(event.payload);
+    }).catch(console.error);
+  }
+
+  if (hasTauri) {
+    const initialMode = await safeInvoke("hub_get_mode", {}, { fallback: "editor", silent: true });
+    console.log("[ui] initial mode", initialMode);
+    applyHubMode(initialMode || "editor");
+    setHubVisibility(false);
+  } else {
+    applyHubMode("editor");
+    setHubVisibility(true);
+  }
 
   try {
     const selectedGame = await invoke("get_selected_game");

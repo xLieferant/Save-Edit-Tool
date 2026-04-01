@@ -284,6 +284,57 @@
                   </div>
                 </div>
 
+                <div class="job-focus-grid">
+                  <article class="job-card panel-surface" id="careerJobCard">
+                    <div class="section-head">
+                      <div>
+                        <span class="eyebrow" data-translate="career.jobs.active.eyebrow">Current job</span>
+                        <h2 data-translate="career.jobs.active.title">Aktueller Auftrag</h2>
+                      </div>
+                      <div id="careerJobStatusPill" class="job-status-pill"></div>
+                    </div>
+
+                    <div class="job-route" id="careerJobRoute">-</div>
+                    <p class="job-companies" id="careerJobCompanies">-</p>
+
+                    <div class="job-metrics">
+                      <div class="job-metric">
+                        <span class="job-metric-label" data-translate="career.jobs.fields.cargo">Cargo</span>
+                        <strong id="careerJobCargo">-</strong>
+                      </div>
+                      <div class="job-metric">
+                        <span class="job-metric-label" data-translate="career.jobs.fields.distance">Distance</span>
+                        <strong id="careerJobDistance">-</strong>
+                      </div>
+                      <div class="job-metric">
+                        <span class="job-metric-label" data-translate="career.jobs.fields.income">Income</span>
+                        <strong id="careerJobIncome">-</strong>
+                      </div>
+                      <div class="job-metric">
+                        <span class="job-metric-label" data-translate="career.jobs.fields.time_remaining">Time remaining</span>
+                        <strong id="careerJobTimeRemaining">-</strong>
+                      </div>
+                    </div>
+
+                    <div class="job-id-row">
+                      <span class="job-metric-label" data-translate="career.jobs.fields.job_id">Job ID</span>
+                      <span id="careerJobId" class="job-id">-</span>
+                    </div>
+                  </article>
+
+                  <article class="job-history-card panel-surface">
+                    <div class="section-head">
+                      <div>
+                        <span class="eyebrow" data-translate="career.jobs.history.eyebrow">History</span>
+                        <h2 data-translate="career.jobs.history.title">Letzte Auftraege</h2>
+                      </div>
+                      <p data-translate="career.jobs.history.summary">Recent contracts captured from the active telemetry session.</p>
+                    </div>
+                    <div id="careerRecentJobsList" class="job-history-list"></div>
+                    <p id="careerRecentJobsEmpty" class="career-logbook-empty" data-translate="career.jobs.history.empty">No jobs logged yet.</p>
+                  </article>
+                </div>
+
                 <div class="telemetry-grid">
                   <article class="metric-card speed-card panel-surface">
                     <div class="metric-card-head">
@@ -332,9 +383,25 @@
                     <p data-translate="career.dashboard.live_income_desc">Projected rolling revenue across player and dispatched drivers.</p>
                   </article>
                   <article class="info-card panel-surface">
-                    <span class="card-label" data-translate="career.dashboard.active_trip">Active Trip</span>
-                    <strong id="careerActiveTripValue" data-translate="career.dashboard.no_active_trip">No active trip</strong>
-                    <p id="careerActiveTripSummary" data-translate="career.dashboard.trip_waiting">Waiting for telemetry session start.</p>
+                    <span class="card-label" data-translate="career.jobs.stats.title">Career Overview</span>
+                    <div class="stack-list">
+                      <div class="stack-row">
+                        <span data-translate="career.jobs.stats.total_jobs">Total Jobs</span>
+                        <strong id="careerJobsTotalValue">0</strong>
+                      </div>
+                      <div class="stack-row">
+                        <span data-translate="career.jobs.stats.total_income">Total Income</span>
+                        <strong id="careerJobsTotalIncomeValue">EUR 0</strong>
+                      </div>
+                      <div class="stack-row">
+                        <span data-translate="career.jobs.stats.average_distance">Average Distance</span>
+                        <strong id="careerJobsAverageDistanceValue">0 km</strong>
+                      </div>
+                      <div class="stack-row">
+                        <span data-translate="career.jobs.stats.success_rate">Success Rate</span>
+                        <strong id="careerJobsSuccessRateValue">0%</strong>
+                      </div>
+                    </div>
                   </article>
                   <article class="info-card panel-surface">
                     <span class="card-label" data-translate="career.dashboard.cost_stack">Realtime Costs</span>
@@ -371,22 +438,22 @@
                 <section class="career-logbook-shell panel-surface">
                   <div class="section-head">
                     <div>
-                      <span class="eyebrow" data-translate="career.logbook.eyebrow">Trip history</span>
-                      <h2 data-translate="career.logbook.title">Recent Logbook</h2>
+                      <span class="eyebrow" data-translate="career.jobs_logbook.eyebrow">Job history</span>
+                      <h2 data-translate="career.jobs_logbook.title">Auftrags-Logbuch</h2>
                     </div>
-                    <p data-translate="career.logbook.summary">Completed telemetry-driven sessions are stored here automatically.</p>
+                    <p data-translate="career.jobs_logbook.summary">Active jobs are detected and stored automatically.</p>
                   </div>
                   <div class="table-shell career-logbook-table">
                     <div class="table-row table-head career-logbook-head">
-                      <span data-translate="career.logbook.started">Started</span>
-                      <span data-translate="career.logbook.route">Route</span>
-                      <span data-translate="career.logbook.cargo">Cargo</span>
-                      <span data-translate="career.logbook.distance">Distance</span>
-                      <span data-translate="career.logbook.income">Income</span>
-                      <span data-translate="career.logbook.status">Status</span>
+                      <span data-translate="career.jobs_logbook.started">Started</span>
+                      <span data-translate="career.jobs_logbook.route">Route</span>
+                      <span data-translate="career.jobs_logbook.cargo">Cargo</span>
+                      <span data-translate="career.jobs_logbook.distance">Distance</span>
+                      <span data-translate="career.jobs_logbook.income">Income</span>
+                      <span data-translate="career.jobs_logbook.status">Status</span>
                     </div>
                     <div id="careerLogbookTable"></div>
-                    <p id="careerLogbookEmpty" class="career-logbook-empty" data-translate="career.logbook.empty">No trips logged yet.</p>
+                    <p id="careerLogbookEmpty" class="career-logbook-empty" data-translate="career.jobs_logbook.empty">No jobs logged yet.</p>
                   </div>
                 </section>
               </div>

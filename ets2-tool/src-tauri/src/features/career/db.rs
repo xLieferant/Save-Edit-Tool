@@ -4,6 +4,7 @@ use rusqlite::Connection;
 use std::path::{Path, PathBuf};
 
 use crate::features::career::dispatcher;
+use crate::features::career::job_log;
 use crate::features::{bank, contracts, economy, employees, events, fleet, reputation};
 
 pub fn default_db_path() -> PathBuf {
@@ -68,6 +69,7 @@ pub fn init_logbook(db_path: &Path) -> Result<(), String> {
     employees::ensure_tables(&conn)?;
     fleet::ensure_tables(&conn)?;
     dispatcher::ensure_tables(&conn)?;
+    job_log::ensure_tables(&conn)?;
 
     Ok(())
 }

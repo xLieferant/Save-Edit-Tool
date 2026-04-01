@@ -138,7 +138,34 @@
                   "accepted": "Accepted",
                   "refresh_failed": "Job generation failed",
                   "accept_success": "Job accepted",
-                  "accept_failed": "Job accept failed"
+                  "accept_failed": "Job accept failed",
+                  "active": {
+                        "eyebrow": "Current job",
+                        "title": "Active Job",
+                        "none": "No active job",
+                        "status_active": "Job active",
+                        "status_none": "No job"
+                  },
+                  "fields": {
+                        "cargo": "Cargo",
+                        "distance": "Planned distance",
+                        "income": "Expected income",
+                        "time_remaining": "Time remaining",
+                        "job_id": "Job ID"
+                  },
+                  "history": {
+                        "eyebrow": "History",
+                        "title": "Last Jobs",
+                        "summary": "Recent contracts captured from the active telemetry session.",
+                        "empty": "No jobs logged yet."
+                  },
+                  "stats": {
+                        "title": "Career Overview",
+                        "total_jobs": "Total jobs",
+                        "total_income": "Total income",
+                        "average_distance": "Average distance",
+                        "success_rate": "Success rate"
+                  }
             },
             "freight": {
                   "title": "Table and Route Preview",
@@ -267,6 +294,18 @@
                   "income": "Income",
                   "status": "Status",
                   "empty": "No trips logged yet."
+            },
+            "jobs_logbook": {
+                  "eyebrow": "Job history",
+                  "title": "Job Logbook",
+                  "summary": "Active jobs are detected and stored automatically.",
+                  "started": "Started",
+                  "route": "Route",
+                  "cargo": "Cargo",
+                  "distance": "Planned distance",
+                  "income": "Income",
+                  "status": "Status",
+                  "empty": "No jobs logged yet."
             },
             "shared": {
                   "none": "No data",

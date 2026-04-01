@@ -1,6 +1,8 @@
 pub mod commands;
 pub mod db;
 pub mod dispatcher;
+pub mod job_log;
+pub mod job_tracking;
 pub mod overlay;
 pub mod plugin_installer;
 pub mod scs_sdk_telemetry;

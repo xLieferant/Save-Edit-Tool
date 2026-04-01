@@ -258,6 +258,7 @@ pub struct CareerRuntime {
     pub overview_dirty: AtomicBool,
     pub active_game: Mutex<Option<String>>,
     pub last_telemetry: Mutex<Option<LiveTelemetryState>>,
+    pub active_job: Mutex<Option<ActiveJobState>>,
     pub active_trip: Mutex<Option<ActiveTripState>>,
     pub db_path: Mutex<Option<PathBuf>>,
 }
@@ -276,6 +277,7 @@ impl Default for CareerRuntime {
             overview_dirty: AtomicBool::new(true),
             active_game: Mutex::new(None),
             last_telemetry: Mutex::new(None),
+            active_job: Mutex::new(None),
             active_trip: Mutex::new(None),
             db_path: Mutex::new(None),
         }
@@ -293,6 +295,32 @@ pub struct LiveTelemetryState {
     pub engine_on: bool,
     pub timestamp: u64,
     pub paused: bool,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ActiveJobState {
+    pub job_id: String,
+    pub started_at_utc: String,
+    pub last_seen_at_utc: String,
+    pub origin_city: String,
+    pub destination_city: String,
+    pub source_company: String,
+    pub destination_company: String,
+    pub cargo: String,
+    pub planned_distance_km: f64,
+    pub income: i64,
+    pub delivery_time_min: u32,
+    pub game_time_min: u32,
+    pub cargo_damage: f32,
+    pub job_market: String,
+    pub special_job: bool,
+    pub last_event: Option<ActiveJobEvent>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ActiveJobEvent {
+    Delivered,
+    Cancelled,
 }
 
 #[derive(Debug, Clone)]

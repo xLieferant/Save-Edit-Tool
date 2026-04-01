@@ -1,0 +1,10 @@
+^A:\CODING PROJECTS\SAVE EDIT TOOL\ETS2-TOOL\NATIVE\SIMNEXUS_SDK\BUILD\CMAKEFILES\D2A8DEA863F3AAA25456A79B55F98E26\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" "-SA:/Coding Projects/Save Edit Tool/ets2-tool/native/simnexus_sdk" "-BA:/Coding Projects/Save Edit Tool/ets2-tool/native/simnexus_sdk/build" --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file "A:/Coding Projects/Save Edit Tool/ets2-tool/native/simnexus_sdk/build/simnexus_sdk.sln"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

@@ -158,6 +158,9 @@ fn main() {
             // Career (background + logbook)
             features::career::commands::career_get_status,
             features::career::commands::career_get_overview,
+            features::career::commands::career_get_active_job,
+            features::career::commands::career_get_job_log,
+            features::career::commands::career_get_job_stats,
             features::career::commands::career_list_trips,
             features::career::commands::career_generate_jobs,
             features::career::commands::career_accept_job,
