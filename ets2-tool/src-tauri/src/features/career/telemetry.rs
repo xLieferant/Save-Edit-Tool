@@ -341,6 +341,7 @@ pub fn ensure_running(app: AppHandle, runtime: Arc<CareerRuntime>, game: GameId)
         let mut last_job_missing_log_ms: i64 = 0;
         let mut last_payload_debug_ms: i64 = 0;
         let mut last_job_debug_fingerprint: Option<String> = None;
+        let mut last_frontend_tick_emit_ms: i64 = 0;
 
         while !runtime.stop_all.load(Ordering::Relaxed)
             && !runtime.telemetry_stop.load(Ordering::Relaxed)
@@ -445,7 +446,10 @@ pub fn ensure_running(app: AppHandle, runtime: Arc<CareerRuntime>, game: GameId)
                     {
                         crate::dev_log!("[career] job tracking failed: {}", error);
                     }
-                    let _ = app.emit("career://telemetry_tick", snapshot);
+                    if now - last_frontend_tick_emit_ms >= 250 {
+                        last_frontend_tick_emit_ms = now;
+                        let _ = app.emit("career://telemetry_tick", snapshot);
+                    }
                     std::thread::sleep(Duration::from_millis(100));
                 }
                 Ok(None) => {

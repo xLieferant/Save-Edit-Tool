@@ -80,6 +80,17 @@
                   "fleet_label": "Fleet",
                   "no_company": "No company selected"
             },
+            "portal": {
+                  "role_owner": "Owner",
+                  "level_label": "Level",
+                  "xp_label": "XP",
+                  "progress_next": "Next level",
+                  "tag_realtime": "Realtime",
+                  "tag_dispatch": "Dispatch",
+                  "tag_community": "Community",
+                  "banner_eyebrow": "SimNexus Portal",
+                  "banner_tagline": "Career control center for your logistics operation."
+            },
             "widget": {
                   "speed": "Speed",
                   "gear": "Gear",
@@ -90,6 +101,7 @@
             },
             "dashboard": {
                   "telemetry": "Live telemetry feed from the active vehicle session.",
+                  "telemetry_title": "Live vehicle",
                   "live_income": "Live Income",
                   "live_income_desc": "Projected rolling revenue across player and dispatched drivers.",
                   "active_trip": "Active Trip",
@@ -299,7 +311,9 @@
                   "eyebrow": "Job history",
                   "title": "Job Logbook",
                   "summary": "Active jobs are detected and stored automatically.",
+                  "index": "#",
                   "started": "Started",
+                  "game": "Game",
                   "route": "Route",
                   "cargo": "Cargo",
                   "distance": "Planned distance",

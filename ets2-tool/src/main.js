@@ -352,6 +352,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     careerBalanceValue: document.getElementById("careerBalanceValue"),
     careerReputationValue: document.getElementById("careerReputationValue"),
     careerFleetStatusValue: document.getElementById("careerFleetStatusValue"),
+    careerProfileAvatar: document.getElementById("careerProfileAvatar"),
+    careerProfileName: document.getElementById("careerProfileName"),
+    careerCompanyHeadline: document.getElementById("careerCompanyHeadline"),
+    careerLevelValue: document.getElementById("careerLevelValue"),
+    careerXpValue: document.getElementById("careerXpValue"),
+    careerLevelProgressFill: document.getElementById("careerLevelProgressFill"),
+    careerLevelProgressText: document.getElementById("careerLevelProgressText"),
+    careerStatusGameRunning: document.getElementById("careerStatusGameRunning"),
+    careerStatusPluginInstalled: document.getElementById("careerStatusPluginInstalled"),
+    careerStatusSdkConnected: document.getElementById("careerStatusSdkConnected"),
     careerSpeedDial: document.getElementById("careerSpeedDial"),
     careerSpeedValue: document.getElementById("careerSpeedValue"),
     careerGearValue: document.getElementById("careerGearValue"),
@@ -458,6 +468,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     player: await t("career.shared.player"),
   };
   let careerOverview = null;
+  let lastStableActiveJob = null;
+  let lastStableActiveJobAt = 0;
+  const ACTIVE_JOB_EMPTY_DEBOUNCE_MS = 1500;
   const editorStageMeta = {
     truck: {
       title: "editor.stage.truck",
@@ -500,30 +513,63 @@ document.addEventListener("DOMContentLoaded", async () => {
       `).join("")}
     </div>
   `;
+  const jobStatusClass = (status) => {
+    const normalized = String(status || "").toLowerCase();
+    if (normalized === "active") return "active";
+    if (normalized === "completed") return "completed";
+    if (normalized === "aborted" || normalized === "cancelled" || normalized === "canceled") return "cancelled";
+    return "unknown";
+  };
+  const renderLogbookRows = (jobs) => jobs.slice(0, 40).map((job, index) => {
+    const started = formatDateTime(job.startedAtUtc);
+    const game = String(careerState.activeGame || lastSelectedGame || "ets2").toUpperCase();
+    const route = `${job.originCity || "--"} -> ${job.destinationCity || "--"}`;
+    const statusLabel = humanizeToken(job.status);
+    const statusClass = jobStatusClass(job.status);
 
-  const renderLogbookRows = (jobs) => jobs.slice(0, 12).map((job) => `
-    <div class="table-row career-logbook-row">
-      <span>${escapeHtml(formatDateTime(job.startedAtUtc))}</span>
-      <span>${escapeHtml(`${job.originCity || "--"} - ${job.destinationCity || "--"}`)}</span>
-      <span>${escapeHtml(job.cargo || careerUi.noData)}</span>
-      <span>${escapeHtml(formatDistance(job.plannedDistanceKm || 0))}</span>
-      <span>${escapeHtml(formatCurrency(job.income ?? 0))}</span>
-      <span>${escapeHtml(humanizeToken(job.status))}</span>
-    </div>
-  `).join("");
-
+    return `
+      <div class="table-row career-logbook-row" data-job-id="${escapeHtml(job.jobId || "")}">
+        <span class="cell cell-index">${String(index + 1).padStart(2, "0")}</span>
+        <span class="cell cell-date">${escapeHtml(started)}</span>
+        <span class="cell cell-game">${escapeHtml(game)}</span>
+        <span class="cell cell-cargo">${escapeHtml(job.cargo || careerUi.noData)}</span>
+        <span class="cell cell-route">${escapeHtml(route)}</span>
+        <span class="cell cell-distance">${escapeHtml(formatDistance(job.plannedDistanceKm || 0))}</span>
+        <span class="cell cell-income">${escapeHtml(formatCurrency(job.income ?? 0))}</span>
+        <span class="cell cell-status"><span class="status-badge status-${statusClass}">${escapeHtml(statusLabel)}</span></span>
+      </div>
+    `;
+  }).join("");
   const renderCareerLogbook = () => {
     if (!refs.careerLogbookTable || !refs.careerLogbookEmpty) return;
     const jobs = careerOverview?.recentJobs || [];
 
     refs.careerLogbookEmpty.hidden = jobs.length > 0;
     refs.careerLogbookEmpty.textContent = careerUi.noLogbook;
-    refs.careerLogbookTable.innerHTML = renderLogbookRows(jobs.slice(0, 6));
+    refs.careerLogbookTable.innerHTML = renderLogbookRows(jobs);
   };
-
   const renderActiveJobCard = () => {
     if (!refs.careerJobRoute || !refs.careerJobCompanies || !refs.careerJobCargo) return;
-    const job = careerOverview?.activeJob;
+    const now = Date.now();
+    const incoming = careerOverview?.activeJob || null;
+
+    if (incoming) {
+      lastStableActiveJob = incoming;
+      lastStableActiveJobAt = now;
+    } else if (!careerState.bridgeConnected) {
+      lastStableActiveJob = null;
+      lastStableActiveJobAt = 0;
+    }
+
+    const useStable =
+      !incoming &&
+      careerState.bridgeConnected &&
+      lastStableActiveJob &&
+      now - lastStableActiveJobAt < ACTIVE_JOB_EMPTY_DEBOUNCE_MS;
+
+    const job = incoming || (useStable ? lastStableActiveJob : null);
+
+    if (refs.careerJobCard) refs.careerJobCard.classList.toggle("is-stale", Boolean(useStable));
 
     if (!job) {
       if (refs.careerJobStatusPill) refs.careerJobStatusPill.textContent = careerUi.jobNone;
@@ -967,6 +1013,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     setLamp(refs.statusGameRunning, careerState.gameRunning);
     setLamp(refs.statusPluginInstalled, careerState.pluginInstalled);
     setLamp(refs.statusSdkConnected, careerState.bridgeConnected);
+    setLamp(refs.careerStatusGameRunning, careerState.gameRunning);
+    setLamp(refs.careerStatusPluginInstalled, careerState.pluginInstalled);
+    setLamp(refs.careerStatusSdkConnected, careerState.bridgeConnected);
     setCareerGame(careerState.activeGame || lastSelectedGame || "ets2");
 
     const pluginStatusValue = document.getElementById("careerPluginStatusValue");
@@ -1056,6 +1105,29 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (refs.careerReputationValue) refs.careerReputationValue.textContent = careerReputation;
     if (refs.careerFleetStatusValue) refs.careerFleetStatusValue.textContent = careerFleet;
 
+    if (refs.careerProfileName) refs.careerProfileName.textContent = profileLabel;
+    if (refs.careerCompanyHeadline) refs.careerCompanyHeadline.textContent = companyLabel;
+
+    if (refs.careerProfileAvatar) {
+      const src = document.getElementById("activeProfileIcon")?.getAttribute("src") || getThemeFallbackIcon();
+      if (refs.careerProfileAvatar.getAttribute("src") !== src) {
+        refs.careerProfileAvatar.setAttribute("src", src);
+      }
+      refs.careerProfileAvatar.onerror = () => handleIconError(refs.careerProfileAvatar);
+    }
+
+    const careerXp = overview?.reputation?.xpPoints ?? xp;
+    const levelSpan = 1500;
+    const xpIntoLevel = ((Number(careerXp) % levelSpan) + levelSpan) % levelSpan;
+    const progress = levelSpan > 0 ? Math.max(0, Math.min(xpIntoLevel / levelSpan, 1)) : 0;
+
+    if (refs.careerLevelValue) refs.careerLevelValue.textContent = `L${careerLevel}`;
+    if (refs.careerXpValue) refs.careerXpValue.textContent = formatTelemetryNumber(careerXp, 0);
+    if (refs.careerLevelProgressFill) refs.careerLevelProgressFill.style.width = `${Math.round(progress * 100)}%`;
+    if (refs.careerLevelProgressText) {
+      refs.careerLevelProgressText.textContent = `${Math.round(progress * 100)}% • ${Math.round(xpIntoLevel)} / ${levelSpan}`;
+    }
+
     if (refs.careerJobsTotalValue) refs.careerJobsTotalValue.textContent = String(jobStats?.totalJobs ?? 0);
     if (refs.careerJobsTotalIncomeValue) refs.careerJobsTotalIncomeValue.textContent = formatCurrency(jobStats?.totalIncome ?? 0);
     if (refs.careerJobsAverageDistanceValue) refs.careerJobsAverageDistanceValue.textContent = formatDistance(jobStats?.averageDistanceKm ?? 0);
@@ -1067,6 +1139,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (refs.careerCostTollValue) refs.careerCostTollValue.textContent = formatCurrency(dashboard?.tollCost ?? (18 + level * 6));
     if (refs.careerDriversOnlineValue) refs.careerDriversOnlineValue.textContent = String(employeeOverview?.onDuty ?? Math.max(1, Math.min(level, 9))).padStart(2, "0");
     if (refs.careerDriversRestingValue) refs.careerDriversRestingValue.textContent = String(employeeOverview?.resting ?? Math.max(1, Math.min(Math.ceil(level / 3), 4))).padStart(2, "0");
+    const activeTrip = overview?.activeTrip;
+    if (refs.careerActiveTripValue) {
+      refs.careerActiveTripValue.textContent = activeTrip
+        ? `${activeTrip.origin || "--"} -> ${activeTrip.destination || "--"}`
+        : careerUi.noActiveTrip;
+    }
+    if (refs.careerActiveTripSummary) {
+      refs.careerActiveTripSummary.textContent = activeTrip
+        ? `${formatDistance(activeTrip.distanceKm || 0)} | ${formatDurationCompact(activeTrip.durationSeconds || 0)}`
+        : careerUi.tripWaiting;
+    }
+
     renderActiveJobCard();
     renderRecentJobs();
     renderCareerLogbook();

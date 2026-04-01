@@ -251,212 +251,263 @@
 
           <section id="careerView" class="workspace-view career-view">
             <div class="career-content">
-              <div class="career-dashboard-shell" data-career-panel="dashboard">
-                <div class="career-hero panel-surface">
-                  <div class="career-hero-copy">
-                    <span class="eyebrow" data-translate="career.hero.eyebrow">Career simulation</span>
-                    <h1 class="career-title" id="careerHeroTitle">ETS2</h1>
-                    <p
-                      class="career-summary"
-                      id="careerConnectionNote"
-                      data-translate="career.status.awaiting_signal"
-                    >
-                      Waiting for shared memory bridge
-                    </p>
-                  </div>
-                  <div class="career-hero-meta">
-                    <div class="hero-stat">
-                      <span class="hero-stat-label" data-translate="career.hero.company_label">Company</span>
-                      <strong id="careerCompanyValue">North Axis Logistics</strong>
-                    </div>
-                    <div class="hero-stat">
-                      <span class="hero-stat-label" data-translate="career.hero.balance_label">Balance</span>
-                      <strong id="careerBalanceValue">EUR 0</strong>
-                    </div>
-                    <div class="hero-stat">
-                      <span class="hero-stat-label" data-translate="career.hero.reputation_label">Reputation</span>
-                      <strong id="careerReputationValue">L1</strong>
-                    </div>
-                    <div class="hero-stat">
-                      <span class="hero-stat-label" data-translate="career.hero.fleet_label">Fleet</span>
-                      <strong id="careerFleetStatusValue">0 / 0</strong>
-                    </div>
-                  </div>
-                </div>
+              <div class="career-portal">
+  <nav class="career-topnav panel-surface" aria-label="Career navigation">
+    <button class="career-nav-btn active" data-career-panel="dashboard" data-translate="career.nav.dashboard">Dashboard</button>
+    <button class="career-nav-btn" data-career-panel="members" data-translate="career.nav.members">Members</button>
+    <button class="career-nav-btn" data-career-panel="orders" data-translate="career.nav.orders">Orders</button>
+    <button class="career-nav-btn" data-career-panel="balance" data-translate="career.nav.balance">Balance</button>
+    <button class="career-nav-btn" data-career-panel="fleet" data-translate="career.nav.fleet">Fleet</button>
+    <button class="career-nav-btn" data-career-panel="statistics" data-translate="career.nav.statistics">Statistics</button>
+    <button class="career-nav-btn" data-career-panel="freight" data-translate="career.nav.freight">Freight Market</button>
+    <button class="career-nav-btn" data-career-panel="settings" data-translate="career.nav.settings">Settings</button>
+  </nav>
 
-                <div class="job-focus-grid">
-                  <article class="job-card panel-surface" id="careerJobCard">
-                    <div class="section-head">
-                      <div>
-                        <span class="eyebrow" data-translate="career.jobs.active.eyebrow">Current job</span>
-                        <h2 data-translate="career.jobs.active.title">Aktueller Auftrag</h2>
-                      </div>
-                      <div id="careerJobStatusPill" class="job-status-pill"></div>
-                    </div>
+  <header class="career-profile-head panel-surface">
+    <div class="profile-left">
+      <div class="profile-avatar" aria-hidden="true">
+        <img id="careerProfileAvatar" class="profile-avatar-img" alt="" />
+      </div>
 
-                    <div class="job-route" id="careerJobRoute">-</div>
-                    <p class="job-companies" id="careerJobCompanies">-</p>
+      <div class="profile-meta">
+        <div class="profile-row">
+          <strong id="careerProfileName" class="profile-name">-</strong>
+          <span id="careerRoleBadge" class="role-badge" data-translate="career.portal.role_owner">Owner</span>
+          <span id="careerHeroTitle" class="game-badge">ETS2</span>
+          <span id="careerGameLabel" class="engine-badge"></span>
+        </div>
+        <div class="profile-row muted">
+          <span id="careerCompanyValue">-</span>
+          <span class="dot" aria-hidden="true"></span>
+          <span id="careerConnectionNote" class="connection-note" data-translate="career.status.awaiting_signal">Waiting for shared memory bridge</span>
+        </div>
+        <div class="tag-row">
+          <span class="tag" data-translate="career.portal.tag_realtime">Realtime</span>
+          <span class="tag" data-translate="career.portal.tag_dispatch">Dispatch</span>
+          <span class="tag" data-translate="career.portal.tag_community">Community</span>
+        </div>
+      </div>
+    </div>
 
-                    <div class="job-metrics">
-                      <div class="job-metric">
-                        <span class="job-metric-label" data-translate="career.jobs.fields.cargo">Cargo</span>
-                        <strong id="careerJobCargo">-</strong>
-                      </div>
-                      <div class="job-metric">
-                        <span class="job-metric-label" data-translate="career.jobs.fields.distance">Distance</span>
-                        <strong id="careerJobDistance">-</strong>
-                      </div>
-                      <div class="job-metric">
-                        <span class="job-metric-label" data-translate="career.jobs.fields.income">Income</span>
-                        <strong id="careerJobIncome">-</strong>
-                      </div>
-                      <div class="job-metric">
-                        <span class="job-metric-label" data-translate="career.jobs.fields.time_remaining">Time remaining</span>
-                        <strong id="careerJobTimeRemaining">-</strong>
-                      </div>
-                    </div>
+    <div class="profile-kpis" role="group" aria-label="Career summary">
+      <div class="kpi">
+        <span class="kpi-label" data-translate="career.hero.balance_label">Balance</span>
+        <strong id="careerBalanceValue">-</strong>
+      </div>
+      <div class="kpi">
+        <span class="kpi-label" data-translate="career.hero.reputation_label">Reputation</span>
+        <strong id="careerReputationValue">-</strong>
+      </div>
+      <div class="kpi">
+        <span class="kpi-label" data-translate="career.hero.fleet_label">Fleet</span>
+        <strong id="careerFleetStatusValue">-</strong>
+      </div>
+    </div>
 
-                    <div class="job-id-row">
-                      <span class="job-metric-label" data-translate="career.jobs.fields.job_id">Job ID</span>
-                      <span id="careerJobId" class="job-id">-</span>
-                    </div>
-                  </article>
+    <div class="profile-progress" aria-label="Level progress">
+      <div class="progress-top">
+        <span class="kpi-label" data-translate="career.portal.level_label">Level</span>
+        <strong id="careerLevelValue">-</strong>
+        <span id="careerXpValue" class="muted"></span>
+      </div>
+      <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+        <div id="careerLevelProgressFill" class="progress-fill"></div>
+      </div>
+      <div id="careerLevelProgressText" class="progress-bottom muted"></div>
+    </div>
+  </header>
 
-                  <article class="job-history-card panel-surface">
-                    <div class="section-head">
-                      <div>
-                        <span class="eyebrow" data-translate="career.jobs.history.eyebrow">History</span>
-                        <h2 data-translate="career.jobs.history.title">Letzte Auftraege</h2>
-                      </div>
-                      <p data-translate="career.jobs.history.summary">Recent contracts captured from the active telemetry session.</p>
-                    </div>
-                    <div id="careerRecentJobsList" class="job-history-list"></div>
-                    <p id="careerRecentJobsEmpty" class="career-logbook-empty" data-translate="career.jobs.history.empty">No jobs logged yet.</p>
-                  </article>
-                </div>
+  <section class="career-banner panel-surface" aria-label="Company banner">
+    <div class="banner-copy">
+      <div class="eyebrow" data-translate="career.portal.banner_eyebrow">SimNexus Portal</div>
+      <h2 id="careerCompanyHeadline" class="banner-title">-</h2>
+      <p class="banner-tagline" data-translate="career.portal.banner_tagline">Career control center for your logistics operation.</p>
+    </div>
+    <div class="banner-status" aria-label="Connection status">
+      <span id="careerStatusGameRunning" class="status-pill-mini" data-translate="career.status.game_running">Game Running</span>
+      <span id="careerStatusPluginInstalled" class="status-pill-mini" data-translate="career.status.plugin_installed">Plugin Installed</span>
+      <span id="careerStatusSdkConnected" class="status-pill-mini" data-translate="career.status.sdk_connected">SDK Connected</span>
+    </div>
+  </section>
 
-                <div class="telemetry-grid">
-                  <article class="metric-card speed-card panel-surface">
-                    <div class="metric-card-head">
-                      <span class="metric-label" data-translate="career.widget.speed">Speed</span>
-                      <span class="metric-unit">KM/H</span>
-                    </div>
-                    <div class="speed-dial" id="careerSpeedDial" style="--dial-progress: 0;">
-                      <div class="speed-dial-core">
-                        <strong id="careerSpeedValue">0</strong>
-                      </div>
-                    </div>
-                  </article>
+  <div class="career-dashboard-shell" data-career-panel="dashboard"><div class="career-dashboard-grid">
+    <section class="career-panel panel-surface career-panel-job" id="careerJobCard">
+      <div class="panel-head">
+        <div>
+          <span class="eyebrow" data-translate="career.jobs.active.eyebrow">Current job</span>
+          <h2 data-translate="career.jobs.active.title">Aktueller Auftrag</h2>
+        </div>
+        <div class="panel-head-right">
+          <span id="careerJobStatusPill" class="status-chip"></span>
+        </div>
+      </div>
 
-                  <article class="metric-card gear-card panel-surface">
-                    <div class="metric-card-head">
-                      <span class="metric-label" data-translate="career.widget.gear">Gear</span>
-                    </div>
-                    <div class="gear-display" id="careerGearValue">N</div>
-                    <div class="gear-caption" id="careerGameLabel">ETS2</div>
-                  </article>
+      <div class="job-route" id="careerJobRoute">-</div>
+      <div class="job-subline" id="careerJobCompanies">-</div>
 
-                  <article class="metric-card fuel-card panel-surface">
-                    <div class="metric-card-head">
-                      <span class="metric-label" data-translate="career.widget.fuel">Fuel</span>
-                      <span id="careerFuelPercent">0%</span>
-                    </div>
-                    <strong class="fuel-value" id="careerFuelValue">0.0 L</strong>
-                    <div class="fuel-bar">
-                      <span id="careerFuelBarFill" class="fuel-bar-fill" style="--fuel-progress: 0;"></span>
-                    </div>
-                  </article>
+      <div class="job-info-grid" role="group" aria-label="Active job metrics">
+        <div class="job-metric">
+          <span class="job-metric-label" data-translate="career.jobs.fields.cargo">Cargo</span>
+          <strong id="careerJobCargo">-</strong>
+        </div>
+        <div class="job-metric">
+          <span class="job-metric-label" data-translate="career.jobs.fields.distance">Distance</span>
+          <strong id="careerJobDistance">-</strong>
+        </div>
+        <div class="job-metric">
+          <span class="job-metric-label" data-translate="career.jobs.fields.income">Income</span>
+          <strong id="careerJobIncome">-</strong>
+        </div>
+        <div class="job-metric">
+          <span class="job-metric-label" data-translate="career.jobs.fields.time_remaining">Time remaining</span>
+          <strong id="careerJobTimeRemaining">-</strong>
+        </div>
+      </div>
 
-                  <article class="metric-card rpm-card panel-surface">
-                    <div class="metric-card-head">
-                      <span class="metric-label" data-translate="career.widget.rpm">RPM</span>
-                    </div>
-                    <strong class="rpm-value" id="careerRpmValue">0</strong>
-                    <p class="rpm-subtext" data-translate="career.dashboard.telemetry">Live telemetry feed from the active vehicle session.</p>
-                  </article>
-                </div>
+      <div class="job-meta-row">
+        <span class="job-meta-label" data-translate="career.jobs.fields.job_id">Job ID</span>
+        <span id="careerJobId" class="job-id">-</span>
+      </div>
+    </section>
 
-                <div class="career-dashboard-grid">
-                  <article class="info-card panel-surface">
-                    <span class="card-label" data-translate="career.dashboard.live_income">Live Income</span>
-                    <strong id="careerLiveRevenueValue">EUR 12,480</strong>
-                    <p data-translate="career.dashboard.live_income_desc">Projected rolling revenue across player and dispatched drivers.</p>
-                  </article>
-                  <article class="info-card panel-surface">
-                    <span class="card-label" data-translate="career.jobs.stats.title">Career Overview</span>
-                    <div class="stack-list">
-                      <div class="stack-row">
-                        <span data-translate="career.jobs.stats.total_jobs">Total Jobs</span>
-                        <strong id="careerJobsTotalValue">0</strong>
-                      </div>
-                      <div class="stack-row">
-                        <span data-translate="career.jobs.stats.total_income">Total Income</span>
-                        <strong id="careerJobsTotalIncomeValue">EUR 0</strong>
-                      </div>
-                      <div class="stack-row">
-                        <span data-translate="career.jobs.stats.average_distance">Average Distance</span>
-                        <strong id="careerJobsAverageDistanceValue">0 km</strong>
-                      </div>
-                      <div class="stack-row">
-                        <span data-translate="career.jobs.stats.success_rate">Success Rate</span>
-                        <strong id="careerJobsSuccessRateValue">0%</strong>
-                      </div>
-                    </div>
-                  </article>
-                  <article class="info-card panel-surface">
-                    <span class="card-label" data-translate="career.dashboard.cost_stack">Realtime Costs</span>
-                    <div class="stack-list">
-                      <div class="stack-row">
-                        <span data-translate="career.dashboard.fuel_cost">Diesel</span>
-                        <strong id="careerCostFuelValue">EUR 182</strong>
-                      </div>
-                      <div class="stack-row">
-                        <span data-translate="career.dashboard.repair_cost">Repairs</span>
-                        <strong id="careerCostRepairValue">EUR 74</strong>
-                      </div>
-                      <div class="stack-row">
-                        <span data-translate="career.dashboard.toll_cost">Tolls</span>
-                        <strong id="careerCostTollValue">EUR 46</strong>
-                      </div>
-                    </div>
-                  </article>
-                  <article class="info-card panel-surface">
-                    <span class="card-label" data-translate="career.dashboard.drivers_overview">Drivers</span>
-                    <div class="stack-list">
-                      <div class="stack-row">
-                        <span data-translate="career.dashboard.driver_online">On duty</span>
-                        <strong id="careerDriversOnlineValue">06</strong>
-                      </div>
-                      <div class="stack-row">
-                        <span data-translate="career.dashboard.driver_resting">Resting</span>
-                        <strong id="careerDriversRestingValue">02</strong>
-                      </div>
-                    </div>
-                  </article>
-                </div>
+    <aside class="career-panel-side">
+      <section class="career-panel panel-surface career-panel-stats">
+        <div class="panel-head compact">
+          <div>
+            <span class="eyebrow" data-translate="career.jobs.stats.eyebrow">Key numbers</span>
+            <h2 data-translate="career.jobs.stats.title">Stats</h2>
+          </div>
+        </div>
 
-                <section class="career-logbook-shell panel-surface">
-                  <div class="section-head">
-                    <div>
-                      <span class="eyebrow" data-translate="career.jobs_logbook.eyebrow">Job history</span>
-                      <h2 data-translate="career.jobs_logbook.title">Auftrags-Logbuch</h2>
-                    </div>
-                    <p data-translate="career.jobs_logbook.summary">Active jobs are detected and stored automatically.</p>
-                  </div>
-                  <div class="table-shell career-logbook-table">
-                    <div class="table-row table-head career-logbook-head">
-                      <span data-translate="career.jobs_logbook.started">Started</span>
-                      <span data-translate="career.jobs_logbook.route">Route</span>
-                      <span data-translate="career.jobs_logbook.cargo">Cargo</span>
-                      <span data-translate="career.jobs_logbook.distance">Distance</span>
-                      <span data-translate="career.jobs_logbook.income">Income</span>
-                      <span data-translate="career.jobs_logbook.status">Status</span>
-                    </div>
-                    <div id="careerLogbookTable"></div>
-                    <p id="careerLogbookEmpty" class="career-logbook-empty" data-translate="career.jobs_logbook.empty">No jobs logged yet.</p>
-                  </div>
-                </section>
-              </div>
+        <div class="stat-stack">
+          <div class="stat-row">
+            <span data-translate="career.dashboard.live_income">Live Income</span>
+            <strong id="careerLiveRevenueValue">EUR 0</strong>
+          </div>
+          <div class="stat-row">
+            <span data-translate="career.jobs.stats.total_jobs">Total Jobs</span>
+            <strong id="careerJobsTotalValue">0</strong>
+          </div>
+          <div class="stat-row">
+            <span data-translate="career.jobs.stats.total_income">Total Income</span>
+            <strong id="careerJobsTotalIncomeValue">EUR 0</strong>
+          </div>
+          <div class="stat-row">
+            <span data-translate="career.jobs.stats.average_distance">Average Distance</span>
+            <strong id="careerJobsAverageDistanceValue">0 km</strong>
+          </div>
+          <div class="stat-row">
+            <span data-translate="career.jobs.stats.success_rate">Success Rate</span>
+            <strong id="careerJobsSuccessRateValue">0%</strong>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="panel-subhead">
+          <span class="card-label" data-translate="career.dashboard.cost_stack">Realtime Costs</span>
+        </div>
+        <div class="stat-stack">
+          <div class="stat-row">
+            <span data-translate="career.dashboard.fuel_cost">Diesel</span>
+            <strong id="careerCostFuelValue">EUR 0</strong>
+          </div>
+          <div class="stat-row">
+            <span data-translate="career.dashboard.repair_cost">Repairs</span>
+            <strong id="careerCostRepairValue">EUR 0</strong>
+          </div>
+          <div class="stat-row">
+            <span data-translate="career.dashboard.toll_cost">Tolls</span>
+            <strong id="careerCostTollValue">EUR 0</strong>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="panel-subhead">
+          <span class="card-label" data-translate="career.dashboard.drivers_overview">Drivers</span>
+        </div>
+        <div class="stat-stack">
+          <div class="stat-row">
+            <span data-translate="career.dashboard.driver_online">On duty</span>
+            <strong id="careerDriversOnlineValue">00</strong>
+          </div>
+          <div class="stat-row">
+            <span data-translate="career.dashboard.driver_resting">Resting</span>
+            <strong id="careerDriversRestingValue">00</strong>
+          </div>
+        </div>
+        <div class="divider"></div>
+
+        <div class="panel-subhead">
+          <span class="card-label" data-translate="career.dashboard.active_trip">Active Trip</span>
+        </div>
+        <div class="active-trip">
+          <strong id="careerActiveTripValue">-</strong>
+          <p id="careerActiveTripSummary" class="muted" data-translate="career.dashboard.active_trip_desc">Medical supplies, priority corridor, 5h 40m remaining.</p>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="panel-subhead">
+          <span class="card-label" data-translate="career.dashboard.telemetry_title">Live vehicle</span>
+          <span class="card-hint" data-translate="career.dashboard.telemetry">Live telemetry feed from the active vehicle session.</span>
+        </div>
+        <div class="telemetry-strip" aria-label="Live telemetry">          <div class="telemetry-item">
+            <span class="telemetry-label" data-translate="career.widget.speed">Speed</span>
+            <strong><span id="careerSpeedValue">0</span> km/h</strong>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label" data-translate="career.widget.gear">Gear</span>
+            <strong id="careerGearValue">N</strong>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label" data-translate="career.widget.fuel">Fuel</span>
+            <strong id="careerFuelValue">-</strong>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label" data-translate="career.widget.rpm">RPM</span>
+            <strong id="careerRpmValue">0</strong>
+          </div>
+          <div class="telemetry-progress">
+            <div id="careerFuelBarFill" class="telemetry-progress-fill"></div>
+            <span id="careerFuelPercent" class="telemetry-progress-label">0%</span>
+          </div>
+        </div>
+      </section>
+
+      <div id="careerRecentJobsList" hidden></div>
+      <p id="careerRecentJobsEmpty" hidden data-translate="career.jobs.history.empty">No jobs logged yet.</p>
+    </aside>
+  </div>
+
+  <section class="career-panel panel-surface career-logbook-shell">
+    <div class="panel-head">
+      <div>
+        <span class="eyebrow" data-translate="career.jobs_logbook.eyebrow">Job history</span>
+        <h2 data-translate="career.jobs_logbook.title">Auftrags-Logbuch</h2>
+      </div>
+      <p class="panel-copy" data-translate="career.jobs_logbook.summary">Active jobs are detected and stored automatically.</p>
+    </div>
+
+    <div class="table-shell career-logbook-table">
+            <div class="table-row table-head career-logbook-head">
+        <span data-translate="career.jobs_logbook.index">#</span>
+        <span data-translate="career.jobs_logbook.started">Date</span>
+        <span data-translate="career.jobs_logbook.game">Game</span>
+        <span data-translate="career.jobs_logbook.cargo">Cargo</span>
+        <span data-translate="career.jobs_logbook.route">Route</span>
+        <span data-translate="career.jobs_logbook.distance">Distance</span>
+        <span data-translate="career.jobs_logbook.income">Income</span>
+        <span data-translate="career.jobs_logbook.status">Status</span>
+      </div>
+      <div class="table-scroll">
+        <div id="careerLogbookTable" class="table-body"></div>
+        <p id="careerLogbookEmpty" class="career-logbook-empty" data-translate="career.jobs_logbook.empty">No jobs logged yet.</p>
+      </div>
+    </div>
+  </section>
+</div>
 
               <div id="careerDetailHost" class="career-detail-host panel-surface"></div>
             </div>

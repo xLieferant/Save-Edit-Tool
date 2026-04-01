@@ -80,6 +80,17 @@
                   "fleet_label": "[NEEDS TRANSLATION]",
                   "no_company": "[NEEDS TRANSLATION]"
             },
+            "portal": {
+                  "role_owner": "[NEEDS TRANSLATION] Owner",
+                  "level_label": "[NEEDS TRANSLATION] Level",
+                  "xp_label": "[NEEDS TRANSLATION] XP",
+                  "progress_next": "[NEEDS TRANSLATION] Next level",
+                  "tag_realtime": "[NEEDS TRANSLATION] Realtime",
+                  "tag_dispatch": "[NEEDS TRANSLATION] Dispatch",
+                  "tag_community": "[NEEDS TRANSLATION] Community",
+                  "banner_eyebrow": "[NEEDS TRANSLATION] SimNexus Portal",
+                  "banner_tagline": "[NEEDS TRANSLATION] Career control center for your logistics operation."
+            },
             "widget": {
                   "speed": "Geschwindigkeit",
                   "gear": "Gang",
@@ -90,6 +101,7 @@
             },
             "dashboard": {
                   "telemetry": "[NEEDS TRANSLATION]",
+                  "telemetry_title": "[NEEDS TRANSLATION] Live vehicle",
                   "live_income": "[NEEDS TRANSLATION]",
                   "live_income_desc": "[NEEDS TRANSLATION]",
                   "active_trip": "[NEEDS TRANSLATION]",
@@ -299,7 +311,9 @@
                   "eyebrow": "[NEEDS TRANSLATION] Job history",
                   "title": "[NEEDS TRANSLATION] Job Logbook",
                   "summary": "[NEEDS TRANSLATION] Active jobs are detected and stored automatically.",
+                  "index": "#",
                   "started": "[NEEDS TRANSLATION] Started",
+                  "game": "[NEEDS TRANSLATION] Game",
                   "route": "[NEEDS TRANSLATION] Route",
                   "cargo": "[NEEDS TRANSLATION] Cargo",
                   "distance": "[NEEDS TRANSLATION] Planned distance",
