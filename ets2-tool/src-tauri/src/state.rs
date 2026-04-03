@@ -360,3 +360,17 @@ impl Default for CareerState {
         }
     }
 }
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AuthSession {
+    pub user_id: i64,
+    pub remember_me: bool,
+    pub token: Option<String>,
+    pub expires_at: Option<String>,
+}
+
+#[derive(Default)]
+pub struct AuthState {
+    pub session: Mutex<Option<AuthSession>>,
+}

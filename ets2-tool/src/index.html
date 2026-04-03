@@ -195,7 +195,7 @@
                     <button id="youtubeBtn" class="nav-action youtube" data-translate="buttons.youtube">YouTube</button>
                     <button id="patreonBtn" class="nav-action patreon" data-translate="buttons.patreon">Patreon</button>
                     <button id="githubBtn" class="nav-action github" data-translate="buttons.github">GitHub</button>
-                    <button id="versionBtn" class="version-btn">0.6.0</button>
+                    <button id="versionBtn" class="version-btn">0.7.0 - Beta</button>
                   </div>
 
                   <div class="editor-sidebar-block">
@@ -262,6 +262,151 @@
     <button class="career-nav-btn" data-career-panel="freight" data-translate="career.nav.freight">Freight Market</button>
     <button class="career-nav-btn" data-career-panel="settings" data-translate="career.nav.settings">Settings</button>
   </nav>
+
+  <div id="careerAuthGate" class="career-auth-gate" hidden>
+    <div class="career-auth-card panel-surface">
+      <div id="careerAuthStatus" class="career-auth-status muted" hidden></div>
+
+      <section id="careerLoginView" class="career-auth-view">
+        <div class="panel-head compact">
+          <div>
+            <span class="eyebrow" data-translate="career.auth.eyebrow">Authentication</span>
+            <h2 data-translate="career.auth.title">Login</h2>
+          </div>
+        </div>
+
+        <div class="career-onboarding-tabs" role="tablist" aria-label="Auth options">
+          <button id="careerAuthLoginTab" class="career-tab-btn active" type="button" data-translate="career.auth.login_tab">Login</button>
+          <button id="careerAuthRegisterTab" class="career-tab-btn" type="button" data-translate="career.auth.register_tab">Create account</button>
+        </div>
+
+        <div id="careerAuthLoginPanel" class="career-auth-form" role="tabpanel">
+          <label class="career-auth-field">
+            <span data-translate="career.auth.email_label">Email</span>
+            <input id="careerLoginEmail" type="email" autocomplete="email" />
+          </label>
+
+          <label class="career-auth-field">
+            <span data-translate="career.auth.password_label">Password</span>
+            <input id="careerLoginPassword" type="password" autocomplete="current-password" />
+          </label>
+
+          <p id="careerLoginError" class="career-auth-error" hidden></p>
+
+          <button id="careerLoginSubmit" class="table-action career-auth-submit" type="button" data-translate="career.auth.login_button">Login</button>
+        </div>
+
+        <div id="careerAuthRegisterPanel" class="career-auth-form" role="tabpanel" hidden>
+          <label class="career-auth-field">
+            <span data-translate="career.auth.username_label">Username</span>
+            <input id="careerRegisterUsername" type="text" autocomplete="username" />
+          </label>
+
+          <label class="career-auth-field">
+            <span data-translate="career.auth.email_label">Email</span>
+            <input id="careerRegisterEmail" type="email" autocomplete="email" />
+          </label>
+
+          <label class="career-auth-field">
+            <span data-translate="career.auth.password_label">Password</span>
+            <input id="careerRegisterPassword" type="password" autocomplete="new-password" />
+          </label>
+
+          <label class="career-auth-field">
+            <span data-translate="career.auth.password_confirm_label">Confirm password</span>
+            <input id="careerRegisterPasswordConfirm" type="password" autocomplete="new-password" />
+          </label>
+
+          <label class="career-consent">
+            <input id="careerRegisterConsentPrivacy" type="checkbox" />
+            <span data-translate="career.auth.consent_privacy">I accept the privacy policy.</span>
+          </label>
+
+          <label class="career-consent">
+            <input id="careerRegisterConsentTerms" type="checkbox" />
+            <span data-translate="career.auth.consent_terms">I accept the terms.</span>
+          </label>
+
+          <p id="careerRegisterError" class="career-auth-error" hidden></p>
+
+          <button id="careerRegisterSubmit" class="table-action career-auth-submit" type="button" data-translate="career.auth.register_button">Create account</button>
+        </div>
+      </section>
+
+      <section id="careerOnboardingView" class="career-auth-view" hidden>
+        <div class="panel-head compact">
+          <div>
+            <span class="eyebrow" data-translate="career.onboarding.eyebrow">Onboarding</span>
+            <h2 data-translate="career.onboarding.title">Company Setup</h2>
+          </div>
+        </div>
+
+        <div class="career-onboarding-tabs" role="tablist" aria-label="Company onboarding options">
+          <button id="careerOnboardingJoinTab" class="career-tab-btn active" type="button" data-translate="career.onboarding.join_tab">Join a company</button>
+          <button id="careerOnboardingCreateTab" class="career-tab-btn" type="button" data-translate="career.onboarding.create_tab">Create a company</button>
+        </div>
+
+        <div id="careerOnboardingJoinView" class="career-onboarding-view" role="tabpanel">
+          <label class="career-auth-field">
+            <span data-translate="career.onboarding.search_label">Search</span>
+            <input id="careerCompanySearch" type="text" data-translate-placeholder="career.onboarding.search_placeholder" placeholder="Search company name" />
+          </label>
+          <div id="careerCompanyList" class="career-company-list"></div>
+          <p id="careerCompanyListEmpty" class="career-auth-empty muted" hidden data-translate="career.onboarding.no_companies">No companies found.</p>
+        </div>
+
+        <div id="careerOnboardingCreateView" class="career-onboarding-view" role="tabpanel" hidden>
+          <div class="career-auth-form">
+            <label class="career-auth-field">
+              <span data-translate="career.company.name_label">Company Name</span>
+              <input id="careerCompanyName" type="text" />
+            </label>
+
+            <label class="career-auth-field">
+              <span data-translate="career.company.location_label">Location</span>
+              <input id="careerCompanyLocation" type="text" />
+            </label>
+
+            <label class="career-auth-field">
+              <span data-translate="career.company.language_label">Language</span>
+              <select id="careerCompanyLanguage">
+                <option value="" data-translate="career.company.language_select">Select</option>
+                <option value="de">DE</option>
+                <option value="en">EN</option>
+              </select>
+            </label>
+
+            <label class="career-auth-field">
+              <span data-translate="career.company.game_label">Game</span>
+              <select id="careerCompanyGame">
+                <option value="" data-translate="career.company.game_select">Select</option>
+                <option value="ETS2" data-translate="game.ets2">ETS2</option>
+                <option value="ATS" data-translate="game.ats">ATS</option>
+              </select>
+            </label>
+
+            <label class="career-auth-field">
+              <span data-translate="career.company.logo_label">Logo</span>
+              <input id="careerCompanyLogo" type="file" accept="image/*" />
+            </label>
+
+            <label class="career-auth-field">
+              <span data-translate="career.company.header_label">Header</span>
+              <input id="careerCompanyHeader" type="file" accept="image/*" />
+            </label>
+
+            <label class="career-auth-field">
+              <span data-translate="career.company.description_label">Description</span>
+              <textarea id="careerCompanyDescription" rows="4"></textarea>
+            </label>
+
+            <p id="careerCompanyCreateError" class="career-auth-error" hidden></p>
+            <button id="careerCompanyCreateSubmit" class="table-action career-auth-submit" type="button" data-translate="career.onboarding.create_button">Create company</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
 
   <header class="career-profile-head panel-surface">
     <div class="profile-left">
@@ -478,6 +623,17 @@
 
       <div id="careerRecentJobsList" hidden></div>
       <p id="careerRecentJobsEmpty" hidden data-translate="career.jobs.history.empty">No jobs logged yet.</p>
+
+      <section class="career-panel panel-surface career-panel-activity">
+        <div class="panel-head compact">
+          <div>
+            <span class="eyebrow" data-translate="career.nav.dispatcher">Dispatcher</span>
+            <h2 data-translate="career.dispatcher.title">Dispatcher</h2>
+          </div>
+        </div>
+        <div id="careerActivityList" class="career-activity-list" hidden></div>
+        <p id="careerActivityEmpty" class="career-activity-empty" hidden data-translate="career.dispatcher.no_events">No dispatcher events.</p>
+      </section>
     </aside>
   </div>
 

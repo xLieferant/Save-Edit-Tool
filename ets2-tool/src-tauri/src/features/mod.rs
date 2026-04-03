@@ -18,3 +18,6 @@ pub mod bank;
 pub mod events;
 pub mod employees;
 pub mod fleet;
+pub mod auth;
+pub mod companies;
+pub mod career_onboarding;

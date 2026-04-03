@@ -82,6 +82,7 @@
             },
             "portal": {
                   "role_owner": "[NEEDS TRANSLATION] Owner",
+                  "role_member": "Mitglied",
                   "level_label": "[NEEDS TRANSLATION] Level",
                   "xp_label": "[NEEDS TRANSLATION] XP",
                   "progress_next": "[NEEDS TRANSLATION] Next level",
@@ -90,6 +91,70 @@
                   "tag_community": "[NEEDS TRANSLATION] Community",
                   "banner_eyebrow": "[NEEDS TRANSLATION] SimNexus Portal",
                   "banner_tagline": "[NEEDS TRANSLATION] Career control center for your logistics operation."
+            },
+            "auth": {
+                  "eyebrow": "Konto",
+                  "title": "Anmeldung",
+                  "login_tab": "Anmelden",
+                  "register_tab": "Registrieren",
+                  "username_label": "Benutzername",
+                  "email_label": "E-Mail",
+                  "password_label": "Passwort",
+                  "password_confirm_label": "Passwort bestätigen",
+                  "login_button": "Anmelden",
+                  "register_button": "Konto erstellen",
+                  "consent_privacy": "Ich akzeptiere die Datenschutzerklärung.",
+                  "consent_terms": "Ich akzeptiere die Nutzungsbedingungen.",
+                  "state_failed": "Login-Status konnte nicht geladen werden.",
+                  "status_logging_in": "Anmeldung läuft...",
+                  "status_registering": "Konto wird erstellt...",
+                  "errors": {
+                        "unknown": "Anmeldung fehlgeschlagen.",
+                        "username_required": "Benutzername ist erforderlich.",
+                        "username_too_short": "Benutzername ist zu kurz.",
+                        "username_taken": "Benutzername ist bereits vergeben.",
+                        "email_required": "E-Mail ist erforderlich.",
+                        "email_invalid": "E-Mail ist ungültig.",
+                        "email_not_found": "E-Mail wurde nicht gefunden.",
+                        "email_taken": "E-Mail ist bereits registriert.",
+                        "password_required": "Passwort ist erforderlich.",
+                        "password_too_short": "Passwort ist zu kurz.",
+                        "password_confirm_required": "Passwortbestätigung ist erforderlich.",
+                        "password_confirm_mismatch": "Passwortbestätigung stimmt nicht überein.",
+                        "password_invalid": "Passwort ist falsch.",
+                        "consent_required": "Bitte akzeptiere Datenschutzerklärung und Nutzungsbedingungen.",
+                        "not_authenticated": "Nicht angemeldet."
+                  }
+            },
+            "onboarding": {
+                  "eyebrow": "Onboarding",
+                  "title": "Firmen-Setup",
+                  "join_tab": "Firma beitreten",
+                  "create_tab": "Firma gründen",
+                  "search_label": "Suche",
+                  "search_placeholder": "Firmennamen suchen",
+                  "no_companies": "Keine Firmen gefunden.",
+                  "join_button": "Beitreten",
+                  "create_button": "Firma erstellen",
+                  "status_joining": "Firma wird beigetreten...",
+                  "status_creating": "Firma wird erstellt..."
+            },
+            "company": {
+                  "name_label": "Firmenname",
+                  "location_label": "Standort",
+                  "language_label": "Sprache",
+                  "language_select": "Bitte wählen",
+                  "game_label": "Spiel",
+                  "game_select": "Bitte wählen",
+                  "logo_label": "Logo",
+                  "header_label": "Headerbild",
+                  "description_label": "Beschreibung",
+                  "errors": {
+                        "name_required": "Firmenname ist erforderlich.",
+                        "location_required": "Standort ist erforderlich.",
+                        "language_required": "Sprache ist erforderlich.",
+                        "game_required": "Spiel ist erforderlich."
+                  }
             },
             "widget": {
                   "speed": "Geschwindigkeit",

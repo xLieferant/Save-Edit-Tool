@@ -82,6 +82,7 @@
             },
             "portal": {
                   "role_owner": "Owner",
+                  "role_member": "Member",
                   "level_label": "Level",
                   "xp_label": "XP",
                   "progress_next": "Next level",
@@ -90,6 +91,70 @@
                   "tag_community": "Community",
                   "banner_eyebrow": "SimNexus Portal",
                   "banner_tagline": "Career control center for your logistics operation."
+            },
+            "auth": {
+                  "eyebrow": "Authentication",
+                  "title": "Login",
+                  "login_tab": "Login",
+                  "register_tab": "Create account",
+                  "username_label": "Username",
+                  "email_label": "Email",
+                  "password_label": "Password",
+                  "password_confirm_label": "Confirm password",
+                  "login_button": "Login",
+                  "register_button": "Create account",
+                  "consent_privacy": "I accept the privacy policy.",
+                  "consent_terms": "I accept the terms of use.",
+                  "state_failed": "Failed to load login state.",
+                  "status_logging_in": "Signing in...",
+                  "status_registering": "Creating account...",
+                  "errors": {
+                        "unknown": "Login failed.",
+                        "username_required": "Username is required.",
+                        "username_too_short": "Username is too short.",
+                        "username_taken": "Username is already taken.",
+                        "email_required": "Email is required.",
+                        "email_invalid": "Email is invalid.",
+                        "email_not_found": "Email not found.",
+                        "email_taken": "Email is already registered.",
+                        "password_required": "Password is required.",
+                        "password_too_short": "Password is too short.",
+                        "password_confirm_required": "Password confirmation is required.",
+                        "password_confirm_mismatch": "Password confirmation does not match.",
+                        "password_invalid": "Password is incorrect.",
+                        "consent_required": "Please accept the privacy policy and terms.",
+                        "not_authenticated": "Not authenticated."
+                  }
+            },
+            "onboarding": {
+                  "eyebrow": "Onboarding",
+                  "title": "Company Setup",
+                  "join_tab": "Join a company",
+                  "create_tab": "Create a company",
+                  "search_label": "Search",
+                  "search_placeholder": "Search company name",
+                  "no_companies": "No companies found.",
+                  "join_button": "Join",
+                  "create_button": "Create company",
+                  "status_joining": "Joining company...",
+                  "status_creating": "Creating company..."
+            },
+            "company": {
+                  "name_label": "Company Name",
+                  "location_label": "Location",
+                  "language_label": "Language",
+                  "language_select": "Select",
+                  "game_label": "Game",
+                  "game_select": "Select",
+                  "logo_label": "Logo",
+                  "header_label": "Header",
+                  "description_label": "Description",
+                  "errors": {
+                        "name_required": "Company name is required.",
+                        "location_required": "Location is required.",
+                        "language_required": "Language is required.",
+                        "game_required": "Game is required."
+                  }
             },
             "widget": {
                   "speed": "Speed",

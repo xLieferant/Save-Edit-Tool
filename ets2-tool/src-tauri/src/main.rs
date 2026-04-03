@@ -5,6 +5,7 @@
 
 use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 use crate::state::{CareerState, HubState};
+use crate::state::AuthState;
 use tauri::Manager;
 
 mod models;
@@ -13,6 +14,11 @@ mod shared;   // ehemals utils
 mod features; // ehemals commands (aufgeteilt)
 
 fn main() {
+    std::panic::set_hook(Box::new(|info| {
+        crate::shared::logs::write_log(format!("[panic] {}", info));
+    }));
+    crate::dev_log!("[app] starting");
+
     features::career::scs_sdk_telemetry::start_terminal_telemetry_loop();
     features::career::telemetry_debug::start_telemetry_debug_thread();
 
@@ -23,6 +29,7 @@ fn main() {
         .manage(ProfileCache::default())
         .manage(HubState::default())
         .manage(CareerState::default())
+        .manage(AuthState::default())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
@@ -30,13 +37,30 @@ fn main() {
             let handle = app.handle().clone();
             let career = app.state::<CareerState>();
             let runtime = career.runtime.clone();
+            let auth = app.state::<AuthState>();
+            crate::dev_log!("[app] setup begin");
 
             let db_path = features::career::db::default_db_path();
+            crate::dev_log!("[app] setup init db: {}", db_path.display());
             match features::career::db::init_logbook(&db_path) {
                 Ok(()) => {
                     crate::dev_log!("[career] setup db ready: {}", db_path.display());
                     if let Ok(mut guard) = runtime.db_path.lock() {
                         *guard = Some(db_path);
+                    }
+
+                    if let Ok(conn) = rusqlite::Connection::open(features::auth::db::default_db_path()) {
+                        if let Err(error) = features::auth::db::ensure_tables(&conn) {
+                            crate::dev_log!("[auth] ensure tables failed: {}", error);
+                        } else if let Err(error) = features::auth::service::seed_default_admin(&conn) {
+                            crate::dev_log!("[auth] seed admin failed: {}", error);
+                        } else if let Err(error) =
+                            features::auth::service::restore_persisted_session(&conn, auth.inner())
+                        {
+                            crate::dev_log!("[auth] restore session failed: {}", error);
+                        } else {
+                            crate::dev_log!("[auth] restore session ok");
+                        }
                     }
                 }
                 Err(error) => {
@@ -44,6 +68,7 @@ fn main() {
                 }
             }
 
+            crate::dev_log!("[app] setup load hub mode");
             match features::hub::config::load_mode() {
                 Ok(mode) => {
                     let hub = app.state::<HubState>();
@@ -55,6 +80,7 @@ fn main() {
                     crate::dev_log!("[hub] config load failed: {}", error);
                 }
             }
+            crate::dev_log!("[app] setup ensure plugin files");
             for game in [
                 features::career::plugin_installer::ScsGame::Ets2,
                 features::career::plugin_installer::ScsGame::Ats,
@@ -72,11 +98,13 @@ fn main() {
                     ),
                 }
             }
+            crate::dev_log!("[app] setup start telemetry bridge + background threads");
             features::career::scs_sdk_telemetry::start_frontend_telemetry_bridge(
                 handle.clone(),
                 runtime.clone(),
             );
             features::career::service::start_background(handle, runtime);
+            crate::dev_log!("[app] setup complete");
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -166,6 +194,25 @@ fn main() {
             features::career::commands::career_accept_job,
             features::career::commands::career_complete_job,
             features::career::commands::get_plugin_status,
+
+            // Auth
+            features::auth::commands::auth_seed_default_admin,
+            features::auth::commands::auth_register,
+            features::auth::commands::auth_login,
+            features::auth::commands::auth_logout,
+            features::auth::commands::auth_get_current_user,
+            features::auth::commands::auth_restore_session,
+
+            // Companies
+            features::companies::commands::company_create,
+            features::companies::commands::company_create_onboarding,
+            features::companies::commands::company_list,
+            features::companies::commands::company_join,
+            features::companies::commands::company_get_current,
+            features::companies::commands::company_get_for_user,
+
+            // Onboarding
+            features::career_onboarding::commands::career_get_onboarding_state,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

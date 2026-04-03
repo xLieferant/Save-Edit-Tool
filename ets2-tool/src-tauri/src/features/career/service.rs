@@ -204,10 +204,13 @@ pub fn start_background(app: AppHandle, runtime: Arc<CareerRuntime>) {
 
 #[cfg(target_os = "windows")]
 fn is_process_running(exe_name: &str) -> bool {
+    use std::os::windows::process::CommandExt;
     use std::process::Command;
 
     let filter = format!("IMAGENAME eq {}", exe_name);
+    const CREATE_NO_WINDOW: u32 = 0x08000000;
     let output = Command::new("tasklist")
+        .creation_flags(CREATE_NO_WINDOW)
         .arg("/FI")
         .arg(filter)
         .arg("/NH")

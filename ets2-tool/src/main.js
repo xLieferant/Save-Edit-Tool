@@ -83,7 +83,16 @@ async function safeInvoke(command, args = {}, options = {}) {
   } = options;
 
   try {
-    console.log("[invoke:start]", command, args);
+    const shouldRedact = ["auth_login", "auth_register"].includes(command);
+    if (shouldRedact) {
+      const safeArgs = { ...(args || {}) };
+      for (const key of ["password", "passwordConfirm", "password_confirm"]) {
+        if (key in safeArgs) safeArgs[key] = "[REDACTED]";
+      }
+      console.log("[invoke:start]", command, safeArgs);
+    } else {
+      console.log("[invoke:start]", command, args);
+    }
     const result = await tauriInvoke(command, args);
     console.log("[invoke:ok]", command, result);
     return result;
@@ -345,6 +354,42 @@ document.addEventListener("DOMContentLoaded", async () => {
     careerSidebarCompany: document.getElementById("careerSidebarCompany"),
     careerDashboardShell: document.querySelector(".career-dashboard-shell"),
     careerDetailHost: document.getElementById("careerDetailHost"),
+    careerAuthGate: document.getElementById("careerAuthGate"),
+    careerAuthStatus: document.getElementById("careerAuthStatus"),
+    careerLoginView: document.getElementById("careerLoginView"),
+    careerOnboardingView: document.getElementById("careerOnboardingView"),
+    careerLoginEmail: document.getElementById("careerLoginEmail"),
+    careerLoginPassword: document.getElementById("careerLoginPassword"),
+    careerLoginSubmit: document.getElementById("careerLoginSubmit"),
+    careerLoginError: document.getElementById("careerLoginError"),
+    careerAuthLoginTab: document.getElementById("careerAuthLoginTab"),
+    careerAuthRegisterTab: document.getElementById("careerAuthRegisterTab"),
+    careerAuthLoginPanel: document.getElementById("careerAuthLoginPanel"),
+    careerAuthRegisterPanel: document.getElementById("careerAuthRegisterPanel"),
+    careerRegisterUsername: document.getElementById("careerRegisterUsername"),
+    careerRegisterEmail: document.getElementById("careerRegisterEmail"),
+    careerRegisterPassword: document.getElementById("careerRegisterPassword"),
+    careerRegisterPasswordConfirm: document.getElementById("careerRegisterPasswordConfirm"),
+    careerRegisterConsentPrivacy: document.getElementById("careerRegisterConsentPrivacy"),
+    careerRegisterConsentTerms: document.getElementById("careerRegisterConsentTerms"),
+    careerRegisterSubmit: document.getElementById("careerRegisterSubmit"),
+    careerRegisterError: document.getElementById("careerRegisterError"),
+    careerOnboardingJoinTab: document.getElementById("careerOnboardingJoinTab"),
+    careerOnboardingCreateTab: document.getElementById("careerOnboardingCreateTab"),
+    careerOnboardingJoinView: document.getElementById("careerOnboardingJoinView"),
+    careerOnboardingCreateView: document.getElementById("careerOnboardingCreateView"),
+    careerCompanySearch: document.getElementById("careerCompanySearch"),
+    careerCompanyList: document.getElementById("careerCompanyList"),
+    careerCompanyListEmpty: document.getElementById("careerCompanyListEmpty"),
+    careerCompanyName: document.getElementById("careerCompanyName"),
+    careerCompanyLocation: document.getElementById("careerCompanyLocation"),
+    careerCompanyLanguage: document.getElementById("careerCompanyLanguage"),
+    careerCompanyGame: document.getElementById("careerCompanyGame"),
+    careerCompanyLogo: document.getElementById("careerCompanyLogo"),
+    careerCompanyHeader: document.getElementById("careerCompanyHeader"),
+    careerCompanyDescription: document.getElementById("careerCompanyDescription"),
+    careerCompanyCreateSubmit: document.getElementById("careerCompanyCreateSubmit"),
+    careerCompanyCreateError: document.getElementById("careerCompanyCreateError"),
     careerHeroTitle: document.getElementById("careerHeroTitle"),
     careerGameLabel: document.getElementById("careerGameLabel"),
     careerConnectionNote: document.getElementById("careerConnectionNote"),
@@ -354,6 +399,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     careerFleetStatusValue: document.getElementById("careerFleetStatusValue"),
     careerProfileAvatar: document.getElementById("careerProfileAvatar"),
     careerProfileName: document.getElementById("careerProfileName"),
+    careerRoleBadge: document.getElementById("careerRoleBadge"),
     careerCompanyHeadline: document.getElementById("careerCompanyHeadline"),
     careerLevelValue: document.getElementById("careerLevelValue"),
     careerXpValue: document.getElementById("careerXpValue"),
@@ -380,6 +426,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     careerJobId: document.getElementById("careerJobId"),
     careerRecentJobsList: document.getElementById("careerRecentJobsList"),
     careerRecentJobsEmpty: document.getElementById("careerRecentJobsEmpty"),
+    careerActivityList: document.getElementById("careerActivityList"),
+    careerActivityEmpty: document.getElementById("careerActivityEmpty"),
     careerJobsTotalValue: document.getElementById("careerJobsTotalValue"),
     careerJobsTotalIncomeValue: document.getElementById("careerJobsTotalIncomeValue"),
     careerJobsAverageDistanceValue: document.getElementById("careerJobsAverageDistanceValue"),
@@ -458,6 +506,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     acceptedJob: await t("career.jobs.accepted"),
     noFreight: await t("career.freight.none"),
     noDispatcherEvents: await t("career.dispatcher.no_events"),
+    dispatcherPriorityHigh: await t("career.dispatcher.priority_high"),
+    dispatcherPriorityMedium: await t("career.dispatcher.priority_medium"),
+    joinCompanyButton: await t("career.onboarding.join_button"),
     totalStaff: await t("career.members.total_staff"),
     systemControlled: await t("career.settings.system_controlled"),
     modulesValue: await t("career.settings.modules_value"),
@@ -468,6 +519,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     player: await t("career.shared.player"),
   };
   let careerOverview = null;
+  let careerOnboardingState = null;
+  let cachedCompanyList = [];
+  let cachedCompanyListAt = 0;
+  const COMPANY_LIST_CACHE_MS = 15_000;
+  let activeOnboardingTab = "join";
+  let activeAuthTab = "login";
   let lastStableActiveJob = null;
   let lastStableActiveJobAt = 0;
   const ACTIVE_JOB_EMPTY_DEBOUNCE_MS = 1500;
@@ -501,6 +558,188 @@ document.addEventListener("DOMContentLoaded", async () => {
     </div>
     ${bodyMarkup}
   `;
+
+  const isCareerModeActive = () => document.body.classList.contains("mode-career");
+
+  const setCareerAuthGateVisible = (visible) => {
+    if (!refs.careerAuthGate) return;
+    refs.careerAuthGate.hidden = !visible;
+  };
+
+  const showCareerLoginView = () => {
+    setCareerAuthGateVisible(true);
+    if (refs.careerLoginView) refs.careerLoginView.hidden = false;
+    if (refs.careerOnboardingView) refs.careerOnboardingView.hidden = true;
+    setInlineError(refs.careerLoginError, "");
+    setInlineError(refs.careerRegisterError, "");
+    applyAuthTab(activeAuthTab);
+  };
+
+  const showCareerOnboardingView = () => {
+    setCareerAuthGateVisible(true);
+    if (refs.careerLoginView) refs.careerLoginView.hidden = true;
+    if (refs.careerOnboardingView) refs.careerOnboardingView.hidden = false;
+  };
+
+  const hideCareerAuthGate = () => {
+    setCareerAuthGateVisible(false);
+    if (refs.careerLoginError) refs.careerLoginError.hidden = true;
+    if (refs.careerRegisterError) refs.careerRegisterError.hidden = true;
+    if (refs.careerCompanyCreateError) refs.careerCompanyCreateError.hidden = true;
+    if (refs.careerAuthStatus) refs.careerAuthStatus.hidden = true;
+  };
+
+  const setCareerAuthStatus = (message) => {
+    if (!refs.careerAuthStatus) return;
+    if (!message) {
+      refs.careerAuthStatus.hidden = true;
+      refs.careerAuthStatus.textContent = "";
+      return;
+    }
+    refs.careerAuthStatus.hidden = false;
+    refs.careerAuthStatus.textContent = message;
+  };
+
+  const setInlineError = (element, message) => {
+    if (!element) return;
+    if (!message) {
+      element.hidden = true;
+      element.textContent = "";
+      return;
+    }
+    element.hidden = false;
+    element.textContent = message;
+  };
+
+  const normalizeCompanySearch = (value) => String(value || "").trim().toLowerCase();
+
+  const renderCompanyList = (companies, query) => {
+    if (!refs.careerCompanyList || !refs.careerCompanyListEmpty) return;
+    const q = normalizeCompanySearch(query);
+    const filtered = companies.filter((company) => {
+      if (!q) return true;
+      return String(company.name || "").toLowerCase().includes(q);
+    });
+
+    refs.careerCompanyListEmpty.hidden = filtered.length > 0;
+    refs.careerCompanyList.innerHTML = filtered.map((company) => `
+      <div class="career-company-item">
+        <strong>${escapeHtml(company.name || "-")}</strong>
+        <p>${escapeHtml(`${company.location || "-"} | ${(company.game || company.jobType || "-")}`)}</p>
+        <button class="table-action" type="button" data-career-company-join="${escapeHtml(String(company.id))}">${escapeHtml(careerUi.joinCompanyButton)}</button>
+      </div>
+    `).join("");
+  };
+
+  const loadCompanyList = async ({ force = false } = {}) => {
+    const now = Date.now();
+    if (!force && cachedCompanyList.length && now - cachedCompanyListAt < COMPANY_LIST_CACHE_MS) {
+      return cachedCompanyList;
+    }
+
+    const companies = await invoke("company_list", { limit: 50 });
+    cachedCompanyList = Array.isArray(companies) ? companies : [];
+    cachedCompanyListAt = now;
+    return cachedCompanyList;
+  };
+
+  const applyOnboardingTab = (tab) => {
+    activeOnboardingTab = tab === "create" ? "create" : "join";
+    if (refs.careerOnboardingJoinTab) refs.careerOnboardingJoinTab.classList.toggle("active", activeOnboardingTab === "join");
+    if (refs.careerOnboardingCreateTab) refs.careerOnboardingCreateTab.classList.toggle("active", activeOnboardingTab === "create");
+    if (refs.careerOnboardingJoinView) refs.careerOnboardingJoinView.hidden = activeOnboardingTab !== "join";
+    if (refs.careerOnboardingCreateView) refs.careerOnboardingCreateView.hidden = activeOnboardingTab !== "create";
+  };
+
+  const applyAuthTab = (tab) => {
+    activeAuthTab = tab === "register" ? "register" : "login";
+    if (refs.careerAuthLoginTab) refs.careerAuthLoginTab.classList.toggle("active", activeAuthTab === "login");
+    if (refs.careerAuthRegisterTab) refs.careerAuthRegisterTab.classList.toggle("active", activeAuthTab === "register");
+    if (refs.careerAuthLoginPanel) refs.careerAuthLoginPanel.hidden = activeAuthTab !== "login";
+    if (refs.careerAuthRegisterPanel) refs.careerAuthRegisterPanel.hidden = activeAuthTab !== "register";
+  };
+
+  const readFileBase64 = async (input) => {
+    const file = input?.files?.[0];
+    if (!file) return { base64: null, mime: null };
+
+    const buf = await file.arrayBuffer();
+    const bytes = new Uint8Array(buf);
+    let binary = "";
+    const chunkSize = 0x2000;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const end = Math.min(i + chunkSize, bytes.length);
+      let chunk = "";
+      for (let j = i; j < end; j++) {
+        chunk += String.fromCharCode(bytes[j]);
+      }
+      binary += chunk;
+    }
+    return {
+      base64: btoa(binary),
+      mime: file.type || null,
+    };
+  };
+
+  const refreshCareerOnboardingGate = async () => {
+    if (!isCareerModeActive()) {
+      hideCareerAuthGate();
+      return;
+    }
+
+    try {
+      careerOnboardingState = await invoke("career_get_onboarding_state");
+    } catch (error) {
+      console.error("[career] onboarding state failed", error);
+      showCareerLoginView();
+      setCareerAuthStatus(await t("career.auth.state_failed"));
+      return;
+    }
+
+    if (careerOnboardingState?.hasCompany) {
+      hideCareerAuthGate();
+      return;
+    }
+
+    if (!careerOnboardingState?.needsLogin) {
+      try {
+        window.careerAuthUser = await invoke("auth_get_current_user");
+      } catch {
+        window.careerAuthUser = null;
+      }
+    } else {
+      window.careerAuthUser = null;
+    }
+
+    if (refs.careerRoleBadge) {
+      refs.careerRoleBadge.hidden = !careerOnboardingState?.hasCompany;
+      refs.careerRoleBadge.textContent = careerOnboardingState?.isCompanyOwner ? await t("career.portal.role_owner") : await t("career.portal.role_member");
+    }
+
+    if (careerOnboardingState?.needsLogin) {
+      showCareerLoginView();
+      setCareerAuthStatus("");
+      return;
+    }
+
+    if (careerOnboardingState?.needsCompany) {
+      try {
+        const currentCompany = await invoke("company_get_current");
+        if (currentCompany) {
+          hideCareerAuthGate();
+          return;
+        }
+      } catch {}
+      showCareerOnboardingView();
+      setCareerAuthStatus("");
+      applyOnboardingTab(activeOnboardingTab);
+      const companies = await loadCompanyList({ force: false });
+      renderCompanyList(companies, refs.careerCompanySearch?.value || "");
+      return;
+    }
+
+    hideCareerAuthGate();
+  };
 
   const buildDetailCards = (items, columns = "three-up") => `
     <div class="detail-grid ${columns}">
@@ -540,6 +779,31 @@ document.addEventListener("DOMContentLoaded", async () => {
       </div>
     `;
   }).join("");
+
+  const renderTripLogbookRows = (trips) => trips.slice(0, 40).map((trip) => {
+    const startedAt =
+      trip?.startedAtUtc ??
+      trip?.startedAt ??
+      trip?.startedUtc ??
+      trip?.timestampUtc ??
+      trip?.timestamp ??
+      null;
+    const started = formatDateTime(startedAt);
+    const origin = trip?.origin ?? trip?.originCity ?? "--";
+    const destination = trip?.destination ?? trip?.destinationCity ?? "--";
+    const distanceKmRaw = trip?.distanceKm ?? trip?.distance_km ?? trip?.distance ?? null;
+    const distanceKm = distanceKmRaw === null || distanceKmRaw === undefined ? null : Number(distanceKmRaw);
+
+    return `
+      <div class="table-row career-tripbook-row">
+        <span class="cell cell-date">${escapeHtml(started)}</span>
+        <span class="cell cell-origin">${escapeHtml(origin)}</span>
+        <span class="cell cell-destination">${escapeHtml(destination)}</span>
+        <span class="cell cell-distance">${escapeHtml(distanceKm === null || Number.isNaN(distanceKm) ? "-" : formatDistance(distanceKm))}</span>
+      </div>
+    `;
+  }).join("");
+
   const renderCareerLogbook = () => {
     if (!refs.careerLogbookTable || !refs.careerLogbookEmpty) return;
     const jobs = careerOverview?.recentJobs || [];
@@ -610,6 +874,68 @@ document.addEventListener("DOMContentLoaded", async () => {
         <p>${escapeHtml(`${job.cargo || careerUi.noData} | ${formatDistance(job.plannedDistanceKm || 0)} | ${formatCurrency(job.income ?? 0)} | ${humanizeToken(job.status)}`)}</p>
       </div>
     `).join("");
+  };
+
+  const getDispatcherEventTimestampMs = (event) => {
+    const raw =
+      event?.atUtc ??
+      event?.at ??
+      event?.timestampUtc ??
+      event?.timestamp ??
+      event?.createdAtUtc ??
+      event?.createdAt ??
+      event?.occurredAtUtc ??
+      event?.occurredAt ??
+      null;
+    if (!raw) return null;
+    const date = new Date(raw);
+    const ms = date.getTime();
+    return Number.isNaN(ms) ? null : ms;
+  };
+
+  const renderCareerActivityFeed = () => {
+    if (!refs.careerActivityList || !refs.careerActivityEmpty) return;
+    const events = Array.isArray(careerOverview?.dispatcherEvents) ? careerOverview.dispatcherEvents : [];
+    const limit = 8;
+
+    let display = events.slice();
+    const hasTimestamps = display.some((event) => getDispatcherEventTimestampMs(event) !== null);
+    if (hasTimestamps) {
+      display.sort((a, b) => (getDispatcherEventTimestampMs(b) ?? 0) - (getDispatcherEventTimestampMs(a) ?? 0));
+    }
+    display = display.slice(0, limit);
+
+    refs.careerActivityEmpty.hidden = display.length > 0;
+    refs.careerActivityList.hidden = display.length === 0;
+    refs.careerActivityEmpty.textContent = careerUi.noDispatcherEvents;
+
+    refs.careerActivityList.innerHTML = display.map((event) => {
+      const severity = String(event?.severity ?? "medium").toLowerCase();
+      const severityClass = severity === "high" ? "high" : severity === "medium" ? "medium" : "medium";
+      const severityLabel = severityClass === "high" ? careerUi.dispatcherPriorityHigh : careerUi.dispatcherPriorityMedium;
+      const timeRaw =
+        event?.atUtc ??
+        event?.at ??
+        event?.timestampUtc ??
+        event?.timestamp ??
+        event?.createdAtUtc ??
+        event?.createdAt ??
+        event?.occurredAtUtc ??
+        event?.occurredAt ??
+        null;
+      const timeText = timeRaw ? formatDateTime(timeRaw) : "";
+
+      return `
+        <article class="career-activity-item">
+          <div class="career-activity-head">
+            <span class="career-activity-priority priority ${escapeHtml(severityClass)}">${escapeHtml(severityLabel)}</span>
+            ${timeText ? `<span class="career-activity-time muted">${escapeHtml(timeText)}</span>` : ""}
+          </div>
+          <strong class="career-activity-title">${escapeHtml(event?.title || careerUi.noData)}</strong>
+          ${event?.impact ? `<p class="career-activity-impact">${escapeHtml(event.impact)}</p>` : ""}
+        </article>
+      `;
+    }).join("");
   };
 
   const renderCareerDetailPanel = async (panel) => {
@@ -744,16 +1070,14 @@ document.addEventListener("DOMContentLoaded", async () => {
           "career.logbook.title",
           "career.logbook.summary",
           `
-            <div class="table-shell career-logbook-table">
-              <div class="table-row table-head career-logbook-head">
+            <div class="table-shell career-tripbook-table">
+              <div class="table-row table-head career-tripbook-head">
                 <span>${await t("career.logbook.started")}</span>
-                <span>${await t("career.logbook.route")}</span>
-                <span>${await t("career.logbook.cargo")}</span>
+                <span>${await t("career.orders.origin")}</span>
+                <span>${await t("career.orders.destination")}</span>
                 <span>${await t("career.logbook.distance")}</span>
-                <span>${await t("career.logbook.income")}</span>
-                <span>${await t("career.logbook.status")}</span>
               </div>
-              ${trips.length ? renderLogbookRows(trips) : `<p class="career-logbook-empty">${escapeHtml(careerUi.noLogbook)}</p>`}
+              ${trips.length ? renderTripLogbookRows(trips) : `<p class="career-logbook-empty">${escapeHtml(careerUi.noLogbook)}</p>`}
             </div>
           `
         );
@@ -1055,6 +1379,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.body.classList.toggle("mode-editor", !isCareer);
     refs.editorModeBtn?.classList.toggle("active", !isCareer);
     refs.careerModeBtn?.classList.toggle("active", isCareer);
+    void refreshCareerOnboardingGate();
   };
 
   const updateEditorStage = async (tab) => {
@@ -1078,15 +1403,43 @@ document.addEventListener("DOMContentLoaded", async () => {
       : uiText.noSave;
     const companyLabel =
       overview?.economy?.companyName || (window.selectedProfilePath ? profileLabel : uiText.noCompany);
-    const careerBalance = overview?.bank?.cashBalance ?? money;
-    const careerLevel = overview?.reputation?.level ?? level;
-    const careerReputation = overview?.reputation?.label
-      ? `${overview.reputation.label} / L${overview.reputation.level}`
-      : `L${careerLevel}`;
+
+    const emptyMetric = "-";
+    const asNumberOrNull = (value) => {
+      if (value === null || value === undefined) return null;
+      const number = Number(value);
+      return Number.isNaN(number) ? null : number;
+    };
+    const setTextOrEmpty = (element, value, formatter = (v) => String(v)) => {
+      if (!element) return;
+      if (value === null || value === undefined) {
+        element.textContent = emptyMetric;
+        return;
+      }
+      element.textContent = formatter(value);
+    };
+    const formatTwoDigitOrEmpty = (value) => {
+      const numeric = asNumberOrNull(value);
+      if (numeric === null) return "--";
+      return String(Math.max(0, Math.floor(numeric))).padStart(2, "0");
+    };
+
+    const cashBalance = asNumberOrNull(overview?.bank?.cashBalance);
+    const careerLevel = asNumberOrNull(overview?.reputation?.level);
+    const careerXp = asNumberOrNull(overview?.reputation?.xpPoints);
+    const fleetTrucks = asNumberOrNull(overview?.fleetOverview?.trucks);
+    const fleetTrailers = asNumberOrNull(overview?.fleetOverview?.trailers);
     const careerFleet =
-      overview?.fleetOverview
-        ? `${overview.fleetOverview.trucks} / ${overview.fleetOverview.trailers}`
-        : `${truckCount} / ${trailerCount}`;
+      fleetTrucks !== null && fleetTrailers !== null
+        ? `${Math.max(0, Math.floor(fleetTrucks))} / ${Math.max(0, Math.floor(fleetTrailers))}`
+        : emptyMetric;
+
+    const repLabel = overview?.reputation?.label ?? null;
+    const careerReputation = repLabel && careerLevel !== null
+      ? `${repLabel} / L${careerLevel}`
+      : careerLevel !== null
+        ? `L${careerLevel}`
+        : emptyMetric;
     const dashboard = overview?.dashboard;
     const employeeOverview = overview?.employeeOverview;
     const jobStats = overview?.jobStats;
@@ -1100,8 +1453,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (refs.careerCompanyValue) refs.careerCompanyValue.textContent = companyLabel;
     if (refs.careerSidebarCompany) refs.careerSidebarCompany.textContent = companyLabel;
-    if (refs.careerSidebarBalance) refs.careerSidebarBalance.textContent = formatCurrency(careerBalance);
-    if (refs.careerBalanceValue) refs.careerBalanceValue.textContent = formatCurrency(careerBalance);
+    setTextOrEmpty(refs.careerSidebarBalance, cashBalance, formatCurrency);
+    setTextOrEmpty(refs.careerBalanceValue, cashBalance, formatCurrency);
     if (refs.careerReputationValue) refs.careerReputationValue.textContent = careerReputation;
     if (refs.careerFleetStatusValue) refs.careerFleetStatusValue.textContent = careerFleet;
 
@@ -1116,29 +1469,39 @@ document.addEventListener("DOMContentLoaded", async () => {
       refs.careerProfileAvatar.onerror = () => handleIconError(refs.careerProfileAvatar);
     }
 
-    const careerXp = overview?.reputation?.xpPoints ?? xp;
     const levelSpan = 1500;
-    const xpIntoLevel = ((Number(careerXp) % levelSpan) + levelSpan) % levelSpan;
-    const progress = levelSpan > 0 ? Math.max(0, Math.min(xpIntoLevel / levelSpan, 1)) : 0;
+    const xpIntoLevel =
+      careerXp === null
+        ? 0
+        : ((Number(careerXp) % levelSpan) + levelSpan) % levelSpan;
+    const progress =
+      careerXp === null || levelSpan <= 0
+        ? 0
+        : Math.max(0, Math.min(xpIntoLevel / levelSpan, 1));
 
-    if (refs.careerLevelValue) refs.careerLevelValue.textContent = `L${careerLevel}`;
-    if (refs.careerXpValue) refs.careerXpValue.textContent = formatTelemetryNumber(careerXp, 0);
+    if (refs.careerLevelValue) refs.careerLevelValue.textContent = careerLevel === null ? emptyMetric : `L${careerLevel}`;
+    if (refs.careerXpValue) refs.careerXpValue.textContent = careerXp === null ? emptyMetric : formatTelemetryNumber(careerXp, 0);
     if (refs.careerLevelProgressFill) refs.careerLevelProgressFill.style.width = `${Math.round(progress * 100)}%`;
     if (refs.careerLevelProgressText) {
-      refs.careerLevelProgressText.textContent = `${Math.round(progress * 100)}% • ${Math.round(xpIntoLevel)} / ${levelSpan}`;
+      refs.careerLevelProgressText.textContent = careerXp === null
+        ? emptyMetric
+        : `${Math.round(progress * 100)}% • ${Math.round(xpIntoLevel)} / ${levelSpan}`;
     }
 
-    if (refs.careerJobsTotalValue) refs.careerJobsTotalValue.textContent = String(jobStats?.totalJobs ?? 0);
-    if (refs.careerJobsTotalIncomeValue) refs.careerJobsTotalIncomeValue.textContent = formatCurrency(jobStats?.totalIncome ?? 0);
-    if (refs.careerJobsAverageDistanceValue) refs.careerJobsAverageDistanceValue.textContent = formatDistance(jobStats?.averageDistanceKm ?? 0);
-    if (refs.careerJobsSuccessRateValue) refs.careerJobsSuccessRateValue.textContent = `${Math.round((jobStats?.successRate ?? 0) * 100)}%`;
+    setTextOrEmpty(refs.careerJobsTotalValue, asNumberOrNull(jobStats?.totalJobs), (v) => String(Math.max(0, Math.floor(v))));
+    setTextOrEmpty(refs.careerJobsTotalIncomeValue, asNumberOrNull(jobStats?.totalIncome), formatCurrency);
+    setTextOrEmpty(refs.careerJobsAverageDistanceValue, asNumberOrNull(jobStats?.averageDistanceKm), formatDistance);
+    if (refs.careerJobsSuccessRateValue) {
+      const rate = asNumberOrNull(jobStats?.successRate);
+      refs.careerJobsSuccessRateValue.textContent = rate === null ? emptyMetric : `${Math.round(rate * 100)}%`;
+    }
 
-    if (refs.careerLiveRevenueValue) refs.careerLiveRevenueValue.textContent = formatCurrency(dashboard?.liveIncome ?? Math.max(12480, level * 3200));
-    if (refs.careerCostFuelValue) refs.careerCostFuelValue.textContent = formatCurrency(dashboard?.fuelCost ?? (80 + truckCount * 48));
-    if (refs.careerCostRepairValue) refs.careerCostRepairValue.textContent = formatCurrency(dashboard?.repairCost ?? (24 + trailerCount * 50));
-    if (refs.careerCostTollValue) refs.careerCostTollValue.textContent = formatCurrency(dashboard?.tollCost ?? (18 + level * 6));
-    if (refs.careerDriversOnlineValue) refs.careerDriversOnlineValue.textContent = String(employeeOverview?.onDuty ?? Math.max(1, Math.min(level, 9))).padStart(2, "0");
-    if (refs.careerDriversRestingValue) refs.careerDriversRestingValue.textContent = String(employeeOverview?.resting ?? Math.max(1, Math.min(Math.ceil(level / 3), 4))).padStart(2, "0");
+    setTextOrEmpty(refs.careerLiveRevenueValue, asNumberOrNull(dashboard?.liveIncome), formatCurrency);
+    setTextOrEmpty(refs.careerCostFuelValue, asNumberOrNull(dashboard?.fuelCost), formatCurrency);
+    setTextOrEmpty(refs.careerCostRepairValue, asNumberOrNull(dashboard?.repairCost), formatCurrency);
+    setTextOrEmpty(refs.careerCostTollValue, asNumberOrNull(dashboard?.tollCost), formatCurrency);
+    if (refs.careerDriversOnlineValue) refs.careerDriversOnlineValue.textContent = formatTwoDigitOrEmpty(employeeOverview?.onDuty);
+    if (refs.careerDriversRestingValue) refs.careerDriversRestingValue.textContent = formatTwoDigitOrEmpty(employeeOverview?.resting);
     const activeTrip = overview?.activeTrip;
     if (refs.careerActiveTripValue) {
       refs.careerActiveTripValue.textContent = activeTrip
@@ -1153,6 +1516,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     renderActiveJobCard();
     renderRecentJobs();
+    renderCareerActivityFeed();
     renderCareerLogbook();
   };
 
@@ -1302,6 +1666,205 @@ document.addEventListener("DOMContentLoaded", async () => {
     button.addEventListener("click", () => {
       void showCareerPanel(button.dataset.careerPanel);
     });
+  });
+
+  const resolveAuthErrorMessage = async (error) => {
+    const raw = String(error?.message || error || "").replace(/^Error:\s*/, "").trim();
+    if (!raw) return await t("career.auth.errors.unknown");
+    const map = {
+      "Email is required": "career.auth.errors.email_required",
+      "Email is invalid": "career.auth.errors.email_invalid",
+      "Email not found": "career.auth.errors.email_not_found",
+      "Email is already registered": "career.auth.errors.email_taken",
+      "Username is required": "career.auth.errors.username_required",
+      "Username is too short": "career.auth.errors.username_too_short",
+      "Username is already taken": "career.auth.errors.username_taken",
+      "Password must be at least 8 characters": "career.auth.errors.password_too_short",
+      "Password confirmation does not match": "career.auth.errors.password_confirm_mismatch",
+      "Invalid password": "career.auth.errors.password_invalid",
+      "Consent is required": "career.auth.errors.consent_required",
+      "Not authenticated": "career.auth.errors.not_authenticated",
+    };
+    if (raw in map) return await t(map[raw]);
+    return raw;
+  };
+
+  refs.careerAuthLoginTab?.addEventListener("click", () => applyAuthTab("login"));
+  refs.careerAuthRegisterTab?.addEventListener("click", () => applyAuthTab("register"));
+
+  refs.careerLoginSubmit?.addEventListener("click", async () => {
+    setInlineError(refs.careerLoginError, "");
+    const email = refs.careerLoginEmail?.value?.trim() || "";
+    const password = refs.careerLoginPassword?.value || "";
+
+    if (!email) {
+      setInlineError(refs.careerLoginError, await t("career.auth.errors.email_required"));
+      return;
+    }
+    if (!password) {
+      setInlineError(refs.careerLoginError, await t("career.auth.errors.password_required"));
+      return;
+    }
+
+    refs.careerLoginSubmit.disabled = true;
+    setCareerAuthStatus(await t("career.auth.status_logging_in"));
+    try {
+      await invoke("auth_login", { email, password, rememberMe: true });
+      setCareerAuthStatus("");
+      await refreshCareerOnboardingGate();
+    } catch (error) {
+      setCareerAuthStatus("");
+      setInlineError(refs.careerLoginError, await resolveAuthErrorMessage(error));
+      console.error("[career] login failed", error);
+    } finally {
+      refs.careerLoginSubmit.disabled = false;
+    }
+  });
+
+  refs.careerRegisterSubmit?.addEventListener("click", async () => {
+    setInlineError(refs.careerRegisterError, "");
+    const username = refs.careerRegisterUsername?.value?.trim() || "";
+    const email = refs.careerRegisterEmail?.value?.trim() || "";
+    const password = refs.careerRegisterPassword?.value || "";
+    const passwordConfirm = refs.careerRegisterPasswordConfirm?.value || "";
+    const consentPrivacy = Boolean(refs.careerRegisterConsentPrivacy?.checked);
+    const consentTerms = Boolean(refs.careerRegisterConsentTerms?.checked);
+
+    if (!username) {
+      setInlineError(refs.careerRegisterError, await t("career.auth.errors.username_required"));
+      return;
+    }
+    if (!email) {
+      setInlineError(refs.careerRegisterError, await t("career.auth.errors.email_required"));
+      return;
+    }
+    if (!password) {
+      setInlineError(refs.careerRegisterError, await t("career.auth.errors.password_required"));
+      return;
+    }
+    if (!passwordConfirm) {
+      setInlineError(refs.careerRegisterError, await t("career.auth.errors.password_confirm_required"));
+      return;
+    }
+    if (!(consentPrivacy && consentTerms)) {
+      setInlineError(refs.careerRegisterError, await t("career.auth.errors.consent_required"));
+      return;
+    }
+
+    refs.careerRegisterSubmit.disabled = true;
+    setCareerAuthStatus(await t("career.auth.status_registering"));
+    try {
+      await invoke("auth_register", {
+        username,
+        email,
+        password,
+        passwordConfirm,
+        consentPrivacy,
+        consentTerms,
+        rememberMe: true,
+      });
+      setCareerAuthStatus("");
+      await refreshCareerOnboardingGate();
+    } catch (error) {
+      setCareerAuthStatus("");
+      setInlineError(refs.careerRegisterError, await resolveAuthErrorMessage(error));
+      console.error("[career] register failed", error);
+    } finally {
+      refs.careerRegisterSubmit.disabled = false;
+    }
+  });
+
+  const onboardingTabHandler = (tab) => {
+    applyOnboardingTab(tab);
+    if (tab === "join") {
+      renderCompanyList(cachedCompanyList, refs.careerCompanySearch?.value || "");
+    }
+  };
+
+  refs.careerOnboardingJoinTab?.addEventListener("click", () => onboardingTabHandler("join"));
+  refs.careerOnboardingCreateTab?.addEventListener("click", () => onboardingTabHandler("create"));
+
+  refs.careerCompanySearch?.addEventListener("input", () => {
+    renderCompanyList(cachedCompanyList, refs.careerCompanySearch?.value || "");
+  });
+
+  refs.careerCompanyList?.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-career-company-join]");
+    if (!button) return;
+    const id = Number(button.getAttribute("data-career-company-join") || 0);
+    if (!id) return;
+
+    // MVP: Direct join without invitations / approvals.
+    button.disabled = true;
+    setCareerAuthStatus(await t("career.onboarding.status_joining"));
+    try {
+      await invoke("company_join", { companyId: id });
+      cachedCompanyListAt = 0;
+      setCareerAuthStatus("");
+      await refreshCareerOnboardingGate();
+    } catch (error) {
+      setCareerAuthStatus("");
+      window.showToast(await resolveAuthErrorMessage(error), "error");
+      console.error("[career] company join failed", error);
+    } finally {
+      button.disabled = false;
+    }
+  });
+
+  refs.careerCompanyCreateSubmit?.addEventListener("click", async () => {
+    setInlineError(refs.careerCompanyCreateError, "");
+
+    const name = refs.careerCompanyName?.value?.trim() || "";
+    const location = refs.careerCompanyLocation?.value?.trim() || "";
+    const language = refs.careerCompanyLanguage?.value?.trim() || "";
+    const game = refs.careerCompanyGame?.value?.trim() || "";
+    const descriptionRaw = refs.careerCompanyDescription?.value || "";
+    const description = descriptionRaw.trim() ? descriptionRaw.trim().slice(0, 500) : null;
+
+    if (!name) {
+      setInlineError(refs.careerCompanyCreateError, await t("career.company.errors.name_required"));
+      return;
+    }
+    if (!location) {
+      setInlineError(refs.careerCompanyCreateError, await t("career.company.errors.location_required"));
+      return;
+    }
+    if (!language) {
+      setInlineError(refs.careerCompanyCreateError, await t("career.company.errors.language_required"));
+      return;
+    }
+    if (!game) {
+      setInlineError(refs.careerCompanyCreateError, await t("career.company.errors.game_required"));
+      return;
+    }
+
+    refs.careerCompanyCreateSubmit.disabled = true;
+    setCareerAuthStatus(await t("career.onboarding.status_creating"));
+    try {
+      const logo = await readFileBase64(refs.careerCompanyLogo);
+      const header = await readFileBase64(refs.careerCompanyHeader);
+
+      await invoke("company_create_onboarding", {
+        name,
+        location,
+        language,
+        game,
+        description,
+        logoBase64: logo.base64,
+        logoMime: logo.mime,
+        headerBase64: header.base64,
+        headerMime: header.mime,
+      });
+      cachedCompanyListAt = 0;
+      setCareerAuthStatus("");
+      await refreshCareerOnboardingGate();
+    } catch (error) {
+      setCareerAuthStatus("");
+      setInlineError(refs.careerCompanyCreateError, await resolveAuthErrorMessage(error));
+      console.error("[career] company create failed", error);
+    } finally {
+      refs.careerCompanyCreateSubmit.disabled = false;
+    }
   });
 
   refs.careerDetailHost?.addEventListener("click", async (event) => {

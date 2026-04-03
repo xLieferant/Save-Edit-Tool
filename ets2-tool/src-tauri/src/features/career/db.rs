@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 use crate::features::career::dispatcher;
 use crate::features::career::job_log;
 use crate::features::{bank, contracts, economy, employees, events, fleet, reputation};
+use crate::features::{auth, companies};
 
 pub fn default_db_path() -> PathBuf {
     dirs::data_local_dir()
@@ -70,6 +71,10 @@ pub fn init_logbook(db_path: &Path) -> Result<(), String> {
     fleet::ensure_tables(&conn)?;
     dispatcher::ensure_tables(&conn)?;
     job_log::ensure_tables(&conn)?;
+
+    auth::db::ensure_tables(&conn)?;
+    companies::db::ensure_tables(&conn)?;
+    auth::service::seed_default_admin(&conn)?;
 
     Ok(())
 }
