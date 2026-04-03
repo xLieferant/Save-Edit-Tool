@@ -71,6 +71,13 @@
                   "account": "Account",
                   "settings": "Settings"
             },
+            "user_menu": {
+                  "login": "Login",
+                  "logout": "Logout",
+                  "admin": "Admin / DB",
+                  "account": "Account",
+                  "not_logged_in": "Not logged in"
+            },
             "hero": {
                   "eyebrow": "Career simulation",
                   "title": "Operations Backbone",
@@ -105,6 +112,7 @@
                   "password_confirm_label": "Confirm password",
                   "recovery_code_label": "Recovery Code",
                   "login_button": "Login",
+                  "cancel": "Cancel",
                   "register_button": "Create account",
                   "forgot_hint": "Forgot your password?",
                   "forgot_button": "Reset password",
@@ -136,7 +144,8 @@
                         "recovery_code_required": "Recovery code is required.",
                         "recovery_code_invalid": "Recovery code is invalid.",
                         "consent_required": "Please accept the privacy policy and terms.",
-                        "not_authenticated": "Not authenticated."
+                        "not_authenticated": "Not authenticated.",
+                        "forbidden": "Access denied."
                   }
             },
             "account": {
@@ -174,6 +183,26 @@
                         "expires_at": "Expires",
                         "current": "Current",
                         "empty": "No sessions found."
+                  }
+            },
+            "admin_db": {
+                  "eyebrow": "Admin",
+                  "title": "Database Overview",
+                  "summary": "Local database overview for debugging and verification. No passwords are shown.",
+                  "load_failed": "Failed to load admin database overview.",
+                  "paths": {
+                        "db": "DB path",
+                        "session_file": "Session file"
+                  },
+                  "users": {
+                        "total": "Users",
+                        "id": "ID",
+                        "email": "Email",
+                        "role": "Role",
+                        "created_at": "Created",
+                        "last_login_at": "Last login",
+                        "session": "Session",
+                        "empty": "No users found."
                   }
             },
             "onboarding": {

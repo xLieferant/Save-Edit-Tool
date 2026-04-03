@@ -29,6 +29,7 @@ pub fn ensure_tables(conn: &Connection) -> Result<(), String> {
             company_id INTEGER,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL,
+            last_login_at TEXT,
             consent_at TEXT NOT NULL,
             is_active INTEGER NOT NULL DEFAULT 1,
             is_seed INTEGER NOT NULL DEFAULT 0
@@ -43,7 +44,8 @@ pub fn ensure_tables(conn: &Connection) -> Result<(), String> {
             token TEXT,
             created_at TEXT NOT NULL,
             expires_at TEXT,
-            last_used_at TEXT
+            last_used_at TEXT,
+            revoked_at TEXT
         );
 
         CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
@@ -73,6 +75,7 @@ pub fn ensure_tables(conn: &Connection) -> Result<(), String> {
     .map_err(|e| e.to_string())?;
 
     ensure_user_columns(conn)?;
+    ensure_session_columns(conn)?;
     Ok(())
 }
 
@@ -81,6 +84,7 @@ fn ensure_user_columns(conn: &Connection) -> Result<(), String> {
     let required = [
         ("role", "TEXT NOT NULL DEFAULT 'user'"),
         ("company_id", "INTEGER"),
+        ("last_login_at", "TEXT"),
         ("consent_at", "TEXT NOT NULL DEFAULT ''"),
         ("is_active", "INTEGER NOT NULL DEFAULT 1"),
         ("is_seed", "INTEGER NOT NULL DEFAULT 0"),
@@ -89,6 +93,20 @@ fn ensure_user_columns(conn: &Connection) -> Result<(), String> {
     for (column, definition) in required {
         if !existing.contains(column) {
             conn.execute(&format!("ALTER TABLE users ADD COLUMN {column} {definition}"), [])
+                .map_err(|e| e.to_string())?;
+        }
+    }
+
+    Ok(())
+}
+
+fn ensure_session_columns(conn: &Connection) -> Result<(), String> {
+    let existing = existing_columns(conn, "sessions")?;
+    let required = [("revoked_at", "TEXT")];
+
+    for (column, definition) in required {
+        if !existing.contains(column) {
+            conn.execute(&format!("ALTER TABLE sessions ADD COLUMN {column} {definition}"), [])
                 .map_err(|e| e.to_string())?;
         }
     }

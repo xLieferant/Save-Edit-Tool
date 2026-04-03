@@ -71,6 +71,13 @@
                   "account": "[NEEDS TRANSLATION]",
                   "settings": "[NEEDS TRANSLATION]"
             },
+            "user_menu": {
+                  "login": "[NEEDS TRANSLATION]",
+                  "logout": "[NEEDS TRANSLATION]",
+                  "admin": "[NEEDS TRANSLATION]",
+                  "account": "[NEEDS TRANSLATION]",
+                  "not_logged_in": "[NEEDS TRANSLATION]"
+            },
             "hero": {
                   "eyebrow": "[NEEDS TRANSLATION]",
                   "title": "[NEEDS TRANSLATION]",
@@ -105,6 +112,7 @@
                   "password_confirm_label": "Passwort bestätigen",
                   "recovery_code_label": "[NEEDS TRANSLATION]",
                   "login_button": "Anmelden",
+                  "cancel": "[NEEDS TRANSLATION]",
                   "register_button": "Konto erstellen",
                   "forgot_hint": "[NEEDS TRANSLATION]",
                   "forgot_button": "[NEEDS TRANSLATION]",
@@ -136,7 +144,8 @@
                         "recovery_code_required": "[NEEDS TRANSLATION]",
                         "recovery_code_invalid": "[NEEDS TRANSLATION]",
                         "consent_required": "Bitte akzeptiere Datenschutzerklärung und Nutzungsbedingungen.",
-                        "not_authenticated": "Nicht angemeldet."
+                        "not_authenticated": "Nicht angemeldet.",
+                        "forbidden": "[NEEDS TRANSLATION]"
                   }
             },
             "account": {
@@ -173,6 +182,26 @@
                         "last_used_at": "[NEEDS TRANSLATION]",
                         "expires_at": "[NEEDS TRANSLATION]",
                         "current": "[NEEDS TRANSLATION]",
+                        "empty": "[NEEDS TRANSLATION]"
+                  }
+            },
+            "admin_db": {
+                  "eyebrow": "[NEEDS TRANSLATION]",
+                  "title": "[NEEDS TRANSLATION]",
+                  "summary": "[NEEDS TRANSLATION]",
+                  "load_failed": "[NEEDS TRANSLATION]",
+                  "paths": {
+                        "db": "[NEEDS TRANSLATION]",
+                        "session_file": "[NEEDS TRANSLATION]"
+                  },
+                  "users": {
+                        "total": "[NEEDS TRANSLATION]",
+                        "id": "[NEEDS TRANSLATION]",
+                        "email": "[NEEDS TRANSLATION]",
+                        "role": "[NEEDS TRANSLATION]",
+                        "created_at": "[NEEDS TRANSLATION]",
+                        "last_login_at": "[NEEDS TRANSLATION]",
+                        "session": "[NEEDS TRANSLATION]",
                         "empty": "[NEEDS TRANSLATION]"
                   }
             },

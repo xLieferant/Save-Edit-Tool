@@ -11,8 +11,8 @@ use uuid::Uuid;
 
 use crate::features::auth::db;
 use crate::features::auth::models::{
-    AuthAccountOverview, AuthMauSnapshot, AuthSessionOverview, NewSession, NewUser, PublicUser,
-    UserRecord,
+    AuthAccountOverview, AuthAdminDbOverview, AuthAdminUserRow, AuthMauSnapshot,
+    AuthSessionOverview, NewSession, NewUser, PublicUser, UserRecord,
 };
 use crate::features::auth::repo;
 use crate::state::{AuthSession, AuthState};
@@ -168,6 +168,8 @@ pub fn register_local(
         .ok_or_else(|| "Failed to load created user".to_string())?;
 
     set_logged_in_user(conn, auth, &record, remember_me)?;
+    let now = now_rfc3339();
+    repo::set_user_last_login_at(conn, record.id, &now, &now)?;
     record_login_event(conn, record.id)?;
     Ok((PublicUser::from(record), remember_me))
 }
@@ -196,17 +198,36 @@ pub fn login_local(
     }
 
     set_logged_in_user(conn, auth, &user, remember_me)?;
+    let now = now_rfc3339();
+    repo::set_user_last_login_at(conn, user.id, &now, &now)?;
     record_login_event(conn, user.id)?;
     Ok((PublicUser::from(user), remember_me))
 }
 
 pub fn logout_local(auth: &AuthState) -> Result<(), String> {
+    let previous_session = {
+        auth.session
+            .lock()
+            .map_err(|_| "AuthState session lock poisoned".to_string())?
+            .clone()
+    };
+
     {
         let mut guard = auth
             .session
             .lock()
             .map_err(|_| "AuthState session lock poisoned".to_string())?;
         *guard = None;
+    }
+
+    if let Some(session) = previous_session {
+        if let Some(token) = session.token {
+            let db_path = db::default_db_path();
+            let conn = Connection::open(db_path).map_err(|e| e.to_string())?;
+            db::ensure_tables(&conn)?;
+            let now = now_rfc3339();
+            repo::revoke_session_by_token(&conn, &token, &now)?;
+        }
     }
 
     let session_path = db::auth_session_path();
@@ -257,6 +278,7 @@ pub fn restore_persisted_session(conn: &Connection, auth: &AuthState) -> Result<
 
     let now = now_rfc3339();
     repo::touch_session(conn, session_id, &now)?;
+    repo::set_user_last_login_at(conn, user_id, &now, &now)?;
     {
         let mut guard = auth
             .session
@@ -386,6 +408,39 @@ pub fn get_account_overview(conn: &Connection, auth: &AuthState) -> Result<AuthA
             active_accounts,
             current_account_active,
         },
+    })
+}
+
+pub fn admin_get_db_overview(conn: &Connection, auth: &AuthState) -> Result<AuthAdminDbOverview, String> {
+    let user = get_current_user(conn, auth)?;
+    let Some(user) = user else {
+        return Err("Not authenticated".to_string());
+    };
+    if String::from(user.role.clone()).to_lowercase() != "admin" {
+        return Err("Forbidden".to_string());
+    }
+
+    let now = now_rfc3339();
+    let rows = repo::list_users_basic(conn, 250)?;
+    let mut users = Vec::new();
+    for (id, username, email, role, company_id, created_at, last_login_at) in rows {
+        let has_active_session = repo::user_has_active_session(conn, id, &now)?;
+        users.push(AuthAdminUserRow {
+            id,
+            username,
+            email,
+            role,
+            company_id,
+            created_at,
+            last_login_at,
+            has_active_session,
+        });
+    }
+
+    Ok(AuthAdminDbOverview {
+        db_path: db::default_db_path().to_string_lossy().to_string(),
+        session_file_path: db::auth_session_path().to_string_lossy().to_string(),
+        users,
     })
 }
 

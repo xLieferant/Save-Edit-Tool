@@ -218,7 +218,7 @@ pub fn find_session_by_token(
         r#"
         SELECT id, user_id, expires_at, last_used_at
         FROM sessions
-        WHERE token = ?1
+        WHERE token = ?1 AND revoked_at IS NULL
         "#,
         params![token],
         |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
@@ -229,11 +229,104 @@ pub fn find_session_by_token(
 
 pub fn touch_session(conn: &Connection, session_id: i64, last_used_at: &str) -> Result<(), String> {
     conn.execute(
-        "UPDATE sessions SET last_used_at = ?1 WHERE id = ?2",
+        "UPDATE sessions SET last_used_at = ?1 WHERE id = ?2 AND revoked_at IS NULL",
         params![last_used_at, session_id],
     )
     .map_err(|e| e.to_string())?;
     Ok(())
+}
+
+pub fn revoke_session(conn: &Connection, session_id: i64, revoked_at: &str) -> Result<(), String> {
+    conn.execute(
+        "UPDATE sessions SET revoked_at = ?1 WHERE id = ?2",
+        params![revoked_at, session_id],
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+pub fn revoke_session_by_token(conn: &Connection, token: &str, revoked_at: &str) -> Result<(), String> {
+    conn.execute(
+        "UPDATE sessions SET revoked_at = ?1 WHERE token = ?2",
+        params![revoked_at, token],
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+pub fn set_user_last_login_at(
+    conn: &Connection,
+    user_id: i64,
+    last_login_at: &str,
+    updated_at: &str,
+) -> Result<(), String> {
+    conn.execute(
+        "UPDATE users SET last_login_at = ?1, updated_at = ?2 WHERE id = ?3",
+        params![last_login_at, updated_at, user_id],
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+pub fn list_users_basic(
+    conn: &Connection,
+    limit: i64,
+) -> Result<Vec<(i64, String, String, String, Option<i64>, String, Option<String>)>, String> {
+    let mut stmt = conn
+        .prepare(
+            r#"
+            SELECT
+                id,
+                username,
+                email,
+                role,
+                company_id,
+                created_at,
+                last_login_at
+            FROM users
+            ORDER BY created_at DESC
+            LIMIT ?1
+            "#,
+        )
+        .map_err(|e| e.to_string())?;
+
+    let rows = stmt
+        .query_map(params![limit], |row| {
+            Ok((
+                row.get::<_, i64>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, Option<i64>>(4)?,
+                row.get::<_, String>(5)?,
+                row.get::<_, Option<String>>(6)?,
+            ))
+        })
+        .map_err(|e| e.to_string())?;
+
+    let mut users = Vec::new();
+    for row in rows {
+        users.push(row.map_err(|e| e.to_string())?);
+    }
+    Ok(users)
+}
+
+pub fn user_has_active_session(conn: &Connection, user_id: i64, now_rfc3339: &str) -> Result<bool, String> {
+    conn.query_row(
+        r#"
+        SELECT 1
+        FROM sessions
+        WHERE user_id = ?1
+          AND revoked_at IS NULL
+          AND (expires_at IS NULL OR expires_at > ?2)
+        LIMIT 1
+        "#,
+        params![user_id, now_rfc3339],
+        |_row| Ok(()),
+    )
+    .optional()
+    .map(|value| value.is_some())
+    .map_err(|e| e.to_string())
 }
 
 pub fn list_sessions_by_user_id(

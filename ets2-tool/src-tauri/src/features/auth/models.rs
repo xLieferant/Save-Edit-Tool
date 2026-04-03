@@ -111,3 +111,24 @@ pub struct AuthAccountOverview {
     pub unused_recovery_codes: u32,
     pub mau: AuthMauSnapshot,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AuthAdminUserRow {
+    pub id: i64,
+    pub username: String,
+    pub email: String,
+    pub role: String,
+    pub company_id: Option<i64>,
+    pub created_at: String,
+    pub last_login_at: Option<String>,
+    pub has_active_session: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AuthAdminDbOverview {
+    pub db_path: String,
+    pub session_file_path: String,
+    pub users: Vec<AuthAdminUserRow>,
+}

@@ -3,7 +3,7 @@ use tauri::command;
 use tauri::State;
 
 use crate::features::auth::db;
-use crate::features::auth::models::{AuthAccountOverview, AuthLoginResult, AuthRegisterResult, PublicUser};
+use crate::features::auth::models::{AuthAccountOverview, AuthAdminDbOverview, AuthLoginResult, AuthRegisterResult, PublicUser};
 use crate::features::auth::service;
 use crate::state::AuthState;
 
@@ -123,4 +123,13 @@ pub fn auth_reset_password_with_recovery_code(
         new_password,
         new_password_confirm,
     )
+}
+
+#[command]
+pub fn auth_admin_get_db_overview(auth: State<'_, AuthState>) -> Result<AuthAdminDbOverview, String> {
+    let db_path = db::default_db_path();
+    let conn = Connection::open(db_path).map_err(|e| e.to_string())?;
+    db::ensure_tables(&conn)?;
+    service::seed_default_admin(&conn)?;
+    service::admin_get_db_overview(&conn, auth.inner())
 }

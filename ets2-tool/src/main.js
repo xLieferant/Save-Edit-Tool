@@ -83,7 +83,7 @@ async function safeInvoke(command, args = {}, options = {}) {
   } = options;
 
   try {
-    const shouldRedact = ["auth_login", "auth_register"].includes(command);
+    const shouldRedact = ["auth_login", "auth_register", "auth_reset_password_with_recovery_code"].includes(command);
     if (shouldRedact) {
       const safeArgs = { ...(args || {}) };
       for (const key of ["password", "passwordConfirm", "password_confirm"]) {
@@ -350,6 +350,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     statusGameRunning: document.getElementById("statusGameRunning"),
     statusPluginInstalled: document.getElementById("statusPluginInstalled"),
     statusSdkConnected: document.getElementById("statusSdkConnected"),
+    userMenuBtn: document.getElementById("userMenuBtn"),
+    userMenuLabel: document.getElementById("userMenuLabel"),
+    userMenuDropdown: document.getElementById("userMenuDropdown"),
+    userMenuIdentity: document.getElementById("userMenuIdentity"),
+    userMenuRole: document.getElementById("userMenuRole"),
+    userMenuLogin: document.getElementById("userMenuLogin"),
+    userMenuLogout: document.getElementById("userMenuLogout"),
+    userMenuAdmin: document.getElementById("userMenuAdmin"),
     careerSidebarBalance: document.getElementById("careerSidebarBalance"),
     careerSidebarCompany: document.getElementById("careerSidebarCompany"),
     careerDashboardShell: document.querySelector(".career-dashboard-shell"),
@@ -361,6 +369,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     careerLoginEmail: document.getElementById("careerLoginEmail"),
     careerLoginPassword: document.getElementById("careerLoginPassword"),
     careerLoginSubmit: document.getElementById("careerLoginSubmit"),
+    careerLoginCancel: document.getElementById("careerLoginCancel"),
     careerLoginError: document.getElementById("careerLoginError"),
     careerAuthLoginTab: document.getElementById("careerAuthLoginTab"),
     careerAuthRegisterTab: document.getElementById("careerAuthRegisterTab"),
@@ -623,6 +632,32 @@ document.addEventListener("DOMContentLoaded", async () => {
     element.textContent = message;
   };
 
+  const setUserMenuOpen = (open) => {
+    if (!refs.userMenuDropdown || !refs.userMenuBtn) return;
+    const visible = Boolean(open);
+    refs.userMenuDropdown.hidden = !visible;
+    refs.userMenuBtn.setAttribute("aria-expanded", visible ? "true" : "false");
+  };
+
+  const toggleUserMenu = () => setUserMenuOpen(refs.userMenuDropdown?.hidden);
+
+  const updateUserMenu = async () => {
+    const user = window.careerAuthUser || null;
+    const labelKey = user ? "career.user_menu.account" : "career.user_menu.login";
+    if (refs.userMenuLabel) refs.userMenuLabel.textContent = await t(labelKey);
+
+    if (refs.userMenuIdentity) {
+      refs.userMenuIdentity.textContent = user ? (user.email || user.username || "-") : await t("career.user_menu.not_logged_in");
+    }
+    if (refs.userMenuRole) {
+      refs.userMenuRole.textContent = user ? (user.role || "") : "";
+    }
+
+    if (refs.userMenuLogin) refs.userMenuLogin.hidden = Boolean(user);
+    if (refs.userMenuLogout) refs.userMenuLogout.hidden = !Boolean(user);
+    if (refs.userMenuAdmin) refs.userMenuAdmin.hidden = !(user && String(user.role || "").toLowerCase() === "admin");
+  };
+
   const normalizeCompanySearch = (value) => String(value || "").trim().toLowerCase();
 
   const renderCompanyList = (companies, query) => {
@@ -739,6 +774,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     } else {
       window.careerAuthUser = null;
     }
+
+    await updateUserMenu();
 
     if (refs.careerRoleBadge) {
       refs.careerRoleBadge.hidden = !careerOnboardingState?.hasCompany;
@@ -1460,6 +1497,74 @@ document.addEventListener("DOMContentLoaded", async () => {
             `
           );
         }
+      case "admin_db":
+        {
+          let overview = null;
+          let errorText = "";
+          try {
+            overview = await invoke("auth_admin_get_db_overview");
+          } catch (error) {
+            errorText = await resolveAuthErrorMessage(error);
+            console.error("[admin_db] load failed", error);
+          }
+
+          if (!overview) {
+            return buildSectionFrame(
+              "career.admin_db.eyebrow",
+              "career.admin_db.title",
+              "career.admin_db.summary",
+              `<p class="career-account-empty muted">${escapeHtml(errorText || await t("career.admin_db.load_failed"))}</p>`
+            );
+          }
+
+          const users = Array.isArray(overview.users) ? overview.users : [];
+          const usersMarkup = users.length
+            ? `
+              <div class="table-shell career-admin-users">
+                <div class="table-row table-head">
+                  <span>${await t("career.admin_db.users.id")}</span>
+                  <span>${await t("career.admin_db.users.email")}</span>
+                  <span>${await t("career.admin_db.users.role")}</span>
+                  <span>${await t("career.admin_db.users.created_at")}</span>
+                  <span>${await t("career.admin_db.users.last_login_at")}</span>
+                  <span>${await t("career.admin_db.users.session")}</span>
+                </div>
+                <div class="table-scroll">
+                  ${users.map((user) => {
+                    const createdAt = formatDateTime(user.createdAt);
+                    const lastLogin = user.lastLoginAt ? formatDateTime(user.lastLoginAt) : "-";
+                    const sessionLabel = user.hasActiveSession ? "✓" : "";
+                    return `
+                      <div class="table-row">
+                        <span>${escapeHtml(String(user.id))}</span>
+                        <span>${escapeHtml(user.email || "-")}</span>
+                        <span>${escapeHtml(user.role || "-")}</span>
+                        <span>${escapeHtml(createdAt)}</span>
+                        <span>${escapeHtml(lastLogin)}</span>
+                        <span>${sessionLabel}</span>
+                      </div>
+                    `;
+                  }).join("")}
+                </div>
+              </div>
+            `
+            : `<p class="muted">${escapeHtml(await t("career.admin_db.users.empty"))}</p>`;
+
+          return buildSectionFrame(
+            "career.admin_db.eyebrow",
+            "career.admin_db.title",
+            "career.admin_db.summary",
+            `
+              ${buildDetailCards([
+                { label: await t("career.admin_db.paths.db"), value: escapeHtml(overview.dbPath || "-") },
+                { label: await t("career.admin_db.paths.session_file"), value: escapeHtml(overview.sessionFilePath || "-") },
+                { label: await t("career.admin_db.users.total"), value: String(users.length) },
+              ])}
+              <div class="divider"></div>
+              ${usersMarkup}
+            `
+          );
+        }
       case "settings":
       default:
         return buildSectionFrame(
@@ -1841,6 +1946,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       "Invalid recovery code": "career.auth.errors.recovery_code_invalid",
       "Consent is required": "career.auth.errors.consent_required",
       "Not authenticated": "career.auth.errors.not_authenticated",
+      "Forbidden": "career.auth.errors.forbidden",
     };
     if (raw in map) return await t(map[raw]);
     return raw;
@@ -1883,6 +1989,43 @@ document.addEventListener("DOMContentLoaded", async () => {
     } finally {
       refs.careerLoginSubmit.disabled = false;
     }
+  });
+
+  refs.careerLoginCancel?.addEventListener("click", () => {
+    invalidPasswordAttempts = 0;
+    if (refs.careerForgotPasswordGate) refs.careerForgotPasswordGate.hidden = true;
+    setCareerAuthStatus("");
+    hideCareerAuthGate();
+    void activateMode("editor");
+    setHubVisibility(true);
+  });
+
+  refs.userMenuLogin?.addEventListener("click", async () => {
+    setUserMenuOpen(false);
+    invalidPasswordAttempts = 0;
+    if (refs.careerForgotPasswordGate) refs.careerForgotPasswordGate.hidden = true;
+    await activateMode("career");
+    showCareerLoginView();
+    setCareerAuthStatus("");
+  });
+
+  refs.userMenuLogout?.addEventListener("click", async () => {
+    setUserMenuOpen(false);
+    try {
+      await invoke("auth_logout");
+    } catch (error) {
+      console.error("[auth] logout failed", error);
+    }
+    pendingRecoveryCodes = null;
+    window.careerAuthUser = null;
+    void updateUserMenu();
+    void refreshCareerOnboardingGate();
+  });
+
+  refs.userMenuAdmin?.addEventListener("click", async () => {
+    setUserMenuOpen(false);
+    await activateMode("career");
+    await showCareerPanel("admin_db");
   });
 
   refs.careerForgotPasswordOpen?.addEventListener("click", () => showPasswordResetPanel());
@@ -2190,9 +2333,24 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.log("[ui] initial mode", initialMode);
     applyHubMode(initialMode || "editor");
     setHubVisibility(false);
+
+    try {
+      await invoke("auth_restore_session");
+    } catch (error) {
+      console.warn("[auth] restore session failed", error);
+    }
+
+    try {
+      window.careerAuthUser = await invoke("auth_get_current_user");
+    } catch {
+      window.careerAuthUser = null;
+    }
+    await updateUserMenu();
   } else {
     applyHubMode("editor");
     setHubVisibility(true);
+    window.careerAuthUser = null;
+    await updateUserMenu();
   }
 
   try {
@@ -2270,6 +2428,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.addEventListener("click", (event) => {
     if (!event.target.closest(".profile-picker")) refs.profileDropdownList.classList.remove("show");
     if (!event.target.closest(".save-picker")) refs.saveDropdownList.classList.remove("show");
+    if (!event.target.closest(".user-menu")) setUserMenuOpen(false);
+  });
+
+  refs.userMenuBtn?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    toggleUserMenu();
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") setUserMenuOpen(false);
   });
 
   document.querySelector(".profile-picker")?.addEventListener("click", (event) => {
