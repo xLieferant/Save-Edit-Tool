@@ -202,6 +202,9 @@ fn main() {
             features::auth::commands::auth_logout,
             features::auth::commands::auth_get_current_user,
             features::auth::commands::auth_restore_session,
+            features::auth::commands::auth_get_account_overview,
+            features::auth::commands::auth_generate_recovery_codes,
+            features::auth::commands::auth_reset_password_with_recovery_code,
 
             // Companies
             features::companies::commands::company_create,

@@ -68,6 +68,7 @@
                   "company": "[NEEDS TRANSLATION]",
                   "store": "[NEEDS TRANSLATION]",
                   "plugin": "[NEEDS TRANSLATION]",
+                  "account": "[NEEDS TRANSLATION]",
                   "settings": "[NEEDS TRANSLATION]"
             },
             "hero": {
@@ -100,13 +101,23 @@
                   "username_label": "Benutzername",
                   "email_label": "E-Mail",
                   "password_label": "Passwort",
+                  "new_password_label": "[NEEDS TRANSLATION]",
                   "password_confirm_label": "Passwort bestätigen",
+                  "recovery_code_label": "[NEEDS TRANSLATION]",
                   "login_button": "Anmelden",
                   "register_button": "Konto erstellen",
+                  "forgot_hint": "[NEEDS TRANSLATION]",
+                  "forgot_button": "[NEEDS TRANSLATION]",
+                  "reset_eyebrow": "[NEEDS TRANSLATION]",
+                  "reset_title": "[NEEDS TRANSLATION]",
+                  "reset_button": "[NEEDS TRANSLATION]",
+                  "reset_cancel": "[NEEDS TRANSLATION]",
+                  "reset_success": "[NEEDS TRANSLATION]",
                   "consent_privacy": "Ich akzeptiere die Datenschutzerklärung.",
                   "consent_terms": "Ich akzeptiere die Nutzungsbedingungen.",
                   "state_failed": "Login-Status konnte nicht geladen werden.",
                   "status_logging_in": "Anmeldung läuft...",
+                  "status_resetting": "[NEEDS TRANSLATION]",
                   "status_registering": "Konto wird erstellt...",
                   "errors": {
                         "unknown": "Anmeldung fehlgeschlagen.",
@@ -122,8 +133,47 @@
                         "password_confirm_required": "Passwortbestätigung ist erforderlich.",
                         "password_confirm_mismatch": "Passwortbestätigung stimmt nicht überein.",
                         "password_invalid": "Passwort ist falsch.",
+                        "recovery_code_required": "[NEEDS TRANSLATION]",
+                        "recovery_code_invalid": "[NEEDS TRANSLATION]",
                         "consent_required": "Bitte akzeptiere Datenschutzerklärung und Nutzungsbedingungen.",
                         "not_authenticated": "Nicht angemeldet."
+                  }
+            },
+            "account": {
+                  "title": "[NEEDS TRANSLATION]",
+                  "summary": "[NEEDS TRANSLATION]",
+                  "not_logged_in": "[NEEDS TRANSLATION]",
+                  "fields": {
+                        "username": "[NEEDS TRANSLATION]",
+                        "email": "[NEEDS TRANSLATION]",
+                        "role": "[NEEDS TRANSLATION]"
+                  },
+                  "mau": {
+                        "month": "[NEEDS TRANSLATION]",
+                        "installation": "[NEEDS TRANSLATION]",
+                        "accounts": "[NEEDS TRANSLATION]",
+                        "active": "[NEEDS TRANSLATION]",
+                        "inactive": "[NEEDS TRANSLATION]",
+                        "current_active": "[NEEDS TRANSLATION]",
+                        "current_inactive": "[NEEDS TRANSLATION]"
+                  },
+                  "recovery_codes": {
+                        "unused": "[NEEDS TRANSLATION]",
+                        "generate_button": "[NEEDS TRANSLATION]",
+                        "generated_toast": "[NEEDS TRANSLATION]",
+                        "generate_failed": "[NEEDS TRANSLATION]",
+                        "eyebrow": "[NEEDS TRANSLATION]",
+                        "generated_title": "[NEEDS TRANSLATION]",
+                        "generated_hint": "[NEEDS TRANSLATION]"
+                  },
+                  "sessions": {
+                        "title": "[NEEDS TRANSLATION]",
+                        "hint": "[NEEDS TRANSLATION]",
+                        "created_at": "[NEEDS TRANSLATION]",
+                        "last_used_at": "[NEEDS TRANSLATION]",
+                        "expires_at": "[NEEDS TRANSLATION]",
+                        "current": "[NEEDS TRANSLATION]",
+                        "empty": "[NEEDS TRANSLATION]"
                   }
             },
             "onboarding": {

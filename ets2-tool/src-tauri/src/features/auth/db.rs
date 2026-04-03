@@ -48,6 +48,26 @@ pub fn ensure_tables(conn: &Connection) -> Result<(), String> {
 
         CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
         CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token);
+
+        CREATE TABLE IF NOT EXISTS recovery_codes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            code_hash TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            used_at TEXT
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_recovery_codes_user_id ON recovery_codes(user_id);
+
+        CREATE TABLE IF NOT EXISTS login_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            at_utc TEXT NOT NULL,
+            year_month TEXT NOT NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_login_events_year_month ON login_events(year_month);
+        CREATE INDEX IF NOT EXISTS idx_login_events_user_month ON login_events(user_id, year_month);
         "#,
     )
     .map_err(|e| e.to_string())?;
@@ -98,4 +118,3 @@ pub fn ensure_parent_dir(path: &Path) -> Result<(), String> {
     }
     Ok(())
 }
-

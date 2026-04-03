@@ -365,6 +365,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     careerAuthLoginTab: document.getElementById("careerAuthLoginTab"),
     careerAuthRegisterTab: document.getElementById("careerAuthRegisterTab"),
     careerAuthLoginPanel: document.getElementById("careerAuthLoginPanel"),
+    careerForgotPasswordGate: document.getElementById("careerForgotPasswordGate"),
+    careerForgotPasswordOpen: document.getElementById("careerForgotPasswordOpen"),
+    careerAuthResetPanel: document.getElementById("careerAuthResetPanel"),
+    careerResetEmail: document.getElementById("careerResetEmail"),
+    careerResetRecoveryCode: document.getElementById("careerResetRecoveryCode"),
+    careerResetNewPassword: document.getElementById("careerResetNewPassword"),
+    careerResetPasswordConfirm: document.getElementById("careerResetPasswordConfirm"),
+    careerResetError: document.getElementById("careerResetError"),
+    careerResetSubmit: document.getElementById("careerResetSubmit"),
+    careerResetCancel: document.getElementById("careerResetCancel"),
     careerAuthRegisterPanel: document.getElementById("careerAuthRegisterPanel"),
     careerRegisterUsername: document.getElementById("careerRegisterUsername"),
     careerRegisterEmail: document.getElementById("careerRegisterEmail"),
@@ -525,6 +535,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   const COMPANY_LIST_CACHE_MS = 15_000;
   let activeOnboardingTab = "join";
   let activeAuthTab = "login";
+  let invalidPasswordAttempts = 0;
+  let pendingRecoveryCodes = null;
   let lastStableActiveJob = null;
   let lastStableActiveJobAt = 0;
   const ACTIVE_JOB_EMPTY_DEBOUNCE_MS = 1500;
@@ -657,6 +669,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (refs.careerAuthRegisterTab) refs.careerAuthRegisterTab.classList.toggle("active", activeAuthTab === "register");
     if (refs.careerAuthLoginPanel) refs.careerAuthLoginPanel.hidden = activeAuthTab !== "login";
     if (refs.careerAuthRegisterPanel) refs.careerAuthRegisterPanel.hidden = activeAuthTab !== "register";
+    if (refs.careerAuthResetPanel) refs.careerAuthResetPanel.hidden = true;
+    setInlineError(refs.careerResetError, "");
+  };
+
+  const showPasswordResetPanel = () => {
+    if (refs.careerAuthLoginPanel) refs.careerAuthLoginPanel.hidden = true;
+    if (refs.careerAuthRegisterPanel) refs.careerAuthRegisterPanel.hidden = true;
+    if (refs.careerAuthResetPanel) refs.careerAuthResetPanel.hidden = false;
+    setInlineError(refs.careerResetError, "");
+    if (refs.careerResetEmail) refs.careerResetEmail.value = refs.careerLoginEmail?.value?.trim() || "";
+    if (refs.careerResetRecoveryCode) refs.careerResetRecoveryCode.value = "";
+    if (refs.careerResetNewPassword) refs.careerResetNewPassword.value = "";
+    if (refs.careerResetPasswordConfirm) refs.careerResetPasswordConfirm.value = "";
+  };
+
+  const showLoginPanel = () => {
+    applyAuthTab("login");
   };
 
   const readFileBase64 = async (input) => {
@@ -1304,6 +1333,133 @@ document.addEventListener("DOMContentLoaded", async () => {
             </div>
           `
         );
+      case "account":
+        {
+          let accountOverview = null;
+          try {
+            accountOverview = await invoke("auth_get_account_overview");
+          } catch (error) {
+            console.error("[career] account overview failed", error);
+          }
+
+          const user = accountOverview?.user || null;
+          if (!user) {
+            return buildSectionFrame(
+              "career.nav.account",
+              "career.account.title",
+              "career.account.summary",
+              `<p class="career-account-empty muted">${escapeHtml(await t("career.account.not_logged_in"))}</p>`
+            );
+          }
+
+          const currentSessionId = accountOverview?.currentSessionId ?? null;
+          const sessions = Array.isArray(accountOverview?.sessions) ? accountOverview.sessions : [];
+          const sessionsMarkup = sessions.length
+            ? `
+              <div class="table-shell career-account-sessions">
+                <div class="table-row table-head">
+                  <span>${await t("career.account.sessions.created_at")}</span>
+                  <span>${await t("career.account.sessions.last_used_at")}</span>
+                  <span>${await t("career.account.sessions.expires_at")}</span>
+                  <span>${await t("career.account.sessions.current")}</span>
+                </div>
+                <div class="table-scroll">
+                  ${sessions.map((session) => {
+                    const isCurrent = currentSessionId !== null && session.id === currentSessionId;
+                    const createdAt = formatDateTime(session.createdAt);
+                    const lastUsedAt = session.lastUsedAt ? formatDateTime(session.lastUsedAt) : "-";
+                    const expiresAt = session.expiresAt ? formatDateTime(session.expiresAt) : "-";
+                    return `
+                      <div class="table-row ${isCurrent ? "is-current" : ""}">
+                        <span>${escapeHtml(createdAt)}</span>
+                        <span>${escapeHtml(lastUsedAt)}</span>
+                        <span>${escapeHtml(expiresAt)}</span>
+                        <span>${isCurrent ? "✓" : ""}</span>
+                      </div>
+                    `;
+                  }).join("")}
+                </div>
+              </div>
+            `
+            : `<p class="muted">${escapeHtml(await t("career.account.sessions.empty"))}</p>`;
+
+          const codesToShow = pendingRecoveryCodes;
+          pendingRecoveryCodes = null;
+          const recoveryCodesMarkup = codesToShow && codesToShow.length
+            ? `
+              <div class="career-account-codes panel-surface">
+                <div class="panel-head compact">
+                  <div>
+                    <span class="eyebrow">${await t("career.account.recovery_codes.eyebrow")}</span>
+                    <h3>${await t("career.account.recovery_codes.generated_title")}</h3>
+                  </div>
+                </div>
+                <ul class="career-account-code-list">
+                  ${codesToShow.map((code) => `<li><code>${escapeHtml(code)}</code></li>`).join("")}
+                </ul>
+                <p class="muted">${escapeHtml(await t("career.account.recovery_codes.generated_hint"))}</p>
+              </div>
+            `
+            : "";
+
+          const unusedRecoveryCodes = Number(accountOverview?.unusedRecoveryCodes ?? 0);
+          const mau = accountOverview?.mau || {};
+          const mauMonth = String(mau.yearMonth || "");
+          const installationActive = Boolean(mau.installationActive);
+          const currentAccountActive = Boolean(mau.currentAccountActive);
+          const activeAccounts = Number(mau.activeAccounts ?? 0);
+
+          return buildSectionFrame(
+            "career.nav.account",
+            "career.account.title",
+            "career.account.summary",
+            `
+              ${buildDetailCards([
+                { label: await t("career.account.fields.username"), value: escapeHtml(user.username || "-") },
+                { label: await t("career.account.fields.email"), value: escapeHtml(user.email || "-") },
+                { label: await t("career.account.fields.role"), value: escapeHtml(user.role || "-") },
+              ])}
+
+              <div class="divider"></div>
+
+              <div class="detail-grid three-up">
+                <article class="detail-card">
+                  <span>${await t("career.account.mau.month")}</span>
+                  <strong>${escapeHtml(mauMonth || "-")}</strong>
+                </article>
+                <article class="detail-card">
+                  <span>${await t("career.account.mau.installation")}</span>
+                  <strong>${installationActive ? await t("career.account.mau.active") : await t("career.account.mau.inactive")}</strong>
+                </article>
+                <article class="detail-card">
+                  <span>${await t("career.account.mau.accounts")}</span>
+                  <strong>${escapeHtml(String(activeAccounts).padStart(2, "0"))}</strong>
+                  <p>${escapeHtml(currentAccountActive ? await t("career.account.mau.current_active") : await t("career.account.mau.current_inactive"))}</p>
+                </article>
+              </div>
+
+              <div class="divider"></div>
+
+              <div class="career-account-actions">
+                <div class="career-account-action-row">
+                  <span>${await t("career.account.recovery_codes.unused")}</span>
+                  <strong>${String(unusedRecoveryCodes)}</strong>
+                </div>
+                <button class="table-action" type="button" data-career-action="generate-recovery-codes">${await t("career.account.recovery_codes.generate_button")}</button>
+              </div>
+
+              ${recoveryCodesMarkup}
+
+              <div class="divider"></div>
+
+              <div class="panel-subhead">
+                <span class="card-label">${await t("career.account.sessions.title")}</span>
+                <span class="card-hint">${await t("career.account.sessions.hint")}</span>
+              </div>
+              ${sessionsMarkup}
+            `
+          );
+        }
       case "settings":
       default:
         return buildSectionFrame(
@@ -1682,6 +1838,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       "Password must be at least 8 characters": "career.auth.errors.password_too_short",
       "Password confirmation does not match": "career.auth.errors.password_confirm_mismatch",
       "Invalid password": "career.auth.errors.password_invalid",
+      "Invalid recovery code": "career.auth.errors.recovery_code_invalid",
       "Consent is required": "career.auth.errors.consent_required",
       "Not authenticated": "career.auth.errors.not_authenticated",
     };
@@ -1711,13 +1868,68 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
       await invoke("auth_login", { email, password, rememberMe: true });
       setCareerAuthStatus("");
+      invalidPasswordAttempts = 0;
+      if (refs.careerForgotPasswordGate) refs.careerForgotPasswordGate.hidden = true;
       await refreshCareerOnboardingGate();
     } catch (error) {
       setCareerAuthStatus("");
       setInlineError(refs.careerLoginError, await resolveAuthErrorMessage(error));
+      const raw = String(error?.message || error || "").replace(/^Error:\s*/, "").trim();
+      if (raw === "Invalid password") {
+        invalidPasswordAttempts += 1;
+        if (refs.careerForgotPasswordGate) refs.careerForgotPasswordGate.hidden = invalidPasswordAttempts < 3;
+      }
       console.error("[career] login failed", error);
     } finally {
       refs.careerLoginSubmit.disabled = false;
+    }
+  });
+
+  refs.careerForgotPasswordOpen?.addEventListener("click", () => showPasswordResetPanel());
+  refs.careerResetCancel?.addEventListener("click", () => showLoginPanel());
+
+  refs.careerResetSubmit?.addEventListener("click", async () => {
+    setInlineError(refs.careerResetError, "");
+    const email = refs.careerResetEmail?.value?.trim() || "";
+    const recoveryCode = refs.careerResetRecoveryCode?.value?.trim() || "";
+    const newPassword = refs.careerResetNewPassword?.value || "";
+    const newPasswordConfirm = refs.careerResetPasswordConfirm?.value || "";
+
+    if (!email) {
+      setInlineError(refs.careerResetError, await t("career.auth.errors.email_required"));
+      return;
+    }
+    if (!recoveryCode) {
+      setInlineError(refs.careerResetError, await t("career.auth.errors.recovery_code_required"));
+      return;
+    }
+    if (!newPassword) {
+      setInlineError(refs.careerResetError, await t("career.auth.errors.password_required"));
+      return;
+    }
+    if (!newPasswordConfirm) {
+      setInlineError(refs.careerResetError, await t("career.auth.errors.password_confirm_required"));
+      return;
+    }
+
+    refs.careerResetSubmit.disabled = true;
+    setCareerAuthStatus(await t("career.auth.status_resetting"));
+    try {
+      await invoke("auth_reset_password_with_recovery_code", {
+        email,
+        recoveryCode,
+        newPassword,
+        newPasswordConfirm,
+      });
+      setCareerAuthStatus("");
+      window.showToast("career.auth.reset_success", "success");
+      showLoginPanel();
+    } catch (error) {
+      setCareerAuthStatus("");
+      setInlineError(refs.careerResetError, await resolveAuthErrorMessage(error));
+      console.error("[career] password reset failed", error);
+    } finally {
+      refs.careerResetSubmit.disabled = false;
     }
   });
 
@@ -1873,6 +2085,22 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const { careerAction, jobId } = actionButton.dataset;
     if (actionButton.disabled) return;
+
+    if (careerAction === "generate-recovery-codes") {
+      actionButton.disabled = true;
+      try {
+        const codes = await invoke("auth_generate_recovery_codes");
+        pendingRecoveryCodes = Array.isArray(codes) ? codes : null;
+        window.showToast("career.account.recovery_codes.generated_toast", "success");
+        await refreshCareerPanel();
+      } catch (error) {
+        console.error("[career] recovery code generation failed", error);
+        window.showToast("career.account.recovery_codes.generate_failed", "error");
+      } finally {
+        actionButton.disabled = false;
+      }
+      return;
+    }
 
     if (careerAction === "generate-jobs") {
       actionButton.disabled = true;

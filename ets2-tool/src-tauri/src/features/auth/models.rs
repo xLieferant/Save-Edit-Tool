@@ -84,3 +84,30 @@ pub struct NewSession {
     pub last_used_at: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AuthSessionOverview {
+    pub id: i64,
+    pub created_at: String,
+    pub expires_at: Option<String>,
+    pub last_used_at: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AuthMauSnapshot {
+    pub year_month: String,
+    pub installation_active: bool,
+    pub active_accounts: u32,
+    pub current_account_active: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AuthAccountOverview {
+    pub user: Option<PublicUser>,
+    pub sessions: Vec<AuthSessionOverview>,
+    pub current_session_id: Option<i64>,
+    pub unused_recovery_codes: u32,
+    pub mau: AuthMauSnapshot,
+}

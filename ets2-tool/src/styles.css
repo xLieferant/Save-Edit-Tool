@@ -2625,6 +2625,10 @@ body.mode-career .career-view {
   backdrop-filter: blur(10px);
 }
 
+.career-auth-gate[hidden] {
+  display: none !important;
+}
+
 .career-auth-card {
   width: min(720px, 100%);
   border-radius: var(--radius-xl);
@@ -2699,6 +2703,53 @@ body.mode-career .career-view {
 
 .career-auth-submit {
   justify-self: end;
+}
+
+.career-auth-forgot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.career-auth-link {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+}
+
+.career-auth-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 14px;
+}
+
+.career-account-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.career-account-action-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.career-account-code-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+}
+
+.career-account-sessions .table-row.is-current {
+  background: rgba(var(--accent-rgb), 0.08);
 }
 
 .career-onboarding-tabs {

@@ -3,7 +3,7 @@ use tauri::command;
 use tauri::State;
 
 use crate::features::auth::db;
-use crate::features::auth::models::{AuthLoginResult, AuthRegisterResult, PublicUser};
+use crate::features::auth::models::{AuthAccountOverview, AuthLoginResult, AuthRegisterResult, PublicUser};
 use crate::features::auth::service;
 use crate::state::AuthState;
 
@@ -85,4 +85,42 @@ pub fn auth_restore_session(auth: State<'_, AuthState>) -> Result<(), String> {
     db::ensure_tables(&conn)?;
     service::seed_default_admin(&conn)?;
     service::restore_persisted_session(&conn, auth.inner())
+}
+
+#[command]
+pub fn auth_get_account_overview(auth: State<'_, AuthState>) -> Result<AuthAccountOverview, String> {
+    let db_path = db::default_db_path();
+    let conn = Connection::open(db_path).map_err(|e| e.to_string())?;
+    db::ensure_tables(&conn)?;
+    service::seed_default_admin(&conn)?;
+    service::get_account_overview(&conn, auth.inner())
+}
+
+#[command]
+pub fn auth_generate_recovery_codes(auth: State<'_, AuthState>) -> Result<Vec<String>, String> {
+    let db_path = db::default_db_path();
+    let conn = Connection::open(db_path).map_err(|e| e.to_string())?;
+    db::ensure_tables(&conn)?;
+    service::seed_default_admin(&conn)?;
+    service::generate_recovery_codes(&conn, auth.inner(), 5)
+}
+
+#[command]
+pub fn auth_reset_password_with_recovery_code(
+    email: String,
+    recovery_code: String,
+    new_password: String,
+    new_password_confirm: String,
+) -> Result<(), String> {
+    let db_path = db::default_db_path();
+    let conn = Connection::open(db_path).map_err(|e| e.to_string())?;
+    db::ensure_tables(&conn)?;
+    service::seed_default_admin(&conn)?;
+    service::reset_password_with_recovery_code(
+        &conn,
+        email,
+        recovery_code,
+        new_password,
+        new_password_confirm,
+    )
 }

@@ -235,3 +235,162 @@ pub fn touch_session(conn: &Connection, session_id: i64, last_used_at: &str) -> 
     .map_err(|e| e.to_string())?;
     Ok(())
 }
+
+pub fn list_sessions_by_user_id(
+    conn: &Connection,
+    user_id: i64,
+    limit: i64,
+) -> Result<Vec<(i64, String, Option<String>, Option<String>)>, String> {
+    let mut stmt = conn
+        .prepare(
+            r#"
+            SELECT id, created_at, expires_at, last_used_at
+            FROM sessions
+            WHERE user_id = ?1
+            ORDER BY COALESCE(last_used_at, created_at) DESC
+            LIMIT ?2
+            "#,
+        )
+        .map_err(|e| e.to_string())?;
+
+    let rows = stmt
+        .query_map(params![user_id, limit], |row| {
+            Ok((
+                row.get::<_, i64>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, Option<String>>(2)?,
+                row.get::<_, Option<String>>(3)?,
+            ))
+        })
+        .map_err(|e| e.to_string())?;
+
+    let mut sessions = Vec::new();
+    for row in rows {
+        sessions.push(row.map_err(|e| e.to_string())?);
+    }
+    Ok(sessions)
+}
+
+pub fn count_unused_recovery_codes(conn: &Connection, user_id: i64) -> Result<u32, String> {
+    conn.query_row(
+        "SELECT COUNT(1) FROM recovery_codes WHERE user_id = ?1 AND used_at IS NULL",
+        params![user_id],
+        |row| row.get::<_, i64>(0),
+    )
+    .map(|value| value.max(0) as u32)
+    .map_err(|e| e.to_string())
+}
+
+pub fn delete_recovery_codes_for_user(conn: &Connection, user_id: i64) -> Result<(), String> {
+    conn.execute("DELETE FROM recovery_codes WHERE user_id = ?1", params![user_id])
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+pub fn insert_recovery_code(
+    conn: &Connection,
+    user_id: i64,
+    code_hash: &str,
+    created_at: &str,
+) -> Result<i64, String> {
+    conn.execute(
+        r#"
+        INSERT INTO recovery_codes (user_id, code_hash, created_at, used_at)
+        VALUES (?1, ?2, ?3, NULL)
+        "#,
+        params![user_id, code_hash, created_at],
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(conn.last_insert_rowid())
+}
+
+pub fn list_unused_recovery_codes(
+    conn: &Connection,
+    user_id: i64,
+) -> Result<Vec<(i64, String)>, String> {
+    let mut stmt = conn
+        .prepare(
+            r#"
+            SELECT id, code_hash
+            FROM recovery_codes
+            WHERE user_id = ?1 AND used_at IS NULL
+            "#,
+        )
+        .map_err(|e| e.to_string())?;
+
+    let rows = stmt
+        .query_map(params![user_id], |row| Ok((row.get(0)?, row.get(1)?)))
+        .map_err(|e| e.to_string())?;
+
+    let mut codes = Vec::new();
+    for row in rows {
+        codes.push(row.map_err(|e| e.to_string())?);
+    }
+    Ok(codes)
+}
+
+pub fn mark_recovery_code_used(
+    conn: &Connection,
+    code_id: i64,
+    used_at: &str,
+) -> Result<(), String> {
+    conn.execute(
+        "UPDATE recovery_codes SET used_at = ?1 WHERE id = ?2",
+        params![used_at, code_id],
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+pub fn insert_login_event(
+    conn: &Connection,
+    user_id: i64,
+    at_utc: &str,
+    year_month: &str,
+) -> Result<i64, String> {
+    conn.execute(
+        r#"
+        INSERT INTO login_events (user_id, at_utc, year_month)
+        VALUES (?1, ?2, ?3)
+        "#,
+        params![user_id, at_utc, year_month],
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(conn.last_insert_rowid())
+}
+
+pub fn has_install_activity_for_month(conn: &Connection, year_month: &str) -> Result<bool, String> {
+    conn.query_row(
+        "SELECT 1 FROM login_events WHERE year_month = ?1 LIMIT 1",
+        params![year_month],
+        |_row| Ok(()),
+    )
+    .optional()
+    .map(|value| value.is_some())
+    .map_err(|e| e.to_string())
+}
+
+pub fn has_user_activity_for_month(
+    conn: &Connection,
+    user_id: i64,
+    year_month: &str,
+) -> Result<bool, String> {
+    conn.query_row(
+        "SELECT 1 FROM login_events WHERE user_id = ?1 AND year_month = ?2 LIMIT 1",
+        params![user_id, year_month],
+        |_row| Ok(()),
+    )
+    .optional()
+    .map(|value| value.is_some())
+    .map_err(|e| e.to_string())
+}
+
+pub fn count_active_accounts_for_month(conn: &Connection, year_month: &str) -> Result<u32, String> {
+    conn.query_row(
+        "SELECT COUNT(DISTINCT user_id) FROM login_events WHERE year_month = ?1 AND user_id IS NOT NULL",
+        params![year_month],
+        |row| row.get::<_, i64>(0),
+    )
+    .map(|value| value.max(0) as u32)
+    .map_err(|e| e.to_string())
+}

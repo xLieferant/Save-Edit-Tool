@@ -137,6 +137,7 @@
             <button class="career-nav-btn" data-career-panel="company" data-translate="career.nav.company">My Company</button>
             <button class="career-nav-btn" data-career-panel="store" data-translate="career.nav.store">Store</button>
             <button class="career-nav-btn" data-career-panel="plugin" data-translate="career.nav.plugin">Plugin Installer</button>
+            <button class="career-nav-btn" data-career-panel="account" data-translate="career.nav.account">Account</button>
             <button class="career-nav-btn" data-career-panel="settings" data-translate="career.nav.settings">Settings</button>
           </nav>
 
@@ -260,6 +261,7 @@
     <button class="career-nav-btn" data-career-panel="fleet" data-translate="career.nav.fleet">Fleet</button>
     <button class="career-nav-btn" data-career-panel="statistics" data-translate="career.nav.statistics">Statistics</button>
     <button class="career-nav-btn" data-career-panel="freight" data-translate="career.nav.freight">Freight Market</button>
+    <button class="career-nav-btn" data-career-panel="account" data-translate="career.nav.account">Account</button>
     <button class="career-nav-btn" data-career-panel="settings" data-translate="career.nav.settings">Settings</button>
   </nav>
 
@@ -294,6 +296,47 @@
           <p id="careerLoginError" class="career-auth-error" hidden></p>
 
           <button id="careerLoginSubmit" class="table-action career-auth-submit" type="button" data-translate="career.auth.login_button">Login</button>
+
+          <div id="careerForgotPasswordGate" class="career-auth-forgot" hidden>
+            <p class="muted" data-translate="career.auth.forgot_hint">Forgot your password?</p>
+            <button id="careerForgotPasswordOpen" class="career-auth-link" type="button" data-translate="career.auth.forgot_button">Reset password</button>
+          </div>
+        </div>
+
+        <div id="careerAuthResetPanel" class="career-auth-form" role="tabpanel" hidden>
+          <div class="panel-head compact">
+            <div>
+              <span class="eyebrow" data-translate="career.auth.reset_eyebrow">Recovery</span>
+              <h2 data-translate="career.auth.reset_title">Reset password</h2>
+            </div>
+          </div>
+
+          <label class="career-auth-field">
+            <span data-translate="career.auth.email_label">Email</span>
+            <input id="careerResetEmail" type="email" autocomplete="email" />
+          </label>
+
+          <label class="career-auth-field">
+            <span data-translate="career.auth.recovery_code_label">Recovery Code</span>
+            <input id="careerResetRecoveryCode" type="text" autocomplete="one-time-code" />
+          </label>
+
+          <label class="career-auth-field">
+            <span data-translate="career.auth.new_password_label">New password</span>
+            <input id="careerResetNewPassword" type="password" autocomplete="new-password" />
+          </label>
+
+          <label class="career-auth-field">
+            <span data-translate="career.auth.password_confirm_label">Confirm password</span>
+            <input id="careerResetPasswordConfirm" type="password" autocomplete="new-password" />
+          </label>
+
+          <p id="careerResetError" class="career-auth-error" hidden></p>
+
+          <div class="career-auth-actions">
+            <button id="careerResetSubmit" class="table-action career-auth-submit" type="button" data-translate="career.auth.reset_button">Reset</button>
+            <button id="careerResetCancel" class="career-auth-link" type="button" data-translate="career.auth.reset_cancel">Cancel</button>
+          </div>
         </div>
 
         <div id="careerAuthRegisterPanel" class="career-auth-form" role="tabpanel" hidden>

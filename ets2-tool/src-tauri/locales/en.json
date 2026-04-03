@@ -68,6 +68,7 @@
                   "company": "My Company",
                   "store": "Store",
                   "plugin": "Plugin Installer",
+                  "account": "Account",
                   "settings": "Settings"
             },
             "hero": {
@@ -100,13 +101,23 @@
                   "username_label": "Username",
                   "email_label": "Email",
                   "password_label": "Password",
+                  "new_password_label": "New password",
                   "password_confirm_label": "Confirm password",
+                  "recovery_code_label": "Recovery Code",
                   "login_button": "Login",
                   "register_button": "Create account",
+                  "forgot_hint": "Forgot your password?",
+                  "forgot_button": "Reset password",
+                  "reset_eyebrow": "Recovery",
+                  "reset_title": "Reset password",
+                  "reset_button": "Reset",
+                  "reset_cancel": "Cancel",
+                  "reset_success": "Password updated.",
                   "consent_privacy": "I accept the privacy policy.",
                   "consent_terms": "I accept the terms of use.",
                   "state_failed": "Failed to load login state.",
                   "status_logging_in": "Signing in...",
+                  "status_resetting": "Resetting password...",
                   "status_registering": "Creating account...",
                   "errors": {
                         "unknown": "Login failed.",
@@ -122,8 +133,47 @@
                         "password_confirm_required": "Password confirmation is required.",
                         "password_confirm_mismatch": "Password confirmation does not match.",
                         "password_invalid": "Password is incorrect.",
+                        "recovery_code_required": "Recovery code is required.",
+                        "recovery_code_invalid": "Recovery code is invalid.",
                         "consent_required": "Please accept the privacy policy and terms.",
                         "not_authenticated": "Not authenticated."
+                  }
+            },
+            "account": {
+                  "title": "Account Overview",
+                  "summary": "Review your local login sessions and recovery options.",
+                  "not_logged_in": "You are not logged in.",
+                  "fields": {
+                        "username": "Username",
+                        "email": "Email",
+                        "role": "Role"
+                  },
+                  "mau": {
+                        "month": "Month",
+                        "installation": "Installation",
+                        "accounts": "Accounts",
+                        "active": "Active",
+                        "inactive": "Inactive",
+                        "current_active": "This account is active this month.",
+                        "current_inactive": "This account is not active this month."
+                  },
+                  "recovery_codes": {
+                        "unused": "Unused recovery codes",
+                        "generate_button": "Generate recovery codes",
+                        "generated_toast": "Recovery codes generated.",
+                        "generate_failed": "Failed to generate recovery codes.",
+                        "eyebrow": "Recovery",
+                        "generated_title": "Recovery codes",
+                        "generated_hint": "Store these codes securely. They are only shown once."
+                  },
+                  "sessions": {
+                        "title": "Sessions",
+                        "hint": "Local sessions created for this account.",
+                        "created_at": "Created",
+                        "last_used_at": "Last used",
+                        "expires_at": "Expires",
+                        "current": "Current",
+                        "empty": "No sessions found."
                   }
             },
             "onboarding": {
