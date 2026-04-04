@@ -20,6 +20,7 @@ let manualUpdateCheck = () => {};
 
 let lastSelectedGame = null;
 const CAREER_LOAD_ERROR = "Career Mode failed to load";
+const isStandaloneEditorPage = Boolean(window.__ETS2_STANDALONE_EDITOR__);
 
 function ensureUiErrorBanner() {
   let banner = document.getElementById("careerLoadFallback");
@@ -2301,7 +2302,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (!window.__ets2_tool_listeners_registered) {
     window.__ets2_tool_listeners_registered = true;
 
-    listen("hub://mode_changed", (event) => applyHubMode(event.payload.mode ?? event.payload)).catch(console.error);
+    listen("hub://mode_changed", (event) => {
+      if (isStandaloneEditorPage) return;
+      applyHubMode(event.payload.mode ?? event.payload);
+    }).catch(console.error);
     listen("telemetry:update", (event) => {
       lastVehicleTelemetryAt = Date.now();
       scheduleTelemetryRender(event.payload);
@@ -2329,7 +2333,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   if (hasTauri) {
-    const initialMode = await safeInvoke("hub_get_mode", {}, { fallback: "editor", silent: true });
+    const initialMode = isStandaloneEditorPage
+      ? "editor"
+      : await safeInvoke("hub_get_mode", {}, { fallback: "editor", silent: true });
     console.log("[ui] initial mode", initialMode);
     applyHubMode(initialMode || "editor");
     setHubVisibility(false);

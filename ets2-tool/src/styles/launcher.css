@@ -1,0 +1,122 @@
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Bahnschrift", "Segoe UI", sans-serif;
+  background: radial-gradient(circle at 10% 20%, #172036 0%, #0d111b 48%, #080b13 100%);
+  color: #e7edf9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.launcher-shell {
+  width: min(1120px, 100%);
+  display: grid;
+  gap: 20px;
+}
+
+.launcher-hero {
+  padding: 24px;
+  border-radius: 20px;
+  border: 1px solid #2a3347;
+  background: linear-gradient(135deg, rgba(25, 33, 51, 0.96), rgba(11, 16, 28, 0.96));
+}
+
+.launcher-logo {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 10px;
+}
+
+.launcher-kicker {
+  display: inline-block;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #8aa0c9;
+}
+
+.launcher-hero h1 {
+  margin: 10px 0 10px;
+  font-size: clamp(30px, 5vw, 46px);
+}
+
+.launcher-hero p {
+  margin: 0;
+  color: #b3c0da;
+  max-width: 760px;
+}
+
+.launcher-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+}
+
+.launcher-card {
+  border-radius: 20px;
+  padding: 22px;
+  border: 1px solid #2b3344;
+  background: linear-gradient(160deg, rgba(15, 21, 34, 0.98), rgba(10, 14, 24, 0.96));
+  display: grid;
+  gap: 12px;
+  box-shadow: 0 24px 40px rgba(4, 7, 12, 0.36);
+}
+
+.launcher-card-career {
+  border-color: #28507a;
+  background: linear-gradient(155deg, rgba(15, 25, 40, 0.98), rgba(10, 16, 28, 0.98));
+}
+
+.launcher-tag {
+  display: inline-flex;
+  width: fit-content;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(92, 113, 147, 0.18);
+  color: #abc0e8;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.launcher-card h2 {
+  margin: 0;
+  font-size: 27px;
+}
+
+.launcher-card p {
+  margin: 0;
+  color: #adbad6;
+}
+
+.launcher-btn {
+  margin-top: 8px;
+  border: 1px solid #4b6aa0;
+  background: linear-gradient(140deg, #2f66c8, #2452a4);
+  color: #f0f5ff;
+  border-radius: 12px;
+  height: 44px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.launcher-btn:hover {
+  filter: brightness(1.08);
+}
+
+.launcher-btn-career {
+  border-color: #3d7ebf;
+  background: linear-gradient(140deg, #2f7dc6, #255f99);
+}

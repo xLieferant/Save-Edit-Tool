@@ -6,6 +6,9 @@
     "main"
   ],
   "permissions": [
+    "core:event:default",
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
     "opener:default",
     "process:default",
     "fs:default",

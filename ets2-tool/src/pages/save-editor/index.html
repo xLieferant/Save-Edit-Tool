@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <title data-translate="app.name">ETS2 Save Editor - Alex Edition</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <section id="hubScreen" class="hub-screen is-active">
+        <div class="hub-panel panel-surface">
+          <div class="hub-copy">
+            <span class="eyebrow" data-translate="hub.eyebrow">Next-generation operations platform</span>
+            <h1 class="hub-title" data-translate="hub.title">One platform. Two realities.</h1>
+            <p class="hub-summary" data-translate="hub.summary">
+              Launch a logistics simulation workspace or enter the save editing environment with full awareness of impact.
+            </p>
+          </div>
+
+          <div class="hub-metric-grid">
+            <article class="hub-metric-card">
+              <span class="hub-metric-label" data-translate="hub.metric_realtime">Realtime telemetry</span>
+              <strong>24/7</strong>
+              <p data-translate="hub.metric_realtime_desc">Shared memory, plugin state and live vehicle signals in one command layer.</p>
+            </article>
+            <article class="hub-metric-card">
+              <span class="hub-metric-label" data-translate="hub.metric_platform">Platform architecture</span>
+              <strong>2</strong>
+              <p data-translate="hub.metric_platform_desc">Separated simulation and utility flows inside the same desktop platform.</p>
+            </article>
+            <article class="hub-metric-card">
+              <span class="hub-metric-label" data-translate="hub.metric_scale">Scalable modules</span>
+              <strong>15+</strong>
+              <p data-translate="hub.metric_scale_desc">Career systems, installers, finance, fleet control and advanced save operations.</p>
+            </article>
+          </div>
+
+          <div class="hub-mode-grid">
+            <button id="hubCareerCard" class="hub-mode-card hub-mode-career">
+              <div class="hub-mode-head">
+                <span class="hub-mode-tag" data-translate="hub.career_tag">Simulation layer</span>
+                <span class="hub-mode-launch" data-translate="hub.launch">Enter</span>
+              </div>
+              <h2 data-translate="hub.mode_career_full">Career Mode</h2>
+              <p data-translate="hub.career_desc">
+                Company growth, dispatching, income streams, fleet supervision and live operational awareness.
+              </p>
+            </button>
+
+            <button id="hubEditorCard" class="hub-mode-card hub-mode-editor">
+              <div class="hub-mode-head">
+                <span class="hub-mode-tag" data-translate="hub.editor_tag">Utility layer</span>
+                <span class="hub-mode-launch" data-translate="hub.launch">Enter</span>
+              </div>
+              <h2 data-translate="hub.mode_editor_full">Save Edit Tool</h2>
+              <p data-translate="hub.editor_desc">
+                Direct control over money, XP, vehicles, garages and profile values in a separate workspace.
+              </p>
+            </button>
+          </div>
+
+          <p class="hub-footer-copy" data-translate="hub.footer">
+            Choose the operating context first. Simulation and save manipulation remain visually and structurally separated.
+          </p>
+        </div>
+      </section>
+      <header class="command-header">
+        <div class="logo">
+          <img src="images/xlLogo.png" alt="ets2Logo" />
+          <div class="logo-text">
+            <span class="logo-title" data-translate="app.title">SAVE EDITOR</span>
+            <span class="logo-subtitle" data-translate="app.subtitle">for SCS - xLieferant</span>
+          </div>
+        </div>
+
+        <div class="command-center-head">
+          <button id="hubHomeBtn" class="hub-home-btn">
+            <span class="hub-home-label" data-translate="hub.home">Open Hub</span>
+            <span class="hub-home-copy" data-translate="hub.home_copy">Return to the central launcher</span>
+          </button>
+
+          <div class="mode-switch" id="hubModeSwitch">
+            <button id="editorModeBtn" class="mode-btn active">
+              <span data-translate="hub.mode_editor_full">Save Edit Tool</span>
+            </button>
+            <button id="careerModeBtn" class="mode-btn">
+              <span data-translate="hub.mode_career_full">Career Mode</span>
+            </button>
+          </div>
+
+          <div class="command-copy">
+            <span class="command-label" data-translate="career.command_center">Command Center</span>
+            <span class="command-subtitle" data-translate="career.live_subtitle">Live telemetry and install state</span>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <div class="status-cluster">
+            <div id="statusGameRunning" class="status-pill">
+              <span class="status-lamp"></span>
+              <span class="status-text" data-translate="career.status.game_running">Game Running</span>
+            </div>
+            <div id="statusPluginInstalled" class="status-pill">
+              <span class="status-lamp"></span>
+              <span class="status-text" data-translate="career.status.plugin_installed">Plugin Installed</span>
+            </div>
+            <div id="statusSdkConnected" class="status-pill">
+              <span class="status-lamp"></span>
+              <span class="status-text" data-translate="career.status.sdk_connected">SDK Connected</span>
+            </div>
+          </div>
+
+          <div class="user-menu">
+          <button id="userMenuBtn" class="user-menu-btn" type="button" aria-haspopup="true" aria-expanded="false">
+            <span class="user-menu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 12c2.761 0 5-2.239 5-5S14.761 2 12 2 7 4.239 7 7s2.239 5 5 5Z" stroke="currentColor" stroke-width="1.8"/>
+                <path d="M4 22c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <span id="userMenuLabel" class="user-menu-label" data-translate="career.user_menu.login">Login</span>
+          </button>
+
+          <div id="userMenuDropdown" class="user-menu-dropdown panel-surface" hidden>
+            <div class="user-menu-head">
+              <strong id="userMenuIdentity">-</strong>
+              <span id="userMenuRole" class="muted"></span>
+            </div>
+            <div class="divider"></div>
+            <button id="userMenuLogin" class="user-menu-item" type="button" data-translate="career.user_menu.login">Login</button>
+            <button id="userMenuLogout" class="user-menu-item" type="button" data-translate="career.user_menu.logout" hidden>Logout</button>
+            <button id="userMenuAdmin" class="user-menu-item" type="button" data-translate="career.user_menu.admin" hidden>Admin / DB</button>
+          </div>
+          </div>
+        </div>
+      </header>
+
+      <div class="workspace-shell">
+        <aside id="careerSidebar" class="career-sidebar panel-surface">
+          <div class="career-sidebar-head">
+            <span class="eyebrow" data-translate="career.command_center">Command Center</span>
+            <h2 data-translate="career.hero.title">Operations Backbone</h2>
+            <p data-translate="career.hero.summary">
+              Coordinate company growth, fleet usage and live logistics data from one central workspace.
+            </p>
+          </div>
+
+          <nav class="career-nav">
+            <button class="career-nav-btn active" data-career-panel="dashboard" data-translate="career.nav.dashboard">Dashboard</button>
+            <button class="career-nav-btn" data-career-panel="logbook" data-translate="career.nav.logbook">Logbook</button>
+            <button class="career-nav-btn" data-career-panel="members" data-translate="career.nav.members">Members</button>
+            <button class="career-nav-btn" data-career-panel="orders" data-translate="career.nav.orders">Orders</button>
+            <button class="career-nav-btn" data-career-panel="freight" data-translate="career.nav.freight">Freight Market</button>
+            <button class="career-nav-btn" data-career-panel="dispatcher" data-translate="career.nav.dispatcher">Dispatcher</button>
+            <button class="career-nav-btn" data-career-panel="livemap" data-translate="career.nav.livemap">Livemap</button>
+            <button class="career-nav-btn" data-career-panel="fleet" data-translate="career.nav.fleet">Fleet</button>
+            <button class="career-nav-btn" data-career-panel="balance" data-translate="career.nav.balance">Balance</button>
+            <button class="career-nav-btn" data-career-panel="insurance" data-translate="career.nav.insurance">Insurance</button>
+            <button class="career-nav-btn" data-career-panel="statistics" data-translate="career.nav.statistics">Statistics</button>
+            <button class="career-nav-btn" data-career-panel="achievements" data-translate="career.nav.achievements">Achievements</button>
+            <button class="career-nav-btn" data-career-panel="company" data-translate="career.nav.company">My Company</button>
+            <button class="career-nav-btn" data-career-panel="store" data-translate="career.nav.store">Store</button>
+            <button class="career-nav-btn" data-career-panel="plugin" data-translate="career.nav.plugin">Plugin Installer</button>
+            <button class="career-nav-btn" data-career-panel="account" data-translate="career.nav.account">Account</button>
+            <button class="career-nav-btn" data-career-panel="settings" data-translate="career.nav.settings">Settings</button>
+          </nav>
+
+          <div class="career-sidebar-footer">
+            <span class="sidebar-stat-label" data-translate="career.hero.balance_label">Balance</span>
+            <strong id="careerSidebarBalance">EUR 0</strong>
+            <span class="sidebar-stat-meta" id="careerSidebarCompany">No company selected</span>
+          </div>
+        </aside>
+
+        <section class="workspace-main">
+          <section id="editorView" class="workspace-view save-editor-view is-active">
+            <div class="save-editor-shell">
+              <section class="save-hero panel-surface">
+                <div class="save-hero-copy">
+                  <span class="eyebrow" data-translate="editor.eyebrow">Save utility workspace</span>
+                  <h1 data-translate="editor.title">High-control save editing</h1>
+                  <p data-translate="editor.summary">
+                    Separate utility mode for direct save manipulation with a clear warning barrier between simulation and editing.
+                  </p>
+
+                  <div class="save-hero-actions">
+                    <button id="saveSafeModeBtn" class="preset-btn active" data-translate="editor.safe_mode">Safe Mode</button>
+                    <button id="saveAdvancedModeBtn" class="preset-btn" data-translate="editor.advanced_mode">Advanced Mode</button>
+                    <button class="secondary-action" disabled data-translate="editor.import">Import Saves</button>
+                    <button class="secondary-action" disabled data-translate="editor.export">Export Saves</button>
+                  </div>
+                </div>
+
+                <div class="save-warning-card">
+                  <span class="warning-label" data-translate="editor.warning_label">Critical note</span>
+                  <h2 data-translate="editor.warning_title">Editing can permanently disrupt progression and balance.</h2>
+                  <p id="editorModeNotice" data-translate="editor.safe_desc">
+                    Safe Mode emphasizes guided actions and lowers the visual intensity of risky operations.
+                  </p>
+                </div>
+              </section>
+
+              <div class="save-layout">
+                <aside class="editor-sidebar panel-surface">
+                  <div class="editor-sidebar-block">
+                    <span class="editor-section-label" data-translate="editor.actions_label">Tool Categories</span>
+                    <div class="nav-main editor-tabs">
+                      <button class="nav-btn" data-tab="truck" data-translate="editor.tab.truck">Truck</button>
+                      <button class="nav-btn" data-tab="trailer" data-translate="editor.tab.trailer">Trailer</button>
+                      <button class="nav-btn active" data-tab="profile" data-translate="editor.tab.profile">Profile</button>
+                      <button class="nav-btn" data-tab="settings" data-translate="editor.tab.settings">Settings</button>
+                    </div>
+                  </div>
+
+                  <div class="editor-sidebar-block editor-quick-actions">
+                    <span class="editor-section-label" data-translate="editor.quick_actions">Workspace Actions</span>
+                    <button id="cloneProfileBtn" class="nav-action" data-translate="editor.clone_button">Clone Profile</button>
+                    <button id="refreshBtn" class="nav-action" data-translate="editor.refresh_button">Scan Profiles</button>
+                    <button id="websiteBtn" class="nav-action website" data-translate="buttons.website">Website</button>
+                    <button id="youtubeBtn" class="nav-action youtube" data-translate="buttons.youtube">YouTube</button>
+                    <button id="patreonBtn" class="nav-action patreon" data-translate="buttons.patreon">Patreon</button>
+                    <button id="githubBtn" class="nav-action github" data-translate="buttons.github">GitHub</button>
+                    <button id="versionBtn" class="version-btn">0.7.0 - Beta</button>
+                  </div>
+
+                  <div class="editor-sidebar-block">
+                    <span class="editor-section-label" data-translate="editor.status_label">Workspace Status</span>
+                    <p id="profile-status" class="profile-status"></p>
+                  </div>
+                </aside>
+
+                <div class="save-content">
+                  <div class="save-overview-grid">
+                    <article class="overview-card panel-surface">
+                      <span class="overview-label" data-translate="editor.profile_card">Active Profile</span>
+                      <strong id="editorProfileValue">-</strong>
+                    </article>
+                    <article class="overview-card panel-surface">
+                      <span class="overview-label" data-translate="editor.save_card">Active Save</span>
+                      <strong id="editorSaveValue">-</strong>
+                    </article>
+                    <article class="overview-card panel-surface">
+                      <span class="overview-label" data-translate="editor.balance_card">Balance</span>
+                      <strong id="editorMoneyValue">EUR 0</strong>
+                    </article>
+                    <article class="overview-card panel-surface">
+                      <span class="overview-label" data-translate="editor.xp_card">XP</span>
+                      <strong id="editorXpValue">0</strong>
+                    </article>
+                    <article class="overview-card panel-surface">
+                      <span class="overview-label" data-translate="editor.level_card">Level</span>
+                      <strong id="editorLevelValue">1</strong>
+                    </article>
+                    <article class="overview-card panel-surface">
+                      <span class="overview-label" data-translate="editor.fleet_card">Fleet Assets</span>
+                      <strong id="editorFleetValue">0 / 0</strong>
+                    </article>
+                  </div>
+
+                  <section class="save-tool-stage panel-surface">
+                    <div class="save-stage-head">
+                      <div>
+                        <span class="eyebrow" data-translate="editor.stage_label">Current Module</span>
+                        <h2 id="editorStageTitle" data-translate="editor.stage.profile">Profile Editing</h2>
+                      </div>
+                      <p id="editorStageSummary" data-translate="editor.stage.profile_desc">
+                        Update money, XP, skills and save-bound profile values in a dedicated editing flow.
+                      </p>
+                    </div>
+                    <div id="tool-container"></div>
+                  </section>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="careerView" class="workspace-view career-view">
+            <div class="career-content">
+              <div class="career-portal">
+  <nav class="career-topnav panel-surface" aria-label="Career navigation">
+    <button class="career-nav-btn active" data-career-panel="dashboard" data-translate="career.nav.dashboard">Dashboard</button>
+    <button class="career-nav-btn" data-career-panel="members" data-translate="career.nav.members">Members</button>
+    <button class="career-nav-btn" data-career-panel="orders" data-translate="career.nav.orders">Orders</button>
+    <button class="career-nav-btn" data-career-panel="balance" data-translate="career.nav.balance">Balance</button>
+    <button class="career-nav-btn" data-career-panel="fleet" data-translate="career.nav.fleet">Fleet</button>
+    <button class="career-nav-btn" data-career-panel="statistics" data-translate="career.nav.statistics">Statistics</button>
+    <button class="career-nav-btn" data-career-panel="freight" data-translate="career.nav.freight">Freight Market</button>
+    <button class="career-nav-btn" data-career-panel="account" data-translate="career.nav.account">Account</button>
+    <button class="career-nav-btn" data-career-panel="settings" data-translate="career.nav.settings">Settings</button>
+  </nav>
+
+  <div id="careerAuthGate" class="career-auth-gate" hidden>
+    <div class="career-auth-card panel-surface">
+      <div id="careerAuthStatus" class="career-auth-status muted" hidden></div>
+
+      <section id="careerLoginView" class="career-auth-view">
+        <div class="panel-head compact">
+          <div>
+            <span class="eyebrow" data-translate="career.auth.eyebrow">Authentication</span>
+            <h2 data-translate="career.auth.title">Login</h2>
+          </div>
+        </div>
+
+        <div class="career-onboarding-tabs" role="tablist" aria-label="Auth options">
+          <button id="careerAuthLoginTab" class="career-tab-btn active" type="button" data-translate="career.auth.login_tab">Login</button>
+          <button id="careerAuthRegisterTab" class="career-tab-btn" type="button" data-translate="career.auth.register_tab">Create account</button>
+        </div>
+
+        <div id="careerAuthLoginPanel" class="career-auth-form" role="tabpanel">
+          <label class="career-auth-field">
+            <span data-translate="career.auth.email_label">Email</span>
+            <input id="careerLoginEmail" type="email" autocomplete="email" />
+          </label>
+
+          <label class="career-auth-field">
+            <span data-translate="career.auth.password_label">Password</span>
+            <input id="careerLoginPassword" type="password" autocomplete="current-password" />
+          </label>
+
+          <p id="careerLoginError" class="career-auth-error" hidden></p>
+
+          <div class="career-auth-actions">
+            <button id="careerLoginSubmit" class="table-action career-auth-submit" type="button" data-translate="career.auth.login_button">Login</button>
+            <button id="careerLoginCancel" class="career-auth-link" type="button" data-translate="career.auth.cancel">Cancel</button>
+          </div>
+
+          <div id="careerForgotPasswordGate" class="career-auth-forgot" hidden>
+            <p class="muted" data-translate="career.auth.forgot_hint">Forgot your password?</p>
+            <button id="careerForgotPasswordOpen" class="career-auth-link" type="button" data-translate="career.auth.forgot_button">Reset password</button>
+          </div>
+        </div>
+
+        <div id="careerAuthResetPanel" class="career-auth-form" role="tabpanel" hidden>
+          <div class="panel-head compact">
+            <div>
+              <span class="eyebrow" data-translate="career.auth.reset_eyebrow">Recovery</span>
+              <h2 data-translate="career.auth.reset_title">Reset password</h2>
+            </div>
+          </div>
+
+          <label class="career-auth-field">
+            <span data-translate="career.auth.email_label">Email</span>
+            <input id="careerResetEmail" type="email" autocomplete="email" />
+          </label>
+
+          <label class="career-auth-field">
+            <span data-translate="career.auth.recovery_code_label">Recovery Code</span>
+            <input id="careerResetRecoveryCode" type="text" autocomplete="one-time-code" />
+          </label>
+
+          <label class="career-auth-field">
+            <span data-translate="career.auth.new_password_label">New password</span>
+            <input id="careerResetNewPassword" type="password" autocomplete="new-password" />
+          </label>
+
+          <label class="career-auth-field">
+            <span data-translate="career.auth.password_confirm_label">Confirm password</span>
+            <input id="careerResetPasswordConfirm" type="password" autocomplete="new-password" />
+          </label>
+
+          <p id="careerResetError" class="career-auth-error" hidden></p>
+
+          <div class="career-auth-actions">
+            <button id="careerResetSubmit" class="table-action career-auth-submit" type="button" data-translate="career.auth.reset_button">Reset</button>
+            <button id="careerResetCancel" class="career-auth-link" type="button" data-translate="career.auth.reset_cancel">Cancel</button>
+          </div>
+        </div>
+
+        <div id="careerAuthRegisterPanel" class="career-auth-form" role="tabpanel" hidden>
+          <label class="career-auth-field">
+            <span data-translate="career.auth.username_label">Username</span>
+            <input id="careerRegisterUsername" type="text" autocomplete="username" />
+          </label>
+
+          <label class="career-auth-field">
+            <span data-translate="career.auth.email_label">Email</span>
+            <input id="careerRegisterEmail" type="email" autocomplete="email" />
+          </label>
+
+          <label class="career-auth-field">
+            <span data-translate="career.auth.password_label">Password</span>
+            <input id="careerRegisterPassword" type="password" autocomplete="new-password" />
+          </label>
+
+          <label class="career-auth-field">
+            <span data-translate="career.auth.password_confirm_label">Confirm password</span>
+            <input id="careerRegisterPasswordConfirm" type="password" autocomplete="new-password" />
+          </label>
+
+          <label class="career-consent">
+            <input id="careerRegisterConsentPrivacy" type="checkbox" />
+            <span data-translate="career.auth.consent_privacy">I accept the privacy policy.</span>
+          </label>
+
+          <label class="career-consent">
+            <input id="careerRegisterConsentTerms" type="checkbox" />
+            <span data-translate="career.auth.consent_terms">I accept the terms.</span>
+          </label>
+
+          <p id="careerRegisterError" class="career-auth-error" hidden></p>
+
+          <button id="careerRegisterSubmit" class="table-action career-auth-submit" type="button" data-translate="career.auth.register_button">Create account</button>
+        </div>
+      </section>
+
+      <section id="careerOnboardingView" class="career-auth-view" hidden>
+        <div class="panel-head compact">
+          <div>
+            <span class="eyebrow" data-translate="career.onboarding.eyebrow">Onboarding</span>
+            <h2 data-translate="career.onboarding.title">Company Setup</h2>
+          </div>
+        </div>
+
+        <div class="career-onboarding-tabs" role="tablist" aria-label="Company onboarding options">
+          <button id="careerOnboardingJoinTab" class="career-tab-btn active" type="button" data-translate="career.onboarding.join_tab">Join a company</button>
+          <button id="careerOnboardingCreateTab" class="career-tab-btn" type="button" data-translate="career.onboarding.create_tab">Create a company</button>
+        </div>
+
+        <div id="careerOnboardingJoinView" class="career-onboarding-view" role="tabpanel">
+          <label class="career-auth-field">
+            <span data-translate="career.onboarding.search_label">Search</span>
+            <input id="careerCompanySearch" type="text" data-translate-placeholder="career.onboarding.search_placeholder" placeholder="Search company name" />
+          </label>
+          <div id="careerCompanyList" class="career-company-list"></div>
+          <p id="careerCompanyListEmpty" class="career-auth-empty muted" hidden data-translate="career.onboarding.no_companies">No companies found.</p>
+        </div>
+
+        <div id="careerOnboardingCreateView" class="career-onboarding-view" role="tabpanel" hidden>
+          <div class="career-auth-form">
+            <label class="career-auth-field">
+              <span data-translate="career.company.name_label">Company Name</span>
+              <input id="careerCompanyName" type="text" />
+            </label>
+
+            <label class="career-auth-field">
+              <span data-translate="career.company.location_label">Location</span>
+              <input id="careerCompanyLocation" type="text" />
+            </label>
+
+            <label class="career-auth-field">
+              <span data-translate="career.company.language_label">Language</span>
+              <select id="careerCompanyLanguage">
+                <option value="" data-translate="career.company.language_select">Select</option>
+                <option value="de">DE</option>
+                <option value="en">EN</option>
+              </select>
+            </label>
+
+            <label class="career-auth-field">
+              <span data-translate="career.company.game_label">Game</span>
+              <select id="careerCompanyGame">
+                <option value="" data-translate="career.company.game_select">Select</option>
+                <option value="ETS2" data-translate="game.ets2">ETS2</option>
+                <option value="ATS" data-translate="game.ats">ATS</option>
+              </select>
+            </label>
+
+            <label class="career-auth-field">
+              <span data-translate="career.company.logo_label">Logo</span>
+              <input id="careerCompanyLogo" type="file" accept="image/*" />
+            </label>
+
+            <label class="career-auth-field">
+              <span data-translate="career.company.header_label">Header</span>
+              <input id="careerCompanyHeader" type="file" accept="image/*" />
+            </label>
+
+            <label class="career-auth-field">
+              <span data-translate="career.company.description_label">Description</span>
+              <textarea id="careerCompanyDescription" rows="4"></textarea>
+            </label>
+
+            <p id="careerCompanyCreateError" class="career-auth-error" hidden></p>
+            <button id="careerCompanyCreateSubmit" class="table-action career-auth-submit" type="button" data-translate="career.onboarding.create_button">Create company</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <header class="career-profile-head panel-surface">
+    <div class="profile-left">
+      <div class="profile-avatar" aria-hidden="true">
+        <img id="careerProfileAvatar" class="profile-avatar-img" alt="" />
+      </div>
+
+      <div class="profile-meta">
+        <div class="profile-row">
+          <strong id="careerProfileName" class="profile-name">-</strong>
+          <span id="careerRoleBadge" class="role-badge" data-translate="career.portal.role_owner">Owner</span>
+          <span id="careerHeroTitle" class="game-badge">ETS2</span>
+          <span id="careerGameLabel" class="engine-badge"></span>
+        </div>
+        <div class="profile-row muted">
+          <span id="careerCompanyValue">-</span>
+          <span class="dot" aria-hidden="true"></span>
+          <span id="careerConnectionNote" class="connection-note" data-translate="career.status.awaiting_signal">Waiting for shared memory bridge</span>
+        </div>
+        <div class="tag-row">
+          <span class="tag" data-translate="career.portal.tag_realtime">Realtime</span>
+          <span class="tag" data-translate="career.portal.tag_dispatch">Dispatch</span>
+          <span class="tag" data-translate="career.portal.tag_community">Community</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="profile-kpis" role="group" aria-label="Career summary">
+      <div class="kpi">
+        <span class="kpi-label" data-translate="career.hero.balance_label">Balance</span>
+        <strong id="careerBalanceValue">-</strong>
+      </div>
+      <div class="kpi">
+        <span class="kpi-label" data-translate="career.hero.reputation_label">Reputation</span>
+        <strong id="careerReputationValue">-</strong>
+      </div>
+      <div class="kpi">
+        <span class="kpi-label" data-translate="career.hero.fleet_label">Fleet</span>
+        <strong id="careerFleetStatusValue">-</strong>
+      </div>
+    </div>
+
+    <div class="profile-progress" aria-label="Level progress">
+      <div class="progress-top">
+        <span class="kpi-label" data-translate="career.portal.level_label">Level</span>
+        <strong id="careerLevelValue">-</strong>
+        <span id="careerXpValue" class="muted"></span>
+      </div>
+      <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+        <div id="careerLevelProgressFill" class="progress-fill"></div>
+      </div>
+      <div id="careerLevelProgressText" class="progress-bottom muted"></div>
+    </div>
+  </header>
+
+  <section class="career-banner panel-surface" aria-label="Company banner">
+    <div class="banner-copy">
+      <div class="eyebrow" data-translate="career.portal.banner_eyebrow">SimNexus Portal</div>
+      <h2 id="careerCompanyHeadline" class="banner-title">-</h2>
+      <p class="banner-tagline" data-translate="career.portal.banner_tagline">Career control center for your logistics operation.</p>
+    </div>
+    <div class="banner-status" aria-label="Connection status">
+      <span id="careerStatusGameRunning" class="status-pill-mini" data-translate="career.status.game_running">Game Running</span>
+      <span id="careerStatusPluginInstalled" class="status-pill-mini" data-translate="career.status.plugin_installed">Plugin Installed</span>
+      <span id="careerStatusSdkConnected" class="status-pill-mini" data-translate="career.status.sdk_connected">SDK Connected</span>
+    </div>
+  </section>
+
+  <div class="career-dashboard-shell" data-career-panel="dashboard"><div class="career-dashboard-grid">
+    <section class="career-panel panel-surface career-panel-job" id="careerJobCard">
+      <div class="panel-head">
+        <div>
+          <span class="eyebrow" data-translate="career.jobs.active.eyebrow">Current job</span>
+          <h2 data-translate="career.jobs.active.title">Aktueller Auftrag</h2>
+        </div>
+        <div class="panel-head-right">
+          <span id="careerJobStatusPill" class="status-chip"></span>
+        </div>
+      </div>
+
+      <div class="job-route" id="careerJobRoute">-</div>
+      <div class="job-subline" id="careerJobCompanies">-</div>
+
+      <div class="job-info-grid" role="group" aria-label="Active job metrics">
+        <div class="job-metric">
+          <span class="job-metric-label" data-translate="career.jobs.fields.cargo">Cargo</span>
+          <strong id="careerJobCargo">-</strong>
+        </div>
+        <div class="job-metric">
+          <span class="job-metric-label" data-translate="career.jobs.fields.distance">Distance</span>
+          <strong id="careerJobDistance">-</strong>
+        </div>
+        <div class="job-metric">
+          <span class="job-metric-label" data-translate="career.jobs.fields.income">Income</span>
+          <strong id="careerJobIncome">-</strong>
+        </div>
+        <div class="job-metric">
+          <span class="job-metric-label" data-translate="career.jobs.fields.time_remaining">Time remaining</span>
+          <strong id="careerJobTimeRemaining">-</strong>
+        </div>
+      </div>
+
+      <div class="job-meta-row">
+        <span class="job-meta-label" data-translate="career.jobs.fields.job_id">Job ID</span>
+        <span id="careerJobId" class="job-id">-</span>
+      </div>
+    </section>
+
+    <aside class="career-panel-side">
+      <section class="career-panel panel-surface career-panel-stats">
+        <div class="panel-head compact">
+          <div>
+            <span class="eyebrow" data-translate="career.jobs.stats.eyebrow">Key numbers</span>
+            <h2 data-translate="career.jobs.stats.title">Stats</h2>
+          </div>
+        </div>
+
+        <div class="stat-stack">
+          <div class="stat-row">
+            <span data-translate="career.dashboard.live_income">Live Income</span>
+            <strong id="careerLiveRevenueValue">EUR 0</strong>
+          </div>
+          <div class="stat-row">
+            <span data-translate="career.jobs.stats.total_jobs">Total Jobs</span>
+            <strong id="careerJobsTotalValue">0</strong>
+          </div>
+          <div class="stat-row">
+            <span data-translate="career.jobs.stats.total_income">Total Income</span>
+            <strong id="careerJobsTotalIncomeValue">EUR 0</strong>
+          </div>
+          <div class="stat-row">
+            <span data-translate="career.jobs.stats.average_distance">Average Distance</span>
+            <strong id="careerJobsAverageDistanceValue">0 km</strong>
+          </div>
+          <div class="stat-row">
+            <span data-translate="career.jobs.stats.success_rate">Success Rate</span>
+            <strong id="careerJobsSuccessRateValue">0%</strong>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="panel-subhead">
+          <span class="card-label" data-translate="career.dashboard.cost_stack">Realtime Costs</span>
+        </div>
+        <div class="stat-stack">
+          <div class="stat-row">
+            <span data-translate="career.dashboard.fuel_cost">Diesel</span>
+            <strong id="careerCostFuelValue">EUR 0</strong>
+          </div>
+          <div class="stat-row">
+            <span data-translate="career.dashboard.repair_cost">Repairs</span>
+            <strong id="careerCostRepairValue">EUR 0</strong>
+          </div>
+          <div class="stat-row">
+            <span data-translate="career.dashboard.toll_cost">Tolls</span>
+            <strong id="careerCostTollValue">EUR 0</strong>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="panel-subhead">
+          <span class="card-label" data-translate="career.dashboard.drivers_overview">Drivers</span>
+        </div>
+        <div class="stat-stack">
+          <div class="stat-row">
+            <span data-translate="career.dashboard.driver_online">On duty</span>
+            <strong id="careerDriversOnlineValue">00</strong>
+          </div>
+          <div class="stat-row">
+            <span data-translate="career.dashboard.driver_resting">Resting</span>
+            <strong id="careerDriversRestingValue">00</strong>
+          </div>
+        </div>
+        <div class="divider"></div>
+
+        <div class="panel-subhead">
+          <span class="card-label" data-translate="career.dashboard.active_trip">Active Trip</span>
+        </div>
+        <div class="active-trip">
+          <strong id="careerActiveTripValue">-</strong>
+          <p id="careerActiveTripSummary" class="muted" data-translate="career.dashboard.active_trip_desc">Medical supplies, priority corridor, 5h 40m remaining.</p>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="panel-subhead">
+          <span class="card-label" data-translate="career.dashboard.telemetry_title">Live vehicle</span>
+          <span class="card-hint" data-translate="career.dashboard.telemetry">Live telemetry feed from the active vehicle session.</span>
+        </div>
+        <div class="telemetry-strip" aria-label="Live telemetry">          <div class="telemetry-item">
+            <span class="telemetry-label" data-translate="career.widget.speed">Speed</span>
+            <strong><span id="careerSpeedValue">0</span> km/h</strong>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label" data-translate="career.widget.gear">Gear</span>
+            <strong id="careerGearValue">N</strong>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label" data-translate="career.widget.fuel">Fuel</span>
+            <strong id="careerFuelValue">-</strong>
+          </div>
+          <div class="telemetry-item">
+            <span class="telemetry-label" data-translate="career.widget.rpm">RPM</span>
+            <strong id="careerRpmValue">0</strong>
+          </div>
+          <div class="telemetry-progress">
+            <div id="careerFuelBarFill" class="telemetry-progress-fill"></div>
+            <span id="careerFuelPercent" class="telemetry-progress-label">0%</span>
+          </div>
+        </div>
+      </section>
+
+      <div id="careerRecentJobsList" hidden></div>
+      <p id="careerRecentJobsEmpty" hidden data-translate="career.jobs.history.empty">No jobs logged yet.</p>
+
+      <section class="career-panel panel-surface career-panel-activity">
+        <div class="panel-head compact">
+          <div>
+            <span class="eyebrow" data-translate="career.nav.dispatcher">Dispatcher</span>
+            <h2 data-translate="career.dispatcher.title">Dispatcher</h2>
+          </div>
+        </div>
+        <div id="careerActivityList" class="career-activity-list" hidden></div>
+        <p id="careerActivityEmpty" class="career-activity-empty" hidden data-translate="career.dispatcher.no_events">No dispatcher events.</p>
+      </section>
+    </aside>
+  </div>
+
+  <section class="career-panel panel-surface career-logbook-shell">
+    <div class="panel-head">
+      <div>
+        <span class="eyebrow" data-translate="career.jobs_logbook.eyebrow">Job history</span>
+        <h2 data-translate="career.jobs_logbook.title">Auftrags-Logbuch</h2>
+      </div>
+      <p class="panel-copy" data-translate="career.jobs_logbook.summary">Active jobs are detected and stored automatically.</p>
+    </div>
+
+    <div class="table-shell career-logbook-table">
+            <div class="table-row table-head career-logbook-head">
+        <span data-translate="career.jobs_logbook.index">#</span>
+        <span data-translate="career.jobs_logbook.started">Date</span>
+        <span data-translate="career.jobs_logbook.game">Game</span>
+        <span data-translate="career.jobs_logbook.cargo">Cargo</span>
+        <span data-translate="career.jobs_logbook.route">Route</span>
+        <span data-translate="career.jobs_logbook.distance">Distance</span>
+        <span data-translate="career.jobs_logbook.income">Income</span>
+        <span data-translate="career.jobs_logbook.status">Status</span>
+      </div>
+      <div class="table-scroll">
+        <div id="careerLogbookTable" class="table-body"></div>
+        <p id="careerLogbookEmpty" class="career-logbook-empty" data-translate="career.jobs_logbook.empty">No jobs logged yet.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+              <div id="careerDetailHost" class="career-detail-host panel-surface"></div>
+            </div>
+          </section>
+        </section>
+      </div>
+
+      <footer class="profile-bar">
+        <div class="game-switch">
+          <button id="ets2Btn" class="active">
+            <img src="images/ets2_32x32.png" alt="ETS2 logo" sizes="15px" />
+            <span data-translate="game.ets2">ETS2</span>
+          </button>
+          <button id="atsBtn" disabled>
+            <img src="images/ats_32x32.png" alt="ATS logo" class="switchButtonLogo" />
+            <span data-translate="game.ats">ATS</span>
+          </button>
+        </div>
+
+        <div class="profile-picker">
+          <img
+            id="activeProfileIcon"
+            src="images/icon_White.png"
+            alt="Profile"
+            class="profile-icon-footer"
+          />
+          <span id="profileNameDisplay" data-translate="profile.select_profile"></span>
+          <button id="openProfileModal">v</button>
+          <div id="profileDropdownList" class="custom-dropdown-list"></div>
+        </div>
+
+        <div class="save-picker">
+          <span id="saveName" data-translate="profile.select_save"></span>
+          <button id="openSaveModal">v</button>
+          <div id="saveDropdownList" class="dropdown-list"></div>
+        </div>
+
+      </footer>
+    </div>
+
+    <div class="modal-backdrop" id="modalText">
+      <div class="modal-box">
+        <h2 id="modalTextTitle">Modal Title</h2>
+        <input id="modalTextInput" type="text" placeholder="" />
+        <div class="modal-actions">
+          <button id="modalTextCancel" data-translate="modals.cancel">Close</button>
+          <button id="modalTextApply" class="apply" data-translate="modals.apply">Apply</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalNumber">
+      <div class="modal-box">
+        <h2 id="modalNumberTitle">Modal Title</h2>
+        <input id="modalNumberInput" type="number" placeholder="" />
+        <div class="modal-actions">
+          <button id="modalNumberCancel" data-translate="modals.cancel">Close</button>
+          <button id="modalNumberApply" class="apply" data-translate="modals.apply">Apply</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalSlider">
+      <div class="modal-box">
+        <h2 id="modalSliderTitle">Modal Title</h2>
+        <input id="modalSliderInput" type="checkbox" class="toggle-checkbox" />
+        <label for="modalSliderInput" class="checkboxSlider"></label>
+        <div class="modal-actions">
+          <button id="modalSliderCancel" data-translate="modals.cancel">Close</button>
+          <button id="modalSliderApply" class="apply" data-translate="modals.apply">Apply</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalMulti">
+      <div class="modal-box">
+        <h2 id="modalMultiTitle"></h2>
+        <div id="modalMultiContent"></div>
+        <div class="modal-actions">
+          <button id="modalMultiCancel" data-translate="modals.cancel">Close</button>
+          <button id="modalMultiApply" class="apply" data-translate="modals.apply">Apply</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalClone">
+      <div class="modal-box">
+        <h2 id="modalCloneTitle" data-translate="modals.clone_profile.title">Clone Profile</h2>
+
+        <p id="cloneSourceDisplay"></p>
+
+        <input id="cloneNameInput" type="text" />
+        <div id="cloneValidationMsg"></div>
+
+        <div class="clone-options">
+          <label class="checkbox-row">
+            <input type="checkbox" id="cloneBackup" checked disabled />
+            <span data-translate="modals.clone_profile.create_backup">Create Backup (.zip)</span>
+          </label>
+        </div>
+
+        <div class="modal-actions">
+          <button id="modalCloneCancel" data-translate="modals.cancel">Cancel</button>
+          <button id="modalCloneApply" class="apply" data-translate="modals.clone_profile.clone_button">Clone</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/modules/save-editor/standalone.js"></script>
+    <script type="module" src="/main.js" defer></script>
+  </body>
+</html>

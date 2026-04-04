@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title data-translate="career_mode.title">Career Mode Dashboard</title>
+    <link rel="stylesheet" href="/styles/career.css" />
+  </head>
+  <body class="career-page">
+    <header class="career-topbar">
+      <div class="career-brand">
+        <img src="/images/xlLogo.png" alt="Logo" class="career-brand-logo" />
+        <div>
+          <span class="career-brand-kicker" data-translate="career_mode.kicker">Career Mode</span>
+          <h1 data-translate="career_mode.title">Career Mode Dashboard</h1>
+        </div>
+      </div>
+
+      <div class="career-topbar-actions">
+        <button id="refreshCareerBtn" type="button" class="career-topbar-btn" data-translate="career_mode.refresh">Refresh</button>
+        <button id="openSaveEditorBtn" type="button" class="career-topbar-btn" data-translate="launcher.editor.title">Save Edit Tool</button>
+        <button id="openLauncherBtn" type="button" class="career-topbar-btn" data-translate="career_mode.open_launcher">Open Launcher</button>
+      </div>
+    </header>
+
+    <section class="career-live-status">
+      <article class="career-status-card">
+        <span data-translate="career.status.game_running">Game Running</span>
+        <strong id="careerStatusGameRunning">-</strong>
+      </article>
+      <article class="career-status-card">
+        <span data-translate="career.status.plugin_installed">Plugin Installed</span>
+        <strong id="careerStatusPluginInstalled">-</strong>
+      </article>
+      <article class="career-status-card">
+        <span data-translate="career.status.sdk_connected">SDK Connected</span>
+        <strong id="careerStatusBridgeConnected">-</strong>
+      </article>
+      <article class="career-status-card">
+        <span data-translate="career_mode.active_game">Active Game</span>
+        <strong id="careerStatusActiveGame">-</strong>
+      </article>
+      <article class="career-status-card career-status-source">
+        <span data-translate="career_mode.data_source">Data Source</span>
+        <strong id="careerDataSource">-</strong>
+      </article>
+    </section>
+
+    <div class="career-layout">
+      <aside class="career-sidebar">
+        <nav class="career-nav">
+          <button class="career-nav-btn is-active" data-panel="dashboard" data-translate="career.nav.dashboard">Dashboard</button>
+          <button class="career-nav-btn" data-panel="members" data-translate="career.nav.members">Members</button>
+          <button class="career-nav-btn" data-panel="orders" data-translate="career.nav.orders">Orders</button>
+          <button class="career-nav-btn" data-panel="finances" data-translate="career.nav.balance">Balance</button>
+          <button class="career-nav-btn" data-panel="fleet" data-translate="career.nav.fleet">Fleet</button>
+          <button class="career-nav-btn" data-panel="company" data-translate="career.nav.company">My Company</button>
+          <button class="career-nav-btn" data-panel="statistics" data-translate="career.nav.statistics">Statistics</button>
+          <button class="career-nav-btn" data-panel="settings" data-translate="career.nav.settings">Settings</button>
+        </nav>
+      </aside>
+
+      <main class="career-content">
+        <section id="panel-dashboard" class="career-panel is-active">
+          <div class="career-panel-head">
+            <h2 data-translate="career.nav.dashboard">Dashboard</h2>
+            <p data-translate="career_mode.dashboard_summary">Core company metrics, profile context and latest activity.</p>
+          </div>
+
+          <div class="career-card-grid">
+            <article class="career-metric-card">
+              <span data-translate="career.hero.company_label">Company</span>
+              <strong id="cmCompanyName">-</strong>
+            </article>
+            <article class="career-metric-card">
+              <span data-translate="career.hero.balance_label">Balance</span>
+              <strong id="cmBalance">EUR 0</strong>
+            </article>
+            <article class="career-metric-card">
+              <span data-translate="career.portal.level_label">Level</span>
+              <strong id="cmLevel">L0</strong>
+            </article>
+            <article class="career-metric-card">
+              <span data-translate="career.portal.xp_label">XP</span>
+              <strong id="cmXp">0</strong>
+            </article>
+            <article class="career-metric-card">
+              <span data-translate="career_mode.drivers">Driver Status</span>
+              <strong id="cmDriverStatus">-</strong>
+            </article>
+            <article class="career-metric-card">
+              <span data-translate="career_mode.last_trip">Last Trip</span>
+              <strong id="cmLastTrip">-</strong>
+            </article>
+          </div>
+
+          <div class="career-two-col">
+            <section class="career-widget">
+              <h3 data-translate="career_mode.quick_overview">Quick Overview</h3>
+              <ul id="cmQuickOverviewList" class="career-list"></ul>
+            </section>
+            <section class="career-widget">
+              <h3 data-translate="career_mode.latest_jobs">Latest Jobs</h3>
+              <div class="career-table-wrap">
+                <table class="career-table">
+                  <thead>
+                    <tr>
+                      <th data-translate="career.jobs_logbook.cargo">Cargo</th>
+                      <th data-translate="career.jobs_logbook.route">Route</th>
+                      <th data-translate="career.jobs_logbook.income">Income</th>
+                      <th data-translate="career.jobs_logbook.status">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="cmLatestJobsBody"></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section id="panel-members" class="career-panel">
+          <div class="career-panel-head">
+            <h2 data-translate="career.nav.members">Members</h2>
+            <p data-translate="career_mode.members_summary">Driver roster with role and operational state.</p>
+          </div>
+          <div class="career-table-wrap">
+            <table class="career-table">
+              <thead>
+                <tr>
+                  <th data-translate="career_mode.member_name">Name</th>
+                  <th data-translate="career_mode.member_role">Role</th>
+                  <th data-translate="career_mode.member_status">Status</th>
+                  <th data-translate="career_mode.member_location">Location</th>
+                </tr>
+              </thead>
+              <tbody id="cmMembersBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="panel-orders" class="career-panel">
+          <div class="career-panel-head">
+            <h2 data-translate="career.nav.orders">Orders</h2>
+            <p data-translate="career_mode.orders_summary">Active dispatch jobs and completed records.</p>
+          </div>
+
+          <h3 class="career-subtitle" data-translate="career.jobs.active.title">Current job</h3>
+          <div class="career-table-wrap">
+            <table class="career-table">
+              <thead>
+                <tr>
+                  <th data-translate="career.jobs.fields.job_id">Job ID</th>
+                  <th data-translate="career.jobs_logbook.route">Route</th>
+                  <th data-translate="career.jobs.fields.cargo">Cargo</th>
+                  <th data-translate="career.jobs.fields.income">Income</th>
+                  <th data-translate="career.jobs.fields.time_remaining">Remaining</th>
+                </tr>
+              </thead>
+              <tbody id="cmActiveOrdersBody"></tbody>
+            </table>
+          </div>
+
+          <h3 class="career-subtitle" data-translate="career.jobs_logbook.title">Job History</h3>
+          <div class="career-table-wrap">
+            <table class="career-table">
+              <thead>
+                <tr>
+                  <th data-translate="career.jobs_logbook.started">Date</th>
+                  <th data-translate="career.jobs_logbook.cargo">Cargo</th>
+                  <th data-translate="career.jobs_logbook.route">Route</th>
+                  <th data-translate="career.jobs_logbook.distance">Distance</th>
+                  <th data-translate="career.jobs_logbook.income">Income</th>
+                </tr>
+              </thead>
+              <tbody id="cmOrderHistoryBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="panel-finances" class="career-panel">
+          <div class="career-panel-head">
+            <h2 data-translate="career.nav.balance">Balance</h2>
+            <p data-translate="career_mode.finance_summary">Income, operating costs and estimated value impact.</p>
+          </div>
+
+          <div class="career-card-grid">
+            <article class="career-metric-card"><span data-translate="career.dashboard.live_income">Live revenue</span><strong id="cmFinanceIncome">EUR 0</strong></article>
+            <article class="career-metric-card"><span data-translate="career.dashboard.fuel_cost">Fuel costs</span><strong id="cmFinanceFuel">EUR 0</strong></article>
+            <article class="career-metric-card"><span data-translate="career.dashboard.repair_cost">Repair costs</span><strong id="cmFinanceRepair">EUR 0</strong></article>
+            <article class="career-metric-card"><span data-translate="career.dashboard.toll_cost">Toll costs</span><strong id="cmFinanceToll">EUR 0</strong></article>
+          </div>
+
+          <div class="career-table-wrap">
+            <table class="career-table">
+              <thead>
+                <tr>
+                  <th data-translate="career_mode.finance_metric">Metric</th>
+                  <th data-translate="career_mode.finance_value">Value</th>
+                </tr>
+              </thead>
+              <tbody id="cmFinanceSummaryBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="panel-fleet" class="career-panel">
+          <div class="career-panel-head">
+            <h2 data-translate="career.nav.fleet">Fleet</h2>
+            <p data-translate="career_mode.fleet_summary">Truck and trailer overview with condition and mileage.</p>
+          </div>
+          <div class="career-table-wrap">
+            <table class="career-table">
+              <thead>
+                <tr>
+                  <th data-translate="career_mode.fleet_type">Type</th>
+                  <th data-translate="career_mode.fleet_name">Asset</th>
+                  <th data-translate="career_mode.fleet_condition">Condition</th>
+                  <th data-translate="career_mode.fleet_distance">Distance</th>
+                </tr>
+              </thead>
+              <tbody id="cmFleetBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="panel-company" class="career-panel">
+          <div class="career-panel-head">
+            <h2 data-translate="career.nav.company">My Company</h2>
+            <p data-translate="career_mode.company_summary">Company profile and VTC identity settings.</p>
+          </div>
+          <div class="career-definition-grid">
+            <div><span data-translate="career_mode.company_name">Company name</span><strong id="cmCompanyFieldName">-</strong></div>
+            <div><span data-translate="career_mode.company_location">Location</span><strong id="cmCompanyFieldLocation">-</strong></div>
+            <div><span data-translate="career_mode.company_language">Language</span><strong id="cmCompanyFieldLanguage">-</strong></div>
+            <div><span data-translate="career_mode.company_game">Game</span><strong id="cmCompanyFieldGame">-</strong></div>
+            <div><span data-translate="career_mode.company_description">Description</span><strong id="cmCompanyFieldDescription">-</strong></div>
+          </div>
+        </section>
+
+        <section id="panel-statistics" class="career-panel">
+          <div class="career-panel-head">
+            <h2 data-translate="career.nav.statistics">Statistics</h2>
+            <p data-translate="career_mode.statistics_summary">Operational totals and trend placeholders for future charts.</p>
+          </div>
+
+          <div class="career-card-grid">
+            <article class="career-metric-card"><span data-translate="career.statistics.total_trips">Trips</span><strong id="cmStatTrips">0</strong></article>
+            <article class="career-metric-card"><span data-translate="career.statistics.total_km">Kilometers</span><strong id="cmStatKm">0</strong></article>
+            <article class="career-metric-card"><span data-translate="career.statistics.total_income">Revenue</span><strong id="cmStatRevenue">EUR 0</strong></article>
+            <article class="career-metric-card"><span data-translate="career.statistics.company_value">Company Value</span><strong id="cmStatCompanyValue">EUR 0</strong></article>
+            <article class="career-metric-card"><span data-translate="career.statistics.avg_speed">Avg Speed</span><strong id="cmStatSpeed">0 km/h</strong></article>
+            <article class="career-metric-card"><span data-translate="career.statistics.speeding">Speeding</span><strong id="cmStatSpeeding">0</strong></article>
+          </div>
+
+          <div class="career-widget">
+            <h3 data-translate="career_mode.statistics_chart">Chart Placeholder</h3>
+            <div id="cmChartBars" class="career-chart-bars"></div>
+          </div>
+        </section>
+
+        <section id="panel-settings" class="career-panel">
+          <div class="career-panel-head">
+            <h2 data-translate="career.nav.settings">Settings</h2>
+            <p data-translate="career_mode.settings_summary">Career-specific options and future API/sync preparation.</p>
+          </div>
+
+          <div class="career-settings-list">
+            <label class="career-setting-row">
+              <span data-translate="career_mode.setting_auto_refresh">Auto refresh dashboard</span>
+              <input id="cmSettingAutoRefresh" type="checkbox" checked />
+            </label>
+            <label class="career-setting-row">
+              <span data-translate="career_mode.setting_show_mock">Allow mock fallback</span>
+              <input id="cmSettingMockFallback" type="checkbox" checked />
+            </label>
+            <label class="career-setting-row">
+              <span data-translate="career_mode.setting_prepare_sync">Prepare API/Sync hooks</span>
+              <input id="cmSettingPrepareSync" type="checkbox" disabled />
+            </label>
+          </div>
+
+          <p class="career-note" data-translate="career_mode.settings_note">
+            API, sync and telemetry configuration hooks are prepared as placeholders.
+          </p>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="/modules/career/main.js"></script>
+  </body>
+</html>
