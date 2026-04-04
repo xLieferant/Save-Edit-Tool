@@ -21,3 +21,4 @@ pub mod fleet;
 pub mod auth;
 pub mod companies;
 pub mod career_onboarding;
+pub mod vtc;

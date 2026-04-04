@@ -123,14 +123,27 @@
             <h2 data-translate="career.nav.members">Members</h2>
             <p data-translate="career_mode.members_summary">Driver roster with role and operational state.</p>
           </div>
+          <div class="career-form-grid compact">
+            <label class="career-field">
+              <span data-translate="career_mode.member_assign_user_id">Assign by User ID</span>
+              <input id="cmAssignUserIdInput" type="number" min="1" />
+            </label>
+            <label class="career-field">
+              <span data-translate="career_mode.member_role">Role</span>
+              <select id="cmAssignRoleSelect"></select>
+            </label>
+            <div class="career-field-action">
+              <button id="cmAssignRoleBtn" class="career-action-btn" type="button" data-translate="career_mode.assign_role">Assign Role</button>
+            </div>
+          </div>
           <div class="career-table-wrap">
             <table class="career-table">
               <thead>
                 <tr>
                   <th data-translate="career_mode.member_name">Name</th>
                   <th data-translate="career_mode.member_role">Role</th>
-                  <th data-translate="career_mode.member_status">Status</th>
-                  <th data-translate="career_mode.member_location">Location</th>
+                  <th data-translate="career_mode.member_joined">Joined</th>
+                  <th data-translate="career_mode.member_actions">Actions</th>
                 </tr>
               </thead>
               <tbody id="cmMembersBody"></tbody>
@@ -228,12 +241,82 @@
             <h2 data-translate="career.nav.company">My Company</h2>
             <p data-translate="career_mode.company_summary">Company profile and VTC identity settings.</p>
           </div>
-          <div class="career-definition-grid">
-            <div><span data-translate="career_mode.company_name">Company name</span><strong id="cmCompanyFieldName">-</strong></div>
-            <div><span data-translate="career_mode.company_location">Location</span><strong id="cmCompanyFieldLocation">-</strong></div>
-            <div><span data-translate="career_mode.company_language">Language</span><strong id="cmCompanyFieldLanguage">-</strong></div>
-            <div><span data-translate="career_mode.company_game">Game</span><strong id="cmCompanyFieldGame">-</strong></div>
-            <div><span data-translate="career_mode.company_description">Description</span><strong id="cmCompanyFieldDescription">-</strong></div>
+          <div class="career-form-grid">
+            <label class="career-field">
+              <span data-translate="career_mode.company_name">Company name</span>
+              <input id="cmCompanyNameInput" type="text" />
+            </label>
+            <label class="career-field">
+              <span data-translate="career_mode.company_location">Location</span>
+              <input id="cmCompanyLocationInput" type="text" />
+            </label>
+            <label class="career-field">
+              <span data-translate="career_mode.company_language">Language</span>
+              <select id="cmCompanyLanguageInput">
+                <option value="en">en</option>
+                <option value="de">de</option>
+              </select>
+            </label>
+            <label class="career-field">
+              <span data-translate="career_mode.company_game">Game</span>
+              <select id="cmCompanyGameInput">
+                <option value="ETS2">ETS2</option>
+                <option value="ATS">ATS</option>
+              </select>
+            </label>
+            <label class="career-field">
+              <span data-translate="career_mode.company_logo">Logo URL/Path</span>
+              <input id="cmCompanyLogoInput" type="text" />
+            </label>
+            <label class="career-field">
+              <span data-translate="career_mode.company_header">Header URL/Path</span>
+              <input id="cmCompanyHeaderInput" type="text" />
+            </label>
+            <label class="career-field">
+              <span data-translate="career_mode.company_slogan">Slogan</span>
+              <input id="cmCompanySloganInput" type="text" />
+            </label>
+            <label class="career-field">
+              <span data-translate="career_mode.company_accent">Accent Color</span>
+              <input id="cmCompanyAccentInput" type="text" placeholder="#3B82F6" />
+            </label>
+            <label class="career-field career-field-wide">
+              <span data-translate="career_mode.company_description">Description</span>
+              <textarea id="cmCompanyDescriptionInput"></textarea>
+            </label>
+            <label class="career-toggle-field">
+              <span data-translate="career_mode.company_public_visibility">Public Visibility</span>
+              <input id="cmCompanyPublicVisibilityInput" type="checkbox" />
+            </label>
+            <div class="career-field-action">
+              <button id="cmCompanyProfileSaveBtn" class="career-action-btn" type="button" data-translate="career_mode.save_company_profile">Save Company Profile</button>
+            </div>
+          </div>
+
+          <div class="career-form-grid">
+            <label class="career-field">
+              <span data-translate="career_mode.company_default_role">Default Member Role</span>
+              <select id="cmCompanyDefaultRoleInput"></select>
+            </label>
+            <label class="career-toggle-field">
+              <span data-translate="career_mode.company_allow_join_requests">Allow Public Join Requests</span>
+              <input id="cmCompanyAllowJoinRequestsInput" type="checkbox" />
+            </label>
+            <label class="career-toggle-field">
+              <span data-translate="career_mode.company_dispatcher_manage_jobs">Dispatcher Can Manage Jobs</span>
+              <input id="cmCompanyDispatcherManageJobsInput" type="checkbox" />
+            </label>
+            <label class="career-toggle-field">
+              <span data-translate="career_mode.company_show_trainee">Show Trainees In Roster</span>
+              <input id="cmCompanyShowTraineeInput" type="checkbox" />
+            </label>
+            <label class="career-toggle-field">
+              <span data-translate="career_mode.company_allow_custom_profiles">Allow Member Custom Profiles</span>
+              <input id="cmCompanyAllowCustomProfilesInput" type="checkbox" />
+            </label>
+            <div class="career-field-action">
+              <button id="cmCompanySettingsSaveBtn" class="career-action-btn" type="button" data-translate="career_mode.save_company_settings">Save Company Settings</button>
+            </div>
           </div>
         </section>
 
@@ -264,7 +347,90 @@
             <p data-translate="career_mode.settings_summary">Career-specific options and future API/sync preparation.</p>
           </div>
 
+          <div class="career-form-grid">
+            <label class="career-field">
+              <span data-translate="career_mode.user_username">Username</span>
+              <input id="cmUserUsernameInput" type="text" />
+            </label>
+            <div class="career-field-action">
+              <button id="cmUpdateUsernameBtn" class="career-action-btn" type="button" data-translate="career_mode.update_username">Update Username</button>
+            </div>
+            <label class="career-field career-field-wide">
+              <span data-translate="career_mode.username_cooldown_hint">Username cooldown</span>
+              <small id="cmUsernameCooldownHint" class="career-inline-info">-</small>
+            </label>
+            <label class="career-field">
+              <span data-translate="career_mode.user_language">Language</span>
+              <select id="cmUserLanguageInput">
+                <option value="en">en</option>
+                <option value="de">de</option>
+              </select>
+            </label>
+            <label class="career-field">
+              <span data-translate="career_mode.user_preferred_game">Preferred Game</span>
+              <select id="cmUserPreferredGameInput">
+                <option value="ETS2">ETS2</option>
+                <option value="ATS">ATS</option>
+              </select>
+            </label>
+            <label class="career-field">
+              <span data-translate="career_mode.user_avatar">Avatar URL/Path</span>
+              <input id="cmUserAvatarInput" type="text" />
+            </label>
+            <label class="career-field">
+              <span data-translate="career_mode.user_visibility">Profile Visibility</span>
+              <select id="cmUserVisibilityInput">
+                <option value="private">private</option>
+                <option value="company">company</option>
+                <option value="public">public</option>
+              </select>
+            </label>
+            <label class="career-field career-field-wide">
+              <span data-translate="career_mode.user_bio">Bio</span>
+              <textarea id="cmUserBioInput"></textarea>
+            </label>
+            <label class="career-field">
+              <span data-translate="career_mode.user_theme">Theme Preference</span>
+              <input id="cmUserThemeInput" type="text" />
+            </label>
+            <label class="career-toggle-field">
+              <span data-translate="career_mode.user_notifications">Notifications Enabled</span>
+              <input id="cmUserNotificationsInput" type="checkbox" />
+            </label>
+            <div class="career-field-action">
+              <button id="cmSaveUserSettingsBtn" class="career-action-btn" type="button" data-translate="career_mode.save_user_settings">Save User Settings</button>
+            </div>
+          </div>
+
           <div class="career-settings-list">
+            <label class="career-setting-row">
+              <span data-translate="career_mode.setting_telemetry_enabled">Telemetry Enabled</span>
+              <input id="cmCareerTelemetryEnabledInput" type="checkbox" />
+            </label>
+            <label class="career-setting-row">
+              <span data-translate="career_mode.setting_local_stats_tracking">Local Stats Tracking</span>
+              <input id="cmCareerLocalStatsTrackingInput" type="checkbox" />
+            </label>
+            <label class="career-setting-row">
+              <span data-translate="career_mode.setting_auto_job_logging">Auto Job Logging</span>
+              <input id="cmCareerAutoJobLoggingInput" type="checkbox" />
+            </label>
+            <label class="career-setting-row">
+              <span data-translate="career_mode.setting_auto_finance_tracking">Auto Finance Tracking</span>
+              <input id="cmCareerAutoFinanceTrackingInput" type="checkbox" />
+            </label>
+            <label class="career-setting-row">
+              <span data-translate="career_mode.setting_metric_units">Use Metric Units</span>
+              <input id="cmCareerMetricUnitsInput" type="checkbox" />
+            </label>
+            <label class="career-setting-row">
+              <span data-translate="career_mode.setting_24h_time">Use 24h Time</span>
+              <input id="cmCareer24hTimeInput" type="checkbox" />
+            </label>
+            <label class="career-setting-row">
+              <span data-translate="career_mode.setting_autosave_career_data">Autosave Career Data</span>
+              <input id="cmCareerAutosaveInput" type="checkbox" />
+            </label>
             <label class="career-setting-row">
               <span data-translate="career_mode.setting_auto_refresh">Auto refresh dashboard</span>
               <input id="cmSettingAutoRefresh" type="checkbox" checked />
@@ -273,10 +439,9 @@
               <span data-translate="career_mode.setting_show_mock">Allow mock fallback</span>
               <input id="cmSettingMockFallback" type="checkbox" checked />
             </label>
-            <label class="career-setting-row">
-              <span data-translate="career_mode.setting_prepare_sync">Prepare API/Sync hooks</span>
-              <input id="cmSettingPrepareSync" type="checkbox" disabled />
-            </label>
+            <div class="career-field-action">
+              <button id="cmSaveCareerSettingsBtn" class="career-action-btn" type="button" data-translate="career_mode.save_career_settings">Save Career Settings</button>
+            </div>
           </div>
 
           <p class="career-note" data-translate="career_mode.settings_note">

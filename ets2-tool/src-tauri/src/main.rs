@@ -215,6 +215,26 @@ fn main() {
             features::companies::commands::company_get_current,
             features::companies::commands::company_get_for_user,
 
+            // VTC / Career Management
+            features::vtc::commands::get_current_user_profile,
+            features::vtc::commands::update_user_language,
+            features::vtc::commands::update_username,
+            features::vtc::commands::check_username_availability,
+            features::vtc::commands::update_user_profile_meta,
+            features::vtc::commands::create_company,
+            features::vtc::commands::get_company_overview,
+            features::vtc::commands::update_company_profile,
+            features::vtc::commands::get_company_members,
+            features::vtc::commands::update_company_settings,
+            features::vtc::commands::assign_member_role,
+            features::vtc::commands::change_member_role,
+            features::vtc::commands::get_available_roles,
+            features::vtc::commands::get_user_settings,
+            features::vtc::commands::update_user_settings,
+            features::vtc::commands::get_company_settings,
+            features::vtc::commands::get_career_settings,
+            features::vtc::commands::update_career_settings,
+
             // Onboarding
             features::career_onboarding::commands::career_get_onboarding_state,
         ])
