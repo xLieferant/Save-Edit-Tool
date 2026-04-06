@@ -1,6 +1,13 @@
 use rusqlite::{Connection, params};
 use serde::Serialize;
 
+pub mod compensation_models;
+pub mod compensation_service;
+
+use crate::features::economy::compensation_models::{
+    CompanyPaymentTier, UpsertCompanyPaymentProfileInput,
+};
+
 #[derive(Debug, Clone, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct EconomyState {
@@ -53,6 +60,33 @@ pub fn ensure_tables(conn: &Connection) -> Result<(), String> {
             eta_hours INTEGER NOT NULL,
             risk TEXT NOT NULL
         );
+
+        CREATE TABLE IF NOT EXISTS company_reputation (
+            company_id TEXT PRIMARY KEY,
+            reputation INTEGER NOT NULL CHECK (reputation >= 0 AND reputation <= 1000),
+            reliability_streak INTEGER NOT NULL DEFAULT 0,
+            completed_jobs INTEGER NOT NULL DEFAULT 0,
+            late_jobs INTEGER NOT NULL DEFAULT 0,
+            damage_incidents INTEGER NOT NULL DEFAULT 0,
+            canceled_jobs INTEGER NOT NULL DEFAULT 0,
+            updated_at_utc TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS company_payment_profiles (
+            company_id TEXT PRIMARY KEY,
+            company_name TEXT,
+            payment_tier TEXT NOT NULL DEFAULT 'standard',
+            payment_multiplier REAL NOT NULL DEFAULT 1.0,
+            home_country_code TEXT,
+            cargo_focus TEXT,
+            updated_at_utc TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS country_payment_levels (
+            country_code TEXT PRIMARY KEY,
+            country_name TEXT NOT NULL,
+            payment_multiplier REAL NOT NULL
+        );
         "#,
     )
     .map_err(|e| e.to_string())?;
@@ -97,6 +131,9 @@ pub fn ensure_tables(conn: &Connection) -> Result<(), String> {
         )
         .map_err(|e| e.to_string())?;
     }
+
+    seed_country_payment_levels(conn)?;
+    seed_company_payment_profiles(conn)?;
 
     Ok(())
 }
@@ -178,4 +215,175 @@ pub fn estimate_trip_costs(
         insurance_cost,
         total_cost,
     })
+}
+
+fn seed_country_payment_levels(conn: &Connection) -> Result<(), String> {
+    let levels = [
+        ("CH", "Switzerland", 1.22_f64),
+        ("NO", "Norway", 1.20_f64),
+        ("DK", "Denmark", 1.16_f64),
+        ("SE", "Sweden", 1.15_f64),
+        ("DE", "Germany", 1.14_f64),
+        ("NL", "Netherlands", 1.13_f64),
+        ("BE", "Belgium", 1.11_f64),
+        ("AT", "Austria", 1.11_f64),
+        ("FR", "France", 1.08_f64),
+        ("UK", "United Kingdom", 1.08_f64),
+        ("IT", "Italy", 1.06_f64),
+        ("ES", "Spain", 1.04_f64),
+        ("CZ", "Czechia", 1.00_f64),
+        ("PT", "Portugal", 0.99_f64),
+        ("PL", "Poland", 0.95_f64),
+        ("SK", "Slovakia", 0.95_f64),
+        ("HU", "Hungary", 0.94_f64),
+        ("HR", "Croatia", 0.94_f64),
+        ("RO", "Romania", 0.92_f64),
+        ("BG", "Bulgaria", 0.91_f64),
+        ("RS", "Serbia", 0.90_f64),
+        ("AL", "Albania", 0.88_f64),
+        ("MK", "North Macedonia", 0.88_f64),
+        ("ME", "Montenegro", 0.88_f64),
+    ];
+
+    for (country_code, country_name, payment_multiplier) in levels {
+        conn.execute(
+            r#"
+            INSERT OR IGNORE INTO country_payment_levels (
+                country_code,
+                country_name,
+                payment_multiplier
+            )
+            VALUES (?1, ?2, ?3)
+            "#,
+            params![country_code, country_name, payment_multiplier],
+        )
+        .map_err(|e| e.to_string())?;
+    }
+
+    Ok(())
+}
+
+fn seed_company_payment_profiles(conn: &Connection) -> Result<(), String> {
+    let profiles = [
+        (
+            "north-axis-logistics",
+            "North Axis Logistics",
+            CompanyPaymentTier::Standard,
+            1.00_f64,
+            Some("DE".to_string()),
+            Some("Industrial components".to_string()),
+        ),
+        (
+            "meditrans-europe",
+            "MediTrans Europe",
+            CompanyPaymentTier::Premium,
+            1.03_f64,
+            Some("AT".to_string()),
+            Some("Medical cargo".to_string()),
+        ),
+        (
+            "freshlink-foods",
+            "FreshLink Foods",
+            CompanyPaymentTier::Budget,
+            0.99_f64,
+            Some("PL".to_string()),
+            Some("Food logistics".to_string()),
+        ),
+        (
+            "alpine-steelworks",
+            "Alpine Steelworks",
+            CompanyPaymentTier::Good,
+            1.02_f64,
+            Some("IT".to_string()),
+            Some("Steel and machine parts".to_string()),
+        ),
+        (
+            "rhein-chem-cargo",
+            "RheinChem Cargo",
+            CompanyPaymentTier::Premium,
+            1.05_f64,
+            Some("DE".to_string()),
+            Some("Hazardous freight".to_string()),
+        ),
+        (
+            "nordic-heavy-haul",
+            "Nordic Heavy Haul",
+            CompanyPaymentTier::Elite,
+            1.01_f64,
+            Some("NO".to_string()),
+            Some("Oversize cargo".to_string()),
+        ),
+        (
+            "metro-retail-movers",
+            "Metro Retail Movers",
+            CompanyPaymentTier::Budget,
+            0.98_f64,
+            Some("FR".to_string()),
+            Some("Retail freight".to_string()),
+        ),
+        (
+            "atlantic-freight-link",
+            "Atlantic Freight Link",
+            CompanyPaymentTier::Good,
+            1.00_f64,
+            Some("BE".to_string()),
+            Some("Packaged and refrigerated goods".to_string()),
+        ),
+        (
+            "company-north-axis-pharma",
+            "North Axis Pharma",
+            CompanyPaymentTier::Premium,
+            1.04_f64,
+            Some("DE".to_string()),
+            Some("Medical supplies".to_string()),
+        ),
+        (
+            "company-alpine-steelworks",
+            "Alpine Steelworks",
+            CompanyPaymentTier::Good,
+            1.02_f64,
+            Some("DE".to_string()),
+            Some("Industrial steel".to_string()),
+        ),
+        (
+            "company-freshlink-foods",
+            "FreshLink Foods",
+            CompanyPaymentTier::Budget,
+            0.99_f64,
+            Some("PL".to_string()),
+            Some("Fresh produce".to_string()),
+        ),
+        (
+            "open-market",
+            "Open Market",
+            CompanyPaymentTier::Standard,
+            1.00_f64,
+            None,
+            None,
+        ),
+        (
+            "dispatcher-open-market",
+            "Dispatcher Market",
+            CompanyPaymentTier::Standard,
+            1.00_f64,
+            None,
+            None,
+        ),
+    ];
+
+    for (company_id, company_name, payment_tier, payment_multiplier, home_country_code, cargo_focus) in profiles {
+        compensation_service::upsert_company_payment_profile(
+            conn,
+            &UpsertCompanyPaymentProfileInput {
+                company_id: company_id.to_string(),
+                company_name: Some(company_name.to_string()),
+                payment_tier,
+                payment_multiplier,
+                home_country_code,
+                cargo_focus,
+            },
+        )?;
+    }
+
+    Ok(())
 }

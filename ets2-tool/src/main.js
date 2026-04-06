@@ -145,6 +145,14 @@ function formatDistance(value) {
   return `${formatTelemetryNumber(value ?? 0, 1)} km`;
 }
 
+function formatRatePerKm(value) {
+  return `EUR ${formatTelemetryNumber(value ?? 0, 2)}/km`;
+}
+
+function formatMultiplier(value) {
+  return `x${formatTelemetryNumber(value ?? 0, 2)}`;
+}
+
 function formatDurationCompact(value) {
   const totalSeconds = Math.max(0, Number(value ?? 0));
   const hours = Math.floor(totalSeconds / 3600);
@@ -1032,6 +1040,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const currentJob = overview?.currentJob || null;
     const freightOffers = overview?.freightOffers || [];
     const dispatcherEvents = overview?.dispatcherEvents || [];
+    const companyConditions = overview?.companyConditions || [];
+    const countryPaymentLevels = overview?.countryPaymentLevels || [];
     const trips = overview?.recentTrips || [];
     const dashboard = overview?.dashboard || {
       fuelCost: 0,
@@ -1088,14 +1098,18 @@ document.addEventListener("DOMContentLoaded", async () => {
               <article class="detail-card">
                 <span>${careerUi.currentJob}</span>
                 <strong>${escapeHtml(currentJob ? `${currentJob.source} - ${currentJob.destination}` : careerUi.noJobs)}</strong>
-                <p>${escapeHtml(currentJob ? `${currentJob.cargo} | ${formatDistance(currentJob.progressKm)} / ${formatDistance(currentJob.distanceKm)}` : careerUi.tripWaiting)}</p>
+                <p>${escapeHtml(currentJob
+                  ? `${currentJob.companyName || careerUi.noData} | ${formatRatePerKm(currentJob.pricePerKm)} | ${formatDistance(currentJob.progressKm)} / ${formatDistance(currentJob.distanceKm)}`
+                  : careerUi.tripWaiting)}</p>
               </article>
             </div>
-            <div class="table-shell">
+            <div class="table-shell career-orders-table">
               <div class="table-row table-head">
                 <span>${await t("career.orders.origin")}</span>
                 <span>${await t("career.orders.destination")}</span>
+                <span>${await t("career.orders.company")}</span>
                 <span>${await t("career.orders.cargo")}</span>
+                <span>${await t("career.orders.rate_per_km")}</span>
                 <span>${await t("career.orders.payout")}</span>
                 <span>${careerUi.progress}</span>
                 <span>${await t("career.freight.accept")}</span>
@@ -1105,7 +1119,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                   <div class="table-row">
                     <span>${escapeHtml(job.source)}</span>
                     <span>${escapeHtml(job.destination)}</span>
+                    <span>${escapeHtml(`${job.companyName || careerUi.noData} (${job.originCountryCode || "--"} -> ${job.destinationCountryCode || "--"})`)}</span>
                     <span>${escapeHtml(job.cargo)}</span>
+                    <span>${escapeHtml(formatRatePerKm(job.pricePerKm))}</span>
                     <span>${escapeHtml(formatCurrency(job.estimatedPayout))}</span>
                     <span>${escapeHtml(`${formatDistance(job.progressKm)} / ${formatDistance(job.distanceKm)}`)}</span>
                     <button
@@ -1121,6 +1137,8 @@ document.addEventListener("DOMContentLoaded", async () => {
                 : `
                   <div class="table-row">
                     <span>${escapeHtml(careerUi.noJobs)}</span>
+                    <span>-</span>
+                    <span>-</span>
                     <span>-</span>
                     <span>-</span>
                     <span>-</span>
@@ -1205,15 +1223,104 @@ document.addEventListener("DOMContentLoaded", async () => {
               copy: event.impact,
             });
           }
+          const dispatcherInsights = buildDetailCards(
+            eventCards.length
+              ? eventCards
+              : [{ label: await t("career.dispatcher.priority_medium"), value: careerUi.noDispatcherEvents, copy: careerUi.tripWaiting }]
+          );
+          const dispatcherJobsTitle = await t("career.dispatcher.pricing_snapshot");
+          const dispatcherConditionsTitle = await t("career.dispatcher.company_conditions");
+          const dispatcherCountriesTitle = await t("career.dispatcher.country_levels");
+          const dispatcherNoCompanies = await t("career.dispatcher.no_company_conditions");
+          const dispatcherNoCountries = await t("career.dispatcher.no_country_levels");
         return buildSectionFrame(
           "career.nav.dispatcher",
           "career.dispatcher.title",
           "career.dispatcher.summary",
-          buildDetailCards(
-            eventCards.length
-              ? eventCards
-              : [{ label: await t("career.dispatcher.priority_medium"), value: careerUi.noDispatcherEvents, copy: careerUi.tripWaiting }]
-          )
+          `
+            ${dispatcherInsights}
+            <div class="table-shell career-dispatcher-jobs">
+              <div class="table-row table-head">
+                <span>${dispatcherJobsTitle}</span>
+                <span>${await t("career.orders.company")}</span>
+                <span>${await t("career.orders.rate_per_km")}</span>
+                <span>${await t("career.dispatcher.customer_multiplier")}</span>
+                <span>${await t("career.dispatcher.reputation_factor")}</span>
+              </div>
+              ${(jobs.length ? jobs : [null]).slice(0, 6).map((job) => job
+                ? `
+                  <div class="table-row">
+                    <span>${escapeHtml(`${job.source} -> ${job.destination} (${job.originCountryCode} -> ${job.destinationCountryCode})`)}</span>
+                    <span>${escapeHtml(`${job.companyName || careerUi.noData} | ${humanizeToken(job.companyPaymentTier)}`)}</span>
+                    <span>${escapeHtml(formatRatePerKm(job.pricePerKm))}</span>
+                    <span>${escapeHtml(formatMultiplier(job.customerMultiplier))}</span>
+                    <span>${escapeHtml(`${job.companyReputation} | ${formatMultiplier(job.companyReputationMultiplier)}`)}</span>
+                  </div>
+                `
+                : `
+                  <div class="table-row">
+                    <span>${escapeHtml(careerUi.noJobs)}</span>
+                    <span>-</span>
+                    <span>-</span>
+                    <span>-</span>
+                    <span>-</span>
+                  </div>
+                `).join("")}
+            </div>
+            <div class="table-shell career-dispatcher-companies">
+              <div class="table-row table-head">
+                <span>${dispatcherConditionsTitle}</span>
+                <span>${await t("career.dispatcher.payment_tier")}</span>
+                <span>${await t("career.dispatcher.payment_multiplier")}</span>
+                <span>${await t("career.dispatcher.customer_multiplier")}</span>
+                <span>${await t("career.dispatcher.reputation_factor")}</span>
+                <span>${await t("career.dispatcher.cargo_focus")}</span>
+              </div>
+              ${(companyConditions.length ? companyConditions : [null]).slice(0, 10).map((condition) => condition
+                ? `
+                  <div class="table-row">
+                    <span>${escapeHtml(`${condition.companyName} (${condition.homeCountryCode || "--"})`)}</span>
+                    <span>${escapeHtml(humanizeToken(condition.paymentTier))}</span>
+                    <span>${escapeHtml(formatMultiplier(condition.paymentMultiplier))}</span>
+                    <span>${escapeHtml(formatMultiplier(condition.customerMultiplier))}</span>
+                    <span>${escapeHtml(`${condition.reputation} | ${formatMultiplier(condition.reputationMultiplier)}`)}</span>
+                    <span>${escapeHtml(condition.cargoFocus || "-")}</span>
+                  </div>
+                `
+                : `
+                  <div class="table-row">
+                    <span>${escapeHtml(dispatcherNoCompanies)}</span>
+                    <span>-</span>
+                    <span>-</span>
+                    <span>-</span>
+                    <span>-</span>
+                    <span>-</span>
+                  </div>
+                `).join("")}
+            </div>
+            <div class="table-shell career-dispatcher-countries">
+              <div class="table-row table-head">
+                <span>${dispatcherCountriesTitle}</span>
+                <span>${await t("career.dispatcher.country_multiplier")}</span>
+                <span>${await t("career.dispatcher.country_code")}</span>
+              </div>
+              ${(countryPaymentLevels.length ? countryPaymentLevels : [null]).slice(0, 8).map((country) => country
+                ? `
+                  <div class="table-row">
+                    <span>${escapeHtml(country.countryName)}</span>
+                    <span>${escapeHtml(formatMultiplier(country.paymentMultiplier))}</span>
+                    <span>${escapeHtml(country.countryCode)}</span>
+                  </div>
+                `
+                : `
+                  <div class="table-row">
+                    <span>${escapeHtml(dispatcherNoCountries)}</span>
+                    <span>-</span>
+                    <span>-</span>
+                  </div>
+                `).join("")}
+            </div>
+          `
         );
         }
       case "livemap":

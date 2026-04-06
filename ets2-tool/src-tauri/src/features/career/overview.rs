@@ -4,6 +4,10 @@ use serde::Serialize;
 use crate::features::career::dispatcher::{self, Job};
 use crate::features::career::job_log::{self, JobLogEntry, JobStats};
 use crate::features::career::logbook::{self, ActiveTripView, TripSummary};
+use crate::features::economy::compensation_models::{
+    CompanyCompensationCondition, CountryPaymentLevel,
+};
+use crate::features::economy::compensation_service;
 use crate::features::{bank, contracts, economy, employees, events, fleet, reputation};
 use crate::state::{CareerRuntime, LiveTelemetryState};
 
@@ -42,6 +46,8 @@ pub struct CareerOverview {
     pub contracts: Vec<contracts::ContractSummary>,
     pub dispatcher_events: Vec<events::CareerEvent>,
     pub freight_offers: Vec<economy::FreightOffer>,
+    pub company_conditions: Vec<CompanyCompensationCondition>,
+    pub country_payment_levels: Vec<CountryPaymentLevel>,
     pub jobs: Vec<Job>,
     pub current_job: Option<Job>,
     pub active_trip: Option<ActiveTripView>,
@@ -73,6 +79,9 @@ pub fn load_overview(runtime: &CareerRuntime) -> Result<CareerOverview, String> 
     let contracts_list = contracts::load_active_contracts(&conn, 6)?;
     let dispatcher_events = events::list_recent_events(&conn, 6)?;
     let freight_offers = economy::list_freight_offers(&conn, 6)?;
+    let company_conditions =
+        compensation_service::list_company_compensation_conditions(&conn, 12)?;
+    let country_payment_levels = compensation_service::list_country_payment_levels(&conn, 24)?;
     let recent_trips = logbook::list_trips_from_connection(&conn, 8)?;
     let active_trip = logbook::current_active_trip(runtime)?;
     job_log::ensure_tables(&conn)?;
@@ -133,6 +142,8 @@ pub fn load_overview(runtime: &CareerRuntime) -> Result<CareerOverview, String> 
         contracts: contracts_list,
         dispatcher_events,
         freight_offers,
+        company_conditions,
+        country_payment_levels,
         jobs,
         current_job,
         active_trip,

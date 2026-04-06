@@ -2,10 +2,14 @@ use std::path::Path;
 use std::sync::atomic::Ordering;
 
 use chrono::Utc;
-use rusqlite::{Connection, params};
+use rusqlite::{Connection, OptionalExtension, params};
 use serde::Serialize;
 
 use crate::features::career::dispatcher;
+use crate::features::economy::compensation_models::{
+    BaseRateType, CargoType, CompanyPaymentTier, CompanyReputationOutcome, EquipmentType,
+    JobCompensationInput, UpsertCompanyPaymentProfileInput, Urgency,
+};
 use crate::features::{bank, contracts, economy, employees, events, fleet, reputation};
 use crate::state::{ActiveTripState, CareerRuntime, LiveTelemetryState};
 
@@ -63,6 +67,14 @@ pub struct ActiveTripView {
 enum FinalizeReason {
     EngineOff,
     JobCompleted,
+}
+
+#[derive(Debug, Clone)]
+struct TripCompanyContext {
+    company_id: String,
+    company_name: String,
+    origin_country_code: String,
+    destination_country_code: String,
 }
 
 pub fn process_snapshot(runtime: &CareerRuntime, sample: TelemetrySample) -> Result<(), String> {
@@ -352,6 +364,8 @@ fn finalize_trip(
         } else {
             active.distance_km
         };
+        let company_context = resolve_company_context(&conn, active, is_dispatch_job)?;
+
         let wear = fleet::apply_trip_wear(&conn, distance_for_result, active.speeding_events)?;
         let costs = economy::estimate_trip_costs(
             &conn,
@@ -362,7 +376,23 @@ fn finalize_trip(
         let gross_income = if dispatcher_completed {
             (job_target_distance * active.job_price_per_km.unwrap_or_default()).round() as i64
         } else {
-            economy::estimate_trip_revenue(&conn, distance_for_result, active.bonus_payout)?
+            let pricing = economy::compensation_service::calculate_job_compensation(
+                &conn,
+                &JobCompensationInput {
+                    company_id: company_context.company_id.clone(),
+                    company_name: Some(company_context.company_name.clone()),
+                    distance_km: distance_for_result.max(1.0),
+                    base_rate_type: BaseRateType::OwnTruck,
+                    equipment_type: EquipmentType::OwnTruck,
+                    cargo_type: infer_cargo_type(&active.cargo),
+                    urgency: infer_urgency_from_bonus(active.bonus_payout),
+                    origin_country_code: company_context.origin_country_code.clone(),
+                    destination_country_code: company_context.destination_country_code.clone(),
+                    market_seed: Utc::now().timestamp_millis().unsigned_abs() as u64,
+                },
+            )?;
+
+            pricing.final_price + active.bonus_payout
         };
         let net_income = gross_income - costs.total_cost;
 
@@ -370,6 +400,17 @@ fn finalize_trip(
         let bank_state = bank::apply_trip_result(&conn, net_income)?;
         let reputation_state =
             reputation::apply_trip_outcome(&conn, distance_for_result, active.speeding_events)?;
+        let company_outcome = CompanyReputationOutcome {
+            completed: true,
+            on_time: true,
+            damage_percent: ((active.speeding_events.max(0) as f64) * 1.8).min(100.0),
+            canceled: false,
+        };
+        let company_reputation = economy::compensation_service::apply_company_reputation_outcome(
+            &conn,
+            &company_context.company_id,
+            company_outcome,
+        )?;
 
         if dispatcher_completed {
             let _ = dispatcher::complete_job(&conn, &active.job_id)?;
@@ -440,6 +481,17 @@ fn finalize_trip(
                 "low",
             )?;
         }
+
+        events::record_event(
+            &conn,
+            "economy",
+            "Company reputation updated",
+            &format!(
+                "{} reputation is now {}.",
+                company_context.company_name, company_reputation.reputation
+            ),
+            "low",
+        )?;
     } else {
         trip_status = "paused";
         employees::mark_driver_status(&conn, "resting")?;
@@ -586,5 +638,151 @@ fn format_gear(gear: i32) -> String {
         value if value < 0 => format!("R{}", value.abs()),
         0 => "N".to_string(),
         value => value.to_string(),
+    }
+}
+
+fn resolve_company_context(
+    conn: &Connection,
+    active: &ActiveTripState,
+    is_dispatch_job: bool,
+) -> Result<TripCompanyContext, String> {
+    if is_dispatch_job {
+        if let Some(context) = dispatcher::load_job_pricing_context(conn, &active.job_id)? {
+            return Ok(TripCompanyContext {
+                company_id: context.company_id,
+                company_name: context.company_name,
+                origin_country_code: context.origin_country_code,
+                destination_country_code: context.destination_country_code,
+            });
+        }
+
+        return Ok(TripCompanyContext {
+            company_id: "dispatcher-open-market".to_string(),
+            company_name: "Dispatcher Market".to_string(),
+            origin_country_code: "DE".to_string(),
+            destination_country_code: "DE".to_string(),
+        });
+    }
+
+    if let Some(contract_id) = active.contract_id.as_deref() {
+        let company_name = conn
+            .query_row(
+                "SELECT company_name FROM contracts WHERE contract_id = ?1",
+                [contract_id],
+                |row| row.get::<_, String>(0),
+            )
+            .optional()
+            .map_err(|e| e.to_string())?;
+
+        if let Some(company_name) = company_name {
+            let context = TripCompanyContext {
+                company_id: company_key_from_name(&company_name),
+                company_name,
+                origin_country_code: infer_country_code(&active.origin),
+                destination_country_code: infer_country_code(&active.destination),
+            };
+            ensure_company_payment_profile(conn, &context, &active.cargo)?;
+            return Ok(context);
+        }
+
+        let context = TripCompanyContext {
+            company_id: format!("contract-{contract_id}"),
+            company_name: format!("Contract {contract_id}"),
+            origin_country_code: infer_country_code(&active.origin),
+            destination_country_code: infer_country_code(&active.destination),
+        };
+        ensure_company_payment_profile(conn, &context, &active.cargo)?;
+        return Ok(context);
+    }
+
+    let context = TripCompanyContext {
+        company_id: "open-market".to_string(),
+        company_name: "Open Market".to_string(),
+        origin_country_code: infer_country_code(&active.origin),
+        destination_country_code: infer_country_code(&active.destination),
+    };
+    ensure_company_payment_profile(conn, &context, &active.cargo)?;
+    Ok(context)
+}
+
+fn company_key_from_name(name: &str) -> String {
+    let mut out = String::new();
+    let mut last_was_dash = false;
+
+    for ch in name.chars() {
+        if ch.is_ascii_alphanumeric() {
+            out.push(ch.to_ascii_lowercase());
+            last_was_dash = false;
+        } else if !last_was_dash {
+            out.push('-');
+            last_was_dash = true;
+        }
+    }
+
+    let trimmed = out.trim_matches('-');
+    if trimmed.is_empty() {
+        "company-unknown".to_string()
+    } else {
+        format!("company-{trimmed}")
+    }
+}
+
+fn ensure_company_payment_profile(
+    conn: &Connection,
+    context: &TripCompanyContext,
+    cargo: &str,
+) -> Result<(), String> {
+    let (payment_tier, payment_multiplier) = match context.company_id.as_str() {
+        "company-north-axis-pharma" => (CompanyPaymentTier::Premium, 1.04),
+        "company-alpine-steelworks" => (CompanyPaymentTier::Good, 1.02),
+        "company-freshlink-foods" => (CompanyPaymentTier::Budget, 0.99),
+        "open-market" => (CompanyPaymentTier::Standard, 1.00),
+        _ => (CompanyPaymentTier::Standard, 1.00),
+    };
+
+    economy::compensation_service::upsert_company_payment_profile(
+        conn,
+        &UpsertCompanyPaymentProfileInput {
+            company_id: context.company_id.clone(),
+            company_name: Some(context.company_name.clone()),
+            payment_tier,
+            payment_multiplier,
+            home_country_code: Some(context.origin_country_code.clone()),
+            cargo_focus: Some(cargo.to_string()),
+        },
+    )
+}
+
+fn infer_country_code(city: &str) -> String {
+    economy::compensation_service::infer_country_code_from_city(city)
+        .map(|value| value.to_string())
+        .unwrap_or_else(|| "DE".to_string())
+}
+
+fn infer_cargo_type(cargo: &str) -> CargoType {
+    let value = cargo.to_ascii_lowercase();
+
+    if value.contains("chemical") || value.contains("hazard") {
+        CargoType::Hazardous
+    } else if value.contains("medical") || value.contains("fragile") {
+        CargoType::Fragile
+    } else if value.contains("fresh") || value.contains("refrigerated") || value.contains("cold") {
+        CargoType::Refrigerated
+    } else if value.contains("special") || value.contains("oversize") || value.contains("heavy") {
+        CargoType::Oversize
+    } else if value.contains("machine") || value.contains("valuable") {
+        CargoType::Valuable
+    } else {
+        CargoType::Standard
+    }
+}
+
+fn infer_urgency_from_bonus(bonus_payout: i64) -> Urgency {
+    if bonus_payout >= 3500 {
+        Urgency::Express
+    } else if bonus_payout >= 1800 {
+        Urgency::Priority
+    } else {
+        Urgency::Normal
     }
 }
