@@ -7,6 +7,7 @@ const state = {
   jobLog: [],
   jobStats: null,
   source: "mock",
+  vtcContext: null,
   userProfile: null,
   userSettings: null,
   companyOverview: null,
@@ -68,11 +69,15 @@ const uiText = {
   dispatcherNoSaveLink: "No save linked",
   dispatcherUnsynced: "Not synced",
   dispatcherExpired: "Expired",
+  dispatcherAssigned: "Assigned to Save",
   dispatcherPrepareLink: "Prepare ETS Link",
+  dispatcherRetryPrepareLink: "Retry Prepare ETS Link",
   dispatcherWriteQuicksave: "Write to Quicksave",
   dispatcherIntervalLabel: "Interval",
   dispatcherPoolLabel: "Pool",
   dispatcherOpenLabel: "Open",
+  vtcContextNoProfile: "No profile linked",
+  vtcContextNoSave: "No save selected",
 };
 
 function formatNumber(value, digits = 0) {
@@ -130,6 +135,11 @@ function formatPathReference(value) {
   const parts = normalized.split("/").filter(Boolean);
   if (parts.length <= 2) return normalized;
   return parts.slice(-2).join("/");
+}
+
+function formatVtcPathReference(value, fallback) {
+  if (!value) return fallback;
+  return formatPathReference(value);
 }
 
 function setCellHtml(id, value) {
@@ -202,6 +212,11 @@ function normalizeErrorCode(rawError) {
     "dispatcher_offer_not_countered",
     "dispatcher_save_context_missing",
     "dispatcher_job_not_generated",
+    "no_active_save",
+    "dispatcher_job_not_found",
+    "job_already_assigned",
+    "invalid_job_status",
+    "save_context_unavailable",
     "profile_not_found",
     "save_not_found",
     "decode_failed",
@@ -652,12 +667,17 @@ function renderDispatcherMarket() {
 function renderDispatcherDetails() {
   const selected = state.dispatcher.selectedJob;
   const acceptButton = document.getElementById("cmDispatcherAcceptJobBtn");
+  const assignButton = document.getElementById("cmDispatcherAssignJobToSaveBtn");
   const prepareLinkButton = document.getElementById("cmDispatcherPrepareEtsLinkBtn");
   const writeQuicksaveButton = document.getElementById("cmDispatcherWriteQuicksaveBtn");
   const syncButton = document.getElementById("cmDispatcherMarkSyncedBtn");
   if (!selected) {
     if (acceptButton) acceptButton.disabled = true;
-    if (prepareLinkButton) prepareLinkButton.disabled = true;
+    if (assignButton) assignButton.disabled = true;
+    if (prepareLinkButton) {
+      prepareLinkButton.disabled = true;
+      prepareLinkButton.textContent = uiText.dispatcherPrepareLink;
+    }
     if (writeQuicksaveButton) writeQuicksaveButton.disabled = true;
     if (syncButton) syncButton.disabled = true;
     setCellHtml("cmDispatcherDetailBadges", "");
@@ -686,16 +706,33 @@ function renderDispatcherDetails() {
   const job = selected.job || selected;
   const jobLink = state.dispatcher.jobLink;
   const linkStatus = normalizeDispatcherJobLinkStatus(jobLink?.status || job.ets2JobLinkStatus);
-  if (acceptButton) acceptButton.disabled = !job.id;
+  const retryPrepare = linkStatus === "error";
+  const normalizedStatus = String(job.status || "").toLowerCase();
+  const saveLinked = Boolean(job.linkedToActiveSave || job.saveReference);
+  const readyForSaveInjection = ["assigned_to_save", "prepared", "injected"].includes(normalizedStatus);
+  if (acceptButton) acceptButton.disabled = !job.id || normalizedStatus !== "open";
+  if (assignButton) {
+    assignButton.disabled = !job.id || !["open", "failed"].includes(normalizedStatus);
+  }
   if (prepareLinkButton) {
-    prepareLinkButton.disabled = !job.id || Boolean(jobLink && !["completed", "error"].includes(linkStatus));
+    prepareLinkButton.disabled =
+      !job.id ||
+      !saveLinked ||
+      !readyForSaveInjection ||
+      Boolean(jobLink && !["completed", "error"].includes(linkStatus));
+    prepareLinkButton.textContent = retryPrepare
+      ? uiText.dispatcherRetryPrepareLink
+      : uiText.dispatcherPrepareLink;
   }
   if (writeQuicksaveButton) {
     writeQuicksaveButton.disabled = !jobLink?.linkId || linkStatus !== "pending";
   }
   if (syncButton) syncButton.disabled = !job.id;
   const route = `${job.originCity || "-"} -> ${job.destinationCity || "-"}`;
-  const ets2Status = dispatcherJobLinkLabel(jobLink?.status || job.ets2JobLinkStatus);
+  const ets2StatusLabel = dispatcherJobLinkLabel(jobLink?.status || job.ets2JobLinkStatus);
+  const ets2Status = job.lastErrorCode
+    ? `${ets2StatusLabel} (${job.lastErrorCode})`
+    : ets2StatusLabel;
   setCellHtml("cmDispatcherDetailBadges", dispatcherJobBadges(job));
   setCellText("cmDispatcherDetailId", job.id || "-");
   setCellText("cmDispatcherDetailSource", titleize(job.sourceType || "-"));
@@ -851,7 +888,7 @@ async function refreshDispatcherData() {
   }
   state.dispatcher.overview = await safeInvoke("dispatcher_get_dispatcher_overview", {}, { fallback: null, silent: true });
   state.dispatcher.marketJobs = await safeInvoke(
-    "dispatcher_get_market_jobs",
+    "dispatcher_get_open_jobs",
     { filter },
     { fallback: [], silent: true }
   );
@@ -862,7 +899,7 @@ async function refreshDispatcherData() {
 
   if (state.dispatcher.selectedJobId) {
     state.dispatcher.selectedJob = await safeInvoke(
-      "dispatcher_get_job_details",
+      "dispatcher_get_job_by_id",
       { jobId: state.dispatcher.selectedJobId },
       { fallback: null, silent: true }
     );
@@ -878,7 +915,7 @@ async function refreshDispatcherData() {
   } else if (state.dispatcher.marketJobs.length > 0) {
     state.dispatcher.selectedJobId = state.dispatcher.marketJobs[0].id;
     state.dispatcher.selectedJob = await safeInvoke(
-      "dispatcher_get_job_details",
+      "dispatcher_get_job_by_id",
       { jobId: state.dispatcher.selectedJobId },
       { fallback: null, silent: true }
     );
@@ -898,7 +935,7 @@ async function handleDispatcherSelectJob(event) {
   if (!row) return;
   state.dispatcher.selectedJobId = row.getAttribute("data-dispatcher-job-id");
   state.dispatcher.selectedJob = await safeInvoke(
-    "dispatcher_get_job_details",
+    "dispatcher_get_job_by_id",
     { jobId: state.dispatcher.selectedJobId },
     { fallback: null, silent: true }
   );
@@ -942,6 +979,22 @@ async function handleDispatcherAcceptJob() {
   }
 }
 
+async function handleDispatcherAssignToActiveSave() {
+  if (!state.dispatcher.selectedJobId) return;
+  try {
+    state.dispatcher.selectedJob = await invokeStrict("dispatcher_assign_and_prepare_ets_link", {
+      jobId: state.dispatcher.selectedJobId,
+    });
+    await refreshDispatcherData();
+    renderDispatcher();
+    showToast(await t("career_mode.dispatcher.toast_assign_prepare_complete"), "success");
+  } catch (error) {
+    await refreshDispatcherData();
+    renderDispatcher();
+    showToast(await resolveErrorMessage(error), "error");
+  }
+}
+
 function dispatcherGenerationConfigPayload() {
   const intervalMinutes = Number(getInputValue("cmDispatcherGenerationIntervalInput"));
   const maxOpenJobs = Number(getInputValue("cmDispatcherGenerationMaxOpenInput"));
@@ -966,10 +1019,7 @@ async function handleDispatcherPersistGenerationConfig() {
 
 async function handleDispatcherGenerateNow() {
   try {
-    state.dispatcher.generation = await invokeStrict("dispatcher_generate_universal_jobs", {
-      force: true,
-      config: dispatcherGenerationConfigPayload(),
-    });
+    state.dispatcher.generation = await invokeStrict("dispatcher_generate_jobs", {});
     await refreshDispatcherData();
     renderDispatcher();
     showToast(await t("career_mode.dispatcher.toast_jobs_generated"), "success");
@@ -1016,6 +1066,8 @@ async function handleDispatcherPrepareEtsLink() {
     renderDispatcher();
     showToast(await t("career_mode.dispatcher.toast_link_prepared"), "success");
   } catch (error) {
+    await refreshDispatcherData();
+    renderDispatcher();
     showToast(await resolveErrorMessage(error), "error");
   }
 }
@@ -1213,6 +1265,24 @@ function renderStatus() {
   setCellText("careerDataSource", state.source === "live" ? uiText.sourceLive : uiText.sourceMock);
 }
 
+function renderVtcContext() {
+  const context = state.vtcContext || {};
+  const userLabel = context.username
+    ? `${context.username} #${formatNumber(context.userId || 0, 0)}`
+    : uiText.noData;
+
+  setCellText("careerVtcContextUser", userLabel);
+  setCellText(
+    "careerVtcContextProfile",
+    formatVtcPathReference(context.profileReference, uiText.vtcContextNoProfile)
+  );
+  setCellText(
+    "careerVtcContextSave",
+    formatVtcPathReference(context.saveReference, uiText.vtcContextNoSave)
+  );
+  setCellText("careerVtcContextSession", context.saveSessionId || uiText.noData);
+}
+
 function renderUserSettings() {
   const profile = state.userProfile;
   const settings = state.userSettings;
@@ -1283,6 +1353,9 @@ function applyDispatcherHandlers() {
   });
   document.getElementById("cmDispatcherAcceptJobBtn")?.addEventListener("click", () => {
     void handleDispatcherAcceptJob();
+  });
+  document.getElementById("cmDispatcherAssignJobToSaveBtn")?.addEventListener("click", () => {
+    void handleDispatcherAssignToActiveSave();
   });
   document.getElementById("cmDispatcherPrepareEtsLinkBtn")?.addEventListener("click", () => {
     void handleDispatcherPrepareEtsLink();
@@ -1365,6 +1438,10 @@ function registerDispatcherEventHandlers() {
     await refreshDispatcherData();
     renderDispatcher();
   }).catch(console.error);
+  listen("vtc://dispatcher/job_updated", async () => {
+    await refreshDispatcherData();
+    renderDispatcher();
+  }).catch(console.error);
   listen("vtc://dispatcher/jobs_updated", async () => {
     await refreshDispatcherData();
     renderDispatcher();
@@ -1400,10 +1477,13 @@ async function loadUiText() {
   uiText.dispatcherUnsynced = await t("career_mode.dispatcher.unsynced");
   uiText.dispatcherExpired = await t("career_mode.dispatcher.expired");
   uiText.dispatcherPrepareLink = await t("career_mode.dispatcher.prepare_ets_link");
+  uiText.dispatcherRetryPrepareLink = await t("career_mode.dispatcher.retry_prepare_ets_link");
   uiText.dispatcherWriteQuicksave = await t("career_mode.dispatcher.write_to_quicksave");
   uiText.dispatcherIntervalLabel = await t("career_mode.dispatcher.generation_interval_short");
   uiText.dispatcherPoolLabel = await t("career_mode.dispatcher.generation_pool_short");
   uiText.dispatcherOpenLabel = await t("career_mode.dispatcher.generation_open_short");
+  uiText.vtcContextNoProfile = await t("career_mode.vtc_context_no_profile");
+  uiText.vtcContextNoSave = await t("career_mode.vtc_context_no_save");
 }
 
 async function refreshCareerTelemetryData() {
@@ -1431,6 +1511,7 @@ async function refreshCareerTelemetryData() {
 }
 
 async function refreshManagementData() {
+  state.vtcContext = await safeInvoke("get_vtc_runtime_context", {}, { fallback: null, silent: true });
   state.roles = await safeInvoke("get_available_roles", {}, { fallback: [], silent: true });
   state.userProfile = await safeInvoke("get_current_user_profile", {}, { fallback: null, silent: true });
   state.userSettings = await safeInvoke("get_user_settings", {}, { fallback: null, silent: true });
@@ -1442,6 +1523,7 @@ async function refreshManagementData() {
 
 function renderAll() {
   renderStatus();
+  renderVtcContext();
   renderDashboard();
   renderMembers();
   renderOrders();

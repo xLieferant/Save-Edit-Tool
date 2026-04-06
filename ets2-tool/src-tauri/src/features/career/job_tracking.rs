@@ -54,7 +54,10 @@ fn derived_job_id(job: &TelemetryJob) -> String {
     format!("job-{:016x}", fnv1a64(&fingerprint))
 }
 
-pub fn process_snapshot(runtime: &CareerRuntime, snapshot: &TelemetrySnapshot) -> Result<(), String> {
+pub fn process_snapshot(
+    runtime: &CareerRuntime,
+    snapshot: &TelemetrySnapshot,
+) -> Result<(), String> {
     let Some(job) = snapshot.job.as_ref() else {
         return handle_job_inactive(runtime);
     };
@@ -200,7 +203,9 @@ pub fn process_snapshot(runtime: &CareerRuntime, snapshot: &TelemetrySnapshot) -
     }
 
     if changed {
-        runtime.overview_dirty.store(true, std::sync::atomic::Ordering::Relaxed);
+        runtime
+            .overview_dirty
+            .store(true, std::sync::atomic::Ordering::Relaxed);
     }
 
     Ok(())
@@ -269,7 +274,11 @@ fn upsert_job(runtime: &CareerRuntime, active: &ActiveJobState) -> Result<(), St
     job_log::upsert_active_job(&conn, &entry)
 }
 
-fn finalize_job(runtime: &CareerRuntime, previous: &ActiveJobState, now: &str) -> Result<(), String> {
+fn finalize_job(
+    runtime: &CareerRuntime,
+    previous: &ActiveJobState,
+    now: &str,
+) -> Result<(), String> {
     let conn = open_connection(runtime)?;
     job_log::ensure_tables(&conn)?;
 

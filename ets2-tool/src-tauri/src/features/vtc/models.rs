@@ -112,6 +112,18 @@ pub struct CompanyRoleOption {
     pub sort_order: i64,
 }
 
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VtcRuntimeContext {
+    pub user_id: i64,
+    pub username: String,
+    pub profile_reference: Option<String>,
+    pub save_reference: Option<String>,
+    pub save_session_id: Option<String>,
+    pub has_active_profile: bool,
+    pub has_active_save: bool,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateUserSettingsInput {

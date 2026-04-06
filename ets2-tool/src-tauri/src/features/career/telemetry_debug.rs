@@ -6,8 +6,7 @@ mod platform {
     use std::time::Duration;
     use windows_sys::Win32::Foundation::{CloseHandle, HANDLE};
     use windows_sys::Win32::System::Memory::{
-        FILE_MAP_READ, MEMORY_MAPPED_VIEW_ADDRESS, MapViewOfFile, OpenFileMappingW,
-        UnmapViewOfFile,
+        FILE_MAP_READ, MEMORY_MAPPED_VIEW_ADDRESS, MapViewOfFile, OpenFileMappingW, UnmapViewOfFile,
     };
 
     const SHARED_MEMORY_NAME: &str = "Local\\SCSTelemetry";
@@ -19,8 +18,7 @@ mod platform {
     const POLL_INTERVAL: Duration = Duration::from_millis(500);
     const RECONNECT_INTERVAL: Duration = Duration::from_millis(1000);
     const STATIC_READ_THRESHOLD: u32 = 3;
-    const NOT_AVAILABLE_MESSAGE: &str =
-        "Telemetry not available. Is ETS2 running with the plugin?";
+    const NOT_AVAILABLE_MESSAGE: &str = "Telemetry not available. Is ETS2 running with the plugin?";
 
     #[derive(Clone, PartialEq, Eq)]
     struct DebugSample {
@@ -141,9 +139,7 @@ mod platform {
                 println!("Raw Data: {:?}", sample.raw_data);
                 println!(
                     "Timestamp: {} | Simulation Timestamp: {} | Render Timestamp: {}",
-                    sample.timestamp,
-                    sample.simulation_timestamp,
-                    sample.render_timestamp
+                    sample.timestamp, sample.simulation_timestamp, sample.render_timestamp
                 );
                 previous_sample = Some(sample);
                 thread::sleep(POLL_INTERVAL);

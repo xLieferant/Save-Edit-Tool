@@ -3,8 +3,8 @@ use std::path::{Path, PathBuf};
 use crate::features::ets2save::errors::AppError;
 use crate::features::ets2save::models::{EtsJobOfferPatch, VtcDispatcherJob};
 use crate::features::ets2save::parser::{
-    extract_field_value, extract_in_game_time, extract_job_offer_pointer, find_company_block,
-    find_job_offer_data_block, patch_job_offer_data, sii_token, UnitRange,
+    UnitRange, extract_field_value, extract_in_game_time, extract_job_offer_pointer,
+    find_company_block, find_job_offer_data_block, patch_job_offer_data, sii_token,
 };
 use crate::features::ets2save::sii_codec::{decode_sii_lines, write_lines_atomic};
 
@@ -26,13 +26,14 @@ pub fn build_offer_patch(
     let trailer_variant = extract_field_value(lines, offer_data_range, "trailer_variant");
     let trailer_definition = extract_field_value(lines, offer_data_range, "trailer_definition");
     let units_count = ((job.cargo_mass_kg / 4000.0).round() as i64).clamp(1, 12);
-    let job_info_unit = format!(
-        "vtc.nameless.job.info.{}",
-        link_seed.replace('-', "_")
-    );
+    let job_info_unit = format!("vtc.nameless.job.info.{}", link_seed.replace('-', "_"));
 
     EtsJobOfferPatch {
-        target: format!("{}.{}", sii_token(dst_company), sii_token(&job.destination_city)),
+        target: format!(
+            "{}.{}",
+            sii_token(dst_company),
+            sii_token(&job.destination_city)
+        ),
         expiration_time: in_game_time + 6120,
         urgency: 0,
         shortest_distance_km: job.route_distance_km.round() as i64,

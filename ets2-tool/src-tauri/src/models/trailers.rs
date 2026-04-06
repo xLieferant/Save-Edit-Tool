@@ -20,7 +20,7 @@ pub struct ParsedTrailer {
 
     pub accessories: Vec<String>,
     pub license_plate: Option<String>,
-    
+
     // Definition Data
     pub gross_trailer_weight_limit: f32,
     pub chassis_mass: f32,
@@ -43,7 +43,7 @@ pub struct TrailerData {
     pub wear_float: Option<f32>,
     pub wheels_float: Option<Vec<f32>>,
     pub assigned_garage: Option<String>,
-    
+
     // Raw fields for merging
     pub cargo_mass: f32,
     pub cargo_damage: f32,

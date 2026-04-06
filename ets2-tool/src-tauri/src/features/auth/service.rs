@@ -1,8 +1,8 @@
 use std::fs;
 
 use argon2::{
-    password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
     Argon2,
+    password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
 };
 use rand_core::OsRng;
 use regex::Regex;
@@ -258,10 +258,9 @@ pub fn restore_persisted_session(conn: &Connection, auth: &AuthState) -> Result<
         return Ok(());
     }
 
-    let payload: PersistedSession = serde_json::from_str(
-        &fs::read_to_string(&session_path).map_err(|e| e.to_string())?,
-    )
-    .map_err(|e| e.to_string())?;
+    let payload: PersistedSession =
+        serde_json::from_str(&fs::read_to_string(&session_path).map_err(|e| e.to_string())?)
+            .map_err(|e| e.to_string())?;
 
     let (session_id, user_id, expires_at, _last_used_at) =
         match repo::find_session_by_token(conn, &payload.token)? {
@@ -315,7 +314,9 @@ fn set_logged_in_user(
             user_id: user.id,
             token: token.clone().ok_or_else(|| "Token missing".to_string())?,
             created_at: now.clone(),
-            expires_at: expires_at.clone().ok_or_else(|| "Expires missing".to_string())?,
+            expires_at: expires_at
+                .clone()
+                .ok_or_else(|| "Expires missing".to_string())?,
             last_used_at: now.clone(),
         };
         repo::insert_session(conn, &session)?;
@@ -325,8 +326,11 @@ fn set_logged_in_user(
         let persisted = PersistedSession {
             token: token.clone().ok_or_else(|| "Token missing".to_string())?,
         };
-        fs::write(&session_path, serde_json::to_string_pretty(&persisted).map_err(|e| e.to_string())?)
-            .map_err(|e| e.to_string())?;
+        fs::write(
+            &session_path,
+            serde_json::to_string_pretty(&persisted).map_err(|e| e.to_string())?,
+        )
+        .map_err(|e| e.to_string())?;
     } else {
         let session_path = db::auth_session_path();
         if session_path.exists() {
@@ -350,7 +354,10 @@ fn set_logged_in_user(
     Ok(())
 }
 
-pub fn get_account_overview(conn: &Connection, auth: &AuthState) -> Result<AuthAccountOverview, String> {
+pub fn get_account_overview(
+    conn: &Connection,
+    auth: &AuthState,
+) -> Result<AuthAccountOverview, String> {
     let session = {
         auth.session
             .lock()
@@ -376,12 +383,14 @@ pub fn get_account_overview(conn: &Connection, auth: &AuthState) -> Result<AuthA
 
     let sessions = repo::list_sessions_by_user_id(conn, user.id, 25)?
         .into_iter()
-        .map(|(id, created_at, expires_at, last_used_at)| AuthSessionOverview {
-            id,
-            created_at,
-            expires_at,
-            last_used_at,
-        })
+        .map(
+            |(id, created_at, expires_at, last_used_at)| AuthSessionOverview {
+                id,
+                created_at,
+                expires_at,
+                last_used_at,
+            },
+        )
         .collect::<Vec<_>>();
 
     let current_session_id = session
@@ -411,7 +420,10 @@ pub fn get_account_overview(conn: &Connection, auth: &AuthState) -> Result<AuthA
     })
 }
 
-pub fn admin_get_db_overview(conn: &Connection, auth: &AuthState) -> Result<AuthAdminDbOverview, String> {
+pub fn admin_get_db_overview(
+    conn: &Connection,
+    auth: &AuthState,
+) -> Result<AuthAdminDbOverview, String> {
     let user = get_current_user(conn, auth)?;
     let Some(user) = user else {
         return Err("Not authenticated".to_string());

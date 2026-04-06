@@ -2,9 +2,10 @@ use chrono::Utc;
 use rusqlite::{Connection, OptionalExtension, params};
 
 use crate::features::economy::compensation_models::{
-    BaseRateType, CargoType, CompanyPaymentProfile, CompanyPaymentTier, CompanyReputationOutcome,
-    CompanyReputationState, CompanyCompensationCondition, CountryPaymentLevel, EquipmentType,
-    JobCompensationInput, JobCompensationResult, UpsertCompanyPaymentProfileInput, Urgency,
+    BaseRateType, CargoType, CompanyCompensationCondition, CompanyPaymentProfile,
+    CompanyPaymentTier, CompanyReputationOutcome, CompanyReputationState, CountryPaymentLevel,
+    EquipmentType, JobCompensationInput, JobCompensationResult, UpsertCompanyPaymentProfileInput,
+    Urgency,
 };
 
 const DEFAULT_COMPANY_REPUTATION: u16 = 500;
@@ -25,16 +26,15 @@ pub fn calculate_job_compensation(
     let origin_country_code = normalize_country_code(&input.origin_country_code);
     let destination_country_code = normalize_country_code(&input.destination_country_code);
 
-    let company_payment = load_company_payment_profile(
-        conn,
-        &input.company_id,
-        input.company_name.as_deref(),
-    )?;
+    let company_payment =
+        load_company_payment_profile(conn, &input.company_id, input.company_name.as_deref())?;
     let company_reputation = load_company_reputation(conn, &input.company_id)?;
 
     let base_rate_per_km = base_rate_per_km(input.base_rate_type);
-    let customer_multiplier =
-        customer_multiplier(company_payment.payment_tier, company_payment.payment_multiplier);
+    let customer_multiplier = customer_multiplier(
+        company_payment.payment_tier,
+        company_payment.payment_multiplier,
+    );
     let country_multiplier =
         resolve_country_multiplier(conn, &origin_country_code, &destination_country_code)?;
     let company_reputation_multiplier = reputation_multiplier(company_reputation.reputation);
@@ -99,7 +99,9 @@ pub fn load_company_payment_profile(
         |row| {
             let payment_tier_raw: String = row.get(2)?;
             let payment_multiplier: f64 = row.get(3)?;
-            let home_country_code = row.get::<_, Option<String>>(4)?.map(|code| normalize_country_code(&code));
+            let home_country_code = row
+                .get::<_, Option<String>>(4)?
+                .map(|code| normalize_country_code(&code));
             Ok(CompanyPaymentProfile {
                 company_id: row.get(0)?,
                 company_name: normalize_optional_text(row.get::<_, Option<String>>(1)?),
@@ -310,18 +312,21 @@ pub fn list_company_compensation_conditions(
         .map_err(|e| e.to_string())?;
 
     let raw_rows = stmt
-        .query_map(params![limit as i64, DEFAULT_COMPANY_REPUTATION as i64], |row| {
-            Ok(RawCompanyCondition {
-                company_id: row.get(0)?,
-                company_name: row.get(1)?,
-                payment_tier_raw: row.get(2)?,
-                payment_multiplier: row.get(3)?,
-                home_country_code: row.get(4)?,
-                cargo_focus: row.get(5)?,
-                updated_at_utc: row.get(6)?,
-                reputation: row.get(7)?,
-            })
-        })
+        .query_map(
+            params![limit as i64, DEFAULT_COMPANY_REPUTATION as i64],
+            |row| {
+                Ok(RawCompanyCondition {
+                    company_id: row.get(0)?,
+                    company_name: row.get(1)?,
+                    payment_tier_raw: row.get(2)?,
+                    payment_multiplier: row.get(3)?,
+                    home_country_code: row.get(4)?,
+                    cargo_focus: row.get(5)?,
+                    updated_at_utc: row.get(6)?,
+                    reputation: row.get(7)?,
+                })
+            },
+        )
         .map_err(|e| e.to_string())?;
 
     let raw_rows = raw_rows
@@ -357,7 +362,9 @@ pub fn list_company_compensation_conditions(
             home_country_code,
             home_country_multiplier,
             cargo_focus: normalize_optional_text(raw.cargo_focus),
-            effective_multiplier: (customer_multiplier * reputation_multiplier * home_country_multiplier)
+            effective_multiplier: (customer_multiplier
+                * reputation_multiplier
+                * home_country_multiplier)
                 .clamp(0.70, 2.20),
             updated_at_utc: raw.updated_at_utc,
         });
@@ -391,7 +398,8 @@ pub fn list_country_payment_levels(
         })
         .map_err(|e| e.to_string())?;
 
-    rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
+    rows.collect::<Result<Vec<_>, _>>()
+        .map_err(|e| e.to_string())
 }
 
 pub fn normalize_country_code(value: &str) -> String {
@@ -536,18 +544,20 @@ pub fn apply_company_reputation_outcome(
         0
     };
 
-    let next_completed_jobs = current
-        .completed_jobs
-        .saturating_add(if outcome.completed { 1 } else { 0 });
+    let next_completed_jobs =
+        current
+            .completed_jobs
+            .saturating_add(if outcome.completed { 1 } else { 0 });
     let next_late_jobs = current
         .late_jobs
         .saturating_add(if outcome.on_time { 0 } else { 1 });
     let next_damage_incidents = current
         .damage_incidents
         .saturating_add(if normalized_damage > 1.0 { 1 } else { 0 });
-    let next_canceled_jobs = current
-        .canceled_jobs
-        .saturating_add(if outcome.canceled { 1 } else { 0 });
+    let next_canceled_jobs =
+        current
+            .canceled_jobs
+            .saturating_add(if outcome.canceled { 1 } else { 0 });
 
     conn.execute(
         r#"
@@ -637,8 +647,7 @@ pub fn equipment_multiplier(equipment_type: EquipmentType) -> f64 {
 
 pub fn reputation_multiplier(reputation: u16) -> f64 {
     let normalized = (reputation as f64 / 1000.0).clamp(0.0, 1.0);
-    MIN_REPUTATION_MULTIPLIER
-        + (MAX_REPUTATION_MULTIPLIER - MIN_REPUTATION_MULTIPLIER) * normalized
+    MIN_REPUTATION_MULTIPLIER + (MAX_REPUTATION_MULTIPLIER - MIN_REPUTATION_MULTIPLIER) * normalized
 }
 
 pub fn customer_tier_multiplier(tier: CompanyPaymentTier) -> f64 {

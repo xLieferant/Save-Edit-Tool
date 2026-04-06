@@ -1,4 +1,4 @@
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{Connection, OptionalExtension, params};
 
 use crate::features::auth::repo as auth_repo;
 use crate::features::companies::repo as companies_repo;
@@ -195,7 +195,11 @@ pub fn update_user_profile_meta(
     Ok(())
 }
 
-pub fn set_username_last_changed_at(conn: &Connection, user_id: i64, now: &str) -> Result<(), String> {
+pub fn set_username_last_changed_at(
+    conn: &Connection,
+    user_id: i64,
+    now: &str,
+) -> Result<(), String> {
     conn.execute(
         "UPDATE user_settings SET username_last_changed_at = ?1, updated_at = ?2 WHERE user_id = ?3",
         params![now, now, user_id],
@@ -222,7 +226,12 @@ pub fn find_user_by_username_case_insensitive(
     .map_err(|e| e.to_string())
 }
 
-pub fn update_username(conn: &Connection, user_id: i64, username: &str, now: &str) -> Result<(), String> {
+pub fn update_username(
+    conn: &Connection,
+    user_id: i64,
+    username: &str,
+    now: &str,
+) -> Result<(), String> {
     conn.execute(
         "UPDATE users SET username = ?1, updated_at = ?2 WHERE id = ?3",
         params![username, now, user_id],
@@ -231,7 +240,10 @@ pub fn update_username(conn: &Connection, user_id: i64, username: &str, now: &st
     Ok(())
 }
 
-pub fn load_company_role_for_user(conn: &Connection, user_id: i64) -> Result<Option<(i64, String)>, String> {
+pub fn load_company_role_for_user(
+    conn: &Connection,
+    user_id: i64,
+) -> Result<Option<(i64, String)>, String> {
     conn.query_row(
         r#"
         SELECT company_id, member_role
@@ -276,7 +288,10 @@ pub fn load_user_profile(conn: &Connection, user_id: i64) -> Result<Option<UserP
     }))
 }
 
-pub fn find_company_id_by_name_case_insensitive(conn: &Connection, name: &str) -> Result<Option<i64>, String> {
+pub fn find_company_id_by_name_case_insensitive(
+    conn: &Connection,
+    name: &str,
+) -> Result<Option<i64>, String> {
     conn.query_row(
         r#"
         SELECT id
@@ -373,7 +388,10 @@ pub fn ensure_company_settings_row(
     Ok(())
 }
 
-pub fn load_company_overview(conn: &Connection, company_id: i64) -> Result<Option<CompanyOverview>, String> {
+pub fn load_company_overview(
+    conn: &Connection,
+    company_id: i64,
+) -> Result<Option<CompanyOverview>, String> {
     conn.query_row(
         r#"
         SELECT
@@ -430,10 +448,15 @@ pub fn update_company_profile(
     input: &UpdateCompanyProfileInput,
     now: &str,
 ) -> Result<(), String> {
-    let current = load_company_overview(conn, company_id)?
-        .ok_or_else(|| "company_not_found".to_string())?;
+    let current =
+        load_company_overview(conn, company_id)?.ok_or_else(|| "company_not_found".to_string())?;
 
-    let name = input.name.clone().unwrap_or(current.name).trim().to_string();
+    let name = input
+        .name
+        .clone()
+        .unwrap_or(current.name)
+        .trim()
+        .to_string();
     let location = input
         .location
         .clone()
@@ -441,7 +464,11 @@ pub fn update_company_profile(
         .trim()
         .to_string();
     let language = input.language.clone().or(current.language);
-    let game = input.game.clone().or(current.game).map(|value| value.to_uppercase());
+    let game = input
+        .game
+        .clone()
+        .or(current.game)
+        .map(|value| value.to_uppercase());
     let description = input.description.clone().or(current.description);
     let logo_path = input.logo_path.clone().or(current.logo_path);
     let header_path = input.header_path.clone().or(current.header_path);
@@ -486,7 +513,10 @@ pub fn update_company_profile(
     Ok(())
 }
 
-pub fn load_company_members(conn: &Connection, company_id: i64) -> Result<Vec<CompanyMember>, String> {
+pub fn load_company_members(
+    conn: &Connection,
+    company_id: i64,
+) -> Result<Vec<CompanyMember>, String> {
     let mut stmt = conn
         .prepare(
             r#"
@@ -679,7 +709,10 @@ pub fn change_member_role(
     Ok(())
 }
 
-pub fn load_company_settings(conn: &Connection, company_id: i64) -> Result<CompanySettings, String> {
+pub fn load_company_settings(
+    conn: &Connection,
+    company_id: i64,
+) -> Result<CompanySettings, String> {
     conn.query_row(
         r#"
         SELECT
@@ -848,7 +881,11 @@ pub fn update_career_settings(
         WHERE id = 1
         "#,
         params![
-            if input.telemetry_enabled.unwrap_or(current.telemetry_enabled) { 1 } else { 0 },
+            if input.telemetry_enabled.unwrap_or(current.telemetry_enabled) {
+                1
+            } else {
+                0
+            },
             if input
                 .local_stats_tracking_enabled
                 .unwrap_or(current.local_stats_tracking_enabled)
@@ -873,8 +910,16 @@ pub fn update_career_settings(
             } else {
                 0
             },
-            if input.use_metric_units.unwrap_or(current.use_metric_units) { 1 } else { 0 },
-            if input.use_24h_time.unwrap_or(current.use_24h_time) { 1 } else { 0 },
+            if input.use_metric_units.unwrap_or(current.use_metric_units) {
+                1
+            } else {
+                0
+            },
+            if input.use_24h_time.unwrap_or(current.use_24h_time) {
+                1
+            } else {
+                0
+            },
             if input
                 .autosave_career_data
                 .unwrap_or(current.autosave_career_data)

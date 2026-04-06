@@ -1,4 +1,4 @@
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{Connection, OptionalExtension, params};
 
 use crate::features::auth::models::{NewSession, NewUser, UserRecord};
 
@@ -245,7 +245,11 @@ pub fn revoke_session(conn: &Connection, session_id: i64, revoked_at: &str) -> R
     Ok(())
 }
 
-pub fn revoke_session_by_token(conn: &Connection, token: &str, revoked_at: &str) -> Result<(), String> {
+pub fn revoke_session_by_token(
+    conn: &Connection,
+    token: &str,
+    revoked_at: &str,
+) -> Result<(), String> {
     conn.execute(
         "UPDATE sessions SET revoked_at = ?1 WHERE token = ?2",
         params![revoked_at, token],
@@ -271,7 +275,18 @@ pub fn set_user_last_login_at(
 pub fn list_users_basic(
     conn: &Connection,
     limit: i64,
-) -> Result<Vec<(i64, String, String, String, Option<i64>, String, Option<String>)>, String> {
+) -> Result<
+    Vec<(
+        i64,
+        String,
+        String,
+        String,
+        Option<i64>,
+        String,
+        Option<String>,
+    )>,
+    String,
+> {
     let mut stmt = conn
         .prepare(
             r#"
@@ -311,7 +326,11 @@ pub fn list_users_basic(
     Ok(users)
 }
 
-pub fn user_has_active_session(conn: &Connection, user_id: i64, now_rfc3339: &str) -> Result<bool, String> {
+pub fn user_has_active_session(
+    conn: &Connection,
+    user_id: i64,
+    now_rfc3339: &str,
+) -> Result<bool, String> {
     conn.query_row(
         r#"
         SELECT 1
@@ -375,8 +394,11 @@ pub fn count_unused_recovery_codes(conn: &Connection, user_id: i64) -> Result<u3
 }
 
 pub fn delete_recovery_codes_for_user(conn: &Connection, user_id: i64) -> Result<(), String> {
-    conn.execute("DELETE FROM recovery_codes WHERE user_id = ?1", params![user_id])
-        .map_err(|e| e.to_string())?;
+    conn.execute(
+        "DELETE FROM recovery_codes WHERE user_id = ?1",
+        params![user_id],
+    )
+    .map_err(|e| e.to_string())?;
     Ok(())
 }
 

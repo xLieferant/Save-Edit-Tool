@@ -43,7 +43,8 @@ pub fn ensure_columns(
 
 pub fn create_indexes(conn: &Connection, statements: &[&str]) -> Result<(), String> {
     for statement in statements {
-        conn.execute(statement, []).map_err(|error| error.to_string())?;
+        conn.execute(statement, [])
+            .map_err(|error| error.to_string())?;
     }
 
     Ok(())

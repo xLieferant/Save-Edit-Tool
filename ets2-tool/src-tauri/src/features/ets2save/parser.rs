@@ -79,10 +79,7 @@ pub fn extract_job_offer_pointer(
     ))
 }
 
-pub fn find_job_offer_data_block(
-    lines: &[String],
-    pointer: &str,
-) -> Result<UnitRange, AppError> {
+pub fn find_job_offer_data_block(lines: &[String], pointer: &str) -> Result<UnitRange, AppError> {
     let token = format!("job_offer_data : {}", pointer);
     find_unit_range(lines, &token).ok_or_else(|| {
         AppError::new(
@@ -92,11 +89,7 @@ pub fn find_job_offer_data_block(
     })
 }
 
-pub fn extract_field_value(
-    lines: &[String],
-    range: UnitRange,
-    field: &str,
-) -> Option<String> {
+pub fn extract_field_value(lines: &[String], range: UnitRange, field: &str) -> Option<String> {
     for line in &lines[range.start..=range.end] {
         let trimmed = line.trim();
         if trimmed.starts_with(&format!("{}:", field)) {
@@ -122,11 +115,7 @@ pub fn extract_in_game_time(lines: &[String]) -> i64 {
     0
 }
 
-pub fn patch_job_offer_data(
-    lines: &mut Vec<String>,
-    range: UnitRange,
-    patch: &EtsJobOfferPatch,
-) {
+pub fn patch_job_offer_data(lines: &mut Vec<String>, range: UnitRange, patch: &EtsJobOfferPatch) {
     set_or_insert_field(lines, range, "target", &patch.target);
     set_or_insert_field(
         lines,
@@ -181,10 +170,7 @@ fn extract_job_offer_count(lines: &[String], company_block: UnitRange) -> Result
                     )
                 })?
                 .ok_or_else(|| {
-                    AppError::new(
-                        AppErrorCode::InvalidToken,
-                        "Missing job_offer count value",
-                    )
+                    AppError::new(AppErrorCode::InvalidToken, "Missing job_offer count value")
                 });
         }
     }
@@ -217,12 +203,7 @@ fn find_unit_range(lines: &[String], token: &str) -> Option<UnitRange> {
     None
 }
 
-fn set_or_insert_field(
-    lines: &mut Vec<String>,
-    range: UnitRange,
-    field: &str,
-    value: &str,
-) {
+fn set_or_insert_field(lines: &mut Vec<String>, range: UnitRange, field: &str, value: &str) {
     let replacement = format!(" {}: {}", field, value);
     for index in range.start..=range.end {
         let trimmed = lines[index].trim();
@@ -242,7 +223,8 @@ fn set_or_insert_field(
 #[cfg(test)]
 mod tests {
     use super::{
-        extract_job_offer_pointer, find_company_block, find_job_offer_data_block, patch_job_offer_data,
+        extract_job_offer_pointer, find_company_block, find_job_offer_data_block,
+        patch_job_offer_data,
     };
     use crate::features::ets2save::models::EtsJobOfferPatch;
 

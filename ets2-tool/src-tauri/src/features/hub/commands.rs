@@ -15,7 +15,11 @@ pub fn hub_get_mode(hub: State<'_, HubState>) -> Result<AppMode, String> {
 }
 
 #[command]
-pub fn hub_set_mode(mode: AppMode, app: AppHandle, hub: State<'_, HubState>) -> Result<AppMode, String> {
+pub fn hub_set_mode(
+    mode: AppMode,
+    app: AppHandle,
+    hub: State<'_, HubState>,
+) -> Result<AppMode, String> {
     {
         let guard = hub
             .mode

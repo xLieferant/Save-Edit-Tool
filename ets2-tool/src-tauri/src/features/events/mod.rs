@@ -65,7 +65,14 @@ pub fn ensure_tables(conn: &Connection) -> Result<(), String> {
             )
             VALUES (?1, ?2, ?3, ?4, ?5, ?6)
             "#,
-            params![event_id, category, title, impact, severity, Utc::now().to_rfc3339()],
+            params![
+                event_id,
+                category,
+                title,
+                impact,
+                severity,
+                Utc::now().to_rfc3339()
+            ],
         )
         .map_err(|e| e.to_string())?;
     }
@@ -98,7 +105,8 @@ pub fn list_recent_events(conn: &Connection, limit: usize) -> Result<Vec<CareerE
         })
         .map_err(|e| e.to_string())?;
 
-    rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
+    rows.collect::<Result<Vec<_>, _>>()
+        .map_err(|e| e.to_string())
 }
 
 pub fn record_event(
@@ -123,7 +131,9 @@ pub fn record_event(
         params![
             format!(
                 "evt-{}-{}",
-                Utc::now().timestamp_nanos_opt().unwrap_or_else(|| Utc::now().timestamp_micros() * 1000),
+                Utc::now()
+                    .timestamp_nanos_opt()
+                    .unwrap_or_else(|| Utc::now().timestamp_micros() * 1000),
                 severity
             ),
             category,

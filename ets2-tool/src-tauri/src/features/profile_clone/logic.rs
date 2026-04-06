@@ -2,11 +2,11 @@ use crate::models::clone_profiles_info::CloneOptions;
 use crate::shared::{decrypt::decrypt_if_needed, hex_float};
 use regex::Regex;
 use std::fs::{self, File};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
-use zip::{ZipWriter, write::FileOptions};
 use zip::CompressionMethod;
-use std::io::Write;
+use zip::{ZipWriter, write::FileOptions};
 
 /// Hauptlogik
 pub fn clone_profile(
@@ -18,7 +18,9 @@ pub fn clone_profile(
         return Err("Quellprofil existiert nicht".to_string());
     }
 
-    let parent = source.parent().ok_or("Kein Parent-Verzeichnis".to_string())?;
+    let parent = source
+        .parent()
+        .ok_or("Kein Parent-Verzeichnis".to_string())?;
     let new_hex = hex_float::text_to_hex(new_name);
     let target_dir = parent.join(&new_hex);
 
@@ -70,13 +72,16 @@ fn create_zip_backup(source: &Path, parent: &Path) -> Result<(), String> {
 
     let file = File::create(zip_path).map_err(|e| e.to_string())?;
     let mut zip = ZipWriter::new(file);
-    let options: FileOptions<()> = 
+    let options: FileOptions<()> =
         FileOptions::default().compression_method(CompressionMethod::Deflated);
 
     for entry in WalkDir::new(source) {
         let entry = entry.map_err(|e| e.to_string())?;
         let path = entry.path();
-        let name = path.strip_prefix(source).map_err(|e| e.to_string())?.to_string_lossy();
+        let name = path
+            .strip_prefix(source)
+            .map_err(|e| e.to_string())?
+            .to_string_lossy();
 
         if path.is_file() {
             zip.start_file(name, options).map_err(|e| e.to_string())?;

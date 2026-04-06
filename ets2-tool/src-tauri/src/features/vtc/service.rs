@@ -5,8 +5,8 @@ use crate::features::auth::repo as auth_repo;
 use crate::features::vtc::models::{
     CareerSettings, CompanyMember, CompanyOverview, CompanyRoleOption, CompanySettings,
     CreateCompanyInput, UpdateCareerSettingsInput, UpdateCompanyProfileInput,
-    UpdateCompanySettingsInput, UpdateUserProfileMetaInput, UpdateUserSettingsInput,
-    UserProfile, UserSettings, UsernameAvailability,
+    UpdateCompanySettingsInput, UpdateUserProfileMetaInput, UpdateUserSettingsInput, UserProfile,
+    UserSettings, UsernameAvailability,
 };
 use crate::features::vtc::repo;
 use crate::state::AuthState;
@@ -73,8 +73,11 @@ fn enforce_company_access(
     conn: &Connection,
     user_id: i64,
 ) -> Result<(i64, Option<String>), String> {
-    let user = auth_repo::load_user_by_id(conn, user_id)?.ok_or_else(|| "user_not_found".to_string())?;
-    let company_id = user.company_id.ok_or_else(|| "company_not_found".to_string())?;
+    let user =
+        auth_repo::load_user_by_id(conn, user_id)?.ok_or_else(|| "user_not_found".to_string())?;
+    let company_id = user
+        .company_id
+        .ok_or_else(|| "company_not_found".to_string())?;
     let role = repo::load_company_role_for_user(conn, user_id)?.map(|(_, role_key)| role_key);
     Ok((company_id, role))
 }
@@ -83,12 +86,17 @@ fn can_manage_members(role: Option<&str>) -> bool {
     matches!(role, Some("owner") | Some("ceo") | Some("manager"))
 }
 
-pub fn get_current_user_profile(conn: &Connection, auth: &AuthState) -> Result<UserProfile, String> {
+pub fn get_current_user_profile(
+    conn: &Connection,
+    auth: &AuthState,
+) -> Result<UserProfile, String> {
     let user_id = require_user_id(auth)?;
     let now = now_rfc3339();
     repo::ensure_user_settings_row(conn, user_id, &now)?;
-    let mut profile = repo::load_user_profile(conn, user_id)?.ok_or_else(|| "user_not_found".to_string())?;
-    profile.username_next_change_at = compute_next_username_change(profile.username_last_changed_at.as_deref());
+    let mut profile =
+        repo::load_user_profile(conn, user_id)?.ok_or_else(|| "user_not_found".to_string())?;
+    profile.username_next_change_at =
+        compute_next_username_change(profile.username_last_changed_at.as_deref());
     Ok(profile)
 }
 
@@ -113,7 +121,10 @@ pub fn update_user_language(
     repo::load_user_settings(conn, user_id)
 }
 
-pub fn check_username_availability(conn: &Connection, username: String) -> Result<UsernameAvailability, String> {
+pub fn check_username_availability(
+    conn: &Connection,
+    username: String,
+) -> Result<UsernameAvailability, String> {
     let normalized = match validate_username_format(&username) {
         Ok(value) => value,
         Err(_) => {
@@ -135,20 +146,27 @@ pub fn check_username_availability(conn: &Connection, username: String) -> Resul
     })
 }
 
-pub fn update_username(conn: &mut Connection, auth: &AuthState, username: String) -> Result<UserProfile, String> {
+pub fn update_username(
+    conn: &mut Connection,
+    auth: &AuthState,
+    username: String,
+) -> Result<UserProfile, String> {
     let user_id = require_user_id(auth)?;
     let now = now_rfc3339();
     let normalized = validate_username_format(&username)?;
 
     repo::ensure_user_settings_row(conn, user_id, &now)?;
 
-    let user = auth_repo::load_user_by_id(conn, user_id)?.ok_or_else(|| "user_not_found".to_string())?;
+    let user =
+        auth_repo::load_user_by_id(conn, user_id)?.ok_or_else(|| "user_not_found".to_string())?;
     if user.username.eq_ignore_ascii_case(&normalized) {
         return get_current_user_profile(conn, auth);
     }
 
     let settings = repo::load_user_settings(conn, user_id)?;
-    if let Some(next_change_at) = compute_next_username_change(settings.username_last_changed_at.as_deref()) {
+    if let Some(next_change_at) =
+        compute_next_username_change(settings.username_last_changed_at.as_deref())
+    {
         let next_change = DateTime::parse_from_rfc3339(&next_change_at)
             .map_err(|_| "username_change_cooldown_active".to_string())?
             .with_timezone(&Utc);
@@ -157,7 +175,9 @@ pub fn update_username(conn: &mut Connection, auth: &AuthState, username: String
         }
     }
 
-    if let Some((existing_user_id, _)) = repo::find_user_by_username_case_insensitive(conn, &normalized)? {
+    if let Some((existing_user_id, _)) =
+        repo::find_user_by_username_case_insensitive(conn, &normalized)?
+    {
         if existing_user_id != user_id {
             return Err("username_already_taken".to_string());
         }
@@ -218,7 +238,8 @@ pub fn create_company(
         return Err("company_language_required".to_string());
     }
 
-    let user = auth_repo::load_user_by_id(conn, user_id)?.ok_or_else(|| "user_not_found".to_string())?;
+    let user =
+        auth_repo::load_user_by_id(conn, user_id)?.ok_or_else(|| "user_not_found".to_string())?;
     if let Some(existing_company_id) = user.company_id {
         if repo::load_company_overview(conn, existing_company_id)?.is_some() {
             return Err("user_already_in_company".to_string());
@@ -241,11 +262,15 @@ pub fn create_company(
     repo::load_company_overview(conn, company_id)?.ok_or_else(|| "company_not_found".to_string())
 }
 
-pub fn get_company_overview(conn: &Connection, auth: &AuthState) -> Result<CompanyOverview, String> {
+pub fn get_company_overview(
+    conn: &Connection,
+    auth: &AuthState,
+) -> Result<CompanyOverview, String> {
     let user_id = require_user_id(auth)?;
     let (company_id, _) = enforce_company_access(conn, user_id)?;
 
-    let company = repo::load_company_overview(conn, company_id)?.ok_or_else(|| "company_not_found".to_string())?;
+    let company = repo::load_company_overview(conn, company_id)?
+        .ok_or_else(|| "company_not_found".to_string())?;
     let now = now_rfc3339();
     repo::ensure_company_settings_row(
         conn,
@@ -281,7 +306,9 @@ pub fn update_company_profile(
     }
 
     if let Some(name) = input.name.as_ref() {
-        if let Some(existing_company_id) = repo::find_company_id_by_name_case_insensitive(conn, name)? {
+        if let Some(existing_company_id) =
+            repo::find_company_id_by_name_case_insensitive(conn, name)?
+        {
             if existing_company_id != company_id {
                 return Err("company_name_already_taken".to_string());
             }
@@ -294,17 +321,24 @@ pub fn update_company_profile(
     repo::load_company_overview(conn, company_id)?.ok_or_else(|| "company_not_found".to_string())
 }
 
-pub fn get_company_members(conn: &Connection, auth: &AuthState) -> Result<Vec<CompanyMember>, String> {
+pub fn get_company_members(
+    conn: &Connection,
+    auth: &AuthState,
+) -> Result<Vec<CompanyMember>, String> {
     let user_id = require_user_id(auth)?;
     let (company_id, _) = enforce_company_access(conn, user_id)?;
     repo::load_company_members(conn, company_id)
 }
 
-pub fn get_company_settings(conn: &Connection, auth: &AuthState) -> Result<CompanySettings, String> {
+pub fn get_company_settings(
+    conn: &Connection,
+    auth: &AuthState,
+) -> Result<CompanySettings, String> {
     let user_id = require_user_id(auth)?;
     let (company_id, _) = enforce_company_access(conn, user_id)?;
 
-    let company = repo::load_company_overview(conn, company_id)?.ok_or_else(|| "company_not_found".to_string())?;
+    let company = repo::load_company_overview(conn, company_id)?
+        .ok_or_else(|| "company_not_found".to_string())?;
     let now = now_rfc3339();
     repo::ensure_company_settings_row(
         conn,
@@ -335,7 +369,8 @@ pub fn update_company_settings(
     }
 
     let now = now_rfc3339();
-    let company = repo::load_company_overview(conn, company_id)?.ok_or_else(|| "company_not_found".to_string())?;
+    let company = repo::load_company_overview(conn, company_id)?
+        .ok_or_else(|| "company_not_found".to_string())?;
     repo::ensure_company_settings_row(
         conn,
         company_id,
@@ -364,7 +399,8 @@ pub fn assign_member_role(
         return Err("invalid_role".to_string());
     }
 
-    let target_user = auth_repo::load_user_by_id(conn, user_id)?.ok_or_else(|| "user_not_found".to_string())?;
+    let target_user =
+        auth_repo::load_user_by_id(conn, user_id)?.ok_or_else(|| "user_not_found".to_string())?;
     if let Some(existing_company_id) = target_user.company_id {
         if existing_company_id != company_id {
             return Err("user_already_in_company".to_string());
@@ -375,7 +411,8 @@ pub fn assign_member_role(
     repo::assign_member_role(conn, company_id, user_id, &role_key, Some(actor_id), &now)?;
     repo::set_user_company(conn, user_id, company_id)?;
 
-    repo::load_company_member_by_user(conn, company_id, user_id)?.ok_or_else(|| "member_not_found".to_string())
+    repo::load_company_member_by_user(conn, company_id, user_id)?
+        .ok_or_else(|| "member_not_found".to_string())
 }
 
 pub fn change_member_role(
@@ -404,7 +441,8 @@ pub fn change_member_role(
     let now = now_rfc3339();
     repo::change_member_role(conn, company_id, member_id, &role_key, &now)?;
 
-    repo::load_company_member_by_id(conn, company_id, member_id)?.ok_or_else(|| "member_not_found".to_string())
+    repo::load_company_member_by_id(conn, company_id, member_id)?
+        .ok_or_else(|| "member_not_found".to_string())
 }
 
 pub fn get_available_roles(conn: &Connection) -> Result<Vec<CompanyRoleOption>, String> {
@@ -432,8 +470,12 @@ pub fn update_user_settings(
         Some(value) => Some(validate_game(&value)?),
         None => None,
     };
-    input.profile_visibility = input.profile_visibility.map(|value| normalize_required(&value));
-    input.theme_preference = input.theme_preference.map(|value| normalize_required(&value));
+    input.profile_visibility = input
+        .profile_visibility
+        .map(|value| normalize_required(&value));
+    input.theme_preference = input
+        .theme_preference
+        .map(|value| normalize_required(&value));
 
     repo::update_user_settings(conn, user_id, &input, &now)?;
     repo::load_user_settings(conn, user_id)

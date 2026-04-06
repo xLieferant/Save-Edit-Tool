@@ -1,0 +1,1678 @@
+{
+  "meta": {
+    "datasetVersion": "1.0.0",
+    "generatedAtUtc": "2026-04-06T15:25:40.744485300+00:00",
+    "inputs": [
+      {
+        "kind": "base_archive",
+        "path": "A:/SteamLibrary/steamapps/common/Euro Truck Simulator 2/def.scs",
+        "sha256": "f702072cfb5063b04d14e73f0793d9ba806260f56f6a8b09a21de02568c23fd2",
+        "available": false,
+        "sourceVersion": "unknown",
+        "notes": [
+          "archive_read_unsupported"
+        ]
+      },
+      {
+        "kind": "dlc_archive",
+        "path": "A:/SteamLibrary/steamapps/common/Euro Truck Simulator 2/dlc_balkan_e.scs",
+        "sha256": "b93e529aac1dfde70caabc7ddc424f6c81601e4ecc203c376160ec9f4a7de52d",
+        "available": false,
+        "sourceVersion": "unknown",
+        "notes": [
+          "archive_read_unsupported"
+        ]
+      },
+      {
+        "kind": "dlc_archive",
+        "path": "A:/SteamLibrary/steamapps/common/Euro Truck Simulator 2/dlc_balkan_w.scs",
+        "sha256": "1866790412dd1ef06a1384015b1ec82e04d7f007605c166b26c561862cf111bb",
+        "available": false,
+        "sourceVersion": "unknown",
+        "notes": [
+          "archive_read_unsupported"
+        ]
+      },
+      {
+        "kind": "dlc_archive",
+        "path": "A:/SteamLibrary/steamapps/common/Euro Truck Simulator 2/dlc_balt.scs",
+        "sha256": "2d5e42353d3403fd6c7a013816af62f11035f059c1b04ca95697658c83f9c1d8",
+        "available": false,
+        "sourceVersion": "unknown",
+        "notes": [
+          "archive_read_unsupported"
+        ]
+      },
+      {
+        "kind": "dlc_archive",
+        "path": "A:/SteamLibrary/steamapps/common/Euro Truck Simulator 2/dlc_east.scs",
+        "sha256": "09ec79a7af069a41c5b078d64dbcff2f5b574503a3c9814fe83b6c881c6b0ed1",
+        "available": false,
+        "sourceVersion": "unknown",
+        "notes": [
+          "archive_read_unsupported"
+        ]
+      },
+      {
+        "kind": "dlc_archive",
+        "path": "A:/SteamLibrary/steamapps/common/Euro Truck Simulator 2/dlc_fr.scs",
+        "sha256": "af912ee14d1d567519ec6bdf51d881b3ef2ffdd87c0105fa1122cb01141033f2",
+        "available": false,
+        "sourceVersion": "unknown",
+        "notes": [
+          "archive_read_unsupported"
+        ]
+      },
+      {
+        "kind": "dlc_archive",
+        "path": "A:/SteamLibrary/steamapps/common/Euro Truck Simulator 2/dlc_greece.scs",
+        "sha256": "1a738f4cc65fa6f3e3cc6af6bb0a733016b3ae1f47437d308045f649579aadde",
+        "available": false,
+        "sourceVersion": "unknown",
+        "notes": [
+          "archive_read_unsupported"
+        ]
+      },
+      {
+        "kind": "dlc_archive",
+        "path": "A:/SteamLibrary/steamapps/common/Euro Truck Simulator 2/dlc_iberia.scs",
+        "sha256": "67da811b5762aa7aa116ee0bdffd0a0a99cffd038813ebb2f898755a39807541",
+        "available": false,
+        "sourceVersion": "unknown",
+        "notes": [
+          "archive_read_unsupported"
+        ]
+      },
+      {
+        "kind": "dlc_archive",
+        "path": "A:/SteamLibrary/steamapps/common/Euro Truck Simulator 2/dlc_it.scs",
+        "sha256": "e0097511b48d9dd0a4ec61f4833944826fae80cf472fc8244f476ace445db044",
+        "available": false,
+        "sourceVersion": "unknown",
+        "notes": [
+          "archive_read_unsupported"
+        ]
+      },
+      {
+        "kind": "dlc_archive",
+        "path": "A:/SteamLibrary/steamapps/common/Euro Truck Simulator 2/dlc_north.scs",
+        "sha256": "fbbea53f26bffa7b66fbf8a6d4c3aa80ac3345bb07bc2e30b930644da9f1c50a",
+        "available": false,
+        "sourceVersion": "unknown",
+        "notes": [
+          "archive_read_unsupported"
+        ]
+      },
+      {
+        "kind": "base_archive",
+        "path": "A:/SteamLibrary/steamapps/common/Euro Truck Simulator 2/locale.scs",
+        "sha256": "61dbde7e259d9fe20981d91524ad5dda5e4b3c4c4bd9228f24d04575bb5def1f",
+        "available": false,
+        "sourceVersion": "unknown",
+        "notes": [
+          "archive_read_unsupported"
+        ]
+      },
+      {
+        "kind": "mod_archive",
+        "path": "C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-def-v276.scs",
+        "sha256": "631e72f85640283df497d1bd21ee84fe2c563eac1717e978beb4cbad002ccdb9",
+        "available": true,
+        "sourceVersion": "v276",
+        "notes": []
+      },
+      {
+        "kind": "mod_archive",
+        "path": "C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs",
+        "sha256": "09808725d471634be7dfbe04cd1656d27ef90db96efbf6a9c7e636b9e64f1978",
+        "available": true,
+        "sourceVersion": "v280",
+        "notes": []
+      },
+      {
+        "kind": "mod_archive",
+        "path": "C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-ma-defmap-v100.scs",
+        "sha256": "b377eccab66fa075813fc83ee260a66eb0e2a57ad6fba4ddce5a79149b78c9e4",
+        "available": true,
+        "sourceVersion": "v100",
+        "notes": []
+      },
+      {
+        "kind": "mod_archive",
+        "path": "C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-me-defmap-v277.scs",
+        "sha256": "00f3312613c9bb70e53c4a45254bb786198b4864d52782397c85e58a1f329d80",
+        "available": true,
+        "sourceVersion": "v277",
+        "notes": []
+      }
+    ],
+    "fileSha256": "16fe6af322c91a0c956f7af29507dbc40ad57c44a64a1ce0836758737085f80f",
+    "warnings": [
+      "input_unavailable:scs:A:/SteamLibrary/steamapps/common/Euro Truck Simulator 2/def.scs",
+      "input_unavailable:scs:A:/SteamLibrary/steamapps/common/Euro Truck Simulator 2/dlc_balkan_e.scs",
+      "input_unavailable:scs:A:/SteamLibrary/steamapps/common/Euro Truck Simulator 2/dlc_balkan_w.scs",
+      "input_unavailable:scs:A:/SteamLibrary/steamapps/common/Euro Truck Simulator 2/dlc_balt.scs",
+      "input_unavailable:scs:A:/SteamLibrary/steamapps/common/Euro Truck Simulator 2/dlc_east.scs",
+      "input_unavailable:scs:A:/SteamLibrary/steamapps/common/Euro Truck Simulator 2/dlc_fr.scs",
+      "input_unavailable:scs:A:/SteamLibrary/steamapps/common/Euro Truck Simulator 2/dlc_greece.scs",
+      "input_unavailable:scs:A:/SteamLibrary/steamapps/common/Euro Truck Simulator 2/dlc_iberia.scs",
+      "input_unavailable:scs:A:/SteamLibrary/steamapps/common/Euro Truck Simulator 2/dlc_it.scs",
+      "input_unavailable:scs:A:/SteamLibrary/steamapps/common/Euro Truck Simulator 2/dlc_north.scs",
+      "input_unavailable:scs:A:/SteamLibrary/steamapps/common/Euro Truck Simulator 2/locale.scs",
+      "company_office_city_missing:promods:arabfood:tobrouk",
+      "company_office_city_missing:promods:bcp:unknown",
+      "company_office_city_missing:promods:bhv:unknown",
+      "company_office_city_missing:promods:euroacres:unknown",
+      "company_office_city_missing:promods:eurogoodies:unknown",
+      "company_office_city_missing:promods:globeur:unknown",
+      "company_office_city_missing:promods:gnt:unknown",
+      "company_office_city_missing:promods:ikea:unknown",
+      "company_office_city_missing:promods:isrfish:unknown",
+      "company_office_city_missing:promods:isrfood:unknown",
+      "company_office_city_missing:promods:low_field:unknown",
+      "company_office_city_missing:promods:marina:tobrouk",
+      "company_office_city_missing:promods:ms_stein:amman_prefab_272",
+      "company_office_city_missing:promods:ms_stein:beirut_prefab_272",
+      "company_office_city_missing:promods:ms_stein:byblos_prefab_272",
+      "company_office_city_missing:promods:ms_stein:damascus_prefab_272",
+      "company_office_city_missing:promods:ms_stein:elarish_prefab_272",
+      "company_office_city_missing:promods:ms_stein:mafraq_prefab_272",
+      "company_office_city_missing:promods:ms_stein:mitzpe_prefab_272",
+      "company_office_city_missing:promods:ms_stein:nabatieh_prefab_272",
+      "company_office_city_missing:promods:ms_stein:ramallah_prefab_272",
+      "company_office_city_missing:promods:ms_stein:taba_prefab_272",
+      "company_office_city_missing:promods:ms_stein:tripolilb_prefab_272",
+      "company_office_city_missing:promods:ms_stein:zahle_prefab_272",
+      "company_office_city_missing:promods:ns_oil:tobrouk",
+      "company_office_city_missing:promods:nucleon:unknown",
+      "company_office_city_missing:promods:radus:unknown",
+      "company_office_city_missing:promods:rimaf:unknown",
+      "company_office_city_missing:promods:shell:unknown",
+      "company_office_city_missing:promods:stokes:unknown",
+      "company_office_city_missing:promods:subse:unknown",
+      "company_office_city_missing:promods:trameri:unknown",
+      "company_office_city_missing:promods:wgcc:unknown"
+    ],
+    "manualReview": [
+      {
+        "leftId": "promods:citroen",
+        "rightId": "promods:citroen",
+        "similarity": 85.71428571428571,
+        "reason": "same_id_name_review:def/company/citroen.sui"
+      },
+      {
+        "leftId": "promods:citroen",
+        "rightId": "promods:citroen",
+        "similarity": 85.71428571428571,
+        "reason": "same_id_name_review:def/company/citroen.sui"
+      },
+      {
+        "leftId": "promods:libyafood",
+        "rightId": "promods:libyafood",
+        "similarity": 90.0,
+        "reason": "same_id_name_review:def/company/libyafood.sui"
+      },
+      {
+        "leftId": "promods:libyafood",
+        "rightId": "promods:libyafood",
+        "similarity": 90.0,
+        "reason": "same_id_name_review:def/company/libyafood.sui"
+      },
+      {
+        "leftId": "promods:roadworks_a7",
+        "rightId": "promods:roadworks_a9",
+        "similarity": 92.85714285714286,
+        "reason": "city_name_near_match_same_country:DE"
+      },
+      {
+        "leftId": "promods:svalsateast",
+        "rightId": "promods:svalsatwest",
+        "similarity": 94.11764705882352,
+        "reason": "city_name_near_match_same_country:SV"
+      }
+    ],
+    "recordCount": 72
+  },
+  "records": [
+    {
+      "id": "promods:aland",
+      "namespace": "promods",
+      "gameToken": "aland",
+      "countryCode": "AX",
+      "isoCountryCode": "ala",
+      "countryIso2": "AX",
+      "nameEn": "Åland",
+      "nameLocal": "Åland",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/aland.sui",
+      "sourceVersion": "v280",
+      "checksum": "93c2965243982b34b81bf3f07bd30266e4d22f2c45ccb2e6a3f553309cfe2ebe",
+      "warnings": []
+    },
+    {
+      "id": "promods:albania",
+      "namespace": "promods",
+      "gameToken": "albania",
+      "countryCode": "AL",
+      "isoCountryCode": "alb",
+      "countryIso2": "AL",
+      "nameEn": "Shqipëria",
+      "nameLocal": "Shqipëria",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/albania.sui",
+      "sourceVersion": "v280",
+      "checksum": "4e3ec791ca09ca5931db2564ef0773f894ed4fa04a2d24dd8d06e07d6a73d80f",
+      "warnings": []
+    },
+    {
+      "id": "promods:algeria",
+      "namespace": "promods",
+      "gameToken": "algeria",
+      "countryCode": "DZ",
+      "isoCountryCode": "dza",
+      "countryIso2": "DZ",
+      "nameEn": "al-Jazāʾir",
+      "nameLocal": "al-Jazāʾir",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-ma-defmap-v100.scs!def/country/algeria.sui",
+      "sourceVersion": "v100",
+      "checksum": "c7fb2ed59db06f10e6e7b0548bd02fe2785dbb5dd5584c7d6d5a67fa45f786e1",
+      "warnings": []
+    },
+    {
+      "id": "promods:andorra",
+      "namespace": "promods",
+      "gameToken": "andorra",
+      "countryCode": "AND",
+      "isoCountryCode": "and",
+      "countryIso2": "AN",
+      "nameEn": "Andorra",
+      "nameLocal": "Andorra",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/andorra.sui",
+      "sourceVersion": "v280",
+      "checksum": "7151fb3c4cfd32606a58f772eaef2f6c7f8a7269c5ff322e27d93fb78e47fc08",
+      "warnings": []
+    },
+    {
+      "id": "promods:armenia",
+      "namespace": "promods",
+      "gameToken": "armenia",
+      "countryCode": "AM",
+      "isoCountryCode": "arm",
+      "countryIso2": "AM",
+      "nameEn": "Hayastan",
+      "nameLocal": "Hayastan",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/armenia.sui",
+      "sourceVersion": "v280",
+      "checksum": "16a73db59ecdc802f9f2961fcaebd5a4e1c10386fbdfd56820fb09ae81f5d0e5",
+      "warnings": []
+    },
+    {
+      "id": "promods:austria",
+      "namespace": "promods",
+      "gameToken": "austria",
+      "countryCode": "A",
+      "isoCountryCode": "aut",
+      "countryIso2": "AT",
+      "nameEn": "Österreich",
+      "nameLocal": "Österreich",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/austria.sui",
+      "sourceVersion": "v280",
+      "checksum": "307df54e195b8dade8a3212a8da17eb0acf1f676a886168285c744ec85634ca2",
+      "warnings": []
+    },
+    {
+      "id": "promods:azerbaijan",
+      "namespace": "promods",
+      "gameToken": "azerbaijan",
+      "countryCode": "AZ",
+      "isoCountryCode": "aze",
+      "countryIso2": "AZ",
+      "nameEn": "Azerbaycan",
+      "nameLocal": "Azerbaycan",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/azerbaijan.sui",
+      "sourceVersion": "v280",
+      "checksum": "30003248cdaf3eba223603e2680baab8d3fcafe6305627ab806e631448e225da",
+      "warnings": []
+    },
+    {
+      "id": "promods:belarus",
+      "namespace": "promods",
+      "gameToken": "belarus",
+      "countryCode": "BY",
+      "isoCountryCode": "blr",
+      "countryIso2": "BY",
+      "nameEn": "Беларусь",
+      "nameLocal": "Беларусь",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/belarus.sui",
+      "sourceVersion": "v280",
+      "checksum": "8c64e2a319bce68c0bc64d4f02a456d4f12a944af0022c7737a792738ee988ae",
+      "warnings": []
+    },
+    {
+      "id": "promods:belgium",
+      "namespace": "promods",
+      "gameToken": "belgium",
+      "countryCode": "B",
+      "isoCountryCode": "bel",
+      "countryIso2": "BE",
+      "nameEn": "België/Belgique",
+      "nameLocal": "België/Belgique",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/belgium.sui",
+      "sourceVersion": "v280",
+      "checksum": "cb2f603fa915cf3f5103b7a235d6bcb79159fb4e9b21bf9f7de7b9fedd60cb85",
+      "warnings": []
+    },
+    {
+      "id": "promods:bosnia",
+      "namespace": "promods",
+      "gameToken": "bosnia",
+      "countryCode": "BIH",
+      "isoCountryCode": "bih",
+      "countryIso2": "BO",
+      "nameEn": "Bosna i Hercegovina",
+      "nameLocal": "Bosna i Hercegovina",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/bosnia.sui",
+      "sourceVersion": "v280",
+      "checksum": "a3e4af43f795890e347194351087ec065585efce91cf82937286ec7a8d763ffd",
+      "warnings": []
+    },
+    {
+      "id": "promods:bulgaria",
+      "namespace": "promods",
+      "gameToken": "bulgaria",
+      "countryCode": "BG",
+      "isoCountryCode": "bgr",
+      "countryIso2": "BG",
+      "nameEn": "България",
+      "nameLocal": "България",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/bulgaria.sui",
+      "sourceVersion": "v280",
+      "checksum": "aa247e2be4dda49b416fba8f5ed84b3009998e72e4a5f5d6731915fff7a524e3",
+      "warnings": []
+    },
+    {
+      "id": "promods:can_islands",
+      "namespace": "promods",
+      "gameToken": "can_islands",
+      "countryCode": "SP",
+      "isoCountryCode": null,
+      "countryIso2": "SP",
+      "nameEn": "Canary Islands",
+      "nameLocal": "Canary Islands",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/can_islands.sui",
+      "sourceVersion": "v280",
+      "checksum": "77a3880c5b0ccde1c2d0ebaaa0723261e06bd0dc4fd9a36a389a768cc9be814f",
+      "warnings": []
+    },
+    {
+      "id": "promods:croatia",
+      "namespace": "promods",
+      "gameToken": "croatia",
+      "countryCode": "HR",
+      "isoCountryCode": "hrv",
+      "countryIso2": "HR",
+      "nameEn": "Hrvatska",
+      "nameLocal": "Hrvatska",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/croatia.sui",
+      "sourceVersion": "v280",
+      "checksum": "2e45d739257b7d9263b3a2b3f3cb8e3337ac770ea188497ebf5e2a5be7529581",
+      "warnings": []
+    },
+    {
+      "id": "promods:cyprus",
+      "namespace": "promods",
+      "gameToken": "cyprus",
+      "countryCode": "CY",
+      "isoCountryCode": "cyp",
+      "countryIso2": "CY",
+      "nameEn": "Κύπρος",
+      "nameLocal": "Κύπρος",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/cyprus.sui",
+      "sourceVersion": "v280",
+      "checksum": "45799fa1e8ccc273fbe7ca085b31f4108bcd52d0f8f6bedb6e3cb98ec3d65b07",
+      "warnings": []
+    },
+    {
+      "id": "promods:czech",
+      "namespace": "promods",
+      "gameToken": "czech",
+      "countryCode": "CZ",
+      "isoCountryCode": "cze",
+      "countryIso2": "CZ",
+      "nameEn": "Česká Republika",
+      "nameLocal": "Česká Republika",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/czech.sui",
+      "sourceVersion": "v280",
+      "checksum": "424cf3ed18a41d621da7c0fbc14acd174446a2af27e612fe7404f10702bd52d8",
+      "warnings": []
+    },
+    {
+      "id": "promods:denmark",
+      "namespace": "promods",
+      "gameToken": "denmark",
+      "countryCode": "DK",
+      "isoCountryCode": "dnk",
+      "countryIso2": "DK",
+      "nameEn": "Danmark",
+      "nameLocal": "Danmark",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/denmark.sui",
+      "sourceVersion": "v280",
+      "checksum": "6c66895b7b8dadb8eb8646f4d985265f6a29cf22105821e7e4a10310ecb0aaa2",
+      "warnings": []
+    },
+    {
+      "id": "promods:egypt",
+      "namespace": "promods",
+      "gameToken": "egypt",
+      "countryCode": "EG",
+      "isoCountryCode": "egy",
+      "countryIso2": "EG",
+      "nameEn": "Masr",
+      "nameLocal": "Masr",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-me-defmap-v277.scs!def/country/egypt.sui",
+      "sourceVersion": "v277",
+      "checksum": "89eaae6c343774486771615bdfcc1844195f280216a00a003262975c4d942e82",
+      "warnings": []
+    },
+    {
+      "id": "promods:estonia",
+      "namespace": "promods",
+      "gameToken": "estonia",
+      "countryCode": "EST",
+      "isoCountryCode": "est",
+      "countryIso2": "EE",
+      "nameEn": "Eesti",
+      "nameLocal": "Eesti",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/estonia.sui",
+      "sourceVersion": "v280",
+      "checksum": "2b4d8ba0b084ccf95739d7dd996b434624eabefa28fc20095aa36a5bc3aec83c",
+      "warnings": []
+    },
+    {
+      "id": "promods:faroe",
+      "namespace": "promods",
+      "gameToken": "faroe",
+      "countryCode": "FO",
+      "isoCountryCode": "fro",
+      "countryIso2": "FO",
+      "nameEn": "Føroyar",
+      "nameLocal": "Føroyar",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/faroe.sui",
+      "sourceVersion": "v280",
+      "checksum": "dc8073950bab120982719945e2b20045e732d1c85e2d7fe0b831271889a68f09",
+      "warnings": []
+    },
+    {
+      "id": "promods:finland",
+      "namespace": "promods",
+      "gameToken": "finland",
+      "countryCode": "FIN",
+      "isoCountryCode": "fin",
+      "countryIso2": "FI",
+      "nameEn": "Suomi",
+      "nameLocal": "Suomi",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/finland.sui",
+      "sourceVersion": "v280",
+      "checksum": "0ae492e78e5096136f2c8e9355437f0a7db3b1a70e4d08fdc3b1334a603fde68",
+      "warnings": []
+    },
+    {
+      "id": "promods:france",
+      "namespace": "promods",
+      "gameToken": "france",
+      "countryCode": "F",
+      "isoCountryCode": "fra",
+      "countryIso2": "FR",
+      "nameEn": "France",
+      "nameLocal": "France",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/france.sui",
+      "sourceVersion": "v280",
+      "checksum": "d7726af20a3ed728cf0baa64fb99ed5592a99a6865173bcaf5c64392351863a9",
+      "warnings": []
+    },
+    {
+      "id": "promods:georgia",
+      "namespace": "promods",
+      "gameToken": "georgia",
+      "countryCode": "GE",
+      "isoCountryCode": "geo",
+      "countryIso2": "GE",
+      "nameEn": "საქართველო",
+      "nameLocal": "საქართველო",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/georgia.sui",
+      "sourceVersion": "v280",
+      "checksum": "e45ffd8296b1cbb070ce67bd71b1c194dc62a019b7ca6dcbe58a2995a6afc849",
+      "warnings": []
+    },
+    {
+      "id": "promods:germany",
+      "namespace": "promods",
+      "gameToken": "germany",
+      "countryCode": "D",
+      "isoCountryCode": "deu",
+      "countryIso2": "DE",
+      "nameEn": "Deutschland",
+      "nameLocal": "Deutschland",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/germany.sui",
+      "sourceVersion": "v280",
+      "checksum": "1d20e2b5327fb6afe7d65f9dceff89fc2057de7f428f09bc34d1abe2d76af18c",
+      "warnings": []
+    },
+    {
+      "id": "promods:gibraltar",
+      "namespace": "promods",
+      "gameToken": "gibraltar",
+      "countryCode": "GBZ",
+      "isoCountryCode": "gbz",
+      "countryIso2": "GI",
+      "nameEn": "Gibraltar",
+      "nameLocal": "Gibraltar",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/gibraltar.sui",
+      "sourceVersion": "v280",
+      "checksum": "f70717924d54416047bbfa67301b98ea18159b4ec9a69c9b36a3109e7f8576b8",
+      "warnings": []
+    },
+    {
+      "id": "promods:greece",
+      "namespace": "promods",
+      "gameToken": "greece",
+      "countryCode": "GR",
+      "isoCountryCode": "grc",
+      "countryIso2": "GR",
+      "nameEn": "Ελλάδα",
+      "nameLocal": "Ελλάδα",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/greece.sui",
+      "sourceVersion": "v280",
+      "checksum": "5cecf16124ee642334571dacf2fa7b9d73601918600e6b2d90c3fba718280de9",
+      "warnings": []
+    },
+    {
+      "id": "promods:greenland",
+      "namespace": "promods",
+      "gameToken": "greenland",
+      "countryCode": "DK",
+      "isoCountryCode": "grl",
+      "countryIso2": "DK",
+      "nameEn": "Kalaallit Nunaat",
+      "nameLocal": "Kalaallit Nunaat",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/greenland.sui",
+      "sourceVersion": "v280",
+      "checksum": "1878a5e4c82808034e8584bdde727bcd011190281f9d99945575d736b2841463",
+      "warnings": []
+    },
+    {
+      "id": "promods:guernsey",
+      "namespace": "promods",
+      "gameToken": "guernsey",
+      "countryCode": "GBG",
+      "isoCountryCode": "ggy",
+      "countryIso2": "GU",
+      "nameEn": "Guernsey",
+      "nameLocal": "Guernsey",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/guernsey.sui",
+      "sourceVersion": "v280",
+      "checksum": "5c47d79807cdb43d62a0c1f69c9ffffa99454817aa6230da75d95f2fb5e52d9c",
+      "warnings": []
+    },
+    {
+      "id": "promods:hungary",
+      "namespace": "promods",
+      "gameToken": "hungary",
+      "countryCode": "H",
+      "isoCountryCode": "hun",
+      "countryIso2": "HU",
+      "nameEn": "Magyarország",
+      "nameLocal": "Magyarország",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/hungary.sui",
+      "sourceVersion": "v280",
+      "checksum": "dd12f4959da927b8c2b59df59aed2300354ca8669ee380a236f4ca3be2d5a3bb",
+      "warnings": []
+    },
+    {
+      "id": "promods:iceland",
+      "namespace": "promods",
+      "gameToken": "iceland",
+      "countryCode": "IS",
+      "isoCountryCode": "isl",
+      "countryIso2": "IS",
+      "nameEn": "Ísland",
+      "nameLocal": "Ísland",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/iceland.sui",
+      "sourceVersion": "v280",
+      "checksum": "e3b95f05ac7883b3a7609a2a56e263883197909dbc02c4bb766006ea218a75ee",
+      "warnings": []
+    },
+    {
+      "id": "promods:iom",
+      "namespace": "promods",
+      "gameToken": "iom",
+      "countryCode": "GBM",
+      "isoCountryCode": "imn",
+      "countryIso2": "IO",
+      "nameEn": "Isle of Man",
+      "nameLocal": "Isle of Man",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/iom.sui",
+      "sourceVersion": "v280",
+      "checksum": "48952aa4566d612857297311c6789cc6fe403fe3014c9dc6ed70ad406485759c",
+      "warnings": []
+    },
+    {
+      "id": "promods:iraq",
+      "namespace": "promods",
+      "gameToken": "iraq",
+      "countryCode": "IRQ",
+      "isoCountryCode": "irq",
+      "countryIso2": "IR",
+      "nameEn": "Al-'Irāq",
+      "nameLocal": "Al-'Irāq",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-me-defmap-v277.scs!def/country/iraq.sui",
+      "sourceVersion": "v277",
+      "checksum": "ffea3b5c9a74070f7ba04a6b88d459454c074cb99638df5dc6720c5ed98b0166",
+      "warnings": []
+    },
+    {
+      "id": "promods:ireland",
+      "namespace": "promods",
+      "gameToken": "ireland",
+      "countryCode": "IRL",
+      "isoCountryCode": "irl",
+      "countryIso2": "IE",
+      "nameEn": "Ireland",
+      "nameLocal": "Ireland",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/ireland.sui",
+      "sourceVersion": "v280",
+      "checksum": "d0398a12d39367f23c91d9c954e9bc2bad77badd5d6aafa01b42b6b697f9a3b5",
+      "warnings": []
+    },
+    {
+      "id": "promods:israel",
+      "namespace": "promods",
+      "gameToken": "israel",
+      "countryCode": "IL",
+      "isoCountryCode": "isr",
+      "countryIso2": "IL",
+      "nameEn": "Israel",
+      "nameLocal": "Israel",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-me-defmap-v277.scs!def/country/israel.sui",
+      "sourceVersion": "v277",
+      "checksum": "1d47d44ab034594d099012a96d393ef0a68253b87dfe6ed58350cb154d6d0917",
+      "warnings": []
+    },
+    {
+      "id": "promods:italy",
+      "namespace": "promods",
+      "gameToken": "italy",
+      "countryCode": "I",
+      "isoCountryCode": "ita",
+      "countryIso2": "IT",
+      "nameEn": "Italia",
+      "nameLocal": "Italia",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/italy.sui",
+      "sourceVersion": "v280",
+      "checksum": "693a3577b1452f8588e2679e12d2a383fb6e2cd34d9f857426f8861d4698378d",
+      "warnings": []
+    },
+    {
+      "id": "promods:jersey",
+      "namespace": "promods",
+      "gameToken": "jersey",
+      "countryCode": "GBJ",
+      "isoCountryCode": "jey",
+      "countryIso2": "JE",
+      "nameEn": "Jersey",
+      "nameLocal": "Jersey",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/jersey.sui",
+      "sourceVersion": "v280",
+      "checksum": "f9bd890f10aa5bcd14efaf832b05da948682dad265714532798b928016c2dcb1",
+      "warnings": []
+    },
+    {
+      "id": "promods:jordan",
+      "namespace": "promods",
+      "gameToken": "jordan",
+      "countryCode": "HKJ",
+      "isoCountryCode": "jor",
+      "countryIso2": "JO",
+      "nameEn": "Al-'Urdunn",
+      "nameLocal": "Al-'Urdunn",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-me-defmap-v277.scs!def/country/jordan.sui",
+      "sourceVersion": "v277",
+      "checksum": "821f58c476d547e0558ea16419ab149f2ca6bb6f1088f55297150e8f0749c904",
+      "warnings": []
+    },
+    {
+      "id": "promods:kosovo",
+      "namespace": "promods",
+      "gameToken": "kosovo",
+      "countryCode": "RKS",
+      "isoCountryCode": "xxk",
+      "countryIso2": "KO",
+      "nameEn": "Kosovo",
+      "nameLocal": "Kosovo",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/kosovo.sui",
+      "sourceVersion": "v280",
+      "checksum": "7b8d0a4505a807f371b778780d49053622f6cb2a30771ddd6c31bea9a0af75d7",
+      "warnings": []
+    },
+    {
+      "id": "promods:latvia",
+      "namespace": "promods",
+      "gameToken": "latvia",
+      "countryCode": "LV",
+      "isoCountryCode": "lva",
+      "countryIso2": "LV",
+      "nameEn": "Latvija",
+      "nameLocal": "Latvija",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/latvia.sui",
+      "sourceVersion": "v280",
+      "checksum": "c3d654915c1fcec47dc08f7343079f2b358ca96c2a5cf0234b04b680853938a9",
+      "warnings": []
+    },
+    {
+      "id": "promods:lebanon",
+      "namespace": "promods",
+      "gameToken": "lebanon",
+      "countryCode": "RL",
+      "isoCountryCode": "lbn",
+      "countryIso2": "LB",
+      "nameEn": "Lubnān",
+      "nameLocal": "Lubnān",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-me-defmap-v277.scs!def/country/lebanon.sui",
+      "sourceVersion": "v277",
+      "checksum": "de8e2b5dbad6ef9508bfcdf3e978e9c22254f5c2e5ca560ade1b4a048469c513",
+      "warnings": []
+    },
+    {
+      "id": "promods:libya",
+      "namespace": "promods",
+      "gameToken": "libya",
+      "countryCode": "LAR",
+      "isoCountryCode": "lby",
+      "countryIso2": "LY",
+      "nameEn": "Lībiyā",
+      "nameLocal": "Lībiyā",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-me-defmap-v277.scs!def/country/libya.sui",
+      "sourceVersion": "v277",
+      "checksum": "4e8f1d8f5c02e6da6e7c245272e1e236b7f94cde8c73b8118aadfcaadcf91e37",
+      "warnings": []
+    },
+    {
+      "id": "promods:libya1",
+      "namespace": "promods",
+      "gameToken": "libya1",
+      "countryCode": "LY",
+      "isoCountryCode": "lby",
+      "countryIso2": "LY",
+      "nameEn": "Lībiyā",
+      "nameLocal": "Lībiyā",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-ma-defmap-v100.scs!def/country/libya1.sui",
+      "sourceVersion": "v100",
+      "checksum": "1adb77247f0055307a1f1bb3fbaafa8e01d4f59aa17570b01795f36d870c2d1a",
+      "warnings": []
+    },
+    {
+      "id": "promods:liecht",
+      "namespace": "promods",
+      "gameToken": "liecht",
+      "countryCode": "FL",
+      "isoCountryCode": "lie",
+      "countryIso2": "FL",
+      "nameEn": "Liechtenstein",
+      "nameLocal": "Liechtenstein",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/liecht.sui",
+      "sourceVersion": "v280",
+      "checksum": "649922ac7649072799534455c7ce05dad0904c81d8fe53fe61f5e54d5727ac3f",
+      "warnings": []
+    },
+    {
+      "id": "promods:lithuania",
+      "namespace": "promods",
+      "gameToken": "lithuania",
+      "countryCode": "LT",
+      "isoCountryCode": "ltu",
+      "countryIso2": "LT",
+      "nameEn": "Lietuva",
+      "nameLocal": "Lietuva",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/lithuania.sui",
+      "sourceVersion": "v280",
+      "checksum": "78337ef549c4d2f49dfe3719b08d30f4a8129c7d5156213a30817a58765a3ab0",
+      "warnings": []
+    },
+    {
+      "id": "promods:luxembourg",
+      "namespace": "promods",
+      "gameToken": "luxembourg",
+      "countryCode": "L",
+      "isoCountryCode": "lux",
+      "countryIso2": "LU",
+      "nameEn": "Lëtzebuerg",
+      "nameLocal": "Lëtzebuerg",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/luxembourg.sui",
+      "sourceVersion": "v280",
+      "checksum": "40d6b8af6b47fcbc43b78dad8f5835992bf7de7f6bc022581b0aada51fd03fb5",
+      "warnings": []
+    },
+    {
+      "id": "promods:macedonia",
+      "namespace": "promods",
+      "gameToken": "macedonia",
+      "countryCode": "NMK",
+      "isoCountryCode": "mkd",
+      "countryIso2": "MA",
+      "nameEn": "Северна Македонија",
+      "nameLocal": "Северна Македонија",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/macedonia.sui",
+      "sourceVersion": "v280",
+      "checksum": "a2407b317bd5e06f81258c86fc674d3985a70d5b88781d353986fe7e5c68ef26",
+      "warnings": []
+    },
+    {
+      "id": "promods:malta",
+      "namespace": "promods",
+      "gameToken": "malta",
+      "countryCode": "M",
+      "isoCountryCode": "mlt",
+      "countryIso2": "MT",
+      "nameEn": "Malta",
+      "nameLocal": "Malta",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/malta.sui",
+      "sourceVersion": "v280",
+      "checksum": "c3750d47edf189236b072093640e5757af7d55f1395df6cfbff0e4758718d3c0",
+      "warnings": []
+    },
+    {
+      "id": "promods:moldova",
+      "namespace": "promods",
+      "gameToken": "moldova",
+      "countryCode": "MD",
+      "isoCountryCode": "mda",
+      "countryIso2": "MD",
+      "nameEn": "Moldova",
+      "nameLocal": "Moldova",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/moldova.sui",
+      "sourceVersion": "v280",
+      "checksum": "a2a0fae2ede8d358f7c0098b3303f108b472f90e6630e46df3d6edca77650314",
+      "warnings": []
+    },
+    {
+      "id": "promods:monaco",
+      "namespace": "promods",
+      "gameToken": "monaco",
+      "countryCode": "MC",
+      "isoCountryCode": "mco",
+      "countryIso2": "MC",
+      "nameEn": "Monaco",
+      "nameLocal": "Monaco",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/monaco.sui",
+      "sourceVersion": "v280",
+      "checksum": "977b1f985369c9a36afbc79c2e1aa4d9fd5d44194e1093c83d00e76f5d541950",
+      "warnings": []
+    },
+    {
+      "id": "promods:montenegro",
+      "namespace": "promods",
+      "gameToken": "montenegro",
+      "countryCode": "MNE",
+      "isoCountryCode": "mne",
+      "countryIso2": "ME",
+      "nameEn": "Црна Гора",
+      "nameLocal": "Црна Гора",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/montenegro.sui",
+      "sourceVersion": "v280",
+      "checksum": "7d87aad01745436aa9ef16b03d8d4b6b38dfeda0324a01eedff2b6e3d1a309e4",
+      "warnings": []
+    },
+    {
+      "id": "promods:morocco",
+      "namespace": "promods",
+      "gameToken": "morocco",
+      "countryCode": "MA",
+      "isoCountryCode": "mar",
+      "countryIso2": "MA",
+      "nameEn": "al-Maghrib",
+      "nameLocal": "al-Maghrib",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-ma-defmap-v100.scs!def/country/morocco.sui",
+      "sourceVersion": "v100",
+      "checksum": "e0fa34bae55c4436db5616e83003b3317e46da29be485e894a55e67a3559dd64",
+      "warnings": []
+    },
+    {
+      "id": "promods:netherlands",
+      "namespace": "promods",
+      "gameToken": "netherlands",
+      "countryCode": "NL",
+      "isoCountryCode": "nld",
+      "countryIso2": "NL",
+      "nameEn": "Nederland",
+      "nameLocal": "Nederland",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/netherlands.sui",
+      "sourceVersion": "v280",
+      "checksum": "b76a25077b1baf655ae33dd924c59e0e75c55a6895018acf5b0df3d91387c9fc",
+      "warnings": []
+    },
+    {
+      "id": "promods:nireland",
+      "namespace": "promods",
+      "gameToken": "nireland",
+      "countryCode": "GB",
+      "isoCountryCode": "gbr",
+      "countryIso2": "GB",
+      "nameEn": "Northern-Ireland",
+      "nameLocal": "Northern-Ireland",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/nireland.sui",
+      "sourceVersion": "v280",
+      "checksum": "3f7f525c36213d210112f493610f57bd7b656bc04f417359b95443c0cc05eb1e",
+      "warnings": []
+    },
+    {
+      "id": "promods:norway",
+      "namespace": "promods",
+      "gameToken": "norway",
+      "countryCode": "N",
+      "isoCountryCode": "nor",
+      "countryIso2": "NO",
+      "nameEn": "Norge",
+      "nameLocal": "Norge",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/norway.sui",
+      "sourceVersion": "v280",
+      "checksum": "dd706443c60a6beb6074bec4b8f4b4c0d57c78e7e23fde568936b5434e84e795",
+      "warnings": []
+    },
+    {
+      "id": "promods:poland",
+      "namespace": "promods",
+      "gameToken": "poland",
+      "countryCode": "PL",
+      "isoCountryCode": "pol",
+      "countryIso2": "PL",
+      "nameEn": "Polska",
+      "nameLocal": "Polska",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/poland.sui",
+      "sourceVersion": "v280",
+      "checksum": "ad0ffae73f2e1e4a18f9063395006409185879e71fc638d2777c37db809e6dba",
+      "warnings": []
+    },
+    {
+      "id": "promods:portugal",
+      "namespace": "promods",
+      "gameToken": "portugal",
+      "countryCode": "P",
+      "isoCountryCode": "prt",
+      "countryIso2": "PT",
+      "nameEn": "Portugal",
+      "nameLocal": "Portugal",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/portugal.sui",
+      "sourceVersion": "v280",
+      "checksum": "2c0730a1bc913a94ee86a7de863d7292cbf1771f165d362472417848a28dd0a2",
+      "warnings": []
+    },
+    {
+      "id": "promods:romania",
+      "namespace": "promods",
+      "gameToken": "romania",
+      "countryCode": "RO",
+      "isoCountryCode": "rou",
+      "countryIso2": "RO",
+      "nameEn": "România",
+      "nameLocal": "România",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/romania.sui",
+      "sourceVersion": "v280",
+      "checksum": "e391ebf6bb25b27227eb50b1795099addaccb1fc5e02abac63e77610814f460d",
+      "warnings": []
+    },
+    {
+      "id": "promods:russia",
+      "namespace": "promods",
+      "gameToken": "russia",
+      "countryCode": "RUS",
+      "isoCountryCode": "rus",
+      "countryIso2": "RU",
+      "nameEn": "Россия",
+      "nameLocal": "Россия",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/russia.sui",
+      "sourceVersion": "v280",
+      "checksum": "b60b7179a126f869294e4e383fa43f37caebcc469abd1cb41120ab6e47d1e60b",
+      "warnings": []
+    },
+    {
+      "id": "promods:sanmarino",
+      "namespace": "promods",
+      "gameToken": "sanmarino",
+      "countryCode": "RSM",
+      "isoCountryCode": "smr",
+      "countryIso2": "SA",
+      "nameEn": "San Marino",
+      "nameLocal": "San Marino",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/sanmarino.sui",
+      "sourceVersion": "v280",
+      "checksum": "e49d5c8e0a75857f9cfff8f81f8365c4896fd3236357f33de83001c3c392f45c",
+      "warnings": []
+    },
+    {
+      "id": "promods:saudia",
+      "namespace": "promods",
+      "gameToken": "saudia",
+      "countryCode": "KSA",
+      "isoCountryCode": "sau",
+      "countryIso2": "SA",
+      "nameEn": "Al-'Arabīyah As-Sa'ūdīyah",
+      "nameLocal": "Al-'Arabīyah As-Sa'ūdīyah",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-me-defmap-v277.scs!def/country/saudia.sui",
+      "sourceVersion": "v277",
+      "checksum": "a5522cf55e4fcd290ecf8e1c8658ebe4dcfbf0404b95d7e27bf2e987a809b226",
+      "warnings": []
+    },
+    {
+      "id": "promods:serbia",
+      "namespace": "promods",
+      "gameToken": "serbia",
+      "countryCode": "SRB",
+      "isoCountryCode": "srb",
+      "countryIso2": "RS",
+      "nameEn": "Србија",
+      "nameLocal": "Србија",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/serbia.sui",
+      "sourceVersion": "v280",
+      "checksum": "25dc4c0733bc7b978a4eea89c28fbd8586b1f740b7eef194b22f2e616f2c2b7a",
+      "warnings": []
+    },
+    {
+      "id": "promods:slovakia",
+      "namespace": "promods",
+      "gameToken": "slovakia",
+      "countryCode": "SK",
+      "isoCountryCode": "svk",
+      "countryIso2": "SK",
+      "nameEn": "Slovensko",
+      "nameLocal": "Slovensko",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/slovakia.sui",
+      "sourceVersion": "v280",
+      "checksum": "f2582729e7c0880b7b72092995f0e26fd8ef5a8c2c21a31346dc3bd649a989db",
+      "warnings": []
+    },
+    {
+      "id": "promods:slovenia",
+      "namespace": "promods",
+      "gameToken": "slovenia",
+      "countryCode": "SLO",
+      "isoCountryCode": "svn",
+      "countryIso2": "SI",
+      "nameEn": "Slovenija",
+      "nameLocal": "Slovenija",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/slovenia.sui",
+      "sourceVersion": "v280",
+      "checksum": "ee8263a4a1900c102182e8f0f2559aa47278cf4ab2a7d5053619f69a3730a4e7",
+      "warnings": []
+    },
+    {
+      "id": "promods:spain",
+      "namespace": "promods",
+      "gameToken": "spain",
+      "countryCode": "E",
+      "isoCountryCode": "esp",
+      "countryIso2": "ES",
+      "nameEn": "España",
+      "nameLocal": "España",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/spain.sui",
+      "sourceVersion": "v280",
+      "checksum": "346af8ee5b0dd55884cb981bbc4c01a3cb430892c0a84fa4d2c2dc33c1df7f49",
+      "warnings": []
+    },
+    {
+      "id": "promods:svalbard",
+      "namespace": "promods",
+      "gameToken": "svalbard",
+      "countryCode": "N",
+      "isoCountryCode": "sjm",
+      "countryIso2": "SV",
+      "nameEn": "Svalbard",
+      "nameLocal": "Svalbard",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/svalbard.sui",
+      "sourceVersion": "v280",
+      "checksum": "98102943ae744d2aaa6adb5d16fc05c00e4e6b141bbdd3e42adafa687b31995d",
+      "warnings": []
+    },
+    {
+      "id": "promods:sweden",
+      "namespace": "promods",
+      "gameToken": "sweden",
+      "countryCode": "S",
+      "isoCountryCode": "swe",
+      "countryIso2": "SE",
+      "nameEn": "Sverige",
+      "nameLocal": "Sverige",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/sweden.sui",
+      "sourceVersion": "v280",
+      "checksum": "2d648bd8bfb2904fafa0429a80712edd87fdadf210d7e020d07192230d2549ac",
+      "warnings": []
+    },
+    {
+      "id": "promods:switzerland",
+      "namespace": "promods",
+      "gameToken": "switzerland",
+      "countryCode": "CH",
+      "isoCountryCode": "che",
+      "countryIso2": "CH",
+      "nameEn": "Schweiz",
+      "nameLocal": "Schweiz",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/switzerland.sui",
+      "sourceVersion": "v280",
+      "checksum": "cfca155d50d71b286742ea5516b1edf7bad7b6dc35aa87c541b11d30fd90f80e",
+      "warnings": []
+    },
+    {
+      "id": "promods:syria",
+      "namespace": "promods",
+      "gameToken": "syria",
+      "countryCode": "SYR",
+      "isoCountryCode": "syr",
+      "countryIso2": "SY",
+      "nameEn": "Sūriyā",
+      "nameLocal": "Sūriyā",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-me-defmap-v277.scs!def/country/syria.sui",
+      "sourceVersion": "v277",
+      "checksum": "179c8ff2396ce44f8463b74e0f3fed78402f04dee8c97b9052af6ff3939be58b",
+      "warnings": []
+    },
+    {
+      "id": "promods:tunisia",
+      "namespace": "promods",
+      "gameToken": "tunisia",
+      "countryCode": "TU",
+      "isoCountryCode": "tun",
+      "countryIso2": "TN",
+      "nameEn": "Tūnis",
+      "nameLocal": "Tūnis",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-ma-defmap-v100.scs!def/country/tunisia.sui",
+      "sourceVersion": "v100",
+      "checksum": "268791412b1823a2b4ffd28abd25dbdad239b02d39a7525519f9980ee0cb3f18",
+      "warnings": []
+    },
+    {
+      "id": "promods:turkey",
+      "namespace": "promods",
+      "gameToken": "turkey",
+      "countryCode": "TR",
+      "isoCountryCode": "tur",
+      "countryIso2": "TR",
+      "nameEn": "Türkiye",
+      "nameLocal": "Türkiye",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/turkey.sui",
+      "sourceVersion": "v280",
+      "checksum": "50bfd06bde28d49106009acd939779d83fd17614377c266fa3e32334d8d39e5a",
+      "warnings": []
+    },
+    {
+      "id": "promods:uk",
+      "namespace": "promods",
+      "gameToken": "uk",
+      "countryCode": "GB",
+      "isoCountryCode": "gbr",
+      "countryIso2": "GB",
+      "nameEn": "United Kingdom",
+      "nameLocal": "United Kingdom",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/uk.sui",
+      "sourceVersion": "v280",
+      "checksum": "d07cd7e99292a17cb4461fb067b66f8b54affe66180d22a82ed419bb22974742",
+      "warnings": []
+    },
+    {
+      "id": "promods:ukraine",
+      "namespace": "promods",
+      "gameToken": "ukraine",
+      "countryCode": "UA",
+      "isoCountryCode": "ukr",
+      "countryIso2": "UA",
+      "nameEn": "Україна",
+      "nameLocal": "Україна",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-eu-def-v280.scs!def/country/ukraine.sui",
+      "sourceVersion": "v280",
+      "checksum": "dced9191f06213234e166988a123e2ea79f8fe045d5c35c17410c5afa252ac6d",
+      "warnings": []
+    },
+    {
+      "id": "promods:westbank",
+      "namespace": "promods",
+      "gameToken": "westbank",
+      "countryCode": "PS",
+      "isoCountryCode": "pse",
+      "countryIso2": "PS",
+      "nameEn": "West Bank",
+      "nameLocal": "West Bank",
+      "aliases": [],
+      "coords": null,
+      "paymentMultiplier": 1.0,
+      "notes": [
+        "VTC balancing default country payment multiplier"
+      ],
+      "source": "local:C:/Users/alexa/Documents/Euro Truck Simulator 2/mod/promods-me-defmap-v277.scs!def/country/westbank.sui",
+      "sourceVersion": "v277",
+      "checksum": "61b2d0800a4c2e6f868eb7c9bf9150b372b62b9b6ce40e3348b81ff95663921c",
+      "warnings": []
+    }
+  ]
+}

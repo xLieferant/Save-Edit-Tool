@@ -74,4 +74,3 @@ pub fn get_onboarding_state(
         is_company_owner: company.owner_user_id == user.id,
     })
 }
-

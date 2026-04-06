@@ -18,19 +18,14 @@ impl SaveContext {
         self.profile_reference.is_some() && self.save_reference.is_some()
     }
 
-    pub fn from_paths(
-        profile_reference: Option<String>,
-        save_reference: Option<String>,
-    ) -> Self {
+    pub fn from_paths(profile_reference: Option<String>, save_reference: Option<String>) -> Self {
         let normalized_profile = profile_reference.map(|value| normalize_reference(&value));
         let normalized_save = save_reference.map(|value| normalize_reference(&value));
         let quicksave_reference = normalized_save
             .as_deref()
             .and_then(detect_quicksave_reference);
-        let save_session_id = build_save_session_id(
-            normalized_profile.as_deref(),
-            normalized_save.as_deref(),
-        );
+        let save_session_id =
+            build_save_session_id(normalized_profile.as_deref(), normalized_save.as_deref());
 
         Self {
             profile_reference: normalized_profile,

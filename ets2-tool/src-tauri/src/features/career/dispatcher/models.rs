@@ -5,15 +5,29 @@ pub type DispatcherSaveContext = crate::shared::models::save_context::SaveContex
 pub(super) const DISPATCHER_DEFAULT_INTERVAL_MINUTES: i64 = 10;
 pub(super) const DISPATCHER_DEFAULT_MAX_OPEN_JOBS: i64 = 24;
 pub(super) const DISPATCHER_MAX_GENERATION_BATCH: usize = 4;
-pub(super) const DISPATCHER_OPEN_JOB_STATUSES: &[&str] = &["open"];
-pub(super) const DISPATCHER_ACTIVE_JOB_STATUSES: &[&str] =
-    &["planned", "accepted", "in_transit", "delayed", "problematic"];
-pub(super) const DISPATCHER_BUSY_JOB_STATUSES: &[&str] =
-    &["accepted", "in_transit", "delayed"];
-pub(super) const DISPATCHER_HISTORY_JOB_STATUSES: &[&str] =
-    &["completed", "problematic", "cancelled", "rejected", "expired"];
+pub(super) const DISPATCHER_OPEN_JOB_STATUSES: &[&str] =
+    &["open", "assigned_to_save", "prepared", "injected", "failed"];
+pub(super) const DISPATCHER_ACTIVE_JOB_STATUSES: &[&str] = &[
+    "planned",
+    "accepted",
+    "in_transit",
+    "delayed",
+    "problematic",
+];
+pub(super) const DISPATCHER_BUSY_JOB_STATUSES: &[&str] = &["accepted", "in_transit", "delayed"];
+pub(super) const DISPATCHER_HISTORY_JOB_STATUSES: &[&str] = &[
+    "completed",
+    "problematic",
+    "cancelled",
+    "rejected",
+    "expired",
+];
 pub(super) const DISPATCHER_ALL_JOB_STATUSES: &[&str] = &[
     "open",
+    "assigned_to_save",
+    "prepared",
+    "injected",
+    "failed",
     "planned",
     "accepted",
     "in_transit",
@@ -93,8 +107,11 @@ pub struct DispatcherMarketJob {
     pub save_reference: Option<String>,
     pub quicksave_reference: Option<String>,
     pub save_session_id: Option<String>,
+    pub linked_to_active_save: bool,
     pub route_reference: Option<String>,
     pub ets2_job_link_status: Option<String>,
+    pub last_error_code: Option<String>,
+    pub last_error_message: Option<String>,
     pub accepted_at_utc: Option<String>,
     pub completed_at_utc: Option<String>,
 }
@@ -275,6 +292,8 @@ pub(super) struct DispatcherJobRow {
     pub save_session_id: Option<String>,
     pub route_reference: Option<String>,
     pub ets2_job_link_status: Option<String>,
+    pub last_error_code: Option<String>,
+    pub last_error_message: Option<String>,
     pub accepted_at_utc: Option<String>,
     pub completed_at_utc: Option<String>,
     pub created_at_utc: String,

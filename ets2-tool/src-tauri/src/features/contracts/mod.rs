@@ -136,7 +136,8 @@ pub fn load_active_contracts(
         })
         .map_err(|e| e.to_string())?;
 
-    rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
+    rows.collect::<Result<Vec<_>, _>>()
+        .map_err(|e| e.to_string())
 }
 
 pub fn select_dispatch_assignment(conn: &Connection) -> Result<DispatchAssignment, String> {

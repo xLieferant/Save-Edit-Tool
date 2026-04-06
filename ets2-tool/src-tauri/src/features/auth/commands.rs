@@ -1,9 +1,11 @@
 use rusqlite::Connection;
-use tauri::command;
 use tauri::State;
+use tauri::command;
 
 use crate::features::auth::db;
-use crate::features::auth::models::{AuthAccountOverview, AuthAdminDbOverview, AuthLoginResult, AuthRegisterResult, PublicUser};
+use crate::features::auth::models::{
+    AuthAccountOverview, AuthAdminDbOverview, AuthLoginResult, AuthRegisterResult, PublicUser,
+};
 use crate::features::auth::service;
 use crate::state::AuthState;
 
@@ -88,7 +90,9 @@ pub fn auth_restore_session(auth: State<'_, AuthState>) -> Result<(), String> {
 }
 
 #[command]
-pub fn auth_get_account_overview(auth: State<'_, AuthState>) -> Result<AuthAccountOverview, String> {
+pub fn auth_get_account_overview(
+    auth: State<'_, AuthState>,
+) -> Result<AuthAccountOverview, String> {
     let db_path = db::default_db_path();
     let conn = Connection::open(db_path).map_err(|e| e.to_string())?;
     db::ensure_tables(&conn)?;
@@ -126,7 +130,9 @@ pub fn auth_reset_password_with_recovery_code(
 }
 
 #[command]
-pub fn auth_admin_get_db_overview(auth: State<'_, AuthState>) -> Result<AuthAdminDbOverview, String> {
+pub fn auth_admin_get_db_overview(
+    auth: State<'_, AuthState>,
+) -> Result<AuthAdminDbOverview, String> {
     let db_path = db::default_db_path();
     let conn = Connection::open(db_path).map_err(|e| e.to_string())?;
     db::ensure_tables(&conn)?;

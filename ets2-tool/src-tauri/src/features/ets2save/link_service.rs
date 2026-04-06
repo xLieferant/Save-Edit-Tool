@@ -8,7 +8,9 @@ use sqlx::{Row, Sqlite, SqlitePool};
 use tauri::{AppHandle, Emitter};
 use uuid::Uuid;
 
-use crate::events::{EVT_DISPATCHER_JOBS_UPDATED, EVT_JOB_LINK_UPDATED};
+use crate::events::{
+    EVT_DISPATCHER_JOB_UPDATED, EVT_DISPATCHER_JOBS_UPDATED, EVT_JOB_LINK_UPDATED,
+};
 use crate::features::ets2save::errors::{AppError, AppErrorCode};
 use crate::features::ets2save::injector::{
     build_offer_patch, preview_offer_pointers, write_job_offer_patch,
@@ -21,12 +23,13 @@ use crate::features::ets2save::parser::sii_token;
 use crate::features::telemetry::events::TelemetryJobEventPayload;
 use crate::state::AppProfileState;
 
-const MIGRATION_FILES: [&str; 5] = [
+const MIGRATION_FILES: [&str; 6] = [
     "2026-04-06_create_ets_profiles.sql",
     "2026-04-06_create_ets_saves.sql",
     "2026-04-06_create_ets_job_links.sql",
     "2026-04-06_create_ets_job_link_audit.sql",
     "2026-04-06_create_vtc_job_ledger.sql",
+    "2026-04-06_create_ets2_datasets.sql",
 ];
 
 pub async fn create_pool(db_path: &std::path::Path) -> Result<SqlitePool, AppError> {
@@ -52,7 +55,10 @@ fn migration_directory() -> PathBuf {
 
 fn run_runtime_migrations(db_path: &Path) -> Result<(), AppError> {
     let mut connection = RusqliteConnection::open(db_path).map_err(|error| {
-        AppError::new(AppErrorCode::WriteFailed, format!("open migration db failed: {}", error))
+        AppError::new(
+            AppErrorCode::WriteFailed,
+            format!("open migration db failed: {}", error),
+        )
     })?;
     connection
         .busy_timeout(std::time::Duration::from_secs(5))
@@ -62,21 +68,22 @@ fn run_runtime_migrations(db_path: &Path) -> Result<(), AppError> {
                 format!("set migration busy timeout failed: {}", error),
             )
         })?;
-    connection.execute_batch(
-        r#"
+    connection
+        .execute_batch(
+            r#"
         PRAGMA foreign_keys = ON;
         CREATE TABLE IF NOT EXISTS ets_feature_migrations (
             filename TEXT PRIMARY KEY,
             applied_at_utc TEXT NOT NULL
         );
         "#,
-    )
-    .map_err(|error| {
-        AppError::new(
-            AppErrorCode::WriteFailed,
-            format!("prepare migration table failed: {}", error),
         )
-    })?;
+        .map_err(|error| {
+            AppError::new(
+                AppErrorCode::WriteFailed,
+                format!("prepare migration table failed: {}", error),
+            )
+        })?;
 
     let tx = connection.transaction().map_err(|error| {
         AppError::new(
@@ -108,7 +115,11 @@ fn run_runtime_migrations(db_path: &Path) -> Result<(), AppError> {
         let sql = fs::read_to_string(&migration_path).map_err(|error| {
             AppError::new(
                 AppErrorCode::WriteFailed,
-                format!("read migration {} failed: {}", migration_path.display(), error),
+                format!(
+                    "read migration {} failed: {}",
+                    migration_path.display(),
+                    error
+                ),
             )
         })?;
         tx.execute_batch(&sql).map_err(|error| {
@@ -154,77 +165,65 @@ pub async fn ets_prepare_job_link(
     profile_id: &str,
     state: &AppProfileState,
 ) -> Result<EtsJobLink, AppError> {
+    prepare_job_link(Some(app), pool, vtc_job_id, profile_id, state).await
+}
+
+pub async fn prepare_job_link(
+    app: Option<&AppHandle>,
+    pool: &SqlitePool,
+    vtc_job_id: &str,
+    profile_id: &str,
+    state: &AppProfileState,
+) -> Result<EtsJobLink, AppError> {
     let (profile, save_slot) = resolve_last_quicksave(pool, profile_id, state).await?;
     let mut connection = begin_immediate(pool).await?;
     let result = async {
-        ensure_no_link_conflict(&mut connection, vtc_job_id).await?;
         let dispatcher_job = load_vtc_dispatcher_job(&mut connection, vtc_job_id).await?;
         let src_company = sii_token(&dispatcher_job.company_id);
         let src_city = sii_token(&dispatcher_job.origin_city);
         let dst_company = sii_token(&dispatcher_job.company_id);
-        let (lines, offer_pointer, offer_range) =
-            preview_offer_pointers(std::path::Path::new(&save_slot.game_sii_path), &src_company, &src_city)?;
-        let link_id = Uuid::new_v4().to_string();
-        let patch = build_offer_patch(
-            &dispatcher_job,
-            &lines,
-            offer_range,
-            &dst_company,
-            &link_id,
-        );
+        let (lines, offer_pointer, offer_range) = preview_offer_pointers(
+            std::path::Path::new(&save_slot.game_sii_path),
+            &src_company,
+            &src_city,
+        )?;
+        let existing_link = ensure_prepare_link_state(&mut connection, vtc_job_id).await?;
+        let link_id = existing_link
+            .as_ref()
+            .map(|link| link.link_id.clone())
+            .unwrap_or_else(|| Uuid::new_v4().to_string());
+        let patch = build_offer_patch(&dispatcher_job, &lines, offer_range, &dst_company, &link_id);
+        let dst_city = sii_token(&dispatcher_job.destination_city);
+        let cargo_id = sii_token(&dispatcher_job.cargo_type);
         let now = Utc::now().to_rfc3339();
-        let patch_json = serde_json::to_string(&patch).map_err(|error| {
-            AppError::new(AppErrorCode::WriteFailed, error.to_string())
-        })?;
-
-        sqlx::query(
-            r#"
-            INSERT INTO ets_job_links (
-                link_id,
-                profile_id,
-                save_id,
+        let patch_json = serde_json::to_string(&patch)
+            .map_err(|error| AppError::new(AppErrorCode::WriteFailed, error.to_string()))?;
+        let previous_status = upsert_prepared_job_link(
+            &mut connection,
+            existing_link.as_ref(),
+            PreparedJobLinkUpsert {
+                link_id: &link_id,
+                profile_id: &profile.profile_id,
+                save_id: &save_slot.save_id,
                 vtc_job_id,
-                offer_pointer,
-                job_offer_data_pointer,
-                src_company,
-                src_city,
-                dst_company,
-                dst_city,
-                cargo_id,
-                distance_km,
-                planned_reward,
-                patch_json,
-                status,
-                created_at_utc,
-                updated_at_utc
-            )
-            VALUES (
-                ?1, ?2, ?3, ?4, ?5, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?15
-            )
-            "#,
+                offer_pointer: &offer_pointer,
+                src_company: &src_company,
+                src_city: &src_city,
+                dst_company: &dst_company,
+                dst_city: &dst_city,
+                cargo_id: &cargo_id,
+                distance_km: dispatcher_job.route_distance_km,
+                planned_reward: dispatcher_job.total_reward,
+                patch_json: &patch_json,
+                now: &now,
+            },
         )
-        .bind(&link_id)
-        .bind(&profile.profile_id)
-        .bind(&save_slot.save_id)
-        .bind(vtc_job_id)
-        .bind(&offer_pointer)
-        .bind(&src_company)
-        .bind(&src_city)
-        .bind(&dst_company)
-        .bind(sii_token(&dispatcher_job.destination_city))
-        .bind(sii_token(&dispatcher_job.cargo_type))
-        .bind(dispatcher_job.route_distance_km)
-        .bind(dispatcher_job.total_reward)
-        .bind(&patch_json)
-        .bind(EtsJobLinkStatus::Prepared.as_db())
-        .bind(&now)
-        .execute(&mut *connection)
         .await?;
 
         insert_audit(
             &mut connection,
             &link_id,
-            None,
+            previous_status,
             EtsJobLinkStatus::Prepared,
             Some(&patch_json),
         )
@@ -235,10 +234,12 @@ pub async fn ets_prepare_job_link(
     }
     .await;
 
-    complete_transaction(&mut connection, result).await.map(|link| {
-        emit_job_link_events(app, &link);
-        link
-    })
+    complete_transaction(&mut connection, result)
+        .await
+        .map(|link| {
+            emit_job_link_events(app, &link);
+            link
+        })
 }
 
 pub async fn ets_write_job_to_quicksave(
@@ -282,9 +283,12 @@ pub async fn ets_write_job_to_quicksave(
             link_id,
             Some(EtsJobLinkStatus::Written),
             EtsJobLinkStatus::RequiresLoad,
-            Some(&serde_json::json!({
-                "backupPath": pointers.backup_path.display().to_string()
-            }).to_string()),
+            Some(
+                &serde_json::json!({
+                    "backupPath": pointers.backup_path.display().to_string()
+                })
+                .to_string(),
+            ),
         )
         .await?;
         set_dispatcher_link_status(
@@ -298,10 +302,12 @@ pub async fn ets_write_job_to_quicksave(
     }
     .await;
 
-    complete_transaction(&mut connection, result).await.map(|link| {
-        emit_job_link_events(app, &link);
-        link
-    })
+    complete_transaction(&mut connection, result)
+        .await
+        .map(|link| {
+            emit_job_link_events(Some(app), &link);
+            link
+        })
 }
 
 pub async fn ets_get_job_link_status(
@@ -350,8 +356,12 @@ pub async fn handle_telemetry_job_event(
             )
             .await?;
             insert_vtc_job_ledger(&mut connection, &link, payload, &now).await?;
-            set_dispatcher_link_status(&mut connection, &link.vtc_job_id, EtsJobLinkStatus::Completed)
-                .await?;
+            set_dispatcher_link_status(
+                &mut connection,
+                &link.vtc_job_id,
+                EtsJobLinkStatus::Completed,
+            )
+            .await?;
             mark_dispatcher_job_completed(&mut connection, &link.vtc_job_id, &now).await?;
         } else if payload.on_job && link.status != EtsJobLinkStatus::Synced {
             update_status_only(
@@ -377,18 +387,22 @@ pub async fn handle_telemetry_job_event(
                 .await?;
         }
 
-        load_job_link_by_id(&mut connection, &link.link_id).await.map(Some)
+        load_job_link_by_id(&mut connection, &link.link_id)
+            .await
+            .map(Some)
     }
     .await;
 
     if let Some(link) = complete_transaction(&mut connection, result).await? {
-        emit_job_link_events(app, &link);
+        emit_job_link_events(Some(app), &link);
     }
 
     Ok(())
 }
 
-async fn begin_immediate(pool: &SqlitePool) -> Result<sqlx::pool::PoolConnection<Sqlite>, AppError> {
+async fn begin_immediate(
+    pool: &SqlitePool,
+) -> Result<sqlx::pool::PoolConnection<Sqlite>, AppError> {
     let mut connection = pool.acquire().await?;
     sqlx::query("BEGIN IMMEDIATE")
         .execute(&mut *connection)
@@ -430,23 +444,236 @@ fn map_begin_error(error: sqlx::Error) -> AppError {
     }
 }
 
-async fn ensure_no_link_conflict(
+struct PreparedJobLinkUpsert<'a> {
+    link_id: &'a str,
+    profile_id: &'a str,
+    save_id: &'a str,
+    vtc_job_id: &'a str,
+    offer_pointer: &'a str,
+    src_company: &'a str,
+    src_city: &'a str,
+    dst_company: &'a str,
+    dst_city: &'a str,
+    cargo_id: &'a str,
+    distance_km: f64,
+    planned_reward: i64,
+    patch_json: &'a str,
+    now: &'a str,
+}
+
+async fn ensure_prepare_link_state(
     connection: &mut sqlx::pool::PoolConnection<Sqlite>,
     vtc_job_id: &str,
-) -> Result<(), AppError> {
-    let existing = sqlx::query("SELECT status FROM ets_job_links WHERE vtc_job_id = ?1")
-        .bind(vtc_job_id)
-        .fetch_optional(&mut **connection)
-        .await?;
-    if let Some(row) = existing {
-        let status = row.get::<String, _>("status");
-        if status != EtsJobLinkStatus::Completed.as_db() && status != EtsJobLinkStatus::Error.as_db() {
+) -> Result<Option<EtsJobLink>, AppError> {
+    let existing = load_job_link_by_vtc_job_id_optional(connection, vtc_job_id).await?;
+    if let Some(link) = existing.as_ref() {
+        if !matches!(
+            link.status,
+            EtsJobLinkStatus::Pending | EtsJobLinkStatus::Error | EtsJobLinkStatus::Completed
+        ) {
             return Err(AppError::new(
                 AppErrorCode::JobLinkConflict,
-                format!("Job link already exists for {} with status {}", vtc_job_id, status),
+                format!(
+                    "Job link already exists for {} with status {}",
+                    vtc_job_id,
+                    link.status.as_db()
+                ),
             ));
         }
     }
+    Ok(existing)
+}
+
+async fn upsert_prepared_job_link(
+    connection: &mut sqlx::pool::PoolConnection<Sqlite>,
+    existing_link: Option<&EtsJobLink>,
+    input: PreparedJobLinkUpsert<'_>,
+) -> Result<Option<EtsJobLinkStatus>, AppError> {
+    if let Some(link) = existing_link {
+        sqlx::query(
+            r#"
+            UPDATE ets_job_links
+            SET
+                profile_id = ?2,
+                save_id = ?3,
+                vtc_job_id = ?4,
+                offer_pointer = ?5,
+                job_offer_data_pointer = ?5,
+                src_company = ?6,
+                src_city = ?7,
+                dst_company = ?8,
+                dst_city = ?9,
+                cargo_id = ?10,
+                distance_km = ?11,
+                planned_reward = ?12,
+                patch_json = ?13,
+                status = ?14,
+                error_code = NULL,
+                error_message = NULL,
+                updated_at_utc = ?15,
+                written_at_utc = NULL,
+                requires_load_at_utc = NULL,
+                synced_at_utc = NULL,
+                completed_at_utc = NULL
+            WHERE link_id = ?1
+            "#,
+        )
+        .bind(input.link_id)
+        .bind(input.profile_id)
+        .bind(input.save_id)
+        .bind(input.vtc_job_id)
+        .bind(input.offer_pointer)
+        .bind(input.src_company)
+        .bind(input.src_city)
+        .bind(input.dst_company)
+        .bind(input.dst_city)
+        .bind(input.cargo_id)
+        .bind(input.distance_km)
+        .bind(input.planned_reward)
+        .bind(input.patch_json)
+        .bind(EtsJobLinkStatus::Prepared.as_db())
+        .bind(input.now)
+        .execute(&mut **connection)
+        .await?;
+        return Ok(Some(link.status));
+    }
+
+    sqlx::query(
+        r#"
+        INSERT INTO ets_job_links (
+            link_id,
+            profile_id,
+            save_id,
+            vtc_job_id,
+            offer_pointer,
+            job_offer_data_pointer,
+            src_company,
+            src_city,
+            dst_company,
+            dst_city,
+            cargo_id,
+            distance_km,
+            planned_reward,
+            patch_json,
+            status,
+            created_at_utc,
+            updated_at_utc
+        )
+        VALUES (
+            ?1, ?2, ?3, ?4, ?5, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?15
+        )
+        "#,
+    )
+    .bind(input.link_id)
+    .bind(input.profile_id)
+    .bind(input.save_id)
+    .bind(input.vtc_job_id)
+    .bind(input.offer_pointer)
+    .bind(input.src_company)
+    .bind(input.src_city)
+    .bind(input.dst_company)
+    .bind(input.dst_city)
+    .bind(input.cargo_id)
+    .bind(input.distance_km)
+    .bind(input.planned_reward)
+    .bind(input.patch_json)
+    .bind(EtsJobLinkStatus::Prepared.as_db())
+    .bind(input.now)
+    .execute(&mut **connection)
+    .await?;
+
+    Ok(None)
+}
+
+pub async fn mark_dispatcher_prepare_error(
+    pool: &SqlitePool,
+    vtc_job_id: &str,
+    error: &AppError,
+) -> Result<(), AppError> {
+    let mut connection = begin_immediate(pool).await?;
+    let result = async {
+        let existing = load_job_link_by_vtc_job_id_optional(&mut connection, vtc_job_id).await?;
+        let now = Utc::now().to_rfc3339();
+        let error_code = error.code.as_key();
+
+        if let Some(link) = existing.as_ref() {
+            update_job_link_error(
+                &mut connection,
+                &link.link_id,
+                Some(link.status),
+                error_code,
+                &error.message,
+                &now,
+            )
+            .await?;
+        }
+
+        sqlx::query(
+            r#"
+            UPDATE dispatcher_jobs
+            SET
+                status = 'assigned_to_save',
+                ets2_job_link_status = 'error',
+                last_error_code = ?2,
+                last_error_message = ?3,
+                updated_at_utc = ?4
+            WHERE id = ?1
+            "#,
+        )
+        .bind(vtc_job_id)
+        .bind(error_code)
+        .bind(&error.message)
+        .bind(&now)
+        .execute(&mut *connection)
+        .await?;
+
+        Ok(())
+    }
+    .await;
+
+    complete_transaction(&mut connection, result).await
+}
+
+async fn update_job_link_error(
+    connection: &mut sqlx::pool::PoolConnection<Sqlite>,
+    link_id: &str,
+    from_status: Option<EtsJobLinkStatus>,
+    error_code: &str,
+    error_message: &str,
+    now: &str,
+) -> Result<(), AppError> {
+    sqlx::query(
+        r#"
+        UPDATE ets_job_links
+        SET
+            status = ?2,
+            updated_at_utc = ?3,
+            error_code = ?4,
+            error_message = ?5
+        WHERE link_id = ?1
+        "#,
+    )
+    .bind(link_id)
+    .bind(EtsJobLinkStatus::Error.as_db())
+    .bind(now)
+    .bind(error_code)
+    .bind(error_message)
+    .execute(&mut **connection)
+    .await?;
+    insert_audit(
+        connection,
+        link_id,
+        from_status,
+        EtsJobLinkStatus::Error,
+        Some(
+            &serde_json::json!({
+                "errorCode": error_code,
+                "errorMessage": error_message,
+            })
+            .to_string(),
+        ),
+    )
+    .await?;
     Ok(())
 }
 
@@ -521,7 +748,12 @@ async fn load_save_slot(
     .bind(save_id)
     .fetch_optional(&mut **connection)
     .await?
-    .ok_or_else(|| AppError::new(AppErrorCode::SaveNotFound, format!("Save not found: {}", save_id)))
+    .ok_or_else(|| {
+        AppError::new(
+            AppErrorCode::SaveNotFound,
+            format!("Save not found: {}", save_id),
+        )
+    })
 }
 
 async fn load_job_link_by_id(
@@ -532,7 +764,12 @@ async fn load_job_link_by_id(
         .bind(link_id)
         .fetch_optional(&mut **connection)
         .await?
-        .ok_or_else(|| AppError::new(AppErrorCode::InvalidToken, format!("Link not found: {}", link_id)))?;
+        .ok_or_else(|| {
+            AppError::new(
+                AppErrorCode::InvalidToken,
+                format!("Link not found: {}", link_id),
+            )
+        })?;
     map_job_link_row(&row)
 }
 
@@ -551,6 +788,20 @@ async fn load_job_link_by_vtc_job_id(
             )
         })?;
     map_job_link_row(&row)
+}
+
+async fn load_job_link_by_vtc_job_id_optional(
+    connection: &mut sqlx::pool::PoolConnection<Sqlite>,
+    vtc_job_id: &str,
+) -> Result<Option<EtsJobLink>, AppError> {
+    let row = sqlx::query("SELECT * FROM ets_job_links WHERE vtc_job_id = ?1")
+        .bind(vtc_job_id)
+        .fetch_optional(&mut **connection)
+        .await?;
+    match row {
+        Some(row) => map_job_link_row(&row).map(Some),
+        None => Ok(None),
+    }
 }
 
 fn map_job_link_row(row: &sqlx::sqlite::SqliteRow) -> Result<EtsJobLink, AppError> {
@@ -644,15 +895,29 @@ async fn set_dispatcher_link_status(
     vtc_job_id: &str,
     status: EtsJobLinkStatus,
 ) -> Result<(), AppError> {
+    let dispatcher_status = dispatcher_status_for_link_status(status);
     sqlx::query(
-        "UPDATE dispatcher_jobs SET ets2_job_link_status = ?2, updated_at_utc = ?3 WHERE id = ?1",
+        "UPDATE dispatcher_jobs SET status = ?2, ets2_job_link_status = ?3, last_error_code = NULL, last_error_message = NULL, updated_at_utc = ?4 WHERE id = ?1",
     )
     .bind(vtc_job_id)
+    .bind(dispatcher_status)
     .bind(status.as_db())
     .bind(Utc::now().to_rfc3339())
     .execute(&mut **connection)
     .await?;
     Ok(())
+}
+
+fn dispatcher_status_for_link_status(status: EtsJobLinkStatus) -> &'static str {
+    match status {
+        EtsJobLinkStatus::Pending => "assigned_to_save",
+        EtsJobLinkStatus::Prepared => "prepared",
+        EtsJobLinkStatus::Written | EtsJobLinkStatus::RequiresLoad | EtsJobLinkStatus::Synced => {
+            "injected"
+        }
+        EtsJobLinkStatus::Completed => "completed",
+        EtsJobLinkStatus::Error => "failed",
+    }
 }
 
 async fn mark_dispatcher_job_completed(
@@ -810,9 +1075,7 @@ fn normalize_cargo_match(value: &str) -> String {
 
 fn normalize_company_match(value: &str) -> String {
     let trimmed = value.trim().trim_matches('"');
-    let without_prefix = trimmed
-        .strip_prefix("company.volatile.")
-        .unwrap_or(trimmed);
+    let without_prefix = trimmed.strip_prefix("company.volatile.").unwrap_or(trimmed);
     let company = without_prefix.split('.').next().unwrap_or(without_prefix);
     sii_token(company)
 }
@@ -824,12 +1087,27 @@ fn normalize_city_match(value: &str) -> String {
     sii_token(city)
 }
 
-fn emit_job_link_events(app: &AppHandle, link: &EtsJobLink) {
+fn emit_job_link_events(app: Option<&AppHandle>, link: &EtsJobLink) {
+    let Some(app) = app else {
+        return;
+    };
+
     let _ = app.emit(EVT_JOB_LINK_UPDATED, link);
-    let _ = app.emit(EVT_DISPATCHER_JOBS_UPDATED, serde_json::json!({
-        "vtcJobId": link.vtc_job_id,
-        "status": link.status,
-    }));
+    let _ = app.emit(
+        EVT_DISPATCHER_JOBS_UPDATED,
+        serde_json::json!({
+            "vtcJobId": link.vtc_job_id,
+            "status": link.status,
+        }),
+    );
+    let _ = app.emit(
+        EVT_DISPATCHER_JOB_UPDATED,
+        serde_json::json!({
+            "jobId": link.vtc_job_id,
+            "status": dispatcher_status_for_link_status(link.status),
+            "ets2JobLinkStatus": link.status.as_db(),
+        }),
+    );
 }
 
 #[cfg(test)]
@@ -839,7 +1117,8 @@ mod tests {
     #[test]
     fn db_migrations_apply() {
         tauri::async_runtime::block_on(async {
-            let db_path = std::env::temp_dir().join(format!("ets_job_links_{}.sqlite", uuid::Uuid::new_v4()));
+            let db_path =
+                std::env::temp_dir().join(format!("ets_job_links_{}.sqlite", uuid::Uuid::new_v4()));
             let pool = create_pool(&db_path).await.unwrap();
             sqlx::query("INSERT INTO ets_profiles (profile_id, profile_path, game, steam_cloud_enabled, created_at_utc, updated_at_utc) VALUES (?1, ?2, 'ets2', 0, 'now', 'now')")
                 .bind("profile-1")
@@ -868,10 +1147,11 @@ mod tests {
                 .await
                 .unwrap();
 
-            let status: String = sqlx::query_scalar("SELECT status FROM ets_job_links WHERE link_id = 'link-1'")
-                .fetch_one(&pool)
-                .await
-                .unwrap();
+            let status: String =
+                sqlx::query_scalar("SELECT status FROM ets_job_links WHERE link_id = 'link-1'")
+                    .fetch_one(&pool)
+                    .await
+                    .unwrap();
             assert_eq!(status, "synced");
         });
     }

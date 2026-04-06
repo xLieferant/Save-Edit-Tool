@@ -34,10 +34,7 @@ pub fn join_lines(lines: &[String]) -> String {
 
 pub fn backup_path_for(path: &Path) -> PathBuf {
     let timestamp = Utc::now().format("%Y%m%d%H%M%S");
-    let filename = format!(
-        "game_bak_{}.sii",
-        timestamp
-    );
+    let filename = format!("game_bak_{}.sii", timestamp);
     path.parent()
         .unwrap_or_else(|| Path::new("."))
         .join(filename)
@@ -71,7 +68,8 @@ fn replace_file(tmp_path: &Path, target_path: &Path) -> Result<(), AppError> {
     };
 
     fn wide_null(value: &Path) -> Vec<u16> {
-        value.as_os_str()
+        value
+            .as_os_str()
             .to_string_lossy()
             .encode_utf16()
             .chain(std::iter::once(0))
@@ -112,7 +110,11 @@ fn replace_file(tmp_path: &Path, target_path: &Path) -> Result<(), AppError> {
     fs::rename(tmp_path, target_path).map_err(|error| {
         AppError::new(
             AppErrorCode::WriteFailed,
-            format!("Atomic rename failed for {}: {}", target_path.display(), error),
+            format!(
+                "Atomic rename failed for {}: {}",
+                target_path.display(),
+                error
+            ),
         )
     })
 }

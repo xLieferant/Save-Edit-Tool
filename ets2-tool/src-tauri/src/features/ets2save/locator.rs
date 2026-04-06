@@ -32,7 +32,11 @@ fn resolve_profile_candidate(profile_id: &str, state: &AppProfileState) -> Optio
         return Some(normalize_profile_id(requested));
     }
 
-    let current_profile = state.current_profile.lock().ok().and_then(|guard| guard.clone());
+    let current_profile = state
+        .current_profile
+        .lock()
+        .ok()
+        .and_then(|guard| guard.clone());
     if let Some(current_profile) = current_profile {
         let normalized_current = normalize_profile_id(&current_profile);
         if requested.is_empty()

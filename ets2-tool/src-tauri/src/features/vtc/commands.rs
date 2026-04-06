@@ -1,6 +1,6 @@
 use rusqlite::Connection;
-use tauri::command;
 use tauri::State;
+use tauri::command;
 
 use crate::features::auth::db as auth_db;
 use crate::features::auth::service as auth_service;
@@ -8,11 +8,12 @@ use crate::features::vtc::db;
 use crate::features::vtc::models::{
     CareerSettings, CompanyMember, CompanyOverview, CompanyRoleOption, CompanySettings,
     CreateCompanyInput, UpdateCareerSettingsInput, UpdateCompanyProfileInput,
-    UpdateCompanySettingsInput, UpdateUserProfileMetaInput, UpdateUserSettingsInput,
-    UserProfile, UserSettings, UsernameAvailability,
+    UpdateCompanySettingsInput, UpdateUserProfileMetaInput, UpdateUserSettingsInput, UserProfile,
+    UserSettings, UsernameAvailability, VtcRuntimeContext,
 };
 use crate::features::vtc::service;
-use crate::state::AuthState;
+use crate::shared::current_profile::snapshot_save_context;
+use crate::state::{AppProfileState, AuthState};
 
 fn open_connection() -> Result<Connection, String> {
     let db_path = auth_db::default_db_path();
@@ -30,13 +31,39 @@ pub fn get_current_user_profile(auth: State<'_, AuthState>) -> Result<UserProfil
 }
 
 #[command]
-pub fn update_user_language(language: String, auth: State<'_, AuthState>) -> Result<UserSettings, String> {
+pub fn get_vtc_runtime_context(
+    auth: State<'_, AuthState>,
+    profile: State<'_, AppProfileState>,
+) -> Result<VtcRuntimeContext, String> {
+    let conn = open_connection()?;
+    let user = service::get_current_user_profile(&conn, auth.inner())?;
+    let save_context = snapshot_save_context(profile.inner())?;
+
+    Ok(VtcRuntimeContext {
+        user_id: user.user_id,
+        username: user.username,
+        has_active_profile: save_context.profile_reference.is_some(),
+        has_active_save: save_context.save_reference.is_some(),
+        profile_reference: save_context.profile_reference,
+        save_reference: save_context.save_reference,
+        save_session_id: save_context.save_session_id,
+    })
+}
+
+#[command]
+pub fn update_user_language(
+    language: String,
+    auth: State<'_, AuthState>,
+) -> Result<UserSettings, String> {
     let conn = open_connection()?;
     service::update_user_language(&conn, auth.inner(), language)
 }
 
 #[command]
-pub fn update_username(username: String, auth: State<'_, AuthState>) -> Result<UserProfile, String> {
+pub fn update_username(
+    username: String,
+    auth: State<'_, AuthState>,
+) -> Result<UserProfile, String> {
     let mut conn = open_connection()?;
     service::update_username(&mut conn, auth.inner(), username)
 }
@@ -57,7 +84,10 @@ pub fn update_user_profile_meta(
 }
 
 #[command]
-pub fn create_company(input: CreateCompanyInput, auth: State<'_, AuthState>) -> Result<CompanyOverview, String> {
+pub fn create_company(
+    input: CreateCompanyInput,
+    auth: State<'_, AuthState>,
+) -> Result<CompanyOverview, String> {
     let mut conn = open_connection()?;
     service::create_company(&mut conn, auth.inner(), input)
 }

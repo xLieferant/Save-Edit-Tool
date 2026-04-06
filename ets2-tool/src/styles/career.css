@@ -82,6 +82,13 @@ body.career-page {
   margin-bottom: 16px;
 }
 
+.career-vtc-context {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
 .career-status-card {
   border-radius: 16px;
   border: 1px solid #2a3850;

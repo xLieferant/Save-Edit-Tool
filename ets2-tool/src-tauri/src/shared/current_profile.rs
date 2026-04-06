@@ -1,6 +1,6 @@
-use crate::state::AppProfileState;
 use crate::shared::models::profile::ActiveSaveSelection;
 use crate::shared::models::save_context::SaveContext;
+use crate::state::AppProfileState;
 use tauri::State;
 
 pub fn set_current_profile(state: State<'_, AppProfileState>, path: String) {

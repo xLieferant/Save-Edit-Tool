@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use chrono::Utc;
-use rusqlite::{params, Connection};
+use rusqlite::{Connection, params};
 
 use crate::features::career::dispatcher::models::{
     DISPATCHER_DEFAULT_INTERVAL_MINUTES, DISPATCHER_DEFAULT_MAX_OPEN_JOBS,
@@ -55,6 +55,8 @@ pub(super) fn ensure_dispatcher_tables(conn: &Connection) -> Result<(), String> 
             save_session_id TEXT,
             route_reference TEXT,
             ets2_job_link_status TEXT DEFAULT 'pending_route',
+            last_error_code TEXT,
+            last_error_message TEXT,
             accepted_at_utc TEXT,
             completed_at_utc TEXT,
             created_at_utc TEXT NOT NULL,
@@ -136,7 +138,10 @@ fn ensure_dispatcher_job_columns(conn: &Connection) -> Result<(), String> {
             ("cargo_mass_kg", "REAL NOT NULL DEFAULT 0"),
             ("urgency_level", "TEXT NOT NULL DEFAULT 'normal'"),
             ("difficulty_level", "TEXT NOT NULL DEFAULT 'normal'"),
-            ("equipment_type_required", "TEXT NOT NULL DEFAULT 'own_truck'"),
+            (
+                "equipment_type_required",
+                "TEXT NOT NULL DEFAULT 'own_truck'",
+            ),
             ("trailer_type_required", "TEXT"),
             ("base_rate_per_km", "REAL NOT NULL DEFAULT 0"),
             ("calculated_rate_per_km", "REAL NOT NULL DEFAULT 0"),
@@ -165,6 +170,8 @@ fn ensure_dispatcher_job_columns(conn: &Connection) -> Result<(), String> {
             ("save_session_id", "TEXT"),
             ("route_reference", "TEXT"),
             ("ets2_job_link_status", "TEXT DEFAULT 'pending_route'"),
+            ("last_error_code", "TEXT"),
+            ("last_error_message", "TEXT"),
             ("accepted_at_utc", "TEXT"),
             ("completed_at_utc", "TEXT"),
             ("created_at_utc", "TEXT NOT NULL DEFAULT ''"),
@@ -186,7 +193,12 @@ fn ensure_dispatcher_job_columns(conn: &Connection) -> Result<(), String> {
         "dispatcher_jobs",
         &columns,
         "updated_at_utc",
-        &["updated_at", "created_at_utc", "accepted_at_utc", "completed_at_utc"],
+        &[
+            "updated_at",
+            "created_at_utc",
+            "accepted_at_utc",
+            "completed_at_utc",
+        ],
         &Utc::now().to_rfc3339(),
     )?;
     conn.execute(
@@ -216,7 +228,10 @@ fn ensure_dispatcher_offer_columns(conn: &Connection) -> Result<(), String> {
             ("company_name", "TEXT NOT NULL DEFAULT ''"),
             ("user_id", "TEXT NOT NULL DEFAULT 'local-player'"),
             ("offer_type", "TEXT NOT NULL DEFAULT 'quote_request'"),
-            ("requested_job_type", "TEXT NOT NULL DEFAULT 'freight_market'"),
+            (
+                "requested_job_type",
+                "TEXT NOT NULL DEFAULT 'freight_market'",
+            ),
             ("requested_cargo_type", "TEXT"),
             ("requested_region", "TEXT"),
             ("proposed_rate_per_km", "REAL"),
@@ -304,10 +319,7 @@ fn ensure_dispatcher_generation_config_columns(conn: &Connection) -> Result<(), 
         conn,
         "dispatcher_generation_config",
         &[
-            (
-                "interval_minutes",
-                "INTEGER NOT NULL DEFAULT 10",
-            ),
+            ("interval_minutes", "INTEGER NOT NULL DEFAULT 10"),
             ("max_open_jobs", "INTEGER NOT NULL DEFAULT 24"),
             ("last_generated_at_utc", "TEXT"),
             ("last_cleanup_at_utc", "TEXT"),

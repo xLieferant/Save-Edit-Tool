@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
-use std::sync::atomic::Ordering;
 use std::sync::Arc;
+use std::sync::atomic::Ordering;
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
 #[cfg(target_os = "windows")]
@@ -350,16 +350,14 @@ pub fn ensure_running(app: AppHandle, runtime: Arc<CareerRuntime>, game: GameId)
                 match SharedBridge::connect() {
                     Ok(client) => {
                         bridge = Some(client);
-                        crate::dev_log!(
-                            "[career] connected shared memory: {}",
-                            SHARED_MEMORY_NAME
-                        );
+                        crate::dev_log!("[career] connected shared memory: {}", SHARED_MEMORY_NAME);
 
                         // Log the expected V2 layout details once per connection.
                         let base = std::mem::MaybeUninit::<TelemetryDataV2>::uninit();
                         let base_ptr = base.as_ptr() as usize;
                         let off_rev = unsafe {
-                            std::ptr::addr_of!((*base.as_ptr()).payload_revision) as usize - base_ptr
+                            std::ptr::addr_of!((*base.as_ptr()).payload_revision) as usize
+                                - base_ptr
                         };
                         let off_job_active = unsafe {
                             std::ptr::addr_of!((*base.as_ptr()).job_active) as usize - base_ptr
@@ -441,9 +439,10 @@ pub fn ensure_running(app: AppHandle, runtime: Arc<CareerRuntime>, game: GameId)
                             last_job_missing_log_ms = now;
                         }
                     }
-                    if let Err(error) =
-                        crate::features::career::job_tracking::process_snapshot(runtime.as_ref(), &snapshot)
-                    {
+                    if let Err(error) = crate::features::career::job_tracking::process_snapshot(
+                        runtime.as_ref(),
+                        &snapshot,
+                    ) {
                         crate::dev_log!("[career] job tracking failed: {}", error);
                     }
                     if now - last_frontend_tick_emit_ms >= 250 {

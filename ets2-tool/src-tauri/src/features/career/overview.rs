@@ -79,8 +79,7 @@ pub fn load_overview(runtime: &CareerRuntime) -> Result<CareerOverview, String> 
     let contracts_list = contracts::load_active_contracts(&conn, 6)?;
     let dispatcher_events = events::list_recent_events(&conn, 6)?;
     let freight_offers = economy::list_freight_offers(&conn, 6)?;
-    let company_conditions =
-        compensation_service::list_company_compensation_conditions(&conn, 12)?;
+    let company_conditions = compensation_service::list_company_compensation_conditions(&conn, 12)?;
     let country_payment_levels = compensation_service::list_country_payment_levels(&conn, 24)?;
     let recent_trips = logbook::list_trips_from_connection(&conn, 8)?;
     let active_trip = logbook::current_active_trip(runtime)?;
@@ -198,9 +197,7 @@ fn build_dashboard(
     let recent_fuel = recent_trips
         .iter()
         .take(4)
-        .map(|trip| {
-            (trip.fuel_used_liters * economy_state.diesel_price_per_liter).round() as i64
-        })
+        .map(|trip| (trip.fuel_used_liters * economy_state.diesel_price_per_liter).round() as i64)
         .sum::<i64>();
     let recent_tolls = recent_trips
         .iter()

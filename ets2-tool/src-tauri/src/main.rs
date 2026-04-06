@@ -3,17 +3,17 @@
     windows_subsystem = "windows"
 )]
 
+use crate::state::AuthState;
 use crate::state::{AppProfileState, DecryptCache, EtsDbState, ProfileCache};
 use crate::state::{CareerState, HubState};
-use crate::state::AuthState;
 use tauri::Manager;
 
 mod commands;
 mod events;
+mod features;
 mod models;
-mod state;
-mod shared;   // ehemals utils
-mod features; // ehemals commands (aufgeteilt)
+mod shared; // ehemals utils
+mod state; // ehemals commands (aufgeteilt)
 
 fn main() {
     std::panic::set_hook(Box::new(|info| {
@@ -24,10 +24,9 @@ fn main() {
     features::career::scs_sdk_telemetry::start_terminal_telemetry_loop();
     features::career::telemetry_debug::start_telemetry_debug_thread();
     let ets_db_path = features::career::db::default_db_path();
-    let ets_db_pool = tauri::async_runtime::block_on(
-        features::ets2save::link_service::create_pool(&ets_db_path),
-    )
-    .expect("failed to initialize ETS sqlx pool");
+    let ets_db_pool =
+        tauri::async_runtime::block_on(features::ets2save::link_service::create_pool(&ets_db_path))
+            .expect("failed to initialize ETS sqlx pool");
 
     tauri::Builder::default()
         .plugin(tauri_plugin_fs::init())
@@ -57,10 +56,14 @@ fn main() {
                         *guard = Some(db_path);
                     }
 
-                    if let Ok(conn) = rusqlite::Connection::open(features::auth::db::default_db_path()) {
+                    if let Ok(conn) =
+                        rusqlite::Connection::open(features::auth::db::default_db_path())
+                    {
                         if let Err(error) = features::auth::db::ensure_tables(&conn) {
                             crate::dev_log!("[auth] ensure tables failed: {}", error);
-                        } else if let Err(error) = features::auth::service::seed_default_admin(&conn) {
+                        } else if let Err(error) =
+                            features::auth::service::seed_default_admin(&conn)
+                        {
                             crate::dev_log!("[auth] seed admin failed: {}", error);
                         } else if let Err(error) =
                             features::auth::service::restore_persisted_session(&conn, auth.inner())
@@ -99,11 +102,9 @@ fn main() {
                         game,
                         path.display()
                     ),
-                    Err(error) => crate::dev_log!(
-                        "[career] plugin install skipped for {:?}: {}",
-                        game,
-                        error
-                    ),
+                    Err(error) => {
+                        crate::dev_log!("[career] plugin install skipped for {:?}: {}", game, error)
+                    }
                 }
             }
             crate::dev_log!("[app] setup start telemetry bridge + background threads");
@@ -122,6 +123,10 @@ fn main() {
             commands::ets_prepare_job_link,
             commands::ets_write_job_to_quicksave,
             commands::ets_get_job_link_status,
+            commands::data_import_ets2_datasets,
+            commands::ets2data_get_city,
+            commands::ets2data_get_company,
+            commands::ets2data_list_cities,
             // Apply Settings
             features::settings::apply_settings::apply_setting,
             // Read Base and Save Config.cfg
@@ -154,7 +159,6 @@ fn main() {
             features::save_editor::commands::edit_player_money,
             features::save_editor::commands::edit_player_experience,
             features::save_editor::commands::edit_skill_value,
-            
             // Save Analysis+
             features::save_analysis::reader::read_all_save_data,
             // features::save_analysis::reader::read_money,
@@ -175,13 +179,11 @@ fn main() {
             features::vehicles::editor::repair_player_trailer,
             features::vehicles::editor::set_player_trailer_cargo_mass,
             features::vehicles::editor::edit_truck_odometer,
-            
             // FEATURE: PROFILE CLONE + Rename
             features::profile_clone::commands::clone_profile_command,
             features::profile_clone::commands::validate_clone_target,
             features::profile_rename::commands::profile_rename,
             features::profile_move_mods::commands::copy_mods_to_profile,
-
             // Language Management
             features::language::commands::get_available_languages_command,
             features::language::commands::get_current_language_command,
@@ -189,14 +191,11 @@ fn main() {
             features::language::commands::translate_command,
             // User action logging
             features::logging::commands::log_user_action,
-                
-                //Feature: Profile Controls move around
-                features::profile_controls::commands::copy_profile_controls,
-
+            //Feature: Profile Controls move around
+            features::profile_controls::commands::copy_profile_controls,
             // Hub (UI navigation)
             features::hub::commands::hub_get_mode,
             features::hub::commands::hub_set_mode,
-
             // Career (background + logbook)
             features::career::commands::career_get_status,
             features::career::commands::career_get_overview,
@@ -207,8 +206,11 @@ fn main() {
             features::career::commands::career_generate_jobs,
             features::career::commands::career_accept_job,
             features::career::commands::career_complete_job,
+            features::career::commands::dispatcher_generate_jobs,
             features::career::commands::dispatcher_get_market_jobs,
+            features::career::commands::dispatcher_get_open_jobs,
             features::career::commands::dispatcher_get_job_details,
+            features::career::commands::dispatcher_get_job_by_id,
             features::career::commands::dispatcher_accept_job,
             features::career::commands::dispatcher_get_active_jobs,
             features::career::commands::dispatcher_get_job_history,
@@ -223,11 +225,13 @@ fn main() {
             features::career::commands::dispatcher_cleanup_expired_jobs,
             features::career::commands::dispatcher_restore_jobs_for_last_quicksave,
             features::career::commands::dispatcher_link_job_to_save_context,
+            features::career::commands::dispatcher_assign_job_to_active_save,
+            features::career::commands::dispatcher_assign_and_prepare_ets_link,
             features::career::commands::dispatcher_accept_generated_job,
             features::career::commands::dispatcher_mark_job_synced_to_ets2,
             features::career::commands::dispatcher_get_jobs_by_save_context,
+            features::career::commands::dispatcher_get_jobs_for_active_save,
             features::career::commands::get_plugin_status,
-
             // Auth
             features::auth::commands::auth_seed_default_admin,
             features::auth::commands::auth_register,
@@ -239,7 +243,6 @@ fn main() {
             features::auth::commands::auth_generate_recovery_codes,
             features::auth::commands::auth_reset_password_with_recovery_code,
             features::auth::commands::auth_admin_get_db_overview,
-
             // Companies
             features::companies::commands::company_create,
             features::companies::commands::company_create_onboarding,
@@ -247,9 +250,9 @@ fn main() {
             features::companies::commands::company_join,
             features::companies::commands::company_get_current,
             features::companies::commands::company_get_for_user,
-
             // VTC / Career Management
             features::vtc::commands::get_current_user_profile,
+            features::vtc::commands::get_vtc_runtime_context,
             features::vtc::commands::update_user_language,
             features::vtc::commands::update_username,
             features::vtc::commands::check_username_availability,
@@ -267,7 +270,6 @@ fn main() {
             features::vtc::commands::get_company_settings,
             features::vtc::commands::get_career_settings,
             features::vtc::commands::update_career_settings,
-
             // Onboarding
             features::career_onboarding::commands::career_get_onboarding_state,
         ])

@@ -87,7 +87,18 @@ pub fn ensure_tables(conn: &Connection) -> Result<(), String> {
         ),
     ];
 
-    for (asset_id, kind, brand, model, condition_percent, insurance_tier, status, leased, service_due_km) in assets {
+    for (
+        asset_id,
+        kind,
+        brand,
+        model,
+        condition_percent,
+        insurance_tier,
+        status,
+        leased,
+        service_due_km,
+    ) in assets
+    {
         conn.execute(
             r#"
             INSERT OR IGNORE INTO fleet_assets (
@@ -156,7 +167,8 @@ pub fn load_assets(conn: &Connection, limit: usize) -> Result<Vec<FleetAssetSumm
         })
         .map_err(|e| e.to_string())?;
 
-    rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
+    rows.collect::<Result<Vec<_>, _>>()
+        .map_err(|e| e.to_string())
 }
 
 pub fn load_overview(conn: &Connection) -> Result<FleetOverview, String> {

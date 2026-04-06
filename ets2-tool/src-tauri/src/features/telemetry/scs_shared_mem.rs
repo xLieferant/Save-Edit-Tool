@@ -1,5 +1,5 @@
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use sqlx::SqlitePool;
@@ -11,8 +11,8 @@ use crate::features::telemetry::events::{SystemStatusPayload, TelemetryJobEventP
 
 #[cfg(target_os = "windows")]
 mod platform {
-    use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::Arc;
+    use std::sync::atomic::{AtomicBool, Ordering};
     use std::time::Duration;
 
     use sqlx::SqlitePool;
@@ -104,7 +104,8 @@ mod platform {
                 return Err("telemetry bridge header mismatch".to_string());
             }
 
-            let seq_before = unsafe { std::ptr::read_volatile(std::ptr::addr_of!(header.sequence)) };
+            let seq_before =
+                unsafe { std::ptr::read_volatile(std::ptr::addr_of!(header.sequence)) };
             if seq_before & 1 == 1 {
                 return Ok(None);
             }
@@ -134,16 +135,52 @@ mod platform {
                 on_job,
                 job_finished,
                 job_delivered,
-                cargo_id: if cargo.is_empty() { None } else { Some(cargo.clone()) },
+                cargo_id: if cargo.is_empty() {
+                    None
+                } else {
+                    Some(cargo.clone())
+                },
                 cargo: if cargo.is_empty() { None } else { Some(cargo) },
-                city_src_id: if src_city.is_empty() { None } else { Some(src_city.clone()) },
-                city_src: if src_city.is_empty() { None } else { Some(src_city) },
-                comp_src_id: if src_company.is_empty() { None } else { Some(src_company.clone()) },
-                comp_src: if src_company.is_empty() { None } else { Some(src_company) },
-                city_dst_id: if dst_city.is_empty() { None } else { Some(dst_city.clone()) },
-                city_dst: if dst_city.is_empty() { None } else { Some(dst_city) },
-                comp_dst_id: if dst_company.is_empty() { None } else { Some(dst_company.clone()) },
-                comp_dst: if dst_company.is_empty() { None } else { Some(dst_company) },
+                city_src_id: if src_city.is_empty() {
+                    None
+                } else {
+                    Some(src_city.clone())
+                },
+                city_src: if src_city.is_empty() {
+                    None
+                } else {
+                    Some(src_city)
+                },
+                comp_src_id: if src_company.is_empty() {
+                    None
+                } else {
+                    Some(src_company.clone())
+                },
+                comp_src: if src_company.is_empty() {
+                    None
+                } else {
+                    Some(src_company)
+                },
+                city_dst_id: if dst_city.is_empty() {
+                    None
+                } else {
+                    Some(dst_city.clone())
+                },
+                city_dst: if dst_city.is_empty() {
+                    None
+                } else {
+                    Some(dst_city)
+                },
+                comp_dst_id: if dst_company.is_empty() {
+                    None
+                } else {
+                    Some(dst_company.clone())
+                },
+                comp_dst: if dst_company.is_empty() {
+                    None
+                } else {
+                    Some(dst_company)
+                },
                 planned_distance_km: payload.job_planned_distance_km,
                 route_distance: payload.job_planned_distance_km,
                 route_time: payload.job_delivery_time_min as i64,
@@ -167,7 +204,10 @@ mod platform {
     }
 
     fn bytes_to_string(bytes: &[u8]) -> String {
-        let end = bytes.iter().position(|byte| *byte == 0).unwrap_or(bytes.len());
+        let end = bytes
+            .iter()
+            .position(|byte| *byte == 0)
+            .unwrap_or(bytes.len());
         String::from_utf8_lossy(&bytes[..end]).trim().to_string()
     }
 
@@ -222,7 +262,12 @@ mod platform {
                             let app_clone = app_for_thread.clone();
                             let pool_clone = pool.clone();
                             tauri::async_runtime::spawn(async move {
-                                let _ = link_service::handle_telemetry_job_event(&app_clone, &pool_clone, &event).await;
+                                let _ = link_service::handle_telemetry_job_event(
+                                    &app_clone,
+                                    &pool_clone,
+                                    &event,
+                                )
+                                .await;
                             });
                         }
                     }

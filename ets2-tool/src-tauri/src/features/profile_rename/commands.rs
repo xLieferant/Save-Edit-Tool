@@ -1,16 +1,16 @@
-use tauri::command;
-use std::path::Path;
-use std::fs;
-use crate::shared::hex_float::text_to_hex;
-use crate::state::AppProfileState;
+use crate::dev_log;
 use crate::shared::current_profile::require_current_profile;
 use crate::shared::decrypt::decrypt_if_needed;
-use crate::dev_log;
+use crate::shared::hex_float::text_to_hex;
+use crate::state::AppProfileState;
+use std::fs;
+use std::path::Path;
+use tauri::command;
 
 #[command]
 pub fn profile_rename(
     new_name: String,
-    profile_state: tauri::State<'_, AppProfileState>
+    profile_state: tauri::State<'_, AppProfileState>,
 ) -> Result<String, String> {
     // 1. Get current profile path
     let profile_path_str = require_current_profile(profile_state.clone())?;
@@ -35,7 +35,8 @@ pub fn profile_rename(
     let new_content = change_profile_name_in_sii(&content, &new_name)?;
 
     // 5. Write back profile.sii
-    fs::write(&profile_sii, new_content).map_err(|e| format!("Fehler beim Schreiben von profile.sii: {}", e))?;
+    fs::write(&profile_sii, new_content)
+        .map_err(|e| format!("Fehler beim Schreiben von profile.sii: {}", e))?;
 
     // 6. Rename Folder (Input Text -> Hex)
     let parent = profile_path.parent().ok_or("Kein Elternordner gefunden")?;
@@ -43,17 +44,24 @@ pub fn profile_rename(
     let new_profile_path = parent.join(&new_dir_name);
 
     if new_profile_path.exists() && new_profile_path != profile_path {
-        return Err(format!("Ein Profilordner mit dem Namen '{}' existiert bereits.", new_dir_name));
+        return Err(format!(
+            "Ein Profilordner mit dem Namen '{}' existiert bereits.",
+            new_dir_name
+        ));
     }
 
     if new_profile_path != profile_path {
         fs::rename(profile_path, &new_profile_path)
             .map_err(|e| format!("Fehler beim Umbenennen des Ordners: {}", e))?;
-        
+
         // 7. Update State with new path
-        *profile_state.current_profile.lock().unwrap() = Some(new_profile_path.to_string_lossy().to_string());
-        
-        dev_log!("Profil erfolgreich umbenannt nach: {}", new_profile_path.display());
+        *profile_state.current_profile.lock().unwrap() =
+            Some(new_profile_path.to_string_lossy().to_string());
+
+        dev_log!(
+            "Profil erfolgreich umbenannt nach: {}",
+            new_profile_path.display()
+        );
         Ok(new_profile_path.to_string_lossy().to_string())
     } else {
         Ok(profile_path_str)

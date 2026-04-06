@@ -37,9 +37,21 @@ pub fn ensure_tables(conn: &Connection) -> Result<(), String> {
 
     let employees = [
         ("emp-chief", "Alex Mercer", "Chief", "on_duty", 5200_i64),
-        ("emp-dispatch", "Mara Stein", "Dispatcher", "on_duty", 3400_i64),
+        (
+            "emp-dispatch",
+            "Mara Stein",
+            "Dispatcher",
+            "on_duty",
+            3400_i64,
+        ),
         ("emp-driver", "Lena Kovac", "Driver", "resting", 2900_i64),
-        ("emp-apprentice", "Noah Weiss", "Azubi", "training", 1600_i64),
+        (
+            "emp-apprentice",
+            "Noah Weiss",
+            "Azubi",
+            "training",
+            1600_i64,
+        ),
     ];
 
     for (employee_id, name, role, status, salary) in employees {
@@ -94,7 +106,8 @@ pub fn load_staff(conn: &Connection, limit: usize) -> Result<Vec<EmployeeSummary
         })
         .map_err(|e| e.to_string())?;
 
-    rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
+    rows.collect::<Result<Vec<_>, _>>()
+        .map_err(|e| e.to_string())
 }
 
 pub fn load_overview(conn: &Connection) -> Result<EmployeeOverview, String> {

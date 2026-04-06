@@ -18,6 +18,26 @@ pub enum AppErrorCode {
     SteamCloudEnabled,
 }
 
+impl AppErrorCode {
+    pub fn as_key(&self) -> &'static str {
+        match self {
+            Self::ProfileNotFound => "profile_not_found",
+            Self::SaveNotFound => "save_not_found",
+            Self::DecodeFailed => "decode_failed",
+            Self::CompanyNotFoundInSave => "company_not_found_in_save",
+            Self::CompanyHasNoJobOffers => "company_has_no_job_offers",
+            Self::InvalidToken => "invalid_token",
+            Self::WriteFailed => "write_failed",
+            Self::BackupFailed => "backup_failed",
+            Self::LockTimeout => "lock_timeout",
+            Self::TelemetryUnavailable => "telemetry_unavailable",
+            Self::JobLinkConflict => "job_link_conflict",
+            Self::RollbackFailed => "rollback_failed",
+            Self::SteamCloudEnabled => "steam_cloud_enabled",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct AppError {

@@ -1,7 +1,7 @@
-use std::sync::atomic::Ordering;
-use std::sync::Arc;
-use std::time::{Duration, Instant};
 use rusqlite::Connection;
+use std::sync::Arc;
+use std::sync::atomic::Ordering;
+use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, Manager};
 
 use crate::features::career::dispatcher;
@@ -181,8 +181,7 @@ pub fn start_background(app: AppHandle, runtime: Arc<CareerRuntime>) {
 
             let dirty = runtime.overview_dirty.swap(false, Ordering::Relaxed);
             let allow_refresh = last_overview_refresh.elapsed() >= OVERVIEW_MIN_REFRESH;
-            let should_emit_overview =
-                (dirty || last_overview_compare.is_none()) && allow_refresh;
+            let should_emit_overview = (dirty || last_overview_compare.is_none()) && allow_refresh;
 
             if should_emit_overview {
                 last_overview_refresh = Instant::now();
@@ -223,11 +222,15 @@ pub fn start_background(app: AppHandle, runtime: Arc<CareerRuntime>) {
                                         || last_dispatcher_status.as_ref() != Some(&result.status)
                                     {
                                         last_dispatcher_status = Some(result.status.clone());
-                                        let _ = app.emit("career://dispatcher_changed", result.status);
+                                        let _ =
+                                            app.emit("career://dispatcher_changed", result.status);
                                     }
                                 }
                                 Err(error) => {
-                                    crate::dev_log!("[career] dispatcher background tick failed: {}", error);
+                                    crate::dev_log!(
+                                        "[career] dispatcher background tick failed: {}",
+                                        error
+                                    );
                                 }
                             }
                         }

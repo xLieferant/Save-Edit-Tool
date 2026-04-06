@@ -8,7 +8,7 @@ use std::time::SystemTime;
 use regex::Regex;
 use tauri::{AppHandle, Manager, Runtime};
 #[cfg(target_os = "windows")]
-use winreg::{enums::*, RegKey};
+use winreg::{RegKey, enums::*};
 
 pub const PLUGIN_DLL_NAME: &str = "simnexus_sdk.dll";
 pub const PLUGIN_RESOURCE_RELATIVE_PATH: &str = "plugins/simnexus_sdk.dll";
@@ -303,7 +303,9 @@ fn uninstall_locations(game: ScsGame) -> Vec<PathBuf> {
 
     let mut out = Vec::new();
     for flags in [KEY_READ | KEY_WOW64_64KEY, KEY_READ | KEY_WOW64_32KEY] {
-        if let Ok(key) = RegKey::predef(HKEY_LOCAL_MACHINE).open_subkey_with_flags(&uninstall_key, flags) {
+        if let Ok(key) =
+            RegKey::predef(HKEY_LOCAL_MACHINE).open_subkey_with_flags(&uninstall_key, flags)
+        {
             if let Ok(path) = key.get_value::<String, _>("InstallLocation") {
                 out.push(PathBuf::from(path));
             }
@@ -340,7 +342,11 @@ fn steam_library_locations(game: ScsGame) -> Result<Vec<PathBuf>, String> {
     Ok(libraries
         .into_iter()
         .filter(|lib| lib.join("steamapps").join(&manifest).is_file())
-        .map(|lib| lib.join("steamapps").join("common").join(game.common_dir_name()))
+        .map(|lib| {
+            lib.join("steamapps")
+                .join("common")
+                .join(game.common_dir_name())
+        })
         .collect())
 }
 

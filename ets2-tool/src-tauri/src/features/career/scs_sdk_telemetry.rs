@@ -1,19 +1,18 @@
 #[cfg(target_os = "windows")]
 mod platform {
+    use crate::features::career::logbook::{self, TelemetrySample};
+    use crate::state::CareerRuntime;
+    use serde::Serialize;
     use std::ptr;
-    use std::sync::atomic::Ordering;
     use std::sync::Arc;
+    use std::sync::atomic::Ordering;
     use std::thread;
     use std::time::Duration;
-    use serde::Serialize;
     use tauri::{AppHandle, Emitter};
     use windows_sys::Win32::Foundation::{CloseHandle, HANDLE};
     use windows_sys::Win32::System::Memory::{
-        FILE_MAP_READ, MEMORY_MAPPED_VIEW_ADDRESS, MapViewOfFile, OpenFileMappingW,
-        UnmapViewOfFile,
+        FILE_MAP_READ, MEMORY_MAPPED_VIEW_ADDRESS, MapViewOfFile, OpenFileMappingW, UnmapViewOfFile,
     };
-    use crate::features::career::logbook::{self, TelemetrySample};
-    use crate::state::CareerRuntime;
 
     const SHARED_MEMORY_NAME: &str = "Local\\SCSTelemetry";
     const SHARED_MEMORY_SIZE: usize = 32 * 1024;
@@ -23,8 +22,7 @@ mod platform {
     const ZONE3_OFFSET: usize = 500;
     const ZONE4_OFFSET: usize = 700;
     const ZONE5_OFFSET: usize = 1500;
-    const NOT_AVAILABLE_MESSAGE: &str =
-        "Telemetry not available. Is ETS2 running with the plugin?";
+    const NOT_AVAILABLE_MESSAGE: &str = "Telemetry not available. Is ETS2 running with the plugin?";
 
     #[repr(C)]
     #[derive(Clone, Copy)]
@@ -115,7 +113,11 @@ mod platform {
             )
         }
 
-        fn into_frontend_payload(self, plugin_installed: bool, sdk_connected: bool) -> FrontendTelemetryPayload {
+        fn into_frontend_payload(
+            self,
+            plugin_installed: bool,
+            sdk_connected: bool,
+        ) -> FrontendTelemetryPayload {
             FrontendTelemetryPayload {
                 speed: self.speed_kph,
                 rpm: self.rpm,
@@ -195,9 +197,7 @@ mod platform {
         }
 
         unsafe fn read_zone<T: Copy>(&self, offset: usize) -> T {
-            unsafe {
-                ptr::read_volatile((self.view.Value as *const u8).add(offset) as *const T)
-            }
+            unsafe { ptr::read_volatile((self.view.Value as *const u8).add(offset) as *const T) }
         }
     }
 
@@ -333,7 +333,9 @@ mod platform {
 
                     let sdk_connected =
                         last_timestamp.is_some() && last_timestamp != Some(snapshot.timestamp);
-                    runtime.bridge_connected.store(sdk_connected, Ordering::Relaxed);
+                    runtime
+                        .bridge_connected
+                        .store(sdk_connected, Ordering::Relaxed);
 
                     emit_frontend_payload(
                         &app,

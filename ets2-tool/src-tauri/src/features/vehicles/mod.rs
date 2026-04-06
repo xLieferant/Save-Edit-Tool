@@ -1,6 +1,6 @@
+pub mod editor;
 pub mod trailers;
 pub mod trucks;
-pub mod editor;
 
 use crate::dev_log;
 use crate::shared::current_profile::{require_current_profile, require_current_save};

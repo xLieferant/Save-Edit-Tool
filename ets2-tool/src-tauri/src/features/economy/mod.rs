@@ -108,9 +108,33 @@ pub fn ensure_tables(conn: &Connection) -> Result<(), String> {
     .map_err(|e| e.to_string())?;
 
     let offers = [
-        ("offer-med-ber-prg", "Berlin", "Prague", "Medical supplies", 18200_i64, 6_i64, "medium"),
-        ("offer-steel-ham-lyo", "Hamburg", "Lyon", "Industrial steel", 31980_i64, 12_i64, "high"),
-        ("offer-food-waw-vie", "Warsaw", "Vienna", "Fresh produce", 22460_i64, 9_i64, "low"),
+        (
+            "offer-med-ber-prg",
+            "Berlin",
+            "Prague",
+            "Medical supplies",
+            18200_i64,
+            6_i64,
+            "medium",
+        ),
+        (
+            "offer-steel-ham-lyo",
+            "Hamburg",
+            "Lyon",
+            "Industrial steel",
+            31980_i64,
+            12_i64,
+            "high",
+        ),
+        (
+            "offer-food-waw-vie",
+            "Warsaw",
+            "Vienna",
+            "Fresh produce",
+            22460_i64,
+            9_i64,
+            "low",
+        ),
     ];
 
     for (offer_id, origin, destination, cargo, payout, eta_hours, risk) in offers {
@@ -127,7 +151,15 @@ pub fn ensure_tables(conn: &Connection) -> Result<(), String> {
             )
             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
             "#,
-            params![offer_id, origin, destination, cargo, payout, eta_hours, risk],
+            params![
+                offer_id,
+                origin,
+                destination,
+                cargo,
+                payout,
+                eta_hours,
+                risk
+            ],
         )
         .map_err(|e| e.to_string())?;
     }
@@ -185,7 +217,8 @@ pub fn list_freight_offers(conn: &Connection, limit: usize) -> Result<Vec<Freigh
         })
         .map_err(|e| e.to_string())?;
 
-    rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
+    rows.collect::<Result<Vec<_>, _>>()
+        .map_err(|e| e.to_string())
 }
 
 pub fn estimate_trip_revenue(
@@ -371,7 +404,15 @@ fn seed_company_payment_profiles(conn: &Connection) -> Result<(), String> {
         ),
     ];
 
-    for (company_id, company_name, payment_tier, payment_multiplier, home_country_code, cargo_focus) in profiles {
+    for (
+        company_id,
+        company_name,
+        payment_tier,
+        payment_multiplier,
+        home_country_code,
+        cargo_focus,
+    ) in profiles
+    {
         compensation_service::upsert_company_payment_profile(
             conn,
             &UpsertCompanyPaymentProfileInput {

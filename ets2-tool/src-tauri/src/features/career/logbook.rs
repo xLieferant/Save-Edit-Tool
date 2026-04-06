@@ -237,7 +237,8 @@ pub fn list_trips_from_connection(
         })
         .map_err(|e| e.to_string())?;
 
-    rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
+    rows.collect::<Result<Vec<_>, _>>()
+        .map_err(|e| e.to_string())
 }
 
 fn start_trip(
@@ -302,7 +303,10 @@ fn start_trip(
         trip_id,
         job_id: assignment.job_id,
         contract_id: assignment.contract_id,
-        job_progress_base_km: active_job.as_ref().map(|job| job.progress_km).unwrap_or(0.0),
+        job_progress_base_km: active_job
+            .as_ref()
+            .map(|job| job.progress_km)
+            .unwrap_or(0.0),
         job_target_distance_km: active_job.as_ref().map(|job| job.distance_km),
         job_price_per_km: active_job.as_ref().map(|job| job.price_per_km),
         started_at_utc_ms: now.timestamp_millis(),
@@ -348,14 +352,19 @@ fn finalize_trip(
 
     let job_target_distance = active.job_target_distance_km.unwrap_or(0.0);
     let job_total_progress = active.job_progress_base_km + active.distance_km;
-    let is_dispatch_job = active.job_target_distance_km.is_some() && active.job_price_per_km.is_some();
-    let dispatcher_completed =
-        is_dispatch_job && (reason == FinalizeReason::JobCompleted || job_total_progress >= job_target_distance);
+    let is_dispatch_job =
+        active.job_target_distance_km.is_some() && active.job_price_per_km.is_some();
+    let dispatcher_completed = is_dispatch_job
+        && (reason == FinalizeReason::JobCompleted || job_total_progress >= job_target_distance);
     let mut trip_status = "completed";
     let mut income: Option<i64> = None;
 
     if is_dispatch_job {
-        dispatcher::store_progress(&conn, &active.job_id, job_total_progress.min(job_target_distance))?;
+        dispatcher::store_progress(
+            &conn,
+            &active.job_id,
+            job_total_progress.min(job_target_distance),
+        )?;
     }
 
     if !is_dispatch_job || dispatcher_completed {
@@ -583,7 +592,10 @@ fn update_active_trip(active: &mut ActiveTripState, sample: TelemetrySample, now
     active.last_update_utc_ms = now_ms;
 }
 
-fn update_runtime_telemetry(runtime: &CareerRuntime, sample: TelemetrySample) -> Result<(), String> {
+fn update_runtime_telemetry(
+    runtime: &CareerRuntime,
+    sample: TelemetrySample,
+) -> Result<(), String> {
     let mut telemetry_guard = runtime
         .last_telemetry
         .lock()

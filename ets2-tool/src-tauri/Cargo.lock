@@ -1174,6 +1174,7 @@ dependencies = [
  "scs-sdk-telemetry",
  "serde",
  "serde_json",
+ "sha2",
  "sqlx",
  "tauri",
  "tauri-build",

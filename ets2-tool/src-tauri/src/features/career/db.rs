@@ -3,15 +3,13 @@ use std::path::{Path, PathBuf};
 
 use crate::features::career::dispatcher;
 use crate::features::career::job_log;
-use crate::features::{bank, contracts, economy, employees, events, fleet, reputation};
 use crate::features::{auth, companies};
+use crate::features::{bank, contracts, economy, employees, events, fleet, reputation};
 use crate::shared::sqlite_schema::ensure_columns;
 
 pub fn default_db_path() -> PathBuf {
     dirs::data_local_dir()
-        .unwrap_or_else(|| {
-            std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
-        })
+        .unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")))
         .join("SimNexusHub")
         .join("logbook.sqlite")
 }

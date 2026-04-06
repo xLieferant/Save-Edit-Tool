@@ -1,6 +1,6 @@
 use rusqlite::Connection;
-use tauri::command;
 use tauri::State;
+use tauri::command;
 
 use crate::features::auth::db as auth_db;
 use crate::features::auth::service as auth_service;
@@ -138,7 +138,10 @@ pub fn company_get_current(auth: State<'_, AuthState>) -> Result<Option<Company>
 }
 
 #[command]
-pub fn company_get_for_user(user_id: i64, auth: State<'_, AuthState>) -> Result<Option<Company>, String> {
+pub fn company_get_for_user(
+    user_id: i64,
+    auth: State<'_, AuthState>,
+) -> Result<Option<Company>, String> {
     let db_path = auth_db::default_db_path();
     let conn = Connection::open(db_path).map_err(|e| e.to_string())?;
     auth_db::ensure_tables(&conn)?;

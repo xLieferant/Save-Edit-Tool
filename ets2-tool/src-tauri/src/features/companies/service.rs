@@ -49,8 +49,8 @@ pub fn create_company(
         return Err("Salary must be a non-negative number".to_string());
     }
 
-    let user = auth_repo::load_user_by_id(conn, user_id)?
-        .ok_or_else(|| "User not found".to_string())?;
+    let user =
+        auth_repo::load_user_by_id(conn, user_id)?.ok_or_else(|| "User not found".to_string())?;
     if let Some(company_id) = user.company_id {
         if repo::load_company_by_id(conn, company_id)?.is_none() {
             auth_repo::clear_user_company(conn, user_id)?;
@@ -65,7 +65,11 @@ pub fn create_company(
         name: name.trim().to_string(),
         logo_path: logo_path.and_then(|v| {
             let trimmed = v.trim().to_string();
-            if trimmed.is_empty() { None } else { Some(trimmed) }
+            if trimmed.is_empty() {
+                None
+            } else {
+                Some(trimmed)
+            }
         }),
         logo_blob: None,
         logo_mime: None,
@@ -76,7 +80,11 @@ pub fn create_company(
         game: None,
         description: description.and_then(|v| {
             let trimmed = v.trim().to_string();
-            if trimmed.is_empty() { None } else { Some(trimmed) }
+            if trimmed.is_empty() {
+                None
+            } else {
+                Some(trimmed)
+            }
         }),
         salary_base,
         location: location.trim().to_string(),
@@ -130,8 +138,8 @@ pub fn create_company_onboarding(
         return Err("Company name already exists".to_string());
     }
 
-    let user = auth_repo::load_user_by_id(conn, user_id)?
-        .ok_or_else(|| "User not found".to_string())?;
+    let user =
+        auth_repo::load_user_by_id(conn, user_id)?.ok_or_else(|| "User not found".to_string())?;
     if let Some(company_id) = user.company_id {
         if repo::load_company_by_id(conn, company_id)?.is_none() {
             auth_repo::clear_user_company(conn, user_id)?;
@@ -148,19 +156,31 @@ pub fn create_company_onboarding(
         logo_blob,
         logo_mime: logo_mime.and_then(|v| {
             let trimmed = v.trim().to_string();
-            if trimmed.is_empty() { None } else { Some(trimmed) }
+            if trimmed.is_empty() {
+                None
+            } else {
+                Some(trimmed)
+            }
         }),
         header_path: None,
         header_blob,
         header_mime: header_mime.and_then(|v| {
             let trimmed = v.trim().to_string();
-            if trimmed.is_empty() { None } else { Some(trimmed) }
+            if trimmed.is_empty() {
+                None
+            } else {
+                Some(trimmed)
+            }
         }),
         language: Some(language.trim().to_string()),
         game: Some(normalized_game),
         description: description.and_then(|v| {
             let trimmed = v.trim().to_string();
-            if trimmed.is_empty() { None } else { Some(trimmed) }
+            if trimmed.is_empty() {
+                None
+            } else {
+                Some(trimmed)
+            }
         }),
         salary_base: 0,
         location: location.trim().to_string(),
@@ -180,11 +200,15 @@ pub fn create_company_onboarding(
         .ok_or_else(|| "Failed to load created company".to_string())
 }
 
-pub fn join_company(conn: &mut Connection, auth: &AuthState, company_id: i64) -> Result<Company, String> {
+pub fn join_company(
+    conn: &mut Connection,
+    auth: &AuthState,
+    company_id: i64,
+) -> Result<Company, String> {
     // MVP: Direct join without invitations / approvals.
     let user_id = require_user_id(auth)?;
-    let user = auth_repo::load_user_by_id(conn, user_id)?
-        .ok_or_else(|| "User not found".to_string())?;
+    let user =
+        auth_repo::load_user_by_id(conn, user_id)?.ok_or_else(|| "User not found".to_string())?;
     if let Some(existing_company_id) = user.company_id {
         if repo::load_company_by_id(conn, existing_company_id)?.is_none() {
             auth_repo::clear_user_company(conn, user_id)?;
@@ -226,7 +250,11 @@ pub fn get_current_company(conn: &Connection, auth: &AuthState) -> Result<Option
     repo::load_company_by_id(conn, company_id)
 }
 
-pub fn get_company_for_user(conn: &Connection, auth: &AuthState, user_id: i64) -> Result<Option<Company>, String> {
+pub fn get_company_for_user(
+    conn: &Connection,
+    auth: &AuthState,
+    user_id: i64,
+) -> Result<Option<Company>, String> {
     let current_user_id = require_user_id(auth)?;
     if current_user_id != user_id {
         return Err("Forbidden".to_string());
