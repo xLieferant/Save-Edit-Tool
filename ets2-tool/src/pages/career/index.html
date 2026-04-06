@@ -204,6 +204,42 @@
             <article class="career-metric-card"><span data-translate="career_mode.dispatcher.kpi_contracts">Accepted Contracts</span><strong id="cmDispatcherContracts">0</strong></article>
           </div>
 
+          <div class="dispatcher-generation-strip">
+            <article class="dispatcher-generation-card">
+              <span data-translate="career_mode.dispatcher.generation_save">Linked Save</span>
+              <strong id="cmDispatcherSaveRef">-</strong>
+              <small id="cmDispatcherSaveSession">-</small>
+            </article>
+            <article class="dispatcher-generation-card">
+              <span data-translate="career_mode.dispatcher.generation_next">Next Market Refresh</span>
+              <strong id="cmDispatcherNextGeneration">-</strong>
+              <small id="cmDispatcherGenerationMeta">-</small>
+            </article>
+            <div class="dispatcher-generation-controls">
+              <label class="career-field">
+                <span data-translate="career_mode.dispatcher.generation_interval">Generation Interval</span>
+                <select id="cmDispatcherGenerationIntervalInput">
+                  <option value="5">5</option>
+                  <option value="10">10</option>
+                  <option value="15">15</option>
+                </select>
+              </label>
+              <label class="career-field">
+                <span data-translate="career_mode.dispatcher.generation_pool">Max Open Jobs</span>
+                <select id="cmDispatcherGenerationMaxOpenInput">
+                  <option value="12">12</option>
+                  <option value="18">18</option>
+                  <option value="24">24</option>
+                  <option value="30">30</option>
+                </select>
+              </label>
+              <div class="dispatcher-filter-actions">
+                <button id="cmDispatcherGenerateNowBtn" class="career-action-btn" type="button" data-translate="career_mode.dispatcher.generation_generate_now">Generate Now</button>
+                <button id="cmDispatcherCleanupBtn" class="career-topbar-btn" type="button" data-translate="career_mode.dispatcher.generation_cleanup">Cleanup</button>
+              </div>
+            </div>
+          </div>
+
           <div class="dispatcher-tabs">
             <button type="button" class="dispatcher-tab-btn is-active" data-dispatcher-tab="market" data-translate="career_mode.dispatcher.tabs.market">Market</button>
             <button type="button" class="dispatcher-tab-btn" data-dispatcher-tab="offers" data-translate="career_mode.dispatcher.tabs.offers">Offers</button>
@@ -270,24 +306,36 @@
 
               <aside class="dispatcher-detail-card">
                 <h3 data-translate="career_mode.dispatcher.detail_title">Job Details</h3>
+                <div id="cmDispatcherDetailBadges" class="dispatcher-row-badges dispatcher-detail-badges"></div>
                 <dl class="dispatcher-detail-grid">
                   <div><dt>ID</dt><dd id="cmDispatcherDetailId">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.detail_source">Source</dt><dd id="cmDispatcherDetailSource">-</dd></div>
                   <div><dt data-translate="career_mode.dispatcher.col_company">Company</dt><dd id="cmDispatcherDetailCompany">-</dd></div>
                   <div><dt data-translate="career_mode.dispatcher.col_type">Type</dt><dd id="cmDispatcherDetailType">-</dd></div>
                   <div><dt data-translate="career_mode.dispatcher.col_route">Route</dt><dd id="cmDispatcherDetailRoute">-</dd></div>
                   <div><dt data-translate="career_mode.dispatcher.col_distance">Distance</dt><dd id="cmDispatcherDetailDistance">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.detail_duration">Est. Duration</dt><dd id="cmDispatcherDetailDuration">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.detail_expiry">Expires In</dt><dd id="cmDispatcherDetailExpiry">-</dd></div>
                   <div><dt data-translate="career_mode.dispatcher.col_rate">EUR/km</dt><dd id="cmDispatcherDetailRate">-</dd></div>
                   <div><dt data-translate="career_mode.dispatcher.col_reward">Reward</dt><dd id="cmDispatcherDetailReward">-</dd></div>
                   <div><dt data-translate="career_mode.dispatcher.col_status">Status</dt><dd id="cmDispatcherDetailStatus">-</dd></div>
                   <div><dt data-translate="career_mode.dispatcher.detail_payment_tier">Payment Tier</dt><dd id="cmDispatcherDetailTier">-</dd></div>
                   <div><dt data-translate="career_mode.dispatcher.detail_reputation">Reputation</dt><dd id="cmDispatcherDetailReputation">-</dd></div>
                   <div><dt data-translate="career_mode.dispatcher.detail_profit">Profit Est.</dt><dd id="cmDispatcherDetailProfit">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.detail_save">Save Link</dt><dd id="cmDispatcherDetailSave">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.detail_route_reference">Route Ref</dt><dd id="cmDispatcherDetailRouteRef">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.detail_ets2_link">ETS2 Link</dt><dd id="cmDispatcherDetailEts2">-</dd></div>
                 </dl>
                 <div class="dispatcher-detail-notes">
                   <p id="cmDispatcherDetailBonus"></p>
                   <p id="cmDispatcherDetailRisk"></p>
                 </div>
-                <button id="cmDispatcherAcceptJobBtn" class="career-action-btn" type="button" data-translate="career_mode.dispatcher.accept_job">Accept Job</button>
+                <div class="dispatcher-detail-actions">
+                  <button id="cmDispatcherAcceptJobBtn" class="career-action-btn" type="button" data-translate="career_mode.dispatcher.accept_job">Accept Job</button>
+                  <button id="cmDispatcherPrepareEtsLinkBtn" class="career-topbar-btn" type="button" data-translate="career_mode.dispatcher.prepare_ets_link">Prepare ETS Link</button>
+                  <button id="cmDispatcherWriteQuicksaveBtn" class="career-topbar-btn" type="button" data-translate="career_mode.dispatcher.write_to_quicksave">Write to Quicksave</button>
+                  <button id="cmDispatcherMarkSyncedBtn" class="career-topbar-btn" type="button" data-translate="career_mode.dispatcher.mark_synced">Mark Synced</button>
+                </div>
               </aside>
             </div>
           </section>

@@ -5,14 +5,16 @@ use tauri::State;
 
 use crate::features::career::dispatcher::{
     self, DispatcherCompanyContact, DispatcherCreateOfferInput, DispatcherHistoryResponse,
-    DispatcherJobDetails, DispatcherJobFilter, DispatcherMarketJob, DispatcherOffer,
-    DispatcherOverview, DispatcherRespondToCounterInput, Job,
+    DispatcherJobDetails, DispatcherJobFilter, DispatcherJobsBySaveContextResponse,
+    DispatcherGenerationConfigInput, DispatcherGenerationStatus, DispatcherMarketJob,
+    DispatcherOffer, DispatcherOverview, DispatcherRespondToCounterInput, Job,
 };
 use crate::features::career::job_log::{self, JobLogEntry, JobStats};
 use crate::features::career::logbook::TripSummary;
 use crate::features::career::overview::CareerOverview;
 use crate::features::career::plugin_installer::{self, ScsGame};
 use crate::features::hub::events::CareerStatus;
+use crate::shared::current_profile::snapshot_save_context;
 use crate::state::{AppProfileState, CareerRuntime, CareerState};
 
 #[command]
@@ -164,28 +166,34 @@ pub fn career_complete_job(
 pub fn dispatcher_get_market_jobs(
     filter: Option<DispatcherJobFilter>,
     career: State<'_, CareerState>,
+    profile: State<'_, AppProfileState>,
 ) -> Result<Vec<DispatcherMarketJob>, String> {
+    let save_context = resolve_dispatcher_save_context(profile.inner())?;
     let conn = open_connection(career.runtime.as_ref())?;
-    dispatcher::dispatcher_get_market_jobs(&conn, filter)
+    dispatcher::dispatcher_get_market_jobs(&conn, filter, &save_context)
 }
 
 #[command]
 pub fn dispatcher_get_job_details(
     job_id: String,
     career: State<'_, CareerState>,
+    profile: State<'_, AppProfileState>,
 ) -> Result<DispatcherJobDetails, String> {
+    let save_context = resolve_dispatcher_save_context(profile.inner())?;
     let conn = open_connection(career.runtime.as_ref())?;
-    dispatcher::dispatcher_get_job_details(&conn, &job_id)
+    dispatcher::dispatcher_get_job_details(&conn, &job_id, &save_context)
 }
 
 #[command]
 pub fn dispatcher_accept_job(
     job_id: String,
     career: State<'_, CareerState>,
+    profile: State<'_, AppProfileState>,
 ) -> Result<DispatcherJobDetails, String> {
     let runtime = career.runtime.as_ref();
+    let save_context = resolve_dispatcher_save_context(profile.inner())?;
     let conn = open_connection(runtime)?;
-    let result = dispatcher::dispatcher_accept_job(&conn, &job_id)?;
+    let result = dispatcher::dispatcher_accept_job(&conn, &job_id, &save_context)?;
     runtime.overview_dirty.store(true, Ordering::Relaxed);
     Ok(result)
 }
@@ -193,25 +201,31 @@ pub fn dispatcher_accept_job(
 #[command]
 pub fn dispatcher_get_active_jobs(
     career: State<'_, CareerState>,
+    profile: State<'_, AppProfileState>,
 ) -> Result<Vec<DispatcherMarketJob>, String> {
+    let save_context = resolve_dispatcher_save_context(profile.inner())?;
     let conn = open_connection(career.runtime.as_ref())?;
-    dispatcher::dispatcher_get_active_jobs(&conn)
+    dispatcher::dispatcher_get_active_jobs(&conn, &save_context)
 }
 
 #[command]
 pub fn dispatcher_get_job_history(
     career: State<'_, CareerState>,
+    profile: State<'_, AppProfileState>,
 ) -> Result<DispatcherHistoryResponse, String> {
+    let save_context = resolve_dispatcher_save_context(profile.inner())?;
     let conn = open_connection(career.runtime.as_ref())?;
-    dispatcher::dispatcher_get_job_history(&conn)
+    dispatcher::dispatcher_get_job_history(&conn, &save_context)
 }
 
 #[command]
 pub fn dispatcher_get_company_contacts(
     career: State<'_, CareerState>,
+    profile: State<'_, AppProfileState>,
 ) -> Result<Vec<DispatcherCompanyContact>, String> {
+    let save_context = resolve_dispatcher_save_context(profile.inner())?;
     let conn = open_connection(career.runtime.as_ref())?;
-    dispatcher::dispatcher_get_company_contacts(&conn)
+    dispatcher::dispatcher_get_company_contacts(&conn, &save_context)
 }
 
 #[command]
@@ -261,9 +275,122 @@ pub fn dispatcher_respond_to_counter(
 #[command]
 pub fn dispatcher_get_dispatcher_overview(
     career: State<'_, CareerState>,
+    profile: State<'_, AppProfileState>,
 ) -> Result<DispatcherOverview, String> {
+    let save_context = resolve_dispatcher_save_context(profile.inner())?;
     let conn = open_connection(career.runtime.as_ref())?;
-    dispatcher::dispatcher_get_dispatcher_overview(&conn)
+    dispatcher::dispatcher_get_dispatcher_overview(&conn, &save_context)
+}
+
+#[command]
+pub fn dispatcher_generate_universal_jobs(
+    force: Option<bool>,
+    config: Option<DispatcherGenerationConfigInput>,
+    career: State<'_, CareerState>,
+    profile: State<'_, AppProfileState>,
+) -> Result<DispatcherGenerationStatus, String> {
+    let runtime = career.runtime.as_ref();
+    let save_context = resolve_dispatcher_save_context(profile.inner())?;
+    let conn = open_connection(runtime)?;
+    let result =
+        dispatcher::dispatcher_generate_universal_jobs(&conn, &save_context, force.unwrap_or(false), config)?;
+    runtime.overview_dirty.store(true, Ordering::Relaxed);
+    Ok(result)
+}
+
+#[command]
+pub fn dispatcher_get_generation_status(
+    career: State<'_, CareerState>,
+    profile: State<'_, AppProfileState>,
+) -> Result<DispatcherGenerationStatus, String> {
+    let save_context = resolve_dispatcher_save_context(profile.inner())?;
+    let conn = open_connection(career.runtime.as_ref())?;
+    dispatcher::dispatcher_get_generation_status(&conn, &save_context)
+}
+
+#[command]
+pub fn dispatcher_cleanup_expired_jobs(
+    career: State<'_, CareerState>,
+    profile: State<'_, AppProfileState>,
+) -> Result<DispatcherGenerationStatus, String> {
+    let runtime = career.runtime.as_ref();
+    let save_context = resolve_dispatcher_save_context(profile.inner())?;
+    let conn = open_connection(runtime)?;
+    let result = dispatcher::dispatcher_cleanup_expired_jobs(&conn, &save_context)?;
+    runtime.overview_dirty.store(true, Ordering::Relaxed);
+    Ok(result)
+}
+
+#[command]
+pub fn dispatcher_restore_jobs_for_last_quicksave(
+    career: State<'_, CareerState>,
+    profile: State<'_, AppProfileState>,
+) -> Result<DispatcherGenerationStatus, String> {
+    let runtime = career.runtime.as_ref();
+    let save_context = resolve_dispatcher_save_context(profile.inner())?;
+    let conn = open_connection(runtime)?;
+    let result = dispatcher::dispatcher_restore_jobs_for_last_quicksave(&conn, &save_context)?;
+    runtime.overview_dirty.store(true, Ordering::Relaxed);
+    Ok(result)
+}
+
+#[command]
+pub fn dispatcher_link_job_to_save_context(
+    job_id: String,
+    career: State<'_, CareerState>,
+    profile: State<'_, AppProfileState>,
+) -> Result<DispatcherJobDetails, String> {
+    let runtime = career.runtime.as_ref();
+    let save_context = resolve_dispatcher_save_context(profile.inner())?;
+    let conn = open_connection(runtime)?;
+    let result = dispatcher::dispatcher_link_job_to_save_context(&conn, &job_id, &save_context)?;
+    runtime.overview_dirty.store(true, Ordering::Relaxed);
+    Ok(result)
+}
+
+#[command]
+pub fn dispatcher_accept_generated_job(
+    job_id: String,
+    career: State<'_, CareerState>,
+    profile: State<'_, AppProfileState>,
+) -> Result<DispatcherJobDetails, String> {
+    let runtime = career.runtime.as_ref();
+    let save_context = resolve_dispatcher_save_context(profile.inner())?;
+    let conn = open_connection(runtime)?;
+    let result = dispatcher::dispatcher_accept_generated_job(&conn, &job_id, &save_context)?;
+    runtime.overview_dirty.store(true, Ordering::Relaxed);
+    Ok(result)
+}
+
+#[command]
+pub fn dispatcher_mark_job_synced_to_ets2(
+    job_id: String,
+    route_reference: Option<String>,
+    career: State<'_, CareerState>,
+    profile: State<'_, AppProfileState>,
+) -> Result<DispatcherJobDetails, String> {
+    let runtime = career.runtime.as_ref();
+    let save_context = resolve_dispatcher_save_context(profile.inner())?;
+    let conn = open_connection(runtime)?;
+    let result = dispatcher::dispatcher_mark_job_synced_to_ets2(
+        &conn,
+        &job_id,
+        route_reference,
+        &save_context,
+    )?;
+    runtime.overview_dirty.store(true, Ordering::Relaxed);
+    Ok(result)
+}
+
+#[command]
+pub fn dispatcher_get_jobs_by_save_context(
+    status: Option<String>,
+    career: State<'_, CareerState>,
+    profile: State<'_, AppProfileState>,
+) -> Result<DispatcherJobsBySaveContextResponse, String> {
+    let save_context = resolve_dispatcher_save_context(profile.inner())?;
+    let conn = open_connection(career.runtime.as_ref())?;
+    dispatcher::dispatcher_get_jobs_by_save_context(&conn, &save_context, status)
 }
 
 fn open_connection(runtime: &CareerRuntime) -> Result<Connection, String> {
@@ -275,4 +402,10 @@ fn open_connection(runtime: &CareerRuntime) -> Result<Connection, String> {
         .ok_or_else(|| "Career database path not initialized".to_string())?;
 
     Connection::open(db_path).map_err(|e| e.to_string())
+}
+
+fn resolve_dispatcher_save_context(
+    profile: &AppProfileState,
+) -> Result<dispatcher::DispatcherSaveContext, String> {
+    snapshot_save_context(profile)
 }

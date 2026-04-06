@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use rusqlite::Connection;
 use std::path::{Path, PathBuf};
 
@@ -7,6 +5,7 @@ use crate::features::career::dispatcher;
 use crate::features::career::job_log;
 use crate::features::{bank, contracts, economy, employees, events, fleet, reputation};
 use crate::features::{auth, companies};
+use crate::shared::sqlite_schema::ensure_columns;
 
 pub fn default_db_path() -> PathBuf {
     dirs::data_local_dir()
@@ -80,7 +79,6 @@ pub fn init_logbook(db_path: &Path) -> Result<(), String> {
 }
 
 fn ensure_trip_columns(conn: &Connection) -> Result<(), String> {
-    let existing = existing_columns(conn, "trips")?;
     let required = [
         ("job_id", "TEXT"),
         ("contract_id", "TEXT"),
@@ -93,29 +91,6 @@ fn ensure_trip_columns(conn: &Connection) -> Result<(), String> {
         ("fuel_used_liters", "REAL NOT NULL DEFAULT 0"),
         ("status", "TEXT NOT NULL DEFAULT 'active'"),
     ];
-
-    for (column, definition) in required {
-        if !existing.contains(column) {
-            conn.execute(&format!("ALTER TABLE trips ADD COLUMN {column} {definition}"), [])
-                .map_err(|e| e.to_string())?;
-        }
-    }
-
+    ensure_columns(conn, "trips", &required)?;
     Ok(())
-}
-
-fn existing_columns(conn: &Connection, table: &str) -> Result<HashSet<String>, String> {
-    let mut stmt = conn
-        .prepare(&format!("PRAGMA table_info({table})"))
-        .map_err(|e| e.to_string())?;
-    let rows = stmt
-        .query_map([], |row| row.get::<_, String>(1))
-        .map_err(|e| e.to_string())?;
-
-    let mut columns = HashSet::new();
-    for row in rows {
-        columns.insert(row.map_err(|e| e.to_string())?);
-    }
-
-    Ok(columns)
 }

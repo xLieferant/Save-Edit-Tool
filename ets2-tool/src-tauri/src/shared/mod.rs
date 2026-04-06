@@ -1,4 +1,5 @@
 pub mod logs;
+pub mod models;
 pub mod paths; 
 pub mod sii_parser;
 pub mod current_profile;
@@ -8,4 +9,5 @@ pub mod extract_save_name;
 pub mod game_loader;
 pub mod hex_float;
 pub mod regex_helper;
+pub mod sqlite_schema;
 pub mod user_log;

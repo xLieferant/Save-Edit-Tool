@@ -1,12 +1,15 @@
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
+use rusqlite::Connection;
 use tauri::{AppHandle, Emitter, Manager};
 
+use crate::features::career::dispatcher;
 use crate::features::career::plugin_installer::{self, ScsGame};
 use crate::features::career::telemetry::GameId;
 use crate::features::career::{db, overlay, overview, telemetry};
 use crate::features::hub::events::CareerStatus;
+use crate::shared::current_profile::snapshot_save_context;
 use crate::state::{AppProfileState, CareerRuntime};
 
 fn choose_game(ets2_running: bool, ats_running: bool, previous: Option<&str>) -> Option<GameId> {
@@ -50,10 +53,13 @@ pub fn start_background(app: AppHandle, runtime: Arc<CareerRuntime>) {
         let mut ats_install_attempted = false;
         let mut last_process_check = Instant::now() - Duration::from_millis(500);
         let mut last_overview_refresh = Instant::now() - Duration::from_millis(5_000);
+        let mut last_dispatcher_check = Instant::now() - Duration::from_secs(45);
+        let mut last_dispatcher_status: Option<dispatcher::DispatcherGenerationStatus> = None;
 
         const LOOP_TICK: Duration = Duration::from_millis(100);
         const PROCESS_POLL: Duration = Duration::from_millis(500);
         const OVERVIEW_MIN_REFRESH: Duration = Duration::from_millis(250);
+        const DISPATCHER_POLL: Duration = Duration::from_secs(30);
 
         loop {
             if runtime.stop_all.load(Ordering::Relaxed) {
@@ -193,6 +199,41 @@ pub fn start_background(app: AppHandle, runtime: Arc<CareerRuntime>) {
                     }
                     Err(error) => {
                         crate::dev_log!("[career] overview refresh failed: {}", error);
+                    }
+                }
+            }
+
+            if last_dispatcher_check.elapsed() >= DISPATCHER_POLL {
+                last_dispatcher_check = Instant::now();
+
+                let db_path = runtime.db_path.lock().ok().and_then(|guard| guard.clone());
+                if let Some(db_path) = db_path {
+                    match Connection::open(&db_path) {
+                        Ok(conn) => {
+                            let profile_state = app.state::<AppProfileState>();
+                            let save_context = snapshot_save_context(profile_state.inner())
+                                .unwrap_or_else(|_| dispatcher::DispatcherSaveContext::default());
+
+                            match dispatcher::dispatcher_background_tick(&conn, &save_context) {
+                                Ok(result) => {
+                                    if result.market_changed {
+                                        runtime.overview_dirty.store(true, Ordering::Relaxed);
+                                    }
+                                    if result.market_changed
+                                        || last_dispatcher_status.as_ref() != Some(&result.status)
+                                    {
+                                        last_dispatcher_status = Some(result.status.clone());
+                                        let _ = app.emit("career://dispatcher_changed", result.status);
+                                    }
+                                }
+                                Err(error) => {
+                                    crate::dev_log!("[career] dispatcher background tick failed: {}", error);
+                                }
+                            }
+                        }
+                        Err(error) => {
+                            crate::dev_log!("[career] dispatcher db open failed: {}", error);
+                        }
                     }
                 }
             }

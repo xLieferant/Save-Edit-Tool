@@ -1,6 +1,6 @@
-use std::collections::HashSet;
-
 use rusqlite::Connection;
+
+use crate::shared::sqlite_schema::ensure_columns;
 
 pub fn ensure_tables(conn: &Connection) -> Result<(), String> {
     conn.execute_batch(
@@ -60,7 +60,6 @@ pub fn ensure_tables(conn: &Connection) -> Result<(), String> {
 }
 
 fn ensure_company_columns(conn: &Connection) -> Result<(), String> {
-    let existing = existing_columns(conn, "companies")?;
     let required = [
         ("logo_blob", "BLOB"),
         ("logo_mime", "TEXT"),
@@ -70,29 +69,6 @@ fn ensure_company_columns(conn: &Connection) -> Result<(), String> {
         ("language", "TEXT"),
         ("game", "TEXT"),
     ];
-
-    for (column, definition) in required {
-        if !existing.contains(column) {
-            conn.execute(&format!("ALTER TABLE companies ADD COLUMN {column} {definition}"), [])
-                .map_err(|e| e.to_string())?;
-        }
-    }
-
+    ensure_columns(conn, "companies", &required)?;
     Ok(())
-}
-
-fn existing_columns(conn: &Connection, table: &str) -> Result<HashSet<String>, String> {
-    let mut stmt = conn
-        .prepare(&format!("PRAGMA table_info({table})"))
-        .map_err(|e| e.to_string())?;
-    let rows = stmt
-        .query_map([], |row| row.get::<_, String>(1))
-        .map_err(|e| e.to_string())?;
-
-    let mut columns = HashSet::new();
-    for row in rows {
-        columns.insert(row.map_err(|e| e.to_string())?);
-    }
-
-    Ok(columns)
 }

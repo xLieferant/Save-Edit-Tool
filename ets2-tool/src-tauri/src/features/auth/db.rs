@@ -1,7 +1,8 @@
-use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 use rusqlite::Connection;
+
+use crate::shared::sqlite_schema::ensure_columns;
 
 pub fn default_db_path() -> PathBuf {
     dirs::data_local_dir()
@@ -80,7 +81,6 @@ pub fn ensure_tables(conn: &Connection) -> Result<(), String> {
 }
 
 fn ensure_user_columns(conn: &Connection) -> Result<(), String> {
-    let existing = existing_columns(conn, "users")?;
     let required = [
         ("role", "TEXT NOT NULL DEFAULT 'user'"),
         ("company_id", "INTEGER"),
@@ -89,45 +89,14 @@ fn ensure_user_columns(conn: &Connection) -> Result<(), String> {
         ("is_active", "INTEGER NOT NULL DEFAULT 1"),
         ("is_seed", "INTEGER NOT NULL DEFAULT 0"),
     ];
-
-    for (column, definition) in required {
-        if !existing.contains(column) {
-            conn.execute(&format!("ALTER TABLE users ADD COLUMN {column} {definition}"), [])
-                .map_err(|e| e.to_string())?;
-        }
-    }
-
+    ensure_columns(conn, "users", &required)?;
     Ok(())
 }
 
 fn ensure_session_columns(conn: &Connection) -> Result<(), String> {
-    let existing = existing_columns(conn, "sessions")?;
     let required = [("revoked_at", "TEXT")];
-
-    for (column, definition) in required {
-        if !existing.contains(column) {
-            conn.execute(&format!("ALTER TABLE sessions ADD COLUMN {column} {definition}"), [])
-                .map_err(|e| e.to_string())?;
-        }
-    }
-
+    ensure_columns(conn, "sessions", &required)?;
     Ok(())
-}
-
-fn existing_columns(conn: &Connection, table: &str) -> Result<HashSet<String>, String> {
-    let mut stmt = conn
-        .prepare(&format!("PRAGMA table_info({table})"))
-        .map_err(|e| e.to_string())?;
-    let rows = stmt
-        .query_map([], |row| row.get::<_, String>(1))
-        .map_err(|e| e.to_string())?;
-
-    let mut columns = HashSet::new();
-    for row in rows {
-        columns.insert(row.map_err(|e| e.to_string())?);
-    }
-
-    Ok(columns)
 }
 
 pub fn ensure_parent_dir(path: &Path) -> Result<(), String> {

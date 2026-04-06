@@ -476,6 +476,41 @@ body.career-page {
   margin-bottom: 14px;
 }
 
+.dispatcher-generation-strip {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(280px, 420px);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.dispatcher-generation-card {
+  border: 1px solid #2d405f;
+  border-radius: 12px;
+  background: linear-gradient(160deg, rgba(13, 21, 35, 0.96), rgba(9, 16, 28, 0.9));
+  padding: 12px;
+  display: grid;
+  gap: 5px;
+}
+
+.dispatcher-generation-card span,
+.dispatcher-generation-card small {
+  color: #8fa6c8;
+}
+
+.dispatcher-generation-card strong {
+  font-size: 17px;
+  color: #f2f6ff;
+}
+
+.dispatcher-generation-controls {
+  border: 1px solid #2d405f;
+  border-radius: 12px;
+  background: linear-gradient(160deg, rgba(13, 21, 35, 0.96), rgba(9, 16, 28, 0.9));
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
 .dispatcher-tabs {
   margin-bottom: 12px;
   display: grid;
@@ -562,6 +597,10 @@ body.career-page {
   font-size: 15px;
 }
 
+.dispatcher-detail-badges {
+  min-height: 26px;
+}
+
 .dispatcher-detail-grid {
   margin: 0;
   display: grid;
@@ -599,8 +638,146 @@ body.career-page {
   min-height: 34px;
 }
 
+.dispatcher-detail-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .dispatcher-history-summary {
   margin-bottom: 10px;
+}
+
+.dispatcher-row-primary {
+  display: block;
+  color: #edf4ff;
+  font-weight: 600;
+}
+
+.dispatcher-row-secondary {
+  display: block;
+  margin-top: 3px;
+  color: #8fa6c8;
+  font-size: 11px;
+}
+
+.dispatcher-row-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.dispatcher-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid #34517a;
+  background: rgba(20, 33, 53, 0.95);
+  color: #d5e4fb;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.dispatcher-badge.is-generated {
+  border-color: #3a638f;
+}
+
+.dispatcher-badge.is-offer {
+  border-color: #7b5f2e;
+  color: #f0dba7;
+}
+
+.dispatcher-badge.is-contract {
+  border-color: #2d7b62;
+  color: #b7f0dd;
+}
+
+.dispatcher-badge.is-imported {
+  border-color: #6f4f88;
+  color: #dfc2f7;
+}
+
+.dispatcher-badge.is-active {
+  border-color: #3c7d4f;
+  color: #b7f2c6;
+}
+
+.dispatcher-badge.is-synced {
+  border-color: #2d8c8c;
+  color: #b0f0f0;
+}
+
+.dispatcher-badge.is-link-pending {
+  border-color: #8c6a2d;
+  color: #ffdca6;
+}
+
+.dispatcher-badge.is-requires-load {
+  border-color: #9a7a33;
+  color: #ffe0a8;
+}
+
+.dispatcher-badge.is-link-completed {
+  border-color: #2f7b69;
+  color: #bcf4e8;
+}
+
+.dispatcher-badge.is-link-error {
+  border-color: #8b4151;
+  color: #f6c3cc;
+}
+
+.dispatcher-badge.is-pending {
+  border-color: #8c6a2d;
+  color: #ffdca6;
+}
+
+.dispatcher-badge.is-save {
+  border-color: #4568a6;
+}
+
+.dispatcher-status-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  border: 1px solid #3b5f90;
+  background: rgba(15, 27, 44, 0.94);
+  color: #e6efff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.dispatcher-status-pill.is-open,
+.dispatcher-status-pill.is-planned {
+  border-color: #4c6d9e;
+}
+
+.dispatcher-status-pill.is-accepted,
+.dispatcher-status-pill.is-in_transit {
+  border-color: #3e8456;
+  color: #c6f5d0;
+}
+
+.dispatcher-status-pill.is-delayed,
+.dispatcher-status-pill.is-problematic {
+  border-color: #9b6b2e;
+  color: #ffd9a0;
+}
+
+.dispatcher-status-pill.is-expired,
+.dispatcher-status-pill.is-rejected,
+.dispatcher-status-pill.is-cancelled {
+  border-color: #8b4151;
+  color: #f6c3cc;
+}
+
+.dispatcher-status-pill.is-completed {
+  border-color: #2f7b69;
+  color: #bcf4e8;
 }
 
 #cmDispatcherMarketBody tr.is-selected td {
@@ -626,6 +803,10 @@ body.career-page {
 
   .dispatcher-detail-card {
     position: static;
+  }
+
+  .dispatcher-generation-strip {
+    grid-template-columns: 1fr;
   }
 }
 

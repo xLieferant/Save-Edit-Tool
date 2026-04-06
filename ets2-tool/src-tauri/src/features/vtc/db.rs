@@ -1,9 +1,8 @@
-use std::collections::HashSet;
-
 use rusqlite::{params, Connection};
 
 use crate::features::auth;
 use crate::features::companies;
+use crate::shared::sqlite_schema::ensure_columns;
 
 pub const AVAILABLE_ROLE_KEYS: [&str; 8] = [
     "owner",
@@ -83,45 +82,23 @@ pub fn ensure_tables(conn: &Connection) -> Result<(), String> {
 }
 
 fn ensure_company_columns(conn: &Connection) -> Result<(), String> {
-    let existing = existing_columns(conn, "companies")?;
     let required = [
         ("slogan", "TEXT"),
         ("accent_color", "TEXT"),
         ("public_visibility", "INTEGER NOT NULL DEFAULT 1"),
     ];
-
-    for (column, definition) in required {
-        if !existing.contains(column) {
-            conn.execute(
-                &format!("ALTER TABLE companies ADD COLUMN {column} {definition}"),
-                [],
-            )
-            .map_err(|e| e.to_string())?;
-        }
-    }
-
+    ensure_columns(conn, "companies", &required)?;
     Ok(())
 }
 
 fn ensure_company_member_columns(conn: &Connection) -> Result<(), String> {
-    let existing = existing_columns(conn, "company_members")?;
     let required = [
         ("promoted_at", "TEXT"),
         ("invited_by", "INTEGER"),
         ("notes", "TEXT"),
         ("updated_at", "TEXT"),
     ];
-
-    for (column, definition) in required {
-        if !existing.contains(column) {
-            conn.execute(
-                &format!("ALTER TABLE company_members ADD COLUMN {column} {definition}"),
-                [],
-            )
-            .map_err(|e| e.to_string())?;
-        }
-    }
-
+    ensure_columns(conn, "company_members", &required)?;
     Ok(())
 }
 
@@ -175,20 +152,4 @@ fn ensure_global_career_settings(conn: &Connection) -> Result<(), String> {
     )
     .map_err(|e| e.to_string())?;
     Ok(())
-}
-
-fn existing_columns(conn: &Connection, table: &str) -> Result<HashSet<String>, String> {
-    let mut stmt = conn
-        .prepare(&format!("PRAGMA table_info({table})"))
-        .map_err(|e| e.to_string())?;
-    let rows = stmt
-        .query_map([], |row| row.get::<_, String>(1))
-        .map_err(|e| e.to_string())?;
-
-    let mut columns = HashSet::new();
-    for row in rows {
-        columns.insert(row.map_err(|e| e.to_string())?);
-    }
-
-    Ok(columns)
 }

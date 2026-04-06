@@ -22,3 +22,5 @@ pub mod auth;
 pub mod companies;
 pub mod career_onboarding;
 pub mod vtc;
+pub mod ets2save;
+pub mod telemetry;

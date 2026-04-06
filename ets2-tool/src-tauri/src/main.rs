@@ -3,11 +3,13 @@
     windows_subsystem = "windows"
 )]
 
-use crate::state::{AppProfileState, DecryptCache, ProfileCache};
+use crate::state::{AppProfileState, DecryptCache, EtsDbState, ProfileCache};
 use crate::state::{CareerState, HubState};
 use crate::state::AuthState;
 use tauri::Manager;
 
+mod commands;
+mod events;
 mod models;
 mod state;
 mod shared;   // ehemals utils
@@ -21,6 +23,11 @@ fn main() {
 
     features::career::scs_sdk_telemetry::start_terminal_telemetry_loop();
     features::career::telemetry_debug::start_telemetry_debug_thread();
+    let ets_db_path = features::career::db::default_db_path();
+    let ets_db_pool = tauri::async_runtime::block_on(
+        features::ets2save::link_service::create_pool(&ets_db_path),
+    )
+    .expect("failed to initialize ETS sqlx pool");
 
     tauri::Builder::default()
         .plugin(tauri_plugin_fs::init())
@@ -30,6 +37,7 @@ fn main() {
         .manage(HubState::default())
         .manage(CareerState::default())
         .manage(AuthState::default())
+        .manage(EtsDbState { pool: ets_db_pool })
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
@@ -104,10 +112,16 @@ fn main() {
                 runtime.clone(),
             );
             features::career::service::start_background(handle, runtime);
+            let ets_db = app.state::<EtsDbState>();
+            features::telemetry::scs_shared_mem::start(app.handle().clone(), ets_db.pool.clone());
             crate::dev_log!("[app] setup complete");
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            commands::ets_get_last_quicksave,
+            commands::ets_prepare_job_link,
+            commands::ets_write_job_to_quicksave,
+            commands::ets_get_job_link_status,
             // Apply Settings
             features::settings::apply_settings::apply_setting,
             // Read Base and Save Config.cfg
@@ -204,6 +218,14 @@ fn main() {
             features::career::commands::dispatcher_cancel_offer,
             features::career::commands::dispatcher_respond_to_counter,
             features::career::commands::dispatcher_get_dispatcher_overview,
+            features::career::commands::dispatcher_generate_universal_jobs,
+            features::career::commands::dispatcher_get_generation_status,
+            features::career::commands::dispatcher_cleanup_expired_jobs,
+            features::career::commands::dispatcher_restore_jobs_for_last_quicksave,
+            features::career::commands::dispatcher_link_job_to_save_context,
+            features::career::commands::dispatcher_accept_generated_job,
+            features::career::commands::dispatcher_mark_job_synced_to_ets2,
+            features::career::commands::dispatcher_get_jobs_by_save_context,
             features::career::commands::get_plugin_status,
 
             // Auth

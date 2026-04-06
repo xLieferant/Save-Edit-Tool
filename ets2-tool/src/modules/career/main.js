@@ -1,5 +1,5 @@
 import { attachI18nToWindow, t, translateDocument } from "../shared/i18n.js";
-import { hasTauri, invoke, safeInvoke } from "../shared/runtime.js";
+import { hasTauri, invoke, listen, safeInvoke } from "../shared/runtime.js";
 
 const state = {
   overview: null,
@@ -16,9 +16,11 @@ const state = {
   roles: [],
   dispatcher: {
     overview: null,
+    generation: null,
     marketJobs: [],
     selectedJobId: null,
     selectedJob: null,
+    jobLink: null,
     activeJobs: [],
     history: null,
     contacts: [],
@@ -51,6 +53,26 @@ const uiText = {
   dispatcherAccept: "Accept",
   dispatcherReject: "Reject",
   dispatcherCancel: "Cancel",
+  dispatcherBadgeGenerated: "Generated",
+  dispatcherBadgeOffer: "Offer",
+  dispatcherBadgeContract: "Contract",
+  dispatcherBadgeImported: "Imported",
+  dispatcherBadgeActive: "Active",
+  dispatcherBadgePending: "Pending",
+  dispatcherBadgeRequiresLoad: "Requires Load",
+  dispatcherBadgeSynced: "Synced to ETS2",
+  dispatcherBadgeCompleted: "Completed",
+  dispatcherBadgeError: "Error",
+  dispatcherBadgePendingRoute: "Pending Route",
+  dispatcherBadgeSaveLinked: "Save-linked",
+  dispatcherNoSaveLink: "No save linked",
+  dispatcherUnsynced: "Not synced",
+  dispatcherExpired: "Expired",
+  dispatcherPrepareLink: "Prepare ETS Link",
+  dispatcherWriteQuicksave: "Write to Quicksave",
+  dispatcherIntervalLabel: "Interval",
+  dispatcherPoolLabel: "Pool",
+  dispatcherOpenLabel: "Open",
 };
 
 function formatNumber(value, digits = 0) {
@@ -77,6 +99,43 @@ function formatDate(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
   return date.toLocaleString();
+}
+
+function formatMinutes(value) {
+  const totalMinutes = Math.max(0, Number(value || 0));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = Math.round(totalMinutes % 60);
+  if (hours <= 0) return `${minutes} min`;
+  if (minutes <= 0) return `${hours} h`;
+  return `${hours} h ${minutes} min`;
+}
+
+function formatRelativeTime(value) {
+  if (!value) return "-";
+  const target = new Date(value);
+  if (Number.isNaN(target.getTime())) return String(value);
+  const diffMs = target.getTime() - Date.now();
+  if (diffMs <= 0) return uiText.dispatcherExpired;
+  const totalMinutes = Math.ceil(diffMs / 60000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours <= 0) return `${minutes} min`;
+  if (minutes <= 0) return `${hours} h`;
+  return `${hours} h ${minutes} min`;
+}
+
+function formatPathReference(value) {
+  if (!value) return uiText.dispatcherNoSaveLink;
+  const normalized = String(value).replace(/\\/g, "/");
+  const parts = normalized.split("/").filter(Boolean);
+  if (parts.length <= 2) return normalized;
+  return parts.slice(-2).join("/");
+}
+
+function setCellHtml(id, value) {
+  const element = document.getElementById(id);
+  if (!element) return;
+  element.innerHTML = value ?? "";
 }
 
 function setCellText(id, value) {
@@ -117,7 +176,10 @@ function showToast(message, type = "info") {
 }
 
 function normalizeErrorCode(rawError) {
-  const raw = String(rawError || "");
+  const raw =
+    rawError && typeof rawError === "object"
+      ? `${String(rawError.code || "")} ${String(rawError.message || "")}`
+      : String(rawError || "");
   const knownCodes = [
     "username_already_taken",
     "username_change_cooldown_active",
@@ -138,6 +200,21 @@ function normalizeErrorCode(rawError) {
     "dispatcher_offer_company_required",
     "dispatcher_offer_not_cancellable",
     "dispatcher_offer_not_countered",
+    "dispatcher_save_context_missing",
+    "dispatcher_job_not_generated",
+    "profile_not_found",
+    "save_not_found",
+    "decode_failed",
+    "company_not_found_in_save",
+    "company_has_no_job_offers",
+    "invalid_token",
+    "write_failed",
+    "backup_failed",
+    "lock_timeout",
+    "telemetry_unavailable",
+    "job_link_conflict",
+    "rollback_failed",
+    "steam_cloud_enabled",
   ];
 
   for (const code of knownCodes) {
@@ -150,12 +227,18 @@ function normalizeErrorCode(rawError) {
 async function resolveErrorMessage(rawError) {
   const code = normalizeErrorCode(rawError);
   if (!code) {
+    if (rawError && typeof rawError === "object" && rawError.message) {
+      return `${uiText.errorPrefix}: ${rawError.message}`;
+    }
     return `${uiText.errorPrefix}: ${String(rawError || "unknown")}`;
   }
 
   const translationKey = `career_mode.errors.${code}`;
   const translated = await t(translationKey);
   if (translated === translationKey) {
+    if (rawError && typeof rawError === "object" && rawError.message) {
+      return `${uiText.errorPrefix}: ${rawError.message}`;
+    }
     return `${uiText.errorPrefix}: ${code}`;
   }
   return translated;
@@ -421,28 +504,145 @@ function dispatcherFilterPayload() {
   };
 }
 
+function titleize(value) {
+  return String(value || "-")
+    .split("_")
+    .filter(Boolean)
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(" ");
+}
+
+function normalizeDispatcherJobLinkStatus(value) {
+  const normalized = String(value || "").toLowerCase();
+  if (!normalized) return "";
+  if (["prepared", "written", "pending"].includes(normalized)) return "pending";
+  if (normalized === "requires_load") return "requires_load";
+  if (["synced", "synced_to_ets2"].includes(normalized)) return "synced";
+  if (normalized === "completed") return "completed";
+  if (normalized === "error") return "error";
+  if (normalized === "pending_route") return "pending_route";
+  return normalized;
+}
+
+function dispatcherJobLinkLabel(value) {
+  switch (normalizeDispatcherJobLinkStatus(value)) {
+    case "pending":
+      return uiText.dispatcherBadgePending;
+    case "requires_load":
+      return uiText.dispatcherBadgeRequiresLoad;
+    case "synced":
+      return uiText.dispatcherBadgeSynced;
+    case "completed":
+      return uiText.dispatcherBadgeCompleted;
+    case "error":
+      return uiText.dispatcherBadgeError;
+    case "pending_route":
+      return uiText.dispatcherBadgePendingRoute;
+    default:
+      return value ? titleize(value) : uiText.dispatcherUnsynced;
+  }
+}
+
+function dispatcherJobBadges(job) {
+  const badges = [];
+  const sourceType = String(job.sourceType || "").toLowerCase();
+  if (sourceType === "generated") {
+    badges.push(`<span class="dispatcher-badge is-generated">${uiText.dispatcherBadgeGenerated}</span>`);
+  } else if (sourceType === "offer") {
+    badges.push(`<span class="dispatcher-badge is-offer">${uiText.dispatcherBadgeOffer}</span>`);
+  } else if (sourceType === "contract") {
+    badges.push(`<span class="dispatcher-badge is-contract">${uiText.dispatcherBadgeContract}</span>`);
+  } else if (sourceType === "imported") {
+    badges.push(`<span class="dispatcher-badge is-imported">${uiText.dispatcherBadgeImported}</span>`);
+  }
+
+  if (["planned", "accepted", "in_transit", "delayed", "problematic"].includes(job.status)) {
+    badges.push(`<span class="dispatcher-badge is-active">${uiText.dispatcherBadgeActive}</span>`);
+  }
+
+  const linkStatus = normalizeDispatcherJobLinkStatus(job.ets2JobLinkStatus);
+  if (linkStatus === "pending") {
+    badges.push(`<span class="dispatcher-badge is-link-pending">${uiText.dispatcherBadgePending}</span>`);
+  } else if (linkStatus === "requires_load") {
+    badges.push(`<span class="dispatcher-badge is-requires-load">${uiText.dispatcherBadgeRequiresLoad}</span>`);
+  } else if (linkStatus === "synced") {
+    badges.push(`<span class="dispatcher-badge is-synced">${uiText.dispatcherBadgeSynced}</span>`);
+  } else if (linkStatus === "completed") {
+    badges.push(`<span class="dispatcher-badge is-link-completed">${uiText.dispatcherBadgeCompleted}</span>`);
+  } else if (linkStatus === "error") {
+    badges.push(`<span class="dispatcher-badge is-link-error">${uiText.dispatcherBadgeError}</span>`);
+  } else if (linkStatus === "pending_route") {
+    badges.push(`<span class="dispatcher-badge is-pending">${uiText.dispatcherBadgePendingRoute}</span>`);
+  }
+
+  if (job.saveReference) {
+    badges.push(`<span class="dispatcher-badge is-save">${uiText.dispatcherBadgeSaveLinked}</span>`);
+  }
+
+  return badges.join("");
+}
+
+function dispatcherStatusMarkup(status) {
+  const normalized = String(status || "unknown").toLowerCase();
+  return `<span class="dispatcher-status-pill is-${normalized}">${titleize(normalized)}</span>`;
+}
+
 function renderDispatcherOverview() {
   const overview = state.dispatcher.overview || {};
+  const generation = state.dispatcher.generation || {};
+  const context = generation.currentContext || {};
+  const saveLinked = Boolean(generation.saveLinkActive);
+
   setCellText("cmDispatcherOpenJobs", formatNumber(overview.openMarketJobs || 0, 0));
   setCellText("cmDispatcherActiveJobs", formatNumber(overview.activeJobs || 0, 0));
   setCellText("cmDispatcherOpenOffers", formatNumber(overview.openOffers || 0, 0));
   setCellText("cmDispatcherContracts", formatNumber(overview.acceptedContracts || 0, 0));
+  setCellText("cmDispatcherSaveRef", saveLinked ? formatPathReference(context.saveReference) : uiText.dispatcherNoSaveLink);
+  setCellText("cmDispatcherSaveSession", saveLinked ? (context.saveSessionId || uiText.noData) : uiText.noData);
+  setCellText("cmDispatcherNextGeneration", saveLinked ? formatRelativeTime(generation.nextGenerationAtUtc) : uiText.noData);
+  setCellText(
+    "cmDispatcherGenerationMeta",
+    saveLinked
+      ? `${uiText.dispatcherIntervalLabel}: ${formatNumber(generation.intervalMinutes || 0, 0)} min | ${uiText.dispatcherPoolLabel}: ${formatNumber(generation.maxOpenJobs || 0, 0)} | ${uiText.dispatcherOpenLabel}: ${formatNumber(generation.openGeneratedJobs || 0, 0)}`
+      : uiText.noData
+  );
+
+  if (generation.intervalMinutes) {
+    setInputValue("cmDispatcherGenerationIntervalInput", String(generation.intervalMinutes));
+  }
+  if (generation.maxOpenJobs) {
+    setInputValue("cmDispatcherGenerationMaxOpenInput", String(generation.maxOpenJobs));
+  }
 }
 
 function renderDispatcherMarket() {
   const rows = (state.dispatcher.marketJobs || []).map((job) => {
     const route = `${job.originCity || "-"} -> ${job.destinationCity || "-"}`;
+    const saveHint = formatPathReference(job.saveReference);
+    const badges = dispatcherJobBadges(job);
     const selectedClass = job.id === state.dispatcher.selectedJobId ? "is-selected" : "";
     return `
       <tr class="${selectedClass}" data-dispatcher-job-id="${job.id}">
         <td>${job.id || "-"}</td>
-        <td>${job.companyName || "-"}</td>
-        <td>${job.jobType || "-"}</td>
-        <td>${route}</td>
+        <td>
+          <div class="dispatcher-row-primary">${job.companyName || "-"}</div>
+          <div class="dispatcher-row-badges">${badges || uiText.noData}</div>
+        </td>
+        <td>
+          <div class="dispatcher-row-primary">${titleize(job.jobType || "-")}</div>
+          <div class="dispatcher-row-secondary">${titleize(job.cargoType || "-")}</div>
+        </td>
+        <td>
+          <div class="dispatcher-row-primary">${route}</div>
+          <div class="dispatcher-row-secondary">${saveHint}</div>
+        </td>
         <td>${formatDistance(job.distanceKm || 0)}</td>
         <td>${formatNumber(job.calculatedRatePerKm || 0, 2)}</td>
         <td>${formatCurrency(job.totalReward || 0)}</td>
-        <td>${job.status || "-"}</td>
+        <td>
+          <div class="dispatcher-row-primary">${dispatcherStatusMarkup(job.status)}</div>
+          <div class="dispatcher-row-secondary">${formatRelativeTime(job.expiresAtUtc)}</div>
+        </td>
       </tr>
     `;
   });
@@ -451,36 +651,69 @@ function renderDispatcherMarket() {
 
 function renderDispatcherDetails() {
   const selected = state.dispatcher.selectedJob;
+  const acceptButton = document.getElementById("cmDispatcherAcceptJobBtn");
+  const prepareLinkButton = document.getElementById("cmDispatcherPrepareEtsLinkBtn");
+  const writeQuicksaveButton = document.getElementById("cmDispatcherWriteQuicksaveBtn");
+  const syncButton = document.getElementById("cmDispatcherMarkSyncedBtn");
   if (!selected) {
+    if (acceptButton) acceptButton.disabled = true;
+    if (prepareLinkButton) prepareLinkButton.disabled = true;
+    if (writeQuicksaveButton) writeQuicksaveButton.disabled = true;
+    if (syncButton) syncButton.disabled = true;
+    setCellHtml("cmDispatcherDetailBadges", "");
     setCellText("cmDispatcherDetailId", "-");
+    setCellText("cmDispatcherDetailSource", "-");
     setCellText("cmDispatcherDetailCompany", "-");
     setCellText("cmDispatcherDetailType", "-");
     setCellText("cmDispatcherDetailRoute", "-");
     setCellText("cmDispatcherDetailDistance", "-");
+    setCellText("cmDispatcherDetailDuration", "-");
+    setCellText("cmDispatcherDetailExpiry", "-");
     setCellText("cmDispatcherDetailRate", "-");
     setCellText("cmDispatcherDetailReward", "-");
     setCellText("cmDispatcherDetailStatus", "-");
     setCellText("cmDispatcherDetailTier", "-");
     setCellText("cmDispatcherDetailReputation", "-");
     setCellText("cmDispatcherDetailProfit", "-");
+    setCellText("cmDispatcherDetailSave", "-");
+    setCellText("cmDispatcherDetailRouteRef", "-");
+    setCellText("cmDispatcherDetailEts2", "-");
     setCellText("cmDispatcherDetailBonus", "-");
     setCellText("cmDispatcherDetailRisk", "-");
     return;
   }
 
   const job = selected.job || selected;
+  const jobLink = state.dispatcher.jobLink;
+  const linkStatus = normalizeDispatcherJobLinkStatus(jobLink?.status || job.ets2JobLinkStatus);
+  if (acceptButton) acceptButton.disabled = !job.id;
+  if (prepareLinkButton) {
+    prepareLinkButton.disabled = !job.id || Boolean(jobLink && !["completed", "error"].includes(linkStatus));
+  }
+  if (writeQuicksaveButton) {
+    writeQuicksaveButton.disabled = !jobLink?.linkId || linkStatus !== "pending";
+  }
+  if (syncButton) syncButton.disabled = !job.id;
   const route = `${job.originCity || "-"} -> ${job.destinationCity || "-"}`;
+  const ets2Status = dispatcherJobLinkLabel(jobLink?.status || job.ets2JobLinkStatus);
+  setCellHtml("cmDispatcherDetailBadges", dispatcherJobBadges(job));
   setCellText("cmDispatcherDetailId", job.id || "-");
+  setCellText("cmDispatcherDetailSource", titleize(job.sourceType || "-"));
   setCellText("cmDispatcherDetailCompany", job.companyName || "-");
-  setCellText("cmDispatcherDetailType", job.jobType || "-");
+  setCellText("cmDispatcherDetailType", titleize(job.jobType || "-"));
   setCellText("cmDispatcherDetailRoute", route);
   setCellText("cmDispatcherDetailDistance", formatDistance(job.distanceKm || 0));
+  setCellText("cmDispatcherDetailDuration", formatMinutes(job.estimatedDurationMinutes || 0));
+  setCellText("cmDispatcherDetailExpiry", formatRelativeTime(job.expiresAtUtc));
   setCellText("cmDispatcherDetailRate", formatNumber(job.calculatedRatePerKm || 0, 2));
   setCellText("cmDispatcherDetailReward", formatCurrency(job.totalReward || 0));
-  setCellText("cmDispatcherDetailStatus", job.status || "-");
+  setCellHtml("cmDispatcherDetailStatus", dispatcherStatusMarkup(job.status));
   setCellText("cmDispatcherDetailTier", job.paymentTierSnapshot || "-");
   setCellText("cmDispatcherDetailReputation", formatNumber(job.companyReputation || 0, 0));
   setCellText("cmDispatcherDetailProfit", formatCurrency(job.profitEstimate || 0));
+  setCellText("cmDispatcherDetailSave", formatPathReference(job.saveReference));
+  setCellText("cmDispatcherDetailRouteRef", job.routeReference || "-");
+  setCellText("cmDispatcherDetailEts2", ets2Status);
   setCellText("cmDispatcherDetailBonus", job.bonusNote || "-");
   setCellText("cmDispatcherDetailRisk", job.riskNote || "-");
 }
@@ -519,10 +752,16 @@ function renderDispatcherActive() {
     return `
       <tr>
         <td>${job.id || "-"}</td>
-        <td>${job.companyName || "-"}</td>
-        <td>${job.jobType || "-"}</td>
-        <td>${route}</td>
-        <td>${job.status || "-"}</td>
+        <td>
+          <div class="dispatcher-row-primary">${job.companyName || "-"}</div>
+          <div class="dispatcher-row-badges">${dispatcherJobBadges(job)}</div>
+        </td>
+        <td>${titleize(job.jobType || "-")}</td>
+        <td>
+          <div class="dispatcher-row-primary">${route}</div>
+          <div class="dispatcher-row-secondary">${job.routeReference || uiText.noData}</div>
+        </td>
+        <td>${dispatcherStatusMarkup(job.status)}</td>
         <td>${progress}</td>
       </tr>
     `;
@@ -559,11 +798,17 @@ function renderDispatcherHistory() {
     return `
       <tr>
         <td>${job.id || "-"}</td>
-        <td>${job.companyName || "-"}</td>
-        <td>${job.jobType || "-"}</td>
-        <td>${route}</td>
+        <td>
+          <div class="dispatcher-row-primary">${job.companyName || "-"}</div>
+          <div class="dispatcher-row-badges">${dispatcherJobBadges(job)}</div>
+        </td>
+        <td>${titleize(job.jobType || "-")}</td>
+        <td>
+          <div class="dispatcher-row-primary">${route}</div>
+          <div class="dispatcher-row-secondary">${formatPathReference(job.saveReference)}</div>
+        </td>
         <td>${formatCurrency(job.totalReward || 0)}</td>
-        <td>${job.status || "-"}</td>
+        <td>${dispatcherStatusMarkup(job.status)}</td>
       </tr>
     `;
   });
@@ -592,6 +837,18 @@ function switchDispatcherTab(tab) {
 
 async function refreshDispatcherData() {
   const filter = dispatcherFilterPayload();
+  state.dispatcher.generation = await safeInvoke(
+    "dispatcher_restore_jobs_for_last_quicksave",
+    {},
+    { fallback: null, silent: true }
+  );
+  if (!state.dispatcher.generation) {
+    state.dispatcher.generation = await safeInvoke(
+      "dispatcher_get_generation_status",
+      {},
+      { fallback: null, silent: true }
+    );
+  }
   state.dispatcher.overview = await safeInvoke("dispatcher_get_dispatcher_overview", {}, { fallback: null, silent: true });
   state.dispatcher.marketJobs = await safeInvoke(
     "dispatcher_get_market_jobs",
@@ -609,6 +866,15 @@ async function refreshDispatcherData() {
       { jobId: state.dispatcher.selectedJobId },
       { fallback: null, silent: true }
     );
+    state.dispatcher.jobLink = await safeInvoke(
+      "ets_get_job_link_status",
+      { vtcJobId: state.dispatcher.selectedJobId },
+      { fallback: null, silent: true }
+    );
+    if (!state.dispatcher.selectedJob) {
+      state.dispatcher.selectedJobId = null;
+      state.dispatcher.jobLink = null;
+    }
   } else if (state.dispatcher.marketJobs.length > 0) {
     state.dispatcher.selectedJobId = state.dispatcher.marketJobs[0].id;
     state.dispatcher.selectedJob = await safeInvoke(
@@ -616,8 +882,14 @@ async function refreshDispatcherData() {
       { jobId: state.dispatcher.selectedJobId },
       { fallback: null, silent: true }
     );
+    state.dispatcher.jobLink = await safeInvoke(
+      "ets_get_job_link_status",
+      { vtcJobId: state.dispatcher.selectedJobId },
+      { fallback: null, silent: true }
+    );
   } else {
     state.dispatcher.selectedJob = null;
+    state.dispatcher.jobLink = null;
   }
 }
 
@@ -628,6 +900,11 @@ async function handleDispatcherSelectJob(event) {
   state.dispatcher.selectedJob = await safeInvoke(
     "dispatcher_get_job_details",
     { jobId: state.dispatcher.selectedJobId },
+    { fallback: null, silent: true }
+  );
+  state.dispatcher.jobLink = await safeInvoke(
+    "ets_get_job_link_status",
+    { vtcJobId: state.dispatcher.selectedJobId },
     { fallback: null, silent: true }
   );
   renderDispatcherMarket();
@@ -651,11 +928,112 @@ async function handleDispatcherResetFilters() {
 async function handleDispatcherAcceptJob() {
   if (!state.dispatcher.selectedJobId) return;
   try {
-    const details = await invokeStrict("dispatcher_accept_job", { jobId: state.dispatcher.selectedJobId });
+    const selected = state.dispatcher.selectedJob?.job || state.dispatcher.selectedJob || {};
+    const command = selected.sourceType === "generated"
+      ? "dispatcher_accept_generated_job"
+      : "dispatcher_accept_job";
+    const details = await invokeStrict(command, { jobId: state.dispatcher.selectedJobId });
     state.dispatcher.selectedJob = details;
     await refreshDispatcherData();
     renderDispatcher();
     showToast(await t("career_mode.dispatcher.toast_job_accepted"), "success");
+  } catch (error) {
+    showToast(await resolveErrorMessage(error), "error");
+  }
+}
+
+function dispatcherGenerationConfigPayload() {
+  const intervalMinutes = Number(getInputValue("cmDispatcherGenerationIntervalInput"));
+  const maxOpenJobs = Number(getInputValue("cmDispatcherGenerationMaxOpenInput"));
+  return {
+    intervalMinutes: Number.isFinite(intervalMinutes) && intervalMinutes > 0 ? intervalMinutes : null,
+    maxOpenJobs: Number.isFinite(maxOpenJobs) && maxOpenJobs > 0 ? maxOpenJobs : null,
+  };
+}
+
+async function handleDispatcherPersistGenerationConfig() {
+  try {
+    await invokeStrict("dispatcher_generate_universal_jobs", {
+      force: false,
+      config: dispatcherGenerationConfigPayload(),
+    });
+    await refreshDispatcherData();
+    renderDispatcher();
+  } catch (error) {
+    showToast(await resolveErrorMessage(error), "error");
+  }
+}
+
+async function handleDispatcherGenerateNow() {
+  try {
+    state.dispatcher.generation = await invokeStrict("dispatcher_generate_universal_jobs", {
+      force: true,
+      config: dispatcherGenerationConfigPayload(),
+    });
+    await refreshDispatcherData();
+    renderDispatcher();
+    showToast(await t("career_mode.dispatcher.toast_jobs_generated"), "success");
+  } catch (error) {
+    showToast(await resolveErrorMessage(error), "error");
+  }
+}
+
+async function handleDispatcherCleanup() {
+  try {
+    state.dispatcher.generation = await invokeStrict("dispatcher_cleanup_expired_jobs", {});
+    await refreshDispatcherData();
+    renderDispatcher();
+    showToast(await t("career_mode.dispatcher.toast_cleanup_complete"), "success");
+  } catch (error) {
+    showToast(await resolveErrorMessage(error), "error");
+  }
+}
+
+async function handleDispatcherMarkSynced() {
+  if (!state.dispatcher.selectedJobId) return;
+  try {
+    const selected = state.dispatcher.selectedJob?.job || state.dispatcher.selectedJob || {};
+    state.dispatcher.selectedJob = await invokeStrict("dispatcher_mark_job_synced_to_ets2", {
+      jobId: state.dispatcher.selectedJobId,
+      routeReference: selected.routeReference || null,
+    });
+    await refreshDispatcherData();
+    renderDispatcher();
+    showToast(await t("career_mode.dispatcher.toast_job_synced"), "success");
+  } catch (error) {
+    showToast(await resolveErrorMessage(error), "error");
+  }
+}
+
+async function handleDispatcherPrepareEtsLink() {
+  if (!state.dispatcher.selectedJobId) return;
+  try {
+    state.dispatcher.jobLink = await invokeStrict("ets_prepare_job_link", {
+      vtcJobId: state.dispatcher.selectedJobId,
+      profileId: "",
+    });
+    await refreshDispatcherData();
+    renderDispatcher();
+    showToast(await t("career_mode.dispatcher.toast_link_prepared"), "success");
+  } catch (error) {
+    showToast(await resolveErrorMessage(error), "error");
+  }
+}
+
+async function handleDispatcherWriteQuicksave() {
+  if (!state.dispatcher.selectedJobId) return;
+  try {
+    if (!state.dispatcher.jobLink?.linkId) {
+      state.dispatcher.jobLink = await invokeStrict("ets_get_job_link_status", {
+        vtcJobId: state.dispatcher.selectedJobId,
+      });
+    }
+    state.dispatcher.jobLink = await invokeStrict("ets_write_job_to_quicksave", {
+      linkId: state.dispatcher.jobLink.linkId,
+    });
+    await refreshDispatcherData();
+    renderDispatcher();
+    showToast(await t("career_mode.dispatcher.toast_quicksave_load_required"), "success");
   } catch (error) {
     showToast(await resolveErrorMessage(error), "error");
   }
@@ -906,8 +1284,29 @@ function applyDispatcherHandlers() {
   document.getElementById("cmDispatcherAcceptJobBtn")?.addEventListener("click", () => {
     void handleDispatcherAcceptJob();
   });
+  document.getElementById("cmDispatcherPrepareEtsLinkBtn")?.addEventListener("click", () => {
+    void handleDispatcherPrepareEtsLink();
+  });
+  document.getElementById("cmDispatcherWriteQuicksaveBtn")?.addEventListener("click", () => {
+    void handleDispatcherWriteQuicksave();
+  });
+  document.getElementById("cmDispatcherMarkSyncedBtn")?.addEventListener("click", () => {
+    void handleDispatcherMarkSynced();
+  });
   document.getElementById("cmDispatcherSendOfferBtn")?.addEventListener("click", () => {
     void handleDispatcherSendOffer();
+  });
+  document.getElementById("cmDispatcherGenerateNowBtn")?.addEventListener("click", () => {
+    void handleDispatcherGenerateNow();
+  });
+  document.getElementById("cmDispatcherCleanupBtn")?.addEventListener("click", () => {
+    void handleDispatcherCleanup();
+  });
+  document.getElementById("cmDispatcherGenerationIntervalInput")?.addEventListener("change", () => {
+    void handleDispatcherPersistGenerationConfig();
+  });
+  document.getElementById("cmDispatcherGenerationMaxOpenInput")?.addEventListener("change", () => {
+    void handleDispatcherPersistGenerationConfig();
   });
   document.getElementById("cmDispatcherOffersBody")?.addEventListener("click", (event) => {
     void handleDispatcherOfferActions(event);
@@ -926,6 +1325,7 @@ function applySettingsHandlers() {
 }
 
 let refreshTimer = null;
+let dispatcherClockTimer = null;
 
 function stopRefreshLoop() {
   if (!refreshTimer) return;
@@ -943,6 +1343,34 @@ function startRefreshLoop() {
   }, 12000);
 }
 
+function startDispatcherClock() {
+  if (dispatcherClockTimer) return;
+  dispatcherClockTimer = setInterval(() => {
+    renderDispatcherOverview();
+    renderDispatcherMarket();
+    renderDispatcherDetails();
+  }, 1000);
+}
+
+function registerDispatcherEventHandlers() {
+  if (!hasTauri || window.__dispatcher_listeners_registered) return;
+  window.__dispatcher_listeners_registered = true;
+
+  listen("career://dispatcher_changed", async (event) => {
+    state.dispatcher.generation = event.payload || null;
+    await refreshDispatcherData();
+    renderDispatcher();
+  }).catch(console.error);
+  listen("vtc://dispatcher/job_link_updated", async () => {
+    await refreshDispatcherData();
+    renderDispatcher();
+  }).catch(console.error);
+  listen("vtc://dispatcher/jobs_updated", async () => {
+    await refreshDispatcherData();
+    renderDispatcher();
+  }).catch(console.error);
+}
+
 async function loadUiText() {
   uiText.online = await t("career_mode.online");
   uiText.offline = await t("career_mode.offline");
@@ -956,6 +1384,26 @@ async function loadUiText() {
   uiText.dispatcherAccept = await t("career_mode.dispatcher.action_accept");
   uiText.dispatcherReject = await t("career_mode.dispatcher.action_reject");
   uiText.dispatcherCancel = await t("career_mode.dispatcher.action_cancel");
+  uiText.dispatcherBadgeGenerated = await t("career_mode.dispatcher.badge_generated");
+  uiText.dispatcherBadgeOffer = await t("career_mode.dispatcher.badge_offer");
+  uiText.dispatcherBadgeContract = await t("career_mode.dispatcher.badge_contract");
+  uiText.dispatcherBadgeImported = await t("career_mode.dispatcher.badge_imported");
+  uiText.dispatcherBadgeActive = await t("career_mode.dispatcher.badge_active");
+  uiText.dispatcherBadgePending = await t("career_mode.dispatcher.badge_pending");
+  uiText.dispatcherBadgeRequiresLoad = await t("career_mode.dispatcher.badge_requires_load");
+  uiText.dispatcherBadgeSynced = await t("career_mode.dispatcher.badge_synced");
+  uiText.dispatcherBadgeCompleted = await t("career_mode.dispatcher.badge_completed");
+  uiText.dispatcherBadgeError = await t("career_mode.dispatcher.badge_error");
+  uiText.dispatcherBadgePendingRoute = await t("career_mode.dispatcher.badge_pending_route");
+  uiText.dispatcherBadgeSaveLinked = await t("career_mode.dispatcher.badge_save_linked");
+  uiText.dispatcherNoSaveLink = await t("career_mode.dispatcher.no_save_link");
+  uiText.dispatcherUnsynced = await t("career_mode.dispatcher.unsynced");
+  uiText.dispatcherExpired = await t("career_mode.dispatcher.expired");
+  uiText.dispatcherPrepareLink = await t("career_mode.dispatcher.prepare_ets_link");
+  uiText.dispatcherWriteQuicksave = await t("career_mode.dispatcher.write_to_quicksave");
+  uiText.dispatcherIntervalLabel = await t("career_mode.dispatcher.generation_interval_short");
+  uiText.dispatcherPoolLabel = await t("career_mode.dispatcher.generation_pool_short");
+  uiText.dispatcherOpenLabel = await t("career_mode.dispatcher.generation_open_short");
 }
 
 async function refreshCareerTelemetryData() {
@@ -1228,9 +1676,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   applyDispatcherHandlers();
   switchDispatcherTab("market");
   applySettingsHandlers();
+  registerDispatcherEventHandlers();
   await initNavigation();
   registerActionHandlers();
 
   await refreshAllData();
   startRefreshLoop();
+  startDispatcherClock();
 });

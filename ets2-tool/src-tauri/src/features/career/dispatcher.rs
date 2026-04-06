@@ -1,8 +1,9 @@
 use std::collections::HashSet;
+use std::hash::{Hash, Hasher};
 
 use chrono::{Duration, Utc};
 use rusqlite::{Connection, OptionalExtension, params};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::features::economy::compensation_models::{
     BaseRateType, CargoType, CompanyPaymentTier, EquipmentType, JobCompensationInput,
@@ -10,6 +11,24 @@ use crate::features::economy::compensation_models::{
 };
 use crate::features::economy::compensation_service;
 use crate::features::economy;
+use crate::shared::sqlite_schema::ensure_columns;
+
+mod models;
+mod schema;
+
+pub use models::{
+    DispatcherCompanyContact, DispatcherCreateOfferInput, DispatcherGenerationConfigInput,
+    DispatcherGenerationRunResult, DispatcherGenerationStatus, DispatcherHistoryResponse,
+    DispatcherHistorySummary, DispatcherJobDetails, DispatcherJobFilter,
+    DispatcherJobsBySaveContextResponse, DispatcherMarketJob, DispatcherOffer, DispatcherOverview,
+    DispatcherRespondToCounterInput, DispatcherSaveContext,
+};
+use models::{
+    DispatcherGenerationConfigRow, DispatcherJobRow, DISPATCHER_ACTIVE_JOB_STATUSES,
+    DISPATCHER_ALL_JOB_STATUSES, DISPATCHER_BUSY_JOB_STATUSES, DISPATCHER_HISTORY_JOB_STATUSES,
+    DISPATCHER_MAX_GENERATION_BATCH, DISPATCHER_OPEN_JOB_STATUSES,
+};
+use schema::{ensure_dispatcher_generation_config, ensure_dispatcher_tables};
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -266,9 +285,7 @@ pub fn ensure_tables(conn: &Connection) -> Result<(), String> {
     .map_err(|e| e.to_string())?;
 
     ensure_job_columns(conn)?;
-    ensure_dispatcher_tables(conn)?;
-    seed_dispatcher_contacts(conn)?;
-    ensure_dispatcher_market_jobs(conn, 16)?;
+    prepare_dispatcher_system(conn)?;
 
     let open_jobs: i64 = conn
         .query_row(
@@ -625,7 +642,6 @@ pub fn complete_job(conn: &Connection, job_id: &str) -> Result<Job, String> {
 }
 
 fn ensure_job_columns(conn: &Connection) -> Result<(), String> {
-    let existing = existing_columns(conn, "career_jobs")?;
     let required = [
         (
             "company_id",
@@ -644,199 +660,8 @@ fn ensure_job_columns(conn: &Connection) -> Result<(), String> {
             "TEXT NOT NULL DEFAULT 'DE'",
         ),
     ];
-
-    for (column, definition) in required {
-        if !existing.contains(column) {
-            conn.execute(
-                &format!("ALTER TABLE career_jobs ADD COLUMN {column} {definition}"),
-                [],
-            )
-            .map_err(|e| e.to_string())?;
-        }
-    }
-
+    ensure_columns(conn, "career_jobs", &required)?;
     Ok(())
-}
-
-fn existing_columns(conn: &Connection, table: &str) -> Result<HashSet<String>, String> {
-    let mut stmt = conn
-        .prepare(&format!("PRAGMA table_info({table})"))
-        .map_err(|e| e.to_string())?;
-    let rows = stmt
-        .query_map([], |row| row.get::<_, String>(1))
-        .map_err(|e| e.to_string())?;
-
-    let mut columns = HashSet::new();
-    for row in rows {
-        columns.insert(row.map_err(|e| e.to_string())?);
-    }
-
-    Ok(columns)
-}
-
-const DISPATCHER_MARKET_TARGET: usize = 24;
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct DispatcherJobFilter {
-    pub search: Option<String>,
-    pub job_type: Option<String>,
-    pub company_id: Option<String>,
-    pub country: Option<String>,
-    pub cargo_type: Option<String>,
-    pub urgency: Option<String>,
-    pub equipment_type: Option<String>,
-    pub payment_tier: Option<String>,
-    pub status: Option<String>,
-    pub min_distance_km: Option<f64>,
-    pub max_distance_km: Option<f64>,
-    pub min_rate_per_km: Option<f64>,
-    pub max_rate_per_km: Option<f64>,
-    pub min_total_reward: Option<i64>,
-    pub max_total_reward: Option<i64>,
-    pub sort_by: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct DispatcherMarketJob {
-    pub id: String,
-    pub company_id: String,
-    pub company_name: String,
-    pub job_type: String,
-    pub cargo_type: String,
-    pub origin_city: String,
-    pub origin_country: String,
-    pub destination_city: String,
-    pub destination_country: String,
-    pub distance_km: f64,
-    pub cargo_mass_kg: f64,
-    pub urgency_level: String,
-    pub difficulty_level: String,
-    pub equipment_type_required: String,
-    pub trailer_type_required: Option<String>,
-    pub base_rate_per_km: f64,
-    pub calculated_rate_per_km: f64,
-    pub total_reward: i64,
-    pub payment_tier_snapshot: String,
-    pub company_reputation: u16,
-    pub country_multiplier_snapshot: f64,
-    pub reputation_multiplier_snapshot: f64,
-    pub cargo_multiplier_snapshot: f64,
-    pub urgency_multiplier_snapshot: f64,
-    pub equipment_multiplier_snapshot: f64,
-    pub market_variation_snapshot: f64,
-    pub customer_multiplier_snapshot: f64,
-    pub fuel_cost_estimate: i64,
-    pub profit_estimate: i64,
-    pub risk_note: Option<String>,
-    pub bonus_note: Option<String>,
-    pub expires_at_utc: Option<String>,
-    pub status: String,
-    pub progress_km: f64,
-}
-
-#[derive(Debug, Clone, Serialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct DispatcherJobDetails {
-    pub job: DispatcherMarketJob,
-    pub payout_drivers: Vec<String>,
-}
-
-#[derive(Debug, Clone, Serialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct DispatcherHistorySummary {
-    pub total_completed: i64,
-    pub total_failed: i64,
-    pub total_rejected: i64,
-    pub revenue: i64,
-    pub avg_rate_per_km: f64,
-    pub avg_distance_km: f64,
-    pub punctuality: f64,
-    pub quality: f64,
-}
-
-#[derive(Debug, Clone, Serialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct DispatcherHistoryResponse {
-    pub summary: DispatcherHistorySummary,
-    pub items: Vec<DispatcherMarketJob>,
-}
-
-#[derive(Debug, Clone, Serialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct DispatcherCompanyContact {
-    pub company_id: String,
-    pub company_name: String,
-    pub payment_tier: String,
-    pub payment_multiplier: f64,
-    pub customer_multiplier: f64,
-    pub reputation: u16,
-    pub reputation_multiplier: f64,
-    pub home_country_code: Option<String>,
-    pub country_multiplier: f64,
-    pub cargo_focus: Option<String>,
-    pub completed_jobs: i64,
-    pub failed_jobs: i64,
-    pub accepted_offers: i64,
-    pub rejected_offers: i64,
-    pub success_rate: f64,
-}
-
-#[derive(Debug, Clone, Serialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct DispatcherOffer {
-    pub id: String,
-    pub company_id: String,
-    pub company_name: String,
-    pub user_id: String,
-    pub offer_type: String,
-    pub requested_job_type: String,
-    pub requested_cargo_type: Option<String>,
-    pub requested_region: Option<String>,
-    pub proposed_rate_per_km: Option<f64>,
-    pub note: Option<String>,
-    pub equipment_type: Option<String>,
-    pub contract_scope: Option<String>,
-    pub status: String,
-    pub counter_rate_per_km: Option<f64>,
-    pub final_rate_per_km: Option<f64>,
-    pub response_reason: Option<String>,
-    pub linked_job_id: Option<String>,
-    pub expires_at_utc: Option<String>,
-    pub created_at_utc: String,
-    pub updated_at_utc: String,
-}
-
-#[derive(Debug, Clone, Serialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct DispatcherOverview {
-    pub open_market_jobs: i64,
-    pub active_jobs: i64,
-    pub open_offers: i64,
-    pub accepted_contracts: i64,
-}
-
-#[derive(Debug, Clone, Deserialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct DispatcherCreateOfferInput {
-    pub company_id: String,
-    pub user_id: Option<String>,
-    pub offer_type: String,
-    pub requested_job_type: String,
-    pub requested_cargo_type: Option<String>,
-    pub requested_region: Option<String>,
-    pub proposed_rate_per_km: Option<f64>,
-    pub note: Option<String>,
-    pub equipment_type: Option<String>,
-    pub contract_scope: Option<String>,
-}
-
-#[derive(Debug, Clone, Deserialize, PartialEq)]
-#[serde(rename_all = "camelCase")]
-pub struct DispatcherRespondToCounterInput {
-    pub offer_id: String,
-    pub accept_counter: bool,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -1117,137 +942,6 @@ const DISPATCHER_TEMPLATES: [DispatcherTemplate; 12] = [
     },
 ];
 
-#[derive(Debug, Clone)]
-struct DispatcherJobRow {
-    id: String,
-    company_id: String,
-    company_name: String,
-    job_type: String,
-    cargo_type: String,
-    origin_city: String,
-    origin_country: String,
-    destination_city: String,
-    destination_country: String,
-    distance_km: f64,
-    cargo_mass_kg: f64,
-    urgency_level: String,
-    difficulty_level: String,
-    equipment_type_required: String,
-    trailer_type_required: Option<String>,
-    base_rate_per_km: f64,
-    calculated_rate_per_km: f64,
-    total_reward: i64,
-    payment_tier_snapshot: String,
-    payment_multiplier_snapshot: f64,
-    country_multiplier_snapshot: f64,
-    reputation_multiplier_snapshot: f64,
-    cargo_multiplier_snapshot: f64,
-    urgency_multiplier_snapshot: f64,
-    equipment_multiplier_snapshot: f64,
-    market_variation_snapshot: f64,
-    customer_multiplier_snapshot: f64,
-    company_reputation: i64,
-    fuel_cost_estimate: i64,
-    profit_estimate: i64,
-    risk_note: Option<String>,
-    bonus_note: Option<String>,
-    expires_at_utc: Option<String>,
-    status: String,
-    progress_km: f64,
-    created_at_utc: String,
-    updated_at_utc: String,
-}
-
-fn ensure_dispatcher_tables(conn: &Connection) -> Result<(), String> {
-    conn.execute_batch(
-        r#"
-        CREATE TABLE IF NOT EXISTS dispatcher_jobs (
-            id TEXT PRIMARY KEY,
-            company_id TEXT NOT NULL,
-            company_name TEXT NOT NULL,
-            job_type TEXT NOT NULL,
-            cargo_type TEXT NOT NULL,
-            origin_city TEXT NOT NULL,
-            origin_country TEXT NOT NULL,
-            destination_city TEXT NOT NULL,
-            destination_country TEXT NOT NULL,
-            distance_km REAL NOT NULL,
-            cargo_mass_kg REAL NOT NULL,
-            urgency_level TEXT NOT NULL,
-            difficulty_level TEXT NOT NULL,
-            equipment_type_required TEXT NOT NULL,
-            trailer_type_required TEXT,
-            base_rate_per_km REAL NOT NULL,
-            calculated_rate_per_km REAL NOT NULL,
-            total_reward INTEGER NOT NULL,
-            payment_tier_snapshot TEXT NOT NULL,
-            payment_multiplier_snapshot REAL NOT NULL,
-            country_multiplier_snapshot REAL NOT NULL,
-            reputation_multiplier_snapshot REAL NOT NULL,
-            cargo_multiplier_snapshot REAL NOT NULL,
-            urgency_multiplier_snapshot REAL NOT NULL,
-            equipment_multiplier_snapshot REAL NOT NULL,
-            market_variation_snapshot REAL NOT NULL,
-            customer_multiplier_snapshot REAL NOT NULL,
-            company_reputation INTEGER NOT NULL,
-            fuel_cost_estimate INTEGER NOT NULL DEFAULT 0,
-            profit_estimate INTEGER NOT NULL DEFAULT 0,
-            risk_note TEXT,
-            bonus_note TEXT,
-            expires_at_utc TEXT,
-            status TEXT NOT NULL,
-            progress_km REAL NOT NULL DEFAULT 0,
-            created_at_utc TEXT NOT NULL,
-            updated_at_utc TEXT NOT NULL
-        );
-
-        CREATE INDEX IF NOT EXISTS idx_dispatcher_jobs_status ON dispatcher_jobs(status, created_at_utc DESC);
-        CREATE INDEX IF NOT EXISTS idx_dispatcher_jobs_company ON dispatcher_jobs(company_id, status);
-
-        CREATE TABLE IF NOT EXISTS dispatcher_offers (
-            id TEXT PRIMARY KEY,
-            company_id TEXT NOT NULL,
-            company_name TEXT NOT NULL,
-            user_id TEXT NOT NULL,
-            offer_type TEXT NOT NULL,
-            requested_job_type TEXT NOT NULL,
-            requested_cargo_type TEXT,
-            requested_region TEXT,
-            proposed_rate_per_km REAL,
-            note TEXT,
-            equipment_type TEXT,
-            contract_scope TEXT,
-            status TEXT NOT NULL,
-            counter_rate_per_km REAL,
-            final_rate_per_km REAL,
-            response_reason TEXT,
-            linked_job_id TEXT,
-            created_at_utc TEXT NOT NULL,
-            updated_at_utc TEXT NOT NULL,
-            expires_at_utc TEXT
-        );
-
-        CREATE INDEX IF NOT EXISTS idx_dispatcher_offers_status ON dispatcher_offers(status, created_at_utc DESC);
-
-        CREATE TABLE IF NOT EXISTS dispatcher_contracts (
-            id TEXT PRIMARY KEY,
-            company_id TEXT NOT NULL,
-            user_id TEXT NOT NULL,
-            contract_type TEXT NOT NULL,
-            agreed_rate_modifier REAL NOT NULL,
-            preferred_cargo_type TEXT,
-            region_scope TEXT,
-            active_from_utc TEXT NOT NULL,
-            active_until_utc TEXT,
-            status TEXT NOT NULL
-        );
-        "#,
-    )
-    .map_err(|e| e.to_string())?;
-
-    Ok(())
-}
-
 fn seed_dispatcher_contacts(conn: &Connection) -> Result<(), String> {
     for template in DISPATCHER_TEMPLATES {
         compensation_service::upsert_company_payment_profile(
@@ -1266,58 +960,429 @@ fn seed_dispatcher_contacts(conn: &Connection) -> Result<(), String> {
     Ok(())
 }
 
-fn ensure_dispatcher_market_jobs(conn: &Connection, target: usize) -> Result<(), String> {
-    expire_dispatcher_market_jobs(conn)?;
+fn prepare_dispatcher_system(conn: &Connection) -> Result<(), String> {
+    ensure_dispatcher_tables(conn)?;
+    seed_dispatcher_contacts(conn)?;
+    Ok(())
+}
 
-    let open: i64 = conn
-        .query_row(
-            "SELECT COUNT(*) FROM dispatcher_jobs WHERE status = 'open'",
-            [],
-            |row| row.get(0),
+fn load_dispatcher_generation_config(conn: &Connection) -> Result<DispatcherGenerationConfigRow, String> {
+    ensure_dispatcher_generation_config(conn)?;
+    conn.query_row(
+        r#"
+        SELECT interval_minutes, max_open_jobs, last_generated_at_utc, last_cleanup_at_utc
+        FROM dispatcher_generation_config
+        WHERE id = 1
+        "#,
+        [],
+        |row| {
+            Ok(DispatcherGenerationConfigRow {
+                interval_minutes: row.get(0)?,
+                max_open_jobs: row.get(1)?,
+                last_generated_at_utc: row.get(2)?,
+                last_cleanup_at_utc: row.get(3)?,
+            })
+        },
+    )
+    .map_err(|e| e.to_string())
+}
+
+fn clamp_dispatcher_interval_minutes(value: i64) -> i64 {
+    match value {
+        ..=5 => 5,
+        6..=10 => 10,
+        _ => 15,
+    }
+}
+
+fn clamp_dispatcher_max_open_jobs(value: i64) -> i64 {
+    value.clamp(12, 36)
+}
+
+fn apply_dispatcher_generation_config(
+    conn: &Connection,
+    config: Option<DispatcherGenerationConfigInput>,
+) -> Result<DispatcherGenerationConfigRow, String> {
+    ensure_dispatcher_generation_config(conn)?;
+
+    if let Some(config) = config {
+        let current = load_dispatcher_generation_config(conn)?;
+        let interval_minutes = config
+            .interval_minutes
+            .map(clamp_dispatcher_interval_minutes)
+            .unwrap_or(current.interval_minutes);
+        let max_open_jobs = config
+            .max_open_jobs
+            .map(clamp_dispatcher_max_open_jobs)
+            .unwrap_or(current.max_open_jobs);
+        conn.execute(
+            r#"
+            UPDATE dispatcher_generation_config
+            SET interval_minutes = ?1, max_open_jobs = ?2
+            WHERE id = 1
+            "#,
+            params![interval_minutes, max_open_jobs],
+        )
+        .map_err(|e| e.to_string())?;
+    }
+
+    load_dispatcher_generation_config(conn)
+}
+
+fn count_dispatcher_jobs_by_status(
+    conn: &Connection,
+    statuses: &[&str],
+    save_context: &DispatcherSaveContext,
+    source_type: Option<&str>,
+) -> Result<i64, String> {
+    if !save_context.is_ready() {
+        return Ok(0);
+    }
+
+    let in_clause = statuses
+        .iter()
+        .map(|status| format!("'{}'", status))
+        .collect::<Vec<_>>()
+        .join(", ");
+    let source_clause = source_type
+        .map(|value| format!(" AND source_type = '{}'", value))
+        .unwrap_or_default();
+    let sql = format!(
+        "
+        SELECT COUNT(*)
+        FROM dispatcher_jobs
+        WHERE status IN ({in_clause})
+          AND (?1 IS NULL OR profile_reference = ?1)
+          AND (?2 IS NULL OR save_reference = ?2)
+          {source_clause}
+        "
+    );
+
+    conn.query_row(
+        &sql,
+        params![
+            save_context.profile_reference.as_deref(),
+            save_context.save_reference.as_deref()
+        ],
+        |row| row.get(0),
+    )
+    .map_err(|e| e.to_string())
+}
+
+fn count_dispatcher_company_jobs(
+    conn: &Connection,
+    company_id: &str,
+    statuses: &[&str],
+    save_context: &DispatcherSaveContext,
+) -> Result<i64, String> {
+    if !save_context.is_ready() {
+        return Ok(0);
+    }
+
+    let in_clause = statuses
+        .iter()
+        .map(|status| format!("'{}'", status))
+        .collect::<Vec<_>>()
+        .join(", ");
+    let sql = format!(
+        "
+        SELECT COUNT(*)
+        FROM dispatcher_jobs
+        WHERE company_id = ?1
+          AND status IN ({in_clause})
+          AND (?2 IS NULL OR profile_reference = ?2)
+          AND (?3 IS NULL OR save_reference = ?3)
+        "
+    );
+
+    conn.query_row(
+        &sql,
+        params![
+            company_id,
+            save_context.profile_reference.as_deref(),
+            save_context.save_reference.as_deref()
+        ],
+        |row| row.get(0),
+    )
+    .map_err(|e| e.to_string())
+}
+
+fn dispatcher_generation_due(last_generated_at_utc: Option<&str>, interval_minutes: i64) -> bool {
+    let Some(last_generated_at_utc) = last_generated_at_utc else {
+        return true;
+    };
+    let Some(last_generated_at) = parse_dispatcher_datetime(last_generated_at_utc) else {
+        return true;
+    };
+    Utc::now() >= last_generated_at + Duration::minutes(interval_minutes.max(5))
+}
+
+fn dispatcher_generation_batch_size(max_open_jobs: i64) -> usize {
+    if max_open_jobs <= 12 {
+        3
+    } else {
+        DISPATCHER_MAX_GENERATION_BATCH
+    }
+}
+
+fn parse_dispatcher_datetime(value: &str) -> Option<chrono::DateTime<Utc>> {
+    chrono::DateTime::parse_from_rfc3339(value)
+        .ok()
+        .map(|date_time| date_time.with_timezone(&Utc))
+}
+
+fn build_dispatcher_generation_status(
+    conn: &Connection,
+    save_context: &DispatcherSaveContext,
+) -> Result<DispatcherGenerationStatus, String> {
+    let config = load_dispatcher_generation_config(conn)?;
+    let open_generated_jobs = count_dispatcher_jobs_by_status(
+        conn,
+        DISPATCHER_OPEN_JOB_STATUSES,
+        save_context,
+        Some("generated"),
+    )?;
+    let open_total_jobs =
+        count_dispatcher_jobs_by_status(conn, DISPATCHER_OPEN_JOB_STATUSES, save_context, None)?;
+    let next_generation_at_utc = if !save_context.is_ready() {
+        None
+    } else if open_total_jobs == 0 || config.last_generated_at_utc.is_none() {
+        Some(Utc::now().to_rfc3339())
+    } else {
+        config
+            .last_generated_at_utc
+            .as_deref()
+            .and_then(parse_dispatcher_datetime)
+            .map(|last| {
+                (last + Duration::minutes(config.interval_minutes.max(5))).to_rfc3339()
+            })
+    };
+
+    Ok(DispatcherGenerationStatus {
+        interval_minutes: config.interval_minutes,
+        max_open_jobs: config.max_open_jobs,
+        open_generated_jobs,
+        open_total_jobs,
+        last_generated_at_utc: config.last_generated_at_utc,
+        last_cleanup_at_utc: config.last_cleanup_at_utc,
+        next_generation_at_utc,
+        current_context: save_context.clone(),
+        save_link_active: save_context.is_ready(),
+    })
+}
+
+fn dispatcher_job_type_variants(template: DispatcherTemplate) -> Vec<&'static str> {
+    match template.equipment_type_required {
+        "quick_job" => vec!["quick_job"],
+        "own_truck" => vec!["freight_market", "company_contract"],
+        "own_truck_trailer" => {
+            if matches!(template.payment_tier, CompanyPaymentTier::Premium | CompanyPaymentTier::Elite)
+            {
+                vec!["cargo_market", "company_contract", "premium_special"]
+            } else {
+                vec!["cargo_market", "company_contract"]
+            }
+        }
+        _ => vec![template.job_type],
+    }
+}
+
+fn dispatcher_job_signature(
+    company_id: &str,
+    origin_city: &str,
+    destination_city: &str,
+    cargo_type: &str,
+    job_type: &str,
+) -> String {
+    format!(
+        "{}|{}|{}|{}|{}",
+        company_id.to_ascii_lowercase(),
+        origin_city.to_ascii_lowercase(),
+        destination_city.to_ascii_lowercase(),
+        cargo_type.to_ascii_lowercase(),
+        job_type.to_ascii_lowercase()
+    )
+}
+
+fn build_dispatcher_route_reference(
+    company_id: &str,
+    origin_country: &str,
+    origin_city: &str,
+    destination_country: &str,
+    destination_city: &str,
+    job_type: &str,
+) -> String {
+    let slug = |value: &str| {
+        value
+            .chars()
+            .map(|character| match character {
+                'a'..='z' | '0'..='9' => character,
+                'A'..='Z' => character.to_ascii_lowercase(),
+                _ => '_',
+            })
+            .collect::<String>()
+    };
+
+    format!(
+        "{}__{}_{}__{}_{}__{}",
+        slug(company_id),
+        slug(origin_country),
+        slug(origin_city),
+        slug(destination_country),
+        slug(destination_city),
+        slug(job_type)
+    )
+}
+
+fn dispatcher_average_speed_kmh(urgency: Urgency) -> f64 {
+    match urgency {
+        Urgency::Express => 74.0,
+        Urgency::Priority => 68.0,
+        Urgency::Normal => 64.0,
+    }
+}
+
+fn load_dispatcher_open_signatures(
+    conn: &Connection,
+    save_context: &DispatcherSaveContext,
+) -> Result<HashSet<String>, String> {
+    if !save_context.is_ready() {
+        return Ok(HashSet::new());
+    }
+
+    let mut stmt = conn
+        .prepare(
+            r#"
+            SELECT company_id, origin_city, destination_city, cargo_type, job_type
+            FROM dispatcher_jobs
+            WHERE status = 'open'
+              AND (?1 IS NULL OR profile_reference = ?1)
+              AND (?2 IS NULL OR save_reference = ?2)
+            "#,
+        )
+        .map_err(|e| e.to_string())?;
+    let rows = stmt
+        .query_map(
+            params![
+                save_context.profile_reference.as_deref(),
+                save_context.save_reference.as_deref()
+            ],
+            |row| {
+                let company_id: String = row.get(0)?;
+                let origin_city: String = row.get(1)?;
+                let destination_city: String = row.get(2)?;
+                let cargo_type: String = row.get(3)?;
+                let job_type: String = row.get(4)?;
+                Ok(dispatcher_job_signature(
+                    &company_id,
+                    &origin_city,
+                    &destination_city,
+                    &cargo_type,
+                    &job_type,
+                ))
+            },
         )
         .map_err(|e| e.to_string())?;
 
-    let needed = (target as i64 - open).max(0) as usize;
-    if needed == 0 {
-        return Ok(());
+    let mut signatures = HashSet::new();
+    for row in rows {
+        signatures.insert(row.map_err(|e| e.to_string())?);
+    }
+
+    Ok(signatures)
+}
+
+fn generate_dispatcher_jobs_for_context(
+    conn: &Connection,
+    save_context: &DispatcherSaveContext,
+    count: usize,
+) -> Result<usize, String> {
+    if !save_context.is_ready() || count == 0 {
+        return Ok(0);
     }
 
     let economy_state = economy::load_state(conn)?;
-    let seed = Utc::now().timestamp_millis().unsigned_abs() as usize;
-    for index in 0..needed {
-        let template = DISPATCHER_TEMPLATES[(seed + index) % DISPATCHER_TEMPLATES.len()];
+    let mut signatures = load_dispatcher_open_signatures(conn, save_context)?;
+    let base_seed = {
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        save_context.profile_reference.hash(&mut hasher);
+        save_context.save_reference.hash(&mut hasher);
+        save_context.save_session_id.hash(&mut hasher);
+        Utc::now().timestamp_millis().hash(&mut hasher);
+        hasher.finish()
+    };
+
+    let mut created = 0usize;
+    let max_attempts = (count * 12).max(DISPATCHER_TEMPLATES.len() * 4);
+
+    for attempt in 0..max_attempts {
+        if created >= count {
+            break;
+        }
+
+        let template_index = ((base_seed as usize) + attempt) % DISPATCHER_TEMPLATES.len();
+        let template = DISPATCHER_TEMPLATES[template_index];
+        let job_type_variants = dispatcher_job_type_variants(template);
+        let variant_index = ((base_seed as usize) + attempt) % job_type_variants.len();
+        let job_type = job_type_variants[variant_index];
+        let cargo_type = cargo_type_to_db(template.cargo_type);
+        let signature = dispatcher_job_signature(
+            template.company_id,
+            template.origin_city,
+            template.destination_city,
+            &cargo_type,
+            job_type,
+        );
+        if signatures.contains(&signature) {
+            continue;
+        }
+
         let pricing_input = JobCompensationInput {
             company_id: template.company_id.to_string(),
             company_name: Some(template.company_name.to_string()),
             distance_km: template.distance_km,
-            base_rate_type: base_rate_type_for_dispatcher_job(template.job_type),
+            base_rate_type: base_rate_type_for_dispatcher_job(job_type),
             equipment_type: equipment_type_for_dispatcher_job(template.equipment_type_required),
             cargo_type: template.cargo_type,
             urgency: template.urgency,
             origin_country_code: template.origin_country.to_string(),
             destination_country_code: template.destination_country.to_string(),
-            market_seed: (seed + index) as u64,
+            market_seed: base_seed + attempt as u64,
         };
         let pricing = compensation_service::calculate_job_compensation(conn, &pricing_input)?;
         let final_rate = pricing.final_rate_per_km
-            * dispatcher_job_type_modifier(template.job_type)
+            * dispatcher_job_type_modifier(job_type)
             * dispatcher_difficulty_modifier(template.difficulty_level);
         let total_reward = (template.distance_km * final_rate).round() as i64;
-        let fuel_cost = (template.distance_km * 0.31 * economy_state.diesel_price_per_liter).round() as i64;
+        let fuel_cost =
+            (template.distance_km * 0.31 * economy_state.diesel_price_per_liter).round() as i64;
         let toll_cost = (template.distance_km * economy_state.toll_per_km).round() as i64;
         let insurance_cost = (economy_state.insurance_daily_cost / 6).max(45);
         let profit_estimate = total_reward - fuel_cost - toll_cost - insurance_cost;
+        let estimated_duration_minutes =
+            ((template.distance_km / dispatcher_average_speed_kmh(template.urgency)) * 60.0)
+                .ceil() as i64
+                + 35;
         let now = Utc::now();
         let expires_at = now + Duration::hours(match template.urgency {
             Urgency::Express => 8,
             Urgency::Priority => 14,
             Urgency::Normal => 20,
         });
+        let route_reference = build_dispatcher_route_reference(
+            template.company_id,
+            template.origin_country,
+            template.origin_city,
+            template.destination_country,
+            template.destination_city,
+            job_type,
+        );
 
         conn.execute(
             r#"
             INSERT INTO dispatcher_jobs (
                 id,
+                source_type,
                 company_id,
                 company_name,
                 job_type,
@@ -1335,6 +1400,7 @@ fn ensure_dispatcher_market_jobs(conn: &Connection, target: usize) -> Result<(),
                 base_rate_per_km,
                 calculated_rate_per_km,
                 total_reward,
+                estimated_duration_minutes,
                 payment_tier_snapshot,
                 payment_multiplier_snapshot,
                 country_multiplier_snapshot,
@@ -1352,21 +1418,30 @@ fn ensure_dispatcher_market_jobs(conn: &Connection, target: usize) -> Result<(),
                 expires_at_utc,
                 status,
                 progress_km,
+                profile_reference,
+                save_reference,
+                quicksave_reference,
+                save_session_id,
+                route_reference,
+                ets2_job_link_status,
+                accepted_at_utc,
+                completed_at_utc,
                 created_at_utc,
                 updated_at_utc
             )
             VALUES (
-                ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17,
-                ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28, ?29, ?30, ?31, ?32, ?33,
-                'open', 0, ?34, ?34
+                ?1, 'generated', ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15,
+                ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27, ?28, ?29, ?30, ?31,
+                ?32, ?33, ?34, 'open', 0, ?35, ?36, ?37, ?38, ?39, 'pending_route', NULL, NULL,
+                ?40, ?40
             )
             "#,
             params![
-                build_dispatcher_job_id(template.company_id, seed, index),
+                build_dispatcher_job_id(template.company_id, (base_seed as usize) + attempt, created),
                 template.company_id,
                 template.company_name,
-                template.job_type,
-                cargo_type_to_db(template.cargo_type),
+                job_type,
+                cargo_type,
                 template.origin_city,
                 template.origin_country,
                 template.destination_city,
@@ -1380,6 +1455,7 @@ fn ensure_dispatcher_market_jobs(conn: &Connection, target: usize) -> Result<(),
                 pricing.base_rate_per_km,
                 final_rate,
                 total_reward,
+                estimated_duration_minutes,
                 payment_tier_to_db(template.payment_tier),
                 template.payment_multiplier,
                 pricing.country_multiplier,
@@ -1395,23 +1471,92 @@ fn ensure_dispatcher_market_jobs(conn: &Connection, target: usize) -> Result<(),
                 dispatcher_risk_note(template.difficulty_level, template.urgency_level),
                 dispatcher_bonus_note(template.payment_tier, template.equipment_type_required),
                 expires_at.to_rfc3339(),
+                save_context.profile_reference.as_deref(),
+                save_context.save_reference.as_deref(),
+                save_context.quicksave_reference.as_deref(),
+                save_context.save_session_id.as_deref(),
+                route_reference,
                 now.to_rfc3339(),
             ],
         )
         .map_err(|e| e.to_string())?;
+
+        signatures.insert(signature);
+        created += 1;
     }
 
-    Ok(())
+    Ok(created)
 }
 
-fn expire_dispatcher_market_jobs(conn: &Connection) -> Result<(), String> {
+fn ensure_dispatcher_market_jobs(
+    conn: &Connection,
+    save_context: &DispatcherSaveContext,
+    force: bool,
+) -> Result<DispatcherGenerationRunResult, String> {
+    let expired_count = expire_dispatcher_market_jobs(conn)?;
+    let config = load_dispatcher_generation_config(conn)?;
+    let mut market_changed = expired_count > 0;
+
+    if save_context.is_ready() {
+        let open_total = count_dispatcher_jobs_by_status(
+            conn,
+            DISPATCHER_OPEN_JOB_STATUSES,
+            save_context,
+            None,
+        )?;
+        let should_generate = force
+            || open_total == 0
+            || (open_total < config.max_open_jobs
+                && dispatcher_generation_due(
+                    config.last_generated_at_utc.as_deref(),
+                    config.interval_minutes,
+                ));
+
+        if should_generate && open_total < config.max_open_jobs {
+            let needed = (config.max_open_jobs - open_total).max(0) as usize;
+            let batch_size = dispatcher_generation_batch_size(config.max_open_jobs);
+            let generation_target = if force || open_total == 0 {
+                needed
+            } else {
+                needed.min(batch_size)
+            };
+            let created = generate_dispatcher_jobs_for_context(conn, save_context, generation_target)?;
+            if created > 0 {
+                let now = Utc::now().to_rfc3339();
+                conn.execute(
+                    "UPDATE dispatcher_generation_config SET last_generated_at_utc = ?1 WHERE id = 1",
+                    params![now],
+                )
+                .map_err(|e| e.to_string())?;
+                market_changed = true;
+            }
+        }
+    }
+
+    Ok(DispatcherGenerationRunResult {
+        status: build_dispatcher_generation_status(conn, save_context)?,
+        market_changed,
+    })
+}
+
+fn expire_dispatcher_market_jobs(conn: &Connection) -> Result<usize, String> {
     let now = Utc::now().to_rfc3339();
-    conn.execute(
-        "UPDATE dispatcher_jobs SET status = 'expired', updated_at_utc = ?1 WHERE status = 'open' AND expires_at_utc IS NOT NULL AND expires_at_utc < ?1",
-        [now],
-    )
-    .map_err(|e| e.to_string())?;
-    Ok(())
+    let expired = conn
+        .execute(
+            "UPDATE dispatcher_jobs SET status = 'expired', updated_at_utc = ?1 WHERE status = 'open' AND expires_at_utc IS NOT NULL AND expires_at_utc < ?1",
+            [now.clone()],
+        )
+        .map_err(|e| e.to_string())?;
+
+    if expired > 0 {
+        conn.execute(
+            "UPDATE dispatcher_generation_config SET last_cleanup_at_utc = ?1 WHERE id = 1",
+            params![now],
+        )
+        .map_err(|e| e.to_string())?;
+    }
+
+    Ok(expired)
 }
 
 fn dispatcher_risk_note(difficulty: &str, urgency: &str) -> Option<String> {
@@ -1450,59 +1595,96 @@ fn build_dispatcher_job_id(company_id: &str, seed: usize, index: usize) -> Strin
 
 fn map_dispatcher_job_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<DispatcherJobRow> {
     Ok(DispatcherJobRow {
-        id: row.get(0)?,
-        company_id: row.get(1)?,
-        company_name: row.get(2)?,
-        job_type: row.get(3)?,
-        cargo_type: row.get(4)?,
-        origin_city: row.get(5)?,
-        origin_country: row.get(6)?,
-        destination_city: row.get(7)?,
-        destination_country: row.get(8)?,
-        distance_km: row.get(9)?,
-        cargo_mass_kg: row.get(10)?,
-        urgency_level: row.get(11)?,
-        difficulty_level: row.get(12)?,
-        equipment_type_required: row.get(13)?,
-        trailer_type_required: row.get(14)?,
-        base_rate_per_km: row.get(15)?,
-        calculated_rate_per_km: row.get(16)?,
-        total_reward: row.get(17)?,
-        payment_tier_snapshot: row.get(18)?,
-        payment_multiplier_snapshot: row.get(19)?,
-        country_multiplier_snapshot: row.get(20)?,
-        reputation_multiplier_snapshot: row.get(21)?,
-        cargo_multiplier_snapshot: row.get(22)?,
-        urgency_multiplier_snapshot: row.get(23)?,
-        equipment_multiplier_snapshot: row.get(24)?,
-        market_variation_snapshot: row.get(25)?,
-        customer_multiplier_snapshot: row.get(26)?,
-        company_reputation: row.get(27)?,
-        fuel_cost_estimate: row.get(28)?,
-        profit_estimate: row.get(29)?,
-        risk_note: row.get(30)?,
-        bonus_note: row.get(31)?,
-        expires_at_utc: row.get(32)?,
-        status: row.get(33)?,
-        progress_km: row.get(34)?,
-        created_at_utc: row.get(35)?,
-        updated_at_utc: row.get(36)?,
+        id: row.get("id")?,
+        source_type: row.get("source_type")?,
+        company_id: row.get("company_id")?,
+        company_name: row.get("company_name")?,
+        job_type: row.get("job_type")?,
+        cargo_type: row.get("cargo_type")?,
+        origin_city: row.get("origin_city")?,
+        origin_country: row.get("origin_country")?,
+        destination_city: row.get("destination_city")?,
+        destination_country: row.get("destination_country")?,
+        distance_km: row.get("distance_km")?,
+        cargo_mass_kg: row.get("cargo_mass_kg")?,
+        urgency_level: row.get("urgency_level")?,
+        difficulty_level: row.get("difficulty_level")?,
+        equipment_type_required: row.get("equipment_type_required")?,
+        trailer_type_required: row.get("trailer_type_required")?,
+        base_rate_per_km: row.get("base_rate_per_km")?,
+        calculated_rate_per_km: row.get("calculated_rate_per_km")?,
+        total_reward: row.get("total_reward")?,
+        estimated_duration_minutes: row.get("estimated_duration_minutes")?,
+        payment_tier_snapshot: row.get("payment_tier_snapshot")?,
+        payment_multiplier_snapshot: row.get("payment_multiplier_snapshot")?,
+        country_multiplier_snapshot: row.get("country_multiplier_snapshot")?,
+        reputation_multiplier_snapshot: row.get("reputation_multiplier_snapshot")?,
+        cargo_multiplier_snapshot: row.get("cargo_multiplier_snapshot")?,
+        urgency_multiplier_snapshot: row.get("urgency_multiplier_snapshot")?,
+        equipment_multiplier_snapshot: row.get("equipment_multiplier_snapshot")?,
+        market_variation_snapshot: row.get("market_variation_snapshot")?,
+        customer_multiplier_snapshot: row.get("customer_multiplier_snapshot")?,
+        company_reputation: row.get("company_reputation")?,
+        fuel_cost_estimate: row.get("fuel_cost_estimate")?,
+        profit_estimate: row.get("profit_estimate")?,
+        risk_note: row.get("risk_note")?,
+        bonus_note: row.get("bonus_note")?,
+        expires_at_utc: row.get("expires_at_utc")?,
+        status: row.get("status")?,
+        progress_km: row.get("progress_km")?,
+        profile_reference: row.get("profile_reference")?,
+        save_reference: row.get("save_reference")?,
+        quicksave_reference: row.get("quicksave_reference")?,
+        save_session_id: row.get("save_session_id")?,
+        route_reference: row.get("route_reference")?,
+        ets2_job_link_status: row.get("ets2_job_link_status")?,
+        accepted_at_utc: row.get("accepted_at_utc")?,
+        completed_at_utc: row.get("completed_at_utc")?,
+        created_at_utc: row.get("created_at_utc")?,
+        updated_at_utc: row.get("updated_at_utc")?,
     })
 }
 
-fn load_dispatcher_job_by_id(conn: &Connection, job_id: &str) -> Result<Option<DispatcherJobRow>, String> {
+fn load_dispatcher_job_by_id(
+    conn: &Connection,
+    job_id: &str,
+    save_context: &DispatcherSaveContext,
+) -> Result<Option<DispatcherJobRow>, String> {
+    if !save_context.is_ready() {
+        return Ok(None);
+    }
+
     let mut stmt = conn
         .prepare(
             r#"
-            SELECT
-                id, company_id, company_name, job_type, cargo_type, origin_city, origin_country,
-                destination_city, destination_country, distance_km, cargo_mass_kg, urgency_level,
-                difficulty_level, equipment_type_required, trailer_type_required, base_rate_per_km,
-                calculated_rate_per_km, total_reward, payment_tier_snapshot, payment_multiplier_snapshot,
-                country_multiplier_snapshot, reputation_multiplier_snapshot, cargo_multiplier_snapshot,
-                urgency_multiplier_snapshot, equipment_multiplier_snapshot, market_variation_snapshot,
-                customer_multiplier_snapshot, company_reputation, fuel_cost_estimate, profit_estimate,
-                risk_note, bonus_note, expires_at_utc, status, progress_km, created_at_utc, updated_at_utc
+            SELECT *
+            FROM dispatcher_jobs
+            WHERE id = ?1
+              AND (?2 IS NULL OR profile_reference = ?2)
+              AND (?3 IS NULL OR save_reference = ?3)
+            "#,
+        )
+        .map_err(|e| e.to_string())?;
+    stmt.query_row(
+        params![
+            job_id,
+            save_context.profile_reference.as_deref(),
+            save_context.save_reference.as_deref()
+        ],
+        map_dispatcher_job_row,
+    )
+    .optional()
+    .map_err(|e| e.to_string())
+}
+
+fn load_dispatcher_job_by_id_any(
+    conn: &Connection,
+    job_id: &str,
+) -> Result<Option<DispatcherJobRow>, String> {
+    let mut stmt = conn
+        .prepare(
+            r#"
+            SELECT *
             FROM dispatcher_jobs
             WHERE id = ?1
             "#,
@@ -1517,7 +1699,12 @@ fn list_dispatcher_jobs_by_status(
     conn: &Connection,
     statuses: &[&str],
     limit: usize,
+    save_context: &DispatcherSaveContext,
 ) -> Result<Vec<DispatcherJobRow>, String> {
+    if !save_context.is_ready() {
+        return Ok(Vec::new());
+    }
+
     let in_clause = statuses
         .iter()
         .map(|status| format!("'{}'", status))
@@ -1525,31 +1712,37 @@ fn list_dispatcher_jobs_by_status(
         .join(", ");
     let sql = format!(
         "
-        SELECT
-            id, company_id, company_name, job_type, cargo_type, origin_city, origin_country,
-            destination_city, destination_country, distance_km, cargo_mass_kg, urgency_level,
-            difficulty_level, equipment_type_required, trailer_type_required, base_rate_per_km,
-            calculated_rate_per_km, total_reward, payment_tier_snapshot, payment_multiplier_snapshot,
-            country_multiplier_snapshot, reputation_multiplier_snapshot, cargo_multiplier_snapshot,
-            urgency_multiplier_snapshot, equipment_multiplier_snapshot, market_variation_snapshot,
-            customer_multiplier_snapshot, company_reputation, fuel_cost_estimate, profit_estimate,
-            risk_note, bonus_note, expires_at_utc, status, progress_km, created_at_utc, updated_at_utc
+        SELECT *
         FROM dispatcher_jobs
         WHERE status IN ({in_clause})
+          AND (?1 IS NULL OR profile_reference = ?1)
+          AND (?2 IS NULL OR save_reference = ?2)
         ORDER BY created_at_utc DESC
-        LIMIT ?1
+        LIMIT ?3
         "
     );
     let mut stmt = conn.prepare(&sql).map_err(|e| e.to_string())?;
     let rows = stmt
-        .query_map([limit as i64], map_dispatcher_job_row)
+        .query_map(
+            params![
+                save_context.profile_reference.as_deref(),
+                save_context.save_reference.as_deref(),
+                limit as i64
+            ],
+            map_dispatcher_job_row,
+        )
         .map_err(|e| e.to_string())?;
     rows.collect::<Result<Vec<_>, _>>().map_err(|e| e.to_string())
 }
 
 fn to_dispatcher_market_job(row: DispatcherJobRow) -> DispatcherMarketJob {
+    let payment_tier_snapshot = row.payment_tier_snapshot.clone();
+    let status = row.status.clone();
+    let distance_km = row.distance_km;
+
     DispatcherMarketJob {
         id: row.id,
+        source_type: row.source_type,
         company_id: row.company_id,
         company_name: row.company_name,
         job_type: row.job_type,
@@ -1558,7 +1751,7 @@ fn to_dispatcher_market_job(row: DispatcherJobRow) -> DispatcherMarketJob {
         origin_country: row.origin_country,
         destination_city: row.destination_city,
         destination_country: row.destination_country,
-        distance_km: row.distance_km,
+        distance_km,
         cargo_mass_kg: row.cargo_mass_kg,
         urgency_level: row.urgency_level,
         difficulty_level: row.difficulty_level,
@@ -1567,7 +1760,10 @@ fn to_dispatcher_market_job(row: DispatcherJobRow) -> DispatcherMarketJob {
         base_rate_per_km: row.base_rate_per_km,
         calculated_rate_per_km: row.calculated_rate_per_km,
         total_reward: row.total_reward,
-        payment_tier_snapshot: row.payment_tier_snapshot,
+        estimated_duration_minutes: row.estimated_duration_minutes,
+        payment_tier_snapshot,
+        payment_tier: row.payment_tier_snapshot,
+        company_multiplier_snapshot: row.payment_multiplier_snapshot,
         company_reputation: row.company_reputation.clamp(0, 1000) as u16,
         country_multiplier_snapshot: row.country_multiplier_snapshot,
         reputation_multiplier_snapshot: row.reputation_multiplier_snapshot,
@@ -1581,8 +1777,18 @@ fn to_dispatcher_market_job(row: DispatcherJobRow) -> DispatcherMarketJob {
         risk_note: row.risk_note,
         bonus_note: row.bonus_note,
         expires_at_utc: row.expires_at_utc,
-        status: row.status,
+        status,
+        dispatcher_status: row.status,
         progress_km: row.progress_km,
+        route_distance_km: distance_km,
+        profile_reference: row.profile_reference,
+        save_reference: row.save_reference,
+        quicksave_reference: row.quicksave_reference,
+        save_session_id: row.save_session_id,
+        route_reference: row.route_reference,
+        ets2_job_link_status: row.ets2_job_link_status,
+        accepted_at_utc: row.accepted_at_utc,
+        completed_at_utc: row.completed_at_utc,
     }
 }
 
@@ -1590,21 +1796,21 @@ fn matches_filter_text(value: &str, needle: &str) -> bool {
     value.to_ascii_lowercase().contains(&needle.to_ascii_lowercase())
 }
 
-pub fn dispatcher_get_dispatcher_overview(conn: &Connection) -> Result<DispatcherOverview, String> {
-    expire_dispatcher_market_jobs(conn)?;
+pub fn dispatcher_get_dispatcher_overview(
+    conn: &Connection,
+    save_context: &DispatcherSaveContext,
+) -> Result<DispatcherOverview, String> {
+    prepare_dispatcher_system(conn)?;
     expire_dispatcher_offers(conn)?;
-    ensure_dispatcher_market_jobs(conn, DISPATCHER_MARKET_TARGET)?;
+    let generation = ensure_dispatcher_market_jobs(conn, save_context, false)?;
 
-    let open_market_jobs: i64 = conn
-        .query_row("SELECT COUNT(*) FROM dispatcher_jobs WHERE status = 'open'", [], |r| r.get(0))
-        .map_err(|e| e.to_string())?;
-    let active_jobs: i64 = conn
-        .query_row(
-            "SELECT COUNT(*) FROM dispatcher_jobs WHERE status IN ('planned', 'accepted', 'in_transit', 'delayed', 'problematic')",
-            [],
-            |r| r.get(0),
-        )
-        .map_err(|e| e.to_string())?;
+    let open_market_jobs = generation.status.open_total_jobs;
+    let active_jobs = count_dispatcher_jobs_by_status(
+        conn,
+        DISPATCHER_ACTIVE_JOB_STATUSES,
+        save_context,
+        None,
+    )?;
     let open_offers: i64 = conn
         .query_row(
             "SELECT COUNT(*) FROM dispatcher_offers WHERE status IN ('draft', 'sent', 'under_review', 'countered')",
@@ -1628,13 +1834,189 @@ pub fn dispatcher_get_dispatcher_overview(conn: &Connection) -> Result<Dispatche
     })
 }
 
+pub fn dispatcher_get_generation_status(
+    conn: &Connection,
+    save_context: &DispatcherSaveContext,
+) -> Result<DispatcherGenerationStatus, String> {
+    prepare_dispatcher_system(conn)?;
+    build_dispatcher_generation_status(conn, save_context)
+}
+
+pub fn dispatcher_generate_universal_jobs(
+    conn: &Connection,
+    save_context: &DispatcherSaveContext,
+    force: bool,
+    config: Option<DispatcherGenerationConfigInput>,
+) -> Result<DispatcherGenerationStatus, String> {
+    prepare_dispatcher_system(conn)?;
+    apply_dispatcher_generation_config(conn, config)?;
+    Ok(ensure_dispatcher_market_jobs(conn, save_context, force)?.status)
+}
+
+pub fn dispatcher_cleanup_expired_jobs(
+    conn: &Connection,
+    save_context: &DispatcherSaveContext,
+) -> Result<DispatcherGenerationStatus, String> {
+    prepare_dispatcher_system(conn)?;
+    expire_dispatcher_market_jobs(conn)?;
+    build_dispatcher_generation_status(conn, save_context)
+}
+
+pub fn dispatcher_restore_jobs_for_last_quicksave(
+    conn: &Connection,
+    save_context: &DispatcherSaveContext,
+) -> Result<DispatcherGenerationStatus, String> {
+    prepare_dispatcher_system(conn)?;
+    Ok(ensure_dispatcher_market_jobs(conn, save_context, false)?.status)
+}
+
+pub fn dispatcher_background_tick(
+    conn: &Connection,
+    save_context: &DispatcherSaveContext,
+) -> Result<DispatcherGenerationRunResult, String> {
+    prepare_dispatcher_system(conn)?;
+    ensure_dispatcher_market_jobs(conn, save_context, false)
+}
+
+pub fn dispatcher_get_jobs_by_save_context(
+    conn: &Connection,
+    save_context: &DispatcherSaveContext,
+    status: Option<String>,
+) -> Result<DispatcherJobsBySaveContextResponse, String> {
+    prepare_dispatcher_system(conn)?;
+    let jobs = if let Some(status) = status
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+    {
+        list_dispatcher_jobs_by_status(conn, &[status], 240, save_context)?
+    } else {
+        list_dispatcher_jobs_by_status(conn, DISPATCHER_ALL_JOB_STATUSES, 240, save_context)?
+    };
+
+    Ok(DispatcherJobsBySaveContextResponse {
+        context: save_context.clone(),
+        jobs: jobs.into_iter().map(to_dispatcher_market_job).collect(),
+    })
+}
+
+pub fn dispatcher_link_job_to_save_context(
+    conn: &Connection,
+    job_id: &str,
+    save_context: &DispatcherSaveContext,
+) -> Result<DispatcherJobDetails, String> {
+    prepare_dispatcher_system(conn)?;
+    if !save_context.is_ready() {
+        return Err("dispatcher_save_context_missing".to_string());
+    }
+
+    let row = load_dispatcher_job_by_id_any(conn, job_id)?
+        .ok_or_else(|| format!("dispatcher_job_not_found:{job_id}"))?;
+    let route_reference = row.route_reference.unwrap_or_else(|| {
+        build_dispatcher_route_reference(
+            &row.company_id,
+            &row.origin_country,
+            &row.origin_city,
+            &row.destination_country,
+            &row.destination_city,
+            &row.job_type,
+        )
+    });
+    let now = Utc::now().to_rfc3339();
+
+    conn.execute(
+        r#"
+        UPDATE dispatcher_jobs
+        SET profile_reference = ?2,
+            save_reference = ?3,
+            quicksave_reference = ?4,
+            save_session_id = ?5,
+            route_reference = ?6,
+            updated_at_utc = ?7
+        WHERE id = ?1
+        "#,
+        params![
+            job_id,
+            save_context.profile_reference.as_deref(),
+            save_context.save_reference.as_deref(),
+            save_context.quicksave_reference.as_deref(),
+            save_context.save_session_id.as_deref(),
+            route_reference,
+            now,
+        ],
+    )
+    .map_err(|e| e.to_string())?;
+
+    dispatcher_get_job_details(conn, job_id, save_context)
+}
+
+pub fn dispatcher_accept_generated_job(
+    conn: &Connection,
+    job_id: &str,
+    save_context: &DispatcherSaveContext,
+) -> Result<DispatcherJobDetails, String> {
+    prepare_dispatcher_system(conn)?;
+    let row = load_dispatcher_job_by_id(conn, job_id, save_context)?
+        .ok_or_else(|| format!("dispatcher_job_not_found:{job_id}"))?;
+    if row.source_type != "generated" {
+        return Err("dispatcher_job_not_generated".to_string());
+    }
+    dispatcher_accept_job(conn, job_id, save_context)
+}
+
+pub fn dispatcher_mark_job_synced_to_ets2(
+    conn: &Connection,
+    job_id: &str,
+    route_reference: Option<String>,
+    save_context: &DispatcherSaveContext,
+) -> Result<DispatcherJobDetails, String> {
+    prepare_dispatcher_system(conn)?;
+    let row = load_dispatcher_job_by_id(conn, job_id, save_context)?
+        .ok_or_else(|| format!("dispatcher_job_not_found:{job_id}"))?;
+    let route_reference = route_reference
+        .map(|value| value.trim().to_string())
+        .filter(|value| !value.is_empty())
+        .or(row.route_reference.clone())
+        .unwrap_or_else(|| {
+            build_dispatcher_route_reference(
+                &row.company_id,
+                &row.origin_country,
+                &row.origin_city,
+                &row.destination_country,
+                &row.destination_city,
+                &row.job_type,
+            )
+        });
+    let now = Utc::now().to_rfc3339();
+
+    conn.execute(
+        r#"
+        UPDATE dispatcher_jobs
+        SET route_reference = ?2,
+            ets2_job_link_status = 'synced_to_ets2',
+            updated_at_utc = ?3
+        WHERE id = ?1
+        "#,
+        params![job_id, route_reference, now],
+    )
+    .map_err(|e| e.to_string())?;
+
+    dispatcher_get_job_details(conn, job_id, save_context)
+}
+
 pub fn dispatcher_get_market_jobs(
     conn: &Connection,
     filter: Option<DispatcherJobFilter>,
+    save_context: &DispatcherSaveContext,
 ) -> Result<Vec<DispatcherMarketJob>, String> {
-    expire_dispatcher_market_jobs(conn)?;
-    ensure_dispatcher_market_jobs(conn, DISPATCHER_MARKET_TARGET)?;
-    let mut rows = list_dispatcher_jobs_by_status(conn, &["open"], 80)?;
+    prepare_dispatcher_system(conn)?;
+    ensure_dispatcher_market_jobs(conn, save_context, false)?;
+    let mut rows = list_dispatcher_jobs_by_status(
+        conn,
+        DISPATCHER_OPEN_JOB_STATUSES,
+        80,
+        save_context,
+    )?;
 
     if let Some(filter) = filter {
         rows = rows
@@ -1743,8 +2125,10 @@ pub fn dispatcher_get_market_jobs(
 pub fn dispatcher_get_job_details(
     conn: &Connection,
     job_id: &str,
+    save_context: &DispatcherSaveContext,
 ) -> Result<DispatcherJobDetails, String> {
-    let row = load_dispatcher_job_by_id(conn, job_id)?
+    prepare_dispatcher_system(conn)?;
+    let row = load_dispatcher_job_by_id(conn, job_id, save_context)?
         .ok_or_else(|| format!("dispatcher_job_not_found:{job_id}"))?;
     let drivers = vec![
         format!("payment_tier={}", row.payment_tier_snapshot),
@@ -1758,9 +2142,14 @@ pub fn dispatcher_get_job_details(
     })
 }
 
-pub fn dispatcher_accept_job(conn: &Connection, job_id: &str) -> Result<DispatcherJobDetails, String> {
+pub fn dispatcher_accept_job(
+    conn: &Connection,
+    job_id: &str,
+    save_context: &DispatcherSaveContext,
+) -> Result<DispatcherJobDetails, String> {
+    prepare_dispatcher_system(conn)?;
     expire_dispatcher_market_jobs(conn)?;
-    let row = load_dispatcher_job_by_id(conn, job_id)?
+    let row = load_dispatcher_job_by_id(conn, job_id, save_context)?
         .ok_or_else(|| format!("dispatcher_job_not_found:{job_id}"))?;
 
     if row.status != "open" {
@@ -1776,13 +2165,12 @@ pub fn dispatcher_accept_job(conn: &Connection, job_id: &str) -> Result<Dispatch
         return Err("dispatcher_job_expired".to_string());
     }
 
-    let active_jobs: i64 = conn
-        .query_row(
-            "SELECT COUNT(*) FROM dispatcher_jobs WHERE status IN ('accepted', 'in_transit', 'delayed')",
-            [],
-            |r| r.get(0),
-        )
-        .map_err(|e| e.to_string())?;
+    let active_jobs = count_dispatcher_jobs_by_status(
+        conn,
+        DISPATCHER_BUSY_JOB_STATUSES,
+        save_context,
+        None,
+    )?;
     if active_jobs > 0 {
         return Err("dispatcher_active_job_exists".to_string());
     }
@@ -1797,27 +2185,37 @@ pub fn dispatcher_accept_job(conn: &Connection, job_id: &str) -> Result<Dispatch
 
     let now = Utc::now().to_rfc3339();
     conn.execute(
-        "UPDATE dispatcher_jobs SET status = 'accepted', updated_at_utc = ?2 WHERE id = ?1",
+        "UPDATE dispatcher_jobs SET status = 'accepted', accepted_at_utc = ?2, updated_at_utc = ?2 WHERE id = ?1",
         params![job_id, now],
     )
     .map_err(|e| e.to_string())?;
-    dispatcher_get_job_details(conn, job_id)
+    dispatcher_get_job_details(conn, job_id, save_context)
 }
 
-pub fn dispatcher_get_active_jobs(conn: &Connection) -> Result<Vec<DispatcherMarketJob>, String> {
+pub fn dispatcher_get_active_jobs(
+    conn: &Connection,
+    save_context: &DispatcherSaveContext,
+) -> Result<Vec<DispatcherMarketJob>, String> {
+    prepare_dispatcher_system(conn)?;
     let rows = list_dispatcher_jobs_by_status(
         conn,
-        &["planned", "accepted", "in_transit", "delayed", "problematic"],
+        DISPATCHER_ACTIVE_JOB_STATUSES,
         60,
+        save_context,
     )?;
     Ok(rows.into_iter().map(to_dispatcher_market_job).collect())
 }
 
-pub fn dispatcher_get_job_history(conn: &Connection) -> Result<DispatcherHistoryResponse, String> {
+pub fn dispatcher_get_job_history(
+    conn: &Connection,
+    save_context: &DispatcherSaveContext,
+) -> Result<DispatcherHistoryResponse, String> {
+    prepare_dispatcher_system(conn)?;
     let rows = list_dispatcher_jobs_by_status(
         conn,
-        &["completed", "problematic", "cancelled", "rejected", "expired"],
+        DISPATCHER_HISTORY_JOB_STATUSES,
         120,
+        save_context,
     )?;
     let items = rows
         .iter()
@@ -1869,7 +2267,11 @@ pub fn dispatcher_get_job_history(conn: &Connection) -> Result<DispatcherHistory
     })
 }
 
-pub fn dispatcher_get_company_contacts(conn: &Connection) -> Result<Vec<DispatcherCompanyContact>, String> {
+pub fn dispatcher_get_company_contacts(
+    conn: &Connection,
+    save_context: &DispatcherSaveContext,
+) -> Result<Vec<DispatcherCompanyContact>, String> {
+    prepare_dispatcher_system(conn)?;
     let mut stmt = conn
         .prepare(
             r#"
@@ -1917,20 +2319,14 @@ pub fn dispatcher_get_company_contacts(conn: &Connection) -> Result<Vec<Dispatch
         } else {
             1.0
         };
-        let completed_jobs: i64 = conn
-            .query_row(
-                "SELECT COUNT(*) FROM dispatcher_jobs WHERE company_id = ?1 AND status = 'completed'",
-                [company_id.as_str()],
-                |r| r.get(0),
-            )
-            .map_err(|e| e.to_string())?;
-        let failed_jobs: i64 = conn
-            .query_row(
-                "SELECT COUNT(*) FROM dispatcher_jobs WHERE company_id = ?1 AND status IN ('problematic', 'cancelled')",
-                [company_id.as_str()],
-                |r| r.get(0),
-            )
-            .map_err(|e| e.to_string())?;
+        let completed_jobs =
+            count_dispatcher_company_jobs(conn, &company_id, &["completed"], save_context)?;
+        let failed_jobs = count_dispatcher_company_jobs(
+            conn,
+            &company_id,
+            &["problematic", "cancelled"],
+            save_context,
+        )?;
         let accepted_offers: i64 = conn
             .query_row(
                 "SELECT COUNT(*) FROM dispatcher_offers WHERE company_id = ?1 AND status = 'accepted'",
@@ -1969,6 +2365,7 @@ pub fn dispatcher_get_company_contacts(conn: &Connection) -> Result<Vec<Dispatch
 }
 
 pub fn dispatcher_get_offers(conn: &Connection) -> Result<Vec<DispatcherOffer>, String> {
+    prepare_dispatcher_system(conn)?;
     expire_dispatcher_offers(conn)?;
     let mut stmt = conn
         .prepare(
@@ -2013,6 +2410,7 @@ pub fn dispatcher_create_offer(
     conn: &Connection,
     input: DispatcherCreateOfferInput,
 ) -> Result<DispatcherOffer, String> {
+    prepare_dispatcher_system(conn)?;
     let company_id = input.company_id.trim();
     if company_id.is_empty() {
         return Err("dispatcher_offer_company_required".to_string());
@@ -2064,30 +2462,40 @@ pub fn dispatcher_create_offer(
     );
 
     let now = Utc::now();
-    let mut status = "sent".to_string();
-    let mut counter_rate = None;
-    let mut final_rate = None;
-    let mut response_reason = None;
-    let mut expires = Some((now + Duration::hours(36)).to_rfc3339());
-
-    if score >= 72.0 {
-        status = "accepted".to_string();
-        final_rate = Some(requested_rate);
-        response_reason = Some("offer_aligned_with_profile".to_string());
-        expires = None;
+    let default_expiry = Some((now + Duration::hours(36)).to_rfc3339());
+    let (status, counter_rate, final_rate, response_reason, expires) = if score >= 72.0 {
+        (
+            "accepted".to_string(),
+            None,
+            Some(requested_rate),
+            Some("offer_aligned_with_profile".to_string()),
+            None,
+        )
     } else if score >= 48.0 {
-        status = "countered".to_string();
-        counter_rate = Some(((requested_rate + target_rate) / 2.0 * 100.0).round() / 100.0);
-        response_reason = Some("counter_offer_requested".to_string());
+        (
+            "countered".to_string(),
+            Some(((requested_rate + target_rate) / 2.0 * 100.0).round() / 100.0),
+            None,
+            Some("counter_offer_requested".to_string()),
+            default_expiry,
+        )
     } else if score >= 38.0 {
-        status = "under_review".to_string();
-        response_reason = Some("manual_review_pending".to_string());
-        expires = Some((now + Duration::hours(18)).to_rfc3339());
+        (
+            "under_review".to_string(),
+            None,
+            None,
+            Some("manual_review_pending".to_string()),
+            Some((now + Duration::hours(18)).to_rfc3339()),
+        )
     } else {
-        status = "rejected".to_string();
-        response_reason = Some("rate_above_company_band".to_string());
-        expires = None;
-    }
+        (
+            "rejected".to_string(),
+            None,
+            None,
+            Some("rate_above_company_band".to_string()),
+            None,
+        )
+    };
 
     let offer_id = format!(
         "offer-{}-{}",
@@ -2170,6 +2578,7 @@ pub fn dispatcher_create_offer(
 }
 
 pub fn dispatcher_cancel_offer(conn: &Connection, offer_id: &str) -> Result<DispatcherOffer, String> {
+    prepare_dispatcher_system(conn)?;
     let offer = load_dispatcher_offer_by_id(conn, offer_id)?
         .ok_or_else(|| format!("dispatcher_offer_not_found:{offer_id}"))?;
     if !matches!(
@@ -2193,6 +2602,7 @@ pub fn dispatcher_respond_to_counter(
     conn: &Connection,
     input: DispatcherRespondToCounterInput,
 ) -> Result<DispatcherOffer, String> {
+    prepare_dispatcher_system(conn)?;
     let offer = load_dispatcher_offer_by_id(conn, &input.offer_id)?
         .ok_or_else(|| format!("dispatcher_offer_not_found:{}", input.offer_id))?;
     if offer.status != "countered" {
@@ -2533,3 +2943,4 @@ fn normalize_dispatcher_equipment_type(value: &str) -> String {
         _ => "own_truck".to_string(),
     }
 }
+

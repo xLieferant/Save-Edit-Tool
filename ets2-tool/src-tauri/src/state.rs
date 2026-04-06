@@ -4,6 +4,7 @@ use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex, RwLock};
 
 use serde::{Deserialize, Serialize};
+use sqlx::SqlitePool;
 
 use crate::models::global_config_info::BaseGameConfig;
 use crate::models::quicksave_game_info::GameDataQuicksave;
@@ -359,6 +360,10 @@ impl Default for CareerState {
             runtime: Arc::new(CareerRuntime::default()),
         }
     }
+}
+
+pub struct EtsDbState {
+    pub pool: SqlitePool,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
