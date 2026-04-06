@@ -12,7 +12,7 @@ use crate::features::vtc::models::{
     UserSettings, UsernameAvailability, VtcRuntimeContext,
 };
 use crate::features::vtc::service;
-use crate::shared::current_profile::snapshot_save_context;
+use crate::shared::current_profile::snapshot_resolved_save_context;
 use crate::state::{AppProfileState, AuthState};
 
 fn open_connection() -> Result<Connection, String> {
@@ -37,7 +37,19 @@ pub fn get_vtc_runtime_context(
 ) -> Result<VtcRuntimeContext, String> {
     let conn = open_connection()?;
     let user = service::get_current_user_profile(&conn, auth.inner())?;
-    let save_context = snapshot_save_context(profile.inner())?;
+    let resolved_context = snapshot_resolved_save_context(profile.inner())?;
+    let save_context = resolved_context.context;
+    let save_session_status = if save_context.is_ready() {
+        if resolved_context.profile_inferred || resolved_context.save_inferred {
+            "inferred"
+        } else {
+            "linked"
+        }
+    } else if save_context.profile_reference.is_some() {
+        "profile_only"
+    } else {
+        "missing"
+    };
 
     Ok(VtcRuntimeContext {
         user_id: user.user_id,
@@ -47,6 +59,7 @@ pub fn get_vtc_runtime_context(
         profile_reference: save_context.profile_reference,
         save_reference: save_context.save_reference,
         save_session_id: save_context.save_session_id,
+        save_session_status: save_session_status.to_string(),
     })
 }
 

@@ -5,3 +5,4 @@ pub mod locator;
 pub mod models;
 pub mod parser;
 pub mod sii_codec;
+pub mod snapshot;

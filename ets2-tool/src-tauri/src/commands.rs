@@ -3,11 +3,13 @@ use tauri::{AppHandle, State, command};
 
 use crate::features::ets2save::errors::AppError;
 use crate::features::ets2save::link_service;
-use crate::features::ets2save::models::{EtsJobLink, EtsSaveSlot};
+use crate::features::ets2save::models::{EtsJobLink, EtsJobWriteResult, EtsSaveSlot};
+use crate::features::ets2save::snapshot::{self, SaveSnapshotInput};
+use crate::shared::current_profile::snapshot_save_context;
 use crate::shared::ets2data;
 use crate::shared::ets2data::import;
 use crate::shared::ets2data::models::{CityQueryFilter, CityRecord, CompanyRecord, Ets2DataImportSummary};
-use crate::state::{AppProfileState, CareerState, EtsDbState};
+use crate::state::{AppProfileState, AppState, CareerState, EtsDbState};
 
 #[command]
 pub async fn ets_get_last_quicksave(
@@ -41,7 +43,7 @@ pub async fn ets_write_job_to_quicksave(
     link_id: String,
     app: AppHandle,
     db: State<'_, EtsDbState>,
-) -> Result<EtsJobLink, AppError> {
+) -> Result<EtsJobWriteResult, AppError> {
     link_service::ets_write_job_to_quicksave(&app, &db.pool, &link_id).await
 }
 
@@ -51,6 +53,82 @@ pub async fn ets_get_job_link_status(
     db: State<'_, EtsDbState>,
 ) -> Result<EtsJobLink, AppError> {
     link_service::ets_get_job_link_status(&db.pool, &vtc_job_id).await
+}
+
+#[command]
+pub async fn ets_snapshot_refresh_active_save(
+    app: AppHandle,
+    profile_state: State<'_, AppProfileState>,
+    db: State<'_, EtsDbState>,
+) -> Result<snapshot::SaveSnapshotDto, AppError> {
+    let context = snapshot_save_context(profile_state.inner())
+        .map_err(|error| AppError::new(crate::features::ets2save::errors::AppErrorCode::InvalidToken, error))?;
+    let save_session_id = context
+        .save_session_id
+        .clone()
+        .ok_or_else(|| AppError::new(crate::features::ets2save::errors::AppErrorCode::InvalidToken, "save_session_id missing"))?;
+
+    let input = SaveSnapshotInput {
+        save_session_id,
+        profile_reference: context.profile_reference.clone(),
+        save_reference: context.save_reference.clone(),
+        quicksave_reference: context.quicksave_reference.clone(),
+    };
+
+    snapshot::snapshot_refresh(Some(&app), &db.pool, input)
+        .await
+        .map_err(|error| {
+            snapshot::emit_error(Some(&app), context.save_session_id.as_deref().unwrap_or(""), &error.to_string());
+            error
+        })
+}
+
+#[command]
+pub async fn ets_snapshot_get_active(
+    profile_state: State<'_, AppProfileState>,
+    db: State<'_, EtsDbState>,
+) -> Result<Option<snapshot::SaveSnapshotDto>, AppError> {
+    let context = snapshot_save_context(profile_state.inner())
+        .map_err(|error| AppError::new(crate::features::ets2save::errors::AppErrorCode::InvalidToken, error))?;
+    let Some(save_session_id) = context.save_session_id.as_deref() else {
+        return Ok(None);
+    };
+    snapshot::snapshot_get_by_session(&db.pool, save_session_id).await
+}
+
+#[command]
+pub async fn ets_snapshot_list_depots(
+    city_token: Option<String>,
+    profile_state: State<'_, AppProfileState>,
+    db: State<'_, EtsDbState>,
+) -> Result<Vec<snapshot::SaveSnapshotDepotDto>, AppError> {
+    let context = snapshot_save_context(profile_state.inner())
+        .map_err(|error| AppError::new(crate::features::ets2save::errors::AppErrorCode::InvalidToken, error))?;
+    let save_session_id = context
+        .save_session_id
+        .clone()
+        .ok_or_else(|| AppError::new(crate::features::ets2save::errors::AppErrorCode::InvalidToken, "save_session_id missing"))?;
+    snapshot::snapshot_list_depots(&db.pool, &save_session_id, city_token.as_deref()).await
+}
+
+#[command]
+pub async fn ets_snapshot_get_active_diagnostics(
+    profile_state: State<'_, AppProfileState>,
+    db: State<'_, EtsDbState>,
+) -> Result<Option<snapshot::SaveSnapshotDiagnosticsDto>, AppError> {
+    let context = snapshot_save_context(profile_state.inner())
+        .map_err(|error| AppError::new(crate::features::ets2save::errors::AppErrorCode::InvalidToken, error))?;
+    let Some(save_session_id) = context.save_session_id.as_deref() else {
+        return Ok(None);
+    };
+    snapshot::snapshot_diagnostics_by_session(&db.pool, save_session_id).await
+}
+
+#[command]
+pub async fn get_sqlite_info(
+    app_state: State<'_, AppState>,
+) -> Result<crate::db::sqlite::SqliteInfoDto, String> {
+    crate::db::sqlite::get_sqlite_info(&app_state.sqlite).await
 }
 
 #[command]

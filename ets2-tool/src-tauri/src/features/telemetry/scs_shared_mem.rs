@@ -127,7 +127,14 @@ mod platform {
             let on_job = payload.job_active != 0
                 || (!cargo.is_empty() && !src_city.is_empty() && !dst_city.is_empty());
             let job_delivered = payload.job_event == 1;
+            let job_cancelled = payload.job_event == 2;
             let job_finished = payload.job_event != 0;
+            let job_result = match payload.job_event {
+                1 => Some("completed".to_string()),
+                2 => Some("cancelled".to_string()),
+                value if value != 0 => Some("finished".to_string()),
+                _ => None,
+            };
 
             Ok(Some(TelemetryJobEventPayload {
                 sdk_active: true,
@@ -135,6 +142,8 @@ mod platform {
                 on_job,
                 job_finished,
                 job_delivered,
+                job_cancelled,
+                job_result,
                 cargo_id: if cargo.is_empty() {
                     None
                 } else {

@@ -1030,7 +1030,7 @@ fn count_dispatcher_jobs_by_status(
     save_context: &DispatcherSaveContext,
     source_type: Option<&str>,
 ) -> Result<i64, String> {
-    if !save_context.is_ready() {
+    if save_context.profile_reference.is_none() {
         return Ok(0);
     }
 
@@ -1053,12 +1053,24 @@ fn count_dispatcher_jobs_by_status(
         "
     );
 
+    let exact_count = conn
+        .query_row(
+            &sql,
+            params![
+                save_context.profile_reference.as_deref(),
+                save_context.save_reference.as_deref()
+            ],
+            |row| row.get(0),
+        )
+        .map_err(|e| e.to_string())?;
+
+    if exact_count > 0 || save_context.save_reference.is_none() {
+        return Ok(exact_count);
+    }
+
     conn.query_row(
         &sql,
-        params![
-            save_context.profile_reference.as_deref(),
-            save_context.save_reference.as_deref()
-        ],
+        params![save_context.profile_reference.as_deref(), Option::<&str>::None],
         |row| row.get(0),
     )
     .map_err(|e| e.to_string())
@@ -1070,7 +1082,7 @@ fn count_dispatcher_company_jobs(
     statuses: &[&str],
     save_context: &DispatcherSaveContext,
 ) -> Result<i64, String> {
-    if !save_context.is_ready() {
+    if save_context.profile_reference.is_none() {
         return Ok(0);
     }
 
@@ -1090,12 +1102,28 @@ fn count_dispatcher_company_jobs(
         "
     );
 
+    let exact_count = conn
+        .query_row(
+            &sql,
+            params![
+                company_id,
+                save_context.profile_reference.as_deref(),
+                save_context.save_reference.as_deref()
+            ],
+            |row| row.get(0),
+        )
+        .map_err(|e| e.to_string())?;
+
+    if exact_count > 0 || save_context.save_reference.is_none() {
+        return Ok(exact_count);
+    }
+
     conn.query_row(
         &sql,
         params![
             company_id,
             save_context.profile_reference.as_deref(),
-            save_context.save_reference.as_deref()
+            Option::<&str>::None
         ],
         |row| row.get(0),
     )
@@ -1241,7 +1269,7 @@ fn load_dispatcher_open_signatures(
     conn: &Connection,
     save_context: &DispatcherSaveContext,
 ) -> Result<HashSet<String>, String> {
-    if !save_context.is_ready() {
+    if save_context.profile_reference.is_none() {
         return Ok(HashSet::new());
     }
 
@@ -1280,6 +1308,37 @@ fn load_dispatcher_open_signatures(
         .map_err(|e| e.to_string())?;
 
     let mut signatures = HashSet::new();
+    for row in rows {
+        signatures.insert(row.map_err(|e| e.to_string())?);
+    }
+
+    if !signatures.is_empty() || save_context.save_reference.is_none() {
+        return Ok(signatures);
+    }
+
+    let rows = stmt
+        .query_map(
+            params![
+                save_context.profile_reference.as_deref(),
+                Option::<&str>::None
+            ],
+            |row| {
+                let company_id: String = row.get(0)?;
+                let origin_city: String = row.get(1)?;
+                let destination_city: String = row.get(2)?;
+                let cargo_type: String = row.get(3)?;
+                let job_type: String = row.get(4)?;
+                Ok(dispatcher_job_signature(
+                    &company_id,
+                    &origin_city,
+                    &destination_city,
+                    &cargo_type,
+                    &job_type,
+                ))
+            },
+        )
+        .map_err(|e| e.to_string())?;
+
     for row in rows {
         signatures.insert(row.map_err(|e| e.to_string())?);
     }
@@ -1655,7 +1714,7 @@ fn load_dispatcher_job_by_id(
     job_id: &str,
     save_context: &DispatcherSaveContext,
 ) -> Result<Option<DispatcherJobRow>, String> {
-    if !save_context.is_ready() {
+    if save_context.profile_reference.is_none() {
         return Ok(None);
     }
 
@@ -1670,11 +1729,27 @@ fn load_dispatcher_job_by_id(
             "#,
         )
         .map_err(|e| e.to_string())?;
+    let exact = stmt
+        .query_row(
+            params![
+                job_id,
+                save_context.profile_reference.as_deref(),
+                save_context.save_reference.as_deref()
+            ],
+            map_dispatcher_job_row,
+        )
+        .optional()
+        .map_err(|e| e.to_string())?;
+
+    if exact.is_some() || save_context.save_reference.is_none() {
+        return Ok(exact);
+    }
+
     stmt.query_row(
         params![
             job_id,
             save_context.profile_reference.as_deref(),
-            save_context.save_reference.as_deref()
+            Option::<&str>::None
         ],
         map_dispatcher_job_row,
     )
@@ -1706,7 +1781,7 @@ fn list_dispatcher_jobs_by_status(
     limit: usize,
     save_context: &DispatcherSaveContext,
 ) -> Result<Vec<DispatcherJobRow>, String> {
-    if !save_context.is_ready() {
+    if save_context.profile_reference.is_none() {
         return Ok(Vec::new());
     }
 
@@ -1737,6 +1812,25 @@ fn list_dispatcher_jobs_by_status(
             map_dispatcher_job_row,
         )
         .map_err(|e| e.to_string())?;
+    let exact_rows = rows
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| e.to_string())?;
+
+    if !exact_rows.is_empty() || save_context.save_reference.is_none() {
+        return Ok(exact_rows);
+    }
+
+    let rows = stmt
+        .query_map(
+            params![
+                save_context.profile_reference.as_deref(),
+                Option::<&str>::None,
+                limit as i64
+            ],
+            map_dispatcher_job_row,
+        )
+        .map_err(|e| e.to_string())?;
+
     rows.collect::<Result<Vec<_>, _>>()
         .map_err(|e| e.to_string())
 }
@@ -2095,7 +2189,7 @@ pub fn dispatcher_get_company_contacts(
         let failed_jobs = count_dispatcher_company_jobs(
             conn,
             &company_id,
-            &["problematic", "cancelled"],
+            &["problematic", "cancelled", "failed"],
             save_context,
         )?;
         let accepted_offers: i64 = conn
@@ -2569,7 +2663,7 @@ fn dispatcher_success_rate_for_company(conn: &Connection, company_id: &str) -> R
         .map_err(|e| e.to_string())?;
     let failed: i64 = conn
         .query_row(
-            "SELECT COUNT(*) FROM dispatcher_jobs WHERE company_id = ?1 AND status IN ('problematic', 'cancelled', 'rejected')",
+            "SELECT COUNT(*) FROM dispatcher_jobs WHERE company_id = ?1 AND status IN ('problematic', 'cancelled', 'failed', 'rejected')",
             [company_id],
             |r| r.get(0),
         )

@@ -1,5 +1,6 @@
 use rusqlite::Connection;
 use serde::Serialize;
+use std::collections::HashSet;
 
 use crate::features::career::dispatcher::{self, Job};
 use crate::features::career::job_log::{self, JobLogEntry, JobStats};
@@ -25,12 +26,17 @@ pub struct CareerDashboardMetrics {
 #[derive(Debug, Clone, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct CareerStatistics {
+    pub total_trips: i64,
     pub total_kilometers: f64,
     pub total_income: i64,
     pub average_speed: f64,
     pub speeding_events: i64,
     pub company_value: i64,
     pub completed_trips: i64,
+    pub completed_jobs: i64,
+    pub failed_jobs: i64,
+    pub cancelled_jobs: i64,
+    pub abandoned_jobs: i64,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -84,7 +90,8 @@ pub fn load_overview(runtime: &CareerRuntime) -> Result<CareerOverview, String> 
     let recent_trips = logbook::list_trips_from_connection(&conn, 8)?;
     let active_trip = logbook::current_active_trip(runtime)?;
     job_log::ensure_tables(&conn)?;
-    let recent_jobs = job_log::list_recent_jobs(&conn, 8)?;
+    let mut recent_jobs = job_log::list_recent_jobs(&conn, 8)?;
+    job_log::enrich_job_entries(&conn, &mut recent_jobs)?;
     let job_stats = job_log::load_job_stats(&conn)?;
     let mut jobs = dispatcher::list_jobs(&conn, 8)?;
     let mut current_job = dispatcher::current_job(&conn)?;
@@ -96,7 +103,7 @@ pub fn load_overview(runtime: &CareerRuntime) -> Result<CareerOverview, String> 
 
     apply_live_job_progress(&mut jobs, current_job.as_mut(), active_trip.as_ref());
 
-    let active_job = runtime
+    let mut active_job = runtime
         .active_job
         .lock()
         .map_err(|_| "Career active_job lock poisoned".to_string())?
@@ -120,7 +127,14 @@ pub fn load_overview(runtime: &CareerRuntime) -> Result<CareerOverview, String> 
             cargo_damage: active.cargo_damage as f64,
             job_market: active.job_market.clone(),
             special_job: active.special_job,
+            ingame_income: None,
+            vtc_expected_income: None,
+            result_status: None,
+            planned_distance_source: None,
         });
+    if let Some(active_job) = active_job.as_mut() {
+        job_log::enrich_job_entry(&conn, active_job)?;
+    }
 
     let statistics = load_statistics(&conn, &bank_state)?;
     let dashboard = build_dashboard(
@@ -224,26 +238,107 @@ fn load_statistics(
     conn: &Connection,
     bank_state: &bank::BankState,
 ) -> Result<CareerStatistics, String> {
+    let mut jobs = job_log::list_recent_jobs(conn, 5000)?;
+    job_log::enrich_job_entries(conn, &mut jobs)?;
+
+    let mut seen_job_ids = HashSet::new();
+    let mut total_trips = 0_i64;
+    let mut total_kilometers = 0.0_f64;
+    let mut total_income = 0_i64;
+    let mut completed_jobs = 0_i64;
+    let mut failed_jobs = 0_i64;
+    let mut cancelled_jobs = 0_i64;
+    let mut abandoned_jobs = 0_i64;
+
+    for job in &jobs {
+        total_trips += 1;
+        total_kilometers += job.planned_distance_km.max(0.0);
+        if !job.job_id.trim().is_empty() {
+            seen_job_ids.insert(job.job_id.clone());
+        }
+
+        match job.status.as_str() {
+            "completed" => {
+                completed_jobs += 1;
+                total_income += job
+                    .vtc_expected_income
+                    .or(job.ingame_income)
+                    .unwrap_or(job.income);
+            }
+            "failed" => failed_jobs += 1,
+            "cancelled" => cancelled_jobs += 1,
+            "abandoned" => abandoned_jobs += 1,
+            _ => {}
+        }
+    }
+
+    let mut stmt = conn
+        .prepare(
+            r#"
+            SELECT
+                job_id,
+                COALESCE(distance_km, 0),
+                income,
+                COALESCE(status, 'completed')
+            FROM trips
+            "#,
+        )
+        .map_err(|e| e.to_string())?;
+    let rows = stmt
+        .query_map([], |row| {
+            Ok((
+                row.get::<_, Option<String>>(0)?,
+                row.get::<_, f64>(1)?,
+                row.get::<_, Option<i64>>(2)?,
+                row.get::<_, String>(3)?,
+            ))
+        })
+        .map_err(|e| e.to_string())?;
+    for row in rows {
+        let (job_id, distance_km, income, status) = row.map_err(|e| e.to_string())?;
+        let already_counted = job_id
+            .as_deref()
+            .map(|value| seen_job_ids.contains(value))
+            .unwrap_or(false);
+        if already_counted {
+            continue;
+        }
+
+        total_trips += 1;
+        total_kilometers += distance_km.max(0.0);
+        match status.as_str() {
+            "completed" => {
+                completed_jobs += 1;
+                total_income += income.unwrap_or(0);
+            }
+            "failed" => failed_jobs += 1,
+            "cancelled" => cancelled_jobs += 1,
+            "paused" | "aborted" => abandoned_jobs += 1,
+            _ => {}
+        }
+    }
+
     conn.query_row(
         r#"
         SELECT
-            COALESCE(SUM(distance_km), 0),
-            COALESCE(SUM(COALESCE(income, 0)), 0),
             COALESCE(AVG(NULLIF(avg_speed_kph, 0)), 0),
-            COALESCE(SUM(speeding_events), 0),
-            COALESCE(SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END), 0)
+            COALESCE(SUM(speeding_events), 0)
         FROM trips
         "#,
         [],
         |row| {
-            let total_income: i64 = row.get(1)?;
             Ok(CareerStatistics {
-                total_kilometers: row.get(0)?,
+                total_trips,
+                total_kilometers,
                 total_income,
-                average_speed: row.get(2)?,
-                speeding_events: row.get(3)?,
+                average_speed: row.get(0)?,
+                speeding_events: row.get(1)?,
                 company_value: bank_state.cash_balance + total_income,
-                completed_trips: row.get(4)?,
+                completed_trips: completed_jobs,
+                completed_jobs,
+                failed_jobs,
+                cancelled_jobs,
+                abandoned_jobs,
             })
         },
     )

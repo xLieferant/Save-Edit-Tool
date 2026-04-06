@@ -366,6 +366,11 @@ pub struct EtsDbState {
     pub pool: SqlitePool,
 }
 
+pub struct AppState {
+    pub sqlite: SqlitePool,
+    pub sqlite_path: PathBuf,
+}
+
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AuthSession {

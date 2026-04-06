@@ -13,6 +13,7 @@ pub struct InjectionPointers {
     pub offer_pointer: String,
     pub job_offer_data_pointer: String,
     pub backup_path: PathBuf,
+    pub job_info_updated: bool,
 }
 
 pub fn build_offer_patch(
@@ -84,6 +85,7 @@ pub fn write_job_offer_patch(
         offer_pointer: offer_pointer.clone(),
         job_offer_data_pointer: offer_pointer,
         backup_path,
+        job_info_updated: patch.job_info_unit.is_some(),
     })
 }
 
@@ -215,7 +217,11 @@ mod tests {
             profile_reference: None,
             quicksave_reference: None,
             save_reference: None,
+            save_session_id: None,
             route_reference: None,
+            dispatcher_status: None,
+            last_error_code: None,
+            last_error_message: None,
         };
         let offer_range = crate::features::ets2save::parser::find_job_offer_data_block(
             &lines,

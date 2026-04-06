@@ -120,6 +120,7 @@ pub struct VtcRuntimeContext {
     pub profile_reference: Option<String>,
     pub save_reference: Option<String>,
     pub save_session_id: Option<String>,
+    pub save_session_status: String,
     pub has_active_profile: bool,
     pub has_active_save: bool,
 }

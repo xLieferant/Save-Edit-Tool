@@ -20,6 +20,30 @@
         <button id="refreshCareerBtn" type="button" class="career-topbar-btn" data-translate="career_mode.refresh">Refresh</button>
         <button id="openSaveEditorBtn" type="button" class="career-topbar-btn" data-translate="launcher.editor.title">Save Edit Tool</button>
         <button id="openLauncherBtn" type="button" class="career-topbar-btn" data-translate="career_mode.open_launcher">Open Launcher</button>
+        <div class="career-user-menu">
+          <button id="careerUserMenuBtn" class="career-user-menu-btn" type="button" aria-haspopup="true" aria-expanded="false">
+            <span class="career-user-menu-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 12c2.761 0 5-2.239 5-5S14.761 2 12 2 7 4.239 7 7s2.239 5 5 5Z" stroke="currentColor" stroke-width="1.8"/>
+                <path d="M4 22c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <span class="career-user-menu-copy">
+              <strong id="careerUserMenuLabel" data-translate="career.user_menu.login">Login</strong>
+              <small id="careerUserMenuName">-</small>
+            </span>
+          </button>
+          <div id="careerUserMenuDropdown" class="career-user-menu-dropdown" hidden>
+            <div class="career-user-menu-head">
+              <strong id="careerUserMenuIdentity">-</strong>
+              <span id="careerUserMenuState">-</span>
+            </div>
+            <button id="careerUserMenuLogin" class="career-user-menu-item" type="button" data-translate="career.user_menu.login">Login</button>
+            <button id="careerUserMenuProfile" class="career-user-menu-item" type="button" data-translate="career.user_menu.profile">Profile</button>
+            <button id="careerUserMenuSettings" class="career-user-menu-item" type="button" data-translate="career.user_menu.settings">Settings</button>
+            <button id="careerUserMenuLogout" class="career-user-menu-item" type="button" data-translate="career.user_menu.logout" hidden>Logout</button>
+          </div>
+        </div>
       </div>
     </header>
 
@@ -62,6 +86,7 @@
       <article class="career-status-card">
         <span data-translate="career_mode.vtc_context_session">Save Session</span>
         <strong id="careerVtcContextSession">-</strong>
+        <small id="careerVtcContextSessionStatus">-</small>
       </article>
     </section>
 
@@ -185,8 +210,10 @@
                   <th data-translate="career.jobs.fields.job_id">Job ID</th>
                   <th data-translate="career.jobs_logbook.route">Route</th>
                   <th data-translate="career.jobs.fields.cargo">Cargo</th>
-                  <th data-translate="career.jobs.fields.income">Income</th>
-                  <th data-translate="career.jobs.fields.time_remaining">Remaining</th>
+                  <th data-translate="career.jobs.fields.distance">Planned Distance</th>
+                  <th data-translate="career.jobs.fields.income">Expected Income</th>
+                  <th data-translate="career.jobs.fields.ingame_income">Ingame Reward</th>
+                  <th data-translate="career.jobs.fields.result">Result</th>
                 </tr>
               </thead>
               <tbody id="cmActiveOrdersBody"></tbody>
@@ -202,7 +229,9 @@
                   <th data-translate="career.jobs_logbook.cargo">Cargo</th>
                   <th data-translate="career.jobs_logbook.route">Route</th>
                   <th data-translate="career.jobs_logbook.distance">Distance</th>
-                  <th data-translate="career.jobs_logbook.income">Income</th>
+                  <th data-translate="career.jobs.fields.income">Expected Income</th>
+                  <th data-translate="career.jobs.fields.ingame_income">Ingame Reward</th>
+                  <th data-translate="career.jobs_logbook.status">Status</th>
                 </tr>
               </thead>
               <tbody id="cmOrderHistoryBody"></tbody>
@@ -330,6 +359,15 @@
                   <div><dt>ID</dt><dd id="cmDispatcherDetailId">-</dd></div>
                   <div><dt data-translate="career_mode.dispatcher.detail_source">Source</dt><dd id="cmDispatcherDetailSource">-</dd></div>
                   <div><dt data-translate="career_mode.dispatcher.col_company">Company</dt><dd id="cmDispatcherDetailCompany">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.detail_vtc_company">VTC Company</dt><dd id="cmDispatcherDetailVtcCompany">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.detail_ingame_host">Ingame Host</dt><dd id="cmDispatcherDetailIngameHost">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.detail_requested_cargo">Requested Cargo</dt><dd id="cmDispatcherDetailRequestedCargo">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.detail_resolved_cargo">Resolved ETS2 Cargo</dt><dd id="cmDispatcherDetailResolvedCargo">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.detail_cargo_resolution_mode">Cargo Resolution Mode</dt><dd id="cmDispatcherDetailCargoResolutionMode">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.detail_cargo_valid_snapshot">Cargo Valid for Snapshot</dt><dd id="cmDispatcherDetailCargoValidSnapshot">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.detail_snapshot_session">Snapshot Session</dt><dd id="cmDispatcherDetailSnapshotSession">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.detail_snapshot_counts">Snapshot Counts</dt><dd id="cmDispatcherDetailSnapshotCounts">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.detail_snapshot_db_path">Snapshot DB Path</dt><dd id="cmDispatcherDetailSnapshotDbPath">-</dd></div>
                   <div><dt data-translate="career_mode.dispatcher.col_type">Type</dt><dd id="cmDispatcherDetailType">-</dd></div>
                   <div><dt data-translate="career_mode.dispatcher.col_route">Route</dt><dd id="cmDispatcherDetailRoute">-</dd></div>
                   <div><dt data-translate="career_mode.dispatcher.col_distance">Distance</dt><dd id="cmDispatcherDetailDistance">-</dd></div>
@@ -342,8 +380,14 @@
                   <div><dt data-translate="career_mode.dispatcher.detail_reputation">Reputation</dt><dd id="cmDispatcherDetailReputation">-</dd></div>
                   <div><dt data-translate="career_mode.dispatcher.detail_profit">Profit Est.</dt><dd id="cmDispatcherDetailProfit">-</dd></div>
                   <div><dt data-translate="career_mode.dispatcher.detail_save">Save Link</dt><dd id="cmDispatcherDetailSave">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.detail_save_linked">Save Linked</dt><dd id="cmDispatcherDetailSaveLinked">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.detail_active_save">Active Save</dt><dd id="cmDispatcherDetailActiveSave">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.detail_active_session">Active Session</dt><dd id="cmDispatcherDetailActiveSession">-</dd></div>
                   <div><dt data-translate="career_mode.dispatcher.detail_route_reference">Route Ref</dt><dd id="cmDispatcherDetailRouteRef">-</dd></div>
                   <div><dt data-translate="career_mode.dispatcher.detail_ets2_link">ETS2 Link</dt><dd id="cmDispatcherDetailEts2">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.detail_last_error_code">Last Error Code</dt><dd id="cmDispatcherDetailLastErrorCode">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.detail_last_error_message">Last Error Message</dt><dd id="cmDispatcherDetailLastErrorMessage">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.detail_live_progress">Live Progress</dt><dd id="cmDispatcherDetailLiveProgress">-</dd></div>
                 </dl>
                 <div class="dispatcher-detail-notes">
                   <p id="cmDispatcherDetailBonus"></p>
@@ -351,10 +395,23 @@
                 </div>
                 <div class="dispatcher-detail-actions">
                   <button id="cmDispatcherAcceptJobBtn" class="career-action-btn" type="button" data-translate="career_mode.dispatcher.accept_job">Accept Job</button>
-                  <button id="cmDispatcherAssignJobToSaveBtn" class="career-topbar-btn" type="button" data-translate="career_mode.dispatcher.assign_to_active_save">Load into Active Save</button>
-                  <button id="cmDispatcherPrepareEtsLinkBtn" class="career-topbar-btn" type="button" data-translate="career_mode.dispatcher.prepare_ets_link">Prepare ETS Link</button>
-                  <button id="cmDispatcherWriteQuicksaveBtn" class="career-topbar-btn" type="button" data-translate="career_mode.dispatcher.write_to_quicksave">Write to Quicksave</button>
+                  <button id="cmDispatcherInjectActiveSaveBtn" class="career-topbar-btn dispatcher-write-btn" type="button" data-translate="career_mode.dispatcher.inject_active_save">Inject into Active Save</button>
                   <button id="cmDispatcherMarkSyncedBtn" class="career-topbar-btn" type="button" data-translate="career_mode.dispatcher.mark_synced">Mark Synced</button>
+                </div>
+                <div class="dispatcher-action-hints">
+                  <label class="career-field">
+                    <span data-translate="career_mode.dispatcher.use_autosave_fallback">Use autosave fallback if quicksave is missing</span>
+                    <input id="cmDispatcherUseAutosaveFallback" type="checkbox" />
+                  </label>
+                  <p data-translate="career_mode.dispatcher.hint_accept">Accept Job: Dispatcher-only state change.</p>
+                  <p data-translate="career_mode.dispatcher.hint_assign">Inject into Active Save: runs Assign -> Prepare -> Write in one action.</p>
+                  <p data-translate="career_mode.dispatcher.hint_prepare">Prepare ETS2: internal metadata phase before write.</p>
+                  <p data-translate="career_mode.dispatcher.hint_write">Only Write modifies game.sii / quicksave.</p>
+                  <p data-translate="career_mode.dispatcher.hint_synced">Mark Synced: updates tool sync status only.</p>
+                </div>
+                <div class="dispatcher-write-report">
+                  <h4 data-translate="career_mode.dispatcher.write_report_title">Last Write Output</h4>
+                  <pre id="cmDispatcherWriteReport">-</pre>
                 </div>
               </aside>
             </div>

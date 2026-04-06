@@ -8,6 +8,7 @@ const state = {
   jobStats: null,
   source: "mock",
   vtcContext: null,
+  authUser: null,
   userProfile: null,
   userSettings: null,
   companyOverview: null,
@@ -26,6 +27,11 @@ const state = {
     history: null,
     contacts: [],
     offers: [],
+    liveProgress: {},
+    lastError: {},
+    writeReport: {},
+    snapshotDiagnostics: null,
+    actionBusy: false,
     tab: "market",
   },
 };
@@ -70,6 +76,8 @@ const uiText = {
   dispatcherUnsynced: "Not synced",
   dispatcherExpired: "Expired",
   dispatcherAssigned: "Assigned to Save",
+  dispatcherInjectActiveSave: "Inject into Active Save",
+  dispatcherAlreadyInjected: "Already Injected",
   dispatcherPrepareLink: "Prepare ETS Link",
   dispatcherRetryPrepareLink: "Retry Prepare ETS Link",
   dispatcherWriteQuicksave: "Write to Quicksave",
@@ -78,6 +86,13 @@ const uiText = {
   dispatcherOpenLabel: "Open",
   vtcContextNoProfile: "No profile linked",
   vtcContextNoSave: "No save selected",
+  vtcContextSessionLinked: "Session linked",
+  vtcContextSessionInferred: "Session inferred",
+  vtcContextSessionProfileOnly: "Profile detected, save pending",
+  vtcContextSessionMissing: "No live save context",
+  userMenuAccount: "Account",
+  userMenuLogin: "Login",
+  userMenuNotLoggedIn: "Not logged in",
 };
 
 function formatNumber(value, digits = 0) {
@@ -140,6 +155,98 @@ function formatPathReference(value) {
 function formatVtcPathReference(value, fallback) {
   if (!value) return fallback;
   return formatPathReference(value);
+}
+
+function sessionStatusLabel(status) {
+  switch (String(status || "").toLowerCase()) {
+    case "linked":
+      return uiText.vtcContextSessionLinked;
+    case "inferred":
+      return uiText.vtcContextSessionInferred;
+    case "profile_only":
+      return uiText.vtcContextSessionProfileOnly;
+    default:
+      return uiText.vtcContextSessionMissing;
+  }
+}
+
+function hasActiveSaveContext() {
+  const context = state.vtcContext || {};
+  return Boolean(context.saveReference || context.saveSessionId);
+}
+
+function currentDispatcherJob() {
+  return state.dispatcher.selectedJob?.job || state.dispatcher.selectedJob || null;
+}
+
+function dispatcherActionAvailability(job, jobLink) {
+  const status = String(job?.status || "").toLowerCase();
+  const rawLinkStatus = String(jobLink?.status || job?.ets2JobLinkStatus || "").toLowerCase();
+  const saveLinked = Boolean(job?.linkedToActiveSave || job?.saveReference);
+  const activeSaveReady = hasActiveSaveContext();
+
+  const canAccept = Boolean(job?.id) && status === "open";
+  const canAssign = Boolean(job?.id) && activeSaveReady && ["open", "accepted", "failed"].includes(status);
+  const canPrepare = Boolean(job?.id) && saveLinked && (["assigned_to_save", "failed"].includes(status) || rawLinkStatus === "error");
+  const canWrite = Boolean(job?.id) && Boolean(jobLink?.linkId) && ["prepared", "written", "pending"].includes(rawLinkStatus);
+  const alreadyInjected = ["injected", "completed"].includes(status)
+    || ["requires_load", "synced", "completed", "synced_to_ets2"].includes(rawLinkStatus);
+  const injectableStatuses = ["open", "accepted", "failed", "assigned_to_save", "prepared"];
+  const canInject = Boolean(job?.id)
+    && activeSaveReady
+    && injectableStatuses.includes(status)
+    && !alreadyInjected;
+  const canMarkSynced = Boolean(job?.id) && (
+    status === "injected"
+      || ["written", "requires_load", "synced", "completed", "synced_to_ets2"].includes(rawLinkStatus)
+  );
+
+  return { canAccept, canAssign, canPrepare, canWrite, canInject, canMarkSynced };
+}
+
+function formatDispatcherWriteReport(report) {
+  if (!report) return "-";
+  if (report.error) {
+    const lines = [
+      `dispatcher_job_id: ${report.jobId || "-"}`,
+      `write_result: failed`,
+      `error: ${report.error}`,
+    ];
+    if (report.diagnostics) {
+      for (const [key, value] of Object.entries(report.diagnostics)) {
+        lines.push(`${key}: ${value}`);
+      }
+    }
+    return lines.join("\n");
+  }
+  const lines = [
+    `dispatcher_job_id: ${report.jobId || "-"}`,
+    `save_reference: ${report.saveReference || "-"}`,
+    `quicksave_reference: ${report.quicksaveReference || "-"}`,
+    `save_session_id: ${report.saveSessionId || "-"}`,
+    `assign_result: ${report.assignResult || "-"}`,
+    `prepare_result: ${report.prepareResult || "-"}`,
+    `write_result: ${report.writeResult || "-"}`,
+    `save_path: ${report.savePath || "-"}`,
+    `backup_path: ${report.backupPath || "-"}`,
+    `company_pointer: ${report.companyPointer || "-"}`,
+    `offer_pointer: ${report.offerPointer || "-"}`,
+    `job_offer_data_pointer: ${report.jobOfferDataPointer || "-"}`,
+    `origin: ${report.origin || "-"}`,
+    `destination: ${report.destination || "-"}`,
+    `target_company: ${report.targetCompany || "-"}`,
+    `cargo_token: ${report.cargoToken || "-"}`,
+    `shortest_distance_km: ${report.shortestDistanceKm ?? "-"}`,
+    `expiration_time: ${report.expirationTime ?? "-"}`,
+    `reward: ${report.reward ?? "-"}`,
+    `write_mode: ${report.writeMode || "overwrite_existing_offer"}`,
+    `before_sha256: ${report.beforeSha256 || "-"}`,
+    `after_sha256: ${report.afterSha256 || "-"}`,
+    `job_info_updated: ${report.jobInfoUpdated == null ? "-" : String(report.jobInfoUpdated)}`,
+    `final_dispatcher_status: ${report.finalDispatcherStatus || "-"}`,
+    `final_link_status: ${report.finalLinkStatus || "-"}`,
+  ];
+  return lines.join("\n");
 }
 
 function setCellHtml(id, value) {
@@ -425,12 +532,13 @@ function renderDashboard() {
 
   const latestRows = (overview.recentJobs || []).slice(0, 6).map((job) => {
     const route = `${job.originCity || "-"} -> ${job.destinationCity || "-"}`;
+    const resultStatus = job.resultStatus || job.status || "-";
     return `
       <tr>
         <td>${job.cargo || "-"}</td>
         <td>${route}</td>
-        <td>${formatCurrency(job.income || 0)}</td>
-        <td>${job.status || "-"}</td>
+        <td>${formatCurrency(job.vtcExpectedIncome ?? job.income ?? 0)}</td>
+        <td>${dispatcherStatusMarkup(resultStatus)}</td>
       </tr>
     `;
   });
@@ -476,34 +584,49 @@ function renderOrders() {
     const remaining = activeJob.remainingTimeMin != null
       ? `${formatNumber(activeJob.remainingTimeMin, 0)} min`
       : `${formatNumber(activeJob.deliveryEtaHours || 0, 0)} h`;
+    const plannedDistance = activeJob.plannedDistanceKm || activeJob.planned_distance_km || activeJob.distanceKm || 0;
+    const ingameIncome = activeJob.ingameIncome ?? activeJob.income ?? activeJob.payout ?? 0;
+    const expectedIncome = activeJob.vtcExpectedIncome ?? activeJob.vtc_expected_income ?? ingameIncome;
+    const resultStatus = activeJob.resultStatus || activeJob.status || "active";
 
     activeRows.push(`
       <tr>
         <td>${activeJob.jobId || activeJob.id || "-"}</td>
         <td>${route}</td>
         <td>${activeJob.cargo || "-"}</td>
-        <td>${formatCurrency(activeJob.income || activeJob.payout || 0)}</td>
-        <td>${remaining}</td>
+        <td>${formatDistance(plannedDistance)}</td>
+        <td>${formatCurrency(expectedIncome)}</td>
+        <td>${formatCurrency(ingameIncome)}</td>
+        <td>
+          <div class="dispatcher-row-primary">${dispatcherStatusMarkup(resultStatus)}</div>
+          <div class="dispatcher-row-secondary">${remaining}</div>
+        </td>
       </tr>
     `);
   }
 
-  setTableRows("cmActiveOrdersBody", activeRows, uiText.noData, 5);
+  setTableRows("cmActiveOrdersBody", activeRows, uiText.noData, 7);
 
   const historyRows = (state.jobLog || []).slice(0, 20).map((job) => {
     const route = `${job.originCity || "-"} -> ${job.destinationCity || "-"}`;
+    const plannedDistance = job.plannedDistanceKm || job.planned_distance_km || 0;
+    const ingameIncome = job.ingameIncome ?? job.income ?? 0;
+    const expectedIncome = job.vtcExpectedIncome ?? job.vtc_expected_income ?? ingameIncome;
+    const resultStatus = job.resultStatus || job.status || "-";
     return `
       <tr>
         <td>${formatDate(job.startedAtUtc || job.startedAt || job.started_at_utc)}</td>
         <td>${job.cargo || "-"}</td>
         <td>${route}</td>
-        <td>${formatDistance(job.plannedDistanceKm || job.planned_distance_km || 0)}</td>
-        <td>${formatCurrency(job.income || 0)}</td>
+        <td>${formatDistance(plannedDistance)}</td>
+        <td>${formatCurrency(expectedIncome)}</td>
+        <td>${formatCurrency(ingameIncome)}</td>
+        <td>${dispatcherStatusMarkup(resultStatus)}</td>
       </tr>
     `;
   });
 
-  setTableRows("cmOrderHistoryBody", historyRows, uiText.noData, 5);
+  setTableRows("cmOrderHistoryBody", historyRows, uiText.noData, 7);
 }
 
 function dispatcherFilterPayload() {
@@ -571,7 +694,7 @@ function dispatcherJobBadges(job) {
     badges.push(`<span class="dispatcher-badge is-imported">${uiText.dispatcherBadgeImported}</span>`);
   }
 
-  if (["planned", "accepted", "in_transit", "delayed", "problematic"].includes(job.status)) {
+  if (["assigned_to_save", "prepared", "injected", "planned", "accepted", "in_transit", "delayed", "problematic"].includes(job.status)) {
     badges.push(`<span class="dispatcher-badge is-active">${uiText.dispatcherBadgeActive}</span>`);
   }
 
@@ -667,23 +790,25 @@ function renderDispatcherMarket() {
 function renderDispatcherDetails() {
   const selected = state.dispatcher.selectedJob;
   const acceptButton = document.getElementById("cmDispatcherAcceptJobBtn");
-  const assignButton = document.getElementById("cmDispatcherAssignJobToSaveBtn");
-  const prepareLinkButton = document.getElementById("cmDispatcherPrepareEtsLinkBtn");
-  const writeQuicksaveButton = document.getElementById("cmDispatcherWriteQuicksaveBtn");
+  const injectButton = document.getElementById("cmDispatcherInjectActiveSaveBtn");
   const syncButton = document.getElementById("cmDispatcherMarkSyncedBtn");
   if (!selected) {
     if (acceptButton) acceptButton.disabled = true;
-    if (assignButton) assignButton.disabled = true;
-    if (prepareLinkButton) {
-      prepareLinkButton.disabled = true;
-      prepareLinkButton.textContent = uiText.dispatcherPrepareLink;
-    }
-    if (writeQuicksaveButton) writeQuicksaveButton.disabled = true;
+    if (injectButton) injectButton.disabled = true;
     if (syncButton) syncButton.disabled = true;
     setCellHtml("cmDispatcherDetailBadges", "");
     setCellText("cmDispatcherDetailId", "-");
     setCellText("cmDispatcherDetailSource", "-");
     setCellText("cmDispatcherDetailCompany", "-");
+    setCellText("cmDispatcherDetailVtcCompany", "-");
+    setCellText("cmDispatcherDetailIngameHost", "-");
+    setCellText("cmDispatcherDetailRequestedCargo", "-");
+    setCellText("cmDispatcherDetailResolvedCargo", "-");
+    setCellText("cmDispatcherDetailCargoResolutionMode", "-");
+    setCellText("cmDispatcherDetailCargoValidSnapshot", "-");
+    setCellText("cmDispatcherDetailSnapshotSession", "-");
+    setCellText("cmDispatcherDetailSnapshotCounts", "-");
+    setCellText("cmDispatcherDetailSnapshotDbPath", "-");
     setCellText("cmDispatcherDetailType", "-");
     setCellText("cmDispatcherDetailRoute", "-");
     setCellText("cmDispatcherDetailDistance", "-");
@@ -696,47 +821,76 @@ function renderDispatcherDetails() {
     setCellText("cmDispatcherDetailReputation", "-");
     setCellText("cmDispatcherDetailProfit", "-");
     setCellText("cmDispatcherDetailSave", "-");
+    setCellText("cmDispatcherDetailSaveLinked", "-");
+    setCellText("cmDispatcherDetailActiveSave", "-");
+    setCellText("cmDispatcherDetailActiveSession", "-");
     setCellText("cmDispatcherDetailRouteRef", "-");
     setCellText("cmDispatcherDetailEts2", "-");
+    setCellText("cmDispatcherDetailLastErrorCode", "-");
+    setCellText("cmDispatcherDetailLastErrorMessage", "-");
+    setCellText("cmDispatcherDetailLiveProgress", "-");
     setCellText("cmDispatcherDetailBonus", "-");
     setCellText("cmDispatcherDetailRisk", "-");
+    setCellText("cmDispatcherWriteReport", "-");
     return;
   }
 
   const job = selected.job || selected;
   const jobLink = state.dispatcher.jobLink;
-  const linkStatus = normalizeDispatcherJobLinkStatus(jobLink?.status || job.ets2JobLinkStatus);
-  const retryPrepare = linkStatus === "error";
-  const normalizedStatus = String(job.status || "").toLowerCase();
+  const availability = dispatcherActionAvailability(job, jobLink);
   const saveLinked = Boolean(job.linkedToActiveSave || job.saveReference);
-  const readyForSaveInjection = ["assigned_to_save", "prepared", "injected"].includes(normalizedStatus);
-  if (acceptButton) acceptButton.disabled = !job.id || normalizedStatus !== "open";
-  if (assignButton) {
-    assignButton.disabled = !job.id || !["open", "failed"].includes(normalizedStatus);
+  const normalizedStatus = String(job.status || "").toLowerCase();
+  const normalizedLinkStatus = String(jobLink?.status || job.ets2JobLinkStatus || "").toLowerCase();
+  if (acceptButton) acceptButton.disabled = state.dispatcher.actionBusy || !availability.canAccept;
+  if (injectButton) {
+    injectButton.disabled = state.dispatcher.actionBusy || !availability.canInject;
+    const alreadyInjected = ["injected", "completed"].includes(normalizedStatus)
+      || ["requires_load", "synced", "completed", "synced_to_ets2"].includes(normalizedLinkStatus);
+    injectButton.textContent = alreadyInjected
+      ? uiText.dispatcherAlreadyInjected
+      : uiText.dispatcherInjectActiveSave;
   }
-  if (prepareLinkButton) {
-    prepareLinkButton.disabled =
-      !job.id ||
-      !saveLinked ||
-      !readyForSaveInjection ||
-      Boolean(jobLink && !["completed", "error"].includes(linkStatus));
-    prepareLinkButton.textContent = retryPrepare
-      ? uiText.dispatcherRetryPrepareLink
-      : uiText.dispatcherPrepareLink;
-  }
-  if (writeQuicksaveButton) {
-    writeQuicksaveButton.disabled = !jobLink?.linkId || linkStatus !== "pending";
-  }
-  if (syncButton) syncButton.disabled = !job.id;
+  if (syncButton) syncButton.disabled = state.dispatcher.actionBusy || !availability.canMarkSynced;
   const route = `${job.originCity || "-"} -> ${job.destinationCity || "-"}`;
   const ets2StatusLabel = dispatcherJobLinkLabel(jobLink?.status || job.ets2JobLinkStatus);
   const ets2Status = job.lastErrorCode
     ? `${ets2StatusLabel} (${job.lastErrorCode})`
     : ets2StatusLabel;
+  const context = state.vtcContext || {};
+  const liveProgress = state.dispatcher.liveProgress?.[job.id];
+  const eventError = state.dispatcher.lastError?.[job.id];
   setCellHtml("cmDispatcherDetailBadges", dispatcherJobBadges(job));
   setCellText("cmDispatcherDetailId", job.id || "-");
   setCellText("cmDispatcherDetailSource", titleize(job.sourceType || "-"));
   setCellText("cmDispatcherDetailCompany", job.companyName || "-");
+  setCellText("cmDispatcherDetailVtcCompany", job.companyId || "-");
+  const templateResolved = jobLink?.saveOfferTemplate?.resolved || {};
+  const ingameSourceCompany = jobLink?.resolvedSourceCompanyToken
+    || templateResolved.resolvedSourceCompanyToken
+    || jobLink?.srcCompany
+    || "-";
+  const ingameSourceCity = jobLink?.resolvedSourceCityToken
+    || templateResolved.resolvedSourceCityToken
+    || jobLink?.srcCity
+    || "-";
+  setCellText("cmDispatcherDetailIngameHost", `${ingameSourceCompany}.${ingameSourceCity}`);
+  const requestedCargo = jobLink?.requestedCargoToken || job.cargoType || "-";
+  const resolvedCargo = jobLink?.resolvedCargoToken || jobLink?.cargoId || "-";
+  const cargoResolutionMode = jobLink?.cargoResolutionMode || "-";
+  const cargoValid = typeof jobLink?.cargoValidForSnapshot === "boolean"
+    ? (jobLink.cargoValidForSnapshot ? "Yes" : "No")
+    : "-";
+  const snapshotDiagnostics = state.dispatcher.snapshotDiagnostics || null;
+  const snapshotCounts = snapshotDiagnostics
+    ? `depots=${snapshotDiagnostics.depotCount || 0}, cities=${snapshotDiagnostics.visitedCityCount || 0}, cargo=${snapshotDiagnostics.cargoCount || 0}`
+    : "-";
+  setCellText("cmDispatcherDetailRequestedCargo", requestedCargo);
+  setCellText("cmDispatcherDetailResolvedCargo", resolvedCargo);
+  setCellText("cmDispatcherDetailCargoResolutionMode", cargoResolutionMode);
+  setCellText("cmDispatcherDetailCargoValidSnapshot", cargoValid);
+  setCellText("cmDispatcherDetailSnapshotSession", snapshotDiagnostics?.activeSaveSessionId || context.saveSessionId || "-");
+  setCellText("cmDispatcherDetailSnapshotCounts", snapshotCounts);
+  setCellText("cmDispatcherDetailSnapshotDbPath", snapshotDiagnostics?.snapshotDbPath || "-");
   setCellText("cmDispatcherDetailType", titleize(job.jobType || "-"));
   setCellText("cmDispatcherDetailRoute", route);
   setCellText("cmDispatcherDetailDistance", formatDistance(job.distanceKm || 0));
@@ -749,10 +903,17 @@ function renderDispatcherDetails() {
   setCellText("cmDispatcherDetailReputation", formatNumber(job.companyReputation || 0, 0));
   setCellText("cmDispatcherDetailProfit", formatCurrency(job.profitEstimate || 0));
   setCellText("cmDispatcherDetailSave", formatPathReference(job.saveReference));
+  setCellText("cmDispatcherDetailSaveLinked", saveLinked ? "Yes" : "No");
+  setCellText("cmDispatcherDetailActiveSave", formatPathReference(context.saveReference || ""));
+  setCellText("cmDispatcherDetailActiveSession", context.saveSessionId || uiText.noData);
   setCellText("cmDispatcherDetailRouteRef", job.routeReference || "-");
   setCellText("cmDispatcherDetailEts2", ets2Status);
+  setCellText("cmDispatcherDetailLastErrorCode", job.lastErrorCode || eventError?.error || "-");
+  setCellText("cmDispatcherDetailLastErrorMessage", job.lastErrorMessage || eventError?.error || "-");
+  setCellText("cmDispatcherDetailLiveProgress", liveProgress?.stage || "-");
   setCellText("cmDispatcherDetailBonus", job.bonusNote || "-");
   setCellText("cmDispatcherDetailRisk", job.riskNote || "-");
+  setCellText("cmDispatcherWriteReport", formatDispatcherWriteReport(state.dispatcher.writeReport?.[job.id]));
 }
 
 function renderDispatcherOffers() {
@@ -785,9 +946,11 @@ function renderDispatcherOffers() {
 function renderDispatcherActive() {
   const rows = (state.dispatcher.activeJobs || []).map((job) => {
     const route = `${job.originCity || "-"} -> ${job.destinationCity || "-"}`;
-    const progress = `${formatDistance(job.progressKm || 0)} / ${formatDistance(job.distanceKm || 0)}`;
+    const routeDistance = job.routeDistanceKm || job.distanceKm || 0;
+    const progress = `${formatDistance(job.progressKm || 0)} / ${formatDistance(routeDistance)}`;
+    const selectedClass = job.id === state.dispatcher.selectedJobId ? "is-selected" : "";
     return `
-      <tr>
+      <tr class="${selectedClass}" data-dispatcher-job-id="${job.id}">
         <td>${job.id || "-"}</td>
         <td>
           <div class="dispatcher-row-primary">${job.companyName || "-"}</div>
@@ -832,8 +995,9 @@ function renderDispatcherHistory() {
 
   const rows = (history.items || []).map((job) => {
     const route = `${job.originCity || "-"} -> ${job.destinationCity || "-"}`;
+    const selectedClass = job.id === state.dispatcher.selectedJobId ? "is-selected" : "";
     return `
-      <tr>
+      <tr class="${selectedClass}" data-dispatcher-job-id="${job.id}">
         <td>${job.id || "-"}</td>
         <td>
           <div class="dispatcher-row-primary">${job.companyName || "-"}</div>
@@ -908,9 +1072,15 @@ async function refreshDispatcherData() {
       { vtcJobId: state.dispatcher.selectedJobId },
       { fallback: null, silent: true }
     );
+    state.dispatcher.snapshotDiagnostics = await safeInvoke(
+      "ets_snapshot_get_active_diagnostics",
+      {},
+      { fallback: null, silent: true }
+    );
     if (!state.dispatcher.selectedJob) {
       state.dispatcher.selectedJobId = null;
       state.dispatcher.jobLink = null;
+      state.dispatcher.snapshotDiagnostics = null;
     }
   } else if (state.dispatcher.marketJobs.length > 0) {
     state.dispatcher.selectedJobId = state.dispatcher.marketJobs[0].id;
@@ -924,13 +1094,39 @@ async function refreshDispatcherData() {
       { vtcJobId: state.dispatcher.selectedJobId },
       { fallback: null, silent: true }
     );
+    state.dispatcher.snapshotDiagnostics = await safeInvoke(
+      "ets_snapshot_get_active_diagnostics",
+      {},
+      { fallback: null, silent: true }
+    );
   } else {
     state.dispatcher.selectedJob = null;
     state.dispatcher.jobLink = null;
+    state.dispatcher.snapshotDiagnostics = null;
   }
 }
 
-async function handleDispatcherSelectJob(event) {
+async function refreshSelectedDispatcherDetails() {
+  if (!state.dispatcher.selectedJobId) return;
+  state.dispatcher.selectedJob = await safeInvoke(
+    "dispatcher_get_job_by_id",
+    { jobId: state.dispatcher.selectedJobId },
+    { fallback: state.dispatcher.selectedJob, silent: true }
+  );
+  state.dispatcher.jobLink = await safeInvoke(
+    "ets_get_job_link_status",
+    { vtcJobId: state.dispatcher.selectedJobId },
+    { fallback: state.dispatcher.jobLink, silent: true }
+  );
+  state.dispatcher.snapshotDiagnostics = await safeInvoke(
+    "ets_snapshot_get_active_diagnostics",
+    {},
+    { fallback: state.dispatcher.snapshotDiagnostics, silent: true }
+  );
+}
+
+async function handleDispatcherSelectJob(event, options = {}) {
+  const switchToMarket = Boolean(options.switchToMarket);
   const row = event.target.closest("[data-dispatcher-job-id]");
   if (!row) return;
   state.dispatcher.selectedJobId = row.getAttribute("data-dispatcher-job-id");
@@ -944,7 +1140,17 @@ async function handleDispatcherSelectJob(event) {
     { vtcJobId: state.dispatcher.selectedJobId },
     { fallback: null, silent: true }
   );
+  state.dispatcher.snapshotDiagnostics = await safeInvoke(
+    "ets_snapshot_get_active_diagnostics",
+    {},
+    { fallback: null, silent: true }
+  );
+  if (switchToMarket) {
+    switchDispatcherTab("market");
+  }
   renderDispatcherMarket();
+  renderDispatcherActive();
+  renderDispatcherHistory();
   renderDispatcherDetails();
 }
 
@@ -964,35 +1170,163 @@ async function handleDispatcherResetFilters() {
 
 async function handleDispatcherAcceptJob() {
   if (!state.dispatcher.selectedJobId) return;
+  state.dispatcher.actionBusy = true;
+  renderDispatcherDetails();
   try {
-    const selected = state.dispatcher.selectedJob?.job || state.dispatcher.selectedJob || {};
-    const command = selected.sourceType === "generated"
-      ? "dispatcher_accept_generated_job"
-      : "dispatcher_accept_job";
-    const details = await invokeStrict(command, { jobId: state.dispatcher.selectedJobId });
+    const details = await invokeStrict("dispatcher_accept_job", { jobId: state.dispatcher.selectedJobId });
     state.dispatcher.selectedJob = details;
     await refreshDispatcherData();
     renderDispatcher();
     showToast(await t("career_mode.dispatcher.toast_job_accepted"), "success");
   } catch (error) {
     showToast(await resolveErrorMessage(error), "error");
+  } finally {
+    state.dispatcher.actionBusy = false;
+    renderDispatcherDetails();
   }
 }
 
 async function handleDispatcherAssignToActiveSave() {
   if (!state.dispatcher.selectedJobId) return;
+  state.dispatcher.liveProgress[state.dispatcher.selectedJobId] = { stage: "assigning", updatedAt: Date.now() };
+  state.dispatcher.actionBusy = true;
+  renderDispatcherDetails();
   try {
-    state.dispatcher.selectedJob = await invokeStrict("dispatcher_assign_and_prepare_ets_link", {
+    state.dispatcher.selectedJob = await invokeStrict("dispatcher_assign_job_to_active_save", {
       jobId: state.dispatcher.selectedJobId,
     });
     await refreshDispatcherData();
     renderDispatcher();
-    showToast(await t("career_mode.dispatcher.toast_assign_prepare_complete"), "success");
+    showToast(await t("career_mode.dispatcher.toast_job_assigned"), "success");
   } catch (error) {
     await refreshDispatcherData();
     renderDispatcher();
     showToast(await resolveErrorMessage(error), "error");
+  } finally {
+    state.dispatcher.actionBusy = false;
+    renderDispatcherDetails();
   }
+}
+
+async function handleDispatcherInjectToActiveSave() {
+  if (!state.dispatcher.selectedJobId) return;
+  const jobId = String(state.dispatcher.selectedJobId);
+  const context = state.vtcContext || {};
+  const autosaveFallbackEnabled = Boolean(getInputChecked("cmDispatcherUseAutosaveFallback"));
+  if (!context.quicksaveReference && !autosaveFallbackEnabled) {
+    showToast(await t("career_mode.dispatcher.require_quicksave"), "warning");
+    return;
+  }
+  state.dispatcher.liveProgress[jobId] = { stage: "assigning", updatedAt: Date.now() };
+  state.dispatcher.actionBusy = true;
+  renderDispatcherDetails();
+  try {
+    console.log("[dispatcher][inject] start", { jobId, autoWrite: true });
+    const result = await invokeStrict("dispatcher_assign_and_prepare_and_write", {
+      jobId,
+      autoWrite: true,
+    });
+    console.log("[dispatcher][inject] success", result);
+
+    const write = result.writeOutput || null;
+    const baseReport = {
+      jobId,
+      saveReference: result.saveReference || "-",
+      quicksaveReference: result.quicksaveReference || "-",
+      saveSessionId: result.saveSessionId || "-",
+      assignResult: result.assignResult || "-",
+      prepareResult: result.prepareResult || "-",
+      writeResult: result.writeResult || "-",
+      finalDispatcherStatus: result.dispatcherStatus || "-",
+      finalLinkStatus: result.ets2JobLinkStatus || "-",
+      savePath: result.saveReference || "-",
+      backupPath: "-",
+      companyPointer: "-",
+      offerPointer: "-",
+      jobOfferDataPointer: "-",
+      origin: "-",
+      destination: "-",
+      targetCompany: "-",
+      cargoToken: "-",
+      shortestDistanceKm: "-",
+      expirationTime: "-",
+      reward: 0,
+      writeMode: result.writeResult || "-",
+      beforeSha256: result.shaBefore || "-",
+      afterSha256: result.shaAfter || "-",
+    };
+
+    state.dispatcher.writeReport[jobId] = write
+      ? {
+          ...baseReport,
+          jobId: write.jobId || jobId,
+          savePath: write.savePath || baseReport.savePath,
+          backupPath: write.backupPath || "-",
+          companyPointer: write.companyPointer || "-",
+          offerPointer: write.offerPointer || "-",
+          jobOfferDataPointer: write.jobOfferDataPointer || "-",
+          origin: write.origin || "-",
+          destination: write.destination || "-",
+          targetCompany: write.targetCompany || "-",
+          cargoToken: write.cargoToken || "-",
+          shortestDistanceKm: write.shortestDistanceKm ?? "-",
+          expirationTime: write.expirationTime ?? "-",
+          reward: write.reward ?? 0,
+          writeMode: write.writeMode || baseReport.writeMode,
+          beforeSha256: write.beforeSha256 || baseReport.beforeSha256,
+          afterSha256: write.afterSha256 || baseReport.afterSha256,
+          jobInfoUpdated: write.jobInfoUpdated,
+          finalLinkStatus: write.finalLinkStatus || baseReport.finalLinkStatus,
+        }
+      : baseReport;
+
+    state.dispatcher.liveProgress[jobId] = {
+      stage: `done (${result.assignResult} -> ${result.prepareResult} -> ${result.writeResult})`,
+      updatedAt: Date.now(),
+    };
+    await refreshDispatcherData();
+    renderDispatcher();
+    showToast(
+      `Injected: ${jobId} | dispatcher=${result.dispatcherStatus} | link=${result.ets2JobLinkStatus || "-"}`,
+      "success"
+    );
+  } catch (error) {
+    console.error("[dispatcher][inject] failed", { jobId, error });
+    state.dispatcher.liveProgress[jobId] = { stage: "failed", updatedAt: Date.now() };
+    state.dispatcher.lastError[jobId] = {
+      stage: "inject",
+      error: String(error?.message || error || "unknown"),
+      updatedAt: Date.now(),
+    };
+    const raw = String(error?.message || error || "unknown");
+    state.dispatcher.writeReport[jobId] = {
+      jobId,
+      error: raw,
+      diagnostics: parseDispatcherDiagnostics(raw),
+    };
+    await refreshDispatcherData();
+    renderDispatcher();
+    const resolved = await resolveErrorMessage(error);
+    showToast(`${resolved} (${raw})`, "error");
+  } finally {
+    state.dispatcher.actionBusy = false;
+    renderDispatcherDetails();
+  }
+}
+
+function parseDispatcherDiagnostics(rawError) {
+  const out = {};
+  const raw = String(rawError || "");
+  const segments = raw.split("|").map((part) => part.trim()).filter(Boolean);
+  for (const segment of segments) {
+    const eq = segment.indexOf("=");
+    if (eq <= 0) continue;
+    const key = segment.slice(0, eq).trim();
+    const value = segment.slice(eq + 1).trim();
+    if (!key || !value) continue;
+    out[key] = value;
+  }
+  return out;
 }
 
 function dispatcherGenerationConfigPayload() {
@@ -1041,6 +1375,8 @@ async function handleDispatcherCleanup() {
 
 async function handleDispatcherMarkSynced() {
   if (!state.dispatcher.selectedJobId) return;
+  state.dispatcher.actionBusy = true;
+  renderDispatcherDetails();
   try {
     const selected = state.dispatcher.selectedJob?.job || state.dispatcher.selectedJob || {};
     state.dispatcher.selectedJob = await invokeStrict("dispatcher_mark_job_synced_to_ets2", {
@@ -1052,11 +1388,17 @@ async function handleDispatcherMarkSynced() {
     showToast(await t("career_mode.dispatcher.toast_job_synced"), "success");
   } catch (error) {
     showToast(await resolveErrorMessage(error), "error");
+  } finally {
+    state.dispatcher.actionBusy = false;
+    renderDispatcherDetails();
   }
 }
 
 async function handleDispatcherPrepareEtsLink() {
   if (!state.dispatcher.selectedJobId) return;
+  state.dispatcher.liveProgress[state.dispatcher.selectedJobId] = { stage: "preparing", updatedAt: Date.now() };
+  state.dispatcher.actionBusy = true;
+  renderDispatcherDetails();
   try {
     state.dispatcher.jobLink = await invokeStrict("ets_prepare_job_link", {
       vtcJobId: state.dispatcher.selectedJobId,
@@ -1069,25 +1411,56 @@ async function handleDispatcherPrepareEtsLink() {
     await refreshDispatcherData();
     renderDispatcher();
     showToast(await resolveErrorMessage(error), "error");
+  } finally {
+    state.dispatcher.actionBusy = false;
+    renderDispatcherDetails();
   }
 }
 
 async function handleDispatcherWriteQuicksave() {
   if (!state.dispatcher.selectedJobId) return;
+  state.dispatcher.liveProgress[state.dispatcher.selectedJobId] = { stage: "writing", updatedAt: Date.now() };
+  state.dispatcher.actionBusy = true;
+  renderDispatcherDetails();
   try {
     if (!state.dispatcher.jobLink?.linkId) {
       state.dispatcher.jobLink = await invokeStrict("ets_get_job_link_status", {
         vtcJobId: state.dispatcher.selectedJobId,
       });
     }
-    state.dispatcher.jobLink = await invokeStrict("ets_write_job_to_quicksave", {
+    const writeResult = await invokeStrict("ets_write_job_to_quicksave", {
       linkId: state.dispatcher.jobLink.linkId,
     });
+    state.dispatcher.jobLink = writeResult.link || writeResult;
+    const selected = currentDispatcherJob() || {};
+    const patch = writeResult.link?.patch || {};
+    state.dispatcher.writeReport[state.dispatcher.selectedJobId] = {
+      jobId: state.dispatcher.selectedJobId,
+      savePath: writeResult.savePath || selected.saveReference || "",
+      backupPath: writeResult.backupPath || "",
+      companyPointer: `company.volatile.${writeResult.link?.srcCompany || selected.companyId || "-"}.${String(selected.originCity || "").toLowerCase()}`,
+      offerPointer: writeResult.link?.offerPointer || "-",
+      jobOfferDataPointer: writeResult.link?.jobOfferDataPointer || "-",
+      origin: `${selected.originCity || "-"} (${selected.originCountry || "-"})`,
+      destination: `${selected.destinationCity || "-"} (${selected.destinationCountry || "-"})`,
+      targetCompany: patch.target || writeResult.link?.dstCompany || "-",
+      cargoToken: patch.cargo || writeResult.link?.cargoId || "-",
+      shortestDistanceKm: patch.shortestDistanceKm ?? Math.round(Number(selected.distanceKm || 0)),
+      expirationTime: patch.expirationTime ?? "-",
+      reward: selected.totalReward || writeResult.link?.plannedReward || 0,
+      writeMode: writeResult.writeMode || "overwrite_existing_offer",
+      beforeSha256: writeResult.beforeSha256 || "-",
+      afterSha256: writeResult.afterSha256 || "-",
+      finalLinkStatus: writeResult.link?.status || "-",
+    };
     await refreshDispatcherData();
     renderDispatcher();
     showToast(await t("career_mode.dispatcher.toast_quicksave_load_required"), "success");
   } catch (error) {
     showToast(await resolveErrorMessage(error), "error");
+  } finally {
+    state.dispatcher.actionBusy = false;
+    renderDispatcherDetails();
   }
 }
 
@@ -1222,8 +1595,9 @@ function renderCompany() {
 
 function renderStatistics() {
   const statistics = state.overview?.statistics || {};
+  const totalTrips = statistics.totalTrips ?? statistics.completedTrips ?? 0;
 
-  setCellText("cmStatTrips", formatNumber(statistics.completedTrips || 0, 0));
+  setCellText("cmStatTrips", formatNumber(totalTrips || 0, 0));
   setCellText("cmStatKm", formatNumber(statistics.totalKilometers || 0, 0));
   setCellText("cmStatRevenue", formatCurrency(statistics.totalIncome || 0));
   setCellText("cmStatCompanyValue", formatCurrency(statistics.companyValue || 0));
@@ -1231,7 +1605,7 @@ function renderStatistics() {
   setCellText("cmStatSpeeding", formatNumber(statistics.speedingEvents || 0, 0));
 
   const bars = [
-    Number(statistics.completedTrips || 0),
+    Number(totalTrips || 0),
     Number(statistics.totalKilometers || 0) / 100,
     Number(statistics.totalIncome || 0) / 1000,
     Number(statistics.companyValue || 0) / 1000,
@@ -1281,6 +1655,44 @@ function renderVtcContext() {
     formatVtcPathReference(context.saveReference, uiText.vtcContextNoSave)
   );
   setCellText("careerVtcContextSession", context.saveSessionId || uiText.noData);
+  setCellText("careerVtcContextSessionStatus", sessionStatusLabel(context.saveSessionStatus));
+}
+
+function setUserMenuOpen(open) {
+  const dropdown = document.getElementById("careerUserMenuDropdown");
+  const button = document.getElementById("careerUserMenuBtn");
+  if (!dropdown || !button) return;
+  const visible = Boolean(open);
+  dropdown.hidden = !visible;
+  button.setAttribute("aria-expanded", visible ? "true" : "false");
+}
+
+function toggleUserMenu() {
+  const dropdown = document.getElementById("careerUserMenuDropdown");
+  setUserMenuOpen(Boolean(dropdown?.hidden));
+}
+
+function renderUserMenu() {
+  const user = state.authUser || null;
+  const label = user ? uiText.userMenuAccount : uiText.userMenuLogin;
+  const displayName = user
+    ? (user.username || user.email || uiText.userMenuAccount)
+    : uiText.userMenuNotLoggedIn;
+
+  setCellText("careerUserMenuLabel", label);
+  setCellText("careerUserMenuName", displayName);
+  setCellText("careerUserMenuIdentity", user ? (user.email || user.username || "-") : uiText.userMenuNotLoggedIn);
+  setCellText("careerUserMenuState", user ? (user.role || uiText.userMenuAccount) : uiText.userMenuLogin);
+
+  const loginButton = document.getElementById("careerUserMenuLogin");
+  const profileButton = document.getElementById("careerUserMenuProfile");
+  const settingsButton = document.getElementById("careerUserMenuSettings");
+  const logoutButton = document.getElementById("careerUserMenuLogout");
+
+  if (loginButton) loginButton.hidden = Boolean(user);
+  if (logoutButton) logoutButton.hidden = !Boolean(user);
+  if (profileButton) profileButton.disabled = !Boolean(user);
+  if (settingsButton) settingsButton.disabled = false;
 }
 
 function renderUserSettings() {
@@ -1345,6 +1757,12 @@ function applyDispatcherHandlers() {
   document.getElementById("cmDispatcherMarketBody")?.addEventListener("click", (event) => {
     void handleDispatcherSelectJob(event);
   });
+  document.getElementById("cmDispatcherActiveBody")?.addEventListener("click", (event) => {
+    void handleDispatcherSelectJob(event, { switchToMarket: true });
+  });
+  document.getElementById("cmDispatcherHistoryBody")?.addEventListener("click", (event) => {
+    void handleDispatcherSelectJob(event, { switchToMarket: true });
+  });
   document.getElementById("cmDispatcherApplyFiltersBtn")?.addEventListener("click", () => {
     void handleDispatcherApplyFilters();
   });
@@ -1354,14 +1772,8 @@ function applyDispatcherHandlers() {
   document.getElementById("cmDispatcherAcceptJobBtn")?.addEventListener("click", () => {
     void handleDispatcherAcceptJob();
   });
-  document.getElementById("cmDispatcherAssignJobToSaveBtn")?.addEventListener("click", () => {
-    void handleDispatcherAssignToActiveSave();
-  });
-  document.getElementById("cmDispatcherPrepareEtsLinkBtn")?.addEventListener("click", () => {
-    void handleDispatcherPrepareEtsLink();
-  });
-  document.getElementById("cmDispatcherWriteQuicksaveBtn")?.addEventListener("click", () => {
-    void handleDispatcherWriteQuicksave();
+  document.getElementById("cmDispatcherInjectActiveSaveBtn")?.addEventListener("click", () => {
+    void handleDispatcherInjectToActiveSave();
   });
   document.getElementById("cmDispatcherMarkSyncedBtn")?.addEventListener("click", () => {
     void handleDispatcherMarkSynced();
@@ -1430,21 +1842,129 @@ function registerDispatcherEventHandlers() {
   window.__dispatcher_listeners_registered = true;
 
   listen("career://dispatcher_changed", async (event) => {
+    console.log("[dispatcher][event] career://dispatcher_changed", event.payload);
     state.dispatcher.generation = event.payload || null;
     await refreshDispatcherData();
     renderDispatcher();
   }).catch(console.error);
   listen("vtc://dispatcher/job_link_updated", async () => {
+    console.log("[dispatcher][event] vtc://dispatcher/job_link_updated");
     await refreshDispatcherData();
     renderDispatcher();
   }).catch(console.error);
-  listen("vtc://dispatcher/job_updated", async () => {
+  listen("vtc://dispatcher/job_updated", async (event) => {
+    console.log("[dispatcher][event] vtc://dispatcher/job_updated", event.payload);
+    const payload = event.payload || {};
+    if (payload.jobId && state.dispatcher.selectedJobId && String(payload.jobId) === String(state.dispatcher.selectedJobId)) {
+      await refreshSelectedDispatcherDetails();
+      renderDispatcherDetails();
+      renderDispatcherMarket();
+      renderDispatcherActive();
+      renderDispatcherHistory();
+      return;
+    }
     await refreshDispatcherData();
     renderDispatcher();
   }).catch(console.error);
   listen("vtc://dispatcher/jobs_updated", async () => {
+    console.log("[dispatcher][event] vtc://dispatcher/jobs_updated");
     await refreshDispatcherData();
     renderDispatcher();
+  }).catch(console.error);
+  listen("vtc://dispatcher/assign_progress", async (event) => {
+    console.log("[dispatcher][event] vtc://dispatcher/assign_progress", event.payload);
+    const payload = event.payload || {};
+    const jobId = payload.jobId ? String(payload.jobId) : "";
+    if (!jobId) return;
+    state.dispatcher.liveProgress[jobId] = {
+      stage: String(payload.stage || "assigning"),
+      updatedAt: Date.now(),
+    };
+    if (!state.dispatcher.selectedJobId || String(state.dispatcher.selectedJobId) === jobId) {
+      await refreshSelectedDispatcherDetails();
+      renderDispatcherDetails();
+      renderDispatcherMarket();
+      showToast(`Assign: ${payload.stage || "running"} (${jobId})`, "info");
+    }
+  }).catch(console.error);
+  listen("vtc://dispatcher/prepare_progress", async (event) => {
+    console.log("[dispatcher][event] vtc://dispatcher/prepare_progress", event.payload);
+    const payload = event.payload || {};
+    const jobId = payload.jobId ? String(payload.jobId) : "";
+    if (!jobId) return;
+    state.dispatcher.liveProgress[jobId] = {
+      stage: String(payload.stage || "preparing"),
+      updatedAt: Date.now(),
+    };
+    if (!state.dispatcher.selectedJobId || String(state.dispatcher.selectedJobId) === jobId) {
+      await refreshSelectedDispatcherDetails();
+      renderDispatcherDetails();
+      renderDispatcherMarket();
+      showToast(`Prepare: ${payload.stage || "running"} (${jobId})`, "info");
+    }
+  }).catch(console.error);
+  listen("vtc://dispatcher/write_progress", async (event) => {
+    console.log("[dispatcher][event] vtc://dispatcher/write_progress", event.payload);
+    const payload = event.payload || {};
+    const jobId = payload.jobId ? String(payload.jobId) : "";
+    if (!jobId) return;
+    state.dispatcher.liveProgress[jobId] = {
+      stage: String(payload.stage || "writing"),
+      updatedAt: Date.now(),
+    };
+    if (!state.dispatcher.selectedJobId || String(state.dispatcher.selectedJobId) === jobId) {
+      await refreshSelectedDispatcherDetails();
+      renderDispatcherDetails();
+      renderDispatcherMarket();
+      renderDispatcherActive();
+      showToast(`Write: ${payload.stage || "running"} (${jobId})`, "info");
+    }
+  }).catch(console.error);
+  listen("vtc://dispatcher/job_error", async (event) => {
+    console.error("[dispatcher][event] vtc://dispatcher/job_error", event.payload);
+    const payload = event.payload || {};
+    const jobId = payload.jobId ? String(payload.jobId) : "";
+    if (!jobId) return;
+    state.dispatcher.lastError[jobId] = {
+      stage: String(payload.stage || "error"),
+      error: String(payload.error || "unknown"),
+      updatedAt: Date.now(),
+    };
+    if (!state.dispatcher.selectedJobId || String(state.dispatcher.selectedJobId) === jobId) {
+      await refreshSelectedDispatcherDetails();
+      renderDispatcherDetails();
+    }
+    showToast(String(payload.error || "Dispatcher error"), "error");
+  }).catch(console.error);
+}
+
+function registerCareerEventHandlers() {
+  if (!hasTauri || window.__career_listeners_registered) return;
+  window.__career_listeners_registered = true;
+
+  listen("career://status", (event) => {
+    state.status = event.payload || null;
+    renderStatus();
+  }).catch(console.error);
+
+  listen("career://overview", (event) => {
+    const nextOverview = event.payload || null;
+    if (!nextOverview) return;
+    state.overview = nextOverview;
+    state.source = "live";
+    if (Array.isArray(nextOverview.recentJobs)) {
+      state.jobLog = nextOverview.recentJobs;
+    }
+    if (nextOverview.jobStats) {
+      state.jobStats = nextOverview.jobStats;
+    }
+    renderAll();
+  }).catch(console.error);
+
+  listen("vtc://system/status", async () => {
+    state.vtcContext = await safeInvoke("get_vtc_runtime_context", {}, { fallback: null, silent: true });
+    renderStatus();
+    renderVtcContext();
   }).catch(console.error);
 }
 
@@ -1476,6 +1996,8 @@ async function loadUiText() {
   uiText.dispatcherNoSaveLink = await t("career_mode.dispatcher.no_save_link");
   uiText.dispatcherUnsynced = await t("career_mode.dispatcher.unsynced");
   uiText.dispatcherExpired = await t("career_mode.dispatcher.expired");
+  uiText.dispatcherInjectActiveSave = await t("career_mode.dispatcher.inject_active_save");
+  uiText.dispatcherAlreadyInjected = await t("career_mode.dispatcher.already_injected");
   uiText.dispatcherPrepareLink = await t("career_mode.dispatcher.prepare_ets_link");
   uiText.dispatcherRetryPrepareLink = await t("career_mode.dispatcher.retry_prepare_ets_link");
   uiText.dispatcherWriteQuicksave = await t("career_mode.dispatcher.write_to_quicksave");
@@ -1484,6 +2006,13 @@ async function loadUiText() {
   uiText.dispatcherOpenLabel = await t("career_mode.dispatcher.generation_open_short");
   uiText.vtcContextNoProfile = await t("career_mode.vtc_context_no_profile");
   uiText.vtcContextNoSave = await t("career_mode.vtc_context_no_save");
+  uiText.vtcContextSessionLinked = await t("career_mode.vtc_context_status_linked");
+  uiText.vtcContextSessionInferred = await t("career_mode.vtc_context_status_inferred");
+  uiText.vtcContextSessionProfileOnly = await t("career_mode.vtc_context_status_profile_only");
+  uiText.vtcContextSessionMissing = await t("career_mode.vtc_context_status_missing");
+  uiText.userMenuAccount = await t("career.user_menu.account");
+  uiText.userMenuLogin = await t("career.user_menu.login");
+  uiText.userMenuNotLoggedIn = await t("career.user_menu.not_logged_in");
 }
 
 async function refreshCareerTelemetryData() {
@@ -1501,7 +2030,11 @@ async function refreshCareerTelemetryData() {
     : allowMock
       ? buildFallbackOverview()
       : { ...buildFallbackOverview(), recentJobs: [] };
-  state.jobLog = Array.isArray(jobLog) && jobLog.length > 0 ? jobLog : state.overview.recentJobs || [];
+  state.jobLog = hasLiveOverview && Array.isArray(state.overview?.recentJobs) && state.overview.recentJobs.length > 0
+    ? state.overview.recentJobs
+    : Array.isArray(jobLog) && jobLog.length > 0
+      ? jobLog
+      : state.overview.recentJobs || [];
   state.jobStats = jobStats || state.overview.jobStats || null;
   state.source = hasLiveOverview ? "live" : "mock";
 
@@ -1511,6 +2044,8 @@ async function refreshCareerTelemetryData() {
 }
 
 async function refreshManagementData() {
+  await safeInvoke("auth_restore_session", {}, { silent: true });
+  state.authUser = await safeInvoke("auth_get_current_user", {}, { fallback: null, silent: true });
   state.vtcContext = await safeInvoke("get_vtc_runtime_context", {}, { fallback: null, silent: true });
   state.roles = await safeInvoke("get_available_roles", {}, { fallback: [], silent: true });
   state.userProfile = await safeInvoke("get_current_user_profile", {}, { fallback: null, silent: true });
@@ -1524,6 +2059,7 @@ async function refreshManagementData() {
 function renderAll() {
   renderStatus();
   renderVtcContext();
+  renderUserMenu();
   renderDashboard();
   renderMembers();
   renderOrders();
@@ -1723,6 +2259,54 @@ async function initNavigation() {
   });
 }
 
+function registerUserMenuHandlers() {
+  document.getElementById("careerUserMenuBtn")?.addEventListener("click", (event) => {
+    event.stopPropagation();
+    toggleUserMenu();
+  });
+
+  document.getElementById("careerUserMenuLogin")?.addEventListener("click", async () => {
+    setUserMenuOpen(false);
+    await safeInvoke("hub_set_mode", { mode: "career" }, { silent: true });
+    window.location.href = "/index.html";
+  });
+
+  document.getElementById("careerUserMenuProfile")?.addEventListener("click", () => {
+    setUserMenuOpen(false);
+    switchPanel("settings");
+    document.getElementById("cmUserUsernameInput")?.focus();
+  });
+
+  document.getElementById("careerUserMenuSettings")?.addEventListener("click", () => {
+    setUserMenuOpen(false);
+    switchPanel("settings");
+  });
+
+  document.getElementById("careerUserMenuLogout")?.addEventListener("click", async () => {
+    setUserMenuOpen(false);
+    try {
+      await invokeStrict("auth_logout");
+    } catch (error) {
+      showToast(await resolveErrorMessage(error), "error");
+      return;
+    }
+    state.authUser = null;
+    renderUserMenu();
+  });
+
+  document.addEventListener("click", (event) => {
+    if (!event.target.closest(".career-user-menu")) {
+      setUserMenuOpen(false);
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      setUserMenuOpen(false);
+    }
+  });
+}
+
 function registerActionHandlers() {
   document.getElementById("cmUpdateUsernameBtn")?.addEventListener("click", () => {
     void handleUpdateUsername();
@@ -1759,6 +2343,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   switchDispatcherTab("market");
   applySettingsHandlers();
   registerDispatcherEventHandlers();
+  registerCareerEventHandlers();
+  registerUserMenuHandlers();
   await initNavigation();
   registerActionHandlers();
 

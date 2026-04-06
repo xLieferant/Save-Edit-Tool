@@ -8,6 +8,9 @@ pub(super) const DISPATCHER_MAX_GENERATION_BATCH: usize = 4;
 pub(super) const DISPATCHER_OPEN_JOB_STATUSES: &[&str] =
     &["open", "assigned_to_save", "prepared", "injected", "failed"];
 pub(super) const DISPATCHER_ACTIVE_JOB_STATUSES: &[&str] = &[
+    "assigned_to_save",
+    "prepared",
+    "injected",
     "planned",
     "accepted",
     "in_transit",
@@ -17,6 +20,7 @@ pub(super) const DISPATCHER_ACTIVE_JOB_STATUSES: &[&str] = &[
 pub(super) const DISPATCHER_BUSY_JOB_STATUSES: &[&str] = &["accepted", "in_transit", "delayed"];
 pub(super) const DISPATCHER_HISTORY_JOB_STATUSES: &[&str] = &[
     "completed",
+    "failed",
     "problematic",
     "cancelled",
     "rejected",

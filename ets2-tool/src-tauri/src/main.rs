@@ -4,10 +4,11 @@
 )]
 
 use crate::state::AuthState;
-use crate::state::{AppProfileState, DecryptCache, EtsDbState, ProfileCache};
+use crate::state::{AppProfileState, AppState, DecryptCache, EtsDbState, ProfileCache};
 use crate::state::{CareerState, HubState};
 use tauri::Manager;
 
+mod db;
 mod commands;
 mod events;
 mod features;
@@ -23,10 +24,12 @@ fn main() {
 
     features::career::scs_sdk_telemetry::start_terminal_telemetry_loop();
     features::career::telemetry_debug::start_telemetry_debug_thread();
-    let ets_db_path = features::career::db::default_db_path();
-    let ets_db_pool =
-        tauri::async_runtime::block_on(features::ets2save::link_service::create_pool(&ets_db_path))
-            .expect("failed to initialize ETS sqlx pool");
+    let sqlite_pool = tauri::async_runtime::block_on(db::sqlite::init_sqlite())
+        .expect("failed to initialize central sqlite pool");
+    let sqlite_path = db::sqlite::app_db_path();
+    if let Err(error) = db::sqlite::validate_sqlite_extension(&sqlite_path) {
+        panic!("{}", error);
+    }
 
     tauri::Builder::default()
         .plugin(tauri_plugin_fs::init())
@@ -36,7 +39,13 @@ fn main() {
         .manage(HubState::default())
         .manage(CareerState::default())
         .manage(AuthState::default())
-        .manage(EtsDbState { pool: ets_db_pool })
+        .manage(EtsDbState {
+            pool: sqlite_pool.clone(),
+        })
+        .manage(AppState {
+            sqlite: sqlite_pool.clone(),
+            sqlite_path: sqlite_path.clone(),
+        })
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
@@ -47,7 +56,7 @@ fn main() {
             let auth = app.state::<AuthState>();
             crate::dev_log!("[app] setup begin");
 
-            let db_path = features::career::db::default_db_path();
+            let db_path = db::sqlite::app_db_path();
             crate::dev_log!("[app] setup init db: {}", db_path.display());
             match features::career::db::init_logbook(&db_path) {
                 Ok(()) => {
@@ -56,9 +65,7 @@ fn main() {
                         *guard = Some(db_path);
                     }
 
-                    if let Ok(conn) =
-                        rusqlite::Connection::open(features::auth::db::default_db_path())
-                    {
+                    if let Ok(conn) = rusqlite::Connection::open(db::sqlite::app_db_path()) {
                         if let Err(error) = features::auth::db::ensure_tables(&conn) {
                             crate::dev_log!("[auth] ensure tables failed: {}", error);
                         } else if let Err(error) =
@@ -123,6 +130,11 @@ fn main() {
             commands::ets_prepare_job_link,
             commands::ets_write_job_to_quicksave,
             commands::ets_get_job_link_status,
+            commands::ets_snapshot_refresh_active_save,
+            commands::ets_snapshot_get_active,
+            commands::ets_snapshot_list_depots,
+            commands::ets_snapshot_get_active_diagnostics,
+            commands::get_sqlite_info,
             commands::data_import_ets2_datasets,
             commands::ets2data_get_city,
             commands::ets2data_get_company,
@@ -227,6 +239,7 @@ fn main() {
             features::career::commands::dispatcher_link_job_to_save_context,
             features::career::commands::dispatcher_assign_job_to_active_save,
             features::career::commands::dispatcher_assign_and_prepare_ets_link,
+            features::career::commands::dispatcher_assign_and_prepare_and_write,
             features::career::commands::dispatcher_accept_generated_job,
             features::career::commands::dispatcher_mark_job_synced_to_ets2,
             features::career::commands::dispatcher_get_jobs_by_save_context,

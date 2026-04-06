@@ -269,6 +269,10 @@ fn upsert_job(runtime: &CareerRuntime, active: &ActiveJobState) -> Result<(), St
         cargo_damage: active.cargo_damage as f64,
         job_market: active.job_market.clone(),
         special_job: active.special_job,
+        ingame_income: None,
+        vtc_expected_income: None,
+        result_status: None,
+        planned_distance_source: None,
     };
 
     job_log::upsert_active_job(&conn, &entry)
@@ -284,8 +288,8 @@ fn finalize_job(
 
     let status = match previous.last_event {
         Some(ActiveJobEvent::Delivered) => "completed",
-        Some(ActiveJobEvent::Cancelled) => "aborted",
-        None => "unknown",
+        Some(ActiveJobEvent::Cancelled) => "cancelled",
+        None => "abandoned",
     };
 
     job_log::mark_job_finished(

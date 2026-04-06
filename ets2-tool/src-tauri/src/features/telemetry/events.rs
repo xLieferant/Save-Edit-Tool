@@ -16,6 +16,8 @@ pub struct TelemetryJobEventPayload {
     pub on_job: bool,
     pub job_finished: bool,
     pub job_delivered: bool,
+    pub job_cancelled: bool,
+    pub job_result: Option<String>,
     pub cargo_id: Option<String>,
     pub cargo: Option<String>,
     pub city_src_id: Option<String>,

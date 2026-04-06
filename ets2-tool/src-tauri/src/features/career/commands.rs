@@ -1,5 +1,9 @@
 use rusqlite::Connection;
+use serde::Serialize;
+use sha2::{Digest, Sha256};
 use sqlx::SqlitePool;
+use std::fs;
+use std::path::PathBuf;
 use std::sync::atomic::Ordering;
 use tauri::command;
 use tauri::{AppHandle, Emitter, State};
@@ -20,10 +24,61 @@ use crate::features::career::overview::CareerOverview;
 use crate::features::career::plugin_installer::{self, ScsGame};
 use crate::features::ets2save::errors::{AppError, AppErrorCode};
 use crate::features::ets2save::link_service;
-use crate::features::ets2save::models::EtsJobLinkStatus;
+use crate::features::ets2save::models::{EtsJobLink, EtsJobLinkStatus, EtsJobWriteResult};
 use crate::features::hub::events::CareerStatus;
 use crate::shared::current_profile::snapshot_save_context;
 use crate::state::{AppProfileState, CareerRuntime, CareerState, EtsDbState};
+
+const EVT_DISPATCHER_ASSIGN_PROGRESS: &str = "vtc://dispatcher/assign_progress";
+const EVT_DISPATCHER_PREPARE_PROGRESS: &str = "vtc://dispatcher/prepare_progress";
+const EVT_DISPATCHER_WRITE_PROGRESS: &str = "vtc://dispatcher/write_progress";
+const EVT_DISPATCHER_JOB_UPDATED_NEW: &str = "vtc://dispatcher/job_updated";
+const EVT_DISPATCHER_JOB_ERROR: &str = "vtc://dispatcher/job_error";
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DispatcherAssignPrepareWriteDto {
+    pub job: DispatcherJobDetails,
+    pub link: Option<EtsJobLink>,
+    pub auto_write: bool,
+    pub write_attempted: bool,
+    pub write_applied: bool,
+    pub dispatcher_status: String,
+    pub ets2_job_link_status: Option<String>,
+    pub sha_before: Option<String>,
+    pub sha_after: Option<String>,
+    pub sha_changed: Option<bool>,
+    pub save_reference: Option<String>,
+    pub quicksave_reference: Option<String>,
+    pub save_session_id: Option<String>,
+    pub assign_result: String,
+    pub prepare_result: String,
+    pub write_result: String,
+    pub write_output: Option<DispatcherWriteOutputDto>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DispatcherWriteOutputDto {
+    pub job_id: String,
+    pub save_path: String,
+    pub backup_path: String,
+    pub company_pointer: String,
+    pub offer_pointer: Option<String>,
+    pub job_offer_data_pointer: Option<String>,
+    pub origin: String,
+    pub destination: String,
+    pub target_company: Option<String>,
+    pub cargo_token: Option<String>,
+    pub shortest_distance_km: Option<i64>,
+    pub expiration_time: Option<i64>,
+    pub reward: i64,
+    pub write_mode: String,
+    pub before_sha256: String,
+    pub after_sha256: String,
+    pub job_info_updated: bool,
+    pub final_link_status: String,
+}
 
 #[command]
 pub fn career_get_status(career: State<'_, CareerState>) -> Result<CareerStatus, String> {
@@ -84,8 +139,7 @@ pub fn career_get_active_job(
         .active_job
         .lock()
         .map_err(|_| "Career active_job lock poisoned".to_string())?;
-
-    Ok(guard.as_ref().map(|active| JobLogEntry {
+    let mut active_entry = guard.as_ref().map(|active| JobLogEntry {
         job_id: active.job_id.clone(),
         started_at_utc: active.started_at_utc.clone(),
         ended_at_utc: None,
@@ -104,7 +158,20 @@ pub fn career_get_active_job(
         cargo_damage: active.cargo_damage as f64,
         job_market: active.job_market.clone(),
         special_job: active.special_job,
-    }))
+        ingame_income: None,
+        vtc_expected_income: None,
+        result_status: None,
+        planned_distance_source: None,
+    });
+    drop(guard);
+
+    if let Some(entry) = active_entry.as_mut() {
+        let conn = open_connection(runtime)?;
+        job_log::ensure_tables(&conn)?;
+        job_log::enrich_job_entry(&conn, entry)?;
+    }
+
+    Ok(active_entry)
 }
 
 #[command]
@@ -120,7 +187,9 @@ pub fn career_get_job_log(career: State<'_, CareerState>) -> Result<Vec<JobLogEn
 
     let conn = Connection::open(db_path).map_err(|e| e.to_string())?;
     job_log::ensure_tables(&conn)?;
-    job_log::list_recent_jobs(&conn, 200)
+    let mut jobs = job_log::list_recent_jobs(&conn, 200)?;
+    job_log::enrich_job_entries(&conn, &mut jobs)?;
+    Ok(jobs)
 }
 
 #[command]
@@ -427,6 +496,26 @@ pub async fn dispatcher_assign_and_prepare_ets_link(
 }
 
 #[command]
+pub async fn dispatcher_assign_and_prepare_and_write(
+    job_id: String,
+    auto_write: bool,
+    app: AppHandle,
+    career: State<'_, CareerState>,
+    profile: State<'_, AppProfileState>,
+    db: State<'_, EtsDbState>,
+) -> Result<DispatcherAssignPrepareWriteDto, String> {
+    dispatcher_assign_prepare_write_inner(
+        Some(&app),
+        career.runtime.as_ref(),
+        profile.inner(),
+        &db.pool,
+        &job_id,
+        auto_write,
+    )
+    .await
+}
+
+#[command]
 pub fn dispatcher_accept_generated_job(
     job_id: String,
     career: State<'_, CareerState>,
@@ -602,6 +691,321 @@ async fn dispatcher_assign_and_prepare_ets_link_inner(
     }
 }
 
+async fn dispatcher_assign_prepare_write_inner(
+    app: Option<&AppHandle>,
+    runtime: &CareerRuntime,
+    profile: &AppProfileState,
+    db_pool: &SqlitePool,
+    job_id: &str,
+    auto_write: bool,
+) -> Result<DispatcherAssignPrepareWriteDto, String> {
+    let save_context = resolve_required_dispatcher_save_context(profile)?;
+    let mut assign_result = "pending".to_string();
+    let mut prepare_result = "pending".to_string();
+    let mut write_result = if auto_write {
+        "pending".to_string()
+    } else {
+        "skipped_auto_write_disabled".to_string()
+    };
+    let mut write_output: Option<DispatcherWriteOutputDto> = None;
+    ensure_steam_cloud_disabled(db_pool, save_context.profile_reference.as_deref())
+        .await
+        .map_err(|error| {
+            let formatted = format_ets_app_error(&error);
+            emit_dispatcher_job_error(app, job_id, "validation", &formatted);
+            formatted
+        })?;
+
+    let game_sii_path = save_context
+        .save_reference
+        .as_ref()
+        .map(|save_reference| PathBuf::from(save_reference).join("game.sii"));
+    let sha_before = game_sii_path
+        .as_deref()
+        .and_then(read_file_sha256_hex_opt);
+
+    emit_dispatcher_progress(app, EVT_DISPATCHER_ASSIGN_PROGRESS, job_id, "assigning");
+
+    let assigned_or_current = {
+        let conn = open_connection(runtime)?;
+        match dispatcher::dispatcher_assign_job_to_active_save(&conn, job_id, &save_context) {
+            Ok(details) => {
+                assign_result = "assigned".to_string();
+                details
+            }
+            Err(error) if error == "job_already_assigned" => {
+                let current = dispatcher::dispatcher_get_job_by_id(&conn, job_id, &save_context)?;
+                if matches!(
+                    current.job.status.as_str(),
+                    "assigned_to_save" | "prepared" | "injected" | "completed"
+                ) {
+                    assign_result = "already_assigned".to_string();
+                    current
+                } else {
+                    return Err(error);
+                }
+            }
+            Err(error) => return Err(error),
+        }
+    };
+    runtime.overview_dirty.store(true, Ordering::Relaxed);
+
+    emit_dispatcher_progress(app, EVT_DISPATCHER_PREPARE_PROGRESS, job_id, "preparing");
+
+    let mut link = match link_service::ets_get_job_link_status(db_pool, job_id).await {
+        Ok(link) => Some(link),
+        Err(error) if matches!(&error.code, AppErrorCode::InvalidToken) => None,
+        Err(error) => {
+            let formatted = format_ets_app_error(&error);
+            emit_dispatcher_job_error(app, job_id, "prepare", &formatted);
+            return Err(formatted);
+        }
+    };
+
+    let prepare_needed = !matches!(
+        link.as_ref().map(|item| item.status),
+        Some(
+            EtsJobLinkStatus::Prepared
+                | EtsJobLinkStatus::Written
+                | EtsJobLinkStatus::RequiresLoad
+                | EtsJobLinkStatus::Synced
+                | EtsJobLinkStatus::Completed
+        )
+    );
+
+    if prepare_needed {
+        match link_service::prepare_job_link(
+            app,
+            db_pool,
+            job_id,
+            save_context
+                .profile_reference
+                .as_deref()
+                .unwrap_or_default(),
+            profile,
+        )
+        .await
+        {
+            Ok(prepared_link) => {
+                prepare_result = "prepared".to_string();
+                link = Some(prepared_link);
+            }
+            Err(error) => {
+                let _ = link_service::mark_dispatcher_prepare_error(db_pool, job_id, &error).await;
+                runtime.overview_dirty.store(true, Ordering::Relaxed);
+                let details =
+                    load_dispatcher_job_details_for_context(runtime, job_id, &save_context).ok();
+                if let Some(details) = details.as_ref() {
+                    emit_dispatcher_job_updated(app, details);
+                }
+                let formatted = format_ets_app_error(&error);
+                emit_dispatcher_job_error(app, job_id, "prepare", &formatted);
+                return Err(formatted);
+            }
+        }
+    } else {
+        prepare_result = "already_prepared_or_written".to_string();
+    }
+
+    let mut write_attempted = false;
+    let mut write_applied = false;
+    let mut written_result: Option<EtsJobWriteResult> = None;
+
+    if auto_write {
+        write_attempted = true;
+        emit_dispatcher_progress(app, EVT_DISPATCHER_WRITE_PROGRESS, job_id, "writing");
+
+        let current_link = link.clone().ok_or_else(|| {
+            let message = "invalid_token: Missing prepared link after prepare step".to_string();
+            emit_dispatcher_job_error(app, job_id, "write", &message);
+            message
+        })?;
+
+        match current_link.status {
+            EtsJobLinkStatus::RequiresLoad | EtsJobLinkStatus::Synced | EtsJobLinkStatus::Completed => {
+                emit_dispatcher_progress(app, EVT_DISPATCHER_WRITE_PROGRESS, job_id, "already_written");
+                write_result = "already_written".to_string();
+            }
+            EtsJobLinkStatus::Prepared | EtsJobLinkStatus::Written => {
+                match link_service::write_job_to_quicksave(app, db_pool, &current_link.link_id)
+                .await
+                {
+                    Ok(write_payload) => {
+                        write_result = "written".to_string();
+                        link = Some(write_payload.link.clone());
+                        written_result = Some(write_payload);
+                        write_applied = true;
+                    }
+                    Err(error) => {
+                        let formatted = format_ets_app_error(&error);
+                        emit_dispatcher_job_error(app, job_id, "write", &formatted);
+                        return Err(formatted);
+                    }
+                }
+            }
+            EtsJobLinkStatus::Pending | EtsJobLinkStatus::Error => {
+                let message = format!(
+                    "invalid_job_status: Link {} is not writable from status {}",
+                    current_link.link_id,
+                    current_link.status.as_db()
+                );
+                emit_dispatcher_job_error(app, job_id, "write", &message);
+                return Err(message);
+            }
+        }
+    }
+
+    runtime.overview_dirty.store(true, Ordering::Relaxed);
+    let details =
+        load_dispatcher_job_details_for_context(runtime, job_id, &save_context).unwrap_or(assigned_or_current);
+    emit_dispatcher_job_updated(app, &details);
+    emit_dispatcher_job_updated_new(app, &details);
+
+    let sha_after = if auto_write {
+        game_sii_path
+            .as_deref()
+            .and_then(read_file_sha256_hex_opt)
+    } else {
+        None
+    };
+    let sha_changed = match (sha_before.as_ref(), sha_after.as_ref()) {
+        (Some(before), Some(after)) => Some(before != after),
+        _ => None,
+    };
+
+    if let Some(result) = written_result {
+        let patch = result.link.patch.clone();
+        let origin = format!("{} ({})", details.job.origin_city, details.job.origin_country);
+        let destination = format!(
+            "{} ({})",
+            details.job.destination_city, details.job.destination_country
+        );
+        write_output = Some(DispatcherWriteOutputDto {
+            job_id: details.job.id.clone(),
+            save_path: result.save_path.clone(),
+            backup_path: result.backup_path.clone(),
+            company_pointer: format!(
+                "company.volatile.{}.{}",
+                result.link.src_company,
+                result.link.src_city
+            ),
+            offer_pointer: result.link.offer_pointer.clone(),
+            job_offer_data_pointer: result.link.job_offer_data_pointer.clone(),
+            origin,
+            destination,
+            target_company: Some(patch.target),
+            cargo_token: Some(patch.cargo),
+            shortest_distance_km: Some(patch.shortest_distance_km),
+            expiration_time: Some(patch.expiration_time),
+            reward: details.job.total_reward,
+            write_mode: result.write_mode,
+            before_sha256: result.before_sha256,
+            after_sha256: result.after_sha256,
+            job_info_updated: result.job_info_updated,
+            final_link_status: result.link.status.as_db().to_string(),
+        });
+    }
+
+    Ok(DispatcherAssignPrepareWriteDto {
+        dispatcher_status: details.job.status.clone(),
+        ets2_job_link_status: details.job.ets2_job_link_status.clone(),
+        job: details,
+        link,
+        auto_write,
+        write_attempted,
+        write_applied,
+        sha_before,
+        sha_after,
+        sha_changed,
+        save_reference: save_context.save_reference.clone(),
+        quicksave_reference: save_context.quicksave_reference.clone(),
+        save_session_id: save_context.save_session_id.clone(),
+        assign_result,
+        prepare_result,
+        write_result,
+        write_output,
+    })
+}
+
+async fn ensure_steam_cloud_disabled(
+    pool: &SqlitePool,
+    profile_reference: Option<&str>,
+) -> Result<(), AppError> {
+    let Some(profile_reference) = profile_reference.map(str::trim).filter(|value| !value.is_empty())
+    else {
+        return Ok(());
+    };
+
+    let steam_cloud_enabled = sqlx::query_scalar::<_, i64>(
+        "SELECT steam_cloud_enabled FROM ets_profiles WHERE profile_id = ?1 OR profile_path = ?1 ORDER BY updated_at_utc DESC LIMIT 1",
+    )
+    .bind(profile_reference)
+    .fetch_optional(pool)
+    .await?
+    .map(|value| value != 0)
+    .unwrap_or(false);
+
+    if steam_cloud_enabled {
+        return Err(AppError::new(
+            AppErrorCode::SteamCloudEnabled,
+            format!("Steam Cloud enabled for profile: {}", profile_reference),
+        ));
+    }
+
+    Ok(())
+}
+
+fn read_file_sha256_hex_opt(path: &std::path::Path) -> Option<String> {
+    let bytes = fs::read(path).ok()?;
+    let mut hasher = Sha256::new();
+    hasher.update(bytes);
+    Some(format!("{:x}", hasher.finalize()))
+}
+
+fn emit_dispatcher_progress(app: Option<&AppHandle>, event: &str, job_id: &str, stage: &str) {
+    let Some(app) = app else {
+        return;
+    };
+
+    let _ = app.emit(
+        event,
+        serde_json::json!({
+            "jobId": job_id,
+            "stage": stage,
+        }),
+    );
+}
+
+fn emit_dispatcher_job_updated_new(app: Option<&AppHandle>, details: &DispatcherJobDetails) {
+    let Some(app) = app else {
+        return;
+    };
+
+    let _ = app.emit(
+        EVT_DISPATCHER_JOB_UPDATED_NEW,
+        serde_json::json!({
+            "jobId": details.job.id,
+            "status": details.job.status,
+            "ets2JobLinkStatus": details.job.ets2_job_link_status,
+        }),
+    );
+}
+
+fn emit_dispatcher_job_error(app: Option<&AppHandle>, job_id: &str, stage: &str, error: &str) {
+    let Some(app) = app else {
+        return;
+    };
+
+    let _ = app.emit(
+        EVT_DISPATCHER_JOB_ERROR,
+        serde_json::json!({
+            "jobId": job_id,
+            "stage": stage,
+            "error": error,
+        }),
+    );
+}
+
 fn load_dispatcher_job_details_for_context(
     runtime: &CareerRuntime,
     job_id: &str,
@@ -668,7 +1072,9 @@ mod tests {
     use sqlx::SqlitePool;
     use uuid::Uuid;
 
-    use super::dispatcher_assign_and_prepare_ets_link_inner;
+    use super::{
+        dispatcher_assign_and_prepare_ets_link_inner, dispatcher_assign_prepare_write_inner,
+    };
     use crate::features::career::dispatcher;
     use crate::features::ets2save::link_service;
     use crate::state::{AppProfileState, CareerRuntime};
@@ -683,7 +1089,11 @@ mod tests {
         job_id: String,
     }
 
-    async fn setup_test_context(company_id: &str, company_name: &str) -> TestContext {
+    async fn setup_test_context(
+        company_id: &str,
+        company_name: &str,
+        origin_city: &str,
+    ) -> TestContext {
         let temp_root =
             std::env::temp_dir().join(format!("dispatcher_assign_prepare_{}", Uuid::new_v4()));
         let profile_path = temp_root.join("profile");
@@ -718,7 +1128,7 @@ mod tests {
             )
             VALUES (
                 ?1, 'generated', ?2, ?3, 'quick_job', 'trucks',
-                'Berlin', 'DE', 'Hamburg', 'DE',
+                ?4, 'DE', 'Hamburg', 'DE',
                 520.0, 12000.0, 'normal', 'normal',
                 'quick_job', NULL, 1.12,
                 1.18, 758, 360,
@@ -729,10 +1139,10 @@ mod tests {
                 120, 480, NULL, NULL,
                 NULL, 'open', 0, NULL, NULL,
                 NULL, NULL, NULL, 'pending_route',
-                NULL, NULL, NULL, NULL, ?4, ?4
+                NULL, NULL, NULL, NULL, ?5, ?5
             )
             "#,
-            params![job_id, company_id, company_name, now],
+            params![job_id, company_id, company_name, origin_city, now],
         )
         .unwrap();
         drop(conn);
@@ -758,7 +1168,7 @@ mod tests {
     #[test]
     fn assign_and_prepare_sets_status_prepared() {
         tauri::async_runtime::block_on(async {
-            let context = setup_test_context("test_company", "Test Company").await;
+            let context = setup_test_context("test_company", "Test Company", "Berlin").await;
 
             let result = dispatcher_assign_and_prepare_ets_link_inner(
                 None,
@@ -788,7 +1198,8 @@ mod tests {
     #[test]
     fn prepare_failure_leaves_job_assigned_and_marks_error() {
         tauri::async_runtime::block_on(async {
-            let context = setup_test_context("missing_company", "Missing Company").await;
+            let context =
+                setup_test_context("missing_company", "Missing Company", "UnknownCity").await;
 
             let error = dispatcher_assign_and_prepare_ets_link_inner(
                 None,
@@ -825,7 +1236,7 @@ mod tests {
     #[test]
     fn assign_and_prepare_is_idempotent() {
         tauri::async_runtime::block_on(async {
-            let context = setup_test_context("test_company", "Test Company").await;
+            let context = setup_test_context("test_company", "Test Company", "Berlin").await;
 
             let first = dispatcher_assign_and_prepare_ets_link_inner(
                 None,
@@ -848,6 +1259,138 @@ mod tests {
 
             assert_eq!(first.job.status, "prepared");
             assert_eq!(second.job.status, "prepared");
+
+            let conn = Connection::open(&context.db_path).unwrap();
+            let link_count: i64 = conn
+                .query_row(
+                    "SELECT COUNT(*) FROM ets_job_links WHERE vtc_job_id = ?1",
+                    [context.job_id.as_str()],
+                    |row| row.get(0),
+                )
+                .unwrap();
+            assert_eq!(link_count, 1);
+        });
+    }
+
+    #[test]
+    fn prepare_resolves_tokens_for_missing_company_against_save_depots() {
+        tauri::async_runtime::block_on(async {
+            let context =
+                setup_test_context("north-axis-logistics", "North Axis Logistics", "Berlin").await;
+
+            let result = dispatcher_assign_and_prepare_ets_link_inner(
+                None,
+                &context.runtime,
+                &context.profile_state,
+                &context.pool,
+                &context.job_id,
+            )
+            .await
+            .unwrap();
+
+            assert_eq!(result.job.status, "prepared");
+            assert_eq!(result.job.ets2_job_link_status.as_deref(), Some("prepared"));
+
+            let conn = Connection::open(&context.db_path).unwrap();
+            let row = conn
+                .query_row(
+                    "SELECT resolved_source_company_token, resolved_source_city_token, resolved_target_company_token, resolved_target_city_token FROM ets_job_links WHERE vtc_job_id = ?1",
+                    [context.job_id.as_str()],
+                    |row| {
+                        Ok((
+                            row.get::<_, Option<String>>(0)?,
+                            row.get::<_, Option<String>>(1)?,
+                            row.get::<_, Option<String>>(2)?,
+                            row.get::<_, Option<String>>(3)?,
+                        ))
+                    },
+                )
+                .unwrap();
+            assert_eq!(row.1.as_deref(), Some("berlin"));
+            assert!(row.0.as_deref().is_some_and(|value| !value.is_empty()));
+            assert!(row.2.as_deref().is_some_and(|value| !value.is_empty()));
+            assert!(row.3.as_deref().is_some_and(|value| !value.is_empty()));
+        });
+    }
+
+    #[test]
+    fn assign_prepare_write_sets_requires_load_and_injected() {
+        tauri::async_runtime::block_on(async {
+            let context = setup_test_context("test_company", "Test Company", "Berlin").await;
+
+            let result = dispatcher_assign_prepare_write_inner(
+                None,
+                &context.runtime,
+                &context.profile_state,
+                &context.pool,
+                &context.job_id,
+                true,
+            )
+            .await
+            .unwrap();
+
+            assert_eq!(result.dispatcher_status, "injected");
+            assert_eq!(result.ets2_job_link_status.as_deref(), Some("requires_load"));
+            assert!(result.write_attempted);
+
+            let conn = Connection::open(&context.db_path).unwrap();
+            let row = conn
+                .query_row(
+                    "SELECT status, ets2_job_link_status FROM dispatcher_jobs WHERE id = ?1",
+                    [context.job_id.as_str()],
+                    |row| {
+                        Ok((
+                            row.get::<_, String>(0)?,
+                            row.get::<_, Option<String>>(1)?,
+                        ))
+                    },
+                )
+                .unwrap();
+            assert_eq!(row.0, "injected");
+            assert_eq!(row.1.as_deref(), Some("requires_load"));
+
+            let save_path = context
+                .profile_state
+                .current_save
+                .lock()
+                .unwrap()
+                .clone()
+                .unwrap();
+            let written = std::fs::read_to_string(format!("{}/game.sii", save_path)).unwrap();
+            assert!(written.contains("cargo: cargo.trucks"));
+            assert!(written.contains("target: test_company.hamburg"));
+            assert!(written.contains("shortest_distance_km: 520"));
+        });
+    }
+
+    #[test]
+    fn assign_prepare_write_is_idempotent_when_already_written() {
+        tauri::async_runtime::block_on(async {
+            let context = setup_test_context("test_company", "Test Company", "Berlin").await;
+
+            let first = dispatcher_assign_prepare_write_inner(
+                None,
+                &context.runtime,
+                &context.profile_state,
+                &context.pool,
+                &context.job_id,
+                true,
+            )
+            .await
+            .unwrap();
+            let second = dispatcher_assign_prepare_write_inner(
+                None,
+                &context.runtime,
+                &context.profile_state,
+                &context.pool,
+                &context.job_id,
+                true,
+            )
+            .await
+            .unwrap();
+
+            assert_eq!(first.dispatcher_status, "injected");
+            assert_eq!(second.dispatcher_status, "injected");
 
             let conn = Connection::open(&context.db_path).unwrap();
             let link_count: i64 = conn

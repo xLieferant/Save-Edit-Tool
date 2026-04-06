@@ -57,7 +57,7 @@ pub(super) fn dispatcher_assign_job_to_active_save(
         .ok_or_else(|| "dispatcher_job_not_found".to_string())?;
 
     match row.status.as_str() {
-        "open" | "failed" => {}
+        "open" | "accepted" | "failed" => {}
         "assigned_to_save" | "prepared" | "injected" => {
             return Err("job_already_assigned".to_string());
         }
@@ -332,7 +332,9 @@ pub(super) fn dispatcher_get_job_history(
     let completed = rows.iter().filter(|row| row.status == "completed").count() as i64;
     let failed = rows
         .iter()
-        .filter(|row| row.status == "problematic" || row.status == "cancelled")
+        .filter(|row| {
+            row.status == "problematic" || row.status == "cancelled" || row.status == "failed"
+        })
         .count() as i64;
     let rejected = rows
         .iter()
@@ -454,5 +456,70 @@ mod tests {
         assert_eq!(result.job.ets2_job_link_status.as_deref(), Some("pending"));
         assert!(result.job.route_reference.is_some());
         assert!(result.job.linked_to_active_save);
+    }
+
+    #[test]
+    fn assign_job_to_active_save_allows_accepted_status() {
+        let conn = Connection::open_in_memory().unwrap();
+        crate::features::economy::ensure_tables(&conn).unwrap();
+        prepare_dispatcher_system(&conn).unwrap();
+
+        let now = Utc::now().to_rfc3339();
+        conn.execute(
+            r#"
+            INSERT INTO dispatcher_jobs (
+                id, source_type, company_id, company_name, job_type, cargo_type,
+                origin_city, origin_country, destination_city, destination_country,
+                distance_km, cargo_mass_kg, urgency_level, difficulty_level,
+                equipment_type_required, trailer_type_required, base_rate_per_km,
+                calculated_rate_per_km, total_reward, estimated_duration_minutes,
+                payment_tier_snapshot, payment_multiplier_snapshot, country_multiplier_snapshot,
+                reputation_multiplier_snapshot, cargo_multiplier_snapshot,
+                urgency_multiplier_snapshot, equipment_multiplier_snapshot,
+                market_variation_snapshot, customer_multiplier_snapshot, company_reputation,
+                fuel_cost_estimate, profit_estimate, risk_note, bonus_note,
+                expires_at_utc, status, progress_km, profile_reference, save_reference,
+                quicksave_reference, save_session_id, route_reference, ets2_job_link_status,
+                accepted_at_utc, completed_at_utc, created_at_utc, updated_at_utc
+            )
+            VALUES (
+                ?1, 'generated', 'north-axis-logistics', 'North Axis Logistics', 'quick_job', 'standard',
+                'Hamburg', 'DE', 'Prague', 'CZ',
+                642.0, 12000.0, 'normal', 'normal',
+                'quick_job', NULL, 1.12,
+                1.18, 758, 620,
+                'standard', 1.0, 1.02,
+                1.01, 1.0,
+                1.0, 1.0,
+                1.0, 1.0, 320,
+                120, 480, NULL, NULL,
+                NULL, 'accepted', 0, NULL, NULL,
+                NULL, NULL, NULL, 'pending_route',
+                ?2, NULL, ?2, ?2
+            )
+            "#,
+            params!["dispatcher-test-accepted-1", now],
+        )
+        .unwrap();
+
+        let save_context = DispatcherSaveContext {
+            profile_reference: Some("profiles/main".to_string()),
+            save_reference: Some("profiles/main/save/quicksave".to_string()),
+            quicksave_reference: Some("profiles/main/save/quicksave".to_string()),
+            save_session_id: Some("savectx-test".to_string()),
+        };
+
+        let result = dispatcher_assign_job_to_active_save(
+            &conn,
+            "dispatcher-test-accepted-1",
+            &save_context,
+        )
+        .unwrap();
+
+        assert_eq!(result.job.status, "assigned_to_save");
+        assert_eq!(
+            result.job.profile_reference.as_deref(),
+            Some("profiles/main")
+        );
     }
 }

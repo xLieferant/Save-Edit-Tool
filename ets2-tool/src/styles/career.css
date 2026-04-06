@@ -55,6 +55,7 @@ body.career-page {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .career-topbar-btn {
@@ -73,6 +74,109 @@ body.career-page {
 .career-topbar-btn:hover {
   filter: brightness(1.08);
   transform: translateY(-1px);
+}
+
+.career-user-menu {
+  position: relative;
+}
+
+.career-user-menu-btn {
+  min-height: 38px;
+  border-radius: 12px;
+  border: 1px solid #355684;
+  background: linear-gradient(145deg, rgba(22, 36, 58, 0.98), rgba(17, 29, 47, 0.96));
+  color: #eef5ff;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: transform 120ms ease, filter 180ms ease, border-color 180ms ease;
+}
+
+.career-user-menu-btn:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+  border-color: #4c72a8;
+}
+
+.career-user-menu-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid rgba(130, 165, 222, 0.25);
+  background: rgba(26, 45, 72, 0.92);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #d7e7ff;
+}
+
+.career-user-menu-copy {
+  display: grid;
+  gap: 1px;
+  text-align: left;
+}
+
+.career-user-menu-copy strong {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.career-user-menu-copy small {
+  color: #9eb4d6;
+  font-size: 11px;
+}
+
+.career-user-menu-dropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  z-index: 30;
+  width: min(260px, 80vw);
+  border-radius: 14px;
+  border: 1px solid #2c4263;
+  background: linear-gradient(160deg, rgba(13, 21, 35, 0.98), rgba(10, 17, 29, 0.96));
+  box-shadow: 0 22px 34px rgba(3, 8, 16, 0.34);
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+}
+
+.career-user-menu-head {
+  display: grid;
+  gap: 4px;
+  padding: 4px 6px 8px;
+}
+
+.career-user-menu-head strong {
+  font-size: 14px;
+}
+
+.career-user-menu-head span {
+  color: #95add1;
+  font-size: 12px;
+}
+
+.career-user-menu-item {
+  width: 100%;
+  min-height: 38px;
+  border-radius: 10px;
+  border: 1px solid #2d4261;
+  background: rgba(12, 20, 34, 0.94);
+  color: #e6eefb;
+  font: inherit;
+  text-align: left;
+  padding: 0 12px;
+  cursor: pointer;
+  transition: transform 120ms ease, filter 180ms ease, border-color 180ms ease;
+}
+
+.career-user-menu-item:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  border-color: #476998;
 }
 
 .career-live-status {
@@ -111,6 +215,11 @@ body.career-page {
 
 .career-status-card strong {
   font-size: 17px;
+}
+
+.career-status-card small {
+  color: #8ea4c4;
+  font-size: 12px;
 }
 
 .career-layout {
@@ -651,6 +760,52 @@ body.career-page {
   flex-wrap: wrap;
 }
 
+.dispatcher-write-btn {
+  border-color: #9e3e2f;
+  background: linear-gradient(180deg, #5a221a, #3a1712);
+  color: #ffd3ca;
+}
+
+.dispatcher-write-btn:hover {
+  border-color: #c25744;
+  background: linear-gradient(180deg, #6f2a20, #4a1d16);
+}
+
+.dispatcher-action-hints {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.dispatcher-action-hints p {
+  margin: 0;
+  font-size: 11px;
+  color: #a9b8d2;
+}
+
+.dispatcher-write-report {
+  margin-top: 10px;
+  border: 1px solid #2d405f;
+  border-radius: 10px;
+  padding: 8px;
+  background: rgba(8, 16, 28, 0.96);
+}
+
+.dispatcher-write-report h4 {
+  margin: 0 0 6px 0;
+  font-size: 12px;
+  color: #dde9fb;
+}
+
+.dispatcher-write-report pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #bed0eb;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
 .dispatcher-history-summary {
   margin-bottom: 10px;
 }
@@ -763,6 +918,13 @@ body.career-page {
   border-color: #4c6d9e;
 }
 
+.dispatcher-status-pill.is-assigned_to_save,
+.dispatcher-status-pill.is-prepared,
+.dispatcher-status-pill.is-injected {
+  border-color: #526f9d;
+  color: #d9e8ff;
+}
+
 .dispatcher-status-pill.is-accepted,
 .dispatcher-status-pill.is-in_transit {
   border-color: #3e8456;
@@ -777,7 +939,9 @@ body.career-page {
 
 .dispatcher-status-pill.is-expired,
 .dispatcher-status-pill.is-rejected,
-.dispatcher-status-pill.is-cancelled {
+.dispatcher-status-pill.is-cancelled,
+.dispatcher-status-pill.is-failed,
+.dispatcher-status-pill.is-abandoned {
   border-color: #8b4151;
   color: #f6c3cc;
 }
@@ -832,7 +996,16 @@ body.career-page {
     justify-content: stretch;
   }
 
-  .career-topbar-btn {
+  .career-topbar-btn,
+  .career-user-menu-btn {
     flex: 1;
+  }
+
+  .career-user-menu {
+    width: 100%;
+  }
+
+  .career-user-menu-dropdown {
+    width: 100%;
   }
 }

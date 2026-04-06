@@ -8,10 +8,7 @@ use crate::features::{bank, contracts, economy, employees, events, fleet, reputa
 use crate::shared::sqlite_schema::ensure_columns;
 
 pub fn default_db_path() -> PathBuf {
-    dirs::data_local_dir()
-        .unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")))
-        .join("SimNexusHub")
-        .join("logbook.sqlite")
+    crate::db::sqlite::app_db_path()
 }
 
 pub fn init_logbook(db_path: &Path) -> Result<(), String> {
