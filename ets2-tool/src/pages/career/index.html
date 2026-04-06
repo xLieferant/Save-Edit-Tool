@@ -52,6 +52,7 @@
           <button class="career-nav-btn is-active" data-panel="dashboard" data-translate="career.nav.dashboard">Dashboard</button>
           <button class="career-nav-btn" data-panel="members" data-translate="career.nav.members">Members</button>
           <button class="career-nav-btn" data-panel="orders" data-translate="career.nav.orders">Orders</button>
+          <button class="career-nav-btn" data-panel="dispatcher" data-translate="career_mode.dispatcher.nav_title">Dispatcher</button>
           <button class="career-nav-btn" data-panel="finances" data-translate="career.nav.balance">Balance</button>
           <button class="career-nav-btn" data-panel="fleet" data-translate="career.nav.fleet">Fleet</button>
           <button class="career-nav-btn" data-panel="company" data-translate="career.nav.company">My Company</button>
@@ -188,6 +189,235 @@
               <tbody id="cmOrderHistoryBody"></tbody>
             </table>
           </div>
+        </section>
+
+        <section id="panel-dispatcher" class="career-panel">
+          <div class="career-panel-head">
+            <h2 data-translate="career_mode.dispatcher.nav_title">Dispatcher</h2>
+            <p data-translate="career_mode.dispatcher.summary">Market, offers, active assignments, company relationships and job history.</p>
+          </div>
+
+          <div class="career-card-grid dispatcher-kpi-grid">
+            <article class="career-metric-card"><span data-translate="career_mode.dispatcher.kpi_open_jobs">Open Market Jobs</span><strong id="cmDispatcherOpenJobs">0</strong></article>
+            <article class="career-metric-card"><span data-translate="career_mode.dispatcher.kpi_active_jobs">Active Jobs</span><strong id="cmDispatcherActiveJobs">0</strong></article>
+            <article class="career-metric-card"><span data-translate="career_mode.dispatcher.kpi_open_offers">Open Offers</span><strong id="cmDispatcherOpenOffers">0</strong></article>
+            <article class="career-metric-card"><span data-translate="career_mode.dispatcher.kpi_contracts">Accepted Contracts</span><strong id="cmDispatcherContracts">0</strong></article>
+          </div>
+
+          <div class="dispatcher-tabs">
+            <button type="button" class="dispatcher-tab-btn is-active" data-dispatcher-tab="market" data-translate="career_mode.dispatcher.tabs.market">Market</button>
+            <button type="button" class="dispatcher-tab-btn" data-dispatcher-tab="offers" data-translate="career_mode.dispatcher.tabs.offers">Offers</button>
+            <button type="button" class="dispatcher-tab-btn" data-dispatcher-tab="active" data-translate="career_mode.dispatcher.tabs.active">Active</button>
+            <button type="button" class="dispatcher-tab-btn" data-dispatcher-tab="contacts" data-translate="career_mode.dispatcher.tabs.contacts">Company Contacts</button>
+            <button type="button" class="dispatcher-tab-btn" data-dispatcher-tab="history" data-translate="career_mode.dispatcher.tabs.history">History</button>
+          </div>
+
+          <section class="dispatcher-tab-panel is-active" data-dispatcher-panel="market">
+            <div class="dispatcher-filter-row">
+              <label class="career-field">
+                <span data-translate="career_mode.dispatcher.filter_search">Search</span>
+                <input id="cmDispatcherSearchInput" type="text" />
+              </label>
+              <label class="career-field">
+                <span data-translate="career_mode.dispatcher.filter_job_type">Job Type</span>
+                <select id="cmDispatcherFilterJobType">
+                  <option value="" data-translate="career_mode.dispatcher.filter_any">Any</option>
+                  <option value="quick_job">Quick Job</option>
+                  <option value="freight_market">Freight Market</option>
+                  <option value="cargo_market">Cargo Market</option>
+                  <option value="company_contract">Company Contract</option>
+                  <option value="premium_special">Premium Special</option>
+                </select>
+              </label>
+              <label class="career-field">
+                <span data-translate="career_mode.dispatcher.filter_country">Country</span>
+                <input id="cmDispatcherFilterCountry" type="text" />
+              </label>
+              <label class="career-field">
+                <span data-translate="career_mode.dispatcher.filter_sort">Sort</span>
+                <select id="cmDispatcherSortInput">
+                  <option value="newest" data-translate="career_mode.dispatcher.sort_newest">Newest</option>
+                  <option value="best_reward" data-translate="career_mode.dispatcher.sort_best_reward">Best Reward</option>
+                  <option value="best_rate" data-translate="career_mode.dispatcher.sort_best_rate">Best EUR/km</option>
+                  <option value="shortest_distance" data-translate="career_mode.dispatcher.sort_shortest">Shortest Distance</option>
+                  <option value="highest_urgency" data-translate="career_mode.dispatcher.sort_urgency">Highest Urgency</option>
+                </select>
+              </label>
+              <div class="dispatcher-filter-actions">
+                <button id="cmDispatcherApplyFiltersBtn" class="career-action-btn" type="button" data-translate="career_mode.dispatcher.apply_filters">Apply</button>
+                <button id="cmDispatcherResetFiltersBtn" class="career-topbar-btn" type="button" data-translate="career_mode.dispatcher.reset_filters">Reset</button>
+              </div>
+            </div>
+
+            <div class="dispatcher-market-layout">
+              <div class="career-table-wrap">
+                <table class="career-table">
+                  <thead>
+                    <tr>
+                      <th data-translate="career_mode.dispatcher.col_job_id">Job ID</th>
+                      <th data-translate="career_mode.dispatcher.col_company">Company</th>
+                      <th data-translate="career_mode.dispatcher.col_type">Type</th>
+                      <th data-translate="career_mode.dispatcher.col_route">Route</th>
+                      <th data-translate="career_mode.dispatcher.col_distance">Distance</th>
+                      <th data-translate="career_mode.dispatcher.col_rate">EUR/km</th>
+                      <th data-translate="career_mode.dispatcher.col_reward">Reward</th>
+                      <th data-translate="career_mode.dispatcher.col_status">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="cmDispatcherMarketBody"></tbody>
+                </table>
+              </div>
+
+              <aside class="dispatcher-detail-card">
+                <h3 data-translate="career_mode.dispatcher.detail_title">Job Details</h3>
+                <dl class="dispatcher-detail-grid">
+                  <div><dt>ID</dt><dd id="cmDispatcherDetailId">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.col_company">Company</dt><dd id="cmDispatcherDetailCompany">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.col_type">Type</dt><dd id="cmDispatcherDetailType">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.col_route">Route</dt><dd id="cmDispatcherDetailRoute">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.col_distance">Distance</dt><dd id="cmDispatcherDetailDistance">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.col_rate">EUR/km</dt><dd id="cmDispatcherDetailRate">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.col_reward">Reward</dt><dd id="cmDispatcherDetailReward">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.col_status">Status</dt><dd id="cmDispatcherDetailStatus">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.detail_payment_tier">Payment Tier</dt><dd id="cmDispatcherDetailTier">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.detail_reputation">Reputation</dt><dd id="cmDispatcherDetailReputation">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.detail_profit">Profit Est.</dt><dd id="cmDispatcherDetailProfit">-</dd></div>
+                </dl>
+                <div class="dispatcher-detail-notes">
+                  <p id="cmDispatcherDetailBonus"></p>
+                  <p id="cmDispatcherDetailRisk"></p>
+                </div>
+                <button id="cmDispatcherAcceptJobBtn" class="career-action-btn" type="button" data-translate="career_mode.dispatcher.accept_job">Accept Job</button>
+              </aside>
+            </div>
+          </section>
+
+          <section class="dispatcher-tab-panel" data-dispatcher-panel="offers">
+            <div class="career-form-grid">
+              <label class="career-field">
+                <span data-translate="career_mode.dispatcher.offer_company">Company ID</span>
+                <input id="cmDispatcherOfferCompanyInput" type="text" />
+              </label>
+              <label class="career-field">
+                <span data-translate="career_mode.dispatcher.offer_job_type">Requested Job Type</span>
+                <select id="cmDispatcherOfferJobTypeInput">
+                  <option value="quick_job">Quick Job</option>
+                  <option value="freight_market">Freight Market</option>
+                  <option value="cargo_market">Cargo Market</option>
+                  <option value="company_contract">Company Contract</option>
+                  <option value="premium_special">Premium Special</option>
+                </select>
+              </label>
+              <label class="career-field">
+                <span data-translate="career_mode.dispatcher.offer_rate">Rate (EUR/km)</span>
+                <input id="cmDispatcherOfferRateInput" type="number" step="0.01" min="0" />
+              </label>
+              <label class="career-field">
+                <span data-translate="career_mode.dispatcher.offer_region">Region / Country</span>
+                <input id="cmDispatcherOfferRegionInput" type="text" />
+              </label>
+              <label class="career-field">
+                <span data-translate="career_mode.dispatcher.offer_equipment">Equipment</span>
+                <select id="cmDispatcherOfferEquipmentInput">
+                  <option value="quick_job">Quick Job</option>
+                  <option value="own_truck">Own Truck</option>
+                  <option value="own_truck_trailer">Own Truck + Trailer</option>
+                </select>
+              </label>
+              <label class="career-field">
+                <span data-translate="career_mode.dispatcher.offer_scope">Scope</span>
+                <select id="cmDispatcherOfferScopeInput">
+                  <option value="one_time">One-time</option>
+                  <option value="recurring">Recurring</option>
+                  <option value="contract">Contract</option>
+                </select>
+              </label>
+              <label class="career-field career-field-wide">
+                <span data-translate="career_mode.dispatcher.offer_note">Note</span>
+                <textarea id="cmDispatcherOfferNoteInput"></textarea>
+              </label>
+              <div class="career-field-action">
+                <button id="cmDispatcherSendOfferBtn" class="career-action-btn" type="button" data-translate="career_mode.dispatcher.send_offer">Send Offer</button>
+              </div>
+            </div>
+
+            <div class="career-table-wrap">
+              <table class="career-table">
+                <thead>
+                  <tr>
+                    <th data-translate="career_mode.dispatcher.col_offer_id">Offer ID</th>
+                    <th data-translate="career_mode.dispatcher.col_company">Company</th>
+                    <th data-translate="career_mode.dispatcher.col_type">Type</th>
+                    <th data-translate="career_mode.dispatcher.col_rate">Rate</th>
+                    <th data-translate="career_mode.dispatcher.col_status">Status</th>
+                    <th data-translate="career_mode.dispatcher.col_actions">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="cmDispatcherOffersBody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="dispatcher-tab-panel" data-dispatcher-panel="active">
+            <div class="career-table-wrap">
+              <table class="career-table">
+                <thead>
+                  <tr>
+                    <th data-translate="career_mode.dispatcher.col_job_id">Job ID</th>
+                    <th data-translate="career_mode.dispatcher.col_company">Company</th>
+                    <th data-translate="career_mode.dispatcher.col_type">Type</th>
+                    <th data-translate="career_mode.dispatcher.col_route">Route</th>
+                    <th data-translate="career_mode.dispatcher.col_status">Status</th>
+                    <th data-translate="career_mode.dispatcher.col_progress">Progress</th>
+                  </tr>
+                </thead>
+                <tbody id="cmDispatcherActiveBody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="dispatcher-tab-panel" data-dispatcher-panel="contacts">
+            <div class="career-table-wrap">
+              <table class="career-table">
+                <thead>
+                  <tr>
+                    <th data-translate="career_mode.dispatcher.col_company">Company</th>
+                    <th data-translate="career_mode.dispatcher.col_payment_tier">Payment Tier</th>
+                    <th data-translate="career_mode.dispatcher.col_reputation">Reputation</th>
+                    <th data-translate="career_mode.dispatcher.col_success_rate">Success</th>
+                    <th data-translate="career_mode.dispatcher.col_completed">Completed</th>
+                    <th data-translate="career_mode.dispatcher.col_failed">Failed</th>
+                  </tr>
+                </thead>
+                <tbody id="cmDispatcherContactsBody"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="dispatcher-tab-panel" data-dispatcher-panel="history">
+            <div class="career-card-grid dispatcher-history-summary">
+              <article class="career-metric-card"><span data-translate="career_mode.dispatcher.history_completed">Completed</span><strong id="cmDispatcherHistCompleted">0</strong></article>
+              <article class="career-metric-card"><span data-translate="career_mode.dispatcher.history_failed">Failed</span><strong id="cmDispatcherHistFailed">0</strong></article>
+              <article class="career-metric-card"><span data-translate="career_mode.dispatcher.history_revenue">Revenue</span><strong id="cmDispatcherHistRevenue">EUR 0</strong></article>
+              <article class="career-metric-card"><span data-translate="career_mode.dispatcher.history_avg_rate">Avg EUR/km</span><strong id="cmDispatcherHistRate">0</strong></article>
+            </div>
+
+            <div class="career-table-wrap">
+              <table class="career-table">
+                <thead>
+                  <tr>
+                    <th data-translate="career_mode.dispatcher.col_job_id">Job ID</th>
+                    <th data-translate="career_mode.dispatcher.col_company">Company</th>
+                    <th data-translate="career_mode.dispatcher.col_type">Type</th>
+                    <th data-translate="career_mode.dispatcher.col_route">Route</th>
+                    <th data-translate="career_mode.dispatcher.col_reward">Reward</th>
+                    <th data-translate="career_mode.dispatcher.col_status">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="cmDispatcherHistoryBody"></tbody>
+              </table>
+            </div>
+          </section>
         </section>
 
         <section id="panel-finances" class="career-panel">

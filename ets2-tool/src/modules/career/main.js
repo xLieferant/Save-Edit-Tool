@@ -14,6 +14,17 @@ const state = {
   companySettings: null,
   careerSettings: null,
   roles: [],
+  dispatcher: {
+    overview: null,
+    marketJobs: [],
+    selectedJobId: null,
+    selectedJob: null,
+    activeJobs: [],
+    history: null,
+    contacts: [],
+    offers: [],
+    tab: "market",
+  },
 };
 
 const FALLBACK_ROLES = [
@@ -37,6 +48,9 @@ const uiText = {
   companyMockDesc: "-",
   genericSaved: "Saved",
   errorPrefix: "Error",
+  dispatcherAccept: "Accept",
+  dispatcherReject: "Reject",
+  dispatcherCancel: "Cancel",
 };
 
 function formatNumber(value, digits = 0) {
@@ -52,6 +66,10 @@ function formatCurrency(value) {
 
 function formatDistance(value) {
   return `${formatNumber(value || 0, 1)} km`;
+}
+
+function formatPercent(value) {
+  return `${formatNumber(Number(value || 0) * 100, 0)}%`;
 }
 
 function formatDate(value) {
@@ -112,6 +130,14 @@ function normalizeErrorCode(rawError) {
     "company_name_already_taken",
     "invalid_game",
     "invalid_username",
+    "dispatcher_job_not_open",
+    "dispatcher_job_expired",
+    "dispatcher_active_job_exists",
+    "dispatcher_equipment_requirement_not_met",
+    "dispatcher_reputation_requirement_not_met",
+    "dispatcher_offer_company_required",
+    "dispatcher_offer_not_cancellable",
+    "dispatcher_offer_not_countered",
   ];
 
   for (const code of knownCodes) {
@@ -382,6 +408,321 @@ function renderOrders() {
   setTableRows("cmOrderHistoryBody", historyRows, uiText.noData, 5);
 }
 
+function dispatcherFilterPayload() {
+  const search = getInputValue("cmDispatcherSearchInput").trim();
+  const jobType = getInputValue("cmDispatcherFilterJobType");
+  const country = getInputValue("cmDispatcherFilterCountry").trim();
+  const sortBy = getInputValue("cmDispatcherSortInput");
+  return {
+    search: search || null,
+    jobType: jobType || null,
+    country: country || null,
+    sortBy: sortBy || "newest",
+  };
+}
+
+function renderDispatcherOverview() {
+  const overview = state.dispatcher.overview || {};
+  setCellText("cmDispatcherOpenJobs", formatNumber(overview.openMarketJobs || 0, 0));
+  setCellText("cmDispatcherActiveJobs", formatNumber(overview.activeJobs || 0, 0));
+  setCellText("cmDispatcherOpenOffers", formatNumber(overview.openOffers || 0, 0));
+  setCellText("cmDispatcherContracts", formatNumber(overview.acceptedContracts || 0, 0));
+}
+
+function renderDispatcherMarket() {
+  const rows = (state.dispatcher.marketJobs || []).map((job) => {
+    const route = `${job.originCity || "-"} -> ${job.destinationCity || "-"}`;
+    const selectedClass = job.id === state.dispatcher.selectedJobId ? "is-selected" : "";
+    return `
+      <tr class="${selectedClass}" data-dispatcher-job-id="${job.id}">
+        <td>${job.id || "-"}</td>
+        <td>${job.companyName || "-"}</td>
+        <td>${job.jobType || "-"}</td>
+        <td>${route}</td>
+        <td>${formatDistance(job.distanceKm || 0)}</td>
+        <td>${formatNumber(job.calculatedRatePerKm || 0, 2)}</td>
+        <td>${formatCurrency(job.totalReward || 0)}</td>
+        <td>${job.status || "-"}</td>
+      </tr>
+    `;
+  });
+  setTableRows("cmDispatcherMarketBody", rows, uiText.noData, 8);
+}
+
+function renderDispatcherDetails() {
+  const selected = state.dispatcher.selectedJob;
+  if (!selected) {
+    setCellText("cmDispatcherDetailId", "-");
+    setCellText("cmDispatcherDetailCompany", "-");
+    setCellText("cmDispatcherDetailType", "-");
+    setCellText("cmDispatcherDetailRoute", "-");
+    setCellText("cmDispatcherDetailDistance", "-");
+    setCellText("cmDispatcherDetailRate", "-");
+    setCellText("cmDispatcherDetailReward", "-");
+    setCellText("cmDispatcherDetailStatus", "-");
+    setCellText("cmDispatcherDetailTier", "-");
+    setCellText("cmDispatcherDetailReputation", "-");
+    setCellText("cmDispatcherDetailProfit", "-");
+    setCellText("cmDispatcherDetailBonus", "-");
+    setCellText("cmDispatcherDetailRisk", "-");
+    return;
+  }
+
+  const job = selected.job || selected;
+  const route = `${job.originCity || "-"} -> ${job.destinationCity || "-"}`;
+  setCellText("cmDispatcherDetailId", job.id || "-");
+  setCellText("cmDispatcherDetailCompany", job.companyName || "-");
+  setCellText("cmDispatcherDetailType", job.jobType || "-");
+  setCellText("cmDispatcherDetailRoute", route);
+  setCellText("cmDispatcherDetailDistance", formatDistance(job.distanceKm || 0));
+  setCellText("cmDispatcherDetailRate", formatNumber(job.calculatedRatePerKm || 0, 2));
+  setCellText("cmDispatcherDetailReward", formatCurrency(job.totalReward || 0));
+  setCellText("cmDispatcherDetailStatus", job.status || "-");
+  setCellText("cmDispatcherDetailTier", job.paymentTierSnapshot || "-");
+  setCellText("cmDispatcherDetailReputation", formatNumber(job.companyReputation || 0, 0));
+  setCellText("cmDispatcherDetailProfit", formatCurrency(job.profitEstimate || 0));
+  setCellText("cmDispatcherDetailBonus", job.bonusNote || "-");
+  setCellText("cmDispatcherDetailRisk", job.riskNote || "-");
+}
+
+function renderDispatcherOffers() {
+  const rows = (state.dispatcher.offers || []).map((offer) => {
+    const rate = offer.proposedRatePerKm != null ? formatNumber(offer.proposedRatePerKm, 2) : "-";
+    const actions = [];
+    if (offer.status === "countered") {
+      actions.push(`<button class="career-mini-btn" data-offer-accept-counter="${offer.id}">${uiText.dispatcherAccept}</button>`);
+      actions.push(`<button class="career-mini-btn" data-offer-reject-counter="${offer.id}">${uiText.dispatcherReject}</button>`);
+    }
+    if (["draft", "sent", "under_review", "countered"].includes(offer.status)) {
+      actions.push(`<button class="career-mini-btn" data-offer-cancel="${offer.id}">${uiText.dispatcherCancel}</button>`);
+    }
+
+    return `
+      <tr>
+        <td>${offer.id || "-"}</td>
+        <td>${offer.companyName || "-"}</td>
+        <td>${offer.requestedJobType || "-"}</td>
+        <td>${rate}</td>
+        <td>${offer.status || "-"}</td>
+        <td>${actions.join(" ") || "-"}</td>
+      </tr>
+    `;
+  });
+
+  setTableRows("cmDispatcherOffersBody", rows, uiText.noData, 6);
+}
+
+function renderDispatcherActive() {
+  const rows = (state.dispatcher.activeJobs || []).map((job) => {
+    const route = `${job.originCity || "-"} -> ${job.destinationCity || "-"}`;
+    const progress = `${formatDistance(job.progressKm || 0)} / ${formatDistance(job.distanceKm || 0)}`;
+    return `
+      <tr>
+        <td>${job.id || "-"}</td>
+        <td>${job.companyName || "-"}</td>
+        <td>${job.jobType || "-"}</td>
+        <td>${route}</td>
+        <td>${job.status || "-"}</td>
+        <td>${progress}</td>
+      </tr>
+    `;
+  });
+  setTableRows("cmDispatcherActiveBody", rows, uiText.noData, 6);
+}
+
+function renderDispatcherContacts() {
+  const rows = (state.dispatcher.contacts || []).map((contact) => {
+    return `
+      <tr>
+        <td>${contact.companyName || "-"}</td>
+        <td>${contact.paymentTier || "-"}</td>
+        <td>${formatNumber(contact.reputation || 0, 0)}</td>
+        <td>${formatPercent(contact.successRate || 0)}</td>
+        <td>${formatNumber(contact.completedJobs || 0, 0)}</td>
+        <td>${formatNumber(contact.failedJobs || 0, 0)}</td>
+      </tr>
+    `;
+  });
+  setTableRows("cmDispatcherContactsBody", rows, uiText.noData, 6);
+}
+
+function renderDispatcherHistory() {
+  const history = state.dispatcher.history || { summary: {}, items: [] };
+  const summary = history.summary || {};
+  setCellText("cmDispatcherHistCompleted", formatNumber(summary.totalCompleted || 0, 0));
+  setCellText("cmDispatcherHistFailed", formatNumber(summary.totalFailed || 0, 0));
+  setCellText("cmDispatcherHistRevenue", formatCurrency(summary.revenue || 0));
+  setCellText("cmDispatcherHistRate", formatNumber(summary.avgRatePerKm || 0, 2));
+
+  const rows = (history.items || []).map((job) => {
+    const route = `${job.originCity || "-"} -> ${job.destinationCity || "-"}`;
+    return `
+      <tr>
+        <td>${job.id || "-"}</td>
+        <td>${job.companyName || "-"}</td>
+        <td>${job.jobType || "-"}</td>
+        <td>${route}</td>
+        <td>${formatCurrency(job.totalReward || 0)}</td>
+        <td>${job.status || "-"}</td>
+      </tr>
+    `;
+  });
+  setTableRows("cmDispatcherHistoryBody", rows, uiText.noData, 6);
+}
+
+function renderDispatcher() {
+  renderDispatcherOverview();
+  renderDispatcherMarket();
+  renderDispatcherDetails();
+  renderDispatcherOffers();
+  renderDispatcherActive();
+  renderDispatcherContacts();
+  renderDispatcherHistory();
+}
+
+function switchDispatcherTab(tab) {
+  state.dispatcher.tab = tab;
+  document.querySelectorAll(".dispatcher-tab-btn").forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.dispatcherTab === tab);
+  });
+  document.querySelectorAll(".dispatcher-tab-panel").forEach((panel) => {
+    panel.classList.toggle("is-active", panel.dataset.dispatcherPanel === tab);
+  });
+}
+
+async function refreshDispatcherData() {
+  const filter = dispatcherFilterPayload();
+  state.dispatcher.overview = await safeInvoke("dispatcher_get_dispatcher_overview", {}, { fallback: null, silent: true });
+  state.dispatcher.marketJobs = await safeInvoke(
+    "dispatcher_get_market_jobs",
+    { filter },
+    { fallback: [], silent: true }
+  );
+  state.dispatcher.activeJobs = await safeInvoke("dispatcher_get_active_jobs", {}, { fallback: [], silent: true });
+  state.dispatcher.history = await safeInvoke("dispatcher_get_job_history", {}, { fallback: { summary: {}, items: [] }, silent: true });
+  state.dispatcher.contacts = await safeInvoke("dispatcher_get_company_contacts", {}, { fallback: [], silent: true });
+  state.dispatcher.offers = await safeInvoke("dispatcher_get_offers", {}, { fallback: [], silent: true });
+
+  if (state.dispatcher.selectedJobId) {
+    state.dispatcher.selectedJob = await safeInvoke(
+      "dispatcher_get_job_details",
+      { jobId: state.dispatcher.selectedJobId },
+      { fallback: null, silent: true }
+    );
+  } else if (state.dispatcher.marketJobs.length > 0) {
+    state.dispatcher.selectedJobId = state.dispatcher.marketJobs[0].id;
+    state.dispatcher.selectedJob = await safeInvoke(
+      "dispatcher_get_job_details",
+      { jobId: state.dispatcher.selectedJobId },
+      { fallback: null, silent: true }
+    );
+  } else {
+    state.dispatcher.selectedJob = null;
+  }
+}
+
+async function handleDispatcherSelectJob(event) {
+  const row = event.target.closest("[data-dispatcher-job-id]");
+  if (!row) return;
+  state.dispatcher.selectedJobId = row.getAttribute("data-dispatcher-job-id");
+  state.dispatcher.selectedJob = await safeInvoke(
+    "dispatcher_get_job_details",
+    { jobId: state.dispatcher.selectedJobId },
+    { fallback: null, silent: true }
+  );
+  renderDispatcherMarket();
+  renderDispatcherDetails();
+}
+
+async function handleDispatcherApplyFilters() {
+  await refreshDispatcherData();
+  renderDispatcher();
+}
+
+async function handleDispatcherResetFilters() {
+  setInputValue("cmDispatcherSearchInput", "");
+  setInputValue("cmDispatcherFilterJobType", "");
+  setInputValue("cmDispatcherFilterCountry", "");
+  setInputValue("cmDispatcherSortInput", "newest");
+  await refreshDispatcherData();
+  renderDispatcher();
+}
+
+async function handleDispatcherAcceptJob() {
+  if (!state.dispatcher.selectedJobId) return;
+  try {
+    const details = await invokeStrict("dispatcher_accept_job", { jobId: state.dispatcher.selectedJobId });
+    state.dispatcher.selectedJob = details;
+    await refreshDispatcherData();
+    renderDispatcher();
+    showToast(await t("career_mode.dispatcher.toast_job_accepted"), "success");
+  } catch (error) {
+    showToast(await resolveErrorMessage(error), "error");
+  }
+}
+
+async function handleDispatcherSendOffer() {
+  try {
+    const companyId = getInputValue("cmDispatcherOfferCompanyInput").trim();
+    if (!companyId) return;
+    const proposedRate = Number(getInputValue("cmDispatcherOfferRateInput"));
+    const payload = {
+      companyId,
+      offerType: "quote_request",
+      requestedJobType: getInputValue("cmDispatcherOfferJobTypeInput"),
+      requestedRegion: getInputValue("cmDispatcherOfferRegionInput").trim() || null,
+      proposedRatePerKm: Number.isFinite(proposedRate) && proposedRate > 0 ? proposedRate : null,
+      note: getInputValue("cmDispatcherOfferNoteInput").trim() || null,
+      equipmentType: getInputValue("cmDispatcherOfferEquipmentInput"),
+      contractScope: getInputValue("cmDispatcherOfferScopeInput"),
+    };
+    await invokeStrict("dispatcher_create_offer", { input: payload });
+    await refreshDispatcherData();
+    renderDispatcher();
+    showToast(await t("career_mode.dispatcher.toast_offer_sent"), "success");
+  } catch (error) {
+    showToast(await resolveErrorMessage(error), "error");
+  }
+}
+
+async function handleDispatcherOfferActions(event) {
+  const cancelButton = event.target.closest("[data-offer-cancel]");
+  const acceptCounterButton = event.target.closest("[data-offer-accept-counter]");
+  const rejectCounterButton = event.target.closest("[data-offer-reject-counter]");
+
+  try {
+    if (cancelButton) {
+      await invokeStrict("dispatcher_cancel_offer", { offerId: cancelButton.getAttribute("data-offer-cancel") });
+      await refreshDispatcherData();
+      renderDispatcher();
+      return;
+    }
+    if (acceptCounterButton) {
+      await invokeStrict("dispatcher_respond_to_counter", {
+        input: {
+          offerId: acceptCounterButton.getAttribute("data-offer-accept-counter"),
+          acceptCounter: true,
+        },
+      });
+      await refreshDispatcherData();
+      renderDispatcher();
+      return;
+    }
+    if (rejectCounterButton) {
+      await invokeStrict("dispatcher_respond_to_counter", {
+        input: {
+          offerId: rejectCounterButton.getAttribute("data-offer-reject-counter"),
+          acceptCounter: false,
+        },
+      });
+      await refreshDispatcherData();
+      renderDispatcher();
+    }
+  } catch (error) {
+    showToast(await resolveErrorMessage(error), "error");
+  }
+}
+
 function renderFinances() {
   const overview = state.overview || {};
   const dashboard = overview.dashboard || {};
@@ -546,6 +887,33 @@ function applyNavHandlers() {
   });
 }
 
+function applyDispatcherHandlers() {
+  document.querySelectorAll(".dispatcher-tab-btn").forEach((button) => {
+    button.addEventListener("click", () => {
+      switchDispatcherTab(button.dataset.dispatcherTab);
+    });
+  });
+
+  document.getElementById("cmDispatcherMarketBody")?.addEventListener("click", (event) => {
+    void handleDispatcherSelectJob(event);
+  });
+  document.getElementById("cmDispatcherApplyFiltersBtn")?.addEventListener("click", () => {
+    void handleDispatcherApplyFilters();
+  });
+  document.getElementById("cmDispatcherResetFiltersBtn")?.addEventListener("click", () => {
+    void handleDispatcherResetFilters();
+  });
+  document.getElementById("cmDispatcherAcceptJobBtn")?.addEventListener("click", () => {
+    void handleDispatcherAcceptJob();
+  });
+  document.getElementById("cmDispatcherSendOfferBtn")?.addEventListener("click", () => {
+    void handleDispatcherSendOffer();
+  });
+  document.getElementById("cmDispatcherOffersBody")?.addEventListener("click", (event) => {
+    void handleDispatcherOfferActions(event);
+  });
+}
+
 function applySettingsHandlers() {
   const autoRefreshCheckbox = document.getElementById("cmSettingAutoRefresh");
   autoRefreshCheckbox?.addEventListener("change", () => {
@@ -585,6 +953,9 @@ async function loadUiText() {
   uiText.companyMockDesc = await t("career_mode.company_mock_desc");
   uiText.genericSaved = await t("career_mode.apply_role");
   uiText.errorPrefix = await t("career_mode.error_prefix");
+  uiText.dispatcherAccept = await t("career_mode.dispatcher.action_accept");
+  uiText.dispatcherReject = await t("career_mode.dispatcher.action_reject");
+  uiText.dispatcherCancel = await t("career_mode.dispatcher.action_cancel");
 }
 
 async function refreshCareerTelemetryData() {
@@ -626,6 +997,7 @@ function renderAll() {
   renderDashboard();
   renderMembers();
   renderOrders();
+  renderDispatcher();
   renderFinances();
   renderFleet();
   renderCompany();
@@ -637,6 +1009,7 @@ function renderAll() {
 async function refreshAllData() {
   await refreshCareerTelemetryData();
   await refreshManagementData();
+  await refreshDispatcherData();
   renderAll();
 }
 
@@ -852,6 +1225,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   await safeInvoke("hub_set_mode", { mode: "career" }, { silent: true });
 
   applyNavHandlers();
+  applyDispatcherHandlers();
+  switchDispatcherTab("market");
   applySettingsHandlers();
   await initNavigation();
   registerActionHandlers();

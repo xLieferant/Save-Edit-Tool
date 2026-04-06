@@ -3,7 +3,11 @@ use std::sync::atomic::Ordering;
 use tauri::command;
 use tauri::State;
 
-use crate::features::career::dispatcher::{self, Job};
+use crate::features::career::dispatcher::{
+    self, DispatcherCompanyContact, DispatcherCreateOfferInput, DispatcherHistoryResponse,
+    DispatcherJobDetails, DispatcherJobFilter, DispatcherMarketJob, DispatcherOffer,
+    DispatcherOverview, DispatcherRespondToCounterInput, Job,
+};
 use crate::features::career::job_log::{self, JobLogEntry, JobStats};
 use crate::features::career::logbook::TripSummary;
 use crate::features::career::overview::CareerOverview;
@@ -154,6 +158,112 @@ pub fn career_complete_job(
     let job = dispatcher::complete_job(&conn, &job_id)?;
     runtime.overview_dirty.store(true, Ordering::Relaxed);
     Ok(job)
+}
+
+#[command]
+pub fn dispatcher_get_market_jobs(
+    filter: Option<DispatcherJobFilter>,
+    career: State<'_, CareerState>,
+) -> Result<Vec<DispatcherMarketJob>, String> {
+    let conn = open_connection(career.runtime.as_ref())?;
+    dispatcher::dispatcher_get_market_jobs(&conn, filter)
+}
+
+#[command]
+pub fn dispatcher_get_job_details(
+    job_id: String,
+    career: State<'_, CareerState>,
+) -> Result<DispatcherJobDetails, String> {
+    let conn = open_connection(career.runtime.as_ref())?;
+    dispatcher::dispatcher_get_job_details(&conn, &job_id)
+}
+
+#[command]
+pub fn dispatcher_accept_job(
+    job_id: String,
+    career: State<'_, CareerState>,
+) -> Result<DispatcherJobDetails, String> {
+    let runtime = career.runtime.as_ref();
+    let conn = open_connection(runtime)?;
+    let result = dispatcher::dispatcher_accept_job(&conn, &job_id)?;
+    runtime.overview_dirty.store(true, Ordering::Relaxed);
+    Ok(result)
+}
+
+#[command]
+pub fn dispatcher_get_active_jobs(
+    career: State<'_, CareerState>,
+) -> Result<Vec<DispatcherMarketJob>, String> {
+    let conn = open_connection(career.runtime.as_ref())?;
+    dispatcher::dispatcher_get_active_jobs(&conn)
+}
+
+#[command]
+pub fn dispatcher_get_job_history(
+    career: State<'_, CareerState>,
+) -> Result<DispatcherHistoryResponse, String> {
+    let conn = open_connection(career.runtime.as_ref())?;
+    dispatcher::dispatcher_get_job_history(&conn)
+}
+
+#[command]
+pub fn dispatcher_get_company_contacts(
+    career: State<'_, CareerState>,
+) -> Result<Vec<DispatcherCompanyContact>, String> {
+    let conn = open_connection(career.runtime.as_ref())?;
+    dispatcher::dispatcher_get_company_contacts(&conn)
+}
+
+#[command]
+pub fn dispatcher_create_offer(
+    input: DispatcherCreateOfferInput,
+    career: State<'_, CareerState>,
+) -> Result<DispatcherOffer, String> {
+    let runtime = career.runtime.as_ref();
+    let conn = open_connection(runtime)?;
+    let result = dispatcher::dispatcher_create_offer(&conn, input)?;
+    runtime.overview_dirty.store(true, Ordering::Relaxed);
+    Ok(result)
+}
+
+#[command]
+pub fn dispatcher_get_offers(
+    career: State<'_, CareerState>,
+) -> Result<Vec<DispatcherOffer>, String> {
+    let conn = open_connection(career.runtime.as_ref())?;
+    dispatcher::dispatcher_get_offers(&conn)
+}
+
+#[command]
+pub fn dispatcher_cancel_offer(
+    offer_id: String,
+    career: State<'_, CareerState>,
+) -> Result<DispatcherOffer, String> {
+    let runtime = career.runtime.as_ref();
+    let conn = open_connection(runtime)?;
+    let result = dispatcher::dispatcher_cancel_offer(&conn, &offer_id)?;
+    runtime.overview_dirty.store(true, Ordering::Relaxed);
+    Ok(result)
+}
+
+#[command]
+pub fn dispatcher_respond_to_counter(
+    input: DispatcherRespondToCounterInput,
+    career: State<'_, CareerState>,
+) -> Result<DispatcherOffer, String> {
+    let runtime = career.runtime.as_ref();
+    let conn = open_connection(runtime)?;
+    let result = dispatcher::dispatcher_respond_to_counter(&conn, input)?;
+    runtime.overview_dirty.store(true, Ordering::Relaxed);
+    Ok(result)
+}
+
+#[command]
+pub fn dispatcher_get_dispatcher_overview(
+    career: State<'_, CareerState>,
+) -> Result<DispatcherOverview, String> {
+    let conn = open_connection(career.runtime.as_ref())?;
+    dispatcher::dispatcher_get_dispatcher_overview(&conn)
 }
 
 fn open_connection(runtime: &CareerRuntime) -> Result<Connection, String> {

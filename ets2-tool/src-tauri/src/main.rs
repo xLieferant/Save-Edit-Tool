@@ -193,6 +193,17 @@ fn main() {
             features::career::commands::career_generate_jobs,
             features::career::commands::career_accept_job,
             features::career::commands::career_complete_job,
+            features::career::commands::dispatcher_get_market_jobs,
+            features::career::commands::dispatcher_get_job_details,
+            features::career::commands::dispatcher_accept_job,
+            features::career::commands::dispatcher_get_active_jobs,
+            features::career::commands::dispatcher_get_job_history,
+            features::career::commands::dispatcher_get_company_contacts,
+            features::career::commands::dispatcher_create_offer,
+            features::career::commands::dispatcher_get_offers,
+            features::career::commands::dispatcher_cancel_offer,
+            features::career::commands::dispatcher_respond_to_counter,
+            features::career::commands::dispatcher_get_dispatcher_overview,
             features::career::commands::get_plugin_status,
 
             // Auth
