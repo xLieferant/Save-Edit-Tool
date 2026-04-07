@@ -2734,6 +2734,8 @@ body.mode-career .career-view {
   padding: 22px;
   background: rgba(0, 0, 0, 0.62);
   backdrop-filter: blur(10px);
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .career-auth-gate[hidden] {
@@ -2742,10 +2744,19 @@ body.mode-career .career-view {
 
 .career-auth-card {
   width: min(720px, 100%);
+  max-width: 100%;
+  max-height: calc(100vh - 44px);
   border-radius: var(--radius-xl);
   padding: 18px 20px;
   background: linear-gradient(140deg, var(--bg-panel-strong), var(--bg-panel));
   border: 1px solid var(--card-border);
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+body.mode-career {
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .career-auth-form {

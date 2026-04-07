@@ -202,6 +202,9 @@
                   "detail_source": "Source",
                   "detail_vtc_company": "VTC Company",
                   "detail_ingame_host": "Ingame Host",
+                  "detail_host_city": "Host City",
+                  "detail_target_company": "Target Company",
+                  "detail_offer_location": "Offer Location",
                   "detail_requested_cargo": "Requested Cargo",
                   "detail_resolved_cargo": "Resolved ETS2 Cargo",
                   "detail_cargo_resolution_mode": "Cargo Resolution Mode",
@@ -223,7 +226,13 @@
                   "detail_last_error_code": "Last Error Code",
                   "detail_last_error_message": "Last Error Message",
                   "detail_live_progress": "Live Progress",
+                  "action_guide_title": "Action Guide",
                   "write_report_title": "Last Write Output",
+                  "db_diagnostics_title": "SQLite Diagnostics",
+                  "load_hint": "Job written to quicksave. Load this exact quicksave in ETS2 to apply the new offer: {path}",
+                  "load_hint_generic": "Job written to quicksave. Load the exact quicksave in ETS2 to apply the new offer.",
+                  "load_path_warning": "Warning: {warning}",
+                  "offer_location_hint": "This injected offer is attached to host depot {depot}.",
                   "hint_accept": "Accept Job: Dispatcher-only state change.",
                   "hint_assign": "Inject into Active Save: runs Assign -> Prepare -> Write in one action.",
                   "hint_prepare": "Prepare ETS2: internal metadata phase before write.",
@@ -290,10 +299,12 @@
                   "toast_link_prepared": "ETS job link prepared.",
                   "toast_quicksave_load_required": "Quicksave written. Load the quicksave in-game.",
                   "toast_job_synced": "Dispatcher job marked as synced to ETS2.",
+                  "toast_job_cancelled": "Dispatcher job cancelled.",
                   "toast_offer_sent": "Offer sent.",
                   "action_accept": "Accept",
                   "action_reject": "Reject",
-                  "action_cancel": "Cancel"
+                  "action_cancel": "Cancel",
+                  "cancel_job": "Cancel Job"
             },
             "errors": {
                   "unknown": "Operation failed.",
@@ -319,13 +330,17 @@
                   "dispatcher_offer_company_required": "Company ID is required for the offer.",
                   "dispatcher_offer_not_cancellable": "This offer cannot be cancelled.",
                   "dispatcher_offer_not_countered": "This offer has no active counter offer.",
+                  "dispatcher_job_not_cancellable": "This job cannot be cancelled.",
                   "dispatcher_save_context_missing": "A save context is required for dispatcher market actions.",
                   "dispatcher_job_not_generated": "This dispatcher job is not a generated market job.",
                   "no_active_save": "No active save is loaded.",
                   "dispatcher_job_not_found": "Dispatcher job was not found.",
                   "job_already_assigned": "Dispatcher job is already assigned to the active save.",
                   "invalid_job_status": "Dispatcher job status does not allow this action.",
-                  "save_context_unavailable": "Active save context is currently unavailable."
+                  "save_context_unavailable": "Active save context is currently unavailable.",
+                  "decode_failed": "Save decoding failed. Check the diagnostics for the detected signature and required source files.",
+                  "company_has_no_job_offers": "The selected host depot has no available job offers. Refresh the ETS2 economy and save again.",
+                  "company_has_no_job_offers_in_city": "No depot in the selected city currently has job offers. Refresh the ETS2 economy and save again."
             }
       },
       "career": {

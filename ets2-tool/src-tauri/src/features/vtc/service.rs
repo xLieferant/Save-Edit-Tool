@@ -2,6 +2,7 @@ use chrono::{DateTime, Duration, Utc};
 use rusqlite::Connection;
 
 use crate::features::auth::repo as auth_repo;
+use crate::features::auth::service as auth_service;
 use crate::features::vtc::models::{
     CareerSettings, CompanyMember, CompanyOverview, CompanyRoleOption, CompanySettings,
     CreateCompanyInput, UpdateCareerSettingsInput, UpdateCompanyProfileInput,
@@ -84,6 +85,123 @@ fn enforce_company_access(
 
 fn can_manage_members(role: Option<&str>) -> bool {
     matches!(role, Some("owner") | Some("ceo") | Some("manager"))
+}
+
+fn sync_local_company_context(
+    conn: &Connection,
+    user_id: i64,
+    company_id: i64,
+) -> Result<(), String> {
+    let now = now_rfc3339();
+    let company = repo::load_company_overview(conn, company_id)?
+        .ok_or_else(|| "company_not_found".to_string())?;
+    let role = repo::load_company_role_for_user(conn, user_id)?
+        .map(|(_, role_key)| role_key)
+        .unwrap_or_else(|| "owner".to_string());
+    repo::upsert_vtc_company(
+        conn,
+        company.id,
+        &company.name,
+        &company.created_at,
+        &company.updated_at,
+        "local_only",
+        None,
+    )?;
+    repo::upsert_vtc_company_member(conn, company.id, user_id, &role)?;
+    repo::set_local_context(conn, Some(user_id), Some(company.id), &now)?;
+    Ok(())
+}
+
+fn ensure_seed_company_for_user(conn: &Connection, user_id: i64) -> Result<i64, String> {
+    if let Some(company_id) =
+        auth_repo::load_user_by_id(conn, user_id)?.and_then(|user| user.company_id)
+    {
+        if repo::load_company_overview(conn, company_id)?.is_some() {
+            return Ok(company_id);
+        }
+    }
+
+    let input = CreateCompanyInput {
+        name: "My Company".to_string(),
+        location: "Berlin".to_string(),
+        language: "en".to_string(),
+        game: "ETS2".to_string(),
+        description: Some("Local offline-first VTC company".to_string()),
+        logo_path: None,
+        header_path: None,
+        slogan: Some("Local operations".to_string()),
+        accent_color: Some("#2F6B5F".to_string()),
+        public_visibility: Some(false),
+    };
+    let now = now_rfc3339();
+    let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
+    let company_id = repo::create_company(&tx, user_id, &input, &now)?;
+    repo::assign_member_role(&tx, company_id, user_id, "owner", None, &now)?;
+    repo::set_user_company(&tx, user_id, company_id)?;
+    repo::ensure_company_settings_row(&tx, company_id, &input.language, &input.game, &now)?;
+    tx.commit().map_err(|e| e.to_string())?;
+    Ok(company_id)
+}
+
+pub fn ensure_local_company_bootstrap(conn: &Connection, auth: &AuthState) -> Result<(), String> {
+    let now = now_rfc3339();
+    repo::ensure_local_context_row(conn, &now)?;
+
+    let admin = auth_repo::find_user_by_email(conn, "admin@admin.de")?
+        .ok_or_else(|| "user_not_found".to_string())?;
+    let local_context = repo::load_local_context(conn)?;
+    let active_user_id = local_context.active_user_id.unwrap_or(admin.id);
+
+    if repo::count_vtc_companies(conn)? == 0 {
+        let company_id = ensure_seed_company_for_user(conn, admin.id)?;
+        sync_local_company_context(conn, admin.id, company_id)?;
+    }
+
+    let active_company_id = match local_context.active_company_id {
+        Some(company_id) if repo::load_company_overview(conn, company_id)?.is_some() => company_id,
+        _ => {
+            let company_id = auth_repo::load_user_by_id(conn, active_user_id)?
+                .and_then(|user| user.company_id)
+                .or_else(|| {
+                    auth_repo::load_user_by_id(conn, admin.id)
+                        .ok()
+                        .flatten()
+                        .and_then(|user| user.company_id)
+                })
+                .ok_or_else(|| "company_not_found".to_string())?;
+            sync_local_company_context(conn, active_user_id, company_id)?;
+            company_id
+        }
+    };
+
+    if let Some(company) = repo::load_company_overview(conn, active_company_id)? {
+        repo::upsert_vtc_company(
+            conn,
+            company.id,
+            &company.name,
+            &company.created_at,
+            &company.updated_at,
+            "local_only",
+            None,
+        )?;
+    }
+
+    let role = repo::load_company_role_for_user(conn, active_user_id)?
+        .map(|(_, role_key)| role_key)
+        .unwrap_or_else(|| "owner".to_string());
+    repo::upsert_vtc_company_member(conn, active_company_id, active_user_id, &role)?;
+    repo::set_local_context(conn, Some(active_user_id), Some(active_company_id), &now)?;
+
+    let has_session = auth
+        .session
+        .lock()
+        .map_err(|_| "not_allowed".to_string())?
+        .is_some();
+    if !has_session {
+        auth_service::set_local_session(auth, active_user_id)?;
+    }
+
+    Ok(())
 }
 
 pub fn get_current_user_profile(
@@ -258,6 +376,7 @@ pub fn create_company(
     repo::set_user_company(&tx, user_id, company_id)?;
     repo::ensure_company_settings_row(&tx, company_id, &input.language, &input.game, &now)?;
     tx.commit().map_err(|e| e.to_string())?;
+    sync_local_company_context(conn, user_id, company_id)?;
 
     repo::load_company_overview(conn, company_id)?.ok_or_else(|| "company_not_found".to_string())
 }
@@ -279,6 +398,7 @@ pub fn get_company_overview(
         company.game.as_deref().unwrap_or("ETS2"),
         &now,
     )?;
+    sync_local_company_context(conn, user_id, company_id)?;
     Ok(company)
 }
 
@@ -317,6 +437,7 @@ pub fn update_company_profile(
 
     let now = now_rfc3339();
     repo::update_company_profile(conn, company_id, &input, &now)?;
+    sync_local_company_context(conn, user_id, company_id)?;
 
     repo::load_company_overview(conn, company_id)?.ok_or_else(|| "company_not_found".to_string())
 }
@@ -327,7 +448,11 @@ pub fn get_company_members(
 ) -> Result<Vec<CompanyMember>, String> {
     let user_id = require_user_id(auth)?;
     let (company_id, _) = enforce_company_access(conn, user_id)?;
-    repo::load_company_members(conn, company_id)
+    let members = repo::load_company_members(conn, company_id)?;
+    for member in &members {
+        repo::upsert_vtc_company_member(conn, company_id, member.user_id, &member.role_key)?;
+    }
+    Ok(members)
 }
 
 pub fn get_company_settings(
@@ -410,6 +535,8 @@ pub fn assign_member_role(
     let now = now_rfc3339();
     repo::assign_member_role(conn, company_id, user_id, &role_key, Some(actor_id), &now)?;
     repo::set_user_company(conn, user_id, company_id)?;
+    repo::upsert_vtc_company_member(conn, company_id, user_id, &role_key)?;
+    repo::set_local_context(conn, Some(actor_id), Some(company_id), &now)?;
 
     repo::load_company_member_by_user(conn, company_id, user_id)?
         .ok_or_else(|| "member_not_found".to_string())
@@ -440,6 +567,9 @@ pub fn change_member_role(
 
     let now = now_rfc3339();
     repo::change_member_role(conn, company_id, member_id, &role_key, &now)?;
+    if let Some(member) = repo::load_company_member_by_id(conn, company_id, member_id)? {
+        repo::upsert_vtc_company_member(conn, company_id, member.user_id, &role_key)?;
+    }
 
     repo::load_company_member_by_id(conn, company_id, member_id)?
         .ok_or_else(|| "member_not_found".to_string())

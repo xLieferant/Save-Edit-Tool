@@ -8,8 +8,8 @@ use crate::state::{AppProfileState, AppState, DecryptCache, EtsDbState, ProfileC
 use crate::state::{CareerState, HubState};
 use tauri::Manager;
 
-mod db;
 mod commands;
+mod db;
 mod events;
 mod features;
 mod models;
@@ -65,9 +65,11 @@ fn main() {
                         *guard = Some(db_path);
                     }
 
-                    if let Ok(conn) = rusqlite::Connection::open(db::sqlite::app_db_path()) {
+                    if let Ok(mut conn) = rusqlite::Connection::open(db::sqlite::app_db_path()) {
                         if let Err(error) = features::auth::db::ensure_tables(&conn) {
                             crate::dev_log!("[auth] ensure tables failed: {}", error);
+                        } else if let Err(error) = features::vtc::db::ensure_tables(&conn) {
+                            crate::dev_log!("[vtc] ensure tables failed: {}", error);
                         } else if let Err(error) =
                             features::auth::service::seed_default_admin(&conn)
                         {
@@ -78,6 +80,39 @@ fn main() {
                             crate::dev_log!("[auth] restore session failed: {}", error);
                         } else {
                             crate::dev_log!("[auth] restore session ok");
+                            if let Err(error) =
+                                features::vtc::service::ensure_local_company_bootstrap(
+                                    &conn,
+                                    auth.inner(),
+                                )
+                            {
+                                crate::dev_log!("[vtc] bootstrap failed: {}", error);
+                            }
+                        }
+
+                        if let Err(error) = shared::ets2data::import::ensure_tables(&conn) {
+                            crate::dev_log!("[ets2data] ensure tables failed: {}", error);
+                        } else {
+                            let company_count: i64 = conn
+                                .query_row("SELECT COUNT(*) FROM ets2_companies", [], |row| {
+                                    row.get(0)
+                                })
+                                .unwrap_or(0);
+                            if company_count == 0 {
+                                if let Err(error) = shared::ets2data::import::import_datasets(
+                                    None,
+                                    &mut conn,
+                                    &shared::ets2data::default_repo_root(),
+                                    false,
+                                ) {
+                                    crate::dev_log!(
+                                        "[ets2data] auto import skipped/failed: {}",
+                                        error
+                                    );
+                                } else {
+                                    crate::dev_log!("[ets2data] auto import completed");
+                                }
+                            }
                         }
                     }
                 }
@@ -135,6 +170,7 @@ fn main() {
             commands::ets_snapshot_list_depots,
             commands::ets_snapshot_get_active_diagnostics,
             commands::get_sqlite_info,
+            commands::get_sqlite_table_counts,
             commands::data_import_ets2_datasets,
             commands::ets2data_get_city,
             commands::ets2data_get_company,
@@ -225,6 +261,7 @@ fn main() {
             features::career::commands::dispatcher_get_job_by_id,
             features::career::commands::dispatcher_accept_job,
             features::career::commands::dispatcher_get_active_jobs,
+            features::career::commands::dispatcher_cancel_job,
             features::career::commands::dispatcher_get_job_history,
             features::career::commands::dispatcher_get_company_contacts,
             features::career::commands::dispatcher_create_offer,

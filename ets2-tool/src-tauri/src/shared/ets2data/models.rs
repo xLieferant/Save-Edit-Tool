@@ -1,4 +1,4 @@
-﻿use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 pub const DATASET_VERSION: &str = "1.0.0";
 pub const DEFAULT_PAYMENT_TIER: &str = "standard";
@@ -178,4 +178,3 @@ pub struct CityQueryFilter {
     pub namespace: Option<String>,
     pub limit: Option<usize>,
 }
-

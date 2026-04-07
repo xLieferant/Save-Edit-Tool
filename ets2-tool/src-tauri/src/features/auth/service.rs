@@ -295,6 +295,20 @@ pub fn restore_persisted_session(conn: &Connection, auth: &AuthState) -> Result<
     Ok(())
 }
 
+pub fn set_local_session(auth: &AuthState, user_id: i64) -> Result<(), String> {
+    let mut guard = auth
+        .session
+        .lock()
+        .map_err(|_| "AuthState session lock poisoned".to_string())?;
+    *guard = Some(AuthSession {
+        user_id,
+        remember_me: true,
+        token: None,
+        expires_at: None,
+    });
+    Ok(())
+}
+
 fn set_logged_in_user(
     conn: &Connection,
     auth: &AuthState,

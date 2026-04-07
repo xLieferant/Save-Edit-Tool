@@ -1,4 +1,4 @@
-﻿use std::fs;
+use std::fs;
 use std::path::Path;
 
 use chrono::Utc;
@@ -6,17 +6,16 @@ use rusqlite::{Connection, OptionalExtension, params};
 use serde::Serialize;
 use tauri::{AppHandle, Emitter};
 
-use crate::events::{
-    EVT_DATA_IMPORT_DONE, EVT_DATA_IMPORT_ERROR, EVT_DATA_IMPORT_PROGRESS,
-};
+use crate::events::{EVT_DATA_IMPORT_DONE, EVT_DATA_IMPORT_ERROR, EVT_DATA_IMPORT_PROGRESS};
 use crate::shared::ets2data::fuzzy::{FuzzyDisposition, fuzzy_disposition, levenshtein_similarity};
 use crate::shared::ets2data::models::{
-    CityQueryFilter, CityRecord, CompanyOfficeRecord, CompanyRecord, CountryRecord,
-    DatasetFile, Ets2DataImportSummary,
+    CityQueryFilter, CityRecord, CompanyOfficeRecord, CompanyRecord, CountryRecord, DatasetFile,
+    Ets2DataImportSummary,
 };
 use crate::shared::ets2data::validate::{validate_cities, validate_companies, validate_countries};
 
-const DATASET_MIGRATION_SQL: &str = include_str!("../../db/migrations/2026-04-06_create_ets2_datasets.sql");
+const DATASET_MIGRATION_SQL: &str =
+    include_str!("../../db/migrations/2026-04-06_create_ets2_datasets.sql");
 
 pub fn ensure_tables(conn: &Connection) -> Result<(), String> {
     conn.execute_batch(DATASET_MIGRATION_SQL)
@@ -62,7 +61,13 @@ pub fn import_datasets(
         upsert_company(&tx, record, &companies.meta.dataset_version, force)?;
         for office in &record.offices {
             office_count += 1;
-            upsert_company_office(&tx, &record.id, office, &companies.meta.dataset_version, force)?;
+            upsert_company_office(
+                &tx,
+                &record.id,
+                office,
+                &companies.meta.dataset_version,
+                force,
+            )?;
         }
     }
 
@@ -203,7 +208,10 @@ pub fn get_company(conn: &Connection, company_id: &str) -> Result<Option<Company
     Ok(Some(company))
 }
 
-pub fn list_cities(conn: &Connection, filter: Option<CityQueryFilter>) -> Result<Vec<CityRecord>, String> {
+pub fn list_cities(
+    conn: &Connection,
+    filter: Option<CityQueryFilter>,
+) -> Result<Vec<CityRecord>, String> {
     ensure_tables(conn)?;
     let filter = filter.unwrap_or_default();
     let mut statement = conn
@@ -224,7 +232,10 @@ pub fn list_cities(conn: &Connection, filter: Option<CityQueryFilter>) -> Result
         .collect::<Result<Vec<_>, _>>()
         .map_err(|error| error.to_string())?;
 
-    let search = filter.search.as_ref().map(|value| value.to_ascii_lowercase());
+    let search = filter
+        .search
+        .as_ref()
+        .map(|value| value.to_ascii_lowercase());
     let mut filtered = rows
         .into_iter()
         .filter(|record| {
@@ -309,7 +320,9 @@ pub fn find_city_with_fallback(
     Ok(best)
 }
 
-fn load_dataset<T: for<'de> serde::Deserialize<'de>>(path: &Path) -> Result<DatasetFile<T>, String> {
+fn load_dataset<T: for<'de> serde::Deserialize<'de>>(
+    path: &Path,
+) -> Result<DatasetFile<T>, String> {
     let content = fs::read_to_string(path)
         .map_err(|error| format!("failed to read {}: {}", path.display(), error))?
         .trim_start_matches('\u{feff}')
@@ -555,7 +568,8 @@ fn to_json_column<T: Serialize>(value: &T) -> Result<String, String> {
 }
 
 fn from_json_for_row<T: serde::de::DeserializeOwned>(value: String) -> Result<T, rusqlite::Error> {
-    serde_json::from_str(&value).map_err(|error| rusqlite::Error::ToSqlConversionFailure(Box::new(error)))
+    serde_json::from_str(&value)
+        .map_err(|error| rusqlite::Error::ToSqlConversionFailure(Box::new(error)))
 }
 
 fn emit_progress(app: Option<&AppHandle>, stage: &str, current: usize, total: usize) {
@@ -584,7 +598,10 @@ mod tests {
         checksum_city_record, checksum_company_record, checksum_country_record,
     };
 
-    use super::{ensure_tables, get_city, get_company, list_cities, upsert_city, upsert_company, upsert_company_office, upsert_country};
+    use super::{
+        ensure_tables, get_city, get_company, list_cities, upsert_city, upsert_company,
+        upsert_company_office, upsert_country,
+    };
 
     #[test]
     fn sqlite_import_smoke() {
@@ -669,4 +686,3 @@ mod tests {
         assert_eq!(loaded_company.offices.len(), 1);
     }
 }
-

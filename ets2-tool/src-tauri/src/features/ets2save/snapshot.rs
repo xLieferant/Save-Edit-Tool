@@ -8,7 +8,7 @@ use sqlx::{Row, SqlitePool};
 use tauri::{AppHandle, Emitter};
 
 use crate::features::ets2save::errors::{AppError, AppErrorCode};
-use crate::features::ets2save::parser::{scan_save_templates, SaveTemplateScan};
+use crate::features::ets2save::parser::{SaveTemplateScan, scan_save_templates};
 use crate::features::ets2save::sii_codec::decode_sii_lines;
 
 const EVT_SAVE_SNAPSHOT_PROGRESS: &str = "vtc://save_snapshot/progress";
@@ -47,6 +47,8 @@ pub struct SaveSnapshotDiagnosticsDto {
     pub snapshot_db_path: String,
     pub active_save_session_id: String,
     pub depot_count: i64,
+    pub depot_with_offers_count: i64,
+    pub offerless_depot_count: i64,
     pub visited_city_count: i64,
     pub cargo_count: i64,
     pub last_snapshot_at: Option<String>,
@@ -77,12 +79,17 @@ pub async fn snapshot_refresh(
 
     emit_progress(app, &input.save_session_id, "persisting_snapshot");
     persist_snapshot(pool, &input, &scan, &checksum).await?;
-    let dto = snapshot_get_by_session(pool, &input.save_session_id).await?.ok_or_else(|| {
-        AppError::new(
-            AppErrorCode::InvalidToken,
-            format!("snapshot missing after persist for {}", input.save_session_id),
-        )
-    })?;
+    let dto = snapshot_get_by_session(pool, &input.save_session_id)
+        .await?
+        .ok_or_else(|| {
+            AppError::new(
+                AppErrorCode::InvalidToken,
+                format!(
+                    "snapshot missing after persist for {}",
+                    input.save_session_id
+                ),
+            )
+        })?;
     crate::dev_log!(
         "[ets2save] snapshot persisted session={} depots={} visited_cities={} cargo_tokens={} checksum={}",
         dto.save_session_id,
@@ -268,10 +275,19 @@ pub async fn snapshot_diagnostics_by_session(
     .fetch_one(pool)
     .await?;
 
+    let depot_with_offers_count = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM ets_save_depots WHERE save_session_id = ?1 AND job_offer_count > 0",
+    )
+    .bind(save_session_id)
+    .fetch_one(pool)
+    .await?;
+
     Ok(Some(SaveSnapshotDiagnosticsDto {
         snapshot_db_path: db_path,
         active_save_session_id: save_session_id.to_string(),
         depot_count,
+        depot_with_offers_count,
+        offerless_depot_count: depot_count.saturating_sub(depot_with_offers_count),
         visited_city_count,
         cargo_count,
         last_snapshot_at,
@@ -379,19 +395,23 @@ async fn persist_snapshot(
     }
 
     for city in &scan.visited_cities {
-        sqlx::query("INSERT INTO ets_save_visited_cities (save_session_id, city_token) VALUES (?1, ?2)")
-            .bind(&input.save_session_id)
-            .bind(city)
-            .execute(&mut *tx)
-            .await?;
+        sqlx::query(
+            "INSERT INTO ets_save_visited_cities (save_session_id, city_token) VALUES (?1, ?2)",
+        )
+        .bind(&input.save_session_id)
+        .bind(city)
+        .execute(&mut *tx)
+        .await?;
     }
 
     for cargo in &scan.transported_cargo_tokens {
-        sqlx::query("INSERT INTO ets_save_transport_cargo (save_session_id, cargo_token) VALUES (?1, ?2)")
-            .bind(&input.save_session_id)
-            .bind(cargo)
-            .execute(&mut *tx)
-            .await?;
+        sqlx::query(
+            "INSERT INTO ets_save_transport_cargo (save_session_id, cargo_token) VALUES (?1, ?2)",
+        )
+        .bind(&input.save_session_id)
+        .bind(cargo)
+        .execute(&mut *tx)
+        .await?;
     }
 
     if let Some(pointer) = scan.selected_job_pointer.as_deref() {
@@ -403,7 +423,11 @@ async fn persist_snapshot(
         .execute(&mut *tx)
         .await?;
     }
-    if let Some(pointer) = scan.job_info_units.first().map(|item| item.pointer.as_str()) {
+    if let Some(pointer) = scan
+        .job_info_units
+        .first()
+        .map(|item| item.pointer.as_str())
+    {
         sqlx::query(
             "INSERT INTO ets_save_snapshot_meta (save_session_id, key, value) VALUES (?1, 'job_info_pointer', ?2)",
         )
@@ -418,7 +442,9 @@ async fn persist_snapshot(
 }
 
 fn emit_progress(app: Option<&AppHandle>, save_session_id: &str, stage: &str) {
-    let Some(app) = app else { return; };
+    let Some(app) = app else {
+        return;
+    };
     let _ = app.emit(
         EVT_SAVE_SNAPSHOT_PROGRESS,
         serde_json::json!({ "saveSessionId": save_session_id, "stage": stage }),
@@ -426,12 +452,16 @@ fn emit_progress(app: Option<&AppHandle>, save_session_id: &str, stage: &str) {
 }
 
 fn emit_done(app: Option<&AppHandle>, snapshot: &SaveSnapshotDto) {
-    let Some(app) = app else { return; };
+    let Some(app) = app else {
+        return;
+    };
     let _ = app.emit(EVT_SAVE_SNAPSHOT_DONE, snapshot);
 }
 
 pub fn emit_error(app: Option<&AppHandle>, save_session_id: &str, error: &str) {
-    let Some(app) = app else { return; };
+    let Some(app) = app else {
+        return;
+    };
     let _ = app.emit(
         EVT_SAVE_SNAPSHOT_ERROR,
         serde_json::json!({ "saveSessionId": save_session_id, "error": error }),

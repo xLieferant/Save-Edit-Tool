@@ -1,6 +1,4 @@
-use std::fs;
 use std::hash::{Hash, Hasher};
-use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
@@ -37,7 +35,15 @@ impl SaveContext {
 }
 
 pub fn normalize_reference(value: &str) -> String {
-    value.trim().replace('\\', "/")
+    let mut normalized = value.trim().replace('\\', "/");
+    while normalized.ends_with('/') {
+        let lower = normalized.to_ascii_lowercase();
+        if lower.ends_with(":/") || normalized == "/" {
+            break;
+        }
+        normalized.pop();
+    }
+    normalized
 }
 
 pub fn detect_quicksave_reference(save_reference: &str) -> Option<String> {
@@ -55,17 +61,10 @@ pub fn build_save_session_id(
 ) -> Option<String> {
     let profile_reference = profile_reference?;
     let save_reference = save_reference?;
-    let modified_token = fs::metadata(Path::new(save_reference))
-        .ok()
-        .and_then(|metadata| metadata.modified().ok())
-        .and_then(|modified| modified.duration_since(std::time::UNIX_EPOCH).ok())
-        .map(|duration| duration.as_secs().to_string())
-        .unwrap_or_else(|| "0".to_string());
 
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     normalize_reference(profile_reference).hash(&mut hasher);
     normalize_reference(save_reference).hash(&mut hasher);
-    modified_token.hash(&mut hasher);
 
     Some(format!("savectx-{:016x}", hasher.finish()))
 }

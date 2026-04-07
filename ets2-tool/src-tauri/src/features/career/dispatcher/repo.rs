@@ -317,6 +317,41 @@ pub(super) fn dispatcher_get_active_jobs(
     Ok(rows.into_iter().map(to_dispatcher_market_job).collect())
 }
 
+pub(super) fn dispatcher_cancel_job(
+    conn: &Connection,
+    job_id: &str,
+    save_context: &DispatcherSaveContext,
+) -> Result<DispatcherJobDetails, String> {
+    prepare_dispatcher_system(conn)?;
+    let row = load_dispatcher_job_by_id(conn, job_id, save_context)?
+        .ok_or_else(|| format!("dispatcher_job_not_found:{job_id}"))?;
+
+    if !matches!(
+        row.status.as_str(),
+        "accepted" | "planned" | "in_transit" | "delayed" | "problematic"
+    ) {
+        return Err("dispatcher_job_not_cancellable".to_string());
+    }
+
+    let now = Utc::now().to_rfc3339();
+    conn.execute(
+        r#"
+        UPDATE dispatcher_jobs
+        SET status = 'cancelled',
+            ets2_job_link_status = NULL,
+            last_error_code = NULL,
+            last_error_message = NULL,
+            completed_at_utc = COALESCE(completed_at_utc, ?2),
+            updated_at_utc = ?2
+        WHERE id = ?1
+        "#,
+        params![job_id, now],
+    )
+    .map_err(|e| e.to_string())?;
+
+    dispatcher_get_job_details(conn, job_id, save_context)
+}
+
 pub(super) fn dispatcher_get_job_history(
     conn: &Connection,
     save_context: &DispatcherSaveContext,

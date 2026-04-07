@@ -1,4 +1,4 @@
-﻿pub mod fuzzy;
+pub mod fuzzy;
 pub mod import;
 pub mod models;
 pub mod validate;
@@ -13,12 +13,12 @@ use regex::Regex;
 use serde::de::DeserializeOwned;
 use zip::ZipArchive;
 
+use crate::shared::decrypt::decode_text_bytes;
 use crate::shared::ets2data::fuzzy::{FuzzyDisposition, fuzzy_disposition, levenshtein_similarity};
 use crate::shared::ets2data::models::{
     CityRecord, CompanyOfficeRecord, CompanyOverride, CompanyRecord, CountryOverride,
-    CountryRecord, DATASET_VERSION, DEFAULT_COUNTRY_PAYMENT_MULTIPLIER,
-    DEFAULT_PAYMENT_MULTIPLIER, DEFAULT_PAYMENT_TIER, DatasetBuildSummary, DatasetFile,
-    DatasetInput, ManualReviewItem,
+    CountryRecord, DATASET_VERSION, DEFAULT_COUNTRY_PAYMENT_MULTIPLIER, DEFAULT_PAYMENT_MULTIPLIER,
+    DEFAULT_PAYMENT_TIER, DatasetBuildSummary, DatasetFile, DatasetInput, ManualReviewItem,
 };
 use crate::shared::ets2data::validate::{
     checksum_city_record, checksum_company_record, checksum_country_record, finalize_dataset_meta,
@@ -232,7 +232,10 @@ pub fn build_datasets(repo_root: &Path) -> Result<DatasetBuildSummary, String> {
         country_count: country_records.len(),
         city_count: city_records.len(),
         company_count: company_records.len(),
-        office_count: company_records.iter().map(|record| record.offices.len()).sum(),
+        office_count: company_records
+            .iter()
+            .map(|record| record.offices.len())
+            .sum(),
         warnings,
         countries_checksum: countries_meta.file_sha256,
         cities_checksum: cities_meta.file_sha256,
@@ -278,7 +281,14 @@ fn discover_sources() -> Result<Vec<SourceInput>, String> {
                     .and_then(|value| value.to_str())
                     .unwrap_or("dlc"),
             );
-            sources.push(build_source(&id, "dlc_archive", "scs", 210, path, Vec::new()));
+            sources.push(build_source(
+                &id,
+                "dlc_archive",
+                "scs",
+                210,
+                path,
+                Vec::new(),
+            ));
         }
     } else {
         sources.push(SourceInput {
@@ -326,7 +336,14 @@ fn discover_sources() -> Result<Vec<SourceInput>, String> {
                         .and_then(|value| value.to_str())
                         .unwrap_or("promods"),
                 );
-                sources.push(build_source(&id, "mod_archive", "promods", 300, path, Vec::new()));
+                sources.push(build_source(
+                    &id,
+                    "mod_archive",
+                    "promods",
+                    300,
+                    path,
+                    Vec::new(),
+                ));
             }
         }
     }
@@ -469,8 +486,10 @@ fn load_relevant_text_files(source: &SourceInput) -> Result<Vec<(String, String)
             continue;
         }
         let mut bytes = Vec::new();
-        entry.read_to_end(&mut bytes).map_err(|error| error.to_string())?;
-        let content = String::from_utf8_lossy(&bytes).to_string();
+        entry
+            .read_to_end(&mut bytes)
+            .map_err(|error| error.to_string())?;
+        let content = decode_text_bytes(&bytes, &name, &[source.path.display().to_string()])?;
         files.push((name, content));
     }
 
@@ -514,11 +533,17 @@ fn build_localization_map(files: &[(String, String)]) -> HashMap<String, String>
 fn parse_localization_line(line: &str) -> Option<(String, String)> {
     let quoted_pair = Regex::new(r#"^"([^"]+)"\s+"([^"]+)"$"#).ok()?;
     if let Some(captures) = quoted_pair.captures(line) {
-        return Some((captures.get(1)?.as_str().to_string(), captures.get(2)?.as_str().to_string()));
+        return Some((
+            captures.get(1)?.as_str().to_string(),
+            captures.get(2)?.as_str().to_string(),
+        ));
     }
     let colon_pair = Regex::new(r#"^([@A-Za-z0-9_.-]+)\s*:\s*"([^"]+)"$"#).ok()?;
     if let Some(captures) = colon_pair.captures(line) {
-        return Some((captures.get(1)?.as_str().to_string(), captures.get(2)?.as_str().to_string()));
+        return Some((
+            captures.get(1)?.as_str().to_string(),
+            captures.get(2)?.as_str().to_string(),
+        ));
     }
     None
 }
@@ -684,10 +709,18 @@ fn merge_country_units(
             .unwrap_or(unit.unit_name.as_str())
             .trim_matches('.')
             .to_string();
-        let id = format!("{}:{}", source.namespace, canonical_id_component(&game_token));
+        let id = format!(
+            "{}:{}",
+            source.namespace,
+            canonical_id_component(&game_token)
+        );
         let country_code = first_field(unit, "country_code");
         let iso_country_code = first_field(unit, "iso_country_code");
-        let country_iso2 = derive_iso2(iso_country_code.as_deref(), country_code.as_deref(), &game_token);
+        let country_iso2 = derive_iso2(
+            iso_country_code.as_deref(),
+            country_code.as_deref(),
+            &game_token,
+        );
         let name_base = first_field(unit, "name").unwrap_or_else(|| title_case(&game_token));
         let name_localized = first_field(unit, "name_localized");
         let name_local = resolve_localized(name_localized.as_deref(), &name_base, localization);
@@ -737,10 +770,19 @@ fn merge_country_units(
             }
             Some(existing) => {
                 merge_aliases(&mut record.aliases, &existing.record.aliases);
-                *existing = CountryDraft { record, priority: source.priority };
+                *existing = CountryDraft {
+                    record,
+                    priority: source.priority,
+                };
             }
             None => {
-                countries.insert(id, CountryDraft { record, priority: source.priority });
+                countries.insert(
+                    id,
+                    CountryDraft {
+                        record,
+                        priority: source.priority,
+                    },
+                );
             }
         }
     }
@@ -767,15 +809,24 @@ fn merge_city_units(
             .unwrap_or(unit.unit_name.as_str())
             .trim_matches('.')
             .to_string();
-        let id = format!("{}:{}", source.namespace, canonical_id_component(&game_token));
+        let id = format!(
+            "{}:{}",
+            source.namespace,
+            canonical_id_component(&game_token)
+        );
         let country_token = first_field(unit, "country").unwrap_or_else(|| "unknown".to_string());
-        let country_id = format!("{}:{}", source.namespace, canonical_id_component(&country_token));
+        let country_id = format!(
+            "{}:{}",
+            source.namespace,
+            canonical_id_component(&country_token)
+        );
         let name_base = first_field(unit, "city_name").unwrap_or_else(|| title_case(&game_token));
         let name_localized = first_field(unit, "city_name_localized")
             .or_else(|| first_field(unit, "short_city_name_localized"));
         let name_local = resolve_localized(name_localized.as_deref(), &name_base, localization);
         let name_en = resolve_localized(name_localized.as_deref(), &name_base, localization);
-        let population = first_field(unit, "population").and_then(|value| value.parse::<i64>().ok());
+        let population =
+            first_field(unit, "population").and_then(|value| value.parse::<i64>().ok());
         let mut record = CityRecord {
             id: id.clone(),
             namespace: source.namespace.clone(),
@@ -809,10 +860,21 @@ fn merge_city_units(
             }
             Some(existing) => {
                 merge_aliases(&mut record.aliases, &existing.record.aliases);
-                *existing = CityDraft { record, country_token, priority: source.priority };
+                *existing = CityDraft {
+                    record,
+                    country_token,
+                    priority: source.priority,
+                };
             }
             None => {
-                cities.insert(id, CityDraft { record, country_token, priority: source.priority });
+                cities.insert(
+                    id,
+                    CityDraft {
+                        record,
+                        country_token,
+                        priority: source.priority,
+                    },
+                );
             }
         }
     }
@@ -834,7 +896,10 @@ fn merge_company_units(
 
     for unit in units {
         let class_name = unit.class_name.as_str();
-        if class_name != "company_permanent" && class_name != "company_def" && class_name != "cargo_def" {
+        if class_name != "company_permanent"
+            && class_name != "company_def"
+            && class_name != "cargo_def"
+        {
             continue;
         }
         let game_token = if class_name == "company_permanent" {
@@ -850,7 +915,11 @@ fn merge_company_units(
         if game_token.is_empty() {
             continue;
         }
-        let id = format!("{}:{}", source.namespace, canonical_id_component(&game_token));
+        let id = format!(
+            "{}:{}",
+            source.namespace,
+            canonical_id_component(&game_token)
+        );
         let override_value = overrides.get(&id).or_else(|| overrides.get(&game_token));
         let entry = companies.entry(id.clone()).or_insert_with(|| CompanyDraft {
             record: CompanyRecord {
@@ -860,11 +929,21 @@ fn merge_company_units(
                 name_en: title_case(&game_token),
                 name_local: title_case(&game_token),
                 aliases: vec![],
-                payment_tier: override_value.and_then(|value| value.payment_tier.clone()).unwrap_or_else(|| DEFAULT_PAYMENT_TIER.to_string()),
-                payment_multiplier: override_value.and_then(|value| value.payment_multiplier).unwrap_or(DEFAULT_PAYMENT_MULTIPLIER),
+                payment_tier: override_value
+                    .and_then(|value| value.payment_tier.clone())
+                    .unwrap_or_else(|| DEFAULT_PAYMENT_TIER.to_string()),
+                payment_multiplier: override_value
+                    .and_then(|value| value.payment_multiplier)
+                    .unwrap_or(DEFAULT_PAYMENT_MULTIPLIER),
                 preferred_cargo_types: vec![],
                 offices: vec![],
-                notes: override_value.and_then(|value| value.notes.clone()).unwrap_or_else(|| vec!["VTC balancing default company payment tier and multiplier".to_string()]),
+                notes: override_value
+                    .and_then(|value| value.notes.clone())
+                    .unwrap_or_else(|| {
+                        vec![
+                            "VTC balancing default company payment tier and multiplier".to_string(),
+                        ]
+                    }),
                 source: format!("local:{}!{}", normalize_path(&source.path), relative_path),
                 source_version: source.source_version.clone(),
                 checksum: String::new(),
@@ -874,7 +953,8 @@ fn merge_company_units(
         });
         if source.priority >= entry.priority {
             entry.priority = source.priority;
-            entry.record.source = format!("local:{}!{}", normalize_path(&source.path), relative_path);
+            entry.record.source =
+                format!("local:{}!{}", normalize_path(&source.path), relative_path);
             entry.record.source_version = source.source_version.clone();
         }
 
@@ -910,7 +990,12 @@ fn merge_company_units(
                     canonical_id_component(&city_token),
                     canonical_id_component(prefab_token.as_deref().unwrap_or("unknown"))
                 );
-                if entry.record.offices.iter().any(|office| office.id == office_id) {
+                if entry
+                    .record
+                    .offices
+                    .iter()
+                    .any(|office| office.id == office_id)
+                {
                     continue;
                 }
                 entry.record.offices.push(CompanyOfficeRecord {
@@ -930,7 +1015,10 @@ fn merge_company_units(
             }
             "cargo_def" => {
                 if let Some(cargo) = first_field(unit, "cargo") {
-                    let cargo_token = cargo.strip_prefix("cargo.").unwrap_or(cargo.as_str()).to_string();
+                    let cargo_token = cargo
+                        .strip_prefix("cargo.")
+                        .unwrap_or(cargo.as_str())
+                        .to_string();
                     if !entry.record.preferred_cargo_types.contains(&cargo_token) {
                         entry.record.preferred_cargo_types.push(cargo_token);
                     }
@@ -946,7 +1034,10 @@ fn finalize_countries(
     countries: BTreeMap<String, CountryDraft>,
     warnings: &mut Vec<String>,
 ) -> Result<Vec<CountryRecord>, String> {
-    let mut records = countries.into_values().map(|draft| draft.record).collect::<Vec<_>>();
+    let mut records = countries
+        .into_values()
+        .map(|draft| draft.record)
+        .collect::<Vec<_>>();
     records.sort_by(|left, right| left.id.cmp(&right.id));
     if records.is_empty() {
         warnings.push("countries_dataset_empty".to_string());
@@ -976,8 +1067,13 @@ fn finalize_cities(
             record.country_iso2 = country.country_iso2.clone();
         } else {
             record.country_iso2 = "UN".to_string();
-            record.warnings.push(format!("country_missing:{}", draft.country_token));
-            warnings.push(format!("city_country_missing:{}:{}", record.id, draft.country_token));
+            record
+                .warnings
+                .push(format!("country_missing:{}", draft.country_token));
+            warnings.push(format!(
+                "city_country_missing:{}:{}",
+                record.id, draft.country_token
+            ));
         }
         record.aliases.sort();
         record.aliases.dedup();
@@ -1009,10 +1105,19 @@ fn finalize_companies(
         for office in &mut record.offices {
             office.city_id = city_map.get(&office.city_game_token).cloned();
             if office.city_id.is_none() {
-                office.warnings.push(format!("office_city_missing:{}", office.city_game_token));
-                warnings.push(format!("company_office_city_missing:{}:{}", record.id, office.city_game_token));
+                office
+                    .warnings
+                    .push(format!("office_city_missing:{}", office.city_game_token));
+                warnings.push(format!(
+                    "company_office_city_missing:{}:{}",
+                    record.id, office.city_game_token
+                ));
             }
-            office.checksum = sha256_hex_bytes(serde_json::to_string(&office).map_err(|error| error.to_string())?.as_bytes());
+            office.checksum = sha256_hex_bytes(
+                serde_json::to_string(&office)
+                    .map_err(|error| error.to_string())?
+                    .as_bytes(),
+            );
         }
         record.checksum = checksum_company_record(&record)?;
         records.push(record);
@@ -1030,7 +1135,10 @@ fn collect_city_review_items(cities: &[CityRecord]) -> Vec<ManualReviewItem> {
                 continue;
             }
             let similarity = levenshtein_similarity(&left.name_en, &right.name_en);
-            if matches!(fuzzy_disposition(similarity), FuzzyDisposition::ManualReview) {
+            if matches!(
+                fuzzy_disposition(similarity),
+                FuzzyDisposition::ManualReview
+            ) {
                 items.push(ManualReviewItem {
                     left_id: left.id.clone(),
                     right_id: right.id.clone(),
@@ -1105,7 +1213,10 @@ fn merge_aliases(target: &mut Vec<String>, source: &[String]) {
 }
 
 fn first_field(unit: &SiiUnit, key: &str) -> Option<String> {
-    unit.fields.get(key).and_then(|values| values.first()).cloned()
+    unit.fields
+        .get(key)
+        .and_then(|values| values.first())
+        .cloned()
 }
 
 fn resolve_localized(
@@ -1308,4 +1419,3 @@ mod tests {
         assert_eq!(canonical_id_component("Trade Aux"), "trade_aux");
     }
 }
-

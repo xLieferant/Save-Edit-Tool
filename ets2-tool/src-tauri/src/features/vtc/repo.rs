@@ -8,6 +8,12 @@ use crate::features::vtc::models::{
     UpdateCompanySettingsInput, UpdateUserSettingsInput, UserProfile, UserSettings,
 };
 
+#[derive(Debug, Clone)]
+pub struct LocalContextRecord {
+    pub active_user_id: Option<i64>,
+    pub active_company_id: Option<i64>,
+}
+
 pub fn is_valid_role(conn: &Connection, role_key: &str) -> Result<bool, String> {
     let exists: Option<i64> = conn
         .query_row(
@@ -18,6 +24,110 @@ pub fn is_valid_role(conn: &Connection, role_key: &str) -> Result<bool, String> 
         .optional()
         .map_err(|e| e.to_string())?;
     Ok(exists.is_some())
+}
+
+pub fn ensure_local_context_row(conn: &Connection, now: &str) -> Result<(), String> {
+    conn.execute(
+        r#"
+        INSERT OR IGNORE INTO vtc_local_context (
+            id,
+            active_user_id,
+            active_company_id,
+            updated_at
+        ) VALUES (1, NULL, NULL, ?1)
+        "#,
+        params![now],
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+pub fn load_local_context(conn: &Connection) -> Result<LocalContextRecord, String> {
+    conn.query_row(
+        "SELECT active_user_id, active_company_id FROM vtc_local_context WHERE id = 1",
+        [],
+        |row| {
+            Ok(LocalContextRecord {
+                active_user_id: row.get(0)?,
+                active_company_id: row.get(1)?,
+            })
+        },
+    )
+    .optional()
+    .map_err(|e| e.to_string())?
+    .ok_or_else(|| "vtc_local_context_missing".to_string())
+}
+
+pub fn set_local_context(
+    conn: &Connection,
+    active_user_id: Option<i64>,
+    active_company_id: Option<i64>,
+    now: &str,
+) -> Result<(), String> {
+    conn.execute(
+        r#"
+        INSERT INTO vtc_local_context (id, active_user_id, active_company_id, updated_at)
+        VALUES (1, ?1, ?2, ?3)
+        ON CONFLICT(id) DO UPDATE SET
+            active_user_id = excluded.active_user_id,
+            active_company_id = excluded.active_company_id,
+            updated_at = excluded.updated_at
+        "#,
+        params![active_user_id, active_company_id, now],
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+pub fn upsert_vtc_company(
+    conn: &Connection,
+    company_id: i64,
+    name: &str,
+    created_at: &str,
+    updated_at: &str,
+    sync_state: &str,
+    remote_id: Option<&str>,
+) -> Result<(), String> {
+    conn.execute(
+        r#"
+        INSERT INTO vtc_companies (id, name, created_at, updated_at, sync_state, remote_id)
+        VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+        ON CONFLICT(id) DO UPDATE SET
+            name = excluded.name,
+            updated_at = excluded.updated_at,
+            sync_state = excluded.sync_state,
+            remote_id = excluded.remote_id
+        "#,
+        params![
+            company_id, name, created_at, updated_at, sync_state, remote_id
+        ],
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+pub fn upsert_vtc_company_member(
+    conn: &Connection,
+    company_id: i64,
+    user_id: i64,
+    role: &str,
+) -> Result<(), String> {
+    conn.execute(
+        r#"
+        INSERT INTO vtc_company_members (company_id, user_id, role)
+        VALUES (?1, ?2, ?3)
+        ON CONFLICT(company_id, user_id) DO UPDATE SET
+            role = excluded.role
+        "#,
+        params![company_id, user_id, role],
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+pub fn count_vtc_companies(conn: &Connection) -> Result<i64, String> {
+    conn.query_row("SELECT COUNT(*) FROM vtc_companies", [], |row| row.get(0))
+        .map_err(|e| e.to_string())
 }
 
 pub fn list_roles(conn: &Connection) -> Result<Vec<CompanyRoleOption>, String> {

@@ -269,14 +269,68 @@ pub struct EtsJobOfferPatch {
     pub selected_job_unit: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct PostWriteOfferSlotScan {
+    pub index: i64,
+    pub pointer: String,
+    pub offer_data_found: bool,
+    pub selected: bool,
+    pub matches_expected_pointer: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct PostWriteValidationResult {
+    pub valid: bool,
+    pub company_block_found: bool,
+    pub offer_pointer_found: bool,
+    pub offer_data_found: bool,
+    pub cargo_matches: bool,
+    pub target_matches: bool,
+    pub shortest_distance_present: bool,
+    pub expiration_time_present: bool,
+    pub expected_company: String,
+    pub expected_offer_pointer: String,
+    pub expected_cargo: String,
+    pub expected_target: String,
+    pub written_cargo: Option<String>,
+    pub written_target: Option<String>,
+    pub written_shortest_distance_km: Option<i64>,
+    pub written_expiration_time: Option<i64>,
+    pub selected_offer_slot_index: Option<i64>,
+    pub selected_offer_slot_pointer: Option<String>,
+    pub root_cause: String,
+    pub validation_error_code: Option<String>,
+    pub validation_error: Option<String>,
+    pub offer_slots: Vec<PostWriteOfferSlotScan>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct EtsJobWriteResult {
     pub link: EtsJobLink,
     pub save_path: String,
-    pub backup_path: String,
+    pub backup_path: Option<String>,
     pub before_sha256: String,
     pub after_sha256: String,
     pub write_mode: String,
     pub job_info_updated: bool,
+    pub post_write_valid: bool,
+    pub validation: PostWriteValidationResult,
+    pub post_write_validated: bool,
+    pub company_block_found_after_write: bool,
+    pub offer_pointer_found_after_write: bool,
+    pub job_offer_data_found_after_write: bool,
+    pub cargo_written_token: String,
+    pub target_written_token: String,
+    pub shortest_distance_written: Option<i64>,
+    pub expiration_time_written: Option<i64>,
+    pub job_info_status: String,
+    pub validation_error_code: Option<String>,
+    pub validation_error_message: Option<String>,
+    pub offer_slot_index: Option<i64>,
+    pub offer_slot_pointer: Option<String>,
+    pub expected_load_path: Option<String>,
+    pub load_path_warning: Option<String>,
 }

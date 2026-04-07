@@ -24,7 +24,9 @@ use crate::features::career::overview::CareerOverview;
 use crate::features::career::plugin_installer::{self, ScsGame};
 use crate::features::ets2save::errors::{AppError, AppErrorCode};
 use crate::features::ets2save::link_service;
-use crate::features::ets2save::models::{EtsJobLink, EtsJobLinkStatus, EtsJobWriteResult};
+use crate::features::ets2save::models::{
+    EtsJobLink, EtsJobLinkStatus, EtsJobWriteResult, PostWriteValidationResult,
+};
 use crate::features::hub::events::CareerStatus;
 use crate::shared::current_profile::snapshot_save_context;
 use crate::state::{AppProfileState, CareerRuntime, CareerState, EtsDbState};
@@ -62,10 +64,12 @@ pub struct DispatcherAssignPrepareWriteDto {
 pub struct DispatcherWriteOutputDto {
     pub job_id: String,
     pub save_path: String,
-    pub backup_path: String,
+    pub backup_path: Option<String>,
     pub company_pointer: String,
     pub offer_pointer: Option<String>,
     pub job_offer_data_pointer: Option<String>,
+    pub offer_slot_index: Option<i64>,
+    pub offer_slot_pointer: Option<String>,
     pub origin: String,
     pub destination: String,
     pub target_company: Option<String>,
@@ -77,6 +81,21 @@ pub struct DispatcherWriteOutputDto {
     pub before_sha256: String,
     pub after_sha256: String,
     pub job_info_updated: bool,
+    pub post_write_valid: bool,
+    pub validation: PostWriteValidationResult,
+    pub post_write_validated: bool,
+    pub company_block_found_after_write: bool,
+    pub offer_pointer_found_after_write: bool,
+    pub job_offer_data_found_after_write: bool,
+    pub cargo_written_token: String,
+    pub target_written_token: String,
+    pub shortest_distance_written: Option<i64>,
+    pub expiration_time_written: Option<i64>,
+    pub job_info_status: String,
+    pub validation_error_code: Option<String>,
+    pub validation_error_message: Option<String>,
+    pub expected_load_path: Option<String>,
+    pub load_path_warning: Option<String>,
     pub final_link_status: String,
 }
 
@@ -304,6 +323,20 @@ pub fn dispatcher_get_active_jobs(
     let save_context = resolve_dispatcher_save_context(profile.inner())?;
     let conn = open_connection(career.runtime.as_ref())?;
     dispatcher::dispatcher_get_active_jobs(&conn, &save_context)
+}
+
+#[command]
+pub fn dispatcher_cancel_job(
+    job_id: String,
+    career: State<'_, CareerState>,
+    profile: State<'_, AppProfileState>,
+) -> Result<DispatcherJobDetails, String> {
+    let runtime = career.runtime.as_ref();
+    let save_context = resolve_dispatcher_save_context(profile.inner())?;
+    let conn = open_connection(runtime)?;
+    let result = dispatcher::dispatcher_cancel_job(&conn, &job_id, &save_context)?;
+    runtime.overview_dirty.store(true, Ordering::Relaxed);
+    Ok(result)
 }
 
 #[command]
@@ -720,9 +753,7 @@ async fn dispatcher_assign_prepare_write_inner(
         .save_reference
         .as_ref()
         .map(|save_reference| PathBuf::from(save_reference).join("game.sii"));
-    let sha_before = game_sii_path
-        .as_deref()
-        .and_then(read_file_sha256_hex_opt);
+    let sha_before = game_sii_path.as_deref().and_then(read_file_sha256_hex_opt);
 
     emit_dispatcher_progress(app, EVT_DISPATCHER_ASSIGN_PROGRESS, job_id, "assigning");
 
@@ -822,13 +853,20 @@ async fn dispatcher_assign_prepare_write_inner(
         })?;
 
         match current_link.status {
-            EtsJobLinkStatus::RequiresLoad | EtsJobLinkStatus::Synced | EtsJobLinkStatus::Completed => {
-                emit_dispatcher_progress(app, EVT_DISPATCHER_WRITE_PROGRESS, job_id, "already_written");
+            EtsJobLinkStatus::RequiresLoad
+            | EtsJobLinkStatus::Synced
+            | EtsJobLinkStatus::Completed => {
+                emit_dispatcher_progress(
+                    app,
+                    EVT_DISPATCHER_WRITE_PROGRESS,
+                    job_id,
+                    "already_written",
+                );
                 write_result = "already_written".to_string();
             }
             EtsJobLinkStatus::Prepared | EtsJobLinkStatus::Written => {
                 match link_service::write_job_to_quicksave(app, db_pool, &current_link.link_id)
-                .await
+                    .await
                 {
                     Ok(write_payload) => {
                         write_result = "written".to_string();
@@ -856,15 +894,13 @@ async fn dispatcher_assign_prepare_write_inner(
     }
 
     runtime.overview_dirty.store(true, Ordering::Relaxed);
-    let details =
-        load_dispatcher_job_details_for_context(runtime, job_id, &save_context).unwrap_or(assigned_or_current);
+    let details = load_dispatcher_job_details_for_context(runtime, job_id, &save_context)
+        .unwrap_or(assigned_or_current);
     emit_dispatcher_job_updated(app, &details);
     emit_dispatcher_job_updated_new(app, &details);
 
     let sha_after = if auto_write {
-        game_sii_path
-            .as_deref()
-            .and_then(read_file_sha256_hex_opt)
+        game_sii_path.as_deref().and_then(read_file_sha256_hex_opt)
     } else {
         None
     };
@@ -875,7 +911,10 @@ async fn dispatcher_assign_prepare_write_inner(
 
     if let Some(result) = written_result {
         let patch = result.link.patch.clone();
-        let origin = format!("{} ({})", details.job.origin_city, details.job.origin_country);
+        let origin = format!(
+            "{} ({})",
+            details.job.origin_city, details.job.origin_country
+        );
         let destination = format!(
             "{} ({})",
             details.job.destination_city, details.job.destination_country
@@ -886,11 +925,12 @@ async fn dispatcher_assign_prepare_write_inner(
             backup_path: result.backup_path.clone(),
             company_pointer: format!(
                 "company.volatile.{}.{}",
-                result.link.src_company,
-                result.link.src_city
+                result.link.src_company, result.link.src_city
             ),
             offer_pointer: result.link.offer_pointer.clone(),
             job_offer_data_pointer: result.link.job_offer_data_pointer.clone(),
+            offer_slot_index: result.offer_slot_index,
+            offer_slot_pointer: result.offer_slot_pointer.clone(),
             origin,
             destination,
             target_company: Some(patch.target),
@@ -902,6 +942,21 @@ async fn dispatcher_assign_prepare_write_inner(
             before_sha256: result.before_sha256,
             after_sha256: result.after_sha256,
             job_info_updated: result.job_info_updated,
+            post_write_valid: result.post_write_valid,
+            validation: result.validation,
+            post_write_validated: result.post_write_validated,
+            company_block_found_after_write: result.company_block_found_after_write,
+            offer_pointer_found_after_write: result.offer_pointer_found_after_write,
+            job_offer_data_found_after_write: result.job_offer_data_found_after_write,
+            cargo_written_token: result.cargo_written_token,
+            target_written_token: result.target_written_token,
+            shortest_distance_written: result.shortest_distance_written,
+            expiration_time_written: result.expiration_time_written,
+            job_info_status: result.job_info_status,
+            validation_error_code: result.validation_error_code,
+            validation_error_message: result.validation_error_message,
+            expected_load_path: result.expected_load_path,
+            load_path_warning: result.load_path_warning,
             final_link_status: result.link.status.as_db().to_string(),
         });
     }
@@ -931,7 +986,9 @@ async fn ensure_steam_cloud_disabled(
     pool: &SqlitePool,
     profile_reference: Option<&str>,
 ) -> Result<(), AppError> {
-    let Some(profile_reference) = profile_reference.map(str::trim).filter(|value| !value.is_empty())
+    let Some(profile_reference) = profile_reference
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
     else {
         return Ok(());
     };
@@ -1330,7 +1387,10 @@ mod tests {
             .unwrap();
 
             assert_eq!(result.dispatcher_status, "injected");
-            assert_eq!(result.ets2_job_link_status.as_deref(), Some("requires_load"));
+            assert_eq!(
+                result.ets2_job_link_status.as_deref(),
+                Some("requires_load")
+            );
             assert!(result.write_attempted);
 
             let conn = Connection::open(&context.db_path).unwrap();
@@ -1338,12 +1398,7 @@ mod tests {
                 .query_row(
                     "SELECT status, ets2_job_link_status FROM dispatcher_jobs WHERE id = ?1",
                     [context.job_id.as_str()],
-                    |row| {
-                        Ok((
-                            row.get::<_, String>(0)?,
-                            row.get::<_, Option<String>>(1)?,
-                        ))
-                    },
+                    |row| Ok((row.get::<_, String>(0)?, row.get::<_, Option<String>>(1)?)),
                 )
                 .unwrap();
             assert_eq!(row.0, "injected");

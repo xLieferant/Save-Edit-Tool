@@ -202,6 +202,9 @@
                   "detail_source": "[NEEDS TRANSLATION]",
                   "detail_vtc_company": "[NEEDS TRANSLATION]",
                   "detail_ingame_host": "[NEEDS TRANSLATION]",
+                  "detail_host_city": "[NEEDS TRANSLATION] Host City",
+                  "detail_target_company": "[NEEDS TRANSLATION] Target Company",
+                  "detail_offer_location": "[NEEDS TRANSLATION] Offer Location",
                   "detail_requested_cargo": "[NEEDS TRANSLATION]",
                   "detail_resolved_cargo": "[NEEDS TRANSLATION]",
                   "detail_cargo_resolution_mode": "[NEEDS TRANSLATION]",
@@ -223,7 +226,13 @@
                   "detail_last_error_code": "[NEEDS TRANSLATION]",
                   "detail_last_error_message": "[NEEDS TRANSLATION]",
                   "detail_live_progress": "[NEEDS TRANSLATION]",
+                  "action_guide_title": "[NEEDS TRANSLATION]",
                   "write_report_title": "[NEEDS TRANSLATION]",
+                  "db_diagnostics_title": "[NEEDS TRANSLATION]",
+                  "load_hint": "[NEEDS TRANSLATION] Job written to quicksave. Load this exact quicksave in ETS2 to apply the new offer: {path}",
+                  "load_hint_generic": "[NEEDS TRANSLATION] Job written to quicksave. Load the exact quicksave in ETS2 to apply the new offer.",
+                  "load_path_warning": "[NEEDS TRANSLATION] Warning: {warning}",
+                  "offer_location_hint": "[NEEDS TRANSLATION] This injected offer is attached to host depot {depot}.",
                   "hint_accept": "[NEEDS TRANSLATION]",
                   "hint_assign": "[NEEDS TRANSLATION]",
                   "hint_prepare": "[NEEDS TRANSLATION]",
@@ -290,10 +299,12 @@
                   "toast_link_prepared": "[NEEDS TRANSLATION]",
                   "toast_quicksave_load_required": "[NEEDS TRANSLATION]",
                   "toast_job_synced": "[NEEDS TRANSLATION]",
+                  "toast_job_cancelled": "[NEEDS TRANSLATION]",
                   "toast_offer_sent": "[NEEDS TRANSLATION]",
                   "action_accept": "[NEEDS TRANSLATION]",
                   "action_reject": "[NEEDS TRANSLATION]",
-                  "action_cancel": "[NEEDS TRANSLATION]"
+                  "action_cancel": "[NEEDS TRANSLATION]",
+                  "cancel_job": "[NEEDS TRANSLATION]"
             },
             "errors": {
                   "unknown": "[NEEDS TRANSLATION]",
@@ -319,13 +330,17 @@
                   "dispatcher_offer_company_required": "[NEEDS TRANSLATION]",
                   "dispatcher_offer_not_cancellable": "[NEEDS TRANSLATION]",
                   "dispatcher_offer_not_countered": "[NEEDS TRANSLATION]",
+                  "dispatcher_job_not_cancellable": "[NEEDS TRANSLATION]",
                   "dispatcher_save_context_missing": "[NEEDS TRANSLATION]",
                   "dispatcher_job_not_generated": "[NEEDS TRANSLATION]",
                   "no_active_save": "[NEEDS TRANSLATION]",
                   "dispatcher_job_not_found": "[NEEDS TRANSLATION]",
                   "job_already_assigned": "[NEEDS TRANSLATION]",
                   "invalid_job_status": "[NEEDS TRANSLATION]",
-                  "save_context_unavailable": "[NEEDS TRANSLATION]"
+                  "save_context_unavailable": "[NEEDS TRANSLATION]",
+                  "decode_failed": "[NEEDS TRANSLATION]",
+                  "company_has_no_job_offers": "[NEEDS TRANSLATION]",
+                  "company_has_no_job_offers_in_city": "[NEEDS TRANSLATION]"
             }
       },
       "career": {

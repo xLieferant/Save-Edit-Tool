@@ -1,11 +1,11 @@
-﻿use serde::Serialize;
+use serde::Serialize;
 use serde_json::{Map, Value};
 use sha2::{Digest, Sha256};
 
-use crate::shared::ets2data::models::{
-    CompanyRecord, CountryRecord, DatasetFile, DatasetMeta, MapCoords, ManualReviewItem,
-};
 use crate::shared::ets2data::models::{CityRecord, DEFAULT_PAYMENT_TIER};
+use crate::shared::ets2data::models::{
+    CompanyRecord, CountryRecord, DatasetFile, DatasetMeta, ManualReviewItem, MapCoords,
+};
 
 pub fn canonical_json<T: Serialize>(value: &T) -> Result<String, String> {
     let value = serde_json::to_value(value).map_err(|error| error.to_string())?;
@@ -208,10 +208,10 @@ fn validate_coords(coords: Option<&MapCoords>, record_id: &str) -> Result<(), St
 
 #[cfg(test)]
 mod tests {
-    use crate::shared::ets2data::models::{
-        CompanyRecord, CountryRecord, MapCoords, DEFAULT_PAYMENT_MULTIPLIER,
-    };
     use crate::shared::ets2data::models::{CityRecord, DEFAULT_COUNTRY_PAYMENT_MULTIPLIER};
+    use crate::shared::ets2data::models::{
+        CompanyRecord, CountryRecord, DEFAULT_PAYMENT_MULTIPLIER, MapCoords,
+    };
 
     use super::{
         checksum_city_record, checksum_country_record, sha256_hex_bytes, validate_cities,
@@ -310,4 +310,3 @@ mod tests {
         assert!(validate_cities(&[broken], &[sample_country()]).is_err());
     }
 }
-

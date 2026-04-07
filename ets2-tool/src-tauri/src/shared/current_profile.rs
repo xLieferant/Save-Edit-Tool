@@ -59,7 +59,9 @@ pub fn snapshot_active_save_selection(
     })
 }
 
-pub fn snapshot_resolved_save_context(state: &AppProfileState) -> Result<ResolvedSaveContext, String> {
+pub fn snapshot_resolved_save_context(
+    state: &AppProfileState,
+) -> Result<ResolvedSaveContext, String> {
     let selection = snapshot_active_save_selection(state)?;
     let selected_game = state
         .selected_game
@@ -73,9 +75,7 @@ pub fn snapshot_resolved_save_context(state: &AppProfileState) -> Result<Resolve
     let mut save_inferred = false;
 
     if profile_path.is_none() {
-        if let Some(derived_profile) = save_path
-            .as_deref()
-            .and_then(derive_profile_from_save_path)
+        if let Some(derived_profile) = save_path.as_deref().and_then(derive_profile_from_save_path)
         {
             profile_path = Some(derived_profile);
             profile_inferred = true;

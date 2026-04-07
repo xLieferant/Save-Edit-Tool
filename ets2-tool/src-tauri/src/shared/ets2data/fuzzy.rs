@@ -1,4 +1,4 @@
-﻿#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FuzzyDisposition {
     Merge,
     AutoMerge,
@@ -75,4 +75,3 @@ mod tests {
         assert!(levenshtein_similarity("Berlin", "Berln") >= 83.0);
     }
 }
-

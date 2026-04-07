@@ -159,6 +159,17 @@ pub fn fallback_company_in_city(index: &SaveDepotIndex, city_token: &str) -> Opt
     companies.first().cloned()
 }
 
+pub fn fallback_company_in_city_with_offers(
+    depots: &[SaveDepotBlock],
+    city_token: &str,
+) -> Option<String> {
+    depots
+        .iter()
+        .filter(|depot| depot.city_token == city_token && depot.job_offer_count > 0)
+        .map(|depot| depot.company_token.clone())
+        .min()
+}
+
 pub fn scan_save_templates(lines: &[String]) -> SaveTemplateScan {
     let depots = parse_save_depots(lines);
     let depot_index = build_save_depot_index(lines);
@@ -170,17 +181,14 @@ pub fn scan_save_templates(lines: &[String]) -> SaveTemplateScan {
         .into_iter()
         .map(|value| sii_token(value.trim_start_matches("cargo.")))
         .collect::<Vec<_>>();
-    let selected_job_pointer = lines
-        .iter()
-        .map(|line| line.trim())
-        .find_map(|trimmed| {
-            if !trimmed.starts_with("selected_job:") {
-                return None;
-            }
-            trimmed
-                .split_once(':')
-                .map(|(_, value)| value.trim().to_string())
-        });
+    let selected_job_pointer = lines.iter().map(|line| line.trim()).find_map(|trimmed| {
+        if !trimmed.starts_with("selected_job:") {
+            return None;
+        }
+        trimmed
+            .split_once(':')
+            .map(|(_, value)| value.trim().to_string())
+    });
 
     SaveTemplateScan {
         depots,
@@ -456,12 +464,53 @@ pub fn extract_job_offer_pointer(
     ))
 }
 
+pub fn list_job_offer_pointers(
+    lines: &[String],
+    company_block: UnitRange,
+) -> Vec<SaveJobOfferPointer> {
+    let mut out = Vec::new();
+    for line in &lines[company_block.start..=company_block.end] {
+        let trimmed = line.trim();
+        if !trimmed.starts_with("job_offer[") {
+            continue;
+        }
+        let Some((_, value)) = trimmed.split_once(':') else {
+            continue;
+        };
+        let idx = trimmed
+            .split(']')
+            .next()
+            .and_then(|left| left.strip_prefix("job_offer["))
+            .and_then(|raw| raw.parse::<usize>().ok())
+            .unwrap_or(0);
+        let pointer = value.trim().to_string();
+        if !pointer.is_empty() {
+            out.push(SaveJobOfferPointer {
+                index: idx,
+                pointer,
+            });
+        }
+    }
+    out.sort_by_key(|item| item.index);
+    out
+}
+
 pub fn find_job_offer_data_block(lines: &[String], pointer: &str) -> Result<UnitRange, AppError> {
     let token = format!("job_offer_data : {}", pointer);
     find_unit_range(lines, &token).ok_or_else(|| {
         AppError::new(
             AppErrorCode::InvalidToken,
             format!("job_offer_data block not found for {}", pointer),
+        )
+    })
+}
+
+pub fn find_job_info_block(lines: &[String], pointer: &str) -> Result<UnitRange, AppError> {
+    let token = format!("job_info : {}", pointer);
+    find_unit_range(lines, &token).ok_or_else(|| {
+        AppError::new(
+            AppErrorCode::InvalidToken,
+            format!("job_info block not found for {}", pointer),
         )
     })
 }
@@ -600,9 +649,9 @@ fn set_or_insert_field(lines: &mut Vec<String>, range: UnitRange, field: &str, v
 #[cfg(test)]
 mod tests {
     use super::{
-        build_save_depot_index, extract_job_offer_pointer, fallback_company_in_city, find_company_block,
-        find_job_offer_data_block, resolve_city_token, scan_save_templates,
-        patch_job_offer_data,
+        build_save_depot_index, extract_job_offer_pointer, fallback_company_in_city,
+        fallback_company_in_city_with_offers, find_company_block, find_job_offer_data_block,
+        patch_job_offer_data, resolve_city_token, scan_save_templates,
     };
     use crate::features::ets2save::models::EtsJobOfferPatch;
 
@@ -721,6 +770,47 @@ mod tests {
         let index = build_save_depot_index(&lines);
         let selected = fallback_company_in_city(&index, "lehavre").unwrap();
         assert_eq!(selected, "tradeaux");
+    }
+
+    #[test]
+    fn fallback_host_with_offers_skips_offerless_companies() {
+        let lines = [
+            "SiiNunit",
+            "{",
+            "company : company.volatile.tradeaux.lehavre {",
+            " job_offer: 0",
+            "}",
+            "company : company.volatile.voitureux.lehavre {",
+            " job_offer: 2",
+            " job_offer[0]: _nameless.offer.002",
+            " job_offer[1]: _nameless.offer.003",
+            "}",
+            "}",
+        ]
+        .into_iter()
+        .map(|line| line.to_string())
+        .collect::<Vec<_>>();
+        let scan = scan_save_templates(&lines);
+        let selected = fallback_company_in_city_with_offers(&scan.depots, "lehavre").unwrap();
+        assert_eq!(selected, "voitureux");
+    }
+
+    #[test]
+    fn scan_templates_defaults_missing_job_offer_count_to_zero() {
+        let lines = [
+            "SiiNunit",
+            "{",
+            "company : company.volatile.tradeaux.berlin {",
+            " permanent_data: company.permanent.tradeaux",
+            "}",
+            "}",
+        ]
+        .into_iter()
+        .map(|line| line.to_string())
+        .collect::<Vec<_>>();
+        let scan = scan_save_templates(&lines);
+        assert_eq!(scan.depots.len(), 1);
+        assert_eq!(scan.depots[0].job_offer_count, 0);
     }
 
     #[test]

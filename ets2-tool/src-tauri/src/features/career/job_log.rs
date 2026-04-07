@@ -343,8 +343,8 @@ pub fn enrich_job_entry(conn: &Connection, entry: &mut JobLogEntry) -> Result<()
     entry.ingame_income = Some(entry.income);
     entry.result_status = Some(entry.status.clone());
 
-    let (planned_distance_km, planned_distance_source) =
-        resolve_planned_distance(conn, entry)?.unwrap_or((
+    let (planned_distance_km, planned_distance_source) = resolve_planned_distance(conn, entry)?
+        .unwrap_or((
             entry.planned_distance_km.max(0.0),
             if entry.planned_distance_km > 0.0 {
                 "telemetry".to_string()
@@ -497,10 +497,7 @@ fn infer_cargo_type(cargo: &str) -> CargoType {
     let value = cargo.trim().to_ascii_lowercase();
     if value.contains("chemical") || value.contains("hazard") {
         CargoType::Hazardous
-    } else if value.contains("medical")
-        || value.contains("fragile")
-        || value.contains("glass")
-    {
+    } else if value.contains("medical") || value.contains("fragile") || value.contains("glass") {
         CargoType::Fragile
     } else if value.contains("fresh")
         || value.contains("refrigerated")

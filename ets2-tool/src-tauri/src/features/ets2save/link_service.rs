@@ -1,7 +1,6 @@
+use std::collections::BTreeSet;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::collections::BTreeSet;
-use std::collections::HashMap;
 
 use chrono::Utc;
 use rusqlite::{Connection as RusqliteConnection, OptionalExtension};
@@ -15,25 +14,25 @@ use crate::events::{
     EVT_DISPATCHER_JOB_UPDATED, EVT_DISPATCHER_JOBS_UPDATED, EVT_JOB_LINK_UPDATED,
 };
 use crate::features::ets2save::errors::{AppError, AppErrorCode};
-use crate::features::ets2save::injector::{
-    build_offer_patch, write_job_offer_patch,
-};
+use crate::features::ets2save::injector::{build_offer_patch, write_job_offer_patch};
 use crate::features::ets2save::locator::resolve_last_quicksave;
 use crate::features::ets2save::models::{
     DispatcherResolvedSaveLink, DispatcherSaveOfferTemplate, EtsJobLink, EtsJobLinkStatus,
     EtsJobWriteResult, EtsSaveSlot, VtcDispatcherJob,
 };
 use crate::features::ets2save::parser::{
-    extract_job_offer_pointer, fallback_company_in_city, find_company_block,
-    find_job_offer_data_block, resolve_city_token, scan_save_templates, sii_token,
+    extract_job_offer_pointer, fallback_company_in_city, fallback_company_in_city_with_offers,
+    find_company_block, find_job_offer_data_block, resolve_city_token, scan_save_templates,
+    sii_token,
 };
 use crate::features::ets2save::sii_codec::decode_sii_lines;
 use crate::features::ets2save::snapshot::{self, SaveSnapshotInput};
 use crate::features::telemetry::events::TelemetryJobEventPayload;
 use crate::shared::models::save_context::build_save_session_id;
+use crate::shared::sqlite_schema::ensure_columns;
 use crate::state::AppProfileState;
 
-const MIGRATION_FILES: [&str; 9] = [
+const MIGRATION_FILES: [&str; 10] = [
     "2026-04-06_create_ets_profiles.sql",
     "2026-04-06_create_ets_saves.sql",
     "2026-04-06_create_ets_job_links.sql",
@@ -43,6 +42,7 @@ const MIGRATION_FILES: [&str; 9] = [
     "2026-04-06_create_ets_save_snapshot.sql",
     "2026-04-06_add_resolved_tokens_to_ets_job_links.sql",
     "2026-04-06_add_cargo_resolution_to_ets_job_links.sql",
+    "2026-04-07_add_vtc_local_persistence.sql",
 ];
 
 pub async fn create_pool(db_path: &std::path::Path) -> Result<SqlitePool, AppError> {
@@ -159,6 +159,30 @@ fn run_runtime_migrations(db_path: &Path) -> Result<(), AppError> {
             format!("commit migration transaction failed: {}", error),
         )
     })?;
+    ensure_runtime_columns(&connection)?;
+    Ok(())
+}
+
+fn ensure_runtime_columns(conn: &RusqliteConnection) -> Result<(), AppError> {
+    ensure_columns(
+        conn,
+        "ets_save_depots",
+        &[
+            ("discovered", "INTEGER NOT NULL DEFAULT 1"),
+            ("job_offer_count", "INTEGER NOT NULL DEFAULT 0"),
+        ],
+    )
+    .map_err(|error| AppError::new(AppErrorCode::WriteFailed, error))?;
+    conn.execute(
+        "UPDATE ets_save_depots SET job_offer_count = 0 WHERE job_offer_count IS NULL",
+        [],
+    )
+    .map_err(|error| {
+        AppError::new(
+            AppErrorCode::WriteFailed,
+            format!("backfill ets_save_depots job_offer_count failed: {}", error),
+        )
+    })?;
     Ok(())
 }
 
@@ -223,7 +247,6 @@ pub async fn prepare_job_link(
             .or_else(|| Some(save_slot.save_path.clone())),
     };
     let snapshot = snapshot::snapshot_refresh(app, pool, snapshot_input).await?;
-    let depots_by_city = snapshot::depots_by_city(&snapshot);
     let cargo_resolution =
         resolve_prepare_cargo_token(&dispatcher_job, &snapshot.transported_cargo_tokens)?;
     crate::dev_log!(
@@ -239,12 +262,8 @@ pub async fn prepare_job_link(
 
     let mut connection = begin_immediate(pool).await?;
     let result = async {
-        let resolved = resolve_prepare_save_mapping(
-            &mut connection,
-            &dispatcher_job,
-            &depots_by_city,
-        )
-        .await?;
+        let resolved =
+            resolve_prepare_save_mapping(&mut connection, &dispatcher_job, &snapshot).await?;
         let company_block = find_company_block(
             &lines,
             &resolved.resolved_src_company_token,
@@ -308,7 +327,11 @@ pub async fn prepare_job_link(
                 requested_target_city_token: &sii_token(&dispatcher_job.destination_city),
                 trailer_definition_token: patch.trailer_definition.as_deref(),
                 trailer_variant_token: patch.trailer_variant.as_deref(),
-                company_truck_mode: if patch.company_truck { "company_truck" } else { "own_truck" },
+                company_truck_mode: if patch.company_truck {
+                    "company_truck"
+                } else {
+                    "own_truck"
+                },
                 requested_cargo_token: &cargo_resolution.requested_cargo_token,
                 resolved_cargo_token: &cargo_resolution.resolved_cargo_token,
                 cargo_resolution_mode: &cargo_resolution.cargo_resolution_mode,
@@ -372,6 +395,22 @@ pub async fn write_job_to_quicksave(
         )?;
         let after_sha256 = file_sha256_hex(std::path::Path::new(&save_slot.game_sii_path))?;
         let now = Utc::now().to_rfc3339();
+        let validation = pointers.validation.clone();
+        let expected_load_path = Some(save_slot.save_path.clone());
+        let load_path_warning = link
+            .save_offer_template
+            .as_ref()
+            .and_then(|template| template.quicksave_reference.clone())
+            .and_then(|expected| {
+                if expected != save_slot.save_path {
+                    Some(format!(
+                        "quicksave_path_mismatch expected={} actual={}",
+                        expected, save_slot.save_path
+                    ))
+                } else {
+                    None
+                }
+            });
 
         update_status_only(
             &mut connection,
@@ -392,17 +431,15 @@ pub async fn write_job_to_quicksave(
             None,
         )
         .await?;
+        let backup_payload = pointers.backup_path.as_ref().map(|path| {
+            serde_json::json!({ "backupPath": path.display().to_string() }).to_string()
+        });
         insert_audit(
             &mut connection,
             link_id,
             Some(EtsJobLinkStatus::Written),
             EtsJobLinkStatus::RequiresLoad,
-            Some(
-                &serde_json::json!({
-                    "backupPath": pointers.backup_path.display().to_string()
-                })
-                .to_string(),
-            ),
+            backup_payload.as_deref(),
         )
         .await?;
         set_dispatcher_link_status(
@@ -416,11 +453,35 @@ pub async fn write_job_to_quicksave(
         Ok(EtsJobWriteResult {
             link: updated_link,
             save_path: save_slot.game_sii_path,
-            backup_path: pointers.backup_path.display().to_string(),
+            backup_path: pointers
+                .backup_path
+                .as_ref()
+                .map(|path| path.display().to_string()),
             before_sha256,
             after_sha256,
             write_mode: "overwrite_existing_offer".to_string(),
             job_info_updated: pointers.job_info_updated,
+            post_write_valid: validation.valid,
+            validation: validation.clone(),
+            post_write_validated: validation.valid,
+            company_block_found_after_write: validation.company_block_found,
+            offer_pointer_found_after_write: validation.offer_pointer_found,
+            job_offer_data_found_after_write: validation.offer_data_found,
+            cargo_written_token: validation.written_cargo.clone().unwrap_or_default(),
+            target_written_token: validation.written_target.clone().unwrap_or_default(),
+            shortest_distance_written: validation.written_shortest_distance_km,
+            expiration_time_written: validation.written_expiration_time,
+            job_info_status: if link.patch.job_info_unit.is_some() {
+                "updated".to_string()
+            } else {
+                "not_applicable".to_string()
+            },
+            validation_error_code: validation.validation_error_code.clone(),
+            validation_error_message: validation.validation_error.clone(),
+            offer_slot_index: Some(pointers.offer_slot_index as i64),
+            offer_slot_pointer: Some(pointers.offer_pointer),
+            expected_load_path,
+            load_path_warning,
         })
     }
     .await;
@@ -743,7 +804,11 @@ async fn upsert_prepared_job_link(
         .bind(input.resolved_cargo_token)
         .bind(input.cargo_resolution_mode)
         .bind(input.cargo_validation_source)
-        .bind(if input.cargo_valid_for_snapshot { 1_i64 } else { 0_i64 })
+        .bind(if input.cargo_valid_for_snapshot {
+            1_i64
+        } else {
+            0_i64
+        })
         .bind(input.cargo_id)
         .bind(input.distance_km)
         .bind(input.planned_reward)
@@ -842,6 +907,7 @@ async fn upsert_prepared_job_link(
 struct SaveCompanyBlock {
     company_token: String,
     city_token: String,
+    job_offer_count: i64,
 }
 
 #[derive(Debug, Clone)]
@@ -866,19 +932,19 @@ struct CargoResolution {
 async fn resolve_prepare_save_mapping(
     connection: &mut sqlx::pool::PoolConnection<Sqlite>,
     dispatcher_job: &VtcDispatcherJob,
-    depots_by_city: &HashMap<String, Vec<String>>,
+    snapshot: &snapshot::SaveSnapshotDto,
 ) -> Result<PrepareSaveMapping, AppError> {
     let requested_company_token = sii_token(&dispatcher_job.company_id);
     let requested_city_token = sii_token(&dispatcher_job.origin_city);
     let requested_destination_city_token = sii_token(&dispatcher_job.destination_city);
     let mut all_depots = Vec::<SaveCompanyBlock>::new();
-    for (city, companies) in depots_by_city {
-        for company in companies {
-            all_depots.push(SaveCompanyBlock {
-                company_token: company.clone(),
-                city_token: city.clone(),
-            });
-        }
+    let depots_by_city = snapshot::depots_by_city(snapshot);
+    for depot in &snapshot.depots {
+        all_depots.push(SaveCompanyBlock {
+            company_token: depot.company_token.clone(),
+            city_token: depot.city_token.clone(),
+            job_offer_count: depot.job_offer_count,
+        });
     }
     let depot_index = crate::features::ets2save::parser::SaveDepotIndex {
         depots_by_city: depots_by_city.clone(),
@@ -897,27 +963,31 @@ async fn resolve_prepare_save_mapping(
         .as_ref()
         .map(|value| value.candidates.clone())
         .unwrap_or_default();
-    let destination_city_resolution = resolve_city_token(&requested_destination_city_token, &depot_index);
+    let destination_city_resolution =
+        resolve_city_token(&requested_destination_city_token, &depot_index);
     let resolved_destination_city_token = destination_city_resolution
         .as_ref()
         .map(|value| value.token.clone())
         .unwrap_or_else(|| requested_destination_city_token.clone());
 
     if let Some(exact) = available_blocks.iter().find(|block| {
-        block.company_token == requested_company_token && block.city_token == resolved_requested_city_token
+        block.company_token == requested_company_token
+            && block.city_token == resolved_requested_city_token
     }) {
-        return Ok(PrepareSaveMapping {
-            resolved_src_company_token: exact.company_token.clone(),
-            resolved_src_city_token: exact.city_token.clone(),
-            resolved_dst_company_token: exact.company_token.clone(),
-            resolved_dst_city_token: resolved_destination_city_token.clone(),
-            resolution_mode: if requested_city_token == resolved_requested_city_token {
-                "exact".to_string()
-            } else {
-                "city_alias".to_string()
-            },
-            candidate_cities: source_city_candidates.clone(),
-        });
+        if exact.job_offer_count > 0 {
+            return Ok(PrepareSaveMapping {
+                resolved_src_company_token: exact.company_token.clone(),
+                resolved_src_city_token: exact.city_token.clone(),
+                resolved_dst_company_token: exact.company_token.clone(),
+                resolved_dst_city_token: resolved_destination_city_token.clone(),
+                resolution_mode: if requested_city_token == resolved_requested_city_token {
+                    "exact".to_string()
+                } else {
+                    "city_alias".to_string()
+                },
+                candidate_cities: source_city_candidates.clone(),
+            });
+        }
     }
 
     let company_candidates = load_company_token_candidates(
@@ -926,29 +996,33 @@ async fn resolve_prepare_save_mapping(
         &dispatcher_job.company_name,
     )
     .await?;
-    let city_candidates = load_city_token_candidates(connection, &dispatcher_job.origin_city).await?;
+    let city_candidates =
+        load_city_token_candidates(connection, &dispatcher_job.origin_city).await?;
     let destination_city_candidates =
         load_city_token_candidates(connection, &dispatcher_job.destination_city).await?;
 
     if let Some(mapped) = available_blocks.iter().find(|block| {
-        company_candidates.contains(&block.company_token) && block.city_token == resolved_requested_city_token
+        company_candidates.contains(&block.company_token)
+            && block.city_token == resolved_requested_city_token
     }) {
-        return Ok(PrepareSaveMapping {
-            resolved_src_company_token: mapped.company_token.clone(),
-            resolved_src_city_token: mapped.city_token.clone(),
-            resolved_dst_company_token: mapped.company_token.clone(),
-            resolved_dst_city_token: pick_destination_city_token(
-                &available_blocks,
-                &destination_city_candidates,
-                &resolved_destination_city_token,
-            ),
-            resolution_mode: if requested_city_token == resolved_requested_city_token {
-                "exact".to_string()
-            } else {
-                "city_alias".to_string()
-            },
-            candidate_cities: source_city_candidates.clone(),
-        });
+        if mapped.job_offer_count > 0 {
+            return Ok(PrepareSaveMapping {
+                resolved_src_company_token: mapped.company_token.clone(),
+                resolved_src_city_token: mapped.city_token.clone(),
+                resolved_dst_company_token: mapped.company_token.clone(),
+                resolved_dst_city_token: pick_destination_city_token(
+                    &available_blocks,
+                    &destination_city_candidates,
+                    &resolved_destination_city_token,
+                ),
+                resolution_mode: if requested_city_token == resolved_requested_city_token {
+                    "exact".to_string()
+                } else {
+                    "city_alias".to_string()
+                },
+                candidate_cities: source_city_candidates.clone(),
+            });
+        }
     }
 
     let available_company_blocks_in_city = available_blocks
@@ -958,8 +1032,25 @@ async fn resolve_prepare_save_mapping(
         .collect::<Vec<_>>();
 
     if !available_company_blocks_in_city.is_empty() {
-        let selected_company = fallback_company_in_city(&depot_index, &resolved_requested_city_token)
-            .unwrap_or_else(|| available_blocks[0].company_token.clone());
+        let snapshot_depots_in_city = snapshot
+            .depots
+            .iter()
+            .filter(|depot| depot.city_token == resolved_requested_city_token)
+            .map(|depot| crate::features::ets2save::models::SaveDepotBlock {
+                unit_token: depot.depot_key.clone(),
+                company_token: depot.company_token.clone(),
+                city_token: depot.city_token.clone(),
+                permanent_data: None,
+                job_offer_count: depot.job_offer_count.max(0) as usize,
+                job_offers: Vec::new(),
+            })
+            .collect::<Vec<_>>();
+        let selected_company = fallback_company_in_city_with_offers(
+            &snapshot_depots_in_city,
+            &resolved_requested_city_token,
+        )
+        .or_else(|| fallback_company_in_city(&depot_index, &resolved_requested_city_token))
+        .unwrap_or_else(|| available_blocks[0].company_token.clone());
         let selected = available_blocks
             .iter()
             .find(|block| {
@@ -967,6 +1058,22 @@ async fn resolve_prepare_save_mapping(
                     && block.company_token == selected_company
             })
             .unwrap_or(&available_blocks[0]);
+        if selected.job_offer_count <= 0 {
+            let depot_count = available_company_blocks_in_city.len();
+            let offerless_count = available_blocks
+                .iter()
+                .filter(|block| {
+                    block.city_token == resolved_requested_city_token && block.job_offer_count <= 0
+                })
+                .count();
+            return Err(AppError::new(
+                AppErrorCode::CompanyHasNoJobOffersInCity,
+                format!(
+                    "No host depot with job offers in current city | city={} | depot_count={} | offerless_count={} | suggestion=economy_reset_or_sleep",
+                    resolved_requested_city_token, depot_count, offerless_count
+                ),
+            ));
+        }
         crate::dev_log!(
             "[ets2save] prepare remap fallback: {}.{} -> {}.{}",
             requested_company_token,
@@ -1125,13 +1232,40 @@ fn resolve_prepare_cargo_token(
 
 fn dispatcher_category_candidates(category: &str) -> &'static [&'static str] {
     match category {
-        "standard" => &["apples", "beans", "electronics", "furniture", "paper", "hardware", "aircond"],
+        "standard" => &[
+            "apples",
+            "beans",
+            "electronics",
+            "furniture",
+            "paper",
+            "hardware",
+            "aircond",
+        ],
         "fragile" => &["electronics", "med_equip", "glass", "aircond", "radiators"],
-        "adr" | "hazardous" => {
-            &["acetylene", "chlorine", "hydrogen", "potassium", "cyanide", "explosives", "dynamite"]
-        }
-        "liquid_food" | "refrigerated" => &["olive_oil_t", "conc_juice_t", "coconut_oil", "milk", "beverages"],
-        "heavy" | "oversize" => &["locomotive", "helicopter", "diesel_gen", "tractors", "jcb_3cx", "volvo_l120h"],
+        "adr" | "hazardous" => &[
+            "acetylene",
+            "chlorine",
+            "hydrogen",
+            "potassium",
+            "cyanide",
+            "explosives",
+            "dynamite",
+        ],
+        "liquid_food" | "refrigerated" => &[
+            "olive_oil_t",
+            "conc_juice_t",
+            "coconut_oil",
+            "milk",
+            "beverages",
+        ],
+        "heavy" | "oversize" => &[
+            "locomotive",
+            "helicopter",
+            "diesel_gen",
+            "tractors",
+            "jcb_3cx",
+            "volvo_l120h",
+        ],
         "valuable" => &["air_mails", "med_equip", "electronics", "banknotes"],
         "machinery" => &["diesel_gen", "aircond", "volvo_l120h", "tractors"],
         "retail" => &["apples", "beans", "paper", "electronics", "furniture"],
@@ -1184,6 +1318,7 @@ fn list_save_company_blocks(lines: &[String]) -> Vec<SaveCompanyBlock> {
         blocks.push(SaveCompanyBlock {
             company_token: sii_token(company),
             city_token: sii_token(city),
+            job_offer_count: 0,
         });
     }
     blocks
@@ -1969,7 +2104,60 @@ fn emit_job_link_events(app: Option<&AppHandle>, link: &EtsJobLink) {
 
 #[cfg(test)]
 mod tests {
-    use super::create_pool;
+    use super::{create_pool, resolve_prepare_save_mapping};
+    use crate::features::ets2save::errors::AppErrorCode;
+    use crate::features::ets2save::models::VtcDispatcherJob;
+    use crate::features::ets2save::snapshot::{SaveSnapshotDepotDto, SaveSnapshotDto};
+
+    fn fixture_dispatcher_job() -> VtcDispatcherJob {
+        VtcDispatcherJob {
+            vtc_job_id: "vtc-1".to_string(),
+            source_type: "generated".to_string(),
+            company_id: "north-axis-logistics".to_string(),
+            company_name: "North Axis Logistics".to_string(),
+            payment_tier: Some("standard".to_string()),
+            job_type: "quick_job".to_string(),
+            cargo_type: "trucks".to_string(),
+            cargo_mass_kg: 12000.0,
+            urgency_level: "normal".to_string(),
+            difficulty_level: "normal".to_string(),
+            equipment_type_required: "quick_job".to_string(),
+            trailer_type_required: None,
+            origin_city: "Berlin".to_string(),
+            origin_country: "DE".to_string(),
+            destination_city: "Hamburg".to_string(),
+            destination_country: "DE".to_string(),
+            route_distance_km: 520.0,
+            estimated_duration_minutes: 360,
+            base_rate_per_km: 1.12,
+            calculated_rate_per_km: 1.18,
+            total_reward: 758,
+            profile_reference: None,
+            quicksave_reference: None,
+            save_reference: None,
+            save_session_id: Some("session-1".to_string()),
+            route_reference: None,
+            dispatcher_status: Some("assigned_to_save".to_string()),
+            last_error_code: None,
+            last_error_message: None,
+        }
+    }
+
+    fn fixture_snapshot(depots: Vec<SaveSnapshotDepotDto>) -> SaveSnapshotDto {
+        SaveSnapshotDto {
+            save_session_id: "session-1".to_string(),
+            profile_reference: None,
+            save_reference: None,
+            quicksave_reference: None,
+            captured_at_utc: "now".to_string(),
+            checksum: "checksum".to_string(),
+            visited_city_tokens: vec!["berlin".to_string()],
+            transported_cargo_tokens: vec!["trucks".to_string()],
+            selected_job_pointer: None,
+            job_info_pointer: None,
+            depots,
+        }
+    }
 
     #[test]
     fn db_migrations_apply() {
@@ -2010,6 +2198,73 @@ mod tests {
                     .await
                     .unwrap();
             assert_eq!(status, "synced");
+        });
+    }
+
+    #[test]
+    fn host_selection_skips_offerless_depots() {
+        tauri::async_runtime::block_on(async {
+            let db_path =
+                std::env::temp_dir().join(format!("ets_job_links_{}.sqlite", uuid::Uuid::new_v4()));
+            let pool = create_pool(&db_path).await.unwrap();
+            let mut connection = pool.acquire().await.unwrap();
+            let snapshot = fixture_snapshot(vec![
+                SaveSnapshotDepotDto {
+                    company_token: "north_axis_logistics".to_string(),
+                    city_token: "berlin".to_string(),
+                    depot_key: "company.volatile.north_axis_logistics.berlin".to_string(),
+                    discovered: true,
+                    job_offer_count: 0,
+                },
+                SaveSnapshotDepotDto {
+                    company_token: "tradeaux".to_string(),
+                    city_token: "berlin".to_string(),
+                    depot_key: "company.volatile.tradeaux.berlin".to_string(),
+                    discovered: true,
+                    job_offer_count: 2,
+                },
+            ]);
+
+            let resolved =
+                resolve_prepare_save_mapping(&mut connection, &fixture_dispatcher_job(), &snapshot)
+                    .await
+                    .unwrap();
+            assert_eq!(resolved.resolved_src_company_token, "tradeaux");
+            assert_eq!(resolved.resolution_mode, "fallback_host");
+        });
+    }
+
+    #[test]
+    fn host_selection_returns_actionable_error_when_city_has_no_offers() {
+        tauri::async_runtime::block_on(async {
+            let db_path =
+                std::env::temp_dir().join(format!("ets_job_links_{}.sqlite", uuid::Uuid::new_v4()));
+            let pool = create_pool(&db_path).await.unwrap();
+            let mut connection = pool.acquire().await.unwrap();
+            let snapshot = fixture_snapshot(vec![
+                SaveSnapshotDepotDto {
+                    company_token: "north_axis_logistics".to_string(),
+                    city_token: "berlin".to_string(),
+                    depot_key: "company.volatile.north_axis_logistics.berlin".to_string(),
+                    discovered: true,
+                    job_offer_count: 0,
+                },
+                SaveSnapshotDepotDto {
+                    company_token: "tradeaux".to_string(),
+                    city_token: "berlin".to_string(),
+                    depot_key: "company.volatile.tradeaux.berlin".to_string(),
+                    discovered: true,
+                    job_offer_count: 0,
+                },
+            ]);
+
+            let error =
+                resolve_prepare_save_mapping(&mut connection, &fixture_dispatcher_job(), &snapshot)
+                    .await
+                    .unwrap_err();
+            assert_eq!(error.code, AppErrorCode::CompanyHasNoJobOffersInCity);
+            assert!(error.message.contains("city=berlin"));
+            assert!(error.message.contains("offerless_count=2"));
         });
     }
 }

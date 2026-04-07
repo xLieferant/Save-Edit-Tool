@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 
 use crate::features::career::dispatcher;
 use crate::features::career::job_log;
-use crate::features::{auth, companies};
+use crate::features::{auth, companies, vtc};
 use crate::features::{bank, contracts, economy, employees, events, fleet, reputation};
 use crate::shared::sqlite_schema::ensure_columns;
 
@@ -68,6 +68,7 @@ pub fn init_logbook(db_path: &Path) -> Result<(), String> {
 
     auth::db::ensure_tables(&conn)?;
     companies::db::ensure_tables(&conn)?;
+    vtc::db::ensure_tables(&conn)?;
     auth::service::seed_default_admin(&conn)?;
 
     Ok(())

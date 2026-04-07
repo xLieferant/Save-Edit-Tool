@@ -31,6 +31,7 @@ const state = {
     lastError: {},
     writeReport: {},
     snapshotDiagnostics: null,
+    sqliteCounts: null,
     actionBusy: false,
     tab: "market",
   },
@@ -201,7 +202,15 @@ function dispatcherActionAvailability(job, jobLink) {
       || ["written", "requires_load", "synced", "completed", "synced_to_ets2"].includes(rawLinkStatus)
   );
 
-  return { canAccept, canAssign, canPrepare, canWrite, canInject, canMarkSynced };
+  const cancellableStatuses = ["accepted", "planned", "in_transit", "delayed", "problematic"];
+  const canCancel = Boolean(job?.id) && cancellableStatuses.includes(status);
+
+  return { canAccept, canAssign, canPrepare, canWrite, canInject, canMarkSynced, canCancel };
+}
+
+function formatYesNo(value) {
+  if (value == null) return "-";
+  return value ? "YES" : "NO";
 }
 
 function formatDispatcherWriteReport(report) {
@@ -219,6 +228,12 @@ function formatDispatcherWriteReport(report) {
     }
     return lines.join("\n");
   }
+  const validation = report.validation || null;
+  const offerSlots = Array.isArray(validation?.offerSlots) && validation.offerSlots.length
+    ? validation.offerSlots
+      .map((slot) => `[${slot.index}] ${slot.pointer} data=${formatYesNo(slot.offerDataFound)} selected=${formatYesNo(slot.selected)}`)
+      .join(" | ")
+    : "-";
   const lines = [
     `dispatcher_job_id: ${report.jobId || "-"}`,
     `save_reference: ${report.saveReference || "-"}`,
@@ -242,11 +257,86 @@ function formatDispatcherWriteReport(report) {
     `write_mode: ${report.writeMode || "overwrite_existing_offer"}`,
     `before_sha256: ${report.beforeSha256 || "-"}`,
     `after_sha256: ${report.afterSha256 || "-"}`,
+    `post_write_valid: ${formatYesNo(report.postWriteValid ?? validation?.valid ?? report.postWriteValidated)}`,
+    `company_found: ${formatYesNo(validation?.companyBlockFound ?? report.companyBlockFoundAfterWrite)}`,
+    `offer_pointer_found: ${formatYesNo(validation?.offerPointerFound ?? report.offerPointerFoundAfterWrite)}`,
+    `offer_data_found: ${formatYesNo(validation?.offerDataFound ?? report.jobOfferDataFoundAfterWrite)}`,
+    `cargo_ok: ${formatYesNo(validation?.cargoMatches)}`,
+    `target_ok: ${formatYesNo(validation?.targetMatches)}`,
+    `shortest_distance_present: ${formatYesNo(validation?.shortestDistancePresent)}`,
+    `expiration_time_present: ${formatYesNo(validation?.expirationTimePresent)}`,
+    `root_cause: ${validation?.rootCause || "-"}`,
+    `validation_error_code: ${validation?.validationErrorCode || report.validationErrorCode || "-"}`,
+    `validation_error: ${validation?.validationError || report.validationErrorMessage || "-"}`,
+    `expected_company: ${validation?.expectedCompany || "-"}`,
+    `expected_offer_pointer: ${validation?.expectedOfferPointer || report.offerPointer || "-"}`,
+    `expected_cargo: ${validation?.expectedCargo || report.cargoToken || "-"}`,
+    `expected_target: ${validation?.expectedTarget || report.targetCompany || "-"}`,
+    `written_cargo: ${validation?.writtenCargo || report.cargoWrittenToken || "-"}`,
+    `written_target: ${validation?.writtenTarget || report.targetWrittenToken || "-"}`,
+    `written_shortest_distance_km: ${validation?.writtenShortestDistanceKm ?? report.shortestDistanceWritten ?? "-"}`,
+    `written_expiration_time: ${validation?.writtenExpirationTime ?? report.expirationTimeWritten ?? "-"}`,
+    `selected_offer_slot_index: ${validation?.selectedOfferSlotIndex ?? report.offerSlotIndex ?? "-"}`,
+    `selected_offer_slot_pointer: ${validation?.selectedOfferSlotPointer || report.offerSlotPointer || "-"}`,
+    `offer_slots: ${offerSlots}`,
     `job_info_updated: ${report.jobInfoUpdated == null ? "-" : String(report.jobInfoUpdated)}`,
+    `post_write_validated: ${report.postWriteValidated == null ? "-" : String(report.postWriteValidated)}`,
+    `company_block_found_after_write: ${report.companyBlockFoundAfterWrite == null ? "-" : String(report.companyBlockFoundAfterWrite)}`,
+    `offer_pointer_found_after_write: ${report.offerPointerFoundAfterWrite == null ? "-" : String(report.offerPointerFoundAfterWrite)}`,
+    `job_offer_data_found_after_write: ${report.jobOfferDataFoundAfterWrite == null ? "-" : String(report.jobOfferDataFoundAfterWrite)}`,
+    `cargo_written_token: ${report.cargoWrittenToken || "-"}`,
+    `target_written_token: ${report.targetWrittenToken || "-"}`,
+    `shortest_distance_written: ${report.shortestDistanceWritten ?? "-"}`,
+    `expiration_time_written: ${report.expirationTimeWritten ?? "-"}`,
+    `job_info_status: ${report.jobInfoStatus || "-"}`,
+    `validation_error_code: ${report.validationErrorCode || "-"}`,
+    `validation_error_message: ${report.validationErrorMessage || "-"}`,
+    `offer_slot_index: ${report.offerSlotIndex ?? "-"}`,
+    `offer_slot_pointer: ${report.offerSlotPointer || "-"}`,
+    `expected_load_path: ${report.expectedLoadPath || "-"}`,
+    `load_path_warning: ${report.loadPathWarning || "-"}`,
     `final_dispatcher_status: ${report.finalDispatcherStatus || "-"}`,
     `final_link_status: ${report.finalLinkStatus || "-"}`,
   ];
   return lines.join("\n");
+}
+
+function formatSqliteDiagnostics(counts) {
+  if (!counts) return "-";
+  const lines = [
+    `db_path: ${counts.path || "-"}`,
+    `active_save_session_id: ${counts.activeSaveSessionId || "-"}`,
+    `ets2_companies: ${counts.ets2Companies ?? 0}`,
+    `ets_save_snapshot: ${counts.etsSaveSnapshot ?? 0}`,
+    `ets_save_depots: ${counts.etsSaveDepots ?? 0}`,
+    `ets_save_visited_cities: ${counts.etsSaveVisitedCities ?? 0}`,
+    `ets_save_transport_cargo: ${counts.etsSaveTransportCargo ?? 0}`,
+    `ets_save_snapshot_meta: ${counts.etsSaveSnapshotMeta ?? 0}`,
+    `ets_job_links: ${counts.etsJobLinks ?? 0}`,
+    `dispatcher_jobs: ${counts.dispatcherJobs ?? 0}`,
+    `vtc_companies: ${counts.vtcCompanies ?? 0}`,
+    `vtc_company_members: ${counts.vtcCompanyMembers ?? 0}`,
+    `vtc_local_context: ${counts.vtcLocalContext ?? 0}`,
+  ];
+  return lines.join("\n");
+}
+
+function formatDispatcherActionGuide(job, diagnostics) {
+  const errorCode = String(job?.lastErrorCode || "").toLowerCase();
+  if (errorCode === "company_has_no_job_offers_in_city" || errorCode === "company_has_no_job_offers") {
+    return [
+      "Recovery steps:",
+      "1. Load the active save in ETS2.",
+      "2. Sleep, quick travel, or use an economy reset to refresh depot jobs.",
+      "3. Create a new quicksave.",
+      "4. Return here and run the inject action again.",
+      "",
+      `city: ${diagnostics?.city || "-"}`,
+      `depot_count: ${diagnostics?.depot_count || "-"}`,
+      `offerless_count: ${diagnostics?.offerless_count || "-"}`,
+    ].join("\n");
+  }
+  return "-";
 }
 
 function setCellHtml(id, value) {
@@ -317,6 +407,7 @@ function normalizeErrorCode(rawError) {
     "dispatcher_offer_company_required",
     "dispatcher_offer_not_cancellable",
     "dispatcher_offer_not_countered",
+    "dispatcher_job_not_cancellable",
     "dispatcher_save_context_missing",
     "dispatcher_job_not_generated",
     "no_active_save",
@@ -329,6 +420,7 @@ function normalizeErrorCode(rawError) {
     "decode_failed",
     "company_not_found_in_save",
     "company_has_no_job_offers",
+    "company_has_no_job_offers_in_city",
     "invalid_token",
     "write_failed",
     "backup_failed",
@@ -791,10 +883,13 @@ function renderDispatcherDetails() {
   const selected = state.dispatcher.selectedJob;
   const acceptButton = document.getElementById("cmDispatcherAcceptJobBtn");
   const injectButton = document.getElementById("cmDispatcherInjectActiveSaveBtn");
+  const cancelButton = document.getElementById("cmDispatcherCancelJobBtn");
   const syncButton = document.getElementById("cmDispatcherMarkSyncedBtn");
   if (!selected) {
     if (acceptButton) acceptButton.disabled = true;
     if (injectButton) injectButton.disabled = true;
+    if (cancelButton) cancelButton.disabled = true;
+    if (cancelButton) cancelButton.hidden = true;
     if (syncButton) syncButton.disabled = true;
     setCellHtml("cmDispatcherDetailBadges", "");
     setCellText("cmDispatcherDetailId", "-");
@@ -817,6 +912,9 @@ function renderDispatcherDetails() {
     setCellText("cmDispatcherDetailRate", "-");
     setCellText("cmDispatcherDetailReward", "-");
     setCellText("cmDispatcherDetailStatus", "-");
+    setCellText("cmDispatcherDetailHostCity", "-");
+    setCellText("cmDispatcherDetailTargetCompany", "-");
+    setCellText("cmDispatcherDetailOfferLocation", "-");
     setCellText("cmDispatcherDetailTier", "-");
     setCellText("cmDispatcherDetailReputation", "-");
     setCellText("cmDispatcherDetailProfit", "-");
@@ -831,7 +929,10 @@ function renderDispatcherDetails() {
     setCellText("cmDispatcherDetailLiveProgress", "-");
     setCellText("cmDispatcherDetailBonus", "-");
     setCellText("cmDispatcherDetailRisk", "-");
+    setCellText("cmDispatcherDetailLoadHint", "-");
+    setCellText("cmDispatcherDetailOfferHint", "-");
     setCellText("cmDispatcherWriteReport", "-");
+    setCellText("cmDispatcherDbDiagnostics", "-");
     return;
   }
 
@@ -849,6 +950,10 @@ function renderDispatcherDetails() {
     injectButton.textContent = alreadyInjected
       ? uiText.dispatcherAlreadyInjected
       : uiText.dispatcherInjectActiveSave;
+  }
+  if (cancelButton) {
+    cancelButton.disabled = state.dispatcher.actionBusy || !availability.canCancel;
+    cancelButton.hidden = !availability.canCancel;
   }
   if (syncButton) syncButton.disabled = state.dispatcher.actionBusy || !availability.canMarkSynced;
   const route = `${job.originCity || "-"} -> ${job.destinationCity || "-"}`;
@@ -882,8 +987,32 @@ function renderDispatcherDetails() {
     : "-";
   const snapshotDiagnostics = state.dispatcher.snapshotDiagnostics || null;
   const snapshotCounts = snapshotDiagnostics
-    ? `depots=${snapshotDiagnostics.depotCount || 0}, cities=${snapshotDiagnostics.visitedCityCount || 0}, cargo=${snapshotDiagnostics.cargoCount || 0}`
+    ? `depots=${snapshotDiagnostics.depotCount || 0}, with_offers=${snapshotDiagnostics.depotWithOffersCount || 0}, offerless=${snapshotDiagnostics.offerlessDepotCount || 0}, cities=${snapshotDiagnostics.visitedCityCount || 0}, cargo=${snapshotDiagnostics.cargoCount || 0}, last=${snapshotDiagnostics.lastSnapshotAt || "-"}`
     : "-";
+  const writeReport = state.dispatcher.writeReport?.[job.id] || null;
+  const expectedLoadPath = writeReport?.expectedLoadPath || writeReport?.savePath || "";
+  const loadPathLabel = expectedLoadPath ? formatPathReference(expectedLoadPath) : "";
+  const loadHint = writeReport
+    ? (expectedLoadPath
+      ? uiText.dispatcherLoadHint.replace("{path}", loadPathLabel)
+      : uiText.dispatcherLoadHintGeneric)
+    : "-";
+  const loadWarning = writeReport?.loadPathWarning
+    ? uiText.dispatcherLoadWarning.replace("{warning}", writeReport.loadPathWarning)
+    : "";
+  const targetCompany = writeReport?.targetCompany
+    || jobLink?.resolvedTargetCompanyToken
+    || templateResolved.resolvedTargetCompanyToken
+    || jobLink?.dstCompany
+    || "-";
+  const offerLocation = `${ingameSourceCompany}.${ingameSourceCity}`;
+  const offerHint = uiText.dispatcherOfferLocationHint.replace("{depot}", offerLocation);
+  const validation = writeReport?.validation || null;
+  const validationCode = validation?.validationErrorCode || writeReport?.validationErrorCode;
+  const validationMessage = validation?.validationError || writeReport?.validationErrorMessage;
+  const validationNote = validationCode
+    ? `${validationCode}${validationMessage ? `: ${validationMessage}` : ""}`
+    : "";
   setCellText("cmDispatcherDetailRequestedCargo", requestedCargo);
   setCellText("cmDispatcherDetailResolvedCargo", resolvedCargo);
   setCellText("cmDispatcherDetailCargoResolutionMode", cargoResolutionMode);
@@ -899,6 +1028,9 @@ function renderDispatcherDetails() {
   setCellText("cmDispatcherDetailRate", formatNumber(job.calculatedRatePerKm || 0, 2));
   setCellText("cmDispatcherDetailReward", formatCurrency(job.totalReward || 0));
   setCellHtml("cmDispatcherDetailStatus", dispatcherStatusMarkup(job.status));
+  setCellText("cmDispatcherDetailHostCity", ingameSourceCity || "-");
+  setCellText("cmDispatcherDetailTargetCompany", targetCompany);
+  setCellText("cmDispatcherDetailOfferLocation", offerLocation);
   setCellText("cmDispatcherDetailTier", job.paymentTierSnapshot || "-");
   setCellText("cmDispatcherDetailReputation", formatNumber(job.companyReputation || 0, 0));
   setCellText("cmDispatcherDetailProfit", formatCurrency(job.profitEstimate || 0));
@@ -913,7 +1045,12 @@ function renderDispatcherDetails() {
   setCellText("cmDispatcherDetailLiveProgress", liveProgress?.stage || "-");
   setCellText("cmDispatcherDetailBonus", job.bonusNote || "-");
   setCellText("cmDispatcherDetailRisk", job.riskNote || "-");
-  setCellText("cmDispatcherWriteReport", formatDispatcherWriteReport(state.dispatcher.writeReport?.[job.id]));
+  setCellText("cmDispatcherDetailLoadHint", loadWarning ? `${loadHint} ${loadWarning}` : loadHint);
+  setCellText("cmDispatcherDetailOfferHint", validationNote ? `${offerHint} (${validationNote})` : offerHint);
+  setCellText("cmDispatcherWriteReport", formatDispatcherWriteReport(writeReport));
+  const diagnostics = parseDispatcherDiagnostics(job.lastErrorMessage || eventError?.error || "");
+  setCellText("cmDispatcherActionGuide", formatDispatcherActionGuide(job, diagnostics));
+  setCellText("cmDispatcherDbDiagnostics", formatSqliteDiagnostics(state.dispatcher.sqliteCounts));
 }
 
 function renderDispatcherOffers() {
@@ -1052,7 +1189,7 @@ async function refreshDispatcherData() {
   }
   state.dispatcher.overview = await safeInvoke("dispatcher_get_dispatcher_overview", {}, { fallback: null, silent: true });
   state.dispatcher.marketJobs = await safeInvoke(
-    "dispatcher_get_open_jobs",
+    "dispatcher_get_market_jobs",
     { filter },
     { fallback: [], silent: true }
   );
@@ -1060,6 +1197,11 @@ async function refreshDispatcherData() {
   state.dispatcher.history = await safeInvoke("dispatcher_get_job_history", {}, { fallback: { summary: {}, items: [] }, silent: true });
   state.dispatcher.contacts = await safeInvoke("dispatcher_get_company_contacts", {}, { fallback: [], silent: true });
   state.dispatcher.offers = await safeInvoke("dispatcher_get_offers", {}, { fallback: [], silent: true });
+  state.dispatcher.sqliteCounts = await safeInvoke(
+    "get_sqlite_table_counts",
+    {},
+    { fallback: state.dispatcher.sqliteCounts, silent: true }
+  );
 
   if (state.dispatcher.selectedJobId) {
     state.dispatcher.selectedJob = await safeInvoke(
@@ -1123,6 +1265,11 @@ async function refreshSelectedDispatcherDetails() {
     {},
     { fallback: state.dispatcher.snapshotDiagnostics, silent: true }
   );
+  state.dispatcher.sqliteCounts = await safeInvoke(
+    "get_sqlite_table_counts",
+    {},
+    { fallback: state.dispatcher.sqliteCounts, silent: true }
+  );
 }
 
 async function handleDispatcherSelectJob(event, options = {}) {
@@ -1144,6 +1291,11 @@ async function handleDispatcherSelectJob(event, options = {}) {
     "ets_snapshot_get_active_diagnostics",
     {},
     { fallback: null, silent: true }
+  );
+  state.dispatcher.sqliteCounts = await safeInvoke(
+    "get_sqlite_table_counts",
+    {},
+    { fallback: state.dispatcher.sqliteCounts, silent: true }
   );
   if (switchToMarket) {
     switchDispatcherTab("market");
@@ -1212,8 +1364,13 @@ async function handleDispatcherInjectToActiveSave() {
   if (!state.dispatcher.selectedJobId) return;
   const jobId = String(state.dispatcher.selectedJobId);
   const context = state.vtcContext || {};
+  const activeSaveReference = String(
+    context.quicksaveReference || context.saveReference || ""
+  ).trim();
+  const hasQuicksaveContext = /(^|[\\/])quicksave$/i.test(activeSaveReference)
+    || /(^|[\\/])quicksave([\\/]|$)/i.test(activeSaveReference);
   const autosaveFallbackEnabled = Boolean(getInputChecked("cmDispatcherUseAutosaveFallback"));
-  if (!context.quicksaveReference && !autosaveFallbackEnabled) {
+  if (!hasQuicksaveContext && !autosaveFallbackEnabled) {
     showToast(await t("career_mode.dispatcher.require_quicksave"), "warning");
     return;
   }
@@ -1254,6 +1411,23 @@ async function handleDispatcherInjectToActiveSave() {
       writeMode: result.writeResult || "-",
       beforeSha256: result.shaBefore || "-",
       afterSha256: result.shaAfter || "-",
+      postWriteValid: false,
+      validation: null,
+      postWriteValidated: false,
+      companyBlockFoundAfterWrite: false,
+      offerPointerFoundAfterWrite: false,
+      jobOfferDataFoundAfterWrite: false,
+      cargoWrittenToken: "-",
+      targetWrittenToken: "-",
+      shortestDistanceWritten: "-",
+      expirationTimeWritten: "-",
+      jobInfoStatus: "-",
+      validationErrorCode: null,
+      validationErrorMessage: null,
+      offerSlotIndex: null,
+      offerSlotPointer: null,
+      expectedLoadPath: result.quicksaveReference || "",
+      loadPathWarning: null,
     };
 
     state.dispatcher.writeReport[jobId] = write
@@ -1276,6 +1450,23 @@ async function handleDispatcherInjectToActiveSave() {
           beforeSha256: write.beforeSha256 || baseReport.beforeSha256,
           afterSha256: write.afterSha256 || baseReport.afterSha256,
           jobInfoUpdated: write.jobInfoUpdated,
+          postWriteValid: write.postWriteValid ?? write.postWriteValidated,
+          validation: write.validation || null,
+          postWriteValidated: write.postWriteValidated,
+          companyBlockFoundAfterWrite: write.companyBlockFoundAfterWrite,
+          offerPointerFoundAfterWrite: write.offerPointerFoundAfterWrite,
+          jobOfferDataFoundAfterWrite: write.jobOfferDataFoundAfterWrite,
+          cargoWrittenToken: write.cargoWrittenToken || "-",
+          targetWrittenToken: write.targetWrittenToken || "-",
+          shortestDistanceWritten: write.shortestDistanceWritten ?? "-",
+          expirationTimeWritten: write.expirationTimeWritten ?? "-",
+          jobInfoStatus: write.jobInfoStatus || "-",
+          validationErrorCode: write.validationErrorCode || null,
+          validationErrorMessage: write.validationErrorMessage || null,
+          offerSlotIndex: write.offerSlotIndex ?? null,
+          offerSlotPointer: write.offerSlotPointer || null,
+          expectedLoadPath: write.expectedLoadPath || baseReport.expectedLoadPath,
+          loadPathWarning: write.loadPathWarning || null,
           finalLinkStatus: write.finalLinkStatus || baseReport.finalLinkStatus,
         }
       : baseReport;
@@ -1354,7 +1545,12 @@ async function handleDispatcherPersistGenerationConfig() {
 async function handleDispatcherGenerateNow() {
   try {
     state.dispatcher.generation = await invokeStrict("dispatcher_generate_jobs", {});
+    setInputValue("cmDispatcherSearchInput", "");
+    setInputValue("cmDispatcherFilterJobType", "");
+    setInputValue("cmDispatcherFilterCountry", "");
+    setInputValue("cmDispatcherSortInput", "newest");
     await refreshDispatcherData();
+    switchDispatcherTab("market");
     renderDispatcher();
     showToast(await t("career_mode.dispatcher.toast_jobs_generated"), "success");
   } catch (error) {
@@ -1386,6 +1582,25 @@ async function handleDispatcherMarkSynced() {
     await refreshDispatcherData();
     renderDispatcher();
     showToast(await t("career_mode.dispatcher.toast_job_synced"), "success");
+  } catch (error) {
+    showToast(await resolveErrorMessage(error), "error");
+  } finally {
+    state.dispatcher.actionBusy = false;
+    renderDispatcherDetails();
+  }
+}
+
+async function handleDispatcherCancelJob() {
+  if (!state.dispatcher.selectedJobId) return;
+  state.dispatcher.actionBusy = true;
+  renderDispatcherDetails();
+  try {
+    state.dispatcher.selectedJob = await invokeStrict("dispatcher_cancel_job", {
+      jobId: state.dispatcher.selectedJobId,
+    });
+    await refreshDispatcherData();
+    renderDispatcher();
+    showToast(await t("career_mode.dispatcher.toast_job_cancelled"), "success");
   } catch (error) {
     showToast(await resolveErrorMessage(error), "error");
   } finally {
@@ -1451,6 +1666,24 @@ async function handleDispatcherWriteQuicksave() {
       writeMode: writeResult.writeMode || "overwrite_existing_offer",
       beforeSha256: writeResult.beforeSha256 || "-",
       afterSha256: writeResult.afterSha256 || "-",
+      jobInfoUpdated: writeResult.jobInfoUpdated,
+      postWriteValid: writeResult.postWriteValid ?? writeResult.postWriteValidated,
+      validation: writeResult.validation || null,
+      postWriteValidated: writeResult.postWriteValidated,
+      companyBlockFoundAfterWrite: writeResult.companyBlockFoundAfterWrite,
+      offerPointerFoundAfterWrite: writeResult.offerPointerFoundAfterWrite,
+      jobOfferDataFoundAfterWrite: writeResult.jobOfferDataFoundAfterWrite,
+      cargoWrittenToken: writeResult.cargoWrittenToken || "-",
+      targetWrittenToken: writeResult.targetWrittenToken || "-",
+      shortestDistanceWritten: writeResult.shortestDistanceWritten ?? "-",
+      expirationTimeWritten: writeResult.expirationTimeWritten ?? "-",
+      jobInfoStatus: writeResult.jobInfoStatus || "-",
+      validationErrorCode: writeResult.validationErrorCode || null,
+      validationErrorMessage: writeResult.validationErrorMessage || null,
+      offerSlotIndex: writeResult.offerSlotIndex ?? null,
+      offerSlotPointer: writeResult.offerSlotPointer || null,
+      expectedLoadPath: writeResult.expectedLoadPath || writeResult.savePath || "",
+      loadPathWarning: writeResult.loadPathWarning || null,
       finalLinkStatus: writeResult.link?.status || "-",
     };
     await refreshDispatcherData();
@@ -1672,6 +1905,33 @@ function toggleUserMenu() {
   setUserMenuOpen(Boolean(dropdown?.hidden));
 }
 
+const userMenuAutoHide = {
+  lastActivityAt: Date.now(),
+  timerId: null,
+};
+
+function bumpUserMenuActivity() {
+  userMenuAutoHide.lastActivityAt = Date.now();
+}
+
+function registerUserMenuAutoHide() {
+  if (userMenuAutoHide.timerId) return;
+
+  const activityEvents = ["mousemove", "keydown", "pointerdown", "touchstart"];
+  activityEvents.forEach((event) => {
+    document.addEventListener(event, bumpUserMenuActivity, { passive: true });
+  });
+
+  userMenuAutoHide.timerId = window.setInterval(() => {
+    const dropdown = document.getElementById("careerUserMenuDropdown");
+    if (!dropdown || dropdown.hidden) return;
+    const idleMs = Date.now() - userMenuAutoHide.lastActivityAt;
+    if (idleMs > 10000) {
+      setUserMenuOpen(false);
+    }
+  }, 1000);
+}
+
 function renderUserMenu() {
   const user = state.authUser || null;
   const label = user ? uiText.userMenuAccount : uiText.userMenuLogin;
@@ -1693,6 +1953,7 @@ function renderUserMenu() {
   if (logoutButton) logoutButton.hidden = !Boolean(user);
   if (profileButton) profileButton.disabled = !Boolean(user);
   if (settingsButton) settingsButton.disabled = false;
+  setUserMenuOpen(false);
 }
 
 function renderUserSettings() {
@@ -1774,6 +2035,9 @@ function applyDispatcherHandlers() {
   });
   document.getElementById("cmDispatcherInjectActiveSaveBtn")?.addEventListener("click", () => {
     void handleDispatcherInjectToActiveSave();
+  });
+  document.getElementById("cmDispatcherCancelJobBtn")?.addEventListener("click", () => {
+    void handleDispatcherCancelJob();
   });
   document.getElementById("cmDispatcherMarkSyncedBtn")?.addEventListener("click", () => {
     void handleDispatcherMarkSynced();
@@ -2001,6 +2265,10 @@ async function loadUiText() {
   uiText.dispatcherPrepareLink = await t("career_mode.dispatcher.prepare_ets_link");
   uiText.dispatcherRetryPrepareLink = await t("career_mode.dispatcher.retry_prepare_ets_link");
   uiText.dispatcherWriteQuicksave = await t("career_mode.dispatcher.write_to_quicksave");
+  uiText.dispatcherLoadHint = await t("career_mode.dispatcher.load_hint");
+  uiText.dispatcherLoadHintGeneric = await t("career_mode.dispatcher.load_hint_generic");
+  uiText.dispatcherLoadWarning = await t("career_mode.dispatcher.load_path_warning");
+  uiText.dispatcherOfferLocationHint = await t("career_mode.dispatcher.offer_location_hint");
   uiText.dispatcherIntervalLabel = await t("career_mode.dispatcher.generation_interval_short");
   uiText.dispatcherPoolLabel = await t("career_mode.dispatcher.generation_pool_short");
   uiText.dispatcherOpenLabel = await t("career_mode.dispatcher.generation_open_short");
@@ -2255,7 +2523,7 @@ async function initNavigation() {
   });
 
   refreshButton?.addEventListener("click", () => {
-    void refreshAllData();
+    window.location.reload();
   });
 }
 
@@ -2305,6 +2573,8 @@ function registerUserMenuHandlers() {
       setUserMenuOpen(false);
     }
   });
+
+  registerUserMenuAutoHide();
 }
 
 function registerActionHandlers() {

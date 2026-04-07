@@ -8,7 +8,9 @@ use crate::features::ets2save::snapshot::{self, SaveSnapshotInput};
 use crate::shared::current_profile::snapshot_save_context;
 use crate::shared::ets2data;
 use crate::shared::ets2data::import;
-use crate::shared::ets2data::models::{CityQueryFilter, CityRecord, CompanyRecord, Ets2DataImportSummary};
+use crate::shared::ets2data::models::{
+    CityQueryFilter, CityRecord, CompanyRecord, Ets2DataImportSummary,
+};
 use crate::state::{AppProfileState, AppState, CareerState, EtsDbState};
 
 #[command]
@@ -61,12 +63,18 @@ pub async fn ets_snapshot_refresh_active_save(
     profile_state: State<'_, AppProfileState>,
     db: State<'_, EtsDbState>,
 ) -> Result<snapshot::SaveSnapshotDto, AppError> {
-    let context = snapshot_save_context(profile_state.inner())
-        .map_err(|error| AppError::new(crate::features::ets2save::errors::AppErrorCode::InvalidToken, error))?;
-    let save_session_id = context
-        .save_session_id
-        .clone()
-        .ok_or_else(|| AppError::new(crate::features::ets2save::errors::AppErrorCode::InvalidToken, "save_session_id missing"))?;
+    let context = snapshot_save_context(profile_state.inner()).map_err(|error| {
+        AppError::new(
+            crate::features::ets2save::errors::AppErrorCode::InvalidToken,
+            error,
+        )
+    })?;
+    let save_session_id = context.save_session_id.clone().ok_or_else(|| {
+        AppError::new(
+            crate::features::ets2save::errors::AppErrorCode::InvalidToken,
+            "save_session_id missing",
+        )
+    })?;
 
     let input = SaveSnapshotInput {
         save_session_id,
@@ -78,7 +86,11 @@ pub async fn ets_snapshot_refresh_active_save(
     snapshot::snapshot_refresh(Some(&app), &db.pool, input)
         .await
         .map_err(|error| {
-            snapshot::emit_error(Some(&app), context.save_session_id.as_deref().unwrap_or(""), &error.to_string());
+            snapshot::emit_error(
+                Some(&app),
+                context.save_session_id.as_deref().unwrap_or(""),
+                &error.to_string(),
+            );
             error
         })
 }
@@ -88,8 +100,12 @@ pub async fn ets_snapshot_get_active(
     profile_state: State<'_, AppProfileState>,
     db: State<'_, EtsDbState>,
 ) -> Result<Option<snapshot::SaveSnapshotDto>, AppError> {
-    let context = snapshot_save_context(profile_state.inner())
-        .map_err(|error| AppError::new(crate::features::ets2save::errors::AppErrorCode::InvalidToken, error))?;
+    let context = snapshot_save_context(profile_state.inner()).map_err(|error| {
+        AppError::new(
+            crate::features::ets2save::errors::AppErrorCode::InvalidToken,
+            error,
+        )
+    })?;
     let Some(save_session_id) = context.save_session_id.as_deref() else {
         return Ok(None);
     };
@@ -102,12 +118,18 @@ pub async fn ets_snapshot_list_depots(
     profile_state: State<'_, AppProfileState>,
     db: State<'_, EtsDbState>,
 ) -> Result<Vec<snapshot::SaveSnapshotDepotDto>, AppError> {
-    let context = snapshot_save_context(profile_state.inner())
-        .map_err(|error| AppError::new(crate::features::ets2save::errors::AppErrorCode::InvalidToken, error))?;
-    let save_session_id = context
-        .save_session_id
-        .clone()
-        .ok_or_else(|| AppError::new(crate::features::ets2save::errors::AppErrorCode::InvalidToken, "save_session_id missing"))?;
+    let context = snapshot_save_context(profile_state.inner()).map_err(|error| {
+        AppError::new(
+            crate::features::ets2save::errors::AppErrorCode::InvalidToken,
+            error,
+        )
+    })?;
+    let save_session_id = context.save_session_id.clone().ok_or_else(|| {
+        AppError::new(
+            crate::features::ets2save::errors::AppErrorCode::InvalidToken,
+            "save_session_id missing",
+        )
+    })?;
     snapshot::snapshot_list_depots(&db.pool, &save_session_id, city_token.as_deref()).await
 }
 
@@ -116,8 +138,12 @@ pub async fn ets_snapshot_get_active_diagnostics(
     profile_state: State<'_, AppProfileState>,
     db: State<'_, EtsDbState>,
 ) -> Result<Option<snapshot::SaveSnapshotDiagnosticsDto>, AppError> {
-    let context = snapshot_save_context(profile_state.inner())
-        .map_err(|error| AppError::new(crate::features::ets2save::errors::AppErrorCode::InvalidToken, error))?;
+    let context = snapshot_save_context(profile_state.inner()).map_err(|error| {
+        AppError::new(
+            crate::features::ets2save::errors::AppErrorCode::InvalidToken,
+            error,
+        )
+    })?;
     let Some(save_session_id) = context.save_session_id.as_deref() else {
         return Ok(None);
     };
@@ -132,18 +158,40 @@ pub async fn get_sqlite_info(
 }
 
 #[command]
+pub async fn get_sqlite_table_counts(
+    profile_state: State<'_, AppProfileState>,
+    app_state: State<'_, AppState>,
+) -> Result<crate::db::sqlite::SqliteTableCountsDto, String> {
+    let save_context = snapshot_save_context(profile_state.inner()).unwrap_or_default();
+    let counts =
+        crate::db::sqlite::get_sqlite_table_counts(&app_state.sqlite, save_context.save_session_id)
+            .await?;
+    crate::dev_log!(
+        "[db] table counts session={:?} ets2_companies={} ets_save_snapshot={} ets_save_depots={} ets_save_visited_cities={} ets_save_transport_cargo={} ets_save_snapshot_meta={} ets_job_links={} dispatcher_jobs={} vtc_companies={} vtc_company_members={} vtc_local_context={}",
+        counts.active_save_session_id,
+        counts.ets2_companies,
+        counts.ets_save_snapshot,
+        counts.ets_save_depots,
+        counts.ets_save_visited_cities,
+        counts.ets_save_transport_cargo,
+        counts.ets_save_snapshot_meta,
+        counts.ets_job_links,
+        counts.dispatcher_jobs,
+        counts.vtc_companies,
+        counts.vtc_company_members,
+        counts.vtc_local_context
+    );
+    Ok(counts)
+}
+
+#[command]
 pub fn data_import_ets2_datasets(
     force: bool,
     app: AppHandle,
     career: State<'_, CareerState>,
 ) -> Result<Ets2DataImportSummary, String> {
     let mut conn = open_runtime_db(career.inner())?;
-    import::import_datasets_with_error_event(
-        &app,
-        &mut conn,
-        &ets2data::default_repo_root(),
-        force,
-    )
+    import::import_datasets_with_error_event(&app, &mut conn, &ets2data::default_repo_root(), force)
 }
 
 #[command]

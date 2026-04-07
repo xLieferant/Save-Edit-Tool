@@ -1,4 +1,4 @@
-﻿use std::path::PathBuf;
+use std::path::PathBuf;
 
 use ets2_tool_lib::shared::ets2data;
 
@@ -10,7 +10,10 @@ fn main() {
 
     match ets2data::build_datasets(&repo_root) {
         Ok(summary) => {
-            println!("{}", serde_json::to_string_pretty(&summary).unwrap_or_default());
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&summary).unwrap_or_default()
+            );
         }
         Err(error) => {
             eprintln!("{}", error);
@@ -18,4 +21,3 @@ fn main() {
         }
     }
 }
-

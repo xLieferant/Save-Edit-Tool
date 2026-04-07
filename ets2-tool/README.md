@@ -150,3 +150,36 @@ Frontend:
 If you are logged in as `admin`, the header user menu shows **Admin / DB**.
 - It displays: user id, email, role, created-at, last login, and whether an active session exists.
 - It does **not** display any password or password hash.
+
+## ETS2 Dispatcher Post-Write Validation
+
+The ETS2 dispatcher write flow validates the written `game.sii` immediately after the file is updated.
+
+- Validator source: `src-tauri/src/features/ets2save/post_write_validator.rs`
+- Trigger point: `src-tauri/src/features/ets2save/injector.rs`
+- UI output: Career Mode dispatcher detail panel, `Last Write Output`
+
+The validator checks the full pointer chain:
+
+1. `company.volatile.<company>.<city>` block exists
+2. expected `job_offer[i]` pointer still exists in that company block
+3. matching `job_offer_data : _nameless.*` block exists
+4. written fields match the expected dispatcher payload:
+   `cargo`, `target`, `shortest_distance_km`, `expiration_time`
+
+Result interpretation:
+
+- `post_write_valid = true`
+  The write is structurally valid. If ETS2 still does not show the job, the remaining cause is ETS2 load/cache state. Load the exact quicksave that was written.
+- `post_write_valid = false`
+  The write is not valid for the expected depot/job chain. Use `validation.rootCause` and `validation.validationErrorCode` from the write output.
+
+Root-cause mapping:
+
+- `wrong_depot`: expected company block was not found after write
+- `wrong_slot`: expected `job_offer` pointer is missing from the company block
+- `write_corrupt`: `job_offer_data` block is missing for the selected pointer
+- `cargo_mismatch`: written cargo token does not match the expected token
+- `target_mismatch`: written target company does not match the expected target
+
+The write output also includes an offer-slot scan so the selected `job_offer[i]` can be inspected when a depot contains multiple offer pointers.

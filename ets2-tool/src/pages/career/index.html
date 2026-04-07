@@ -361,6 +361,9 @@
                   <div><dt data-translate="career_mode.dispatcher.col_company">Company</dt><dd id="cmDispatcherDetailCompany">-</dd></div>
                   <div><dt data-translate="career_mode.dispatcher.detail_vtc_company">VTC Company</dt><dd id="cmDispatcherDetailVtcCompany">-</dd></div>
                   <div><dt data-translate="career_mode.dispatcher.detail_ingame_host">Ingame Host</dt><dd id="cmDispatcherDetailIngameHost">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.detail_host_city">Host City</dt><dd id="cmDispatcherDetailHostCity">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.detail_target_company">Target Company</dt><dd id="cmDispatcherDetailTargetCompany">-</dd></div>
+                  <div><dt data-translate="career_mode.dispatcher.detail_offer_location">Offer Location</dt><dd id="cmDispatcherDetailOfferLocation">-</dd></div>
                   <div><dt data-translate="career_mode.dispatcher.detail_requested_cargo">Requested Cargo</dt><dd id="cmDispatcherDetailRequestedCargo">-</dd></div>
                   <div><dt data-translate="career_mode.dispatcher.detail_resolved_cargo">Resolved ETS2 Cargo</dt><dd id="cmDispatcherDetailResolvedCargo">-</dd></div>
                   <div><dt data-translate="career_mode.dispatcher.detail_cargo_resolution_mode">Cargo Resolution Mode</dt><dd id="cmDispatcherDetailCargoResolutionMode">-</dd></div>
@@ -390,12 +393,15 @@
                   <div><dt data-translate="career_mode.dispatcher.detail_live_progress">Live Progress</dt><dd id="cmDispatcherDetailLiveProgress">-</dd></div>
                 </dl>
                 <div class="dispatcher-detail-notes">
+                  <p id="cmDispatcherDetailLoadHint"></p>
+                  <p id="cmDispatcherDetailOfferHint"></p>
                   <p id="cmDispatcherDetailBonus"></p>
                   <p id="cmDispatcherDetailRisk"></p>
                 </div>
                 <div class="dispatcher-detail-actions">
                   <button id="cmDispatcherAcceptJobBtn" class="career-action-btn" type="button" data-translate="career_mode.dispatcher.accept_job">Accept Job</button>
                   <button id="cmDispatcherInjectActiveSaveBtn" class="career-topbar-btn dispatcher-write-btn" type="button" data-translate="career_mode.dispatcher.inject_active_save">Inject into Active Save</button>
+                  <button id="cmDispatcherCancelJobBtn" class="career-topbar-btn" type="button" data-translate="career_mode.dispatcher.cancel_job" hidden>Cancel Job</button>
                   <button id="cmDispatcherMarkSyncedBtn" class="career-topbar-btn" type="button" data-translate="career_mode.dispatcher.mark_synced">Mark Synced</button>
                 </div>
                 <div class="dispatcher-action-hints">
@@ -410,8 +416,16 @@
                   <p data-translate="career_mode.dispatcher.hint_synced">Mark Synced: updates tool sync status only.</p>
                 </div>
                 <div class="dispatcher-write-report">
+                  <h4 data-translate="career_mode.dispatcher.action_guide_title">Action Guide</h4>
+                  <pre id="cmDispatcherActionGuide">-</pre>
+                </div>
+                <div class="dispatcher-write-report">
                   <h4 data-translate="career_mode.dispatcher.write_report_title">Last Write Output</h4>
                   <pre id="cmDispatcherWriteReport">-</pre>
+                </div>
+                <div class="dispatcher-write-report">
+                  <h4 data-translate="career_mode.dispatcher.db_diagnostics_title">SQLite Diagnostics</h4>
+                  <pre id="cmDispatcherDbDiagnostics">-</pre>
                 </div>
               </aside>
             </div>

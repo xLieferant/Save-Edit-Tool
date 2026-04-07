@@ -1070,7 +1070,10 @@ fn count_dispatcher_jobs_by_status(
 
     conn.query_row(
         &sql,
-        params![save_context.profile_reference.as_deref(), Option::<&str>::None],
+        params![
+            save_context.profile_reference.as_deref(),
+            Option::<&str>::None
+        ],
         |row| row.get(0),
     )
     .map_err(|e| e.to_string())
@@ -2113,6 +2116,14 @@ pub fn dispatcher_get_active_jobs(
     save_context: &DispatcherSaveContext,
 ) -> Result<Vec<DispatcherMarketJob>, String> {
     repo::dispatcher_get_active_jobs(conn, save_context)
+}
+
+pub fn dispatcher_cancel_job(
+    conn: &Connection,
+    job_id: &str,
+    save_context: &DispatcherSaveContext,
+) -> Result<DispatcherJobDetails, String> {
+    repo::dispatcher_cancel_job(conn, job_id, save_context)
 }
 
 pub fn dispatcher_get_job_history(
