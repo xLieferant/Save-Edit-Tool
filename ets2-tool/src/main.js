@@ -2962,3 +2962,4 @@ document.addEventListener("DOMContentLoaded", async () => {
     showCareerLoadFailure(error);
   }
 });
+
