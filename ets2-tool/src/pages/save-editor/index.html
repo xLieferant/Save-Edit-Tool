@@ -186,8 +186,9 @@
                   </p>
 
                   <div class="save-hero-actions">
-                    <button id="saveSafeModeBtn" class="preset-btn active" data-translate="editor.safe_mode">Safe Mode</button>
-                    <button id="saveAdvancedModeBtn" class="preset-btn" data-translate="editor.advanced_mode">Advanced Mode</button>
+                    <button id="saveColorSchemeBtn" class="preset-btn" data-translate="tools.settings.color_theme.title">Color Scheme</button>
+                    <button id="saveSafeModeBtn" class="preset-btn active github-lock-hide" data-translate="editor.safe_mode">Safe Mode</button>
+                    <button id="saveAdvancedModeBtn" class="preset-btn github-lock-hide" data-translate="editor.advanced_mode">Advanced Mode</button>
                     <button class="secondary-action" disabled data-translate="editor.import">Import Saves</button>
                     <button class="secondary-action" disabled data-translate="editor.export">Export Saves</button>
                   </div>
@@ -253,7 +254,7 @@
                       <span class="overview-label" data-translate="editor.level_card">Level</span>
                       <strong id="editorLevelValue">1</strong>
                     </article>
-                    <article class="overview-card panel-surface">
+                    <article id="editorFleetCard" class="overview-card panel-surface">
                       <span class="overview-label" data-translate="editor.fleet_card">Fleet Assets</span>
                       <strong id="editorFleetValue">0 / 0</strong>
                     </article>
