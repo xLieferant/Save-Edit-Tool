@@ -1,6 +1,7 @@
 window.__ETS2_STANDALONE_EDITOR__ = true;
 
 const tauriInvoke = window.__TAURI__?.core?.invoke;
+const GITHUB_PUBLIC_LOCK = true; // TEMP_GITHUB_BUILD
 
 async function setHubMode(mode) {
   if (!tauriInvoke) return;
@@ -11,12 +12,17 @@ async function setHubMode(mode) {
   }
 }
 
-function interceptNavigation(element, targetPath, mode) {
+function interceptNavigation(element, targetPath, mode, options = {}) {
   if (!element) return;
 
   element.addEventListener(
     "click",
     async (event) => {
+      if (options.blocked) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        return;
+      }
       event.preventDefault();
       event.stopImmediatePropagation();
       if (mode) {
@@ -30,7 +36,17 @@ function interceptNavigation(element, targetPath, mode) {
 
 document.addEventListener("DOMContentLoaded", () => {
   interceptNavigation(document.getElementById("hubHomeBtn"), "/index.html");
-  interceptNavigation(document.getElementById("careerModeBtn"), "/pages/career/index.html", "career");
-  interceptNavigation(document.getElementById("hubCareerCard"), "/pages/career/index.html", "career");
+  interceptNavigation(
+    document.getElementById("careerModeBtn"),
+    "/pages/career/index.html",
+    "career",
+    { blocked: GITHUB_PUBLIC_LOCK }
+  );
+  interceptNavigation(
+    document.getElementById("hubCareerCard"),
+    "/pages/career/index.html",
+    "career",
+    { blocked: GITHUB_PUBLIC_LOCK }
+  );
   interceptNavigation(document.getElementById("hubEditorCard"), "/pages/save-editor/index.html", "editor");
 });

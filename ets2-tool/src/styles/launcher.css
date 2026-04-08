@@ -120,3 +120,22 @@ body {
   border-color: #3d7ebf;
   background: linear-gradient(140deg, #2f7dc6, #255f99);
 }
+
+/* TEMP_GITHUB_BUILD: public UI lock styling */
+.github-public-lock .github-lock-disabled {
+  opacity: 0.5;
+  filter: grayscale(0.25);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.github-public-lock .launcher-card.github-lock-disabled {
+  border-color: #2b3344;
+  background: linear-gradient(160deg, rgba(12, 17, 28, 0.98), rgba(8, 12, 20, 0.96));
+}
+
+.github-public-lock .launcher-card.github-lock-disabled .launcher-btn {
+  border-color: #2b3344;
+  background: linear-gradient(140deg, #1f2a3d, #172133);
+  color: #7f8fae;
+}

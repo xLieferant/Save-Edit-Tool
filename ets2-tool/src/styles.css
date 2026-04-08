@@ -1260,6 +1260,53 @@ input[type="checkbox"]:checked + .checkboxSlider::before {
   background: var(--accent-soft);
 }
 
+/* TEMP_GITHUB_BUILD: editor-only layout lock */
+body.mode-editor.github-public-lock {
+  overflow: hidden;
+}
+
+body.mode-editor.github-public-lock .app-shell {
+  height: 100vh;
+  overflow: hidden;
+}
+
+body.mode-editor.github-public-lock .workspace-shell {
+  flex: 1;
+  overflow: hidden;
+}
+
+body.mode-editor.github-public-lock .workspace-main {
+  overflow: hidden;
+}
+
+body.mode-editor.github-public-lock .save-editor-shell {
+  height: 100%;
+  min-height: 0;
+}
+
+body.mode-editor.github-public-lock .save-layout {
+  flex: 1;
+  min-height: 0;
+}
+
+body.mode-editor.github-public-lock .save-content {
+  min-height: 0;
+}
+
+body.mode-editor.github-public-lock .save-tool-stage {
+  flex: 1;
+  min-height: 0;
+}
+
+body.mode-editor.github-public-lock #tool-container {
+  overflow-y: auto;
+  max-height: 100%;
+}
+
+body.mode-editor.github-public-lock .editor-sidebar {
+  overflow-y: auto;
+}
+
 @media (max-width: 1180px) {
   .command-header {
     grid-template-columns: 1fr;
@@ -1474,6 +1521,24 @@ body {
 .hub-mode-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 30px 70px rgba(0, 0, 0, 0.32);
+}
+
+/* TEMP_GITHUB_BUILD: public UI lock styling */
+.github-public-lock .github-lock-hide {
+  display: none !important;
+}
+
+.github-public-lock .github-lock-disabled {
+  opacity: 0.45;
+  filter: grayscale(0.25);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.hub-mode-card.github-lock-disabled,
+.hub-mode-card:disabled {
+  transform: none;
+  box-shadow: none;
 }
 
 .hub-mode-career {
@@ -1840,6 +1905,16 @@ body {
 .plan-card strong {
   font-size: 28px;
   color: var(--text-main);
+}
+
+/* TEMP_GITHUB_BUILD: fleet assets locked visuals */
+.github-public-lock #editorFleetCard {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.github-public-lock #editorFleetCard strong {
+  color: var(--text-muted);
 }
 
 .save-tool-stage {

@@ -21,6 +21,7 @@ let manualUpdateCheck = () => {};
 let lastSelectedGame = null;
 const CAREER_LOAD_ERROR = "Career Mode failed to load";
 const isStandaloneEditorPage = Boolean(window.__ETS2_STANDALONE_EDITOR__);
+const GITHUB_PUBLIC_LOCK = true; // TEMP_GITHUB_BUILD
 
 function ensureUiErrorBanner() {
   let banner = document.getElementById("careerLoadFallback");
@@ -203,6 +204,29 @@ function getThemeFallbackIcon() {
     : "images/icon_White.png";
 }
 
+function toggleGithubLockState(element, locked, options = {}) {
+  if (!element) return;
+  const { disable = false, tabIndex = "-1" } = options;
+  element.classList.toggle("github-lock-disabled", locked);
+  if (locked) {
+    element.setAttribute("aria-disabled", "true");
+    if (disable && "disabled" in element) {
+      element.disabled = true;
+    }
+    if (tabIndex !== null) {
+      element.setAttribute("tabindex", tabIndex);
+    }
+    return;
+  }
+  element.removeAttribute("aria-disabled");
+  if (disable && "disabled" in element) {
+    element.disabled = false;
+  }
+  if (tabIndex !== null) {
+    element.removeAttribute("tabindex");
+  }
+}
+
 function resolveProfileIcon(profile) {
   if (profile?.avatar) {
     return profile.avatar.startsWith("data:")
@@ -329,6 +353,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     await translateUI();
     document.body.classList.add("mode-editor");
+    if (GITHUB_PUBLIC_LOCK) {
+      document.body.classList.add("github-public-lock"); // TEMP_GITHUB_BUILD
+    }
 
   const refs = {
     hubScreen: document.getElementById("hubScreen"),
@@ -345,6 +372,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     atsBtn: document.getElementById("atsBtn"),
     editorModeBtn: document.getElementById("editorModeBtn"),
     careerModeBtn: document.getElementById("careerModeBtn"),
+    saveColorSchemeBtn: document.getElementById("saveColorSchemeBtn"),
     saveSafeModeBtn: document.getElementById("saveSafeModeBtn"),
     saveAdvancedModeBtn: document.getElementById("saveAdvancedModeBtn"),
     editorModeNotice: document.getElementById("editorModeNotice"),
@@ -354,6 +382,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     editorXpValue: document.getElementById("editorXpValue"),
     editorLevelValue: document.getElementById("editorLevelValue"),
     editorFleetValue: document.getElementById("editorFleetValue"),
+    editorFleetCard: document.getElementById("editorFleetCard"),
     editorStageTitle: document.getElementById("editorStageTitle"),
     editorStageSummary: document.getElementById("editorStageSummary"),
     statusGameRunning: document.getElementById("statusGameRunning"),
@@ -1743,11 +1772,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const applyHubMode = (mode) => {
     const normalizedMode = mode === "utility" ? "editor" : mode;
-    const isCareer = normalizedMode === "career";
+    const finalMode = GITHUB_PUBLIC_LOCK && normalizedMode === "career" ? "editor" : normalizedMode; // TEMP_GITHUB_BUILD
+    const isCareer = finalMode === "career";
     document.body.classList.toggle("mode-career", isCareer);
     document.body.classList.toggle("mode-editor", !isCareer);
     refs.editorModeBtn?.classList.toggle("active", !isCareer);
     refs.careerModeBtn?.classList.toggle("active", isCareer);
+    if (GITHUB_PUBLIC_LOCK) {
+      toggleGithubLockState(refs.userMenuBtn, !isCareer, { disable: true }); // TEMP_GITHUB_BUILD
+      if (!isCareer && refs.userMenuDropdown) refs.userMenuDropdown.hidden = true;
+    }
     void refreshCareerOnboardingGate();
   };
 
@@ -1818,7 +1852,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (refs.editorMoneyValue) refs.editorMoneyValue.textContent = formatCurrency(money);
     if (refs.editorXpValue) refs.editorXpValue.textContent = formatTelemetryNumber(xp, 0);
     if (refs.editorLevelValue) refs.editorLevelValue.textContent = String(level);
-    if (refs.editorFleetValue) refs.editorFleetValue.textContent = `${truckCount} / ${trailerCount}`;
+    if (GITHUB_PUBLIC_LOCK) {
+      toggleGithubLockState(refs.editorFleetCard, true, { tabIndex: null }); // TEMP_GITHUB_BUILD
+      if (refs.editorFleetValue) refs.editorFleetValue.textContent = "-- / --";
+    } else {
+      toggleGithubLockState(refs.editorFleetCard, false, { tabIndex: null });
+      if (refs.editorFleetValue) refs.editorFleetValue.textContent = `${truckCount} / ${trailerCount}`;
+    }
 
     if (refs.careerCompanyValue) refs.careerCompanyValue.textContent = companyLabel;
     if (refs.careerSidebarCompany) refs.careerSidebarCompany.textContent = companyLabel;
@@ -1932,7 +1972,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
 
   const setEditorPresentationMode = (mode) => {
-    const isAdvanced = mode === "advanced";
+    const normalizedMode = GITHUB_PUBLIC_LOCK ? "safe" : mode; // TEMP_GITHUB_BUILD
+    const isAdvanced = normalizedMode === "advanced";
     document.body.classList.toggle("editor-advanced", isAdvanced);
     document.body.classList.toggle("editor-safe", !isAdvanced);
     refs.saveSafeModeBtn?.classList.toggle("active", !isAdvanced);
@@ -1941,6 +1982,42 @@ document.addEventListener("DOMContentLoaded", async () => {
       refs.editorModeNotice.textContent = isAdvanced ? uiText.advancedMode : uiText.safeMode;
     }
     localStorage.setItem("ets2_editor_mode", isAdvanced ? "advanced" : "safe");
+  };
+
+  const openColorSchemeModal = async () => {
+    try {
+      const currentTheme = localStorage.getItem("theme") || "dark";
+      const themeMap = {
+        "label.label_color_theme_dark": "dark",
+        "label.label_color_theme_light": "light",
+        "label.label_color_theme_neon": "neon",
+      };
+      const currentKey =
+        Object.keys(themeMap).find((key) => themeMap[key] === currentTheme) || "label.label_color_theme_dark";
+      const res = await openModalMulti("tools.settings.color_theme.modalTextTitle", [
+        {
+          type: "dropdown",
+          id: "theme",
+          label: "label.label_theme",
+          value: currentKey,
+          options: Object.keys(themeMap),
+        },
+      ]);
+      if (!res) return;
+      const newTheme = themeMap[res.theme];
+      if (newTheme) {
+        document.body.classList.remove("theme-dark", "theme-light", "theme-neon");
+        document.body.classList.add(`theme-${newTheme}`);
+        localStorage.setItem("theme", newTheme);
+        window.showToast("toasts.color_theme_success", { newTheme }, "success");
+      } else {
+        console.error("Unknown theme selected:", res.theme);
+        window.showToast("toasts.color_theme_error", "error");
+      }
+    } catch (error) {
+      console.error("Theme change error:", error);
+      window.showToast("toasts.color_theme_error", "error");
+    }
   };
 
   const renderTelemetry = (data) => {
@@ -2018,6 +2095,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
 
   const activateMode = async (mode) => {
+    if (GITHUB_PUBLIC_LOCK && mode === "career") return; // TEMP_GITHUB_BUILD
     applyHubMode(mode);
     setHubVisibility(false);
     try {
@@ -2383,10 +2461,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   refs.editorModeBtn?.addEventListener("click", () => activateMode("editor"));
-  refs.careerModeBtn?.addEventListener("click", () => activateMode("career"));
+  refs.careerModeBtn?.addEventListener("click", () => {
+    if (GITHUB_PUBLIC_LOCK) return; // TEMP_GITHUB_BUILD
+    activateMode("career");
+  });
   refs.hubEditorCard?.addEventListener("click", () => activateMode("editor"));
-  refs.hubCareerCard?.addEventListener("click", () => activateMode("career"));
+  refs.hubCareerCard?.addEventListener("click", () => {
+    if (GITHUB_PUBLIC_LOCK) return; // TEMP_GITHUB_BUILD
+    activateMode("career");
+  });
   refs.hubHomeBtn?.addEventListener("click", () => setHubVisibility(true));
+  refs.saveColorSchemeBtn?.addEventListener("click", openColorSchemeModal);
   refs.saveSafeModeBtn?.addEventListener("click", () => setEditorPresentationMode("safe"));
   refs.saveAdvancedModeBtn?.addEventListener("click", () => setEditorPresentationMode("advanced"));
   let pendingCareerOverview = null;
@@ -2490,7 +2575,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.warn("[ui] career overview load failed", error);
   }
 
-  setEditorPresentationMode(localStorage.getItem("ets2_editor_mode") || "safe");
+  setEditorPresentationMode(GITHUB_PUBLIC_LOCK ? "safe" : (localStorage.getItem("ets2_editor_mode") || "safe"));
+  if (GITHUB_PUBLIC_LOCK) {
+    toggleGithubLockState(refs.hubCareerCard, true, { disable: true }); // TEMP_GITHUB_BUILD
+    toggleGithubLockState(refs.careerModeBtn, true, { disable: true });
+  }
   await updateEditorStage(activeTab);
   await showCareerPanel("dashboard");
   updateOperationalOverview();
@@ -2545,6 +2634,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   refs.userMenuBtn?.addEventListener("click", (event) => {
+    if (GITHUB_PUBLIC_LOCK && document.body.classList.contains("mode-editor")) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      return;
+    }
     event.stopPropagation();
     toggleUserMenu();
   });
