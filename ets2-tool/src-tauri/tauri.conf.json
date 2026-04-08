@@ -2,7 +2,7 @@
   "$schema": "https://schema.tauri.app/config/2",
 
   "productName": "Save-Edit Tool xLieferant",
-  "version": "0.6.0",
+  "version": "0.7.5",
   "identifier": "com.xlieferant.saveedittool",
 
   "build": {
@@ -54,7 +54,7 @@
   "bundle": {
     "active": true,
     "targets": ["nsis"],
-    "resources": ["locales"],
+    "resources": ["locales", "resources/plugins"],
     "createUpdaterArtifacts": true,
     "icon": [
       "icons/32x32.png",

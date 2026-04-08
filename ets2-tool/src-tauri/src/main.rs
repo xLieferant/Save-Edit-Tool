@@ -3,23 +3,179 @@
     windows_subsystem = "windows"
 )]
 
-use crate::state::{AppProfileState, DecryptCache, ProfileCache};
+use crate::state::AuthState;
+use crate::state::{AppProfileState, AppState, DecryptCache, EtsDbState, ProfileCache};
+use crate::state::{CareerState, HubState};
+use tauri::Manager;
 
+mod commands;
+mod db;
+mod events;
+mod features;
 mod models;
-mod state;
-mod shared;   // ehemals utils
-mod features; // ehemals commands (aufgeteilt)
+mod shared; // ehemals utils
+mod state; // ehemals commands (aufgeteilt)
+mod xp;
 
 fn main() {
+    std::panic::set_hook(Box::new(|info| {
+        crate::shared::logs::write_log(format!("[panic] {}", info));
+    }));
+    crate::dev_log!("[app] starting");
+
+    features::career::scs_sdk_telemetry::start_terminal_telemetry_loop();
+    features::career::telemetry_debug::start_telemetry_debug_thread();
+    let sqlite_pool = tauri::async_runtime::block_on(db::sqlite::init_sqlite())
+        .expect("failed to initialize central sqlite pool");
+    let sqlite_path = db::sqlite::app_db_path();
+    if let Err(error) = db::sqlite::validate_sqlite_extension(&sqlite_path) {
+        panic!("{}", error);
+    }
+
     tauri::Builder::default()
         .plugin(tauri_plugin_fs::init())
         .manage(DecryptCache::default())
         .manage(AppProfileState::default())
         .manage(ProfileCache::default())
+        .manage(HubState::default())
+        .manage(CareerState::default())
+        .manage(AuthState::default())
+        .manage(EtsDbState {
+            pool: sqlite_pool.clone(),
+        })
+        .manage(AppState {
+            sqlite: sqlite_pool.clone(),
+            sqlite_path: sqlite_path.clone(),
+        })
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
+        .setup(|app| {
+            let handle = app.handle().clone();
+            let career = app.state::<CareerState>();
+            let runtime = career.runtime.clone();
+            let auth = app.state::<AuthState>();
+            crate::dev_log!("[app] setup begin");
+
+            let db_path = db::sqlite::app_db_path();
+            crate::dev_log!("[app] setup init db: {}", db_path.display());
+            match features::career::db::init_logbook(&db_path) {
+                Ok(()) => {
+                    crate::dev_log!("[career] setup db ready: {}", db_path.display());
+                    if let Ok(mut guard) = runtime.db_path.lock() {
+                        *guard = Some(db_path);
+                    }
+
+                    if let Ok(mut conn) = rusqlite::Connection::open(db::sqlite::app_db_path()) {
+                        if let Err(error) = features::auth::db::ensure_tables(&conn) {
+                            crate::dev_log!("[auth] ensure tables failed: {}", error);
+                        } else if let Err(error) = features::vtc::db::ensure_tables(&conn) {
+                            crate::dev_log!("[vtc] ensure tables failed: {}", error);
+                        } else if let Err(error) =
+                            features::auth::service::seed_default_admin(&conn)
+                        {
+                            crate::dev_log!("[auth] seed admin failed: {}", error);
+                        } else if let Err(error) =
+                            features::auth::service::restore_persisted_session(&conn, auth.inner())
+                        {
+                            crate::dev_log!("[auth] restore session failed: {}", error);
+                        } else {
+                            crate::dev_log!("[auth] restore session ok");
+                            if let Err(error) =
+                                features::vtc::service::ensure_local_company_bootstrap(
+                                    &conn,
+                                    auth.inner(),
+                                )
+                            {
+                                crate::dev_log!("[vtc] bootstrap failed: {}", error);
+                            }
+                        }
+
+                        if let Err(error) = shared::ets2data::import::ensure_tables(&conn) {
+                            crate::dev_log!("[ets2data] ensure tables failed: {}", error);
+                        } else {
+                            let company_count: i64 = conn
+                                .query_row("SELECT COUNT(*) FROM ets2_companies", [], |row| {
+                                    row.get(0)
+                                })
+                                .unwrap_or(0);
+                            if company_count == 0 {
+                                if let Err(error) = shared::ets2data::import::import_datasets(
+                                    None,
+                                    &mut conn,
+                                    &shared::ets2data::default_repo_root(),
+                                    false,
+                                ) {
+                                    crate::dev_log!(
+                                        "[ets2data] auto import skipped/failed: {}",
+                                        error
+                                    );
+                                } else {
+                                    crate::dev_log!("[ets2data] auto import completed");
+                                }
+                            }
+                        }
+                    }
+                }
+                Err(error) => {
+                    crate::dev_log!("[career] setup db init failed: {}", error);
+                }
+            }
+
+            crate::dev_log!("[app] setup load hub mode");
+            match features::hub::config::load_mode() {
+                Ok(mode) => {
+                    let hub = app.state::<HubState>();
+                    if let Ok(mut guard) = hub.mode.write() {
+                        *guard = mode;
+                    }
+                }
+                Err(error) => {
+                    crate::dev_log!("[hub] config load failed: {}", error);
+                }
+            }
+            crate::dev_log!("[app] setup ensure plugin files");
+            for game in [
+                features::career::plugin_installer::ScsGame::Ets2,
+                features::career::plugin_installer::ScsGame::Ats,
+            ] {
+                match features::career::plugin_installer::ensure_plugin_files(&handle, game) {
+                    Ok(path) => crate::dev_log!(
+                        "[career] plugin installed for {:?}: {}",
+                        game,
+                        path.display()
+                    ),
+                    Err(error) => {
+                        crate::dev_log!("[career] plugin install skipped for {:?}: {}", game, error)
+                    }
+                }
+            }
+            crate::dev_log!("[app] setup start telemetry bridge + background threads");
+            features::career::scs_sdk_telemetry::start_frontend_telemetry_bridge(
+                handle.clone(),
+                runtime.clone(),
+            );
+            features::career::service::start_background(handle, runtime);
+            let ets_db = app.state::<EtsDbState>();
+            features::telemetry::scs_shared_mem::start(app.handle().clone(), ets_db.pool.clone());
+            crate::dev_log!("[app] setup complete");
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
+            commands::ets_get_last_quicksave,
+            commands::ets_prepare_job_link,
+            commands::ets_write_job_to_quicksave,
+            commands::ets_get_job_link_status,
+            commands::ets_snapshot_refresh_active_save,
+            commands::ets_snapshot_get_active,
+            commands::ets_snapshot_list_depots,
+            commands::ets_snapshot_get_active_diagnostics,
+            commands::get_sqlite_info,
+            commands::get_sqlite_table_counts,
+            commands::data_import_ets2_datasets,
+            commands::ets2data_get_city,
+            commands::ets2data_get_company,
+            commands::ets2data_list_cities,
             // Apply Settings
             features::settings::apply_settings::apply_setting,
             // Read Base and Save Config.cfg
@@ -52,7 +208,6 @@ fn main() {
             features::save_editor::commands::edit_player_money,
             features::save_editor::commands::edit_player_experience,
             features::save_editor::commands::edit_skill_value,
-            
             // Save Analysis+
             features::save_analysis::reader::read_all_save_data,
             // features::save_analysis::reader::read_money,
@@ -73,13 +228,11 @@ fn main() {
             features::vehicles::editor::repair_player_trailer,
             features::vehicles::editor::set_player_trailer_cargo_mass,
             features::vehicles::editor::edit_truck_odometer,
-            
             // FEATURE: PROFILE CLONE + Rename
             features::profile_clone::commands::clone_profile_command,
             features::profile_clone::commands::validate_clone_target,
             features::profile_rename::commands::profile_rename,
             features::profile_move_mods::commands::copy_mods_to_profile,
-
             // Language Management
             features::language::commands::get_available_languages_command,
             features::language::commands::get_current_language_command,
@@ -87,9 +240,89 @@ fn main() {
             features::language::commands::translate_command,
             // User action logging
             features::logging::commands::log_user_action,
-                
-                //Feature: Profile Controls move around
-                features::profile_controls::commands::copy_profile_controls,
+            //Feature: Profile Controls move around
+            features::profile_controls::commands::copy_profile_controls,
+            // Hub (UI navigation)
+            features::hub::commands::hub_get_mode,
+            features::hub::commands::hub_set_mode,
+            // Career (background + logbook)
+            features::career::commands::career_get_status,
+            features::career::commands::career_get_overview,
+            features::career::commands::career_get_active_job,
+            features::career::commands::career_get_job_log,
+            features::career::commands::career_get_job_stats,
+            features::career::commands::career_list_trips,
+            features::career::commands::career_generate_jobs,
+            features::career::commands::career_accept_job,
+            features::career::commands::career_complete_job,
+            features::career::commands::dispatcher_generate_jobs,
+            features::career::commands::dispatcher_get_market_jobs,
+            features::career::commands::dispatcher_get_open_jobs,
+            features::career::commands::dispatcher_get_job_details,
+            features::career::commands::dispatcher_get_job_by_id,
+            features::career::commands::dispatcher_accept_job,
+            features::career::commands::dispatcher_get_active_jobs,
+            features::career::commands::dispatcher_cancel_job,
+            features::career::commands::dispatcher_get_job_history,
+            features::career::commands::dispatcher_get_company_contacts,
+            features::career::commands::dispatcher_create_offer,
+            features::career::commands::dispatcher_get_offers,
+            features::career::commands::dispatcher_cancel_offer,
+            features::career::commands::dispatcher_respond_to_counter,
+            features::career::commands::dispatcher_get_dispatcher_overview,
+            features::career::commands::dispatcher_generate_universal_jobs,
+            features::career::commands::dispatcher_get_generation_status,
+            features::career::commands::dispatcher_cleanup_expired_jobs,
+            features::career::commands::dispatcher_restore_jobs_for_last_quicksave,
+            features::career::commands::dispatcher_link_job_to_save_context,
+            features::career::commands::dispatcher_assign_job_to_active_save,
+            features::career::commands::dispatcher_assign_and_prepare_ets_link,
+            features::career::commands::dispatcher_assign_and_prepare_and_write,
+            features::career::commands::dispatcher_accept_generated_job,
+            features::career::commands::dispatcher_mark_job_synced_to_ets2,
+            features::career::commands::dispatcher_get_jobs_by_save_context,
+            features::career::commands::dispatcher_get_jobs_for_active_save,
+            features::career::commands::get_plugin_status,
+            // Auth
+            features::auth::commands::auth_seed_default_admin,
+            features::auth::commands::auth_register,
+            features::auth::commands::auth_login,
+            features::auth::commands::auth_logout,
+            features::auth::commands::auth_get_current_user,
+            features::auth::commands::auth_restore_session,
+            features::auth::commands::auth_get_account_overview,
+            features::auth::commands::auth_generate_recovery_codes,
+            features::auth::commands::auth_reset_password_with_recovery_code,
+            features::auth::commands::auth_admin_get_db_overview,
+            // Companies
+            features::companies::commands::company_create,
+            features::companies::commands::company_create_onboarding,
+            features::companies::commands::company_list,
+            features::companies::commands::company_join,
+            features::companies::commands::company_get_current,
+            features::companies::commands::company_get_for_user,
+            // VTC / Career Management
+            features::vtc::commands::get_current_user_profile,
+            features::vtc::commands::get_vtc_runtime_context,
+            features::vtc::commands::update_user_language,
+            features::vtc::commands::update_username,
+            features::vtc::commands::check_username_availability,
+            features::vtc::commands::update_user_profile_meta,
+            features::vtc::commands::create_company,
+            features::vtc::commands::get_company_overview,
+            features::vtc::commands::update_company_profile,
+            features::vtc::commands::get_company_members,
+            features::vtc::commands::update_company_settings,
+            features::vtc::commands::assign_member_role,
+            features::vtc::commands::change_member_role,
+            features::vtc::commands::get_available_roles,
+            features::vtc::commands::get_user_settings,
+            features::vtc::commands::update_user_settings,
+            features::vtc::commands::get_company_settings,
+            features::vtc::commands::get_career_settings,
+            features::vtc::commands::update_career_settings,
+            // Onboarding
+            features::career_onboarding::commands::career_get_onboarding_state,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

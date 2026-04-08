@@ -8,7 +8,7 @@ use crate::shared::paths::quicksave_config_path;
 use crate::state::ProfileCache;
 use regex::Regex;
 use std::fs;
-use tauri::{command, State};
+use tauri::{State, command};
 
 //* Liest die globale config.cfg im Basis-Verzeichnis des Spiels *//
 #[command]

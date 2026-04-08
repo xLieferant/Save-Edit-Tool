@@ -36,9 +36,7 @@ pub fn parse_value_auto(input: &str) -> Result<f32, String> {
 
     // Fall 2: normaler Float (z. B. aus UI)
     match trimmed.replace(',', ".").parse::<f32>() {
-        Ok(v) => {
-            Ok(v)
-        }
+        Ok(v) => Ok(v),
         Err(_) => Err(format!(
             "Konnte '{}' nicht als Hex oder Float interpretieren",
             input
@@ -61,5 +59,8 @@ pub fn decode_hex_folder_name(hex: &str) -> Option<String> {
 }
 
 pub fn text_to_hex(text: &str) -> String {
-    text.as_bytes().iter().map(|b| format!("{:02X}", b)).collect()
+    text.as_bytes()
+        .iter()
+        .map(|b| format!("{:02X}", b))
+        .collect()
 }

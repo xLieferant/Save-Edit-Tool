@@ -1,0 +1,104 @@
+use std::path::{Path, PathBuf};
+
+use rusqlite::Connection;
+
+use crate::shared::sqlite_schema::ensure_columns;
+
+pub fn default_db_path() -> PathBuf {
+    crate::db::sqlite::app_db_path()
+}
+
+pub fn auth_session_path() -> PathBuf {
+    dirs::data_local_dir()
+        .unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")))
+        .join("SimNexusHub")
+        .join("auth_session.json")
+}
+
+pub fn ensure_tables(conn: &Connection) -> Result<(), String> {
+    conn.execute_batch(
+        r#"
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL,
+            email TEXT NOT NULL,
+            password_hash TEXT NOT NULL,
+            role TEXT NOT NULL DEFAULT 'user',
+            company_id INTEGER,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            last_login_at TEXT,
+            consent_at TEXT NOT NULL,
+            is_active INTEGER NOT NULL DEFAULT 1,
+            is_seed INTEGER NOT NULL DEFAULT 0
+        );
+
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username);
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+        CREATE TABLE IF NOT EXISTS sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            token TEXT,
+            created_at TEXT NOT NULL,
+            expires_at TEXT,
+            last_used_at TEXT,
+            revoked_at TEXT
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
+        CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token);
+
+        CREATE TABLE IF NOT EXISTS recovery_codes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            code_hash TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            used_at TEXT
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_recovery_codes_user_id ON recovery_codes(user_id);
+
+        CREATE TABLE IF NOT EXISTS login_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            at_utc TEXT NOT NULL,
+            year_month TEXT NOT NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_login_events_year_month ON login_events(year_month);
+        CREATE INDEX IF NOT EXISTS idx_login_events_user_month ON login_events(user_id, year_month);
+        "#,
+    )
+    .map_err(|e| e.to_string())?;
+
+    ensure_user_columns(conn)?;
+    ensure_session_columns(conn)?;
+    Ok(())
+}
+
+fn ensure_user_columns(conn: &Connection) -> Result<(), String> {
+    let required = [
+        ("role", "TEXT NOT NULL DEFAULT 'user'"),
+        ("company_id", "INTEGER"),
+        ("last_login_at", "TEXT"),
+        ("consent_at", "TEXT NOT NULL DEFAULT ''"),
+        ("is_active", "INTEGER NOT NULL DEFAULT 1"),
+        ("is_seed", "INTEGER NOT NULL DEFAULT 0"),
+    ];
+    ensure_columns(conn, "users", &required)?;
+    Ok(())
+}
+
+fn ensure_session_columns(conn: &Connection) -> Result<(), String> {
+    let required = [("revoked_at", "TEXT")];
+    ensure_columns(conn, "sessions", &required)?;
+    Ok(())
+}
+
+pub fn ensure_parent_dir(path: &Path) -> Result<(), String> {
+    if let Some(dir) = path.parent() {
+        std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}

@@ -1,8 +1,8 @@
 use crate::dev_log;
-use crate::state::{AppProfileState, ProfileCache};
 use crate::shared::current_profile::require_current_profile;
 use crate::shared::decrypt::decrypt_if_needed;
 use crate::shared::paths::{autosave_path, ets2_base_config_path};
+use crate::state::{AppProfileState, ProfileCache};
 use regex::Regex;
 use serde::Deserialize;
 use serde_json::Value;

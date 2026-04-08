@@ -9,6 +9,9 @@
     "main"
   ],
   "permissions": [
+    "core:event:default",
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
     "updater:default",
     "core:app:allow-version",
     "core:app:default",

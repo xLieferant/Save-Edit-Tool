@@ -2,13 +2,13 @@ use serde::Serialize;
 
 #[derive(Debug, Serialize, Clone)]
 pub struct ParsedTruck {
-    pub truck_id: String,              // z. B. "_nameless.1234.abcd"
-    pub brand: String,                 // z. B. "volvo"
-    pub model: String,                 // z. B. "fh16_2012"
-    
+    pub truck_id: String, // z. B. "_nameless.1234.abcd"
+    pub brand: String,    // z. B. "volvo"
+    pub model: String,    // z. B. "fh16_2012"
+
     pub odometer: f32,
     pub integrity_odometer: f32,
-    
+
     pub fuel_relative: f32,
     pub trip_fuel_l: f32,
     pub trip_distance_km: f32,

@@ -1,0 +1,12 @@
+ALTER TABLE ets_job_links ADD COLUMN resolved_source_company_token TEXT;
+ALTER TABLE ets_job_links ADD COLUMN resolved_source_city_token TEXT;
+ALTER TABLE ets_job_links ADD COLUMN resolved_target_company_token TEXT;
+ALTER TABLE ets_job_links ADD COLUMN resolved_target_city_token TEXT;
+ALTER TABLE ets_job_links ADD COLUMN save_offer_template_json TEXT;
+ALTER TABLE ets_job_links ADD COLUMN requested_source_company_token TEXT;
+ALTER TABLE ets_job_links ADD COLUMN requested_source_city_token TEXT;
+ALTER TABLE ets_job_links ADD COLUMN requested_target_company_token TEXT;
+ALTER TABLE ets_job_links ADD COLUMN requested_target_city_token TEXT;
+ALTER TABLE ets_job_links ADD COLUMN trailer_definition_token TEXT;
+ALTER TABLE ets_job_links ADD COLUMN trailer_variant_token TEXT;
+ALTER TABLE ets_job_links ADD COLUMN company_truck_mode TEXT;

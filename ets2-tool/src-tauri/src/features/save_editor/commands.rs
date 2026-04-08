@@ -1,10 +1,10 @@
 use crate::dev_log;
-use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 use crate::shared::current_profile::require_current_profile;
 use crate::shared::decrypt::decrypt_if_needed;
 use crate::shared::paths::{
     autosave_path, ets2_base_config_path, game_sii_from_save, quicksave_config_path,
 };
+use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 use regex::Regex;
 use serde::Deserialize;
 use std::fs;
@@ -211,8 +211,6 @@ pub fn edit_skill_value(
 
     Ok(())
 }
-
-
 
 #[command]
 pub fn edit_developer_value(

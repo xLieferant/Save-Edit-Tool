@@ -1,11 +1,11 @@
+use super::load_save_content;
 use crate::dev_log;
 use crate::models::trailers::{ParsedTrailer, TrailerData, TrailerDefData};
-use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 use crate::shared::sii_parser::{
     get_player_id, get_vehicle_ids, parse_trailer_defs_from_sii, parse_trailers_from_sii,
     parse_trucks_from_sii,
 };
-use super::load_save_content;
+use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 use tauri::command;
 
 #[command]
@@ -32,8 +32,8 @@ pub async fn get_player_trailer(
         .collect();
     let trucks_data = parse_trucks_from_sii(&content);
 
-    let player_id = get_player_id(&content)
-        .ok_or("Player ID nicht im economy block gefunden".to_string())?;
+    let player_id =
+        get_player_id(&content).ok_or("Player ID nicht im economy block gefunden".to_string())?;
     let (player_truck_id_opt, player_trailer_id_opt) = get_vehicle_ids(&content, &player_id);
 
     let player_trailer = match player_trailer_id_opt {
@@ -83,11 +83,7 @@ pub async fn get_player_trailer(
         &player_trailer.wheels_wear
     );
 
-    profile_cache.cache_trailers(
-        path_key,
-        parsed_trailers,
-        Some(player_trailer.clone()),
-    );
+    profile_cache.cache_trailers(path_key, parsed_trailers, Some(player_trailer.clone()));
     Ok(Some(player_trailer))
 }
 
@@ -115,26 +111,26 @@ pub async fn get_all_trailers(
         .map(|trailer_data| parsed_trailer_from_data(trailer_data, &defs_data))
         .collect();
 
-    let player_trailer = profile_cache
-        .get_cached_player_trailer(&path_key)
-        .flatten();
+    let player_trailer = profile_cache.get_cached_player_trailer(&path_key).flatten();
 
-    profile_cache.cache_trailers(
-        path_key.clone(),
-        parsed_trailers.clone(),
-        player_trailer,
-    );
+    profile_cache.cache_trailers(path_key.clone(), parsed_trailers.clone(), player_trailer);
 
     dev_log!("{} Trailer gefunden", parsed_trailers.len());
     Ok(parsed_trailers)
 }
 
 // Hilfsfunktion: ParsedTrailer aus TrailerData
-fn parsed_trailer_from_data(tr: &TrailerData, defs: &std::collections::HashMap<String, TrailerDefData>) -> ParsedTrailer {
+fn parsed_trailer_from_data(
+    tr: &TrailerData,
+    defs: &std::collections::HashMap<String, TrailerDefData>,
+) -> ParsedTrailer {
     let odometer = tr.odometer + tr.odometer_float.unwrap_or(0.0);
     let body_wear = tr.wear_float.unwrap_or(0.0);
     let wheels_wear = tr.wheels_float.clone().unwrap_or_default();
-    let def = defs.get(&tr.trailer_definition).cloned().unwrap_or_default();
+    let def = defs
+        .get(&tr.trailer_definition)
+        .cloned()
+        .unwrap_or_default();
 
     ParsedTrailer {
         trailer_id: tr.trailer_id.clone(),

@@ -1,0 +1,10 @@
+pub const EVT_SYSTEM_STATUS: &str = "vtc://system/status";
+pub const EVT_DISPATCHER_JOBS_UPDATED: &str = "vtc://dispatcher/jobs_updated";
+pub const EVT_DISPATCHER_JOB_UPDATED: &str = "vtc://dispatcher/job_updated";
+pub const EVT_DISPATCHER_ASSIGN_PREPARE_PROGRESS: &str = "vtc://dispatcher/assign_prepare/progress";
+pub const EVT_DISPATCHER_ASSIGN_PREPARE_ERROR: &str = "vtc://dispatcher/assign_prepare/error";
+pub const EVT_JOB_LINK_UPDATED: &str = "vtc://dispatcher/job_link_updated";
+pub const EVT_TELEMETRY_JOB_EVENT: &str = "vtc://telemetry/job_event";
+pub const EVT_DATA_IMPORT_PROGRESS: &str = "vtc://data/import/progress";
+pub const EVT_DATA_IMPORT_DONE: &str = "vtc://data/import/done";
+pub const EVT_DATA_IMPORT_ERROR: &str = "vtc://data/import/error";

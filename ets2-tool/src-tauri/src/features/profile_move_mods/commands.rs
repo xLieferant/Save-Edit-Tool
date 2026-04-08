@@ -1,16 +1,16 @@
-use tauri::command;
-use std::path::Path;
-use std::fs;
-use regex::Regex;
-use crate::state::AppProfileState;
+use crate::dev_log;
 use crate::shared::current_profile::require_current_profile;
 use crate::shared::decrypt::decrypt_if_needed;
-use crate::dev_log;
+use crate::state::AppProfileState;
+use regex::Regex;
+use std::fs;
+use std::path::Path;
+use tauri::command;
 
 #[command]
 pub fn copy_mods_to_profile(
     target_profile_path: String,
-    profile_state: tauri::State<'_, AppProfileState>
+    profile_state: tauri::State<'_, AppProfileState>,
 ) -> Result<String, String> {
     // 1. Get current profile path (Source)
     let source_path_str = require_current_profile(profile_state)?;
@@ -30,7 +30,11 @@ pub fn copy_mods_to_profile(
         return Err("Zielprofil existiert nicht".into());
     }
 
-    dev_log!("Starte Mod-Transfer von '{}' nach '{}'", source_path.display(), target_path.display());
+    dev_log!(
+        "Starte Mod-Transfer von '{}' nach '{}'",
+        source_path.display(),
+        target_path.display()
+    );
 
     // 2. Find profile.sii in Source
     let source_sii = source_path.join("profile.sii");
@@ -58,7 +62,8 @@ pub fn copy_mods_to_profile(
     let new_target_content = inject_mods(&target_content, &mods)?;
 
     // 8. Write back to Target
-    fs::write(&target_sii, new_target_content).map_err(|e| format!("Fehler beim Schreiben von profile.sii: {}", e))?;
+    fs::write(&target_sii, new_target_content)
+        .map_err(|e| format!("Fehler beim Schreiben von profile.sii: {}", e))?;
 
     dev_log!("Mods erfolgreich übertragen.");
     Ok(format!("Erfolgreich {} Mods übertragen.", mods.len()))
@@ -81,7 +86,7 @@ fn extract_mods(content: &str) -> Vec<String> {
 fn inject_mods(content: &str, mods: &[String]) -> Result<String, String> {
     let mut new_lines = Vec::new();
     let mut injected = false;
-    
+
     // Regex to identify the count line: active_mods: 123
     let re_count = Regex::new(r"^\s*active_mods:\s*\d+").unwrap();
     // Regex to identify existing mod lines to remove them
@@ -97,13 +102,16 @@ fn inject_mods(content: &str, mods: &[String]) -> Result<String, String> {
             // Found the count line. Replace it and append new mods.
             // Preserve indentation from the found line
             let indentation = line.split("active_mods").next().unwrap_or("");
-            
+
             // 1. Write new count
             new_lines.push(format!("{}active_mods: {}", indentation, mods.len()));
-            
+
             // 2. Write new mod lines
             for (i, mod_str) in mods.iter().enumerate() {
-                new_lines.push(format!("{}active_mods[{}]: \"{}\"", indentation, i, mod_str));
+                new_lines.push(format!(
+                    "{}active_mods[{}]: \"{}\"",
+                    indentation, i, mod_str
+                ));
             }
             injected = true;
         } else {

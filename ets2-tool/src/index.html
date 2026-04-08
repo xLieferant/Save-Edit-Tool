@@ -3,170 +3,45 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title data-translate="app.name">ETS2 Save Editor - Alex Edition</title>
-    <link rel="stylesheet" href="styles.css" />
-    <!-- Hier kann optional ein Favicon oder Preconnects eingefügt werden -->
+    <title data-translate="launcher.title">ETS2 Tool Launcher</title>
+    <link rel="stylesheet" href="/styles/launcher.css" />
   </head>
   <body>
-    <header class="main-header">
-      <div class="logo">
-        <img src="images/xlLogo.png" alt="ets2Logo" />
-        <div class="logo-text">
-          <span class="logo-title" data-translate="app.title">SAVE EDITOR</span>
-          <span class="logo-subtitle" data-translate="app.subtitle">for SCS - xLieferant</span>
-        </div>
-      </div>
-      <nav class="nav-wrapper">
-        <div class="nav-main">
-          <button class="nav-btn" data-tab="truck" data-translate="tabs.truck">🚛Truck</button>
-          <button class="nav-btn" data-tab="trailer" data-translate="tabs.trailer">🚚Trailer</button>
-          <button class="nav-btn active" data-tab="profile">
-            <span data-translate="tabs.profile">Profile</span>
+    <main class="launcher-shell">
+      <section class="launcher-hero">
+        <img src="/images/xlLogo.png" alt="ETS2 Tool" class="launcher-logo" />
+        <span class="launcher-kicker" data-translate="launcher.kicker">Workspace Launcher</span>
+        <h1 data-translate="launcher.headline">Choose your workspace</h1>
+        <p data-translate="launcher.summary">
+          Start the classic Save Edit Tool or switch to the dedicated Career Mode dashboard.
+        </p>
+      </section>
+
+      <section class="launcher-grid">
+        <article class="launcher-card launcher-card-editor">
+          <span class="launcher-tag" data-translate="launcher.editor.tag">Save Editor</span>
+          <h2 data-translate="launcher.editor.title">Save Edit Tool</h2>
+          <p data-translate="launcher.editor.desc">
+            Existing save-editing workflow with all current tabs, tools and profile operations.
+          </p>
+          <button id="openSaveEditorBtn" type="button" class="launcher-btn">
+            <span data-translate="launcher.open">Open</span>
           </button>
-          <button class="nav-btn" data-tab="settings" data-translate="tabs.settings">⚙️Settings</button>
-          <div id="updateStatus" class="update-status"></div>
-        </div>
+        </article>
 
-        <div class="nav-bottom">
-          <button id="websiteBtn" class="nav-action website" data-translate="buttons.website">🆕Website</button>
-          <button id="youtubeBtn" class="nav-action youtube" data-translate="buttons.youtube">🔴 YouTube</button>
-          <button id="patreonBtn" class="nav-action patreon" data-translate="buttons.patreon">⚠️ Patreon</button>
-          <button id="githubBtn" class="nav-action github" data-translate="buttons.github">⚠️ GitHub</button>
-          <button id="versionBtn" class="version-btn">0.6.0</button>
-        </div>
-      </nav>
-    </header>
-
-    <main id="tool-container">
-      <!-- Tools werden per JS geladen (standardmäßig 'truck') -->
+        <article class="launcher-card launcher-card-career">
+          <span class="launcher-tag" data-translate="launcher.career.tag">Career</span>
+          <h2 data-translate="launcher.career.title">Career Mode / VTC</h2>
+          <p data-translate="launcher.career.desc">
+            Standalone dashboard for company operations, members, orders, finances, fleet and stats.
+          </p>
+          <button id="openCareerBtn" type="button" class="launcher-btn launcher-btn-career">
+            <span data-translate="launcher.open">Open</span>
+          </button>
+        </article>
+      </section>
     </main>
 
-    <!-- Statusmeldung für Profile (außerhalb des Footers positioniert, damit sie Platz hat) -->
-    <p
-      id="profile-status"
-      style="margin: 10px 25px 0; font-size: 0.8em; color: #0ff"
-    ></p>
-
-    <footer class="profile-bar">
-      <div class="game-switch">
-        <button id="ets2Btn" class="active">
-          <img src="images/ets2_32x32.png" alt="ets2Logo" sizes="15px" />
-          <span data-translate="game.ets2">ETS2</span>
-        </button>
-        <button id="atsBtn" disabled>
-          <img
-            src="images/ats_32x32.png"
-            alt="ats Logo"
-            class="switchButtonLogo"
-          />
-          <span data-translate="game.ats">ATS</span>
-        </button>
-      </div>
-
-      <!-- Die Struktur für das benutzerdefinierte Dropdown-Menü -->
-      <div class="profile-picker">
-        <img id="activeProfileIcon" src="images/icon_White.png" alt="Profile" class="profile-icon-footer">
-        <span id="profileNameDisplay" data-translate="profile.select_profile"></span>
-        <button id="openProfileModal">▼</button>
-        <!-- Container für die dynamisch generierte Dropdown-Liste -->
-        <div id="profileDropdownList" class="custom-dropdown-list">
-          <!-- Profile werden hier durch JS eingefügt -->
-        </div>
-      </div>
-
-      <div class="save-picker">
-        <span id="saveName" data-translate="profile.select_save"></span>
-        <button id="openSaveModal">▼</button>
-
-        <div id="saveDropdownList" class="dropdown-list"></div>
-      </div>
-
-      <button
-        id="cloneProfileBtn"
-        class="refresh-btn"
-        title="Clone Profile"
-        style="margin-right: 5px"
-        data-translate="profile.clone_profile"
-      >
-        👯
-      </button>
-      <button id="refreshBtn" class="refresh-btn" data-translate="profile.refresh">⟳</button>
-    </footer>
-
-    <!-- MODAL: Text-Input -->
-    <div class="modal-backdrop" id="modalText">
-      <div class="modal-box">
-        <h2 id="modalTextTitle">Modal Title</h2>
-        <input id="modalTextInput" type="text" placeholder="" />
-        <div class="modal-actions">
-          <button id="modalTextCancel" data-translate="modals.cancel">Close</button>
-          <button id="modalTextApply" class="apply" data-translate="modals.apply">Apply</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- MODAL: Number-Input -->
-    <div class="modal-backdrop" id="modalNumber">
-      <div class="modal-box">
-        <h2 id="modalNumberTitle">Modal Title</h2>
-        <input id="modalNumberInput" type="number" placeholder="" />
-        <div class="modal-actions">
-          <button id="modalNumberCancel" data-translate="modals.cancel">Close</button>
-          <button id="modalNumberApply" class="apply" data-translate="modals.apply">Apply</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- MODAL: Slider/Checkbox Input -->
-    <div class="modal-backdrop" id="modalSlider">
-      <div class="modal-box">
-        <h2 id="modalSliderTitle">Modal Title</h2>
-        <input id="modalSliderInput" type="checkbox" class="toggle-checkbox" />
-        <label for="modalSliderInput" class="checkboxSlider"></label>
-        <div class="modal-actions">
-          <button id="modalSliderCancel" data-translate="modals.cancel">Close</button>
-          <button id="modalSliderApply" class="apply" data-translate="modals.apply">Apply</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- MODAL: Multi Input (Dropdown, Slider, Number) -->
-    <div class="modal-backdrop" id="modalMulti">
-      <div class="modal-box">
-        <h2 id="modalMultiTitle"></h2>
-        <div id="modalMultiContent"></div>
-        <div class="modal-actions">
-          <button id="modalMultiCancel" data-translate="modals.cancel">Close</button>
-          <button id="modalMultiApply" class="apply" data-translate="modals.apply">Apply</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- MODAL: Clone Profile -->
-    <div class="modal-backdrop" id="modalClone">
-      <div class="modal-box">
-        <h2 id="modalCloneTitle" data-translate="modals.clone_profile.title">Clone Profile</h2>
-
-        <p id="cloneSourceDisplay"></p>
-
-        <input id="cloneNameInput" type="text" placeholder="New Profile Name" />
-        <div id="cloneValidationMsg"></div>
-
-        <div class="clone-options">
-          <label class="checkbox-row">
-            <input type="checkbox" id="cloneBackup" checked disabled />
-            <span data-translate="modals.clone_profile.create_backup">Create Backup (.zip)</span>
-          </label>
-        </div>
-
-        <div class="modal-actions">
-          <button id="modalCloneCancel" data-translate="modals.cancel">Cancel</button>
-          <button id="modalCloneApply" class="apply" data-translate="modals.clone_profile.clone_button">Clone</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Nur noch main.js als Modul laden. Es kümmert sich um den Import der anderen Skripte. -->
-    <script type="module" src="main.js" defer></script>
+    <script type="module" src="/modules/launcher/main.js"></script>
   </body>
 </html>

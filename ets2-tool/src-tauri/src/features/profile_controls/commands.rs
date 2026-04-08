@@ -1,9 +1,8 @@
-use tauri::command;
-use std::path::Path;
-use std::fs;
-use fs_extra::dir::copy;
 use crate::dev_log;
-
+use fs_extra::dir::copy;
+use std::fs;
+use std::path::Path;
+use tauri::command;
 
 #[command]
 pub fn copy_profile_controls(
@@ -45,7 +44,7 @@ pub fn copy_profile_controls(
     fs::copy(&source_controls, &target_controls)
         .map_err(|e| format!("Kopieren von controls.sii fehlgeschlagen: {}", e))?;
 
-    // #TODO <- Muss ein Show toast noch anzeigen! 
+    // #TODO <- Muss ein Show toast noch anzeigen!
 
     Ok("controls.sii erfolgreich kopiert".into())
 }
