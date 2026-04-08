@@ -20,7 +20,7 @@
         <button id="refreshCareerBtn" type="button" class="career-topbar-btn" data-translate="career_mode.refresh">Refresh</button>
         <button id="openSaveEditorBtn" type="button" class="career-topbar-btn" data-translate="launcher.editor.title">Save Edit Tool</button>
         <button id="openLauncherBtn" type="button" class="career-topbar-btn" data-translate="career_mode.open_launcher">Open Launcher</button>
-        <div class="career-user-menu">
+        <div class="career-user-menu" id="userMenuButton">
           <button id="careerUserMenuBtn" class="career-user-menu-btn" type="button" aria-haspopup="true" aria-expanded="false">
             <span class="career-user-menu-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -34,14 +34,65 @@
             </span>
           </button>
           <div id="careerUserMenuDropdown" class="career-user-menu-dropdown" hidden>
-            <div class="career-user-menu-head">
-              <strong id="careerUserMenuIdentity">-</strong>
-              <span id="careerUserMenuState">-</span>
+            <div id="userDropdown" class="career-user-dropdown">
+              <div id="userDropdownHeader" class="career-user-dropdown-head">
+                <div class="career-user-dropdown-identity">
+                  <strong id="careerUserMenuIdentity">-</strong>
+                  <span id="careerUserMenuState">-</span>
+                </div>
+                <button id="careerUserMenuClose" class="career-icon-btn" type="button" aria-label="Close">
+                  <svg viewBox="0 0 20 20" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                </button>
+              </div>
+
+              <div id="userDropdownMeta" class="career-user-dropdown-meta">
+                <div class="career-user-meta-row">
+                  <span data-translate="career.user_menu.account">Account</span>
+                  <strong id="userDropdownName">-</strong>
+                </div>
+                <div class="career-user-meta-row">
+                  <span data-translate="career_mode.member_role">Role</span>
+                  <strong id="userRolePreview">-</strong>
+                </div>
+                <div class="career-user-meta-row">
+                  <span data-translate="career.hero.company_label">Company</span>
+                  <strong id="userCompanyPreview">-</strong>
+                </div>
+                <div class="career-user-meta-row">
+                  <span data-translate="career.portal.level_label">Level</span>
+                  <strong id="userLevelPreview">-</strong>
+                </div>
+                <div class="career-user-meta-row">
+                  <span data-translate="career.portal.xp_label">XP</span>
+                  <strong id="userXpPreview">-</strong>
+                </div>
+              </div>
+
+              <div id="userDropdownLogin" class="career-user-dropdown-login">
+                <label class="career-user-auth-field">
+                  <span data-translate="career.auth.email_label">Email</span>
+                  <input id="careerUserLoginEmail" type="email" autocomplete="username" />
+                </label>
+                <label class="career-user-auth-field">
+                  <span data-translate="career.auth.password_label">Password</span>
+                  <input id="careerUserLoginPassword" type="password" autocomplete="current-password" />
+                </label>
+                <p id="careerUserLoginError" class="career-user-auth-error"></p>
+                <div class="career-user-auth-actions">
+                  <button id="careerUserLoginSubmit" class="career-action-btn" type="button" data-translate="career.auth.login_button">Login</button>
+                  <button id="careerUserLoginCancel" class="career-topbar-btn" type="button" data-translate="career.auth.cancel">Cancel</button>
+                </div>
+                <button id="careerUserMenuLogin" class="career-user-menu-item" type="button" data-translate="career_mode.open_launcher">Open Launcher</button>
+              </div>
+
+              <div id="userDropdownActions" class="career-user-dropdown-actions">
+                <button id="careerUserMenuProfile" class="career-user-menu-item" type="button" data-translate="career.user_menu.account">Account</button>
+                <button id="careerUserMenuSettings" class="career-user-menu-item" type="button" data-translate="career.nav.dashboard">Career Panel</button>
+                <button id="careerUserMenuLogout" class="career-user-menu-item" type="button" data-translate="career.user_menu.logout" hidden>Logout</button>
+              </div>
             </div>
-            <button id="careerUserMenuLogin" class="career-user-menu-item" type="button" data-translate="career.user_menu.login">Login</button>
-            <button id="careerUserMenuProfile" class="career-user-menu-item" type="button" data-translate="career.user_menu.profile">Profile</button>
-            <button id="careerUserMenuSettings" class="career-user-menu-item" type="button" data-translate="career.user_menu.settings">Settings</button>
-            <button id="careerUserMenuLogout" class="career-user-menu-item" type="button" data-translate="career.user_menu.logout" hidden>Logout</button>
           </div>
         </div>
       </div>
@@ -112,54 +163,139 @@
             <p data-translate="career_mode.dashboard_summary">Core company metrics, profile context and latest activity.</p>
           </div>
 
-          <div class="career-card-grid">
-            <article class="career-metric-card">
-              <span data-translate="career.hero.company_label">Company</span>
-              <strong id="cmCompanyName">-</strong>
-            </article>
-            <article class="career-metric-card">
-              <span data-translate="career.hero.balance_label">Balance</span>
-              <strong id="cmBalance">EUR 0</strong>
-            </article>
-            <article class="career-metric-card">
-              <span data-translate="career.portal.level_label">Level</span>
-              <strong id="cmLevel">L0</strong>
-            </article>
-            <article class="career-metric-card">
-              <span data-translate="career.portal.xp_label">XP</span>
-              <strong id="cmXp">0</strong>
-            </article>
-            <article class="career-metric-card">
-              <span data-translate="career_mode.drivers">Driver Status</span>
-              <strong id="cmDriverStatus">-</strong>
-            </article>
-            <article class="career-metric-card">
-              <span data-translate="career_mode.last_trip">Last Trip</span>
-              <strong id="cmLastTrip">-</strong>
-            </article>
-          </div>
+          <div class="career-dashboard-layout">
+            <div class="career-dashboard-main">
+              <section id="careerLevelCard" class="career-card career-card--highlight">
+                <div class="career-level-card">
+                  <div class="career-level-badge">
+                    <span data-translate="career.portal.level_label">Level</span>
+                    <strong id="careerLevelValue">-</strong>
+                  </div>
+                  <div class="career-level-meta">
+                    <div class="career-level-stat">
+                      <span data-translate="career.portal.xp_label">XP</span>
+                      <strong id="careerXpTotal">-</strong>
+                    </div>
+                    <div class="career-level-stat">
+                      <span data-translate="career.portal.progress_next">Next level</span>
+                      <strong id="careerXpRemaining">-</strong>
+                    </div>
+                    <div class="career-level-progress">
+                      <div class="career-level-progress-head">
+                        <span id="careerXpCurrent">-</span>
+                        <span class="career-level-progress-sep">/</span>
+                        <span id="careerXpNext">-</span>
+                      </div>
+                      <div class="career-progress-bar">
+                        <div id="careerXpProgressFill" class="career-progress-fill" style="width: 0%;"></div>
+                      </div>
+                      <div class="career-level-progress-meta">
+                        <span data-translate="career.portal.xp_label">XP</span>
+                        <span id="careerXpPercent">-</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
 
-          <div class="career-two-col">
-            <section class="career-widget">
-              <h3 data-translate="career_mode.quick_overview">Quick Overview</h3>
-              <ul id="cmQuickOverviewList" class="career-list"></ul>
-            </section>
-            <section class="career-widget">
-              <h3 data-translate="career_mode.latest_jobs">Latest Jobs</h3>
-              <div class="career-table-wrap">
-                <table class="career-table">
-                  <thead>
-                    <tr>
-                      <th data-translate="career.jobs_logbook.cargo">Cargo</th>
-                      <th data-translate="career.jobs_logbook.route">Route</th>
-                      <th data-translate="career.jobs_logbook.income">Income</th>
-                      <th data-translate="career.jobs_logbook.status">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody id="cmLatestJobsBody"></tbody>
-                </table>
+              <div class="career-kpi-grid">
+                <article class="career-metric-card">
+                  <span data-translate="career.hero.company_label">Company</span>
+                  <strong id="cmCompanyName">-</strong>
+                </article>
+                <article class="career-metric-card">
+                  <span data-translate="career.hero.balance_label">Balance</span>
+                  <strong id="cmBalance">EUR 0</strong>
+                </article>
+                <article class="career-metric-card">
+                  <span data-translate="career_mode.drivers">Driver Status</span>
+                  <strong id="cmDriverStatus">-</strong>
+                </article>
+                <article class="career-metric-card">
+                  <span data-translate="career_mode.last_trip">Last Trip</span>
+                  <strong id="cmLastTrip">-</strong>
+                </article>
               </div>
-            </section>
+
+              <div class="career-two-col">
+                <section class="career-widget">
+                  <h3 data-translate="career_mode.quick_overview">Quick Overview</h3>
+                  <ul id="cmQuickOverviewList" class="career-list"></ul>
+                </section>
+                <section class="career-widget">
+                  <h3 data-translate="career_mode.latest_jobs">Latest Jobs</h3>
+                  <div class="career-table-wrap">
+                    <table class="career-table">
+                      <thead>
+                        <tr>
+                          <th data-translate="career.jobs_logbook.cargo">Cargo</th>
+                          <th data-translate="career.jobs_logbook.route">Route</th>
+                          <th data-translate="career.jobs_logbook.income">Income</th>
+                          <th data-translate="career.jobs_logbook.status">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody id="cmLatestJobsBody"></tbody>
+                    </table>
+                  </div>
+                </section>
+              </div>
+            </div>
+
+            <aside class="career-dashboard-side">
+              <section class="career-card">
+                <div class="career-card-head">
+                  <h3 data-translate="career.nav.balance">Balance</h3>
+                  <p data-translate="career_mode.finance_summary">Income, operating costs and estimated value impact.</p>
+                </div>
+                <div class="career-stat-list">
+                  <div class="career-stat-row">
+                    <span data-translate="career.dashboard.live_income">Live revenue</span>
+                    <strong id="careerDashboardIncome">EUR 0</strong>
+                  </div>
+                  <div class="career-stat-row">
+                    <span data-translate="career.dashboard.fuel_cost">Fuel costs</span>
+                    <strong id="careerDashboardFuel">EUR 0</strong>
+                  </div>
+                  <div class="career-stat-row">
+                    <span data-translate="career.dashboard.repair_cost">Repair costs</span>
+                    <strong id="careerDashboardRepair">EUR 0</strong>
+                  </div>
+                  <div class="career-stat-row">
+                    <span data-translate="career.dashboard.toll_cost">Toll costs</span>
+                    <strong id="careerDashboardToll">EUR 0</strong>
+                  </div>
+                </div>
+              </section>
+
+              <section class="career-card">
+                <div class="career-card-head">
+                  <h3 data-translate="career.jobs.active.title">Current job</h3>
+                </div>
+                <div id="careerActiveJobEmpty" class="career-empty" data-translate="career.jobs.active.none">No active job</div>
+                <div id="careerActiveJobCard" class="career-active-job" hidden>
+                  <div class="career-active-job-row">
+                    <span data-translate="career.jobs_logbook.route">Route</span>
+                    <strong id="careerActiveJobRoute">-</strong>
+                  </div>
+                  <div class="career-active-job-row">
+                    <span data-translate="career.jobs_logbook.cargo">Cargo</span>
+                    <strong id="careerActiveJobCargo">-</strong>
+                  </div>
+                  <div class="career-active-job-row">
+                    <span data-translate="career.jobs.fields.distance">Planned Distance</span>
+                    <strong id="careerActiveJobDistance">-</strong>
+                  </div>
+                  <div class="career-active-job-row">
+                    <span data-translate="career.jobs.fields.income">Expected Income</span>
+                    <strong id="careerActiveJobIncome">-</strong>
+                  </div>
+                  <div class="career-active-job-row">
+                    <span data-translate="career.jobs.fields.time_remaining">Time remaining</span>
+                    <strong id="careerActiveJobEta">-</strong>
+                  </div>
+                </div>
+              </section>
+            </aside>
           </div>
         </section>
 

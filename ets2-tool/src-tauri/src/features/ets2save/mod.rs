@@ -1,3 +1,4 @@
+pub mod dispatcher;
 pub mod errors;
 pub mod injector;
 pub mod link_service;

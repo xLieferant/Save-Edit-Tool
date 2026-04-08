@@ -2,7 +2,8 @@ use std::collections::{HashMap, HashSet};
 
 use crate::features::ets2save::errors::{AppError, AppErrorCode};
 use crate::features::ets2save::models::{
-    EtsJobOfferPatch, SaveDepotBlock, SaveJobInfoSnapshot, SaveJobOfferData, SaveJobOfferPointer,
+    ActiveJobData, Ets2JobState, EtsJobOfferPatch, JobOfferData, SaveDepotBlock,
+    SaveJobInfoSnapshot, SaveJobOfferData, SaveJobOfferPointer,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -34,6 +35,7 @@ pub struct SaveTemplateScan {
     pub visited_cities: Vec<String>,
     pub transported_cargo_tokens: Vec<String>,
     pub selected_job_pointer: Option<String>,
+    pub job_state: Option<Ets2JobState>,
 }
 
 pub fn sii_token(value: &str) -> String {
@@ -181,14 +183,11 @@ pub fn scan_save_templates(lines: &[String]) -> SaveTemplateScan {
         .into_iter()
         .map(|value| sii_token(value.trim_start_matches("cargo.")))
         .collect::<Vec<_>>();
-    let selected_job_pointer = lines.iter().map(|line| line.trim()).find_map(|trimmed| {
-        if !trimmed.starts_with("selected_job:") {
-            return None;
-        }
-        trimmed
-            .split_once(':')
-            .map(|(_, value)| value.trim().to_string())
-    });
+    let job_state = parse_player_job_state(lines);
+    let selected_job_pointer = match &job_state {
+        Some(Ets2JobState::Selected(job)) => Some(job.pointer.clone()),
+        _ => None,
+    };
 
     SaveTemplateScan {
         depots,
@@ -199,6 +198,7 @@ pub fn scan_save_templates(lines: &[String]) -> SaveTemplateScan {
         visited_cities,
         transported_cargo_tokens,
         selected_job_pointer,
+        job_state,
     }
 }
 
@@ -369,6 +369,92 @@ fn parse_job_info_units(lines: &[String]) -> Vec<SaveJobInfoSnapshot> {
         index = end + 1;
     }
     out
+}
+
+pub fn parse_player_job_state(lines: &[String]) -> Option<Ets2JobState> {
+    let player_range = find_player_block_range(lines)?;
+    let current_job = extract_non_nil_field(lines, player_range, "current_job");
+    if let Some(pointer) = current_job {
+        return parse_player_job_data(lines, &pointer).map(Ets2JobState::Active);
+    }
+    if let Some(pointer) = extract_non_nil_field(lines, player_range, "selected_job") {
+        return parse_job_info_data(lines, &pointer).map(Ets2JobState::Selected);
+    }
+    Some(Ets2JobState::None)
+}
+
+pub fn find_player_block_range(lines: &[String]) -> Option<UnitRange> {
+    find_unit_range(lines, "player :")
+}
+
+pub fn parse_job_info_data(lines: &[String], pointer: &str) -> Option<JobOfferData> {
+    let range = find_job_info_block(lines, pointer).ok()?;
+    Some(JobOfferData {
+        pointer: pointer.to_string(),
+        cargo: extract_non_nil_field(lines, range, "cargo"),
+        source_company: extract_non_nil_field(lines, range, "source_company"),
+        target_company: extract_non_nil_field(lines, range, "target_company"),
+        planned_distance_km: parse_i64_field(lines, range, "planned_distance_km"),
+        urgency: parse_i64_field(lines, range, "urgency"),
+        cargo_model_index: parse_i64_field(lines, range, "cargo_model_index"),
+        is_cargo_market_job: parse_bool_field(lines, range, "is_cargo_market_job"),
+        units_count: parse_i64_field(lines, range, "units_count"),
+        fill_ratio: parse_i64_field(lines, range, "fill_ratio"),
+    })
+}
+
+fn parse_player_job_data(lines: &[String], pointer: &str) -> Option<ActiveJobData> {
+    let token = format!("player_job : {}", pointer);
+    let range = find_unit_range(lines, &token)?;
+    Some(ActiveJobData {
+        pointer: pointer.to_string(),
+        company_truck: extract_non_nil_field(lines, range, "company_truck"),
+        company_trailer: extract_non_nil_field(lines, range, "company_trailer"),
+        cargo: extract_non_nil_field(lines, range, "cargo"),
+        source_company: extract_non_nil_field(lines, range, "source_company"),
+        target_company: extract_non_nil_field(lines, range, "target_company"),
+        planned_distance_km: parse_i64_field(lines, range, "planned_distance_km"),
+        urgency: parse_i64_field(lines, range, "urgency"),
+        total_fines: parse_i64_field(lines, range, "total_fines"),
+        time_lower_limit: parse_i64_field(lines, range, "time_lower_limit"),
+        time_upper_limit: parse_i64_field(lines, range, "time_upper_limit"),
+        start_time: parse_i64_field(lines, range, "start_time"),
+        is_trailer_loaded: parse_bool_field(lines, range, "is_trailer_loaded"),
+        autoload_used: parse_bool_field(lines, range, "autoload_used"),
+        is_cargo_market_job: parse_bool_field(lines, range, "is_cargo_market_job"),
+        selected_target: extract_non_nil_field(lines, range, "selected_target"),
+        cargo_model_index: parse_i64_field(lines, range, "cargo_model_index"),
+        units_count: parse_i64_field(lines, range, "units_count"),
+        fill_ratio: parse_i64_field(lines, range, "fill_ratio"),
+    })
+}
+
+fn extract_non_nil_field(lines: &[String], range: UnitRange, field: &str) -> Option<String> {
+    extract_field_value(lines, range, field).and_then(|value| {
+        let normalized = value.trim();
+        if normalized.eq_ignore_ascii_case("nil")
+            || normalized.eq_ignore_ascii_case("null")
+            || normalized.is_empty()
+        {
+            None
+        } else {
+            Some(normalized.to_string())
+        }
+    })
+}
+
+fn parse_i64_field(lines: &[String], range: UnitRange, field: &str) -> Option<i64> {
+    extract_non_nil_field(lines, range, field).and_then(|value| value.parse::<i64>().ok())
+}
+
+fn parse_bool_field(lines: &[String], range: UnitRange, field: &str) -> Option<bool> {
+    extract_non_nil_field(lines, range, field).and_then(|value| {
+        match value.to_lowercase().as_str() {
+            "true" => Some(true),
+            "false" => Some(false),
+            _ => None,
+        }
+    })
 }
 
 fn parse_array_values(lines: &[String], prefix: &str) -> Vec<String> {
@@ -719,6 +805,8 @@ mod tests {
                 trailer_place: 0,
                 job_info_unit: None,
                 selected_job_unit: None,
+                company_trailer_pointer: None,
+                company_truck_pointer: None,
             },
         );
 

@@ -15,6 +15,7 @@ mod features;
 mod models;
 mod shared; // ehemals utils
 mod state; // ehemals commands (aufgeteilt)
+mod xp;
 
 fn main() {
     std::panic::set_hook(Box::new(|info| {

@@ -145,6 +145,50 @@ pub struct SaveJobInfoSnapshot {
     pub fill_ratio: Option<i64>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct JobOfferData {
+    pub pointer: String,
+    pub cargo: Option<String>,
+    pub source_company: Option<String>,
+    pub target_company: Option<String>,
+    pub planned_distance_km: Option<i64>,
+    pub urgency: Option<i64>,
+    pub cargo_model_index: Option<i64>,
+    pub is_cargo_market_job: Option<bool>,
+    pub units_count: Option<i64>,
+    pub fill_ratio: Option<i64>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ActiveJobData {
+    pub pointer: String,
+    pub company_truck: Option<String>,
+    pub company_trailer: Option<String>,
+    pub cargo: Option<String>,
+    pub source_company: Option<String>,
+    pub target_company: Option<String>,
+    pub planned_distance_km: Option<i64>,
+    pub urgency: Option<i64>,
+    pub total_fines: Option<i64>,
+    pub time_lower_limit: Option<i64>,
+    pub time_upper_limit: Option<i64>,
+    pub start_time: Option<i64>,
+    pub is_trailer_loaded: Option<bool>,
+    pub autoload_used: Option<bool>,
+    pub is_cargo_market_job: Option<bool>,
+    pub selected_target: Option<String>,
+    pub cargo_model_index: Option<i64>,
+    pub units_count: Option<i64>,
+    pub fill_ratio: Option<i64>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Ets2JobState {
+    None,
+    Selected(JobOfferData),
+    Active(ActiveJobData),
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct DispatcherResolvedSaveLink {
@@ -267,6 +311,8 @@ pub struct EtsJobOfferPatch {
     pub trailer_place: i64,
     pub job_info_unit: Option<String>,
     pub selected_job_unit: Option<String>,
+    pub company_trailer_pointer: Option<String>,
+    pub company_truck_pointer: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]

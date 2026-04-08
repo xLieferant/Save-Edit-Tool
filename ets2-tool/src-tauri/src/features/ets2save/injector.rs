@@ -2,11 +2,13 @@ use std::path::{Path, PathBuf};
 
 use crate::features::ets2save::errors::AppError;
 use crate::features::ets2save::models::{
-    EtsJobOfferPatch, PostWriteOfferSlotScan, PostWriteValidationResult, VtcDispatcherJob,
+    Ets2JobState, EtsJobOfferPatch, JobOfferData, PostWriteOfferSlotScan,
+    PostWriteValidationResult, VtcDispatcherJob,
 };
 use crate::features::ets2save::parser::{
     UnitRange, extract_field_value, extract_in_game_time, find_company_block,
-    find_job_offer_data_block, patch_job_offer_data, sii_token,
+    find_job_offer_data_block, find_player_block_range, parse_job_info_data,
+    parse_player_job_state, patch_job_offer_data, sii_token,
 };
 use crate::features::ets2save::post_write_validator::{select_offer_slot, validate_written_job};
 use crate::features::ets2save::sii_codec::{decode_sii_lines, write_lines_atomic};
@@ -56,6 +58,8 @@ pub fn build_offer_patch(
         trailer_place: 0,
         job_info_unit: Some(job_info_unit.clone()),
         selected_job_unit: None,
+        company_trailer_pointer: None,
+        company_truck_pointer: None,
     }
 }
 
@@ -83,7 +87,7 @@ pub fn write_job_offer_patch(
     let offer_data_range = find_job_offer_data_block(&lines, &offer_pointer)?;
 
     patch_job_offer_data(&mut lines, offer_data_range, patch);
-    upsert_job_info_unit(&mut lines, patch, &offer_pointer);
+    upsert_job_info_unit(&mut lines, patch, &offer_pointer, src_company, src_city);
     upsert_selected_job(&mut lines, patch);
     ensure_selected_job_nil(&mut lines);
     let player_job_pointer = build_player_job_pointer();
@@ -144,7 +148,13 @@ pub fn write_job_offer_patch(
     })
 }
 
-fn upsert_job_info_unit(lines: &mut Vec<String>, patch: &EtsJobOfferPatch, offer_pointer: &str) {
+fn upsert_job_info_unit(
+    lines: &mut Vec<String>,
+    patch: &EtsJobOfferPatch,
+    offer_pointer: &str,
+    src_company: &str,
+    src_city: &str,
+) {
     let Some(job_info_unit) = patch.job_info_unit.as_deref() else {
         return;
     };
@@ -152,7 +162,7 @@ fn upsert_job_info_unit(lines: &mut Vec<String>, patch: &EtsJobOfferPatch, offer
     let header = format!("job_info : {} {{", job_info_unit);
     if let Some(start) = lines.iter().position(|line| line.trim() == header) {
         let range = find_inline_unit(lines, start);
-        set_job_info_fields(lines, range, patch, offer_pointer);
+        set_job_info_fields(lines, range, patch, offer_pointer, src_company, src_city);
         return;
     }
 
@@ -186,11 +196,28 @@ fn set_job_info_fields(
     range: UnitRange,
     patch: &EtsJobOfferPatch,
     offer_pointer: &str,
+    src_company: &str,
+    src_city: &str,
 ) {
     set_or_insert(lines, range, "job_offer_data", offer_pointer);
     set_or_insert(lines, range, "cargo", &patch.cargo);
     set_or_insert(lines, range, "target", &patch.target);
     set_or_insert(lines, range, "urgency", &patch.urgency.to_string());
+    let source_company = format!(
+        "company.volatile.{}.{}",
+        sii_token(src_company),
+        sii_token(src_city)
+    );
+    set_or_insert(lines, range, "source_company", &source_company);
+    set_or_insert(
+        lines,
+        range,
+        "planned_distance_km",
+        &patch.shortest_distance_km.to_string(),
+    );
+    set_or_insert(lines, range, "units_count", &patch.units_count.to_string());
+    set_or_insert(lines, range, "fill_ratio", &patch.fill_ratio.to_string());
+    set_or_insert(lines, range, "is_cargo_market_job", "false");
 }
 
 fn set_or_insert(lines: &mut Vec<String>, range: UnitRange, field: &str, value: &str) {
@@ -226,6 +253,35 @@ fn build_player_job_pointer() -> String {
     format!("_nameless.{}.{}", high, low)
 }
 
+#[derive(Debug)]
+enum JobInjectionMode {
+    QuickJob {
+        truck_pointer: Option<String>,
+        trailer_pointer: String,
+    },
+    OwnTruckCompanyTrailer {
+        trailer_pointer: String,
+    },
+}
+
+impl JobInjectionMode {
+    fn company_truck_value(&self) -> Option<&str> {
+        match self {
+            JobInjectionMode::QuickJob { truck_pointer, .. } => truck_pointer.as_deref(),
+            JobInjectionMode::OwnTruckCompanyTrailer { .. } => None,
+        }
+    }
+
+    fn company_trailer_value(&self) -> &str {
+        match self {
+            JobInjectionMode::QuickJob {
+                trailer_pointer, ..
+            } => trailer_pointer,
+            JobInjectionMode::OwnTruckCompanyTrailer { trailer_pointer } => trailer_pointer,
+        }
+    }
+}
+
 fn insert_player_job_state(
     lines: &mut Vec<String>,
     job_pointer: &str,
@@ -233,6 +289,40 @@ fn insert_player_job_state(
     src_company: &str,
     src_city: &str,
 ) {
+    let player_range = match find_player_block_range(lines) {
+        Some(range) => range,
+        None => return,
+    };
+    let existing_state = parse_player_job_state(lines);
+    let fallback_trailer = resolve_player_trailer(lines, player_range);
+    let trailer_pointer = patch
+        .company_trailer_pointer
+        .clone()
+        .or(fallback_trailer)
+        .or_else(|| match &existing_state {
+            Some(Ets2JobState::Active(job)) => job.company_trailer.clone(),
+            _ => None,
+        })
+        .unwrap_or_else(|| "null".to_string());
+
+    let truck_pointer = patch
+        .company_truck_pointer
+        .clone()
+        .or_else(|| match &existing_state {
+            Some(Ets2JobState::Active(job)) => job.company_truck.clone(),
+            _ => None,
+        });
+    let mode = if patch.company_truck {
+        JobInjectionMode::QuickJob {
+            truck_pointer,
+            trailer_pointer: trailer_pointer.clone(),
+        }
+    } else {
+        JobInjectionMode::OwnTruckCompanyTrailer {
+            trailer_pointer: trailer_pointer.clone(),
+        }
+    };
+
     if let Some(range) = find_unit_range_with_prefix(lines, "player_job :") {
         lines.drain(range.start..=range.end);
     }
@@ -241,34 +331,26 @@ fn insert_player_job_state(
         Some(range) => range,
         None => return,
     };
-
-    let truck_pointer = resolve_player_truck(lines, player_range);
-    let trailer_pointer = resolve_player_trailer(lines, player_range);
-    let trailer_ref = trailer_pointer.as_deref().filter(|value| *value != "null");
-    let truck_ref = truck_pointer.as_deref().filter(|value| *value != "null");
-    let truck_value = truck_ref.unwrap_or("null");
-    let trailer_value = trailer_ref.unwrap_or("null");
-
-    update_player_block(lines, player_range, job_pointer, trailer_value);
+    update_player_block(lines, player_range, job_pointer, trailer_pointer.as_str());
 
     let player_range = match find_player_block_range(lines) {
         Some(range) => range,
         None => return,
     };
     let insert_pos = player_range.end + 1;
+    let job_info_snapshot = patch
+        .job_info_unit
+        .as_deref()
+        .and_then(|pointer| parse_job_info_data(lines, pointer));
     let block_lines = build_player_job_block_lines(
         job_pointer,
-        truck_value,
-        trailer_value,
+        &mode,
         patch,
         src_company,
         src_city,
+        job_info_snapshot.as_ref(),
     );
     lines.splice(insert_pos..insert_pos, block_lines);
-}
-
-fn find_player_block_range(lines: &[String]) -> Option<UnitRange> {
-    find_unit_range_with_prefix(lines, "player :")
 }
 
 fn find_unit_range_with_prefix(lines: &[String], prefix: &str) -> Option<UnitRange> {
@@ -290,12 +372,6 @@ fn find_unit_range_with_prefix(lines: &[String], prefix: &str) -> Option<UnitRan
     }
 
     None
-}
-
-fn resolve_player_truck(lines: &[String], range: UnitRange) -> Option<String> {
-    extract_player_field(lines, range, "assigned_truck")
-        .or_else(|| extract_player_field(lines, range, "my_truck"))
-        .or_else(|| extract_first_array_value(lines, range, "trucks["))
 }
 
 fn resolve_player_trailer(lines: &[String], range: UnitRange) -> Option<String> {
@@ -334,35 +410,73 @@ fn update_player_block(
     set_or_insert(lines, range, "assigned_trailer_connected", "true");
     set_or_insert(lines, range, "my_trailer_attached", "true");
     set_or_insert(lines, range, "my_trailer", trailer);
+    set_or_insert(lines, range, "selected_job", "nil");
 }
 
 fn build_player_job_block_lines(
     pointer: &str,
-    truck: &str,
-    trailer: &str,
+    mode: &JobInjectionMode,
     patch: &EtsJobOfferPatch,
     src_company: &str,
     src_city: &str,
+    job_info: Option<&JobOfferData>,
 ) -> Vec<String> {
-    let source_company = format!(
-        "company.volatile.{}.{}",
-        sii_token(src_company),
-        sii_token(src_city)
-    );
-    vec![
+    let source_company = job_info
+        .and_then(|info| info.source_company.clone())
+        .unwrap_or_else(|| {
+            format!(
+                "company.volatile.{}.{}",
+                sii_token(src_company),
+                sii_token(src_city)
+            )
+        });
+    let target_company = job_info
+        .and_then(|info| info.target_company.clone())
+        .unwrap_or_else(|| format!("company.volatile.{}", patch.target));
+    let cargo_value = job_info
+        .and_then(|info| info.cargo.clone())
+        .unwrap_or_else(|| patch.cargo.clone());
+    let planned_distance = job_info
+        .and_then(|info| info.planned_distance_km)
+        .unwrap_or(patch.shortest_distance_km);
+    let urgency_value = job_info
+        .and_then(|info| info.urgency)
+        .unwrap_or(patch.urgency);
+    let is_cargo_market_job = job_info
+        .and_then(|info| info.is_cargo_market_job)
+        .unwrap_or(false);
+    let units_count = job_info
+        .and_then(|info| info.units_count)
+        .unwrap_or(patch.units_count);
+    let fill_ratio = job_info
+        .and_then(|info| info.fill_ratio)
+        .unwrap_or(patch.fill_ratio);
+    let cargo_model_index_line = job_info
+        .and_then(|info| info.cargo_model_index)
+        .map(|value| format!(" cargo_model_index: {}", value));
+    let mut lines = vec![
         format!("player_job : {} {{", pointer),
-        format!(" company_truck: {}", truck),
-        format!(" company_trailer: {}", trailer),
-        format!(" cargo: {}", patch.cargo),
+        format!(
+            " company_truck: {}",
+            mode.company_truck_value().unwrap_or("null")
+        ),
+        format!(" company_trailer: {}", mode.company_trailer_value()),
+        format!(" cargo: {}", cargo_value),
         format!(" source_company: {}", source_company),
-        format!(" target_company: {}", patch.target),
-        format!(" planned_distance_km: {}", patch.shortest_distance_km),
-        format!(" urgency: {}", patch.urgency),
-        " is_cargo_market_job: false".to_string(),
+        format!(" target_company: {}", target_company),
+        format!(" planned_distance_km: {}", planned_distance),
+        format!(" urgency: {}", urgency_value),
+        format!(" is_cargo_market_job: {}", is_cargo_market_job),
         " is_trailer_loaded: true".to_string(),
         " autoload_used: true".to_string(),
-        "}".to_string(),
-    ]
+        format!(" units_count: {}", units_count),
+        format!(" fill_ratio: {}", fill_ratio),
+    ];
+    if let Some(line) = cargo_model_index_line {
+        lines.push(line);
+    }
+    lines.push("}".to_string());
+    lines
 }
 
 fn find_inline_unit(lines: &[String], start: usize) -> UnitRange {

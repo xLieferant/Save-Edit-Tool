@@ -94,6 +94,9 @@ const uiText = {
   userMenuAccount: "Account",
   userMenuLogin: "Login",
   userMenuNotLoggedIn: "Not logged in",
+  levelLabel: "Level",
+  xpLabel: "XP",
+  progressNext: "Next level",
 };
 
 function formatNumber(value, digits = 0) {
@@ -143,6 +146,37 @@ function formatRelativeTime(value) {
   if (hours <= 0) return `${minutes} min`;
   if (minutes <= 0) return `${hours} h`;
   return `${hours} h ${minutes} min`;
+}
+
+function normalizeNumber(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function normalizeCareerProgress(progress, overview) {
+  const reputation = overview?.reputation || {};
+  const source = progress || overview?.levelProgress || overview?.level_progress || null;
+  const level = normalizeNumber(source?.level ?? reputation.level);
+  const totalXp = normalizeNumber(source?.totalXp ?? source?.total_xp ?? reputation.xpPoints);
+  const xpIntoLevel = normalizeNumber(source?.xpIntoLevel ?? source?.xp_into_level);
+  const xpNeededForNextLevel = normalizeNumber(
+    source?.xpNeededForNextLevel ?? source?.xp_needed_for_next_level
+  );
+  const progressPercent = normalizeNumber(
+    source?.progressPercent ?? source?.progress_percent
+  );
+  let xpRemaining = normalizeNumber(source?.xpRemaining ?? source?.xp_remaining);
+  if (xpRemaining == null && xpIntoLevel != null && xpNeededForNextLevel != null) {
+    xpRemaining = Math.max(0, xpNeededForNextLevel - xpIntoLevel);
+  }
+  return {
+    level,
+    totalXp,
+    xpIntoLevel,
+    xpNeededForNextLevel,
+    progressPercent,
+    xpRemaining,
+  };
 }
 
 function formatPathReference(value) {
@@ -458,6 +492,92 @@ async function resolveErrorMessage(rawError) {
   return translated;
 }
 
+function renderCareerLevelCard(progress, overview) {
+  const card = document.getElementById("careerLevelCard");
+  const normalized = normalizeCareerProgress(progress, overview);
+  const hasLevel = normalized.level != null;
+  const hasTotal = normalized.totalXp != null;
+  let percent = normalized.progressPercent;
+  if (
+    percent == null
+    && normalized.xpIntoLevel != null
+    && normalized.xpNeededForNextLevel != null
+    && normalized.xpNeededForNextLevel > 0
+  ) {
+    percent = (normalized.xpIntoLevel / normalized.xpNeededForNextLevel) * 100;
+  }
+  const hasProgress = percent != null;
+
+  if (card) {
+    card.classList.toggle("is-empty", !hasLevel && !hasTotal);
+  }
+
+  setCellText(
+    "careerLevelValue",
+    normalized.level != null ? `${Math.round(normalized.level)}` : uiText.noData
+  );
+  setCellText(
+    "careerXpTotal",
+    normalized.totalXp != null ? formatNumber(normalized.totalXp, 0) : uiText.noData
+  );
+  setCellText(
+    "careerXpCurrent",
+    normalized.xpIntoLevel != null ? formatNumber(normalized.xpIntoLevel, 0) : uiText.noData
+  );
+  setCellText(
+    "careerXpNext",
+    normalized.xpNeededForNextLevel != null
+      ? formatNumber(normalized.xpNeededForNextLevel, 0)
+      : uiText.noData
+  );
+  setCellText(
+    "careerXpPercent",
+    hasProgress ? `${formatNumber(percent, 0)}%` : uiText.noData
+  );
+  setCellText(
+    "careerXpRemaining",
+    normalized.xpRemaining != null
+      ? `${formatNumber(normalized.xpRemaining, 0)} ${uiText.xpLabel}`
+      : uiText.noData
+  );
+
+  const progressFill = document.getElementById("careerXpProgressFill");
+  if (progressFill) {
+    const width = hasProgress ? Math.max(0, Math.min(100, percent)) : 0;
+    progressFill.style.width = `${width}%`;
+  }
+}
+
+function renderUserDropdownProfile(account) {
+  const meta = document.getElementById("userDropdownMeta");
+  const loginPanel = document.getElementById("userDropdownLogin");
+  const actions = document.getElementById("userDropdownActions");
+  const hasAccount = Boolean(account);
+
+  if (meta) meta.hidden = !hasAccount;
+  if (loginPanel) loginPanel.hidden = hasAccount;
+  if (actions) actions.hidden = !hasAccount;
+
+  setCellText("userDropdownName", account?.username || uiText.userMenuNotLoggedIn);
+  setCellText("userRolePreview", account?.role || uiText.userMenuAccount);
+  setCellText("userCompanyPreview", account?.companyName || uiText.noData);
+  setCellText(
+    "userLevelPreview",
+    account?.level != null ? `L${formatNumber(account.level, 0)}` : uiText.noData
+  );
+  setCellText(
+    "userXpPreview",
+    account?.totalXp != null ? formatNumber(account.totalXp, 0) : uiText.noData
+  );
+}
+
+function updateCareerDashboardLayout() {
+  const levelCard = document.getElementById("careerLevelCard");
+  const levelValue = document.getElementById("careerLevelValue");
+  if (!levelCard || !levelValue) return;
+  levelCard.classList.toggle("is-empty", levelValue.textContent === uiText.noData);
+}
+
 async function invokeStrict(command, args = {}) {
   if (!hasTauri) {
     throw new Error("not_allowed");
@@ -595,21 +715,55 @@ function renderDashboard() {
 
   const companyName = state.companyOverview?.name || overview.economy?.companyName || uiText.noData;
   const balance = overview.bank?.cashBalance || 0;
-  const level = overview.reputation?.level || 0;
-  const xp = overview.reputation?.xpPoints || 0;
   const onDuty = overview.employeeOverview?.onDuty ?? 0;
   const resting = overview.employeeOverview?.resting ?? 0;
   const lastTrip = overview.recentJobs?.[0];
+  const dashboard = overview.dashboard || {};
+  const jobStats = state.jobStats || overview.jobStats || {};
 
   setCellText("cmCompanyName", companyName);
   setCellText("cmBalance", formatCurrency(balance));
-  setCellText("cmLevel", `L${level}`);
-  setCellText("cmXp", formatNumber(xp, 0));
   setCellText("cmDriverStatus", `${onDuty} / ${resting}`);
   setCellText(
     "cmLastTrip",
     lastTrip ? `${lastTrip.originCity || "-"} -> ${lastTrip.destinationCity || "-"}` : uiText.noData
   );
+
+  renderCareerLevelCard(overview.levelProgress || overview.level_progress || null, overview);
+
+  setCellText("careerDashboardIncome", formatCurrency(dashboard.liveIncome || jobStats.totalIncome || 0));
+  setCellText("careerDashboardFuel", formatCurrency(dashboard.fuelCost || 0));
+  setCellText("careerDashboardRepair", formatCurrency(dashboard.repairCost || 0));
+  setCellText("careerDashboardToll", formatCurrency(dashboard.tollCost || 0));
+
+  const activeJob = overview.activeJob || overview.currentJob || null;
+  const activeJobCard = document.getElementById("careerActiveJobCard");
+  const activeJobEmpty = document.getElementById("careerActiveJobEmpty");
+  if (activeJob) {
+    if (activeJobCard) activeJobCard.hidden = false;
+    if (activeJobEmpty) activeJobEmpty.hidden = true;
+    const route = `${activeJob.originCity || activeJob.origin || "-"} -> ${activeJob.destinationCity || activeJob.destination || "-"}`;
+    const plannedDistance = activeJob.plannedDistanceKm || activeJob.planned_distance_km || activeJob.distanceKm || 0;
+    const ingameIncome = activeJob.ingameIncome ?? activeJob.income ?? activeJob.payout ?? 0;
+    const expectedIncome = activeJob.vtcExpectedIncome ?? activeJob.vtc_expected_income ?? ingameIncome;
+    const remaining = activeJob.remainingTimeMin != null
+      ? formatMinutes(activeJob.remainingTimeMin)
+      : `${formatNumber(activeJob.deliveryEtaHours || 0, 0)} h`;
+
+    setCellText("careerActiveJobRoute", route);
+    setCellText("careerActiveJobCargo", activeJob.cargo || "-");
+    setCellText("careerActiveJobDistance", formatDistance(plannedDistance));
+    setCellText("careerActiveJobIncome", formatCurrency(expectedIncome));
+    setCellText("careerActiveJobEta", remaining);
+  } else {
+    if (activeJobCard) activeJobCard.hidden = true;
+    if (activeJobEmpty) activeJobEmpty.hidden = false;
+    setCellText("careerActiveJobRoute", uiText.noData);
+    setCellText("careerActiveJobCargo", uiText.noData);
+    setCellText("careerActiveJobDistance", uiText.noData);
+    setCellText("careerActiveJobIncome", uiText.noData);
+    setCellText("careerActiveJobEta", uiText.noData);
+  }
 
   const overviewList = document.getElementById("cmQuickOverviewList");
   if (overviewList) {
@@ -636,6 +790,7 @@ function renderDashboard() {
   });
 
   setTableRows("cmLatestJobsBody", latestRows, uiText.noData, 4);
+  updateCareerDashboardLayout();
 }
 
 function renderMembers() {
@@ -1938,6 +2093,15 @@ function renderUserMenu() {
   const displayName = user
     ? (user.username || user.email || uiText.userMenuAccount)
     : uiText.userMenuNotLoggedIn;
+  const accountPreview = user
+    ? {
+        username: user.username || user.email || uiText.userMenuAccount,
+        role: user.role || uiText.userMenuAccount,
+        companyName: state.companyOverview?.name || state.overview?.economy?.companyName || uiText.noData,
+        level: state.overview?.reputation?.level ?? null,
+        totalXp: state.overview?.reputation?.xpPoints ?? null,
+      }
+    : null;
 
   setCellText("careerUserMenuLabel", label);
   setCellText("careerUserMenuName", displayName);
@@ -1953,6 +2117,7 @@ function renderUserMenu() {
   if (logoutButton) logoutButton.hidden = !Boolean(user);
   if (profileButton) profileButton.disabled = !Boolean(user);
   if (settingsButton) settingsButton.disabled = false;
+  renderUserDropdownProfile(accountPreview);
   setUserMenuOpen(false);
 }
 
@@ -2281,6 +2446,9 @@ async function loadUiText() {
   uiText.userMenuAccount = await t("career.user_menu.account");
   uiText.userMenuLogin = await t("career.user_menu.login");
   uiText.userMenuNotLoggedIn = await t("career.user_menu.not_logged_in");
+  uiText.levelLabel = await t("career.portal.level_label");
+  uiText.xpLabel = await t("career.portal.xp_label");
+  uiText.progressNext = await t("career.portal.progress_next");
 }
 
 async function refreshCareerTelemetryData() {
@@ -2528,15 +2696,58 @@ async function initNavigation() {
 }
 
 function registerUserMenuHandlers() {
+  const userMenuRoot = document.querySelector(".career-user-menu");
+
   document.getElementById("careerUserMenuBtn")?.addEventListener("click", (event) => {
     event.stopPropagation();
     toggleUserMenu();
+  });
+
+  document.getElementById("careerUserMenuClose")?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setUserMenuOpen(false);
   });
 
   document.getElementById("careerUserMenuLogin")?.addEventListener("click", async () => {
     setUserMenuOpen(false);
     await safeInvoke("hub_set_mode", { mode: "career" }, { silent: true });
     window.location.href = "/index.html";
+  });
+
+  document.getElementById("careerUserLoginCancel")?.addEventListener("click", () => {
+    const error = document.getElementById("careerUserLoginError");
+    if (error) error.textContent = "";
+    setUserMenuOpen(false);
+  });
+
+  document.getElementById("careerUserLoginSubmit")?.addEventListener("click", async () => {
+    const error = document.getElementById("careerUserLoginError");
+    if (error) error.textContent = "";
+    const email = getInputValue("careerUserLoginEmail").trim();
+    const password = document.getElementById("careerUserLoginPassword")?.value || "";
+
+    if (!email) {
+      if (error) error.textContent = await t("career.auth.errors.email_required");
+      return;
+    }
+    if (!password) {
+      if (error) error.textContent = await t("career.auth.errors.password_required");
+      return;
+    }
+
+    const submit = document.getElementById("careerUserLoginSubmit");
+    if (submit) submit.disabled = true;
+    try {
+      await invokeStrict("auth_login", { email, password, rememberMe: true });
+      await refreshAllData();
+      setUserMenuOpen(false);
+      setInputValue("careerUserLoginPassword", "");
+    } catch (err) {
+      if (error) error.textContent = await resolveErrorMessage(err);
+    } finally {
+      if (submit) submit.disabled = false;
+    }
   });
 
   document.getElementById("careerUserMenuProfile")?.addEventListener("click", () => {
@@ -2547,7 +2758,7 @@ function registerUserMenuHandlers() {
 
   document.getElementById("careerUserMenuSettings")?.addEventListener("click", () => {
     setUserMenuOpen(false);
-    switchPanel("settings");
+    switchPanel("dashboard");
   });
 
   document.getElementById("careerUserMenuLogout")?.addEventListener("click", async () => {
@@ -2568,11 +2779,28 @@ function registerUserMenuHandlers() {
     }
   });
 
+  document.getElementById("careerUserMenuDropdown")?.addEventListener("click", (event) => {
+    const interactive = event.target.closest("button, a, input, select, textarea, label");
+    if (interactive) return;
+    setUserMenuOpen(false);
+  });
+
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       setUserMenuOpen(false);
     }
   });
+
+  if (userMenuRoot) {
+    userMenuRoot.addEventListener("mouseleave", () => {
+      setUserMenuOpen(false);
+    });
+    userMenuRoot.addEventListener("focusout", (event) => {
+      if (!userMenuRoot.contains(event.relatedTarget)) {
+        setUserMenuOpen(false);
+      }
+    });
+  }
 
   registerUserMenuAutoHide();
 }

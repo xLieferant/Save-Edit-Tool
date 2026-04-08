@@ -1159,6 +1159,7 @@ dependencies = [
 name = "ets2-tool"
 version = "0.7.0"
 dependencies = [
+ "anyhow",
  "argon2",
  "base64 0.22.1",
  "chrono",
