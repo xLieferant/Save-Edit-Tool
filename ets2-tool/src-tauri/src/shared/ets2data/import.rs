@@ -16,6 +16,12 @@ use crate::shared::ets2data::validate::{validate_cities, validate_companies, val
 
 const DATASET_MIGRATION_SQL: &str =
     include_str!("../../db/migrations/2026-04-06_create_ets2_datasets.sql");
+const EMBEDDED_COUNTRIES_DATASET_JSON: &str =
+    include_str!("../../../../data/ets2/countries.json");
+const EMBEDDED_CITIES_DATASET_JSON: &str =
+    include_str!("../../../../data/ets2/cities.json");
+const EMBEDDED_COMPANIES_DATASET_JSON: &str =
+    include_str!("../../../../data/ets2/companies.json");
 
 pub fn ensure_tables(conn: &Connection) -> Result<(), String> {
     conn.execute_batch(DATASET_MIGRATION_SQL)
@@ -31,13 +37,23 @@ pub fn import_datasets(
     ensure_tables(conn)?;
 
     emit_progress(app, "load_countries", 1, 6);
-    let countries: DatasetFile<CountryRecord> =
-        load_dataset(&repo_root.join("data/ets2/countries.json"))?;
+    let countries: DatasetFile<CountryRecord> = load_dataset_with_fallback(
+        &repo_root.join("data/ets2/countries.json"),
+        "<embedded>/data/ets2/countries.json",
+        EMBEDDED_COUNTRIES_DATASET_JSON,
+    )?;
     emit_progress(app, "load_cities", 2, 6);
-    let cities: DatasetFile<CityRecord> = load_dataset(&repo_root.join("data/ets2/cities.json"))?;
+    let cities: DatasetFile<CityRecord> = load_dataset_with_fallback(
+        &repo_root.join("data/ets2/cities.json"),
+        "<embedded>/data/ets2/cities.json",
+        EMBEDDED_CITIES_DATASET_JSON,
+    )?;
     emit_progress(app, "load_companies", 3, 6);
-    let companies: DatasetFile<CompanyRecord> =
-        load_dataset(&repo_root.join("data/ets2/companies.json"))?;
+    let companies: DatasetFile<CompanyRecord> = load_dataset_with_fallback(
+        &repo_root.join("data/ets2/companies.json"),
+        "<embedded>/data/ets2/companies.json",
+        EMBEDDED_COMPANIES_DATASET_JSON,
+    )?;
 
     validate_countries(&countries.records)?;
     validate_cities(&cities.records, &countries.records)?;
@@ -320,15 +336,31 @@ pub fn find_city_with_fallback(
     Ok(best)
 }
 
-fn load_dataset<T: for<'de> serde::Deserialize<'de>>(
+fn load_dataset_with_fallback<T: for<'de> serde::Deserialize<'de>>(
     path: &Path,
+    fallback_label: &str,
+    fallback_content: &str,
 ) -> Result<DatasetFile<T>, String> {
-    let content = fs::read_to_string(path)
-        .map_err(|error| format!("failed to read {}: {}", path.display(), error))?
-        .trim_start_matches('\u{feff}')
-        .to_string();
-    serde_json::from_str(&content)
-        .map_err(|error| format!("failed to parse {}: {}", path.display(), error))
+    match fs::read_to_string(path) {
+        Ok(content) => parse_dataset_content(&content, &path.display().to_string()),
+        Err(error) => {
+            crate::dev_log!(
+                "[ets2data] dataset read failed for {}: {}. Falling back to embedded dataset.",
+                path.display(),
+                error
+            );
+            parse_dataset_content(fallback_content, fallback_label)
+        }
+    }
+}
+
+fn parse_dataset_content<T: for<'de> serde::Deserialize<'de>>(
+    content: &str,
+    source: &str,
+) -> Result<DatasetFile<T>, String> {
+    let normalized = content.trim_start_matches('\u{feff}');
+    serde_json::from_str(normalized)
+        .map_err(|error| format!("failed to parse {}: {}", source, error))
 }
 
 fn upsert_country(

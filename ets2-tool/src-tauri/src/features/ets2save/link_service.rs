@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use chrono::Utc;
 use rusqlite::{Connection as RusqliteConnection, OptionalExtension};
@@ -32,17 +32,47 @@ use crate::shared::models::save_context::build_save_session_id;
 use crate::shared::sqlite_schema::ensure_columns;
 use crate::state::AppProfileState;
 
-const MIGRATION_FILES: [&str; 10] = [
-    "2026-04-06_create_ets_profiles.sql",
-    "2026-04-06_create_ets_saves.sql",
-    "2026-04-06_create_ets_job_links.sql",
-    "2026-04-06_create_ets_job_link_audit.sql",
-    "2026-04-06_create_vtc_job_ledger.sql",
-    "2026-04-06_create_ets2_datasets.sql",
-    "2026-04-06_create_ets_save_snapshot.sql",
-    "2026-04-06_add_resolved_tokens_to_ets_job_links.sql",
-    "2026-04-06_add_cargo_resolution_to_ets_job_links.sql",
-    "2026-04-07_add_vtc_local_persistence.sql",
+const RUNTIME_MIGRATIONS: [(&str, &str); 10] = [
+    (
+        "2026-04-06_create_ets_profiles.sql",
+        include_str!("../../db/migrations/2026-04-06_create_ets_profiles.sql"),
+    ),
+    (
+        "2026-04-06_create_ets_saves.sql",
+        include_str!("../../db/migrations/2026-04-06_create_ets_saves.sql"),
+    ),
+    (
+        "2026-04-06_create_ets_job_links.sql",
+        include_str!("../../db/migrations/2026-04-06_create_ets_job_links.sql"),
+    ),
+    (
+        "2026-04-06_create_ets_job_link_audit.sql",
+        include_str!("../../db/migrations/2026-04-06_create_ets_job_link_audit.sql"),
+    ),
+    (
+        "2026-04-06_create_vtc_job_ledger.sql",
+        include_str!("../../db/migrations/2026-04-06_create_vtc_job_ledger.sql"),
+    ),
+    (
+        "2026-04-06_create_ets2_datasets.sql",
+        include_str!("../../db/migrations/2026-04-06_create_ets2_datasets.sql"),
+    ),
+    (
+        "2026-04-06_create_ets_save_snapshot.sql",
+        include_str!("../../db/migrations/2026-04-06_create_ets_save_snapshot.sql"),
+    ),
+    (
+        "2026-04-06_add_resolved_tokens_to_ets_job_links.sql",
+        include_str!("../../db/migrations/2026-04-06_add_resolved_tokens_to_ets_job_links.sql"),
+    ),
+    (
+        "2026-04-06_add_cargo_resolution_to_ets_job_links.sql",
+        include_str!("../../db/migrations/2026-04-06_add_cargo_resolution_to_ets_job_links.sql"),
+    ),
+    (
+        "2026-04-07_add_vtc_local_persistence.sql",
+        include_str!("../../db/migrations/2026-04-07_add_vtc_local_persistence.sql"),
+    ),
 ];
 
 pub async fn create_pool(db_path: &std::path::Path) -> Result<SqlitePool, AppError> {
@@ -57,13 +87,6 @@ pub async fn create_pool(db_path: &std::path::Path) -> Result<SqlitePool, AppErr
         .connect_with(options)
         .await?;
     Ok(pool)
-}
-
-fn migration_directory() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("src")
-        .join("db")
-        .join("migrations")
 }
 
 fn run_runtime_migrations(db_path: &Path) -> Result<(), AppError> {
@@ -104,9 +127,8 @@ fn run_runtime_migrations(db_path: &Path) -> Result<(), AppError> {
             format!("begin migration transaction failed: {}", error),
         )
     })?;
-    let migration_dir = migration_directory();
 
-    for filename in MIGRATION_FILES {
+    for (filename, sql) in RUNTIME_MIGRATIONS {
         let already_applied: Option<String> = tx
             .query_row(
                 "SELECT filename FROM ets_feature_migrations WHERE filename = ?1",
@@ -124,17 +146,6 @@ fn run_runtime_migrations(db_path: &Path) -> Result<(), AppError> {
             continue;
         }
 
-        let migration_path = migration_dir.join(filename);
-        let sql = fs::read_to_string(&migration_path).map_err(|error| {
-            AppError::new(
-                AppErrorCode::WriteFailed,
-                format!(
-                    "read migration {} failed: {}",
-                    migration_path.display(),
-                    error
-                ),
-            )
-        })?;
         tx.execute_batch(&sql).map_err(|error| {
             AppError::new(
                 AppErrorCode::WriteFailed,
