@@ -6,20 +6,61 @@ use rusqlite::{Connection as RusqliteConnection, OptionalExtension};
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use sqlx::{Row, SqlitePool};
 
-const MIGRATION_FILES: [&str; 10] = [
-    "2026-04-06_create_ets_profiles.sql",
-    "2026-04-06_create_ets_saves.sql",
-    "2026-04-06_create_ets_job_links.sql",
-    "2026-04-06_create_ets_job_link_audit.sql",
-    "2026-04-06_create_vtc_job_ledger.sql",
-    "2026-04-06_create_ets2_datasets.sql",
-    "2026-04-06_create_ets_save_snapshot.sql",
-    "2026-04-06_add_resolved_tokens_to_ets_job_links.sql",
-    "2026-04-06_add_cargo_resolution_to_ets_job_links.sql",
-    "2026-04-07_add_vtc_local_persistence.sql",
+const APP_RUNTIME_DIR_NAME: &str = "SimNexusHub";
+const RUNTIME_MIGRATIONS: [(&str, &str); 10] = [
+    (
+        "2026-04-06_create_ets_profiles.sql",
+        include_str!("migrations/2026-04-06_create_ets_profiles.sql"),
+    ),
+    (
+        "2026-04-06_create_ets_saves.sql",
+        include_str!("migrations/2026-04-06_create_ets_saves.sql"),
+    ),
+    (
+        "2026-04-06_create_ets_job_links.sql",
+        include_str!("migrations/2026-04-06_create_ets_job_links.sql"),
+    ),
+    (
+        "2026-04-06_create_ets_job_link_audit.sql",
+        include_str!("migrations/2026-04-06_create_ets_job_link_audit.sql"),
+    ),
+    (
+        "2026-04-06_create_vtc_job_ledger.sql",
+        include_str!("migrations/2026-04-06_create_vtc_job_ledger.sql"),
+    ),
+    (
+        "2026-04-06_create_ets2_datasets.sql",
+        include_str!("migrations/2026-04-06_create_ets2_datasets.sql"),
+    ),
+    (
+        "2026-04-06_create_ets_save_snapshot.sql",
+        include_str!("migrations/2026-04-06_create_ets_save_snapshot.sql"),
+    ),
+    (
+        "2026-04-06_add_resolved_tokens_to_ets_job_links.sql",
+        include_str!("migrations/2026-04-06_add_resolved_tokens_to_ets_job_links.sql"),
+    ),
+    (
+        "2026-04-06_add_cargo_resolution_to_ets_job_links.sql",
+        include_str!("migrations/2026-04-06_add_cargo_resolution_to_ets_job_links.sql"),
+    ),
+    (
+        "2026-04-07_add_vtc_local_persistence.sql",
+        include_str!("migrations/2026-04-07_add_vtc_local_persistence.sql"),
+    ),
 ];
 
 pub fn app_db_path() -> PathBuf {
+    app_runtime_dir().join("app.sqlite")
+}
+
+fn app_runtime_dir() -> PathBuf {
+    dirs::data_local_dir()
+        .unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")))
+        .join(APP_RUNTIME_DIR_NAME)
+}
+
+fn legacy_repo_db_path() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()
         .unwrap_or_else(|| Path::new(env!("CARGO_MANIFEST_DIR")))
@@ -29,10 +70,20 @@ pub fn app_db_path() -> PathBuf {
 
 pub async fn init_sqlite() -> Result<SqlitePool, String> {
     let db_path = app_db_path();
+    let legacy_db_path = legacy_repo_db_path();
+
+    crate::dev_log!("[db] Resolved runtime DB path: {}", db_path.display());
+    crate::dev_log!(
+        "[db] Legacy repo DB candidate: {} (exists={})",
+        legacy_db_path.display(),
+        legacy_db_path.exists()
+    );
+
     validate_sqlite_extension(&db_path)?;
     if let Some(parent) = db_path.parent() {
         std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
     }
+    migrate_legacy_db_if_needed(&db_path, &legacy_db_path)?;
     run_runtime_migrations(&db_path)?;
 
     let options = SqliteConnectOptions::new()
@@ -78,6 +129,63 @@ pub fn validate_sqlite_extension(path: &Path) -> Result<(), String> {
             path.display()
         ));
     }
+    Ok(())
+}
+
+fn migrate_legacy_db_if_needed(db_path: &Path, legacy_db_path: &Path) -> Result<(), String> {
+    if db_path.exists() {
+        crate::dev_log!("[db] Runtime DB already exists: {}", db_path.display());
+        return Ok(());
+    }
+
+    if !legacy_db_path.exists() {
+        crate::dev_log!(
+            "[db] No legacy DB to migrate from: {}",
+            legacy_db_path.display()
+        );
+        return Ok(());
+    }
+
+    if let Some(parent) = db_path.parent() {
+        std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+    }
+
+    std::fs::copy(legacy_db_path, db_path).map_err(|error| {
+        format!(
+            "copy legacy db {} -> {} failed: {}",
+            legacy_db_path.display(),
+            db_path.display(),
+            error
+        )
+    })?;
+    crate::dev_log!(
+        "[db] Migrated legacy DB: {} -> {}",
+        legacy_db_path.display(),
+        db_path.display()
+    );
+
+    for suffix in ["-wal", "-shm"] {
+        let legacy_sidecar = PathBuf::from(format!("{}{}", legacy_db_path.display(), suffix));
+        if !legacy_sidecar.exists() {
+            continue;
+        }
+
+        let target_sidecar = PathBuf::from(format!("{}{}", db_path.display(), suffix));
+        std::fs::copy(&legacy_sidecar, &target_sidecar).map_err(|error| {
+            format!(
+                "copy legacy sqlite sidecar {} -> {} failed: {}",
+                legacy_sidecar.display(),
+                target_sidecar.display(),
+                error
+            )
+        })?;
+        crate::dev_log!(
+            "[db] Migrated SQLite sidecar: {} -> {}",
+            legacy_sidecar.display(),
+            target_sidecar.display()
+        );
+    }
+
     Ok(())
 }
 
@@ -191,14 +299,8 @@ async fn count_rows(pool: &SqlitePool, table: &str) -> Result<i64, String> {
         .map_err(|error| error.to_string())
 }
 
-fn migration_directory() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("src")
-        .join("db")
-        .join("migrations")
-}
-
 fn run_runtime_migrations(db_path: &Path) -> Result<(), String> {
+    crate::dev_log!("[db] Running runtime migrations for {}", db_path.display());
     let mut connection = RusqliteConnection::open(db_path).map_err(|error| error.to_string())?;
     connection
         .busy_timeout(std::time::Duration::from_secs(5))
@@ -218,9 +320,8 @@ fn run_runtime_migrations(db_path: &Path) -> Result<(), String> {
     let tx = connection
         .transaction()
         .map_err(|error| error.to_string())?;
-    let migration_dir = migration_directory();
 
-    for filename in MIGRATION_FILES {
+    for (filename, sql) in RUNTIME_MIGRATIONS {
         let already_applied: Option<String> = tx
             .query_row(
                 "SELECT filename FROM ets_feature_migrations WHERE filename = ?1",
@@ -233,14 +334,6 @@ fn run_runtime_migrations(db_path: &Path) -> Result<(), String> {
             continue;
         }
 
-        let migration_path = migration_dir.join(filename);
-        let sql = std::fs::read_to_string(&migration_path).map_err(|error| {
-            format!(
-                "read migration {} failed: {}",
-                migration_path.display(),
-                error
-            )
-        })?;
         tx.execute_batch(&sql)
             .map_err(|error| format!("apply migration {} failed: {}", filename, error))?;
         tx.execute(
@@ -248,10 +341,12 @@ fn run_runtime_migrations(db_path: &Path) -> Result<(), String> {
             rusqlite::params![filename, Utc::now().to_rfc3339()],
         )
         .map_err(|error| format!("record migration {} failed: {}", filename, error))?;
+        crate::dev_log!("[db] Applied runtime migration: {}", filename);
     }
 
     tx.commit().map_err(|error| error.to_string())?;
     ensure_runtime_columns(&connection)?;
+    crate::dev_log!("[db] Runtime migrations complete");
     Ok(())
 }
 
