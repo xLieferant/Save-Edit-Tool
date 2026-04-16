@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="/styles/career.css" />
   </head>
   <body class="career-page">
+    <input id="careerNavToggle" class="career-nav-toggle" type="checkbox" />
     <header class="career-topbar">
       <div class="career-brand">
         <img src="/images/xlLogo.png" alt="Logo" class="career-brand-logo" />
@@ -17,6 +18,11 @@
       </div>
 
       <div class="career-topbar-actions">
+        <label for="careerNavToggle" class="career-burger" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </label>
         <button id="refreshCareerBtn" type="button" class="career-topbar-btn" data-translate="career_mode.refresh">Refresh</button>
         <button id="openSaveEditorBtn" type="button" class="career-topbar-btn" data-translate="launcher.editor.title">Save Edit Tool</button>
         <button id="openLauncherBtn" type="button" class="career-topbar-btn" data-translate="career_mode.open_launcher">Open Launcher</button>
@@ -97,6 +103,8 @@
         </div>
       </div>
     </header>
+
+    <label for="careerNavToggle" class="career-drawer-scrim" aria-hidden="true"></label>
 
     <section class="career-live-status">
       <article class="career-status-card">

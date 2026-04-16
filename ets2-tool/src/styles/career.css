@@ -1,5 +1,11 @@
 :root {
   color-scheme: dark;
+  --space-xs: clamp(6px, 0.8vw, 10px);
+  --space-sm: clamp(10px, 1.2vw, 14px);
+  --space-md: clamp(14px, 1.6vw, 20px);
+  --space-lg: clamp(18px, 2vw, 28px);
+  --title-lg: clamp(18px, 2.2vw, 24px);
+  --body-md: clamp(12px, 1.1vw, 14px);
 }
 
 * {
@@ -12,20 +18,60 @@ body.career-page {
   font-family: "Bahnschrift", "Segoe UI", sans-serif;
   background: radial-gradient(circle at 12% 8%, #17243a 0%, #0d1320 45%, #090e17 100%);
   color: #e6edf9;
-  padding: 18px;
+  padding: clamp(10px, 1.6vw, 18px);
+  overflow-x: hidden;
+}
+
+.career-nav-toggle {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .career-topbar {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-sm);
   align-items: center;
   margin-bottom: 18px;
-  padding: 18px 20px;
+  padding: var(--space-md);
   border-radius: 18px;
   border: 1px solid #2e3a51;
   background: linear-gradient(145deg, rgba(13, 20, 34, 0.94), rgba(10, 15, 25, 0.9));
   box-shadow: 0 20px 34px rgba(4, 9, 18, 0.32);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.career-burger {
+  display: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid #355684;
+  background: rgba(12, 20, 34, 0.94);
+  color: #eaf1ff;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 120ms ease, filter 180ms ease, border-color 180ms ease;
+}
+
+.career-burger:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+  border-color: #4c72a8;
+}
+
+.career-drawer-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 10, 18, 0.62);
+  opacity: 0;
+  pointer-events: none;
+  transition: 180ms ease;
+  z-index: 20;
 }
 
 .career-brand {
@@ -48,12 +94,12 @@ body.career-page {
 
 .career-brand h1 {
   margin: 3px 0 0;
-  font-size: 24px;
+  font-size: var(--title-lg);
 }
 
 .career-topbar-actions {
   display: flex;
-  gap: 10px;
+  gap: var(--space-xs);
   flex-wrap: wrap;
   align-items: center;
 }
@@ -328,7 +374,8 @@ body.career-page {
 .career-layout {
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
-  gap: 14px;
+  gap: var(--space-sm);
+  min-height: 0;
 }
 
 .career-sidebar {
@@ -374,6 +421,7 @@ body.career-page {
 .career-content {
   display: grid;
   gap: 14px;
+  min-height: 0;
 }
 
 .career-panel {
@@ -1248,12 +1296,23 @@ body.career-page {
 }
 
 @media (max-width: 1080px) {
+  .career-burger {
+    display: inline-flex;
+  }
+
   .career-layout {
     grid-template-columns: 1fr;
   }
 
   .career-sidebar {
-    position: static;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: min(320px, 86vw);
+    height: 100dvh;
+    transform: translateX(-110%);
+    transition: transform 200ms ease;
+    z-index: 25;
   }
 
   .career-nav {
@@ -1278,6 +1337,36 @@ body.career-page {
 
   .career-level-card {
     grid-template-columns: 1fr;
+  }
+
+  #careerNavToggle:checked ~ .career-drawer-scrim {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  #careerNavToggle:checked ~ .career-layout .career-sidebar {
+    transform: translateX(0);
+  }
+}
+
+@media (max-width: 900px) {
+  .career-topbar {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .career-topbar-actions {
+    width: 100%;
+  }
+
+  .career-topbar-btn,
+  .career-user-menu-btn {
+    flex: 1 1 160px;
+  }
+
+  .career-live-status,
+  .career-vtc-context {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   }
 }
 

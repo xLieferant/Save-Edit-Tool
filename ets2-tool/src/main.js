@@ -358,13 +358,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
   const refs = {
+    appNavToggle: document.getElementById("appNavToggle"),
     hubScreen: document.getElementById("hubScreen"),
     hubHomeBtn: document.getElementById("hubHomeBtn"),
     hubCareerCard: document.getElementById("hubCareerCard"),
     hubEditorCard: document.getElementById("hubEditorCard"),
+    pickerBackdrop: document.getElementById("pickerBackdrop"),
+    pickerOverlayRoot: document.getElementById("pickerOverlayRoot"),
     profileStatus: document.getElementById("profile-status"),
+    profilePicker: document.querySelector(".profile-picker"),
     profileNameDisplay: document.getElementById("profileNameDisplay"),
     profileDropdownList: document.getElementById("profileDropdownList"),
+    savePicker: document.querySelector(".save-picker"),
     saveNameDisplay: document.getElementById("saveName"),
     saveDropdownList: document.getElementById("saveDropdownList"),
     openSaveModalBtn: document.getElementById("openSaveModal"),
@@ -506,6 +511,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     githubBtn: document.getElementById("githubBtn"),
     refreshBtn: document.getElementById("refreshBtn"),
     cloneBtn: document.getElementById("cloneProfileBtn"),
+  };
+
+  const isCompactShell = () => window.innerWidth < 900 || window.innerHeight < 600;
+  const closeNavDrawer = () => {
+    if (refs.appNavToggle) refs.appNavToggle.checked = false;
   };
 
   const careerText = {
@@ -2098,6 +2108,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (GITHUB_PUBLIC_LOCK && mode === "career") return; // TEMP_GITHUB_BUILD
     applyHubMode(mode);
     setHubVisibility(false);
+    closeNavDrawer();
     try {
       await invoke("hub_set_mode", { mode });
     } catch (error) {
@@ -2470,7 +2481,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (GITHUB_PUBLIC_LOCK) return; // TEMP_GITHUB_BUILD
     activateMode("career");
   });
-  refs.hubHomeBtn?.addEventListener("click", () => setHubVisibility(true));
+  refs.hubHomeBtn?.addEventListener("click", () => {
+    closeNavDrawer();
+    setHubVisibility(true);
+  });
   refs.saveColorSchemeBtn?.addEventListener("click", openColorSchemeModal);
   refs.saveSafeModeBtn?.addEventListener("click", () => setEditorPresentationMode("safe"));
   refs.saveAdvancedModeBtn?.addEventListener("click", () => setEditorPresentationMode("advanced"));
@@ -2622,15 +2636,300 @@ document.addEventListener("DOMContentLoaded", async () => {
   window.playerTrailer = null;
   window.extractPlateText = (plate) => (plate ? plate.replace(/^"|"$/g, "") : "");
 
+  const dropdownCheckIcon = `
+    <svg viewBox="0 0 20 20" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M5 10.5 8.2 13.7 15 6.8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  `;
+
+  const syncPickerBackdrop = () => {
+    const anyPickerOpen = Boolean(
+      refs.profileDropdownList?.classList.contains("show") ||
+      refs.saveDropdownList?.classList.contains("show")
+    );
+    if (!refs.pickerBackdrop) return;
+    refs.pickerBackdrop.hidden = !anyPickerOpen;
+    refs.pickerBackdrop.classList.toggle("is-visible", anyPickerOpen);
+    if (refs.pickerOverlayRoot) {
+      refs.pickerOverlayRoot.classList.toggle("is-active", anyPickerOpen);
+      refs.pickerOverlayRoot.setAttribute("aria-hidden", anyPickerOpen ? "false" : "true");
+    }
+  };
+
+  const resetDropdownPanelPosition = (panel) => {
+    if (!panel) return;
+    panel.style.left = "";
+    panel.style.top = "";
+    panel.style.width = "";
+    panel.style.maxHeight = "";
+  };
+
+  const getDropdownTargetHeight = (panel) => {
+    if (!panel) return 140;
+
+    const items = Array.from(panel.querySelectorAll(".dropdown-item"));
+    if (!items.length) {
+      return Math.max(140, Math.min(panel.scrollHeight || 0, 240));
+    }
+
+    const visibleItemCount = Math.min(8, items.length);
+    const lastVisibleItem = items[visibleItemCount - 1];
+    const panelStyle = window.getComputedStyle(panel);
+    const paddingBottom = parseFloat(panelStyle.paddingBottom) || 0;
+
+    return Math.max(
+      220,
+      Math.min(
+        panel.scrollHeight || 0,
+        Math.ceil(lastVisibleItem.offsetTop + lastVisibleItem.offsetHeight + paddingBottom)
+      )
+    );
+  };
+
+  const getDropdownTargetWidth = (picker, panel) => {
+    const viewportPadding = window.innerWidth < 720 ? 16 : 24;
+    const maxWidth = Math.max(320, window.innerWidth - (viewportPadding * 2));
+    const pickerWidth = Math.ceil(picker?.getBoundingClientRect().width || 0);
+    const preferredWidth = panel === refs.profileDropdownList ? 720 : 640;
+
+    return Math.max(
+      Math.min(maxWidth, preferredWidth),
+      Math.min(maxWidth, Math.max(360, pickerWidth + 120))
+    );
+  };
+
+  const positionDropdownPanel = (picker, panel) => {
+    if (!picker || !panel) return;
+
+    const viewportPadding = window.innerWidth < 720 ? 16 : 24;
+    const width = getDropdownTargetWidth(picker, panel);
+    const targetHeight = getDropdownTargetHeight(panel);
+    const availableHeight = Math.max(140, window.innerHeight - (viewportPadding * 2));
+    const maxHeight = Math.min(targetHeight, availableHeight);
+    const left = Math.max(viewportPadding, Math.round((window.innerWidth - width) / 2));
+    const top = Math.max(viewportPadding, Math.round((window.innerHeight - maxHeight) / 2));
+
+    panel.style.left = `${Math.round(left)}px`;
+    panel.style.top = `${Math.round(top)}px`;
+    panel.style.width = `${Math.round(width)}px`;
+    panel.style.maxHeight = `${Math.round(maxHeight)}px`;
+  };
+
+  const syncOpenDropdownPanels = () => {
+    if (refs.profileDropdownList?.classList.contains("show")) {
+      positionDropdownPanel(refs.profilePicker, refs.profileDropdownList);
+    }
+    if (refs.saveDropdownList?.classList.contains("show")) {
+      positionDropdownPanel(refs.savePicker, refs.saveDropdownList);
+    }
+    syncPickerBackdrop();
+  };
+
+  if (refs.pickerOverlayRoot) {
+    [refs.profileDropdownList, refs.saveDropdownList].forEach((panel) => {
+      if (panel && panel.parentElement !== refs.pickerOverlayRoot) {
+        refs.pickerOverlayRoot.appendChild(panel);
+      }
+    });
+  }
+
+  const setDropdownPanelOpen = (picker, panel, open) => {
+    if (!panel) return;
+    panel.classList.toggle("show", Boolean(open));
+    picker?.classList.toggle("is-open", Boolean(open));
+    if (picker) {
+      picker.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+    if (open) {
+      window.requestAnimationFrame(() => positionDropdownPanel(picker, panel));
+    } else {
+      resetDropdownPanelPosition(panel);
+    }
+    syncPickerBackdrop();
+  };
+
   const closeDropdowns = () => {
-    refs.profileDropdownList.classList.remove("show");
-    refs.saveDropdownList.classList.remove("show");
+    setDropdownPanelOpen(refs.profilePicker, refs.profileDropdownList, false);
+    setDropdownPanelOpen(refs.savePicker, refs.saveDropdownList, false);
+  };
+
+  const updateDropdownSelectionState = (panel, selectedValue) => {
+    panel?.querySelectorAll(".dropdown-item").forEach((item) => {
+      const isSelected = item.dataset.dropdownValue === String(selectedValue ?? "");
+      item.classList.toggle("is-selected", isSelected);
+      item.setAttribute("aria-selected", isSelected ? "true" : "false");
+    });
+  };
+
+  const bindDropdownItem = (item, onSelect) => {
+    item.tabIndex = 0;
+    item.setAttribute("role", "option");
+    item.addEventListener("click", onSelect);
+    item.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        onSelect();
+      }
+    });
+  };
+
+  const createDropdownSection = (label = "") => {
+    const section = document.createElement("div");
+    section.className = "dropdown-section";
+
+    if (label) {
+      const heading = document.createElement("div");
+      heading.className = "dropdown-section-label";
+      heading.textContent = label;
+      section.appendChild(heading);
+    }
+
+    const items = document.createElement("div");
+    items.className = "dropdown-section-items";
+    section.appendChild(items);
+
+    return { section, items };
+  };
+
+  const createDropdownEmptyState = (message) => {
+    const empty = document.createElement("div");
+    empty.className = "dropdown-empty";
+    empty.textContent = message;
+    return empty;
+  };
+
+  const createProfileDropdownItem = (profile) => {
+    const item = document.createElement("div");
+    item.className = "dropdown-item";
+    item.dataset.dropdownValue = String(profile.path ?? "");
+
+    const media = document.createElement("div");
+    media.className = "dropdown-item-media";
+
+    const img = document.createElement("img");
+    img.src = resolveProfileIcon(profile);
+    img.className = "profile-icon-dropdown";
+    if (profile.avatar) {
+      img.dataset.hasAvatar = "true";
+      img.onerror = () => handleIconError(img);
+    }
+    media.appendChild(img);
+
+    const copy = document.createElement("div");
+    copy.className = "dropdown-item-copy";
+
+    const title = document.createElement("div");
+    title.className = "dropdown-item-title";
+    title.textContent = profile.name ?? uiText.noProfile;
+
+    const meta = document.createElement("div");
+    meta.className = "dropdown-item-meta";
+    meta.textContent = profile.path ?? "";
+
+    copy.appendChild(title);
+    copy.appendChild(meta);
+
+    const status = document.createElement("div");
+    status.className = "dropdown-item-status";
+    status.innerHTML = dropdownCheckIcon;
+
+    item.appendChild(media);
+    item.appendChild(copy);
+    item.appendChild(status);
+
+    bindDropdownItem(item, async () => {
+      window.selectedProfilePath = profile.path;
+      refs.profileNameDisplay.textContent = profile.name ?? uiText.noProfile;
+      closeDropdowns();
+      closeNavDrawer();
+      updateDropdownSelectionState(refs.profileDropdownList, profile.path);
+      localStorage.setItem("ets2_last_profile", profile.path);
+      try {
+        await invoke("save_last_profile", { profilePath: profile.path });
+      } catch {}
+      await loadSelectedProfile();
+    });
+
+    item.classList.toggle("is-selected", window.selectedProfilePath === profile.path);
+    item.setAttribute("aria-selected", window.selectedProfilePath === profile.path ? "true" : "false");
+    return item;
+  };
+
+  const createSaveDropdownItem = (save) => {
+    const folder = String(save.folder ?? "").trim();
+    const normalizedFolder = folder.toLowerCase();
+    const rawName = String(save.name ?? "").trim();
+    const titleText = rawName && rawName.toLowerCase() !== normalizedFolder
+      ? rawName
+      : humanizeToken(folder || "save");
+
+    const item = document.createElement("div");
+    item.className = "dropdown-item";
+    item.dataset.dropdownValue = String(save.path ?? "");
+
+    const badge = document.createElement("div");
+    badge.className = "dropdown-item-badge";
+    badge.textContent = normalizedFolder === "quicksave"
+      ? "QS"
+      : normalizedFolder === "autosave"
+        ? "AS"
+        : (folder || "SV").slice(0, 3).toUpperCase();
+
+    const copy = document.createElement("div");
+    copy.className = "dropdown-item-copy";
+
+    const title = document.createElement("div");
+    title.className = "dropdown-item-title";
+    title.textContent = titleText;
+
+    const meta = document.createElement("div");
+    meta.className = "dropdown-item-meta";
+    meta.textContent = folder;
+
+    copy.appendChild(title);
+    copy.appendChild(meta);
+
+    const status = document.createElement("div");
+    status.className = "dropdown-item-status";
+    status.innerHTML = dropdownCheckIcon;
+
+    item.appendChild(badge);
+    item.appendChild(copy);
+    item.appendChild(status);
+
+    bindDropdownItem(item, async () => {
+      window.selectedSavePath = save.path;
+      window.currentSavePath = save.path;
+      refs.saveNameDisplay.textContent = titleText;
+      closeDropdowns();
+      closeNavDrawer();
+      updateDropdownSelectionState(refs.saveDropdownList, save.path);
+      await invoke("load_profile", { profilePath: window.selectedProfilePath, savePath: save.path });
+      await loadSelectedSave();
+    });
+
+    item.classList.toggle("is-selected", window.selectedSavePath === save.path);
+    item.setAttribute("aria-selected", window.selectedSavePath === save.path ? "true" : "false");
+    return item;
   };
 
   document.addEventListener("click", (event) => {
-    if (!event.target.closest(".profile-picker")) refs.profileDropdownList.classList.remove("show");
-    if (!event.target.closest(".save-picker")) refs.saveDropdownList.classList.remove("show");
+    const clickedInsideProfilePicker = event.target.closest(".profile-picker") || refs.profileDropdownList?.contains(event.target);
+    const clickedInsideSavePicker = event.target.closest(".save-picker") || refs.saveDropdownList?.contains(event.target);
+    if (!clickedInsideProfilePicker) setDropdownPanelOpen(refs.profilePicker, refs.profileDropdownList, false);
+    if (!clickedInsideSavePicker) setDropdownPanelOpen(refs.savePicker, refs.saveDropdownList, false);
     if (!event.target.closest(".user-menu")) setUserMenuOpen(false);
+    if (
+      isCompactShell() &&
+      event.target.closest(".editor-picker-actions .nav-action, .editor-tabs .nav-btn, .editor-quick-actions .nav-action, .editor-quick-actions .version-btn")
+    ) {
+      closeNavDrawer();
+    }
+  });
+
+  refs.pickerOverlayRoot?.addEventListener("click", (event) => {
+    if (event.target !== refs.pickerOverlayRoot) return;
+    closeDropdowns();
   });
 
   refs.userMenuBtn?.addEventListener("click", (event) => {
@@ -2644,28 +2943,50 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") setUserMenuOpen(false);
+    if (event.key === "Escape") {
+      setUserMenuOpen(false);
+      closeDropdowns();
+      closeNavDrawer();
+    }
   });
 
-  document.querySelector(".profile-picker")?.addEventListener("click", (event) => {
+  refs.profilePicker?.addEventListener("click", (event) => {
     if (event.target.closest(".custom-dropdown-list")) return;
     event.stopPropagation();
     const open = refs.profileDropdownList.classList.contains("show");
     closeDropdowns();
-    if (!open) refs.profileDropdownList.classList.add("show");
+    if (!open) setDropdownPanelOpen(refs.profilePicker, refs.profileDropdownList, true);
   });
 
-  document.querySelector(".save-picker")?.addEventListener("click", (event) => {
+  refs.profilePicker?.addEventListener("keydown", (event) => {
+    if (event.target !== refs.profilePicker) return;
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    const open = refs.profileDropdownList.classList.contains("show");
+    closeDropdowns();
+    if (!open) setDropdownPanelOpen(refs.profilePicker, refs.profileDropdownList, true);
+  });
+
+  refs.savePicker?.addEventListener("click", (event) => {
     if (event.target.closest(".dropdown-list") || !window.selectedProfilePath) return;
     event.stopPropagation();
     const open = refs.saveDropdownList.classList.contains("show");
     closeDropdowns();
-    if (!open) refs.saveDropdownList.classList.add("show");
+    if (!open) setDropdownPanelOpen(refs.savePicker, refs.saveDropdownList, true);
+  });
+
+  refs.savePicker?.addEventListener("keydown", (event) => {
+    if (event.target !== refs.savePicker) return;
+    if ((event.key !== "Enter" && event.key !== " ") || !window.selectedProfilePath) return;
+    event.preventDefault();
+    const open = refs.saveDropdownList.classList.contains("show");
+    closeDropdowns();
+    if (!open) setDropdownPanelOpen(refs.savePicker, refs.saveDropdownList, true);
   });
 
   if (localStorage.getItem("ets2_force_profile_picker_open") === "1") {
     localStorage.removeItem("ets2_force_profile_picker_open");
-    refs.profileDropdownList.classList.add("show");
+    setDropdownPanelOpen(refs.profilePicker, refs.profileDropdownList, true);
   }
 
   const loadProfileData = async () => {
@@ -2754,7 +3075,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   const scanSavesForProfile = async () => {
     if (!window.selectedProfilePath) return;
     refs.saveDropdownList.innerHTML = "";
-    refs.openSaveModalBtn.disabled = false;
     try {
       const saves = (await invoke("find_profile_saves", { profilePath: window.selectedProfilePath }))
         .filter((save) => save.success && save.kind !== "Invalid")
@@ -2764,25 +3084,31 @@ document.addEventListener("DOMContentLoaded", async () => {
           const pB = priority(b.folder.toLowerCase());
           return pA !== pB ? pA - pB : b.folder.localeCompare(a.folder, undefined, { numeric: true });
         });
-      saves.forEach((save) => {
-        const item = document.createElement("div");
-        item.className = "dropdown-item";
-        item.textContent =
-          save.folder.toLowerCase() === "quicksave"
-            ? "~ Quicksave ~"
-            : save.folder.toLowerCase() === "autosave"
-              ? "~ Autosave ~"
-              : `${save.name ?? save.folder} [${save.folder}]`;
-        item.addEventListener("click", async () => {
-          window.selectedSavePath = save.path;
-          window.currentSavePath = save.path;
-          refs.saveNameDisplay.textContent = save.name ?? save.folder;
-          refs.saveDropdownList.classList.remove("show");
-          await invoke("load_profile", { profilePath: window.selectedProfilePath, savePath: save.path });
-          await loadSelectedSave();
-        });
-        refs.saveDropdownList.appendChild(item);
+      refs.openSaveModalBtn.disabled = saves.length === 0;
+
+      if (!saves.length) {
+        refs.saveDropdownList.appendChild(createDropdownEmptyState(uiText.noSave));
+        return;
+      }
+
+      const quicksaveEntries = saves.filter((save) => String(save.folder || "").toLowerCase() === "quicksave");
+      const autosaveEntries = saves.filter((save) => String(save.folder || "").toLowerCase() === "autosave");
+      const manualEntries = saves.filter((save) => {
+        const folder = String(save.folder || "").toLowerCase();
+        return folder !== "quicksave" && folder !== "autosave";
       });
+
+      const appendSaveSection = (label, entries) => {
+        if (!entries.length) return;
+        const { section, items } = createDropdownSection(label);
+        entries.forEach((save) => items.appendChild(createSaveDropdownItem(save)));
+        refs.saveDropdownList.appendChild(section);
+      };
+
+      appendSaveSection(humanizeToken("quicksave"), quicksaveEntries);
+      appendSaveSection(humanizeToken("autosave"), autosaveEntries);
+      appendSaveSection("", manualEntries);
+      updateDropdownSelectionState(refs.saveDropdownList, window.selectedSavePath);
     } catch (error) {
       console.error(error);
       showToast("toasts.scan_saves_error", {}, "error");
@@ -2819,6 +3145,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         footerIcon.src = iconSrc;
         if (window.selectedProfileHasAvatar) footerIcon.onerror = () => handleIconError(footerIcon);
       }
+      updateDropdownSelectionState(refs.profileDropdownList, window.selectedProfilePath);
+      updateDropdownSelectionState(refs.saveDropdownList, window.selectedSavePath);
       updateOperationalOverview();
       await showCareerPanel(activeCareerPanel);
       refs.profileStatus.textContent = uiText.profileLoaded;
@@ -2833,33 +3161,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   };
 
-  const createProfileItem = (profile) => {
-    const item = document.createElement("div");
-    item.className = "dropdown-item";
-    const img = document.createElement("img");
-    img.src = resolveProfileIcon(profile);
-    img.className = "profile-icon-dropdown";
-    if (profile.avatar) {
-      img.dataset.hasAvatar = "true";
-      img.onerror = () => handleIconError(img);
-    }
-    const label = document.createElement("span");
-    label.textContent = profile.name;
-    item.appendChild(img);
-    item.appendChild(label);
-    item.addEventListener("click", async () => {
-      window.selectedProfilePath = profile.path;
-      refs.profileNameDisplay.textContent = profile.name;
-      refs.profileDropdownList.classList.remove("show");
-      localStorage.setItem("ets2_last_profile", profile.path);
-      try {
-        await invoke("save_last_profile", { profilePath: profile.path });
-      } catch {}
-      await loadSelectedProfile();
-    });
-    return item;
-  };
-
   const scanProfiles = async ({ saveToBackend = true, showToasts = true } = {}) => {
     refs.profileStatus.textContent = uiText.scanningProfiles;
     refs.profileDropdownList.innerHTML = "";
@@ -2870,7 +3171,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       refs.profileStatus.textContent = await t("status_text.profiles_found", { count: profiles.length });
       if (showToasts) window.showToast("toasts.profiles_found", {}, "success");
       profiles.filter((profile) => profile.success).forEach((profile) => {
-        refs.profileDropdownList.appendChild(createProfileItem(profile));
+        refs.profileDropdownList.appendChild(createProfileDropdownItem(profile));
       });
       localStorage.setItem("ets2_profiles_cache", JSON.stringify(profiles));
       if (saveToBackend) {
@@ -2891,6 +3192,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (matched) {
           window.selectedProfilePath = matched.path;
           refs.profileNameDisplay.textContent = matched.name ?? "Unknown";
+          updateDropdownSelectionState(refs.profileDropdownList, matched.path);
           await loadSelectedProfile();
           return;
         }
@@ -3042,12 +3344,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (cached?.length) {
       refs.profileDropdownList.innerHTML = "";
       cached.filter((profile) => profile.success).forEach((profile) => {
-        refs.profileDropdownList.appendChild(createProfileItem(profile));
+        refs.profileDropdownList.appendChild(createProfileDropdownItem(profile));
       });
     }
   } catch {}
 
     await scanProfiles({ saveToBackend: true, showToasts: true });
+    window.addEventListener("resize", () => {
+      if (!isCompactShell()) closeNavDrawer();
+      syncOpenDropdownPanels();
+    });
+    window.addEventListener("scroll", syncOpenDropdownPanels, true);
     window.dispatchEvent(new Event("translations-ready"));
   clearCareerLoadFailure();
   console.log("[ui] boot complete");

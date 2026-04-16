@@ -9,6 +9,7 @@
   </head>
   <body>
     <div class="app-shell">
+      <input id="appNavToggle" class="nav-toggle" type="checkbox" />
       <section id="hubScreen" class="hub-screen is-active">
         <div class="hub-panel panel-surface">
           <div class="hub-copy">
@@ -67,77 +68,176 @@
         </div>
       </section>
       <header class="command-header">
-        <div class="logo">
-          <img src="images/xlLogo.png" alt="ets2Logo" />
-          <div class="logo-text">
-            <span class="logo-title" data-translate="app.title">SAVE EDITOR</span>
-            <span class="logo-subtitle" data-translate="app.subtitle">for SCS - xLieferant</span>
-          </div>
-        </div>
-
-        <div class="command-center-head">
-          <button id="hubHomeBtn" class="hub-home-btn">
-            <span class="hub-home-label" data-translate="hub.home">Open Hub</span>
-            <span class="hub-home-copy" data-translate="hub.home_copy">Return to the central launcher</span>
-          </button>
-
-          <div class="mode-switch" id="hubModeSwitch">
-            <button id="editorModeBtn" class="mode-btn active">
-              <span data-translate="hub.mode_editor_full">Save Edit Tool</span>
-            </button>
-            <button id="careerModeBtn" class="mode-btn">
-              <span data-translate="hub.mode_career_full">Career Mode</span>
-            </button>
-          </div>
-
-          <div class="command-copy">
-            <span class="command-label" data-translate="career.command_center">Command Center</span>
-            <span class="command-subtitle" data-translate="career.live_subtitle">Live telemetry and install state</span>
-          </div>
-        </div>
-
-        <div class="header-actions">
-          <div class="status-cluster">
-            <div id="statusGameRunning" class="status-pill">
-              <span class="status-lamp"></span>
-              <span class="status-text" data-translate="career.status.game_running">Game Running</span>
-            </div>
-            <div id="statusPluginInstalled" class="status-pill">
-              <span class="status-lamp"></span>
-              <span class="status-text" data-translate="career.status.plugin_installed">Plugin Installed</span>
-            </div>
-            <div id="statusSdkConnected" class="status-pill">
-              <span class="status-lamp"></span>
-              <span class="status-text" data-translate="career.status.sdk_connected">SDK Connected</span>
-            </div>
-          </div>
-
-          <div class="user-menu">
-          <button id="userMenuBtn" class="user-menu-btn" type="button" aria-haspopup="true" aria-expanded="false">
-            <span class="user-menu-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 12c2.761 0 5-2.239 5-5S14.761 2 12 2 7 4.239 7 7s2.239 5 5 5Z" stroke="currentColor" stroke-width="1.8"/>
-                <path d="M4 22c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        <div class="header-row header-row-top">
+          <div class="header-left">
+            <label for="appNavToggle" class="nav-burger" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
               </svg>
-            </span>
-            <span id="userMenuLabel" class="user-menu-label" data-translate="career.user_menu.login">Login</span>
-          </button>
+            </label>
 
-          <div id="userMenuDropdown" class="user-menu-dropdown panel-surface" hidden>
-            <div class="user-menu-head">
-              <strong id="userMenuIdentity">-</strong>
-              <span id="userMenuRole" class="muted"></span>
+            <div class="logo">
+              <img src="images/xlLogo.png" alt="ets2Logo" />
+              <div class="logo-text">
+                <span class="logo-title" data-translate="app.title">SAVE EDITOR</span>
+                <span class="logo-subtitle" data-translate="app.subtitle">for SCS - xLieferant</span>
+              </div>
             </div>
-            <div class="divider"></div>
-            <button id="userMenuLogin" class="user-menu-item" type="button" data-translate="career.user_menu.login">Login</button>
-            <button id="userMenuLogout" class="user-menu-item" type="button" data-translate="career.user_menu.logout" hidden>Logout</button>
-            <button id="userMenuAdmin" class="user-menu-item" type="button" data-translate="career.user_menu.admin" hidden>Admin / DB</button>
           </div>
+
+          <div class="header-center">
+            <button id="hubHomeBtn" class="hub-home-btn" type="button">
+              <span class="hub-home-label" data-translate="hub.home">Open Hub</span>
+              <span class="hub-home-copy" data-translate="hub.home_copy">Return to the central launcher</span>
+            </button>
+
+            <div class="mode-switch" id="hubModeSwitch">
+              <button id="editorModeBtn" class="mode-btn active" type="button">
+                <span data-translate="hub.mode_editor_full">Save Edit Tool</span>
+              </button>
+              <button id="careerModeBtn" class="mode-btn" type="button">
+                <span data-translate="hub.mode_career_full">Career Mode</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="header-right">
+            <div class="status-cluster">
+              <div id="statusGameRunning" class="status-pill">
+                <span class="status-lamp"></span>
+                <span class="status-text" data-translate="career.status.game_running">Game Running</span>
+              </div>
+              <div id="statusPluginInstalled" class="status-pill">
+                <span class="status-lamp"></span>
+                <span class="status-text" data-translate="career.status.plugin_installed">Plugin Installed</span>
+              </div>
+              <div id="statusSdkConnected" class="status-pill">
+                <span class="status-lamp"></span>
+                <span class="status-text" data-translate="career.status.sdk_connected">SDK Connected</span>
+              </div>
+            </div>
+
+            <div class="user-menu">
+              <button id="userMenuBtn" class="user-menu-btn" type="button" aria-haspopup="true" aria-expanded="false">
+                <span class="user-menu-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 12c2.761 0 5-2.239 5-5S14.761 2 12 2 7 4.239 7 7s2.239 5 5 5Z" stroke="currentColor" stroke-width="1.8"/>
+                    <path d="M4 22c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                  </svg>
+                </span>
+                <span id="userMenuLabel" class="user-menu-label" data-translate="career.user_menu.login">Login</span>
+              </button>
+
+              <div id="userMenuDropdown" class="user-menu-dropdown panel-surface" hidden>
+                <div class="user-menu-head">
+                  <strong id="userMenuIdentity">-</strong>
+                  <span id="userMenuRole" class="muted"></span>
+                </div>
+                <div class="divider"></div>
+                <button id="userMenuLogin" class="user-menu-item" type="button" data-translate="career.user_menu.login">Login</button>
+                <button id="userMenuLogout" class="user-menu-item" type="button" data-translate="career.user_menu.logout" hidden>Logout</button>
+                <button id="userMenuAdmin" class="user-menu-item" type="button" data-translate="career.user_menu.admin" hidden>Admin / DB</button>
+              </div>
+            </div>
           </div>
         </div>
       </header>
 
+      <label for="appNavToggle" class="nav-drawer-scrim" aria-hidden="true"></label>
+      <div id="pickerBackdrop" class="picker-backdrop" hidden aria-hidden="true"></div>
+      <div id="pickerOverlayRoot" class="picker-overlay-root" aria-hidden="true"></div>
+
       <div class="workspace-shell">
+        <aside id="editorSidebar" class="editor-sidebar panel-surface">
+          <div class="editor-sidebar-scroll">
+            <section class="editor-sidebar-block editor-session-panel">
+              <div class="editor-sidebar-block-head">
+                <span class="editor-section-label" data-translate="editor.status_label">Workspace Status</span>
+              </div>
+              <p id="profile-status" class="profile-status"></p>
+
+              <div class="editor-session-grid">
+                <div class="game-switch">
+                  <button id="ets2Btn" class="active" type="button">
+                    <img src="images/ets2_32x32.png" alt="ETS2 logo" sizes="15px" />
+                    <span data-translate="game.ets2">ETS2</span>
+                  </button>
+                  <button id="atsBtn" disabled type="button">
+                    <img src="images/ats_32x32.png" alt="ATS logo" class="switchButtonLogo" />
+                    <span data-translate="game.ats">ATS</span>
+                  </button>
+                </div>
+
+                <div class="editor-picker-stack">
+                  <div class="profile-picker editor-picker editor-picker--profile" tabindex="0" role="button" aria-haspopup="listbox" aria-expanded="false">
+                    <div class="picker-leading">
+                      <img
+                        id="activeProfileIcon"
+                        src="images/icon_White.png"
+                        alt="Profile"
+                        class="profile-icon-footer"
+                      />
+                    </div>
+                    <div class="picker-copy">
+                      <span class="picker-label" data-translate="editor.profile_card">Active Profile</span>
+                      <span id="profileNameDisplay" class="picker-value" data-translate="profile.select_profile"></span>
+                    </div>
+                    <button id="openProfileModal" class="picker-toggle" type="button" tabindex="-1" aria-hidden="true">
+                      <svg viewBox="0 0 20 20" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M5 7.5 10 12.5 15 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </button>
+                    <div id="profileDropdownList" class="custom-dropdown-list dropdown-menu picker-menu picker-menu--profile" role="listbox"></div>
+                  </div>
+
+                  <div class="save-picker editor-picker editor-picker--save" tabindex="0" role="button" aria-haspopup="listbox" aria-expanded="false">
+                    <div class="picker-copy">
+                      <span class="picker-label" data-translate="editor.save_card">Active Save</span>
+                      <span id="saveName" class="picker-value" data-translate="profile.select_save"></span>
+                    </div>
+                    <button id="openSaveModal" class="picker-toggle" type="button" tabindex="-1" aria-hidden="true">
+                      <svg viewBox="0 0 20 20" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M5 7.5 10 12.5 15 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </button>
+                    <div id="saveDropdownList" class="dropdown-list dropdown-menu picker-menu picker-menu--save" role="listbox"></div>
+                  </div>
+                </div>
+
+                <div class="editor-picker-actions">
+                  <button id="refreshBtn" class="nav-action editor-picker-action" type="button" data-translate="editor.refresh_button">Scan Profiles</button>
+                </div>
+              </div>
+            </section>
+
+            <section class="editor-sidebar-block">
+              <div class="editor-sidebar-block-head">
+                <span class="editor-section-label" data-translate="editor.actions_label">Tool Categories</span>
+              </div>
+              <div class="nav-main editor-tabs">
+                <button class="nav-btn" data-tab="truck" type="button" data-translate="editor.tab.truck">Truck</button>
+                <button class="nav-btn" data-tab="trailer" type="button" data-translate="editor.tab.trailer">Trailer</button>
+                <button class="nav-btn active" data-tab="profile" type="button" data-translate="editor.tab.profile">Profile</button>
+                <button class="nav-btn" data-tab="settings" type="button" data-translate="editor.tab.settings">Settings</button>
+              </div>
+            </section>
+
+            <section class="editor-sidebar-block">
+              <div class="editor-sidebar-block-head">
+                <span class="editor-section-label" data-translate="editor.quick_actions">Workspace Actions</span>
+              </div>
+              <div class="editor-quick-actions">
+                <button id="cloneProfileBtn" class="nav-action" type="button" data-translate="editor.clone_button">Clone Profile</button>
+                <button id="websiteBtn" class="nav-action website" type="button" data-translate="buttons.website">Website</button>
+                <button id="youtubeBtn" class="nav-action youtube" type="button" data-translate="buttons.youtube">YouTube</button>
+                <button id="patreonBtn" class="nav-action patreon" type="button" data-translate="buttons.patreon">Patreon</button>
+                <button id="githubBtn" class="nav-action github" type="button" data-translate="buttons.github">GitHub</button>
+                <button id="versionBtn" class="version-btn" type="button">0.7.0</button>
+              </div>
+            </section>
+          </div>
+        </aside>
+
         <aside id="careerSidebar" class="career-sidebar panel-surface">
           <div class="career-sidebar-head">
             <span class="eyebrow" data-translate="career.command_center">Command Center</span>
@@ -177,102 +277,75 @@
         <section class="workspace-main">
           <section id="editorView" class="workspace-view save-editor-view is-active">
             <div class="save-editor-shell">
-              <section class="save-hero panel-surface">
-                <div class="save-hero-copy">
-                  <span class="eyebrow" data-translate="editor.eyebrow">Save utility workspace</span>
-                  <h1 data-translate="editor.title">High-control save editing</h1>
-                  <p data-translate="editor.summary">
-                    Separate utility mode for direct save manipulation with a clear warning barrier between simulation and editing.
-                  </p>
+              <div class="save-content-scroll">
+                <section class="save-hero panel-surface">
+                  <div class="save-hero-copy">
+                    <span class="eyebrow" data-translate="editor.eyebrow">Save utility workspace</span>
+                    <h1 data-translate="editor.title">High-control save editing</h1>
+                    <p data-translate="editor.summary">
+                      Separate utility mode for direct save manipulation with a clear warning barrier between simulation and editing.
+                    </p>
 
-                  <div class="save-hero-actions">
-                    <button id="saveColorSchemeBtn" class="preset-btn" data-translate="tools.settings.color_theme.title">Color Scheme</button>
-                    <button id="saveSafeModeBtn" class="preset-btn active github-lock-hide" data-translate="editor.safe_mode">Safe Mode</button>
-                    <button id="saveAdvancedModeBtn" class="preset-btn github-lock-hide" data-translate="editor.advanced_mode">Advanced Mode</button>
-                    <button class="secondary-action" disabled data-translate="editor.import">Import Saves</button>
-                    <button class="secondary-action" disabled data-translate="editor.export">Export Saves</button>
-                  </div>
-                </div>
-
-                <div class="save-warning-card">
-                  <span class="warning-label" data-translate="editor.warning_label">Critical note</span>
-                  <h2 data-translate="editor.warning_title">Editing can permanently disrupt progression and balance.</h2>
-                  <p id="editorModeNotice" data-translate="editor.safe_desc">
-                    Safe Mode emphasizes guided actions and lowers the visual intensity of risky operations.
-                  </p>
-                </div>
-              </section>
-
-              <div class="save-layout">
-                <aside class="editor-sidebar panel-surface">
-                  <div class="editor-sidebar-block">
-                    <span class="editor-section-label" data-translate="editor.actions_label">Tool Categories</span>
-                    <div class="nav-main editor-tabs">
-                      <button class="nav-btn" data-tab="truck" data-translate="editor.tab.truck">Truck</button>
-                      <button class="nav-btn" data-tab="trailer" data-translate="editor.tab.trailer">Trailer</button>
-                      <button class="nav-btn active" data-tab="profile" data-translate="editor.tab.profile">Profile</button>
-                      <button class="nav-btn" data-tab="settings" data-translate="editor.tab.settings">Settings</button>
+                    <div class="save-hero-actions">
+                      <button id="saveColorSchemeBtn" class="preset-btn" type="button" data-translate="tools.settings.color_theme.title">Color Scheme</button>
+                      <button id="saveSafeModeBtn" class="preset-btn active github-lock-hide" type="button" data-translate="editor.safe_mode">Safe Mode</button>
+                      <button id="saveAdvancedModeBtn" class="preset-btn github-lock-hide" type="button" data-translate="editor.advanced_mode">Advanced Mode</button>
+                      <button class="secondary-action" type="button" disabled data-translate="editor.import">Import Saves</button>
+                      <button class="secondary-action" type="button" disabled data-translate="editor.export">Export Saves</button>
                     </div>
                   </div>
 
-                  <div class="editor-sidebar-block editor-quick-actions">
-                    <span class="editor-section-label" data-translate="editor.quick_actions">Workspace Actions</span>
-                    <button id="cloneProfileBtn" class="nav-action" data-translate="editor.clone_button">Clone Profile</button>
-                    <button id="refreshBtn" class="nav-action" data-translate="editor.refresh_button">Scan Profiles</button>
-                    <button id="websiteBtn" class="nav-action website" data-translate="buttons.website">Website</button>
-                    <button id="youtubeBtn" class="nav-action youtube" data-translate="buttons.youtube">YouTube</button>
-                    <button id="patreonBtn" class="nav-action patreon" data-translate="buttons.patreon">Patreon</button>
-                    <button id="githubBtn" class="nav-action github" data-translate="buttons.github">GitHub</button>
-                    <button id="versionBtn" class="version-btn">0.7.5</button>
+                  <div class="save-warning-card">
+                    <span class="warning-label" data-translate="editor.warning_label">Critical note</span>
+                    <h2 data-translate="editor.warning_title">Editing can permanently disrupt progression and balance.</h2>
+                    <p id="editorModeNotice" data-translate="editor.safe_desc">
+                      Safe Mode emphasizes guided actions and lowers the visual intensity of risky operations.
+                    </p>
                   </div>
+                </section>
 
-                  <div class="editor-sidebar-block">
-                    <span class="editor-section-label" data-translate="editor.status_label">Workspace Status</span>
-                    <p id="profile-status" class="profile-status"></p>
-                  </div>
-                </aside>
+                <section class="save-overview-grid">
+                  <article class="overview-card panel-surface">
+                    <span class="overview-label" data-translate="editor.profile_card">Active Profile</span>
+                    <strong id="editorProfileValue">-</strong>
+                  </article>
+                  <article class="overview-card panel-surface">
+                    <span class="overview-label" data-translate="editor.save_card">Active Save</span>
+                    <strong id="editorSaveValue">-</strong>
+                  </article>
+                  <article class="overview-card panel-surface">
+                    <span class="overview-label" data-translate="editor.balance_card">Balance</span>
+                    <strong id="editorMoneyValue">EUR 0</strong>
+                  </article>
+                  <article class="overview-card panel-surface">
+                    <span class="overview-label" data-translate="editor.xp_card">XP</span>
+                    <strong id="editorXpValue">0</strong>
+                  </article>
+                  <article class="overview-card panel-surface">
+                    <span class="overview-label" data-translate="editor.level_card">Level</span>
+                    <strong id="editorLevelValue">1</strong>
+                  </article>
+                  <article id="editorFleetCard" class="overview-card panel-surface">
+                    <span class="overview-label" data-translate="editor.fleet_card">Fleet Assets</span>
+                    <strong id="editorFleetValue">0 / 0</strong>
+                  </article>
+                </section>
 
-                <div class="save-content">
-                  <div class="save-overview-grid">
-                    <article class="overview-card panel-surface">
-                      <span class="overview-label" data-translate="editor.profile_card">Active Profile</span>
-                      <strong id="editorProfileValue">-</strong>
-                    </article>
-                    <article class="overview-card panel-surface">
-                      <span class="overview-label" data-translate="editor.save_card">Active Save</span>
-                      <strong id="editorSaveValue">-</strong>
-                    </article>
-                    <article class="overview-card panel-surface">
-                      <span class="overview-label" data-translate="editor.balance_card">Balance</span>
-                      <strong id="editorMoneyValue">EUR 0</strong>
-                    </article>
-                    <article class="overview-card panel-surface">
-                      <span class="overview-label" data-translate="editor.xp_card">XP</span>
-                      <strong id="editorXpValue">0</strong>
-                    </article>
-                    <article class="overview-card panel-surface">
-                      <span class="overview-label" data-translate="editor.level_card">Level</span>
-                      <strong id="editorLevelValue">1</strong>
-                    </article>
-                    <article id="editorFleetCard" class="overview-card panel-surface">
-                      <span class="overview-label" data-translate="editor.fleet_card">Fleet Assets</span>
-                      <strong id="editorFleetValue">0 / 0</strong>
-                    </article>
-                  </div>
-
-                  <section class="save-tool-stage panel-surface">
-                    <div class="save-stage-head">
-                      <div>
-                        <span class="eyebrow" data-translate="editor.stage_label">Current Module</span>
-                        <h2 id="editorStageTitle" data-translate="editor.stage.profile">Profile Editing</h2>
-                      </div>
-                      <p id="editorStageSummary" data-translate="editor.stage.profile_desc">
-                        Update money, XP, skills and save-bound profile values in a dedicated editing flow.
-                      </p>
+                <section class="save-tool-stage panel-surface">
+                  <div class="save-stage-head">
+                    <div>
+                      <span class="eyebrow" data-translate="editor.stage_label">Current Module</span>
+                      <h2 id="editorStageTitle" data-translate="editor.stage.profile">Profile Editing</h2>
                     </div>
+                    <p id="editorStageSummary" data-translate="editor.stage.profile_desc">
+                      Update money, XP, skills and save-bound profile values in a dedicated editing flow.
+                    </p>
+                  </div>
+
+                  <div class="tool-stage-shell">
                     <div id="tool-container"></div>
-                  </section>
-                </div>
+                  </div>
+                </section>
               </div>
             </div>
           </section>
@@ -744,37 +817,6 @@
         </section>
       </div>
 
-      <footer class="profile-bar">
-        <div class="game-switch">
-          <button id="ets2Btn" class="active">
-            <img src="images/ets2_32x32.png" alt="ETS2 logo" sizes="15px" />
-            <span data-translate="game.ets2">ETS2</span>
-          </button>
-          <button id="atsBtn" disabled>
-            <img src="images/ats_32x32.png" alt="ATS logo" class="switchButtonLogo" />
-            <span data-translate="game.ats">ATS</span>
-          </button>
-        </div>
-
-        <div class="profile-picker">
-          <img
-            id="activeProfileIcon"
-            src="images/icon_White.png"
-            alt="Profile"
-            class="profile-icon-footer"
-          />
-          <span id="profileNameDisplay" data-translate="profile.select_profile"></span>
-          <button id="openProfileModal">v</button>
-          <div id="profileDropdownList" class="custom-dropdown-list"></div>
-        </div>
-
-        <div class="save-picker">
-          <span id="saveName" data-translate="profile.select_save"></span>
-          <button id="openSaveModal">v</button>
-          <div id="saveDropdownList" class="dropdown-list"></div>
-        </div>
-
-      </footer>
     </div>
 
     <div class="modal-backdrop" id="modalText">
