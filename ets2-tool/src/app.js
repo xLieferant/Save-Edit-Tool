@@ -138,6 +138,108 @@ const cloneBackup = document.getElementById("cloneBackup");
 const modalCloneApply = document.getElementById("modalCloneApply");
 const modalCloneCancel = document.getElementById("modalCloneCancel");
 
+const modalTruckInfo = document.getElementById("modalTruckInfo");
+const modalTruckInfoState = document.getElementById("modalTruckInfoState");
+const modalTruckInfoLoading = document.getElementById("modalTruckInfoLoading");
+const modalTruckInfoError = document.getElementById("modalTruckInfoError");
+const modalTruckInfoErrorText = document.getElementById("modalTruckInfoErrorText");
+const modalTruckInfoEmpty = document.getElementById("modalTruckInfoEmpty");
+const modalTruckInfoContent = document.getElementById("modalTruckInfoContent");
+const modalTruckInfoName = document.getElementById("modalTruckInfoName");
+const modalTruckInfoBrand = document.getElementById("modalTruckInfoBrand");
+const modalTruckInfoModel = document.getElementById("modalTruckInfoModel");
+const modalTruckInfoOdometer = document.getElementById("modalTruckInfoOdometer");
+const modalTruckInfoClose = document.getElementById("modalTruckInfoClose");
+
+const modalProfileShare = document.getElementById("modalProfileShare");
+const profileShareModeKicker = document.getElementById("profileShareModeKicker");
+const profileShareModalTitle = document.getElementById("profileShareModalTitle");
+const profileShareModalDescription = document.getElementById("profileShareModalDescription");
+const profileShareExperimentBadge = document.getElementById("profileShareExperimentBadge");
+const profileShareStatusPill = document.getElementById("profileShareStatusPill");
+const profileShareStatusTitle = document.getElementById("profileShareStatusTitle");
+const profileShareStatusMessage = document.getElementById("profileShareStatusMessage");
+const profileShareLastPath = document.getElementById("profileShareLastPath");
+const profileShareSummaryLabel = document.getElementById("profileShareSummaryLabel");
+const profileShareSummaryTitle = document.getElementById("profileShareSummaryTitle");
+const profileShareModeHint = document.getElementById("profileShareModeHint");
+const profileShareSourceName = document.getElementById("profileShareSourceName");
+const profileShareArchiveName = document.getElementById("profileShareArchiveName");
+const profileShareTargetLabel = document.getElementById("profileShareTargetLabel");
+const profileShareTargetPath = document.getElementById("profileShareTargetPath");
+const profileShareSelectedPathLabel = document.getElementById("profileShareSelectedPathLabel");
+const profileShareSelectedPath = document.getElementById("profileShareSelectedPath");
+const profileShareWorkspaceTitle = document.getElementById("profileShareWorkspaceTitle");
+const profileShareExperimentalCopy = document.getElementById("profileShareExperimentalCopy");
+const profileSharePickerLabel = document.getElementById("profileSharePickerLabel");
+const profileShareSelectionDisplay = document.getElementById("profileShareSelectionDisplay");
+const profileShareBrowseButton = document.getElementById("profileShareBrowseButton");
+const profileShareImportOptions = document.getElementById("profileShareImportOptions");
+const profileShareImportName = document.getElementById("profileShareImportName");
+const profileSharePreview = document.getElementById("profileSharePreview");
+const modalProfileSharePrimary = document.getElementById("modalProfileSharePrimary");
+const modalProfileShareClose = document.getElementById("modalProfileShareClose");
+const saveImportSavesBtn = document.getElementById("saveImportSavesBtn");
+const saveExportSavesBtn = document.getElementById("saveExportSavesBtn");
+
+function formatMetric(value, digits = 0) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return "-";
+  return numeric.toLocaleString(undefined, {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  });
+}
+
+function formatDistance(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return "-";
+  return `${formatMetric(numeric, numeric % 1 === 0 ? 0 : 1)} km`;
+}
+
+function safeValue(value, fallback = "-") {
+  if (value === null || value === undefined) return fallback;
+  const text = String(value).trim();
+  return text ? text : fallback;
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll("\"", "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function setModalPillState(element, state, text) {
+  if (!element) return;
+  element.dataset.state = state;
+  element.textContent = text;
+}
+
+function resetTruckModalPanels() {
+  modalTruckInfoLoading.hidden = true;
+  modalTruckInfoError.hidden = true;
+  modalTruckInfoEmpty.hidden = true;
+  modalTruckInfoContent.hidden = true;
+}
+
+function setProfileShareStatus(state, title, message, path = "") {
+  setModalPillState(profileShareStatusPill, state, title);
+  profileShareStatusTitle.textContent = title;
+  profileShareStatusMessage.textContent = message;
+  profileShareLastPath.hidden = !path;
+  profileShareLastPath.textContent = path || "";
+}
+
+function resolveStoredProfileSharePath() {
+  const storedPath = localStorage.getItem("ets2_profile_share_profile_path");
+  if (!storedPath) return null;
+  const normalized = String(storedPath).trim();
+  return normalized ? normalized : null;
+}
+
 
 
 /* --------------------------------------------------------------
@@ -486,4 +588,512 @@ export async function openCloneProfileModal() {
   cloneNameInput.addEventListener("input", validate);
   modalCloneApply.addEventListener("click", apply);
   modalCloneCancel.addEventListener("click", cancel);
+}
+
+/* --------------------------------------------------------------
+   CURRENT TRUCK MODAL
+-------------------------------------------------------------- */
+export async function openCurrentTruckModal() {
+  if (!window.selectedProfilePath) {
+    window.showToast("toasts.profile_not_selected", "warning");
+    return;
+  }
+
+  if (window.logUserAction) window.logUserAction("view_current_truck", "start");
+
+  const loadingLabel = await window.t("modals.truck_info.loading");
+  const readyLabel = await window.t("modals.truck_info.ready");
+  const emptyLabel = await window.t("modals.truck_info.empty_state");
+  const errorLabel = await window.t("modals.truck_info.error_state");
+  const loadingErrorText = await window.t("modals.truck_info.error_body");
+
+  resetTruckModalPanels();
+  setModalPillState(modalTruckInfoState, "loading", loadingLabel);
+  modalTruckInfoLoading.hidden = false;
+  modalTruckInfoErrorText.textContent = "";
+  modalTruckInfo.style.display = "flex";
+
+  function cleanup() {
+    modalTruckInfoClose.removeEventListener("click", cleanup);
+    modalTruckInfo.removeEventListener("click", handleBackdropClick);
+    document.removeEventListener("keydown", handleEscape);
+    modalTruckInfo.style.display = "none";
+  }
+
+  function handleBackdropClick(event) {
+    if (event.target === modalTruckInfo) {
+      cleanup();
+    }
+  }
+
+  function handleEscape(event) {
+    if (event.key === "Escape") {
+      cleanup();
+    }
+  }
+
+  modalTruckInfoClose.addEventListener("click", cleanup);
+  modalTruckInfo.addEventListener("click", handleBackdropClick);
+  document.addEventListener("keydown", handleEscape);
+
+  try {
+    const truckSummary = await window.invoke("get_current_truck_summary");
+
+    if (!truckSummary?.display_name && !truckSummary?.brand_label && !truckSummary?.model_label) {
+      resetTruckModalPanels();
+      modalTruckInfoEmpty.hidden = false;
+      setModalPillState(modalTruckInfoState, "warning", emptyLabel);
+      if (window.logUserAction) window.logUserAction("view_current_truck", "empty");
+      return;
+    }
+
+    modalTruckInfoName.textContent = safeValue(
+      truckSummary?.display_name || [truckSummary?.brand_label, truckSummary?.model_label].filter(Boolean).join(" "),
+      "-"
+    );
+    modalTruckInfoBrand.textContent = safeValue(truckSummary?.brand_label);
+    modalTruckInfoModel.textContent = safeValue(truckSummary?.model_label);
+    modalTruckInfoOdometer.textContent = formatDistance(truckSummary?.odometer_km);
+
+    resetTruckModalPanels();
+    modalTruckInfoContent.hidden = false;
+    setModalPillState(modalTruckInfoState, "success", readyLabel);
+    if (window.logUserAction) window.logUserAction("view_current_truck", "success");
+  } catch (error) {
+    console.error("Current truck modal failed:", error);
+    resetTruckModalPanels();
+    modalTruckInfoError.hidden = false;
+    modalTruckInfoErrorText.textContent = loadingErrorText;
+    setModalPillState(modalTruckInfoState, "error", errorLabel);
+    if (window.logUserAction) window.logUserAction("view_current_truck", "error");
+  }
+}
+
+/* --------------------------------------------------------------
+   PROFILE SHARING MODAL
+-------------------------------------------------------------- */
+export async function openProfileSharingModal(mode = "export", options = {}) {
+  const activeMode = mode === "import" ? "import" : "export";
+  const isImportMode = activeMode === "import";
+  const openSurface = typeof options.openSurface === "function"
+    ? options.openSurface
+    : () => {
+        modalProfileShare.style.display = "flex";
+      };
+  const closeSurface = typeof options.closeSurface === "function"
+    ? options.closeSurface
+    : () => {
+        modalProfileShare.style.display = "none";
+      };
+  const resolveProfilePath = typeof options.resolveProfilePath === "function"
+    ? options.resolveProfilePath
+    : () => window.selectedProfilePath || resolveStoredProfileSharePath();
+  const allowBackdropClose = options.allowBackdropClose ?? true;
+  const allowEscape = options.allowEscape ?? true;
+  const allowMissingProfilePath = options.allowMissingProfilePath ?? false;
+  const onClose = typeof options.onClose === "function" ? options.onClose : null;
+
+  if (!modalProfileShare) return;
+  if (!allowMissingProfilePath && !isImportMode && !resolveProfilePath()) {
+    window.showToast("toasts.profile_not_selected", "warning");
+    return;
+  }
+
+  const copy = {
+    readyTitle: await window.t("modals.profile_sharing.status_ready"),
+    readyImportMessage: await window.t("modals.profile_sharing.status_ready_import"),
+    readyExportMessage: await window.t("modals.profile_sharing.status_ready_export"),
+    checkingMessage: await window.t("modals.profile_sharing.status_checking"),
+    exportTitle: await window.t("modals.profile_sharing.status_exporting"),
+    importTitle: await window.t("modals.profile_sharing.status_importing"),
+    successTitle: await window.t("modals.profile_sharing.status_success"),
+    errorTitle: await window.t("modals.profile_sharing.status_error"),
+    importKicker: await window.t("modals.profile_sharing.kicker_import"),
+    exportKicker: await window.t("modals.profile_sharing.kicker_export"),
+    importModalTitle: await window.t("modals.profile_sharing.title_import"),
+    exportModalTitle: await window.t("modals.profile_sharing.title_export"),
+    importDescription: await window.t("modals.profile_sharing.description_import"),
+    exportDescription: await window.t("modals.profile_sharing.description_export"),
+    importModeHint: await window.t("modals.profile_sharing.mode_hint_import"),
+    exportModeHint: await window.t("modals.profile_sharing.mode_hint_export"),
+    importBrowseButton: await window.t("modals.profile_sharing.browse_import_button"),
+    exportBrowseButton: await window.t("modals.profile_sharing.browse_export_button"),
+    importPrimaryAction: await window.t("modals.profile_sharing.import_primary_action"),
+    exportPrimaryAction: await window.t("modals.profile_sharing.export_primary_action"),
+    importBusyLabel: await window.t("modals.profile_sharing.import_busy"),
+    exportBusyLabel: await window.t("modals.profile_sharing.export_busy"),
+    importHint: await window.t("modals.profile_sharing.import_hint"),
+    exportHint: await window.t("modals.profile_sharing.export_hint"),
+    importEmptyPath: await window.t("modals.profile_sharing.selected_path_empty_import"),
+    exportEmptyPath: await window.t("modals.profile_sharing.selected_path_empty_export"),
+    importTargetLabel: await window.t("modals.profile_sharing.import_target"),
+    exportTargetLabel: await window.t("modals.profile_sharing.export_target"),
+    selectedArchiveLabel: await window.t("modals.profile_sharing.selected_archive_label"),
+    selectedExportDirLabel: await window.t("modals.profile_sharing.selected_export_dir_label"),
+    previewProfileLabel: await window.t("modals.profile_sharing.preview_profile"),
+    previewFilesLabel: await window.t("modals.profile_sharing.preview_files"),
+    previewManifestLabel: await window.t("modals.profile_sharing.preview_manifest"),
+    previewFinalProfileLabel: await window.t("modals.profile_sharing.preview_final_profile"),
+    previewTargetFolderLabel: await window.t("modals.profile_sharing.preview_target_folder"),
+    previewNameConflictLabel: await window.t("modals.profile_sharing.preview_name_conflict"),
+    yesLabel: await window.t("modals.profile_sharing.preview_yes"),
+    noLabel: await window.t("modals.profile_sharing.preview_no"),
+  };
+
+  let inspectTimer = null;
+  let importReady = false;
+  let isBusy = false;
+  let context = null;
+  let selectedImportArchivePath = "";
+  let selectedExportDir = "";
+
+  function currentReadyMessage() {
+    return isImportMode ? copy.readyImportMessage : copy.readyExportMessage;
+  }
+
+  function currentSelectedPath() {
+    return isImportMode ? selectedImportArchivePath : selectedExportDir;
+  }
+
+  function currentEmptyPathText() {
+    return isImportMode ? copy.importEmptyPath : copy.exportEmptyPath;
+  }
+
+  function renderPreviewContent(content, isError = false) {
+    const className = isError
+      ? "share-preview-copy share-preview-copy--error"
+      : "share-preview-copy";
+    profileSharePreview.innerHTML = `<p class="${className}">${escapeHtml(content)}</p>`;
+  }
+
+  function renderStaticFields() {
+    profileShareModeKicker.textContent = isImportMode ? copy.importKicker : copy.exportKicker;
+    profileShareModalTitle.textContent = isImportMode ? copy.importModalTitle : copy.exportModalTitle;
+    profileShareModalDescription.textContent = isImportMode ? copy.importDescription : copy.exportDescription;
+    profileShareModeHint.textContent = isImportMode ? copy.importModeHint : copy.exportModeHint;
+    profileShareWorkspaceTitle.textContent = isImportMode ? copy.importModalTitle : copy.exportModalTitle;
+    profileShareTargetLabel.textContent = isImportMode ? copy.importTargetLabel : copy.exportTargetLabel;
+    profileShareSelectedPathLabel.textContent = isImportMode ? copy.selectedArchiveLabel : copy.selectedExportDirLabel;
+    profileSharePickerLabel.textContent = isImportMode ? copy.selectedArchiveLabel : copy.selectedExportDirLabel;
+    profileShareBrowseButton.textContent = isImportMode ? copy.importBrowseButton : copy.exportBrowseButton;
+    modalProfileSharePrimary.textContent = isImportMode ? copy.importPrimaryAction : copy.exportPrimaryAction;
+    profileShareImportOptions.hidden = !isImportMode;
+
+    const selectedPath = currentSelectedPath();
+    const targetPath = isImportMode
+      ? context?.importTargetDir || "-"
+      : selectedExportDir || context?.defaultExportDir || "-";
+
+    profileShareSourceName.textContent = safeValue(context?.profileName);
+    profileShareArchiveName.textContent = safeValue(context?.defaultArchiveName);
+    profileShareTargetPath.textContent = safeValue(targetPath);
+    profileShareSelectedPath.textContent = safeValue(selectedPath, currentEmptyPathText());
+    profileShareSelectionDisplay.textContent = safeValue(selectedPath, currentEmptyPathText());
+  }
+
+  function syncActionState() {
+    const hasPathResolutionIssue = isImportMode ? !context?.canImport : !context?.canExport;
+    const hasSelection = Boolean(currentSelectedPath());
+    const canRunPrimary = isImportMode ? importReady : hasSelection;
+
+    profileShareBrowseButton.disabled = isBusy || hasPathResolutionIssue;
+    modalProfileSharePrimary.disabled = isBusy || hasPathResolutionIssue || !canRunPrimary;
+    modalProfileShareClose.disabled = isBusy;
+    profileShareImportName.disabled = isBusy || !isImportMode;
+  }
+
+  async function inspectArchive() {
+    if (!selectedImportArchivePath) {
+      importReady = false;
+      renderPreviewContent(copy.importHint);
+      setProfileShareStatus("neutral", copy.readyTitle, currentReadyMessage());
+      syncActionState();
+      return;
+    }
+
+    setProfileShareStatus("loading", copy.readyTitle, copy.checkingMessage, selectedImportArchivePath);
+    importReady = false;
+    syncActionState();
+
+    try {
+      const preview = await window.invoke("inspect_shared_profile_archive", {
+        archivePath: selectedImportArchivePath,
+        profileNameOverride: profileShareImportName.value.trim() || null,
+      });
+      if (!profileShareImportName.value.trim()) {
+        profileShareImportName.placeholder = preview.suggestedProfileName;
+      }
+
+      profileShareTargetPath.textContent = safeValue(preview.targetProfilePath);
+      profileSharePreview.innerHTML = `
+        <div class="share-preview-grid">
+          <div class="share-preview-item">
+            <span>${escapeHtml(copy.previewProfileLabel)}</span>
+            <strong>${escapeHtml(preview.detectedProfileName)}</strong>
+          </div>
+          <div class="share-preview-item">
+            <span>${escapeHtml(copy.previewFinalProfileLabel)}</span>
+            <strong>${escapeHtml(preview.finalProfileName)}</strong>
+          </div>
+          <div class="share-preview-item">
+            <span>${escapeHtml(copy.previewFilesLabel)}</span>
+            <strong>${escapeHtml(preview.fileCount)}</strong>
+          </div>
+          <div class="share-preview-item">
+            <span>${escapeHtml(copy.previewManifestLabel)}</span>
+            <strong>${escapeHtml(preview.hasManifest ? copy.yesLabel : copy.noLabel)}</strong>
+          </div>
+          <div class="share-preview-item">
+            <span>${escapeHtml(copy.previewNameConflictLabel)}</span>
+            <strong>${escapeHtml(preview.profileNameConflict ? copy.yesLabel : copy.noLabel)}</strong>
+          </div>
+          <div class="share-preview-item share-preview-item--stack">
+            <span>${escapeHtml(copy.previewTargetFolderLabel)}</span>
+            <strong class="detail-card-value--mono">${escapeHtml(preview.targetProfilePath)}</strong>
+          </div>
+        </div>
+      `;
+      importReady = true;
+      if (preview.profileNameConflict) {
+        setProfileShareStatus(
+          "warning",
+          copy.readyTitle,
+          await window.t("modals.profile_sharing.import_conflict_message", {
+            profileName: preview.finalProfileName,
+          }),
+          preview.targetProfilePath
+        );
+      } else {
+        setProfileShareStatus("success", copy.readyTitle, currentReadyMessage(), preview.targetProfilePath);
+      }
+    } catch (error) {
+      const errorMessage = error?.message || String(error);
+      console.error("Profile archive inspection failed:", error);
+      renderPreviewContent(errorMessage, true);
+      setProfileShareStatus("error", copy.errorTitle, errorMessage, selectedImportArchivePath);
+    } finally {
+      syncActionState();
+    }
+  }
+
+  function scheduleInspect() {
+    clearTimeout(inspectTimer);
+    inspectTimer = setTimeout(() => {
+      void inspectArchive();
+    }, 220);
+  }
+
+  async function handleBrowse() {
+    if (isBusy) return;
+
+    try {
+      if (isImportMode) {
+        const archivePath = await window.invoke("pick_shared_profile_import_archive");
+        if (!archivePath) return;
+        selectedImportArchivePath = archivePath;
+        renderStaticFields();
+        await inspectArchive();
+        return;
+      }
+
+      const exportDir = await window.invoke("pick_shared_profile_export_directory");
+      if (!exportDir) return;
+      selectedExportDir = exportDir;
+      renderStaticFields();
+      setProfileShareStatus("neutral", copy.readyTitle, currentReadyMessage(), exportDir);
+      syncActionState();
+    } catch (error) {
+      const errorMessage = error?.message || String(error);
+      console.error("Profile share picker failed:", error);
+      setProfileShareStatus("error", copy.errorTitle, errorMessage);
+      window.showToast("toasts.profile_share_action_failed", { error: errorMessage }, "error");
+    }
+  }
+
+  async function handlePrimaryAction() {
+    if (isBusy) return;
+
+    if (isImportMode) {
+      if (!selectedImportArchivePath || !importReady) return;
+
+      isBusy = true;
+      modalProfileSharePrimary.textContent = copy.importBusyLabel;
+      syncActionState();
+      setProfileShareStatus("loading", copy.importTitle, await window.t("modals.profile_sharing.import_progress"));
+      if (window.logUserAction) window.logUserAction("profile_share_import", "start");
+
+      try {
+        const result = await window.invoke("import_shared_profile", {
+          archivePath: selectedImportArchivePath,
+          profileNameOverride: profileShareImportName.value.trim() || null,
+        });
+        profileShareImportName.value = result.profileName;
+        profileShareTargetPath.textContent = safeValue(result.profilePath);
+        setProfileShareStatus(
+          "success",
+          copy.successTitle,
+          await window.t("modals.profile_sharing.import_done", {
+            profileName: result.profileName,
+          }),
+          result.profilePath
+        );
+        window.showToast("toasts.profile_share_import_success", { profileName: result.profileName }, "success");
+        document.querySelector("#refreshBtn")?.click();
+        if (window.logUserAction) window.logUserAction("profile_share_import", "success");
+      } catch (error) {
+        const errorMessage = error?.message || String(error);
+        console.error("Profile import failed:", error);
+        setProfileShareStatus("error", copy.errorTitle, errorMessage);
+        window.showToast("toasts.profile_share_action_failed", { error: errorMessage }, "error");
+        if (window.logUserAction) window.logUserAction("profile_share_import", "error");
+      } finally {
+        isBusy = false;
+        modalProfileSharePrimary.textContent = copy.importPrimaryAction;
+        syncActionState();
+      }
+      return;
+    }
+
+    const activeProfilePath = resolveProfilePath();
+
+    if (!activeProfilePath) {
+      window.showToast("toasts.profile_not_selected", "warning");
+      return;
+    }
+
+    if (!selectedExportDir) {
+      await handleBrowse();
+      if (!selectedExportDir) return;
+    }
+
+    isBusy = true;
+    modalProfileSharePrimary.textContent = copy.exportBusyLabel;
+    syncActionState();
+    setProfileShareStatus("loading", copy.exportTitle, await window.t("modals.profile_sharing.export_progress"));
+    if (window.logUserAction) window.logUserAction("profile_share_export", "start");
+
+    try {
+      const result = await window.invoke("export_shared_profile", {
+        profilePath: activeProfilePath,
+        exportDirOverride: selectedExportDir,
+      });
+      profileShareArchiveName.textContent = result.archiveName;
+      profileShareTargetPath.textContent = safeValue(result.exportDir);
+      profileShareSelectedPath.textContent = safeValue(result.exportDir);
+      profileShareSelectionDisplay.textContent = safeValue(result.exportDir);
+      setProfileShareStatus(
+        "success",
+        copy.successTitle,
+        await window.t("modals.profile_sharing.export_done", {
+          fileCount: result.exportedFiles,
+        }),
+        result.archivePath
+      );
+      renderPreviewContent(copy.exportHint);
+      window.showToast("toasts.profile_share_export_success", { profileName: result.profileName }, "success");
+      if (window.logUserAction) window.logUserAction("profile_share_export", "success");
+    } catch (error) {
+      const errorMessage = error?.message || String(error);
+      console.error("Profile export failed:", error);
+      setProfileShareStatus("error", copy.errorTitle, errorMessage);
+      window.showToast("toasts.profile_share_action_failed", { error: errorMessage }, "error");
+      if (window.logUserAction) window.logUserAction("profile_share_export", "error");
+    } finally {
+      isBusy = false;
+      modalProfileSharePrimary.textContent = copy.exportPrimaryAction;
+      syncActionState();
+    }
+  }
+
+  function cleanup() {
+    if (isBusy) return;
+    clearTimeout(inspectTimer);
+    profileShareBrowseButton.removeEventListener("click", handleBrowse);
+    modalProfileSharePrimary.removeEventListener("click", handlePrimaryAction);
+    modalProfileShareClose.removeEventListener("click", cleanup);
+    if (allowBackdropClose) {
+      modalProfileShare.removeEventListener("click", handleBackdropClick);
+    }
+    profileShareImportName.removeEventListener("input", scheduleInspect);
+    if (allowEscape) {
+      document.removeEventListener("keydown", handleEscape);
+    }
+    closeSurface();
+    onClose?.();
+  }
+
+  function handleBackdropClick(event) {
+    if (!allowBackdropClose) return;
+    if (event.target === modalProfileShare) {
+      cleanup();
+    }
+  }
+
+  function handleEscape(event) {
+    if (!allowEscape) return;
+    if (event.key === "Escape") {
+      cleanup();
+    }
+  }
+
+  profileShareImportName.value = "";
+  profileShareImportName.placeholder = await window.t("modals.profile_sharing.import_name_placeholder");
+  renderPreviewContent(isImportMode ? copy.importHint : copy.exportHint);
+  setProfileShareStatus("neutral", copy.readyTitle, currentReadyMessage());
+  openSurface();
+
+  try {
+    const activeProfilePath = isImportMode ? null : resolveProfilePath();
+    context = await window.invoke("get_profile_share_context", {
+      profilePath: activeProfilePath,
+    });
+    if (!isImportMode) {
+      selectedExportDir = context?.defaultExportDir || "";
+    }
+    renderStaticFields();
+
+    const pathResolutionMessage = context?.pathResolutionError || "";
+    if ((isImportMode && !context?.canImport) || (!isImportMode && !context?.canExport)) {
+      setProfileShareStatus("error", copy.errorTitle, pathResolutionMessage || currentReadyMessage());
+    } else {
+      setProfileShareStatus("neutral", copy.readyTitle, currentReadyMessage(), currentSelectedPath());
+    }
+  } catch (error) {
+    const errorMessage = error?.message || String(error);
+    console.error("Profile share context failed:", error);
+    setProfileShareStatus("error", copy.errorTitle, errorMessage);
+  }
+
+  syncActionState();
+  profileShareBrowseButton.addEventListener("click", handleBrowse);
+  modalProfileSharePrimary.addEventListener("click", handlePrimaryAction);
+  modalProfileShareClose.addEventListener("click", cleanup);
+  if (allowBackdropClose) {
+    modalProfileShare.addEventListener("click", handleBackdropClick);
+  }
+  profileShareImportName.addEventListener("input", scheduleInspect);
+  if (allowEscape) {
+    document.addEventListener("keydown", handleEscape);
+  }
+}
+
+export function openProfileSharingPage(mode = "export") {
+  const activeMode = mode === "import" ? "import" : "export";
+  localStorage.setItem(
+    "ets2_profile_share_profile_path",
+    window.selectedProfilePath ? String(window.selectedProfilePath) : ""
+  );
+  window.location.href = `/pages/profile-sharing/index.html?mode=${encodeURIComponent(activeMode)}`;
+}
+
+if (saveImportSavesBtn) {
+  saveImportSavesBtn.addEventListener("click", () => {
+    openProfileSharingPage("import");
+  });
+}
+
+if (saveExportSavesBtn) {
+  saveExportSavesBtn.addEventListener("click", () => {
+    openProfileSharingPage("export");
+  });
 }

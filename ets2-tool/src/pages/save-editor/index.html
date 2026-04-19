@@ -232,7 +232,7 @@
                 <button id="youtubeBtn" class="nav-action youtube" type="button" data-translate="buttons.youtube">YouTube</button>
                 <button id="patreonBtn" class="nav-action patreon" type="button" data-translate="buttons.patreon">Patreon</button>
                 <button id="githubBtn" class="nav-action github" type="button" data-translate="buttons.github">GitHub</button>
-                <button id="versionBtn" class="version-btn" type="button">0.7.0</button>
+                <button id="versionBtn" class="version-btn" type="button">0.7.2</button>
               </div>
             </section>
           </div>
@@ -290,8 +290,8 @@
                       <button id="saveColorSchemeBtn" class="preset-btn" type="button" data-translate="tools.settings.color_theme.title">Color Scheme</button>
                       <button id="saveSafeModeBtn" class="preset-btn active github-lock-hide" type="button" data-translate="editor.safe_mode">Safe Mode</button>
                       <button id="saveAdvancedModeBtn" class="preset-btn github-lock-hide" type="button" data-translate="editor.advanced_mode">Advanced Mode</button>
-                      <button class="secondary-action" type="button" disabled data-translate="editor.import">Import Saves</button>
-                      <button class="secondary-action" type="button" disabled data-translate="editor.export">Export Saves</button>
+                      <button id="saveImportSavesBtn" class="secondary-action" type="button" data-translate="editor.import">Import Saves</button>
+                      <button id="saveExportSavesBtn" class="secondary-action" type="button" data-translate="editor.export">Export Saves</button>
                     </div>
                   </div>
 
@@ -883,6 +883,64 @@
         <div class="modal-actions">
           <button id="modalCloneCancel" data-translate="modals.cancel">Cancel</button>
           <button id="modalCloneApply" class="apply" data-translate="modals.clone_profile.clone_button">Clone</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalTruckInfo">
+      <div class="modal-box modal-box--xl modal-box--sheet">
+        <div class="detail-modal-head">
+          <div>
+            <span class="modal-kicker" data-translate="modals.truck_info.kicker">Current truck</span>
+            <h2 id="modalTruckInfoTitle" data-translate="modals.truck_info.title">My Current Truck</h2>
+            <p id="modalTruckInfoDescription" class="modal-description" data-translate="modals.truck_info.description">
+              Fast summary of the active truck loaded from the current save.
+            </p>
+          </div>
+          <div id="modalTruckInfoState" class="modal-status-pill" data-state="neutral"></div>
+        </div>
+
+        <div id="modalTruckInfoLoading" class="modal-empty-state" hidden>
+          <strong data-translate="modals.truck_info.loading_title">Loading current truck</strong>
+          <p data-translate="modals.truck_info.loading_body">Reading the active truck from the active save.</p>
+        </div>
+
+        <div id="modalTruckInfoError" class="modal-empty-state modal-empty-state--error" hidden>
+          <strong data-translate="modals.truck_info.error_title">Truck data unavailable</strong>
+          <p id="modalTruckInfoErrorText"></p>
+        </div>
+
+        <div id="modalTruckInfoEmpty" class="modal-empty-state" hidden>
+          <strong data-translate="modals.truck_info.empty_title">No active truck found</strong>
+          <p data-translate="modals.truck_info.empty_body">Load a valid save or quicksave to view the active truck.</p>
+        </div>
+
+        <div id="modalTruckInfoContent" hidden>
+          <section class="detail-hero-card">
+            <div>
+              <span class="detail-card-label" data-translate="modals.truck_info.card_current">Current Truck</span>
+              <h3 id="modalTruckInfoName" class="detail-hero-title">-</h3>
+            </div>
+          </section>
+
+          <div class="detail-grid detail-grid--truck-summary">
+            <article class="detail-card">
+              <span class="detail-card-label" data-translate="modals.truck_info.fields.brand">Brand</span>
+              <strong id="modalTruckInfoBrand" class="detail-card-value">-</strong>
+            </article>
+            <article class="detail-card">
+              <span class="detail-card-label" data-translate="modals.truck_info.fields.model">Model</span>
+              <strong id="modalTruckInfoModel" class="detail-card-value">-</strong>
+            </article>
+            <article class="detail-card">
+              <span class="detail-card-label" data-translate="modals.truck_info.fields.odometer">Odometer</span>
+              <strong id="modalTruckInfoOdometer" class="detail-card-value">-</strong>
+            </article>
+          </div>
+        </div>
+
+        <div class="modal-actions modal-actions--end">
+          <button id="modalTruckInfoClose" data-translate="modals.close">Close</button>
         </div>
       </div>
     </div>

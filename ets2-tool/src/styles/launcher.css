@@ -1,5 +1,8 @@
 :root {
   color-scheme: dark;
+  --launcher-shadow: 0 20px 42px rgba(4, 7, 12, 0.28);
+  --launcher-shadow-strong: 0 24px 48px rgba(4, 7, 12, 0.34);
+  --launcher-focus: 0 0 0 3px rgba(86, 134, 219, 0.22);
 }
 
 * {
@@ -15,20 +18,23 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: clamp(18px, 2.4vw, 32px);
+  line-height: 1.5;
+  text-rendering: optimizeLegibility;
 }
 
 .launcher-shell {
-  width: min(1120px, 100%);
+  width: min(1160px, 100%);
   display: grid;
-  gap: 20px;
+  gap: clamp(18px, 2vw, 24px);
 }
 
 .launcher-hero {
-  padding: 24px;
+  padding: clamp(24px, 2.4vw, 32px);
   border-radius: 20px;
   border: 1px solid #2a3347;
   background: linear-gradient(135deg, rgba(25, 33, 51, 0.96), rgba(11, 16, 28, 0.96));
+  box-shadow: var(--launcher-shadow);
 }
 
 .launcher-logo {
@@ -43,33 +49,47 @@ body {
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: #8aa0c9;
+  line-height: 1.4;
 }
 
 .launcher-hero h1 {
   margin: 10px 0 10px;
   font-size: clamp(30px, 5vw, 46px);
+  line-height: 1.02;
 }
 
 .launcher-hero p {
   margin: 0;
   color: #b3c0da;
   max-width: 760px;
+  line-height: 1.65;
 }
 
 .launcher-grid {
   display: grid;
-  gap: 20px;
+  gap: clamp(18px, 2vw, 24px);
   grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
 }
 
 .launcher-card {
   border-radius: 20px;
-  padding: 22px;
+  padding: clamp(22px, 2.1vw, 28px);
   border: 1px solid #2b3344;
   background: linear-gradient(160deg, rgba(15, 21, 34, 0.98), rgba(10, 14, 24, 0.96));
   display: grid;
-  gap: 12px;
-  box-shadow: 0 24px 40px rgba(4, 7, 12, 0.36);
+  gap: 14px;
+  box-shadow: var(--launcher-shadow);
+  transition:
+    transform 170ms ease,
+    border-color 170ms ease,
+    box-shadow 170ms ease,
+    background 170ms ease;
+}
+
+.launcher-card:hover {
+  transform: translateY(-2px);
+  border-color: #3a4861;
+  box-shadow: var(--launcher-shadow-strong);
 }
 
 .launcher-card-career {
@@ -80,23 +100,27 @@ body {
 .launcher-tag {
   display: inline-flex;
   width: fit-content;
-  padding: 4px 9px;
+  min-height: 26px;
+  padding: 4px 10px;
   border-radius: 999px;
   background: rgba(92, 113, 147, 0.18);
   color: #abc0e8;
   font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  align-items: center;
 }
 
 .launcher-card h2 {
   margin: 0;
   font-size: 27px;
+  line-height: 1.1;
 }
 
 .launcher-card p {
   margin: 0;
   color: #adbad6;
+  line-height: 1.6;
 }
 
 .launcher-btn {
@@ -105,20 +129,48 @@ body {
   background: linear-gradient(140deg, #2f66c8, #2452a4);
   color: #f0f5ff;
   border-radius: 12px;
-  height: 44px;
+  min-height: 46px;
+  padding: 0 18px;
   font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.04em;
   cursor: pointer;
+  transition:
+    transform 160ms ease,
+    filter 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    opacity 160ms ease;
+  box-shadow: 0 12px 26px rgba(32, 74, 146, 0.28);
 }
 
 .launcher-btn:hover {
-  filter: brightness(1.08);
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  border-color: #5d83c5;
+  box-shadow: 0 16px 28px rgba(32, 74, 146, 0.34);
+}
+
+.launcher-btn:active {
+  transform: translateY(0);
+}
+
+.launcher-btn:focus-visible {
+  outline: none;
+  border-color: #76a0eb;
+  box-shadow: var(--launcher-focus), 0 16px 28px rgba(32, 74, 146, 0.34);
 }
 
 .launcher-btn-career {
   border-color: #3d7ebf;
   background: linear-gradient(140deg, #2f7dc6, #255f99);
+  box-shadow: 0 12px 26px rgba(39, 96, 150, 0.28);
+}
+
+.launcher-btn-career:hover,
+.launcher-btn-career:focus-visible {
+  border-color: #57a0f0;
+  box-shadow: 0 16px 30px rgba(39, 96, 150, 0.34);
 }
 
 /* TEMP_GITHUB_BUILD: public UI lock styling */
@@ -138,4 +190,34 @@ body {
   border-color: #2b3344;
   background: linear-gradient(140deg, #1f2a3d, #172133);
   color: #7f8fae;
+  box-shadow: none;
+}
+
+@media (max-width: 720px) {
+  body {
+    align-items: stretch;
+  }
+
+  .launcher-shell {
+    gap: 16px;
+  }
+
+  .launcher-hero,
+  .launcher-card {
+    border-radius: 18px;
+  }
+}
+
+@media (max-width: 560px) {
+  body {
+    padding: 14px;
+  }
+
+  .launcher-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .launcher-btn {
+    width: 100%;
+  }
 }
