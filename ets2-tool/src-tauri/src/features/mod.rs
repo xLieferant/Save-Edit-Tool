@@ -17,6 +17,7 @@ pub mod profile_controls;
 pub mod profile_manager;
 pub mod profile_move_mods;
 pub mod profile_rename;
+pub mod profile_sharing;
 pub mod reputation;
 pub mod save_analysis;
 pub mod save_editor;

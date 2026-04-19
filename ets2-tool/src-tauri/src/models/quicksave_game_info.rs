@@ -1,6 +1,15 @@
 use serde::Serialize;
 
 #[derive(Serialize, Clone)]
+pub struct CurrentTruckSummary {
+    pub brand_label: Option<String>,
+    pub model_label: Option<String>,
+    pub display_name: Option<String>,
+    pub odometer_km: Option<i64>,
+    pub cleaned_plate: Option<String>,
+}
+
+#[derive(Serialize, Clone)]
 pub struct GameDataQuicksave {
     pub player_id: Option<String>,
     pub bank_id: Option<String>,
@@ -21,6 +30,9 @@ pub struct GameDataQuicksave {
     pub trip_fuel_l: Option<i64>,
     pub truck_brand: Option<String>,
     pub truck_model: Option<String>,
+    pub truck_brand_label: Option<String>,
+    pub truck_model_label: Option<String>,
+    pub truck_display_name: Option<String>,
 
     // Trailer-Felder
     pub trailer_brand: Option<String>,

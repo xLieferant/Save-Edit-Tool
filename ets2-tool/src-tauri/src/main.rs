@@ -47,6 +47,7 @@ fn main() {
             sqlite: sqlite_pool.clone(),
             sqlite_path: sqlite_path.clone(),
         })
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
@@ -214,6 +215,7 @@ fn main() {
             // features::save_analysis::reader::read_xp,
             features::save_analysis::reader::read_traffic_value,
             features::save_analysis::quicksave::quicksave_game_info,
+            features::save_analysis::quicksave::get_current_truck_summary,
             // Vehicles and trailers
             features::vehicles::trucks::get_all_trucks,
             features::vehicles::trucks::get_player_truck,
@@ -233,6 +235,12 @@ fn main() {
             features::profile_clone::commands::validate_clone_target,
             features::profile_rename::commands::profile_rename,
             features::profile_move_mods::commands::copy_mods_to_profile,
+            features::profile_sharing::commands::get_profile_share_context,
+            features::profile_sharing::commands::pick_shared_profile_import_archive,
+            features::profile_sharing::commands::pick_shared_profile_export_directory,
+            features::profile_sharing::commands::export_shared_profile,
+            features::profile_sharing::commands::inspect_shared_profile_archive,
+            features::profile_sharing::commands::import_shared_profile,
             // Language Management
             features::language::commands::get_available_languages_command,
             features::language::commands::get_current_language_command,

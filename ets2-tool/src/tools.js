@@ -4,6 +4,8 @@ import {
   openModalSlider,
   openModalMulti,
   openCloneProfileModal,
+  openCurrentTruckModal,
+  openProfileSharingPage,
 } from "./app.js";
 
 // Helper function to guard trailer actions
@@ -34,6 +36,15 @@ function resolveGameToolImage(baseImg, game) {
 // --------------------------------------------------------------
 export const tools = {
   truck: [
+    {
+      title: "tools.truck.current_truck.title",
+      desc: "tools.truck.current_truck.desc",
+      img: "images/odometer.png",
+      action: async () => {
+        await openCurrentTruckModal();
+      },
+      disabled: false,
+    },
     {
       title: "tools.truck.repair_truck.title",
       desc: "tools.truck.repair_truck.desc",
@@ -428,6 +439,15 @@ export const tools = {
         }
       },
     },
+  //  {
+  //    title: "tools.profile.profile_sharing.title",
+  //    desc: "tools.profile.profile_sharing.desc",
+  //    img: "images/moveMods.png",
+  //    action: async () => {
+  //      openProfileSharingPage("export");
+  //    },
+  //    disabled: true,
+  //  },
     {
       title: "tools.profile.move_mods.title",
       desc: "tools.profile.move_mods.desc",

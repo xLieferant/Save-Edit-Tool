@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 
 use crate::models::global_config_info::BaseGameConfig;
-use crate::models::quicksave_game_info::GameDataQuicksave;
+use crate::models::quicksave_game_info::{CurrentTruckSummary, GameDataQuicksave};
 use crate::models::save_game_config::SaveGameConfig;
 use crate::models::save_game_data::SaveGameData;
 use crate::models::trailers::ParsedTrailer;
@@ -32,6 +32,7 @@ struct CachedProfileData {
     save_config: Option<SaveGameConfig>,
     save_game_data: Option<SaveGameData>,
     quicksave_data: Option<GameDataQuicksave>,
+    current_truck_summary: Option<Option<CurrentTruckSummary>>,
     all_trucks: Option<Vec<ParsedTruck>>,
     player_truck: Option<ParsedTruck>,
     all_trailers: Option<Vec<ParsedTrailer>>,
@@ -63,6 +64,7 @@ impl ProfileCache {
         guard.save_config = None;
         guard.save_game_data = None;
         guard.quicksave_data = None;
+        guard.current_truck_summary = None;
         guard.all_trucks = None;
         guard.player_truck = None;
         guard.all_trailers = None;
@@ -74,6 +76,7 @@ impl ProfileCache {
         guard.save_path = save_path;
         guard.save_game_data = None;
         guard.quicksave_data = None;
+        guard.current_truck_summary = None;
         guard.all_trucks = None;
         guard.player_truck = None;
         guard.all_trailers = None;
@@ -105,6 +108,21 @@ impl ProfileCache {
         let guard = self.data.lock().unwrap();
         if Self::matches_save_path(&guard, path) {
             guard.quicksave_data.clone()
+        } else {
+            None
+        }
+    }
+
+    pub fn cache_current_truck_summary(&self, path: String, value: Option<CurrentTruckSummary>) {
+        let mut guard = self.data.lock().unwrap();
+        guard.save_path = Some(path);
+        guard.current_truck_summary = Some(value);
+    }
+
+    pub fn get_current_truck_summary(&self, path: &str) -> Option<Option<CurrentTruckSummary>> {
+        let guard = self.data.lock().unwrap();
+        if Self::matches_save_path(&guard, path) {
+            guard.current_truck_summary.clone()
         } else {
             None
         }
@@ -198,6 +216,7 @@ impl ProfileCache {
 
     pub fn invalidate_vehicle_data(&self) {
         let mut guard = self.data.lock().unwrap();
+        guard.current_truck_summary = None;
         guard.all_trucks = None;
         guard.player_truck = None;
         guard.all_trailers = None;
@@ -208,6 +227,7 @@ impl ProfileCache {
         let mut guard = self.data.lock().unwrap();
         guard.save_game_data = None;
         guard.quicksave_data = None;
+        guard.current_truck_summary = None;
     }
 }
 

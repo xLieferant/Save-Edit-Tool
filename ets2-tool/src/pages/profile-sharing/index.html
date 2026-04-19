@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <title data-translate="app.name">ETS2 Save Editor - Alex Edition</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="mode-editor profile-share-page-body">
+    <div class="app-shell profile-share-page-shell">
+      <section id="modalProfileShare" class="profile-share-page-frame panel-surface">
+        <div class="profile-share-page-topbar">
+          <button id="modalProfileShareClose" class="nav-action profile-share-back" type="button" data-translate="hub.mode_editor_full">
+            Save Edit Tool
+          </button>
+        </div>
+
+        <div class="detail-modal-head detail-modal-head--share">
+          <div>
+            <span id="profileShareModeKicker" class="modal-kicker" data-translate="modals.profile_sharing.kicker">Profile transfer</span>
+            <h2 id="profileShareModalTitle" data-translate="modals.profile_sharing.title">Profile Sharing</h2>
+            <p id="profileShareModalDescription" class="modal-description" data-translate="modals.profile_sharing.description">
+              Export the selected profile as a shareable ZIP archive and prepare incoming archives for import.
+            </p>
+          </div>
+          <div class="share-head-aside">
+            <span id="profileShareExperimentBadge" class="share-flag" data-translate="modals.profile_sharing.experimental_badge">Experimental</span>
+            <div id="profileShareStatusPill" class="modal-status-pill" data-state="neutral"></div>
+          </div>
+        </div>
+
+        <div class="share-modal-scroll">
+          <section class="share-status-card">
+            <span class="detail-card-label" data-translate="modals.profile_sharing.status_label">Status</span>
+            <strong id="profileShareStatusTitle" class="detail-card-value">-</strong>
+            <p id="profileShareStatusMessage" class="share-status-message"></p>
+            <p id="profileShareLastPath" class="share-path" hidden></p>
+          </section>
+
+          <div class="share-grid share-grid--single">
+            <section class="share-panel share-panel--summary">
+              <div class="share-panel-head">
+                <span id="profileShareSummaryLabel" class="detail-card-label" data-translate="modals.profile_sharing.summary_label">Summary</span>
+                <h3 id="profileShareSummaryTitle" class="share-panel-title" data-translate="modals.profile_sharing.summary_title">Current Transfer Setup</h3>
+              </div>
+
+              <p id="profileShareModeHint" class="share-panel-copy" data-translate="modals.profile_sharing.description">
+                Export the selected profile as a shareable ZIP archive and prepare incoming archives for import.
+              </p>
+
+              <div class="share-meta-grid">
+                <article class="detail-card">
+                  <span class="detail-card-label" data-translate="modals.profile_sharing.source_profile">Selected Profile</span>
+                  <strong id="profileShareSourceName" class="detail-card-value">-</strong>
+                </article>
+                <article class="detail-card">
+                  <span class="detail-card-label" data-translate="modals.profile_sharing.archive_name">Archive Name</span>
+                  <strong id="profileShareArchiveName" class="detail-card-value">-</strong>
+                </article>
+                <article class="detail-card detail-card--wide">
+                  <span id="profileShareTargetLabel" class="detail-card-label" data-translate="modals.profile_sharing.import_target">Import Target</span>
+                  <strong id="profileShareTargetPath" class="detail-card-value detail-card-value--mono">-</strong>
+                </article>
+                <article class="detail-card detail-card--wide">
+                  <span id="profileShareSelectedPathLabel" class="detail-card-label" data-translate="modals.profile_sharing.selected_path_label">Selected Path</span>
+                  <strong id="profileShareSelectedPath" class="detail-card-value detail-card-value--mono">-</strong>
+                </article>
+              </div>
+            </section>
+
+            <section class="share-panel share-panel--workspace">
+              <div class="share-panel-head">
+                <span class="detail-card-label" data-translate="modals.profile_sharing.workspace_label">Workflow</span>
+                <h3 id="profileShareWorkspaceTitle" class="share-panel-title" data-translate="modals.profile_sharing.export_title">Create ZIP Archive</h3>
+              </div>
+
+              <p id="profileShareExperimentalCopy" class="share-panel-copy" data-translate="modals.profile_sharing.experimental_copy">
+                Import and export are currently in a test phase. Please validate created archives before sharing them.
+              </p>
+
+              <div class="share-picker-card">
+                <span id="profileSharePickerLabel" class="detail-card-label" data-translate="modals.profile_sharing.selected_path_label">Selected Path</span>
+                <div class="share-picker-row">
+                  <div class="share-selection-display">
+                    <strong id="profileShareSelectionDisplay" class="detail-card-value detail-card-value--mono">-</strong>
+                  </div>
+                  <button id="profileShareBrowseButton" class="secondary-action share-browse-btn" type="button" data-translate="modals.profile_sharing.browse_import_button">
+                    Select ZIP File
+                  </button>
+                </div>
+              </div>
+
+              <div id="profileShareImportOptions" class="share-input-stack">
+                <label class="modal-label" for="profileShareImportName" data-translate="modals.profile_sharing.import_name_label">Profile Name Override</label>
+                <input
+                  id="profileShareImportName"
+                  type="text"
+                  data-translate-placeholder="modals.profile_sharing.import_name_placeholder"
+                  placeholder="Optional imported profile name"
+                />
+              </div>
+
+              <div id="profileSharePreview" class="share-preview"></div>
+            </section>
+          </div>
+        </div>
+
+        <div class="modal-actions modal-actions--end">
+          <button id="modalProfileSharePrimary" class="apply" data-translate="modals.profile_sharing.import_primary_action">
+            Select ZIP and import
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <script type="module">
+      const tauri = window.__TAURI__;
+      const invokeRaw = tauri?.core?.invoke;
+
+      window.invoke = async (command, args = {}) => {
+        if (!invokeRaw) {
+          throw new Error("Tauri API not available");
+        }
+        return invokeRaw(command, args);
+      };
+
+      async function t(key, params = {}) {
+        if (!invokeRaw) {
+          let text = String(key ?? "");
+          for (const [name, value] of Object.entries(params)) {
+            text = text.replaceAll(`{${name}}`, String(value));
+          }
+          return text;
+        }
+
+        const translated = await invokeRaw("translate_command", { key });
+        let text = String(translated ?? key);
+        for (const [name, value] of Object.entries(params)) {
+          text = text.replaceAll(`{${name}}`, String(value));
+        }
+        return text;
+      }
+
+      async function translateUi() {
+        const textNodes = document.querySelectorAll("[data-translate]");
+        for (const element of textNodes) {
+          const key = element.getAttribute("data-translate");
+          element.textContent = await t(key);
+        }
+
+        const placeholders = document.querySelectorAll("[data-translate-placeholder]");
+        for (const element of placeholders) {
+          const key = element.getAttribute("data-translate-placeholder");
+          element.setAttribute("placeholder", await t(key));
+        }
+      }
+
+      window.t = t;
+      window.translateUI = translateUi;
+
+      window.showToast = async function (messageOrKey, options = {}, type = "info") {
+        const resolvedOptions = typeof options === "string" ? {} : options;
+        const resolvedType = typeof options === "string" ? options : type;
+        const message = await t(messageOrKey, resolvedOptions);
+        const toast = document.createElement("div");
+        toast.className = `toast toast-${resolvedType}`;
+        toast.innerHTML = `<span class="toast-icon">${resolvedType === "success" ? "OK" : resolvedType === "error" ? "ER" : resolvedType === "warning" ? "!" : "i"}</span><span class="toast-text"></span>`;
+        toast.querySelector(".toast-text").textContent = message;
+        document.body.appendChild(toast);
+        requestAnimationFrame(() => toast.classList.add("show"));
+        setTimeout(() => {
+          toast.classList.remove("show");
+          setTimeout(() => toast.remove(), 300);
+        }, 4500);
+      };
+
+      const savedTheme = localStorage.getItem("theme") || "neon";
+      document.body.classList.remove("theme-dark", "theme-light", "theme-neon");
+      document.body.classList.add(`theme-${savedTheme}`);
+
+      const storedProfilePath = localStorage.getItem("ets2_profile_share_profile_path");
+      window.selectedProfilePath = storedProfilePath ? String(storedProfilePath).trim() || null : null;
+      const saveEditorPath = "/pages/save-editor/index.html";
+
+      async function navigateBackToSaveEditor() {
+        if (invokeRaw) {
+          try {
+            await invokeRaw("hub_set_mode", { mode: "editor" });
+          } catch (error) {
+            console.warn("[profile-share] hub_set_mode failed", error);
+          }
+        }
+        window.location.href = saveEditorPath;
+      }
+
+      await translateUi();
+
+      const mode = new URL(window.location.href).searchParams.get("mode") === "import" ? "import" : "export";
+      document.title = mode === "import"
+        ? await t("modals.profile_sharing.title_import")
+        : await t("modals.profile_sharing.title_export");
+
+      document.getElementById("modalProfileShareClose")?.addEventListener(
+        "click",
+        async (event) => {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          await navigateBackToSaveEditor();
+        },
+        true
+      );
+
+      const { openProfileSharingModal } = await import("/app.js");
+      await openProfileSharingModal(mode, {
+        openSurface: () => {},
+        closeSurface: () => {},
+        allowBackdropClose: false,
+        allowEscape: true,
+        allowMissingProfilePath: true,
+        resolveProfilePath: () => {
+          const current = localStorage.getItem("ets2_profile_share_profile_path");
+          if (!current) return null;
+          const normalized = String(current).trim();
+          return normalized ? normalized : null;
+        },
+        onClose: navigateBackToSaveEditor,
+      });
+    </script>
+  </body>
+</html>
