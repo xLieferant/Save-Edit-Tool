@@ -1054,6 +1054,7 @@
             "profile_share_import_success": "Shared profile imported as {profileName}.",
             "profile_share_action_failed": "Profile sharing failed: {error}",
             "diagnostics_analysis_failed": "Diagnostics analysis failed.",
+            "diagnostics_analysis_timed_out": "Mod analysis timed out. Some files were skipped.",
             "diagnostics_export_success": "Diagnostic report exported to {path}.",
             "diagnostics_export_failed": "Failed to export the diagnostic report.",
             "diagnostics_copy_summary_success": "Diagnostics summary copied.",
@@ -1062,6 +1063,7 @@
             "diagnostics_log_path_copied": "Log folder path copied.",
             "diagnostics_log_open_failed": "Failed to open or copy the log folder path.",
             "mod_profile_manager_scan_failed": "The mod profile scan failed.",
+            "mod_profile_manager_scan_timed_out": "Mod scan timed out. Some mods were skipped.",
             "mod_profile_manager_preset_created": "Preset {name} created.",
             "mod_profile_manager_preset_failed": "The preset action failed.",
             "mod_profile_manager_preset_deleted": "Preset deleted.",
@@ -1437,12 +1439,16 @@
                   "actions": {
                         "back": "Back",
                         "refresh": "Refresh Analysis",
+                        "retry_analysis": "Retry Analysis",
+                        "deep_scan": "Deep Scan",
+                        "deep_scan_warning": "Deep scan may take longer and some protected mods cannot be inspected.",
                         "export_report": "Export Report",
                         "export_errors": "Export errors.txt",
                         "export_crash": "Export crash-report.txt",
                         "copy_summary": "Copy summary",
                         "copy_suspicious_mods": "Copy suspicious mods",
-                        "open_logs": "Open log folder"
+                        "open_logs": "Open log folder",
+                        "open_log_folder": "Open Log Folder"
                   },
                   "fields": {
                         "package": "Package",
@@ -1492,6 +1498,8 @@
                         "no_logs": "No analyzer log paths available.",
                         "no_save_health_details": "No additional save-health details were isolated.",
                         "no_limitations": "No additional limitations were recorded.",
+                        "protected_mods_title": "Protected or unreadable mods detected",
+                        "protected_mods_hint": "This is common for ETS2 .scs mods and does not necessarily mean the mod is broken.",
                         "removed_suspected": "Potential removed mod or stale save reference.",
                         "no_mod_assigned": "No mod could be confidently assigned.",
                         "limit_label": "Limit"
@@ -1746,6 +1754,8 @@
             "label_color_theme_neon": "neon",
             "label_language": "Language",
             "label_developer": "Developer",
-            "label_console": "Console"
+            "label_console": "Console",
+            "label_toggle_on": "On",
+            "label_toggle_off": "Off"
       }
 }

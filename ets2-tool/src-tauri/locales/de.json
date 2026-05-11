@@ -1037,6 +1037,7 @@
             "profile_share_import_success": "Geteiltes Profil als {profileName} importiert.",
             "profile_share_action_failed": "Profilfreigabe fehlgeschlagen: {error}",
             "diagnostics_analysis_failed": "Diagnoseanalyse fehlgeschlagen.",
+            "diagnostics_analysis_timed_out": "Mod-Analyse hat das Zeitlimit erreicht. Einige Dateien wurden übersprungen.",
             "diagnostics_export_success": "Diagnosebericht nach {path} exportiert.",
             "diagnostics_export_failed": "Diagnosebericht konnte nicht exportiert werden.",
             "diagnostics_copy_summary_success": "Diagnosezusammenfassung kopiert.",
@@ -1045,6 +1046,7 @@
             "diagnostics_log_path_copied": "Pfad zum Log-Ordner kopiert.",
             "diagnostics_log_open_failed": "Log-Ordner konnte nicht ge?ffnet oder kopiert werden.",
             "mod_profile_manager_scan_failed": "Der Mod-Scan ist fehlgeschlagen.",
+            "mod_profile_manager_scan_timed_out": "Mod-Scan hat das Zeitlimit erreicht. Einige Mods wurden übersprungen.",
             "mod_profile_manager_preset_created": "Preset {name} erstellt.",
             "mod_profile_manager_preset_failed": "Die Preset-Aktion ist fehlgeschlagen.",
             "mod_profile_manager_preset_deleted": "Preset gel?scht.",
@@ -1420,12 +1422,16 @@
                   "actions": {
                         "back": "Zurück",
                         "refresh": "Analyse aktualisieren",
+                        "retry_analysis": "Analyse wiederholen",
+                        "deep_scan": "Deep Scan",
+                        "deep_scan_warning": "Der Deep Scan kann länger dauern und einige geschützte Mods können nicht geprüft werden.",
                         "export_report": "Bericht exportieren",
                         "export_errors": "errors.txt exportieren",
                         "export_crash": "crash-report.txt exportieren",
                         "copy_summary": "Zusammenfassung kopieren",
                         "copy_suspicious_mods": "Verd?chtige Mods kopieren",
-                        "open_logs": "Log-Ordner öffnen"
+                        "open_logs": "Log-Ordner öffnen",
+                        "open_log_folder": "Log-Ordner ?ffnen"
                   },
                   "fields": {
                         "package": "Paket",
@@ -1475,6 +1481,8 @@
                         "no_logs": "Keine Analyseprotokollpfade verfügbar.",
                         "no_save_health_details": "Es konnten keine weiteren Details zur Speicherstand-Gesundheit isoliert werden.",
                         "no_limitations": "Es wurden keine weiteren Einschränkungen verzeichnet.",
+                        "protected_mods_title": "Gesch?tzte oder unlesbare Mods erkannt",
+                        "protected_mods_hint": "Das ist bei ETS2-.scs-Mods ?blich und bedeutet nicht zwangsl?ufig, dass der Mod defekt ist.",
                         "removed_suspected": "M?glicherweise entfernter Mod oder veraltete Speicherstand-Referenz.",
                         "no_mod_assigned": "Kein Mod konnte sicher zugeordnet werden.",
                         "limit_label": "Grenze"
@@ -1729,6 +1737,8 @@
             "label_color_theme_neon": "neon",
             "label_language": "Sprache",
             "label_developer": "Entwickler",
-            "label_console": "Konsole"
+            "label_console": "Konsole",
+            "label_toggle_on": "On",
+            "label_toggle_off": "Off"
       }
 }

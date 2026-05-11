@@ -43,7 +43,9 @@ pub fn compare_preset(
             continue;
         }
 
-        let current_index = matches[0];
+        let Some(current_index) = matches.first().copied() else {
+            continue;
+        };
         matched_current_indexes.insert(current_index);
         let current_mod = &inventory.mods[current_index];
 

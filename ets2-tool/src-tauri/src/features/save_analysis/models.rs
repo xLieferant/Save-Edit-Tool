@@ -20,6 +20,8 @@ pub struct AnalyzerOverview {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct AnalysisSources {
+    pub analysis_mode: String,
+    pub analysis_timed_out: bool,
     pub game_log_found: bool,
     pub game_log_path: Option<String>,
     pub game_crash_found: bool,
@@ -99,6 +101,7 @@ pub struct ModConflictAnalysisReport {
     pub suspected_mods: Vec<SuspectedMod>,
     pub missing_references: Vec<MissingReference>,
     pub errors: Vec<AnalyzedError>,
+    pub unreadable_mods: Vec<String>,
     pub removed_mod_suspected: bool,
     pub removed_mod_reason: Option<String>,
     pub logs: AnalyzerLogPaths,

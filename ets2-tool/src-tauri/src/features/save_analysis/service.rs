@@ -13,9 +13,10 @@ use std::any::Any;
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::fs;
 use std::fs::File;
-use std::io::Read;
+use std::io::{Read, Seek, SeekFrom};
 use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::path::{Path, PathBuf};
+use std::time::{Duration, Instant};
 use walkdir::WalkDir;
 use zip::ZipArchive;
 
@@ -23,6 +24,14 @@ const LAST_CONTEXT_COUNT: usize = 10;
 const MAX_RELEVANT_LOG_LINES: usize = 160;
 const MAX_RELEVANT_CRASH_LINES: usize = 80;
 const MAX_SUSPECTED_MODS: usize = 12;
+const ANALYZER_SCAN_TIMEOUT: Duration = Duration::from_secs(5);
+const ANALYZER_MAX_ROOT_ENTRIES: usize = 800;
+const ANALYZER_MAX_FOLDER_DEPTH: usize = 2;
+const ANALYZER_MAX_FOLDER_FILES: usize = 250;
+const ANALYZER_MAX_ARCHIVE_ENTRIES: usize = 250;
+const ANALYZER_MAX_MANIFEST_BYTES: u64 = 128 * 1024;
+const ANALYZER_LOG_TAIL_BYTES: u64 = 512 * 1024;
+const ANALYZER_DEEP_SCAN_TIMEOUT: Duration = Duration::from_secs(20);
 
 const COMMON_TOKENS: &[&str] = &[
     "accessory",
@@ -79,6 +88,9 @@ struct IndexedMod {
     name: String,
     package_name: Option<String>,
     file_path: String,
+    file_size: Option<u64>,
+    modified_at: Option<String>,
+    file_extension: Option<String>,
     readable: bool,
     manifest_present: bool,
     category_hints: BTreeSet<String>,
@@ -113,6 +125,28 @@ struct CandidateScore {
     exact_path_match: bool,
     matched_paths: BTreeSet<String>,
     reasons: Vec<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum AnalysisMode {
+    Light,
+    Deep,
+}
+
+impl AnalysisMode {
+    fn as_str(self) -> &'static str {
+        match self {
+            AnalysisMode::Light => "light",
+            AnalysisMode::Deep => "deep",
+        }
+    }
+
+    fn timeout(self) -> Duration {
+        match self {
+            AnalysisMode::Light => ANALYZER_SCAN_TIMEOUT,
+            AnalysisMode::Deep => ANALYZER_DEEP_SCAN_TIMEOUT,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -161,6 +195,7 @@ fn log_user_issue(message: &str) {
 fn record_limitation(limitations: &mut Vec<String>, message: impl Into<String>, user_visible: bool) {
     let message = message.into();
     crate::dev_log!("[diagnostics] limitation: {}", message);
+    let _ = user_log::user_log_warn("ModAnalyzer", &message);
     if user_visible {
         log_user_issue(&message);
     }
@@ -239,11 +274,53 @@ fn read_plain_text_lossy(label: &str, path: &Path) -> Result<String, String> {
     }
 }
 
+fn read_plain_text_tail_lossy(label: &str, path: &Path, max_bytes: u64) -> Result<String, String> {
+    let mut file = File::open(path).map_err(|error| {
+        format!(
+            "plain_text_tail_open_failed | source={} | label={} | reason={}",
+            path.display(),
+            label,
+            error
+        )
+    })?;
+    let file_len = file
+        .metadata()
+        .map_err(|error| format!("plain_text_tail_metadata_failed | label={} | reason={}", label, error))?
+        .len();
+    let start = file_len.saturating_sub(max_bytes);
+    file.seek(SeekFrom::Start(start))
+        .map_err(|error| format!("plain_text_tail_seek_failed | label={} | reason={}", label, error))?;
+    let mut bytes = Vec::new();
+    file.read_to_end(&mut bytes)
+        .map_err(|error| format!("plain_text_tail_read_failed | label={} | reason={}", label, error))?;
+
+    match String::from_utf8(bytes) {
+        Ok(content) => Ok(content),
+        Err(error) => Ok(String::from_utf8_lossy(&error.into_bytes()).into_owned()),
+    }
+}
+
 pub fn analyze_mod_conflict_diagnostics(
     profile_state: &AppProfileState,
     decrypt_cache: &DecryptCache,
 ) -> Result<ModConflictAnalysisReport, String> {
-    crate::dev_log!("[diagnostics] analysis start");
+    analyze_mod_conflict_diagnostics_with_mode(profile_state, decrypt_cache, AnalysisMode::Light)
+}
+
+pub fn analyze_mod_conflict_diagnostics_deep(
+    profile_state: &AppProfileState,
+    decrypt_cache: &DecryptCache,
+) -> Result<ModConflictAnalysisReport, String> {
+    analyze_mod_conflict_diagnostics_with_mode(profile_state, decrypt_cache, AnalysisMode::Deep)
+}
+
+fn analyze_mod_conflict_diagnostics_with_mode(
+    profile_state: &AppProfileState,
+    decrypt_cache: &DecryptCache,
+    mode: AnalysisMode,
+) -> Result<ModConflictAnalysisReport, String> {
+    let started_at = Instant::now();
+    crate::dev_log!("[diagnostics] {} scan started", mode.as_str());
     if let Err(error) = user_log::write_user_log("mod_conflict_analyzer opened", "start") {
         crate::dev_log!("[diagnostics] user log write failed: {}", error);
     }
@@ -316,12 +393,17 @@ pub fn analyze_mod_conflict_diagnostics(
         .unwrap_or_default();
     let active_mods_reliably_known = profile_sii.content.is_some();
 
-    let mut indexed_mods = mod_path
+    let (mut indexed_mods, scan_timed_out) = mod_path
         .as_deref()
-        .map(|path| scan_installed_mods(path, &mut limitations))
-        .unwrap_or_default();
+        .map(|path| scan_installed_mods(path, &mut limitations, started_at, mode))
+        .unwrap_or_else(|| (Vec::new(), false));
     let mod_folder_found = mod_path.as_deref().map(Path::exists).unwrap_or(false);
     apply_active_states(&mut indexed_mods, &active_mods, active_mods_reliably_known);
+    let unreadable_mods = indexed_mods
+        .iter()
+        .filter(|item| !item.readable)
+        .map(|item| item.name.clone())
+        .collect::<Vec<_>>();
 
     crate::dev_log!(
         "[diagnostics] sources loaded active_mods={} indexed_mods={} readable_mods={} unreadable_mods={}",
@@ -388,6 +470,8 @@ pub fn analyze_mod_conflict_diagnostics(
     };
 
     let sources = AnalysisSources {
+        analysis_mode: mode.as_str().to_string(),
+        analysis_timed_out: scan_timed_out,
         game_log_found: game_log.found,
         game_log_path: game_log.path,
         game_crash_found: game_crash.found,
@@ -431,6 +515,11 @@ pub fn analyze_mod_conflict_diagnostics(
     };
 
     crate::dev_log!(
+        "[diagnostics] {} scan completed entries={}",
+        mode.as_str(),
+        indexed_mods.len()
+    );
+    crate::dev_log!(
         "[diagnostics] analysis complete status={} errors={} missing_refs={} suspects={}",
         overview.status_badge,
         errors.len(),
@@ -467,6 +556,7 @@ pub fn analyze_mod_conflict_diagnostics(
         suspected_mods,
         missing_references,
         errors,
+        unreadable_mods,
         removed_mod_suspected,
         removed_mod_reason,
         logs,
@@ -513,7 +603,7 @@ fn read_optional_text(
     }
 
     let result = match label {
-        "game.log.txt" | "game.crash.txt" => read_plain_text_lossy(label, path),
+        "game.log.txt" | "game.crash.txt" => read_plain_text_tail_lossy(label, path, ANALYZER_LOG_TAIL_BYTES),
         _ => decrypt_if_needed(path),
     };
 
@@ -1058,14 +1148,19 @@ fn parse_active_mods(profile_content: &str) -> Vec<ActiveModEntry> {
         .collect()
 }
 
-fn scan_installed_mods(mod_dir: &Path, limitations: &mut Vec<String>) -> Vec<IndexedMod> {
+fn scan_installed_mods(
+    mod_dir: &Path,
+    limitations: &mut Vec<String>,
+    started_at: Instant,
+    mode: AnalysisMode,
+) -> (Vec<IndexedMod>, bool) {
     if !mod_dir.exists() {
         record_limitation(
             limitations,
             format!("The mod folder does not exist: {}", mod_dir.display()),
             false,
         );
-        return Vec::new();
+        return (Vec::new(), false);
     }
 
     let Ok(entries) = fs::read_dir(mod_dir) else {
@@ -1074,11 +1169,12 @@ fn scan_installed_mods(mod_dir: &Path, limitations: &mut Vec<String>) -> Vec<Ind
             format!("The mod folder could not be read: {}", mod_dir.display()),
             false,
         );
-        return Vec::new();
+        return (Vec::new(), false);
     };
 
     let mut mods = Vec::new();
-    let entries = entries.flatten().collect::<Vec<_>>();
+    let mut timed_out = false;
+    let entries = entries.flatten().take(ANALYZER_MAX_ROOT_ENTRIES).collect::<Vec<_>>();
     crate::dev_log!(
         "[diagnostics] scanning mod folder {} entries={}",
         mod_dir.display(),
@@ -1086,17 +1182,74 @@ fn scan_installed_mods(mod_dir: &Path, limitations: &mut Vec<String>) -> Vec<Ind
     );
 
     for entry in entries {
+        if started_at.elapsed() > mode.timeout() {
+            record_limitation(
+                limitations,
+                "Mod analysis timed out. Some files were skipped.".to_string(),
+                false,
+            );
+            crate::dev_log!(
+                "[diagnostics] timeout after_ms={}",
+                started_at.elapsed().as_millis()
+            );
+            timed_out = true;
+            break;
+        }
         let path = entry.path();
-        let is_archive = path
+        if fs::symlink_metadata(&path)
+            .map(|metadata| metadata.file_type().is_symlink())
+            .unwrap_or(false)
+        {
+            crate::dev_log!(
+                "[trace] MOD_SCAN skipped_file path={} reason=symlink",
+                path.display()
+            );
+            continue;
+        }
+        let extension = path
             .extension()
             .and_then(|value| value.to_str())
-            .map(|value| matches!(value.to_ascii_lowercase().as_str(), "scs" | "zip"))
+            .map(|value| value.to_ascii_lowercase());
+        let is_archive = extension
+            .as_deref()
+            .map(|value| matches!(value, "scs" | "zip"));
+        let is_known_mod_file = extension
+            .as_deref()
+            .map(|value| matches!(value, "scs" | "zip" | "rar" | "7z"))
             .unwrap_or(false);
-        if !path.is_dir() && !is_archive {
+        if !path.is_dir() && !is_known_mod_file {
             continue;
         }
 
-        let inspected = catch_unwind(AssertUnwindSafe(|| inspect_installed_mod_entry(&path, is_archive)));
+        if mode == AnalysisMode::Light {
+            if is_archive == Some(true) {
+                crate::dev_log!(
+                    "[diagnostics] archive deep scan skipped path={} reason=auto_light_mode",
+                    path.display()
+                );
+            }
+            let indexed_mod = scan_mods_light_metadata_only(&path);
+            if !indexed_mod.readable {
+                crate::dev_log!(
+                    "[diagnostics] mod file marked unreadable path={} reason=metadata_read_failed",
+                    path.display()
+                );
+            }
+            mods.push(indexed_mod);
+            continue;
+        }
+
+        if !path.is_dir() && is_archive != Some(true) {
+            crate::dev_log!(
+                "[trace] MOD_SCAN skipped_file path={} reason=unsupported_archive_format",
+                path.display()
+            );
+            mods.push(fallback_indexed_mod(&path, false));
+            continue;
+        }
+
+        let inspected =
+            catch_unwind(AssertUnwindSafe(|| inspect_installed_mod_entry(&path, is_archive == Some(true), started_at, mode)));
         match inspected {
             Ok(Ok(indexed_mod)) => mods.push(indexed_mod),
             Ok(Err(error)) => {
@@ -1109,6 +1262,11 @@ fn scan_installed_mods(mod_dir: &Path, limitations: &mut Vec<String>) -> Vec<Ind
                     limitations,
                     format!("Could not fully index mod entry `{}`: {}", path.display(), error),
                     false,
+                );
+                crate::dev_log!(
+                    "[diagnostics] mod file marked unreadable path={} reason={}",
+                    path.display(),
+                    error
                 );
                 mods.push(fallback_indexed_mod(&path, false));
             }
@@ -1124,29 +1282,42 @@ fn scan_installed_mods(mod_dir: &Path, limitations: &mut Vec<String>) -> Vec<Ind
                     format!("A mod entry was skipped after an internal analyzer failure: {}", path.display()),
                     false,
                 );
+                crate::dev_log!(
+                    "[diagnostics] panic caught in analyzer: {}",
+                    message
+                );
                 mods.push(fallback_indexed_mod(&path, false));
             }
         }
     }
 
-    mods
+    (mods, timed_out)
 }
 
-fn inspect_installed_mod_entry(path: &Path, is_archive: bool) -> Result<IndexedMod, String> {
+fn inspect_installed_mod_entry(
+    path: &Path,
+    is_archive: bool,
+    started_at: Instant,
+    mode: AnalysisMode,
+) -> Result<IndexedMod, String> {
     if is_archive {
-        inspect_archive_mod_entry(path)
+        inspect_archive_mod_entry(path, started_at, mode)
     } else {
-        inspect_folder_mod_entry(path)
+        inspect_folder_mod_entry(path, started_at)
     }
 }
 
-fn inspect_folder_mod_entry(path: &Path) -> Result<IndexedMod, String> {
+fn inspect_folder_mod_entry(path: &Path, started_at: Instant) -> Result<IndexedMod, String> {
     let mut manifest_summary = ManifestSummary::default();
     let mut manifest_present = false;
     let mut indexed_paths = Vec::new();
     let mut readable = true;
 
-    for entry in WalkDir::new(path) {
+    let mut files_seen = 0usize;
+    for entry in WalkDir::new(path).follow_links(false).max_depth(ANALYZER_MAX_FOLDER_DEPTH) {
+        if started_at.elapsed() > ANALYZER_SCAN_TIMEOUT {
+            break;
+        }
         let entry = match entry {
             Ok(value) => value,
             Err(error) => {
@@ -1157,6 +1328,10 @@ fn inspect_folder_mod_entry(path: &Path) -> Result<IndexedMod, String> {
         };
         if !entry.file_type().is_file() {
             continue;
+        }
+        files_seen += 1;
+        if files_seen > ANALYZER_MAX_FOLDER_FILES {
+            break;
         }
 
         let relative = entry
@@ -1169,7 +1344,9 @@ fn inspect_folder_mod_entry(path: &Path) -> Result<IndexedMod, String> {
         if normalized.ends_with("/manifest.sii") || normalized == "/manifest.sii" {
             manifest_present = true;
             if let Ok(content) = read_plain_text_lossy("manifest.sii", entry.path()) {
-                manifest_summary = parse_manifest_text(&content);
+                if content.len() as u64 <= ANALYZER_MAX_MANIFEST_BYTES {
+                    manifest_summary = parse_manifest_text(&content);
+                }
             }
         }
         if is_relevant_indexed_path(&normalized) {
@@ -1187,7 +1364,14 @@ fn inspect_folder_mod_entry(path: &Path) -> Result<IndexedMod, String> {
     ))
 }
 
-fn inspect_archive_mod_entry(path: &Path) -> Result<IndexedMod, String> {
+fn inspect_archive_mod_entry(path: &Path, started_at: Instant, mode: AnalysisMode) -> Result<IndexedMod, String> {
+    if mode == AnalysisMode::Light {
+        crate::dev_log!(
+            "[diagnostics] archive deep scan skipped path={} reason=auto_light_mode",
+            path.display()
+        );
+        return Ok(scan_mods_light_metadata_only(path));
+    }
     let file = File::open(path).map_err(|error| error.to_string())?;
     let mut archive = ZipArchive::new(file).map_err(|error| error.to_string())?;
 
@@ -1195,7 +1379,10 @@ fn inspect_archive_mod_entry(path: &Path) -> Result<IndexedMod, String> {
     let mut manifest_present = false;
     let mut indexed_paths = Vec::new();
 
-    for index in 0..archive.len() {
+    for index in 0..archive.len().min(ANALYZER_MAX_ARCHIVE_ENTRIES) {
+        if started_at.elapsed() > ANALYZER_SCAN_TIMEOUT {
+            break;
+        }
         let mut entry = archive.by_index(index).map_err(|error| error.to_string())?;
         if !entry.is_file() {
             continue;
@@ -1204,9 +1391,11 @@ fn inspect_archive_mod_entry(path: &Path) -> Result<IndexedMod, String> {
         let normalized = normalize_indexed_path(&entry.name().replace('\\', "/"));
         if normalized.ends_with("/manifest.sii") || normalized == "/manifest.sii" {
             manifest_present = true;
-            let mut bytes = Vec::new();
-            entry.read_to_end(&mut bytes).map_err(|error| error.to_string())?;
-            manifest_summary = parse_manifest_text(&String::from_utf8_lossy(&bytes));
+            if entry.size() <= ANALYZER_MAX_MANIFEST_BYTES {
+                let mut bytes = Vec::new();
+                entry.read_to_end(&mut bytes).map_err(|error| error.to_string())?;
+                manifest_summary = parse_manifest_text(&String::from_utf8_lossy(&bytes));
+            }
         }
         if is_relevant_indexed_path(&normalized) {
             indexed_paths.push(normalized);
@@ -1224,6 +1413,27 @@ fn inspect_archive_mod_entry(path: &Path) -> Result<IndexedMod, String> {
 }
 
 fn fallback_indexed_mod(path: &Path, readable: bool) -> IndexedMod {
+    build_indexed_mod(
+        path,
+        path.is_dir(),
+        readable,
+        false,
+        ManifestSummary::default(),
+        Vec::new(),
+    )
+}
+
+fn scan_mods_light_metadata_only(path: &Path) -> IndexedMod {
+    let metadata = fs::metadata(path);
+    let readable = metadata.is_ok();
+    if let Err(error) = &metadata {
+        crate::dev_log!(
+            "[trace] MOD_SCAN error path={} error={}",
+            path.display(),
+            error
+        );
+    }
+
     build_indexed_mod(
         path,
         path.is_dir(),
@@ -1287,6 +1497,15 @@ fn build_indexed_mod(
         name,
         package_name,
         file_path: path_to_string(path),
+        file_size: fs::metadata(path).ok().map(|metadata| metadata.len()),
+        modified_at: fs::metadata(path)
+            .ok()
+            .and_then(|metadata| metadata.modified().ok())
+            .map(|modified| chrono::DateTime::<Local>::from(modified).to_rfc3339()),
+        file_extension: path
+            .extension()
+            .and_then(|value| value.to_str())
+            .map(|value| value.to_ascii_lowercase()),
         readable,
         manifest_present,
         category_hints,

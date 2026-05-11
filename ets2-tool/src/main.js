@@ -458,7 +458,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     modalRecoveryCenter: document.getElementById("modalRecoveryCenter"),
     modalRecoveryCenterClose: document.getElementById("modalRecoveryCenterClose"),
     recoveryCenterModalContent: document.getElementById("recoveryCenterModalContent"),
-    editorRecoveryNavBtn: document.getElementById("editorRecoveryNavBtn"),
     saveResetUndoStatus: document.getElementById("saveResetUndoStatus"),
     saveResetHint: document.getElementById("saveResetHint"),
     resetMoney: document.getElementById("resetMoney"),
@@ -2117,9 +2116,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
 
   const isRecoveryViewActive = () => isModalOpen(refs.modalRecoveryCenter);
-  const setRecoveryNavActive = (active) => {
-    refs.editorRecoveryNavBtn?.classList.toggle("active", Boolean(active));
-  };
+  const setRecoveryNavActive = () => {};
 
   const syncRecoveryControls = () => {
     const hasSave = Boolean(window.selectedSavePath);
@@ -4239,10 +4236,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   refs.undoLastChangeBtn?.addEventListener("click", async () => {
     await undoLastSaveChange();
-  });
-
-  refs.editorRecoveryNavBtn?.addEventListener("click", async () => {
-    await openRecoveryCenterModal();
   });
 
   refs.modalRecoveryCenterClose?.addEventListener("click", closeRecoveryCenterModal);

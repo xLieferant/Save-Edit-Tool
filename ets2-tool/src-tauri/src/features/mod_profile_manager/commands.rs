@@ -1,13 +1,16 @@
 use super::compare;
-use super::discovery::{load_manager_state, scan_inventory};
+use super::discovery::{load_manager_state, scan_inventory, scan_inventory_with_mode, ScanMode};
 use super::models::{DiscoveredMod, GameType, ModPreset, PresetCompareResult, PresetModEntry};
 use super::presets;
 use crate::shared::user_log;
 use crate::state::AppProfileState;
 use std::any::Any;
 use std::panic::{AssertUnwindSafe, catch_unwind};
+use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{AppHandle, State};
 use uuid::Uuid;
+
+static MOD_SCAN_RUNNING: AtomicBool = AtomicBool::new(false);
 
 fn panic_message(payload: Box<dyn Any + Send>) -> String {
     if let Some(message) = payload.downcast_ref::<&str>() {
@@ -27,6 +30,29 @@ fn log_user_event(action: &str, stage: &str) {
             stage,
             error
         );
+    }
+}
+
+fn trace_log(message: &str) {
+    if let Err(error) = user_log::user_log_info("ModScanner", message) {
+        crate::dev_log!("[mod-profile-manager] trace user log failed: {}", error);
+    }
+}
+
+struct ScanGuard;
+
+impl ScanGuard {
+    fn acquire() -> Result<Self, String> {
+        if MOD_SCAN_RUNNING.swap(true, Ordering::SeqCst) {
+            return Err("Mod scan already running".to_string());
+        }
+        Ok(Self)
+    }
+}
+
+impl Drop for ScanGuard {
+    fn drop(&mut self) {
+        MOD_SCAN_RUNNING.store(false, Ordering::SeqCst);
     }
 }
 
@@ -105,10 +131,14 @@ pub fn load_mod_profile_manager_state(
     profile_state: State<'_, AppProfileState>,
     game: Option<String>,
 ) -> Result<super::models::ModProfileManagerState, String> {
+    let started_at = std::time::Instant::now();
+    crate::dev_log!("[trace] START open_mod_manager");
+    trace_log("START open_mod_manager");
     crate::dev_log!("[mod-profile-manager] load state requested game={:?}", game);
     log_user_event("mod_profile_manager opened", "start");
 
-    catch_command("load_mod_profile_manager_state", || {
+    let result = catch_command("load_mod_profile_manager_state", || {
+        let _scan_guard = ScanGuard::acquire()?;
         let state = load_manager_state(&app, profile_state.inner(), game.as_deref())?;
         crate::dev_log!(
             "[mod-profile-manager] load state completed game={} mods={} presets={} workshop_mods={} unreadable={}",
@@ -127,7 +157,26 @@ pub fn load_mod_profile_manager_state(
             "success",
         );
         Ok(state)
-    })
+    });
+    crate::dev_log!(
+        "[trace] END open_mod_manager duration_ms={}",
+        started_at.elapsed().as_millis()
+    );
+    trace_log(&format!(
+        "END open_mod_manager duration_ms={}",
+        started_at.elapsed().as_millis()
+    ));
+    if let Err(error) = &result {
+        crate::dev_log!(
+            "[trace] ERROR mod_manager command=load_mod_profile_manager_state error={}",
+            error
+        );
+        let _ = user_log::user_log_error(
+            "ModManager",
+            format!("ERROR mod_manager command=load_mod_profile_manager_state error={}", error),
+        );
+    }
+    result
 }
 
 #[tauri::command]
@@ -140,6 +189,7 @@ pub fn scan_mods(
     log_user_event("mod_profile_manager scan", "start");
 
     catch_command("scan_mods", || {
+        let _scan_guard = ScanGuard::acquire()?;
         let inventory = scan_inventory(&app, profile_state.inner(), game.as_deref())?;
         crate::dev_log!(
             "[mod-profile-manager] scan completed game={} local_mods={} workshop_mods={} unreadable={} steam_libraries={}",
@@ -160,6 +210,68 @@ pub fn scan_mods(
         );
         Ok(inventory.mods)
     })
+}
+
+#[tauri::command]
+pub fn scan_mods_light(
+    app: AppHandle,
+    profile_state: State<'_, AppProfileState>,
+    game: Option<String>,
+) -> Result<super::models::ModProfileManagerState, String> {
+    let result = catch_command("scan_mods_light", || {
+        let _scan_guard = ScanGuard::acquire()?;
+        let inventory = scan_inventory_with_mode(&app, profile_state.inner(), game.as_deref(), ScanMode::Light)?;
+        let presets = presets::list_presets(&app, Some(inventory.summary.selected_game))?;
+        Ok(super::models::ModProfileManagerState {
+            summary: super::models::ModScanSummary {
+                presets_saved: presets.len(),
+                ..inventory.summary
+            },
+            mods: inventory.mods,
+            presets,
+            warnings: inventory.warnings,
+            current_profile_path: inventory.current_profile_path,
+            logs: inventory.logs,
+        })
+    });
+    if let Err(error) = &result {
+        crate::dev_log!(
+            "[trace] ERROR mod_manager command=scan_mods_light error={}",
+            error
+        );
+    }
+    result
+}
+
+#[tauri::command]
+pub fn scan_mods_deep(
+    app: AppHandle,
+    profile_state: State<'_, AppProfileState>,
+    game: Option<String>,
+) -> Result<super::models::ModProfileManagerState, String> {
+    let result = catch_command("scan_mods_deep", || {
+        let _scan_guard = ScanGuard::acquire()?;
+        let inventory = scan_inventory_with_mode(&app, profile_state.inner(), game.as_deref(), ScanMode::Deep)?;
+        let presets = presets::list_presets(&app, Some(inventory.summary.selected_game))?;
+        Ok(super::models::ModProfileManagerState {
+            summary: super::models::ModScanSummary {
+                presets_saved: presets.len(),
+                ..inventory.summary
+            },
+            mods: inventory.mods,
+            presets,
+            warnings: inventory.warnings,
+            current_profile_path: inventory.current_profile_path,
+            logs: inventory.logs,
+        })
+    });
+    if let Err(error) = &result {
+        crate::dev_log!(
+            "[trace] ERROR mod_manager command=scan_mods_deep error={}",
+            error
+        );
+    }
+    result
 }
 
 #[tauri::command]

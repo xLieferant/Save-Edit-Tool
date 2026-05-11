@@ -80,6 +80,9 @@ pub struct DiscoveredMod {
     pub source: ModSource,
     pub name: String,
     pub file_path: String,
+    pub file_kind: String,
+    pub size_bytes: Option<u64>,
+    pub modified_at: Option<String>,
     pub workshop_id: Option<String>,
     pub app_id: Option<String>,
     pub manifest_name: Option<String>,
@@ -135,6 +138,8 @@ pub struct WorkshopFolderSource {
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ModScanSummary {
     pub selected_game: GameType,
+    pub scan_mode: String,
+    pub scan_timed_out: bool,
     pub local_mod_folder_path: Option<String>,
     pub local_mod_folder_found: bool,
     pub steam_install_found: bool,

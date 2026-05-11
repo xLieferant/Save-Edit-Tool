@@ -14,9 +14,123 @@ use std::collections::{BTreeSet, HashSet};
 use std::fs::{self, File};
 use std::io::Read;
 use std::path::Path;
+use std::time::{Duration, Instant, UNIX_EPOCH};
 use tauri::AppHandle;
 use walkdir::WalkDir;
 use zip::ZipArchive;
+
+const LIGHT_SCAN_TIMEOUT: Duration = Duration::from_secs(5);
+const DEEP_SCAN_TIMEOUT: Duration = Duration::from_secs(20);
+const LIGHT_SCAN_MAX_ROOT_ENTRIES: usize = 800;
+const DEEP_SCAN_MAX_ROOT_ENTRIES: usize = 4_000;
+const LIGHT_SCAN_MAX_FOLDER_DEPTH: usize = 2;
+const DEEP_SCAN_MAX_FOLDER_DEPTH: usize = 8;
+const LIGHT_SCAN_MAX_FOLDER_FILES: usize = 250;
+const DEEP_SCAN_MAX_FOLDER_FILES: usize = 4_000;
+const LIGHT_SCAN_MAX_ARCHIVE_ENTRIES: usize = 250;
+const DEEP_SCAN_MAX_ARCHIVE_ENTRIES: usize = 4_000;
+const LIGHT_SCAN_MAX_MANIFEST_BYTES: u64 = 128 * 1024;
+const DEEP_SCAN_MAX_MANIFEST_BYTES: u64 = 512 * 1024;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ScanMode {
+    Light,
+    Deep,
+}
+
+impl ScanMode {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::Light => "light",
+            Self::Deep => "deep",
+        }
+    }
+
+    fn timeout(self) -> Duration {
+        match self {
+            Self::Light => LIGHT_SCAN_TIMEOUT,
+            Self::Deep => DEEP_SCAN_TIMEOUT,
+        }
+    }
+
+    fn max_root_entries(self) -> usize {
+        match self {
+            Self::Light => LIGHT_SCAN_MAX_ROOT_ENTRIES,
+            Self::Deep => DEEP_SCAN_MAX_ROOT_ENTRIES,
+        }
+    }
+
+    fn max_folder_depth(self) -> usize {
+        match self {
+            Self::Light => LIGHT_SCAN_MAX_FOLDER_DEPTH,
+            Self::Deep => DEEP_SCAN_MAX_FOLDER_DEPTH,
+        }
+    }
+
+    fn max_folder_files(self) -> usize {
+        match self {
+            Self::Light => LIGHT_SCAN_MAX_FOLDER_FILES,
+            Self::Deep => DEEP_SCAN_MAX_FOLDER_FILES,
+        }
+    }
+
+    fn max_archive_entries(self) -> usize {
+        match self {
+            Self::Light => LIGHT_SCAN_MAX_ARCHIVE_ENTRIES,
+            Self::Deep => DEEP_SCAN_MAX_ARCHIVE_ENTRIES,
+        }
+    }
+
+    fn max_manifest_bytes(self) -> u64 {
+        match self {
+            Self::Light => LIGHT_SCAN_MAX_MANIFEST_BYTES,
+            Self::Deep => DEEP_SCAN_MAX_MANIFEST_BYTES,
+        }
+    }
+}
+
+struct ScanContext {
+    mode: ScanMode,
+    started_at: Instant,
+    timed_out: bool,
+}
+
+impl ScanContext {
+    fn new(mode: ScanMode) -> Self {
+        Self {
+            mode,
+            started_at: Instant::now(),
+            timed_out: false,
+        }
+    }
+
+    fn elapsed_ms(&self) -> u128 {
+        self.started_at.elapsed().as_millis()
+    }
+
+    fn check_timeout(&mut self, warnings: &mut Vec<String>) -> bool {
+        if self.timed_out {
+            return true;
+        }
+        if self.started_at.elapsed() <= self.mode.timeout() {
+            return false;
+        }
+        self.timed_out = true;
+        crate::dev_log!(
+            "[trace] MOD_SCAN timeout after_ms={}",
+            self.elapsed_ms()
+        );
+        record_warning(
+            warnings,
+            format!(
+                "Mod scan timed out. Some mods were skipped. mode={} after_ms={}",
+                self.mode.as_str(),
+                self.elapsed_ms()
+            ),
+        );
+        true
+    }
+}
 
 #[derive(Debug, Clone, Default)]
 struct ActiveModEntry {
@@ -44,6 +158,7 @@ pub struct ScanInventoryResult {
 
 fn record_warning(warnings: &mut Vec<String>, message: String) {
     crate::dev_log!("[mod-profile-manager] {}", message);
+    let _ = user_log::user_log_warn("ModScanner", &message);
     warnings.push(message);
 }
 
@@ -52,7 +167,7 @@ pub fn load_manager_state(
     profile_state: &AppProfileState,
     requested_game: Option<&str>,
 ) -> Result<ModProfileManagerState, String> {
-    let inventory = scan_inventory(app, profile_state, requested_game)?;
+    let inventory = scan_inventory_with_mode(app, profile_state, requested_game, ScanMode::Light)?;
     let presets = presets::list_presets(app, Some(inventory.summary.selected_game))?;
 
     Ok(ModProfileManagerState {
@@ -73,13 +188,29 @@ pub fn scan_inventory(
     profile_state: &AppProfileState,
     requested_game: Option<&str>,
 ) -> Result<ScanInventoryResult, String> {
+    scan_inventory_with_mode(app, profile_state, requested_game, ScanMode::Deep)
+}
+
+pub fn scan_inventory_with_mode(
+    app: &AppHandle,
+    profile_state: &AppProfileState,
+    requested_game: Option<&str>,
+    mode: ScanMode,
+) -> Result<ScanInventoryResult, String> {
     let game = resolve_game(profile_state, requested_game)?;
     let current_profile_path = current_profile_path(profile_state)?;
+    let mut scan_context = ScanContext::new(mode);
     crate::dev_log!(
-        "[mod-profile-manager] scan inventory started game={} requested_game={:?} profile={:?}",
+        "[trace] START mod_scan_{} path={}",
+        mode.as_str(),
+        current_profile_path.as_deref().unwrap_or("-")
+    );
+    crate::dev_log!(
+        "[mod-profile-manager] scan inventory started game={} requested_game={:?} profile={:?} mode={}",
         game.as_str(),
         requested_game,
-        current_profile_path
+        current_profile_path,
+        mode.as_str()
     );
     let mut warnings = Vec::new();
     let profile_content = read_profile_content(current_profile_path.as_deref(), &mut warnings);
@@ -128,7 +259,7 @@ pub fn scan_inventory(
             local_mod_folder.display(),
             local_mod_folder.is_dir()
         );
-        scanned_mods.extend(scan_local_mods(local_mod_folder, &mut warnings));
+        scanned_mods.extend(scan_local_mods(local_mod_folder, &mut warnings, &mut scan_context));
     } else {
         crate::dev_log!(
             "[mod-profile-manager] local mod folder could not be resolved game={}",
@@ -136,7 +267,11 @@ pub fn scan_inventory(
         );
     }
 
-    scanned_mods.extend(scan_workshop_mods(&steam_discovery.workshop_sources, &mut warnings));
+    scanned_mods.extend(scan_workshop_mods(
+        &steam_discovery.workshop_sources,
+        &mut warnings,
+        &mut scan_context,
+    ));
     apply_active_state(&mut scanned_mods, &active_mods, active_mods_reliably_known);
     sort_scanned_mods(&mut scanned_mods);
 
@@ -159,6 +294,8 @@ pub fn scan_inventory(
 
     let summary = ModScanSummary {
         selected_game: game,
+        scan_mode: mode.as_str().to_string(),
+        scan_timed_out: scan_context.timed_out,
         local_mod_folder_path: local_mod_folder.as_ref().map(|path| path.display().to_string()),
         local_mod_folder_found: local_mod_folder.as_ref().map(|path| path.is_dir()).unwrap_or(false),
         steam_install_found: steam_discovery.steam_install_found,
@@ -193,6 +330,11 @@ pub fn scan_inventory(
         summary.steam_workshop_mods_found,
         summary.unreadable_mods_count,
         load_order_source
+    );
+    crate::dev_log!(
+        "[trace] END mod_scan_{} duration_ms={}",
+        mode.as_str(),
+        scan_context.elapsed_ms()
     );
 
     Ok(ScanInventoryResult {
@@ -284,7 +426,11 @@ fn parse_active_mods(profile_content: &str) -> Vec<ActiveModEntry> {
         .collect()
 }
 
-fn scan_local_mods(mod_dir: &Path, warnings: &mut Vec<String>) -> Vec<ScannedMod> {
+fn scan_local_mods(
+    mod_dir: &Path,
+    warnings: &mut Vec<String>,
+    scan_context: &mut ScanContext,
+) -> Vec<ScannedMod> {
     if !mod_dir.is_dir() {
         return Vec::new();
     }
@@ -298,12 +444,33 @@ fn scan_local_mods(mod_dir: &Path, warnings: &mut Vec<String>) -> Vec<ScannedMod
         return Vec::new();
     };
 
-    for entry in entries {
+    for (index, entry) in entries.enumerate() {
+        if scan_context.check_timeout(warnings) {
+            break;
+        }
+        if index >= scan_context.mode.max_root_entries() {
+            record_warning(
+                warnings,
+                format!(
+                    "Skipping remaining local mod entries in {} after limit {}.",
+                    mod_dir.display(),
+                    scan_context.mode.max_root_entries()
+                ),
+            );
+            break;
+        }
         let Ok(entry) = entry else {
             continue;
         };
         let path = entry.path();
-        if let Some(mod_entry) = inspect_generic_entry(&path, ModSource::LocalModFolder, None, None, warnings) {
+        if let Some(mod_entry) = inspect_generic_entry(
+            &path,
+            ModSource::LocalModFolder,
+            None,
+            None,
+            warnings,
+            scan_context,
+        ) {
             mods.push(mod_entry);
         }
     }
@@ -314,10 +481,14 @@ fn scan_local_mods(mod_dir: &Path, warnings: &mut Vec<String>) -> Vec<ScannedMod
 fn scan_workshop_mods(
     sources: &[super::models::WorkshopFolderSource],
     warnings: &mut Vec<String>,
+    scan_context: &mut ScanContext,
 ) -> Vec<ScannedMod> {
     let mut mods = Vec::new();
 
     for source in sources {
+        if scan_context.check_timeout(warnings) {
+            break;
+        }
         let root = Path::new(&source.path);
         if !root.is_dir() {
             continue;
@@ -330,6 +501,7 @@ fn scan_workshop_mods(
                 extract_numeric_component(root.file_name().and_then(|value| value.to_str())),
                 Some(source.app_id.as_str()),
                 warnings,
+                scan_context,
             ) {
                 mods.push(entry);
             }
@@ -344,14 +516,34 @@ fn scan_workshop_mods(
             continue;
         };
 
-        for entry in entries {
+        for (index, entry) in entries.enumerate() {
+            if scan_context.check_timeout(warnings) {
+                break;
+            }
+            if index >= scan_context.mode.max_root_entries() {
+                record_warning(
+                    warnings,
+                    format!(
+                        "Skipping remaining workshop entries in {} after limit {}.",
+                        root.display(),
+                        scan_context.mode.max_root_entries()
+                    ),
+                );
+                break;
+            }
             let Ok(entry) = entry else {
                 continue;
             };
             let path = entry.path();
             let workshop_id = extract_numeric_component(path.file_name().and_then(|value| value.to_str()));
             if path.is_dir() && workshop_id.is_some() {
-                mods.extend(scan_workshop_item_dir(&path, workshop_id, Some(source.app_id.as_str()), warnings));
+                mods.extend(scan_workshop_item_dir(
+                    &path,
+                    workshop_id,
+                    Some(source.app_id.as_str()),
+                    warnings,
+                    scan_context,
+                ));
                 continue;
             }
 
@@ -361,6 +553,7 @@ fn scan_workshop_mods(
                 workshop_id,
                 Some(source.app_id.as_str()),
                 warnings,
+                scan_context,
             ) {
                 mods.push(item);
             }
@@ -375,6 +568,7 @@ fn scan_workshop_item_dir(
     workshop_id: Option<String>,
     app_id: Option<&str>,
     warnings: &mut Vec<String>,
+    scan_context: &mut ScanContext,
 ) -> Vec<ScannedMod> {
     let mut mods = Vec::new();
     let Ok(entries) = fs::read_dir(item_dir) else {
@@ -386,7 +580,21 @@ fn scan_workshop_item_dir(
     };
 
     let mut child_mod_found = false;
-    for entry in entries {
+    for (index, entry) in entries.enumerate() {
+        if scan_context.check_timeout(warnings) {
+            break;
+        }
+        if index >= scan_context.mode.max_root_entries() {
+            record_warning(
+                warnings,
+                format!(
+                    "Skipping remaining workshop item entries in {} after limit {}.",
+                    item_dir.display(),
+                    scan_context.mode.max_root_entries()
+                ),
+            );
+            break;
+        }
         let Ok(entry) = entry else {
             continue;
         };
@@ -397,6 +605,7 @@ fn scan_workshop_item_dir(
             workshop_id.clone(),
             app_id,
             warnings,
+            scan_context,
         ) {
             child_mod_found = true;
             mods.push(item);
@@ -410,6 +619,7 @@ fn scan_workshop_item_dir(
             workshop_id.clone(),
             app_id,
             warnings,
+            scan_context,
         ) {
             mods.push(item);
         } else {
@@ -426,7 +636,23 @@ fn inspect_generic_entry(
     workshop_id: Option<String>,
     app_id: Option<&str>,
     warnings: &mut Vec<String>,
+    scan_context: &mut ScanContext,
 ) -> Option<ScannedMod> {
+    if scan_context.check_timeout(warnings) {
+        return None;
+    }
+    if is_symlink_path(path) {
+        crate::dev_log!(
+            "[trace] MOD_SCAN skipped_file path={} reason=symlink",
+            path.display()
+        );
+        record_warning(
+            warnings,
+            format!("Skipped symbolic link or junction {}", path.display()),
+        );
+        return None;
+    }
+
     let is_archive = path
         .extension()
         .and_then(|value| value.to_str())
@@ -434,18 +660,31 @@ fn inspect_generic_entry(
         .unwrap_or(false);
 
     if !path.is_dir() && !is_archive {
+        if let Some(extension) = path.extension().and_then(|value| value.to_str()) {
+            if matches!(extension.to_ascii_lowercase().as_str(), "rar" | "7z") {
+                crate::dev_log!(
+                    "[trace] MOD_SCAN skipped_file path={} reason=unsupported_archive",
+                    path.display()
+                );
+            }
+        }
         return None;
     }
 
     let inspected = if is_archive {
-        inspect_archive_mod(path, source.clone(), workshop_id.clone(), app_id)
+        inspect_archive_mod(path, source.clone(), workshop_id.clone(), app_id, scan_context)
     } else {
-        inspect_folder_mod(path, source.clone(), workshop_id.clone(), app_id)
+        inspect_folder_mod(path, source.clone(), workshop_id.clone(), app_id, scan_context)
     };
 
     match inspected {
         Ok(item) => Some(item),
         Err(error) => {
+            crate::dev_log!(
+                "[trace] MOD_SCAN error path={} error={}",
+                path.display(),
+                error
+            );
             record_warning(
                 warnings,
                 format!("Could not inspect {}: {}", path.display(), error),
@@ -460,13 +699,18 @@ fn inspect_folder_mod(
     source: ModSource,
     workshop_id: Option<String>,
     app_id: Option<&str>,
+    scan_context: &mut ScanContext,
 ) -> Result<ScannedMod, String> {
     let mut indexed_paths = Vec::new();
     let mut manifest_metadata = ManifestMetadata::default();
     let mut manifest_present = false;
     let mut readable = true;
+    let mut files_seen = 0usize;
 
-    for entry in WalkDir::new(path) {
+    for entry in WalkDir::new(path)
+        .follow_links(false)
+        .max_depth(scan_context.mode.max_folder_depth())
+    {
         let entry = match entry {
             Ok(value) => value,
             Err(error) => {
@@ -482,6 +726,14 @@ fn inspect_folder_mod(
         if !entry.file_type().is_file() {
             continue;
         }
+        if scan_context.started_at.elapsed() > scan_context.mode.timeout() {
+            scan_context.timed_out = true;
+            break;
+        }
+        files_seen += 1;
+        if files_seen > scan_context.mode.max_folder_files() {
+            break;
+        }
 
         let Ok(relative) = entry.path().strip_prefix(path) else {
             continue;
@@ -496,7 +748,9 @@ fn inspect_folder_mod(
             manifest_present = true;
             match read_plain_text_lossy(entry.path()) {
                 Ok(content) => {
-                    manifest_metadata = parse_manifest_text(&content);
+                    if content.len() as u64 <= scan_context.mode.max_manifest_bytes() {
+                        manifest_metadata = parse_manifest_text(&content);
+                    }
                 }
                 Err(error) => {
                     crate::dev_log!(
@@ -514,6 +768,9 @@ fn inspect_folder_mod(
         source,
         workshop_id,
         app_id,
+        file_kind_label(path),
+        file_size(path),
+        file_modified_at(path),
         manifest_metadata,
         manifest_present,
         readable,
@@ -527,6 +784,7 @@ fn inspect_archive_mod(
     source: ModSource,
     workshop_id: Option<String>,
     app_id: Option<&str>,
+    scan_context: &mut ScanContext,
 ) -> Result<ScannedMod, String> {
     let file = File::open(path).map_err(|error| format!("open failed: {}", error))?;
     let mut archive = ZipArchive::new(file).map_err(|error| format!("zip read failed: {}", error))?;
@@ -534,7 +792,12 @@ fn inspect_archive_mod(
     let mut manifest_metadata = ManifestMetadata::default();
     let mut manifest_present = false;
 
-    for index in 0..archive.len() {
+    let entry_limit = archive.len().min(scan_context.mode.max_archive_entries());
+    for index in 0..entry_limit {
+        if scan_context.started_at.elapsed() > scan_context.mode.timeout() {
+            scan_context.timed_out = true;
+            break;
+        }
         let mut entry = archive
             .by_index(index)
             .map_err(|error| format!("archive entry failed: {}", error))?;
@@ -546,10 +809,12 @@ fn inspect_archive_mod(
 
         if normalized == "manifest.sii" || normalized.ends_with("/manifest.sii") {
             manifest_present = true;
-            let mut bytes = Vec::new();
-            entry.read_to_end(&mut bytes)
-                .map_err(|error| format!("manifest read failed: {}", error))?;
-            manifest_metadata = parse_manifest_text(&String::from_utf8_lossy(&bytes));
+            if entry.size() <= scan_context.mode.max_manifest_bytes() {
+                let mut bytes = Vec::new();
+                entry.read_to_end(&mut bytes)
+                    .map_err(|error| format!("manifest read failed: {}", error))?;
+                manifest_metadata = parse_manifest_text(&String::from_utf8_lossy(&bytes));
+            }
         }
     }
 
@@ -558,6 +823,9 @@ fn inspect_archive_mod(
         source,
         workshop_id,
         app_id,
+        file_kind_label(path),
+        file_size(path),
+        file_modified_at(path),
         manifest_metadata,
         manifest_present,
         true,
@@ -571,6 +839,9 @@ fn build_scanned_mod(
     source: ModSource,
     workshop_id: Option<String>,
     app_id: Option<&str>,
+    file_kind: String,
+    size_bytes: Option<u64>,
+    modified_at: Option<String>,
     manifest_metadata: ManifestMetadata,
     manifest_present: bool,
     readable: bool,
@@ -639,6 +910,9 @@ fn build_scanned_mod(
             source,
             name,
             file_path: path.display().to_string(),
+            file_kind,
+            size_bytes,
+            modified_at,
             workshop_id,
             app_id: app_id.map(|value| value.to_string()),
             manifest_name: manifest_metadata.display_name,
@@ -675,6 +949,9 @@ fn fallback_mod(
         source,
         workshop_id,
         app_id,
+        file_kind_label(path),
+        file_size(path),
+        file_modified_at(path),
         ManifestMetadata::default(),
         false,
         false,
@@ -926,4 +1203,36 @@ fn normalize_token(value: &str) -> String {
         .collect::<Vec<_>>()
         .join("_")
         .to_ascii_lowercase()
+}
+
+fn is_symlink_path(path: &Path) -> bool {
+    fs::symlink_metadata(path)
+        .map(|metadata| metadata.file_type().is_symlink())
+        .unwrap_or(false)
+}
+
+fn file_kind_label(path: &Path) -> String {
+    if path.is_dir() {
+        return "folder".to_string();
+    }
+    match path
+        .extension()
+        .and_then(|value| value.to_str())
+        .map(|value| value.to_ascii_lowercase())
+    {
+        Some(value) if value == "scs" => "scs".to_string(),
+        Some(value) if value == "zip" => "zip".to_string(),
+        Some(value) => value,
+        None => "unknown".to_string(),
+    }
+}
+
+fn file_size(path: &Path) -> Option<u64> {
+    fs::metadata(path).ok().map(|metadata| metadata.len())
+}
+
+fn file_modified_at(path: &Path) -> Option<String> {
+    let modified = fs::metadata(path).ok()?.modified().ok()?;
+    let seconds = modified.duration_since(UNIX_EPOCH).ok()?.as_secs() as i64;
+    chrono::DateTime::<chrono::Utc>::from_timestamp(seconds, 0).map(|value| value.to_rfc3339())
 }

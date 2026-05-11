@@ -308,6 +308,19 @@
       let sourceFilterValue = "all";
       let categoryFilterValue = "all";
       let searchValue = "";
+      let isModScanRunning = false;
+
+      function warnMissingElement(name) {
+        console.warn(`[mod-profile-manager] Missing element: ${name}`);
+      }
+
+      function safeBind(element, eventName, handler, name) {
+        if (!element) {
+          warnMissingElement(name);
+          return;
+        }
+        element.addEventListener(eventName, handler);
+      }
 
       function setPill(element, state, text) {
         if (!element) return;
@@ -866,17 +879,33 @@
           .join("");
       }
 
-      async function loadState(game = selectedGame, preserveCompare = false) {
+      function setBusyState(running) {
+        isModScanRunning = Boolean(running);
+        const scanLocked = isModScanRunning;
+        [
+          elements.scanBtn,
+          elements.createPresetBtn,
+          elements.importPresetBtn,
+          elements.exportPresetBtn,
+          elements.selectManualWorkshopBtn,
+          elements.clearManualWorkshopBtn,
+        ].forEach((element) => {
+          if (element) element.disabled = scanLocked;
+        });
+      }
+
+      async function loadState(game = selectedGame, preserveCompare = false, command = "scan_mods_light") {
         selectedGame = game;
         setLoading(true);
+        setBusyState(true);
         setPill(elements.statusPill, "neutral", copy.statusReady);
         setPill(elements.gamePill, "neutral", selectedGame.toUpperCase());
 
         try {
-          const state = await window.invoke("load_mod_profile_manager_state", { game });
+          const state = await window.invoke(command, { game });
           managerState = state;
           selectedGame = state.summary.selected_game || game;
-          elements.gameFilter.value = selectedGame;
+          if (elements.gameFilter) elements.gameFilter.value = selectedGame;
           updateCategoryFilterOptions();
           renderSummaryCards(state);
           renderSources(state);
@@ -899,6 +928,9 @@
           }
 
           updateComposerState();
+          if (state.summary?.scan_timed_out) {
+            window.showToast("toasts.mod_profile_manager_scan_timed_out", "warning");
+          }
           if (window.logUserAction) window.logUserAction("mod_profile_manager", "success");
         } catch (error) {
           const message = error?.message || String(error);
@@ -907,6 +939,8 @@
           setPill(elements.statusPill, "error", copy.statusUnknown);
           if (window.logUserAction) window.logUserAction("mod_profile_manager", "error");
           window.showToast("toasts.mod_profile_manager_scan_failed", "error");
+        } finally {
+          setBusyState(false);
         }
       }
 
@@ -1086,13 +1120,13 @@
         return existing?.path || managerState?.summary?.manual_workshop_path || "";
       }
 
-      elements.presetList.addEventListener("click", (event) => {
+      safeBind(elements.presetList, "click", (event) => {
         const button = event.target.closest("[data-action][data-preset-id]");
         if (!button) return;
         handlePresetAction(button.dataset.action, button.dataset.presetId);
-      });
+      }, "presetList");
 
-      elements.gameFilter.addEventListener("change", async () => {
+      safeBind(elements.gameFilter, "change", async () => {
         selectedGame = elements.gameFilter.value;
         try {
           await window.invoke("set_selected_game", { game: selectedGame });
@@ -1100,41 +1134,44 @@
           console.warn("[mod-profile-manager] set_selected_game failed", error);
         }
         compareResult = null;
-        await loadState(selectedGame, false);
-      });
-      elements.sourceFilter.addEventListener("change", () => {
+        await loadState(selectedGame, false, "scan_mods_light");
+      }, "gameFilter");
+      safeBind(elements.sourceFilter, "change", () => {
         sourceFilterValue = elements.sourceFilter.value;
         renderModList();
-      });
-      elements.categoryFilter.addEventListener("change", () => {
+      }, "sourceFilter");
+      safeBind(elements.categoryFilter, "change", () => {
         categoryFilterValue = elements.categoryFilter.value;
         renderModList();
-      });
-      elements.searchInput.addEventListener("input", () => {
+      }, "categoryFilter");
+      safeBind(elements.searchInput, "input", () => {
         searchValue = elements.searchInput.value.trim().toLowerCase();
         renderModList();
-      });
+      }, "searchInput");
 
-      elements.scanBtn.addEventListener("click", () => loadState(selectedGame, false));
-      elements.createPresetBtn.addEventListener("click", () => {
+      safeBind(elements.scanBtn, "click", async () => {
+        if (isModScanRunning) return;
+        await loadState(selectedGame, false, "scan_mods_deep");
+      }, "scanBtn");
+      safeBind(elements.createPresetBtn, "click", () => {
         elements.composer.hidden = false;
-        elements.presetNameInput.focus();
-      });
-      elements.importPresetBtn.addEventListener("click", handleImportPreset);
-      elements.exportPresetBtn.addEventListener("click", handleHeaderExport);
-      elements.saveCurrentPresetBtn.addEventListener("click", () => {
+        elements.presetNameInput?.focus();
+      }, "createPresetBtn");
+      safeBind(elements.importPresetBtn, "click", handleImportPreset, "importPresetBtn");
+      safeBind(elements.exportPresetBtn, "click", handleHeaderExport, "exportPresetBtn");
+      safeBind(elements.saveCurrentPresetBtn, "click", () => {
         elements.composer.hidden = false;
-        elements.presetNameInput.focus();
-      });
-      elements.presetSaveBtn.addEventListener("click", handleCreatePreset);
-      elements.presetCancelBtn.addEventListener("click", () => {
+        elements.presetNameInput?.focus();
+      }, "saveCurrentPresetBtn");
+      safeBind(elements.presetSaveBtn, "click", handleCreatePreset, "presetSaveBtn");
+      safeBind(elements.presetCancelBtn, "click", () => {
         elements.composer.hidden = true;
-      });
-      elements.copyWorkshopLinksBtn.addEventListener("click", handleCopyWorkshopLinks);
-      elements.openWorkshopFolderBtn.addEventListener("click", () => openPathOrCopy(firstWorkshopPath()));
-      elements.openLocalModFolderBtn.addEventListener("click", () => openPathOrCopy(managerState?.summary?.local_mod_folder_path || ""));
-      elements.selectManualWorkshopBtn.addEventListener("click", handleManualWorkshopSelect);
-      elements.clearManualWorkshopBtn.addEventListener("click", handleManualWorkshopClear);
+      }, "presetCancelBtn");
+      safeBind(elements.copyWorkshopLinksBtn, "click", handleCopyWorkshopLinks, "copyWorkshopLinksBtn");
+      safeBind(elements.openWorkshopFolderBtn, "click", () => openPathOrCopy(firstWorkshopPath()), "openWorkshopFolderBtn");
+      safeBind(elements.openLocalModFolderBtn, "click", () => openPathOrCopy(managerState?.summary?.local_mod_folder_path || ""), "openLocalModFolderBtn");
+      safeBind(elements.selectManualWorkshopBtn, "click", handleManualWorkshopSelect, "selectManualWorkshopBtn");
+      safeBind(elements.clearManualWorkshopBtn, "click", handleManualWorkshopClear, "clearManualWorkshopBtn");
 
       await translateUi();
       await loadCopy();
@@ -1151,7 +1188,9 @@
         true
       );
 
-      await loadState(selectedGame, false);
+      setTimeout(() => {
+        void loadState(selectedGame, false, "scan_mods_light");
+      }, 0);
     </script>
   </body>
 </html>

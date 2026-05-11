@@ -227,6 +227,9 @@ const modalConflictDiagnosticsHeadline = document.getElementById("modalConflictD
 const modalConflictDiagnosticsSummary = document.getElementById("modalConflictDiagnosticsSummary");
 const modalConflictDiagnosticsGuidance = document.getElementById("modalConflictDiagnosticsGuidance");
 const diagnosticsRefreshBtn = document.getElementById("diagnosticsRefreshBtn");
+const diagnosticsDeepScanBtn = document.getElementById("diagnosticsDeepScanBtn");
+const diagnosticsRefreshFooterBtn = document.getElementById("diagnosticsRefreshFooterBtn");
+const diagnosticsDeepScanFooterBtn = document.getElementById("diagnosticsDeepScanFooterBtn");
 const diagnosticsExportReportBtn = document.getElementById("diagnosticsExportReportBtn");
 const diagnosticsSourcesGrid = document.getElementById("diagnosticsSourcesGrid");
 const diagnosticsContextGrid = document.getElementById("diagnosticsContextGrid");
@@ -427,6 +430,9 @@ function formatLevelProgressSummary(progress, copy) {
 
 function setDiagnosticsActionState(disabled) {
   if (diagnosticsRefreshBtn) diagnosticsRefreshBtn.disabled = disabled;
+  if (diagnosticsDeepScanBtn) diagnosticsDeepScanBtn.disabled = disabled;
+  if (diagnosticsRefreshFooterBtn) diagnosticsRefreshFooterBtn.disabled = disabled;
+  if (diagnosticsDeepScanFooterBtn) diagnosticsDeepScanFooterBtn.disabled = disabled;
   if (diagnosticsExportReportBtn) diagnosticsExportReportBtn.disabled = disabled;
   if (diagnosticsExportErrorsBtn) diagnosticsExportErrorsBtn.disabled = disabled;
   if (diagnosticsExportCrashBtn) diagnosticsExportCrashBtn.disabled = disabled;
@@ -560,6 +566,10 @@ function createDefaultDiagnosticsCopy() {
     logsUser: "User log",
     logsFolder: "Log folder",
     limitLabel: "Limitation",
+    protectedModsTitle: "Protected or unreadable mods detected",
+    protectedModsHint: "This is common for ETS2 .scs mods and does not necessarily mean the mod is broken.",
+    analysisTimedOut: "Mod analysis timed out. Some files were skipped.",
+    deepScanWarning: "Deep scan may take longer and some protected mods cannot be inspected.",
     errorBody: "Analysis failed.",
   });
 }
@@ -611,6 +621,7 @@ function normalizeDiagnosticsReport(report) {
     logs: normalized.logs && typeof normalized.logs === "object" ? { ...normalized.logs } : {},
     removed_mod_suspected: Boolean(normalized.removed_mod_suspected),
     removed_mod_reason: safeValue(normalized.removed_mod_reason, ""),
+    unreadable_mods: Array.isArray(normalized.unreadable_mods) ? normalized.unreadable_mods : [],
     limitations: Array.isArray(normalized.limitations) ? normalized.limitations : [],
     raw_relevant_log_lines: Array.isArray(normalized.raw_relevant_log_lines) ? normalized.raw_relevant_log_lines : [],
     raw_relevant_crash_lines: Array.isArray(normalized.raw_relevant_crash_lines) ? normalized.raw_relevant_crash_lines : [],
@@ -829,6 +840,7 @@ function renderDiagnosticsReport(report, copy) {
   const context = report?.context || {};
   const suspectedMods = Array.isArray(report?.suspected_mods) ? report.suspected_mods : [];
   const missingReferences = Array.isArray(report?.missing_references) ? report.missing_references : [];
+  const unreadableMods = Array.isArray(report?.unreadable_mods) ? report.unreadable_mods : [];
   const limitations = Array.isArray(report?.limitations) ? report.limitations : [];
   const topSuspect = suspectedMods[0] || null;
 
@@ -951,8 +963,20 @@ function renderDiagnosticsReport(report, copy) {
   }
 
   if (diagnosticsLimitations) {
-    diagnosticsLimitations.innerHTML = limitations.length
-      ? limitations.map((item) => diagnosticsListItem(copy.limitLabel, item)).join("")
+    const renderedLimitations = [];
+    if (unreadableMods.length) {
+      renderedLimitations.push(diagnosticsListItem(
+        copy.protectedModsTitle,
+        copy.protectedModsHint,
+        [diagnosticsBadge(String(unreadableMods.length), "warning")],
+        `<div class="diagnostics-chip-row">${unreadableMods.slice(0, 12).map((item) => diagnosticsBadge(item, "warning")).join("")}</div>`
+      ));
+    }
+    if (sources.analysis_timed_out) {
+      renderedLimitations.push(diagnosticsListItem(copy.limitLabel, copy.analysisTimedOut));
+    }
+    diagnosticsLimitations.innerHTML = renderedLimitations.length || limitations.length
+      ? renderedLimitations.concat(limitations.map((item) => diagnosticsListItem(copy.limitLabel, item))).join("")
       : diagnosticsEmptyMessage(copy.noLimitations);
   }
 
@@ -1057,6 +1081,21 @@ export async function openModalNumber(titleKey, value = 0) {
 export async function openModalSlider(titleKey, isChecked = 0) {
   modalSliderTitle.textContent = await window.t(titleKey);
   modalSliderInput.checked = Boolean(isChecked);
+  const modalSliderToggle = modalSlider.querySelector(".toggle-switch");
+  const modalSliderState = modalSlider.querySelector(".toggle-switch__state");
+  const sliderOnLabel = await window.t("label.toggle_on");
+  const sliderOffLabel = await window.t("label.toggle_off");
+
+  const syncSliderState = () => {
+    const isActive = Boolean(modalSliderInput.checked);
+    modalSliderToggle?.classList.toggle("toggle-switch--active", isActive);
+    if (modalSliderState) {
+      modalSliderState.textContent = isActive ? sliderOnLabel : sliderOffLabel;
+    }
+  };
+
+  modalSliderInput.addEventListener("change", syncSliderState);
+  syncSliderState();
   modalSlider.style.display = "flex";
 
   console.log(`[app.js] Öffne Slider-Modal: "${titleKey}" mit Wert ${isChecked}`);
@@ -1074,6 +1113,7 @@ export async function openModalSlider(titleKey, isChecked = 0) {
     function cleanup() {
       modalSliderApply.removeEventListener("click", apply);
       modalSliderCancel.removeEventListener("click", cancel);
+      modalSliderInput.removeEventListener("change", syncSliderState);
       modalSlider.style.display = "none";
     }
 
@@ -1091,6 +1131,8 @@ export async function openModalMulti(titleKey, config = []) {
 
   console.log(`[app.js] Öffne Multi-Modal: "${titleKey}"`);
   const adrLevels = [1, 3, 7, 15, 31, 63];
+  const toggleOnLabel = await window.t("label.toggle_on");
+  const toggleOffLabel = await window.t("label.toggle_off");
 
   const inputs = [];
 
@@ -1175,13 +1217,62 @@ export async function openModalMulti(titleKey, config = []) {
 
     /* CHECKBOX */
     if (item.type === "checkbox") {
+      const switchRow = document.createElement("div");
+      switchRow.className = "setting-toggle-row";
+
+      const copy = document.createElement("div");
+      copy.className = "setting-toggle-copy";
+
+      const toggleLabel = document.createElement("label");
+      toggleLabel.className = "setting-toggle-label";
+      toggleLabel.htmlFor = item.id;
+      toggleLabel.textContent = await window.t(item.label);
+
+      copy.appendChild(toggleLabel);
+
+      if (item.description) {
+        const description = document.createElement("p");
+        description.className = "setting-toggle-description";
+        description.textContent = await window.t(item.description);
+        copy.appendChild(description);
+      }
+
+      const toggleSwitch = document.createElement("label");
+      toggleSwitch.className = "toggle-switch";
+
       const input = document.createElement("input");
       input.type = "checkbox";
       input.id = item.id;
       input.checked = Boolean(item.value ?? 0);
-      input.className = "modal-checkbox";
-      control.appendChild(input);
+      input.className = "toggle-switch__input";
+      input.setAttribute("aria-label", await window.t(item.label));
+
+      const slider = document.createElement("span");
+      slider.className = "toggle-switch__slider";
+      slider.setAttribute("aria-hidden", "true");
+
+      const state = document.createElement("span");
+      state.className = "toggle-switch__state";
+
+      const syncToggleState = () => {
+        const isActive = Boolean(input.checked);
+        toggleSwitch.classList.toggle("toggle-switch--active", isActive);
+        state.textContent = isActive ? toggleOnLabel : toggleOffLabel;
+      };
+
+      input.addEventListener("change", syncToggleState);
+      syncToggleState();
+
+      toggleSwitch.appendChild(input);
+      toggleSwitch.appendChild(slider);
+      toggleSwitch.appendChild(state);
+
+      switchRow.appendChild(copy);
+      switchRow.appendChild(toggleSwitch);
+      row.appendChild(switchRow);
       inputs.push(input);
+      modalMultiContent.appendChild(row);
+      continue;
     }
 
     row.appendChild(label);
@@ -1776,6 +1867,7 @@ export async function openModConflictDiagnosticsModal(options = {}) {
   const sessionId = ++currentDiagnosticsSessionId;
   let copy = createDefaultDiagnosticsCopy();
   let activeRun = 0;
+  let isDiagnosticsRunning = false;
 
   function isStaleRun(runId) {
     return sessionId !== currentDiagnosticsSessionId || runId !== activeRun;
@@ -1855,6 +1947,7 @@ export async function openModConflictDiagnosticsModal(options = {}) {
   }
 
   async function handleRefresh() {
+    if (isDiagnosticsRunning) return;
     await runAnalysis();
   }
 
@@ -1867,6 +1960,9 @@ export async function openModConflictDiagnosticsModal(options = {}) {
       modalConflictDiagnostics.removeEventListener("click", handleBackdropClick);
     }
     diagnosticsRefreshBtn?.removeEventListener("click", handleRefresh);
+    diagnosticsDeepScanBtn?.removeEventListener("click", handleDeepScan);
+    diagnosticsRefreshFooterBtn?.removeEventListener("click", handleRefresh);
+    diagnosticsDeepScanFooterBtn?.removeEventListener("click", handleDeepScan);
     diagnosticsExportReportBtn?.removeEventListener("click", handleExportReport);
     diagnosticsExportErrorsBtn?.removeEventListener("click", handleExportErrors);
     diagnosticsExportCrashBtn?.removeEventListener("click", handleExportCrash);
@@ -1889,6 +1985,9 @@ export async function openModConflictDiagnosticsModal(options = {}) {
     modalConflictDiagnostics.addEventListener("click", handleBackdropClick);
   }
   diagnosticsRefreshBtn?.addEventListener("click", handleRefresh);
+  diagnosticsDeepScanBtn?.addEventListener("click", handleDeepScan);
+  diagnosticsRefreshFooterBtn?.addEventListener("click", handleRefresh);
+  diagnosticsDeepScanFooterBtn?.addEventListener("click", handleDeepScan);
   diagnosticsExportReportBtn?.addEventListener("click", handleExportReport);
   diagnosticsExportErrorsBtn?.addEventListener("click", handleExportErrors);
   diagnosticsExportCrashBtn?.addEventListener("click", handleExportCrash);
@@ -1960,12 +2059,18 @@ export async function openModConflictDiagnosticsModal(options = {}) {
       logsUser: await window.t("modals.mod_conflict_diagnostics.exports.user_log"),
       logsFolder: await window.t("modals.mod_conflict_diagnostics.exports.log_folder"),
       limitLabel: await window.t("modals.mod_conflict_diagnostics.content.limit_label"),
+      protectedModsTitle: await window.t("modals.mod_conflict_diagnostics.content.protected_mods_title"),
+      protectedModsHint: await window.t("modals.mod_conflict_diagnostics.content.protected_mods_hint"),
+      analysisTimedOut: await window.t("toasts.diagnostics_analysis_timed_out"),
+      deepScanWarning: await window.t("modals.mod_conflict_diagnostics.actions.deep_scan_warning"),
       errorBody: await window.t("modals.mod_conflict_diagnostics.error_body"),
     });
   }
 
-  async function runAnalysis() {
+  async function runAnalysis(command = "analyze_mod_conflict_diagnostics") {
     const runId = ++activeRun;
+    if (isDiagnosticsRunning) return;
+    isDiagnosticsRunning = true;
     currentDiagnosticsSeverityValue = "all";
     currentDiagnosticsReport = null;
     resetDiagnosticsModalPanels();
@@ -1981,9 +2086,9 @@ export async function openModConflictDiagnosticsModal(options = {}) {
 
       setModalPillState(modalConflictDiagnosticsConfidence, "loading", copy.statusNotEnoughData);
       setModalPillState(modalConflictDiagnosticsHealth, "loading", await window.t("modals.mod_conflict_diagnostics.loading_title"));
-      await logDiagnosticsFrontendEvent("analysis_started", "Invoking analyze_mod_conflict_diagnostics", false);
+      await logDiagnosticsFrontendEvent("analysis_started", `Invoking ${command}`, false);
 
-      const report = normalizeDiagnosticsReport(await window.invoke("analyze_mod_conflict_diagnostics"));
+      const report = normalizeDiagnosticsReport(await window.invoke(command));
       if (isStaleRun(runId)) return;
       currentDiagnosticsReport = report;
 
@@ -2008,11 +2113,20 @@ export async function openModConflictDiagnosticsModal(options = {}) {
 
       renderDiagnosticsReport(report, copy);
       if (isStaleRun(runId)) return;
+      if (report.sources?.analysis_timed_out) {
+        window.showToast("toasts.diagnostics_analysis_timed_out", "warning");
+      }
 
       if (modalConflictDiagnosticsContent) modalConflictDiagnosticsContent.hidden = false;
       setDiagnosticsActionState(false);
       if (diagnosticsOpenLogFolderBtn) {
         diagnosticsOpenLogFolderBtn.disabled = !safeValue(report.logs?.log_directory_path, "");
+      }
+      if (diagnosticsDeepScanBtn) {
+        diagnosticsDeepScanBtn.disabled = false;
+      }
+      if (diagnosticsDeepScanFooterBtn) {
+        diagnosticsDeepScanFooterBtn.disabled = false;
       }
       await logDiagnosticsFrontendEvent(
         "analysis_complete",
@@ -2034,10 +2148,23 @@ export async function openModConflictDiagnosticsModal(options = {}) {
       await logDiagnosticsFrontendEvent("analysis_failed", errorMessage, true);
       if (window.logUserAction) window.logUserAction("mod_conflict_analyzer", "error");
       window.showToast("toasts.diagnostics_analysis_failed", "error");
+    } finally {
+      isDiagnosticsRunning = false;
+      if (!isStaleRun(runId)) {
+        setDiagnosticsActionState(false);
+      }
     }
   }
 
-  await runAnalysis();
+  async function handleDeepScan() {
+    if (isDiagnosticsRunning) return;
+    if (!window.confirm(copy.deepScanWarning)) return;
+    await runAnalysis("analyze_mod_conflict_diagnostics_deep");
+  }
+
+  setTimeout(() => {
+    void runAnalysis();
+  }, 0);
 }
 
 /* --------------------------------------------------------------
@@ -2462,6 +2589,7 @@ export function openModConflictDiagnosticsPage() {
 }
 
 export function openModProfileManagerPage() {
+  console.info("[trace] START open_mod_manager");
   window.location.href = "/pages/mod-profile-manager/index.html";
 }
 

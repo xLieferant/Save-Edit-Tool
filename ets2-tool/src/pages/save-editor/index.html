@@ -227,7 +227,6 @@
                 <span class="editor-section-label" data-translate="editor.quick_actions">Workspace Actions</span>
               </div>
               <div class="editor-quick-actions">
-                <button id="editorRecoveryNavBtn" class="nav-action" type="button" data-translate="editor.recovery.nav_button">Recovery Center</button>
                 <button id="cloneProfileBtn" class="nav-action" type="button" data-translate="editor.clone_button">Clone Profile</button>
                 <button id="websiteBtn" class="nav-action website" type="button" data-translate="buttons.website">Website</button>
                 <button id="youtubeBtn" class="nav-action youtube" type="button" data-translate="buttons.youtube">YouTube</button>
@@ -845,8 +844,11 @@
     <div class="modal-backdrop" id="modalSlider">
       <div class="modal-box">
         <h2 id="modalSliderTitle">Modal Title</h2>
-        <input id="modalSliderInput" type="checkbox" class="toggle-checkbox" />
-        <label for="modalSliderInput" class="checkboxSlider"></label>
+        <label class="toggle-switch toggle-switch--modal">
+          <input id="modalSliderInput" type="checkbox" class="toggle-switch__input" />
+          <span class="toggle-switch__slider" aria-hidden="true"></span>
+          <span class="toggle-switch__state" data-translate="label.toggle_on">On</span>
+        </label>
         <div class="modal-actions">
           <button id="modalSliderCancel" data-translate="modals.cancel">Close</button>
           <button id="modalSliderApply" class="apply" data-translate="modals.apply">Apply</button>
@@ -986,6 +988,9 @@
               <p id="modalConflictDiagnosticsGuidance" class="diagnostics-guidance-copy">-</p>
             </div>
             <div class="diagnostics-hero-actions">
+              <button id="diagnosticsRefreshBtn" type="button" data-translate="modals.mod_conflict_diagnostics.actions.retry_analysis">Retry Analysis</button>
+              <button id="diagnosticsDeepScanBtn" type="button" data-translate="modals.mod_conflict_diagnostics.actions.deep_scan">Deep Scan</button>
+              <button id="diagnosticsOpenLogFolderBtn" type="button" data-translate="modals.mod_conflict_diagnostics.actions.open_log_folder">Open Log Folder</button>
               <button id="diagnosticsExportBtn" class="apply" type="button" data-translate="modals.mod_conflict_diagnostics.actions.export_errors">Export errors.txt</button>
               <button id="diagnosticsCopySummaryBtn" type="button" data-translate="modals.mod_conflict_diagnostics.actions.copy_summary">Copy summary</button>
               <button id="diagnosticsCopyModsBtn" type="button" data-translate="modals.mod_conflict_diagnostics.actions.copy_suspicious_mods">Copy suspicious mods</button>
@@ -1053,6 +1058,8 @@
         </div>
 
         <div class="modal-actions modal-actions--end">
+          <button id="diagnosticsRefreshFooterBtn" type="button" data-translate="modals.mod_conflict_diagnostics.actions.retry_analysis">Retry Analysis</button>
+          <button id="diagnosticsDeepScanFooterBtn" type="button" data-translate="modals.mod_conflict_diagnostics.actions.deep_scan">Deep Scan</button>
           <button id="modalConflictDiagnosticsClose" type="button" data-translate="modals.close">Close</button>
         </div>
       </div>
