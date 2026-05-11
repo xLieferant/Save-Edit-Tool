@@ -20,8 +20,10 @@ mod xp;
 fn main() {
     std::panic::set_hook(Box::new(|info| {
         crate::shared::logs::write_log(format!("[panic] {}", info));
+        let _ = crate::shared::user_log::user_log_error("App", format!("Application panic: {}", info));
     }));
     crate::dev_log!("[app] starting");
+    let _ = crate::shared::user_log::user_log_info("App", "Application start");
 
     features::career::scs_sdk_telemetry::start_terminal_telemetry_loop();
     features::career::telemetry_debug::start_telemetry_debug_thread();
@@ -57,6 +59,7 @@ fn main() {
             let runtime = career.runtime.clone();
             let auth = app.state::<AuthState>();
             crate::dev_log!("[app] setup begin");
+            let _ = crate::shared::user_log::user_log_info("App", "App setup started");
 
             let db_path = db::sqlite::app_db_path();
             crate::dev_log!("[app] setup init db: {}", db_path.display());
@@ -162,6 +165,7 @@ fn main() {
             features::telemetry::scs_shared_mem::start(app.handle().clone(), ets_db.pool.clone());
             crate::dev_log!("[trace] END telemetry_bridge_startup duration_ms=0");
             crate::dev_log!("[app] setup complete");
+            let _ = crate::shared::user_log::user_log_info("App", "App setup completed");
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -272,6 +276,10 @@ fn main() {
             // User action logging
             features::logging::commands::log_user_action,
             features::logging::commands::log_diagnostics_event,
+            features::logging::commands::get_user_logs,
+            features::logging::commands::export_user_logs,
+            features::logging::commands::clear_user_logs,
+            features::logging::commands::get_log_status,
             features::logging::commands::build_support_report,
             features::logging::commands::export_logs_bundle,
             //Feature: Profile Controls move around

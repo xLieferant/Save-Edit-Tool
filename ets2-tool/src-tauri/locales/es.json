@@ -1001,6 +1001,11 @@
             "parking_doubles_error": "Error al actualizar el aparcamiento doble",
             "dev_tools_success": "¡Herramientas de desarrollador actualizadas correctamente!",
             "dev_tools_error": "Error al actualizar las herramientas de desarrollador",
+            "user_logs_exported": "Los registros se exportaron a Descargas.",
+            "user_logs_cleared": "Los registros de usuario se borraron.",
+            "user_logs_load_error": "No se pudieron cargar los registros de usuario.",
+            "user_logs_export_error": "No se pudieron exportar los registros de usuario.",
+            "user_logs_clear_error": "No se pudieron borrar los registros de usuario.",
             "profile_loaded_select_save": "Perfil cargado. Por favor selecciona una partida guardada.",
             "profile_load_error": "¡No se pudo cargar el perfil!",
             "scan_saves_error": "No se pudieron escanear las partidas",
@@ -1196,6 +1201,10 @@
                         "title": "Herramientas de Desarrollador",
                         "desc": "Acceder a herramientas de desarrollador",
                         "modalTextTitle": "Ajustar configuración de desarrollador"
+                  },
+                  "user_logs": {
+                        "title": "User Logs",
+                        "desc": "Ver, exportar y borrar registros orientados al usuario."
                   }
             },
             "language_picker": {
@@ -1312,6 +1321,35 @@
                         "level_clamped": "Nivel ajustado al rango admitido {min}-{max}.",
                         "xp_clamped": "XP ajustado al rango admitido 0-{maxXp}.",
                         "unchanged": "Aún no se ha seleccionado ningún cambio."
+                  }
+            },
+            "user_logs": {
+                  "kicker": "User Logs",
+                  "title": "User Logs",
+                  "description": "Revisa las acciones, advertencias y errores recientes registrados por la herramienta.",
+                  "status": {
+                        "ready": "Listo",
+                        "loading": "Cargando"
+                  },
+                  "empty": "No hay registros de usuario disponibles.",
+                  "confirm_clear": "Â¿De verdad quieres borrar los registros de usuario?",
+                  "filters": {
+                        "all": "Todos",
+                        "info": "Info",
+                        "warnings": "Advertencias",
+                        "errors": "Errores"
+                  },
+                  "actions": {
+                        "refresh": "Actualizar registros",
+                        "export": "Exportar registros",
+                        "clear": "Borrar registros"
+                  },
+                  "meta": {
+                        "path": "Archivo de registro",
+                        "size": "TamaÃ±o",
+                        "warnings": "Advertencias",
+                        "errors": "Errores",
+                        "updated": "Actualizado"
                   }
             },
             "mod_conflict_diagnostics": {

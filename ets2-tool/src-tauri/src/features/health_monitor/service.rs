@@ -22,6 +22,7 @@ use crate::shared::sii_parser::{
     parse_trucks_from_sii,
 };
 use crate::shared::trace::{lock_mutex, TraceScope};
+use crate::shared::user_log;
 use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 
 use super::models::{SaveHealthFixResultDto, SaveHealthProblemDto, SaveHealthReportDto};
@@ -803,6 +804,7 @@ fn resolve_mod_scan_outcome(mod_dir: &Path) -> ModScanOutcome {
     };
 
     if is_running {
+        let _ = user_log::user_log_warn("HealthMonitor", "Mod scan already running.");
         return ModScanOutcome {
             mods: Vec::new(),
             state: ModScanState::InProgress,
@@ -931,6 +933,13 @@ fn complete_mod_scan(mod_dir: &Path, fingerprint: Vec<String>, result: ModScanCo
 }
 
 fn mark_mod_scan_timeout(mod_dir: &Path, fingerprint: Vec<String>) {
+    let _ = user_log::user_log_warn(
+        "HealthMonitor",
+        format!(
+            "Mod scan timed out after {}ms.",
+            Duration::from_secs(MOD_SCAN_TIMEOUT_SECS).as_millis()
+        ),
+    );
     if let Ok(mut cache) = lock_mutex("health_monitor.mod_scan_cache", mod_scan_cache()) {
         cache.insert(
             mod_dir.to_path_buf(),
@@ -947,6 +956,7 @@ fn mark_mod_scan_timeout(mod_dir: &Path, fingerprint: Vec<String>) {
 }
 
 fn mark_mod_scan_failure(mod_dir: &Path, fingerprint: Vec<String>, error: String) {
+    let _ = user_log::user_log_error("HealthMonitor", format!("Mod scan failed: {}", error));
     if let Ok(mut cache) = lock_mutex("health_monitor.mod_scan_cache", mod_scan_cache()) {
         cache.insert(
             mod_dir.to_path_buf(),

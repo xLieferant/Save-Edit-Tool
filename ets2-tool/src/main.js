@@ -135,6 +135,12 @@ async function safeInvoke(command, args = {}, options = {}) {
     return result;
   } catch (error) {
     console.error("[invoke:fail]", command, error);
+    if (hasTauri && command !== "log_user_action") {
+      tauriInvoke("log_user_action", {
+        action: `tauri_command_${command}`,
+        stage: "error",
+      }).catch(() => {});
+    }
     if (!silent && ["hub_get_mode", "career_get_status", "career_get_overview"].includes(command)) {
       showCareerLoadFailure(error);
     }
@@ -449,13 +455,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     editorFleetCard: document.getElementById("editorFleetCard"),
     editorStageTitle: document.getElementById("editorStageTitle"),
     editorStageSummary: document.getElementById("editorStageSummary"),
-    saveEditorDashboardView: document.getElementById("saveEditorDashboardView"),
-    editorRecoveryView: document.getElementById("editorRecoveryView"),
-    openRecoveryCenterBtn: document.getElementById("openRecoveryCenterBtn"),
+    modalRecoveryCenter: document.getElementById("modalRecoveryCenter"),
+    modalRecoveryCenterClose: document.getElementById("modalRecoveryCenterClose"),
+    recoveryCenterModalContent: document.getElementById("recoveryCenterModalContent"),
     editorRecoveryNavBtn: document.getElementById("editorRecoveryNavBtn"),
-    recoveryBackBtn: document.getElementById("recoveryBackBtn"),
-    recoveryEntrySummary: document.getElementById("recoveryEntrySummary"),
-    recoveryEntryStatus: document.getElementById("recoveryEntryStatus"),
     saveResetUndoStatus: document.getElementById("saveResetUndoStatus"),
     saveResetHint: document.getElementById("saveResetHint"),
     resetMoney: document.getElementById("resetMoney"),
@@ -463,6 +466,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     resetXp: document.getElementById("resetXp"),
     applyResetValuesBtn: document.getElementById("applyResetValuesBtn"),
     undoLastChangeBtn: document.getElementById("undoLastChangeBtn"),
+    modalSafeValueReset: document.getElementById("modalSafeValueReset"),
+    modalSafeValueResetClose: document.getElementById("modalSafeValueResetClose"),
+    modalUserLogs: document.getElementById("modalUserLogs"),
+    modalUserLogsClose: document.getElementById("modalUserLogsClose"),
+    userLogsStatusPill: document.getElementById("userLogsStatusPill"),
+    userLogsPath: document.getElementById("userLogsPath"),
+    userLogsSize: document.getElementById("userLogsSize"),
+    userLogsWarnings: document.getElementById("userLogsWarnings"),
+    userLogsErrors: document.getElementById("userLogsErrors"),
+    userLogsUpdated: document.getElementById("userLogsUpdated"),
+    userLogsViewer: document.getElementById("userLogsViewer"),
+    userLogsRefreshBtn: document.getElementById("userLogsRefreshBtn"),
+    userLogsExportBtn: document.getElementById("userLogsExportBtn"),
+    userLogsClearBtn: document.getElementById("userLogsClearBtn"),
+    userLogsFilterButtons: [...document.querySelectorAll("[data-user-log-filter]")],
     recoveryStatusProfile: document.getElementById("recoveryStatusProfile"),
     recoveryStatusSave: document.getElementById("recoveryStatusSave"),
     recoveryStatusScan: document.getElementById("recoveryStatusScan"),
@@ -672,10 +690,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     saveSafetyNoPreview: await t("editor.safety.restore.no_preview_status"),
     saveSafetyPreviewReady: await t("editor.safety.restore.ready_status"),
     saveSafetyRestoreConfirm: await t("editor.safety.restore.confirm"),
-    recoveryEntrySummary: await t("editor.recovery.entry_summary"),
-    recoveryEntryEmpty: await t("editor.recovery.entry_empty"),
-    recoveryEntryStatusIdle: await t("editor.recovery.entry_status_idle"),
-    recoveryEntryStatusReady: await t("editor.recovery.entry_status_ready"),
     recoveryLoading: await t("editor.recovery.loading"),
     recoveryNoScan: await t("editor.recovery.no_scan"),
     recoveryNotLoaded: await t("editor.recovery.not_loaded"),
@@ -691,6 +705,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     resetInvalidXp: await t("editor.reset.errors.invalid_xp"),
     resetInvalidMoney: await t("editor.reset.errors.invalid_money"),
     resetNoValues: await t("editor.reset.errors.no_values"),
+    userLogsReady: await t("modals.user_logs.status.ready"),
+    userLogsLoading: await t("modals.user_logs.status.loading"),
+    userLogsEmpty: await t("modals.user_logs.empty"),
+    userLogsClearConfirm: await t("modals.user_logs.confirm_clear"),
   };
   const careerUi = {
     noActiveTrip: await t("career.dashboard.no_active_trip"),
@@ -728,13 +746,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   let pendingSaveSafetyRetry = null;
   let activeSaveSafetyRefresh = null;
   let queuedSaveSafetyRefresh = null;
-  let activeEditorSurface = "dashboard";
   let recoveryHasLoaded = false;
   let recoveryDataDirty = false;
   let recoveryLoading = false;
   let saveEditorLoadInProgress = false;
   let isApplyingResetValues = false;
   let isUndoRunning = false;
+  let userLogsLoading = false;
+  let userLogsExporting = false;
+  let userLogsClearing = false;
+  let activeUserLogsFilter = "all";
   let activeUndoStatus = {
     canUndo: false,
     lastUndoLabel: null,
@@ -2090,8 +2111,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     await syncRecoveryPresentation();
   };
 
-  const isRecoveryViewActive = () => activeEditorSurface === "recovery";
-  const setRecoveryPillActive = (element, active) => element?.classList.toggle("is-active", Boolean(active));
+  const isModalOpen = (element) => {
+    if (!element) return false;
+    return window.getComputedStyle(element).display !== "none";
+  };
+
+  const isRecoveryViewActive = () => isModalOpen(refs.modalRecoveryCenter);
+  const setRecoveryNavActive = (active) => {
+    refs.editorRecoveryNavBtn?.classList.toggle("active", Boolean(active));
+  };
 
   const syncRecoveryControls = () => {
     const hasSave = Boolean(window.selectedSavePath);
@@ -2099,8 +2127,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const hasBackups = activeSaveBackups.length > 0;
     const hasPreview = Boolean(activeRestorePreview?.backupId);
 
-    if (refs.editorRecoveryView) {
-      refs.editorRecoveryView.setAttribute("aria-busy", recoveryLoading ? "true" : "false");
+    if (refs.recoveryCenterModalContent) {
+      refs.recoveryCenterModalContent.setAttribute("aria-busy", recoveryLoading ? "true" : "false");
     }
     if (refs.saveHealthRefreshBtn) refs.saveHealthRefreshBtn.disabled = recoveryLoading || !hasSave;
     if (refs.saveHealthDeepScanBtn) refs.saveHealthDeepScanBtn.disabled = recoveryLoading || !hasSave;
@@ -2139,26 +2167,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         ? await t("editor.safety.backups.count", { count: activeSaveBackups.length })
         : uiText.recoveryNotLoaded
       : uiText.noSave;
-    const entryStatus = !hasSave
-      ? uiText.noSave
-      : activeSaveHealthReport && !recoveryDataDirty
-        ? healthStatusLabel
-        : uiText.recoveryEntryStatusReady;
-    const entrySummary = !hasSave
-      ? uiText.recoveryEntryEmpty
-      : recoveryLoading
-        ? uiText.recoveryLoading
-        : activeSaveHealthReport && !recoveryDataDirty
-          ? activeSaveHealthReport.modScanMessage || activeSaveHealthReport.summary || uiText.recoveryEntrySummary
-          : uiText.recoveryEntrySummary;
-
     if (refs.recoveryStatusProfile) refs.recoveryStatusProfile.textContent = profileLabel;
     if (refs.recoveryStatusSave) refs.recoveryStatusSave.textContent = saveLabel;
     if (refs.recoveryStatusScan) refs.recoveryStatusScan.textContent = lastScanLabel;
     if (refs.recoveryStatusBackups) refs.recoveryStatusBackups.textContent = backupLabel;
-    if (refs.recoveryEntryStatus) refs.recoveryEntryStatus.textContent = entryStatus;
-    if (refs.recoveryEntrySummary) refs.recoveryEntrySummary.textContent = entrySummary;
-    setRecoveryPillActive(refs.recoveryEntryStatus, hasSave);
     syncRecoveryControls();
   };
 
@@ -2223,6 +2235,164 @@ document.addEventListener("DOMContentLoaded", async () => {
     syncSafeResetCard();
   };
 
+  const closeRecoveryCenterModal = () => {
+    if (refs.modalRecoveryCenter) refs.modalRecoveryCenter.style.display = "none";
+    setRecoveryNavActive(false);
+    closeRestorePreviewModal();
+  };
+
+  const openRecoveryCenterModal = async () => {
+    closeNavDrawer();
+    if (refs.modalRecoveryCenter) refs.modalRecoveryCenter.style.display = "flex";
+    setRecoveryNavActive(true);
+    void window.logUserAction?.("recovery_center", "start");
+    await syncRecoveryPresentation();
+    if (hasTauri && window.selectedSavePath && (!recoveryHasLoaded || recoveryDataDirty)) {
+      await refreshSaveSafety({ preservePreview: true });
+    }
+  };
+
+  const closeSafeValueResetModal = () => {
+    if (refs.modalSafeValueReset) refs.modalSafeValueReset.style.display = "none";
+  };
+
+  const openSafeValueResetModal = async () => {
+    closeNavDrawer();
+    if (refs.modalSafeValueReset) refs.modalSafeValueReset.style.display = "flex";
+    void window.logUserAction?.("safe_value_reset", "start");
+    syncSafeResetCard();
+    await refreshUndoStatus();
+  };
+
+  const formatLogSize = (bytes) => {
+    const value = Number(bytes ?? 0);
+    if (!Number.isFinite(value) || value <= 0) return "0 B";
+    if (value >= 1024 * 1024) return `${(value / (1024 * 1024)).toFixed(2)} MB`;
+    if (value >= 1024) return `${(value / 1024).toFixed(1)} KB`;
+    return `${Math.round(value)} B`;
+  };
+
+  const getUserLogsLevelFilter = () => {
+    switch (activeUserLogsFilter) {
+      case "info":
+        return "INFO";
+      case "warnings":
+        return "WARN";
+      case "errors":
+        return "ERROR";
+      default:
+        return null;
+    }
+  };
+
+  const setUserLogsStatus = (state, label) => {
+    setModalStatus(refs.userLogsStatusPill, state, label);
+  };
+
+  const syncUserLogsControls = () => {
+    const busy = userLogsLoading || userLogsExporting || userLogsClearing;
+    refs.userLogsFilterButtons.forEach((button) => {
+      button.classList.toggle("is-active", button.dataset.userLogFilter === activeUserLogsFilter);
+      button.disabled = busy;
+    });
+    if (refs.userLogsRefreshBtn) refs.userLogsRefreshBtn.disabled = busy;
+    if (refs.userLogsExportBtn) refs.userLogsExportBtn.disabled = busy;
+    if (refs.userLogsClearBtn) refs.userLogsClearBtn.disabled = busy;
+    setUserLogsStatus(busy ? "loading" : "neutral", busy ? uiText.userLogsLoading : uiText.userLogsReady);
+  };
+
+  const renderUserLogsStatus = (status) => {
+    if (!status) return;
+    if (refs.userLogsPath) refs.userLogsPath.textContent = status.logFilePath || "-";
+    if (refs.userLogsSize) refs.userLogsSize.textContent = formatLogSize(status.logSizeBytes);
+    if (refs.userLogsWarnings) refs.userLogsWarnings.textContent = String(status.warningCount ?? 0);
+    if (refs.userLogsErrors) refs.userLogsErrors.textContent = String(status.errorCount ?? 0);
+    if (refs.userLogsUpdated) refs.userLogsUpdated.textContent = status.lastModifiedUtc ? formatDateTime(status.lastModifiedUtc) : "-";
+  };
+
+  const renderUserLogsViewer = (entries) => {
+    if (!refs.userLogsViewer) return;
+    refs.userLogsViewer.textContent = entries?.length
+      ? entries.map((entry) => entry.rawLine || `[${entry.timestamp}] [${entry.level}] [${entry.module}] ${entry.message}`).join("\n")
+      : uiText.userLogsEmpty;
+  };
+
+  const refreshUserLogs = async () => {
+    if (userLogsLoading) return;
+    userLogsLoading = true;
+    syncUserLogsControls();
+
+    try {
+      const [entries, status] = await Promise.all([
+        invoke("get_user_logs", {
+          levelFilter: getUserLogsLevelFilter(),
+          maxLines: 600,
+        }),
+        invoke("get_log_status"),
+      ]);
+      renderUserLogsViewer(entries);
+      renderUserLogsStatus(status);
+      setUserLogsStatus("success", uiText.userLogsReady);
+    } catch (error) {
+      console.error("User log refresh failed:", error);
+      renderUserLogsViewer([]);
+      setUserLogsStatus("error", uiText.userLogsReady);
+      window.showToast("toasts.user_logs_load_error", {}, "error");
+    } finally {
+      userLogsLoading = false;
+      syncUserLogsControls();
+    }
+  };
+
+  const closeUserLogsModal = () => {
+    if (refs.modalUserLogs) refs.modalUserLogs.style.display = "none";
+  };
+
+  const openUserLogsModal = async () => {
+    closeNavDrawer();
+    if (refs.modalUserLogs) refs.modalUserLogs.style.display = "flex";
+    void window.logUserAction?.("user_logs", "start");
+    syncUserLogsControls();
+    await refreshUserLogs();
+  };
+
+  const exportUserLogs = async () => {
+    if (userLogsExporting || userLogsLoading || userLogsClearing) return;
+    userLogsExporting = true;
+    syncUserLogsControls();
+    try {
+      await invoke("export_user_logs");
+      window.showToast("toasts.user_logs_exported", {}, "success");
+      await refreshUserLogs();
+    } catch (error) {
+      console.error("User log export failed:", error);
+      window.showToast("toasts.user_logs_export_error", {}, "error");
+    } finally {
+      userLogsExporting = false;
+      syncUserLogsControls();
+    }
+  };
+
+  const clearUserLogs = async () => {
+    if (userLogsClearing || userLogsLoading || userLogsExporting) return;
+    const confirmed = window.confirm(uiText.userLogsClearConfirm);
+    if (!confirmed) return;
+
+    userLogsClearing = true;
+    syncUserLogsControls();
+    try {
+      await invoke("clear_user_logs");
+      window.showToast("toasts.user_logs_cleared", {}, "success");
+      await refreshUserLogs();
+    } catch (error) {
+      console.error("User log clear failed:", error);
+      window.showToast("toasts.user_logs_clear_error", {}, "error");
+    } finally {
+      userLogsClearing = false;
+      syncUserLogsControls();
+    }
+  };
+
   const parseOptionalIntegerInput = (element, errorMessage, { min = null } = {}) => {
     const raw = String(element?.value ?? "").trim();
     if (!raw) return null;
@@ -2250,30 +2420,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       level,
       xp,
     };
-  };
-
-  const showEditorSurface = async (surface) => {
-    const normalizedSurface = surface === "recovery" ? "recovery" : "dashboard";
-    const showRecovery = normalizedSurface === "recovery";
-    activeEditorSurface = normalizedSurface;
-
-    if (refs.saveEditorDashboardView) refs.saveEditorDashboardView.hidden = showRecovery;
-    if (refs.editorRecoveryView) refs.editorRecoveryView.hidden = !showRecovery;
-    refs.editorRecoveryNavBtn?.classList.toggle("active", showRecovery);
-
-    if (!showRecovery) {
-      clearTimeout(pendingSaveSafetyRetry);
-      pendingSaveSafetyRetry = null;
-      queuedSaveSafetyRefresh = null;
-      closeRestorePreviewModal();
-      await syncRecoveryPresentation();
-      return;
-    }
-
-    await syncRecoveryPresentation();
-    if (hasTauri && window.selectedSavePath && (!recoveryHasLoaded || recoveryDataDirty)) {
-      await refreshSaveSafety({ preservePreview: true });
-    }
   };
 
   const renderCareerOverview = async (overview) => {
@@ -2324,11 +2470,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!element) return;
     element.dataset.state = state;
     element.textContent = label;
-  };
-
-  const isRestorePreviewModalOpen = () => {
-    if (!refs.modalRestorePreview) return false;
-    return window.getComputedStyle(refs.modalRestorePreview).display !== "none";
   };
 
   const closeRestorePreviewModal = () => {
@@ -3881,7 +4022,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   window.loadAllTrucks = loadAllTrucks;
   window.loadAllTrailers = loadAllTrailers;
   window.refreshOperationalOverview = updateOperationalOverview;
+  window.openRecoveryCenterModal = openRecoveryCenterModal;
+  window.openSafeValueResetModal = openSafeValueResetModal;
+  window.openUserLogsModal = openUserLogsModal;
   syncSafeResetCard();
+  syncUserLogsControls();
 
   const syncSelectedGameUi = async () => {
     try {
@@ -3925,7 +4070,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       await loadAllTrucks();
       await loadAllTrailers();
       await resetSaveSafetyUi();
-      await refreshUndoStatus();
       if (isRecoveryViewActive()) {
         await refreshSaveSafety({ preservePreview: true });
       }
@@ -4089,11 +4233,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   };
 
-  refs.openRecoveryCenterBtn?.addEventListener("click", async () => {
-    closeNavDrawer();
-    await showEditorSurface("recovery");
-  });
-
   refs.applyResetValuesBtn?.addEventListener("click", async () => {
     await applySafeResetValues();
   });
@@ -4103,12 +4242,53 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   refs.editorRecoveryNavBtn?.addEventListener("click", async () => {
-    closeNavDrawer();
-    await showEditorSurface("recovery");
+    await openRecoveryCenterModal();
   });
 
-  refs.recoveryBackBtn?.addEventListener("click", async () => {
-    await showEditorSurface("dashboard");
+  refs.modalRecoveryCenterClose?.addEventListener("click", closeRecoveryCenterModal);
+
+  refs.modalRecoveryCenter?.addEventListener("click", (event) => {
+    if (event.target === refs.modalRecoveryCenter) {
+      closeRecoveryCenterModal();
+    }
+  });
+
+  refs.modalSafeValueResetClose?.addEventListener("click", closeSafeValueResetModal);
+
+  refs.modalSafeValueReset?.addEventListener("click", (event) => {
+    if (event.target === refs.modalSafeValueReset) {
+      closeSafeValueResetModal();
+    }
+  });
+
+  refs.modalUserLogsClose?.addEventListener("click", closeUserLogsModal);
+
+  refs.modalUserLogs?.addEventListener("click", (event) => {
+    if (event.target === refs.modalUserLogs) {
+      closeUserLogsModal();
+    }
+  });
+
+  refs.userLogsRefreshBtn?.addEventListener("click", async () => {
+    await refreshUserLogs();
+  });
+
+  refs.userLogsExportBtn?.addEventListener("click", async () => {
+    await exportUserLogs();
+  });
+
+  refs.userLogsClearBtn?.addEventListener("click", async () => {
+    await clearUserLogs();
+  });
+
+  refs.userLogsFilterButtons.forEach((button) => {
+    button.addEventListener("click", async () => {
+      const nextFilter = button.dataset.userLogFilter || "all";
+      if (nextFilter === activeUserLogsFilter) return;
+      activeUserLogsFilter = nextFilter;
+      syncUserLogsControls();
+      await refreshUserLogs();
+    });
   });
 
   refs.saveHealthRefreshBtn?.addEventListener("click", () => {
@@ -4197,11 +4377,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (event.target === refs.modalRestorePreview) {
       closeRestorePreviewModal();
     }
-  });
-
-  document.addEventListener("keydown", (event) => {
-    if (event.key !== "Escape" || !isRestorePreviewModalOpen()) return;
-    closeRestorePreviewModal();
   });
 
   refs.refreshBtn?.addEventListener("click", () => scanProfiles({ saveToBackend: true, showToasts: true }));
@@ -4347,7 +4522,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   } catch {}
 
     await resetSaveSafetyUi();
-    await showEditorSurface("dashboard");
+    closeRecoveryCenterModal();
+    closeSafeValueResetModal();
+    closeUserLogsModal();
     await scanProfiles({ saveToBackend: true, showToasts: true });
     window.addEventListener("resize", () => {
       if (!isCompactShell()) closeNavDrawer();

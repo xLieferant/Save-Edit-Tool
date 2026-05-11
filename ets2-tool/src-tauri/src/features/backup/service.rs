@@ -197,11 +197,17 @@ pub fn create_backup_for_targets_with_type(
     log_context
         .extra
         .insert("fileCount".to_string(), files.len().to_string());
-    let _ = logging_service::record_info(
-        "auto_backup_created",
-        &format!("Automatic backup created before {}.", action_reason),
-        &log_context,
-    );
+    let log_action = if backup_type == BACKUP_TYPE_UNDO_BEFORE_EDIT {
+        "undo_snapshot_created"
+    } else {
+        "auto_backup_created"
+    };
+    let log_message = if backup_type == BACKUP_TYPE_UNDO_BEFORE_EDIT {
+        format!("Undo snapshot created: {}.", action_reason)
+    } else {
+        format!("Automatic backup created before {}.", action_reason)
+    };
+    let _ = logging_service::record_info(log_action, &log_message, &log_context);
 
     Ok(BackupCreateResultDto {
         backup_id,
@@ -425,11 +431,9 @@ pub fn restore_backup(
             safety_backup.backup_id.clone(),
         );
     }
-    let _ = logging_service::record_warning(
+    let _ = logging_service::record_info(
         "backup_restore",
-        Some("restore_executed"),
-        "A backup restore was executed after explicit confirmation.",
-        None,
+        "Backup restored after explicit confirmation.",
         &context,
     );
 

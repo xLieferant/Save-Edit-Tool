@@ -12,6 +12,7 @@ use crate::shared::paths::ats_base_path;
 use crate::shared::paths::ets2_base_path;
 use crate::shared::paths::get_base_path;
 use crate::shared::trace::{lock_mutex, TraceScope};
+use crate::shared::user_log;
 use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -128,6 +129,10 @@ pub fn set_active_profile(
         "Aktives Profil gesetzt & DecryptCache geleert: {}",
         profile_path
     );
+    let _ = user_log::user_log_info(
+        "ProfileManager",
+        format!("Active profile set: {}", profile_path),
+    );
     trace.finish_ok();
     Ok(())
 }
@@ -144,6 +149,7 @@ pub fn set_current_save(
     clear_decrypt_cache(cache.inner())?;
     profile_cache.set_save_path(Some(save_path.clone()));
     dev_log!("Aktiver Save gesetzt: {}", save_path);
+    let _ = user_log::user_log_info("SaveEditor", format!("Active save set: {}", save_path));
     trace.finish_ok();
     Ok(())
 }
@@ -268,6 +274,7 @@ fn classify_save_folder(folder: &str) -> SaveKind {
 
 #[command]
 pub fn find_ets2_profiles(state: State<'_, AppProfileState>) -> Vec<ProfileInfo> {
+    let _ = user_log::user_log_info("ProfileManager", "Profile search started.");
     dev_log!("Starte Profil-Suche…");
     let mut found_profiles = Vec::new();
 
@@ -366,6 +373,10 @@ pub fn find_ets2_profiles(state: State<'_, AppProfileState>) -> Vec<ProfileInfo>
     dev_log!(
         "Profil-Suche abgeschlossen. Gefunden: {}",
         found_profiles.len()
+    );
+    let _ = user_log::user_log_info(
+        "ProfileManager",
+        format!("Profile search completed. Found {} profiles.", found_profiles.len()),
     );
     found_profiles
 }

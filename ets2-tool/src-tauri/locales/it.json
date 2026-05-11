@@ -1,4 +1,4 @@
-{
+﻿{
       "app": {
             "name": "Editor salvataggi ETS2 - Edizione Alex",
             "title": "EDITOR SALVATAGGI",
@@ -1001,6 +1001,11 @@
             "parking_doubles_error": "Impossibile aggiornare il parcheggio doppio",
             "dev_tools_success": "Strumenti sviluppatore aggiornati con successo!",
             "dev_tools_error": "Impossibile aggiornare gli strumenti sviluppatore",
+            "user_logs_exported": "I log sono stati esportati in Download.",
+            "user_logs_cleared": "I log utente sono stati svuotati.",
+            "user_logs_load_error": "Impossibile caricare i log utente.",
+            "user_logs_export_error": "Impossibile esportare i log utente.",
+            "user_logs_clear_error": "Impossibile svuotare i log utente.",
             "profile_loaded_select_save": "Profilo caricato. Seleziona un salvataggio.",
             "profile_load_error": "Impossibile caricare il profilo!",
             "scan_saves_error": "Impossibile analizzare i salvataggi",
@@ -1196,6 +1201,10 @@
                         "title": "Strumenti sviluppatore",
                         "desc": "Accedi agli strumenti sviluppatore",
                         "modalTextTitle": "Imposta le impostazioni sviluppatore"
+                  },
+                  "user_logs": {
+                        "title": "User Logs",
+                        "desc": "Visualizza, esporta e svuota i log per l'utente."
                   }
             },
             "language_picker": {
@@ -1314,7 +1323,35 @@
                         "unchanged": "Nessuna modifica ancora selezionata."
                   }
             },
-            "mod_conflict_diagnostics": {
+            "user_logs": {
+                  "kicker": "User Logs",
+                  "title": "User Logs",
+                  "description": "Controlla le azioni, gli avvisi e gli errori recenti registrati dallo strumento.",
+                  "status": {
+                        "ready": "Pronto",
+                        "loading": "Caricamento"
+                  },
+                  "empty": "Non sono disponibili log utente.",
+                  "confirm_clear": "Vuoi davvero cancellare i log utente?",
+                  "filters": {
+                        "all": "Tutti",
+                        "info": "Info",
+                        "warnings": "Avvisi",
+                        "errors": "Errori"
+                  },
+                  "actions": {
+                        "refresh": "Aggiorna log",
+                        "export": "Esporta log",
+                        "clear": "Svuota log"
+                  },
+                  "meta": {
+                        "path": "File di log",
+                        "size": "Dimensione",
+                        "warnings": "Avvisi",
+                        "errors": "Errori",
+                        "updated": "Aggiornato"
+                  }
+            },            "mod_conflict_diagnostics": {
                   "kicker": "Diagnostica degli incidenti",
                   "title": "Analizzatore conflitti mod",
                   "description": "Analizza i registri degli arresti anomali, i riferimenti mancanti e le modifiche locali senza pretendere di dimostrare ogni colpevole.",

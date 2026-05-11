@@ -246,6 +246,14 @@ const diagnosticsExportCrashBtn = document.getElementById("diagnosticsExportCras
 const diagnosticsCopySummaryBtn = document.getElementById("diagnosticsCopySummaryBtn");
 const diagnosticsOpenLogFolderBtn = document.getElementById("diagnosticsOpenLogFolderBtn");
 const modalConflictDiagnosticsClose = document.getElementById("modalConflictDiagnosticsClose");
+const modalRecoveryCenter = document.getElementById("modalRecoveryCenter");
+const modalRecoveryCenterClose = document.getElementById("modalRecoveryCenterClose");
+const modalRestorePreview = document.getElementById("modalRestorePreview");
+const modalRestorePreviewClose = document.getElementById("modalRestorePreviewClose");
+const modalSafeValueReset = document.getElementById("modalSafeValueReset");
+const modalSafeValueResetClose = document.getElementById("modalSafeValueResetClose");
+const modalUserLogs = document.getElementById("modalUserLogs");
+const modalUserLogsClose = document.getElementById("modalUserLogsClose");
 
 const modalProfileShare = document.getElementById("modalProfileShare");
 const profileShareModeKicker = document.getElementById("profileShareModeKicker");
@@ -286,6 +294,10 @@ const editorModalDescriptors = [
   { element: modalTruckInfo, closeButton: modalTruckInfoClose },
   { element: modalLevelSystem, closeButton: modalLevelSystemClose },
   { element: modalConflictDiagnostics, closeButton: modalConflictDiagnosticsClose },
+  { element: modalRecoveryCenter, closeButton: modalRecoveryCenterClose },
+  { element: modalRestorePreview, closeButton: modalRestorePreviewClose },
+  { element: modalSafeValueReset, closeButton: modalSafeValueResetClose },
+  { element: modalUserLogs, closeButton: modalUserLogsClose },
   { element: modalProfileShare, closeButton: modalProfileShareClose },
 ];
 

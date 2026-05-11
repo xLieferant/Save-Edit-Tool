@@ -1,4 +1,4 @@
-{
+﻿{
       "app": {
             "name": "Edytor zapisów ETS2 - wersja Alex",
             "title": "EDYTOR ZAPISÓW",
@@ -1001,6 +1001,11 @@
             "parking_doubles_error": "Nie udało się zaktualizować parkowania podwójnego",
             "dev_tools_success": "Narzędzia deweloperskie zaktualizowane pomyślnie!",
             "dev_tools_error": "Nie udało się zaktualizować narzędzi deweloperskich",
+            "user_logs_exported": "Logi wyeksportowano do folderu Pobrane.",
+            "user_logs_cleared": "Logi użytkownika zostały wyczyszczone.",
+            "user_logs_load_error": "Nie udało się załadować logów użytkownika.",
+            "user_logs_export_error": "Nie udało się wyeksportować logów użytkownika.",
+            "user_logs_clear_error": "Nie udało się wyczyścić logów użytkownika.",
             "profile_loaded_select_save": "Profil załadowany. Wybierz zapis gry.",
             "profile_load_error": "Nie udało się załadować profilu!",
             "scan_saves_error": "Nie udało się zeskanować zapisów",
@@ -1196,6 +1201,10 @@
                         "title": "Narzędzia deweloperskie",
                         "desc": "Uzyskaj dostęp do narzędzi deweloperskich",
                         "modalTextTitle": "Ustawienia narzędzi deweloperskich"
+                  },
+                  "user_logs": {
+                        "title": "User Logs",
+                        "desc": "Przeglądaj, eksportuj i czyść logi użytkownika."
                   }
             },
             "language_picker": {
@@ -1314,7 +1323,35 @@
                         "unchanged": "Nie wybrano jeszcze żadnej zmiany."
                   }
             },
-            "mod_conflict_diagnostics": {
+            "user_logs": {
+                  "kicker": "User Logs",
+                  "title": "User Logs",
+                  "description": "Sprawdzaj ostatnie działania, ostrzeżenia i błędy zapisane przez narzędzie.",
+                  "status": {
+                        "ready": "Gotowe",
+                        "loading": "Ładowanie"
+                  },
+                  "empty": "Brak dostępnych logów użytkownika.",
+                  "confirm_clear": "Czy na pewno chcesz wyczyścić logi użytkownika?",
+                  "filters": {
+                        "all": "Wszystkie",
+                        "info": "Info",
+                        "warnings": "Ostrzeżenia",
+                        "errors": "Błędy"
+                  },
+                  "actions": {
+                        "refresh": "Odśwież logi",
+                        "export": "Eksportuj logi",
+                        "clear": "Wyczyść logi"
+                  },
+                  "meta": {
+                        "path": "Plik logu",
+                        "size": "Rozmiar",
+                        "warnings": "Ostrzeżenia",
+                        "errors": "Błędy",
+                        "updated": "Zaktualizowano"
+                  }
+            },            "mod_conflict_diagnostics": {
                   "kicker": "Diagnostyka awarii",
                   "title": "Analizator konflikt?w mod?w",
                   "description": "Analizuj dzienniki awarii, brakujące odniesienia i lokalne mody, bez udawania, że udowadniasz każdego winowajcę.",

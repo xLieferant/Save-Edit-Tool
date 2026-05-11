@@ -233,7 +233,7 @@
                 <button id="youtubeBtn" class="nav-action youtube" type="button" data-translate="buttons.youtube">YouTube</button>
                 <button id="patreonBtn" class="nav-action patreon" type="button" data-translate="buttons.patreon">Patreon</button>
                 <button id="githubBtn" class="nav-action github" type="button" data-translate="buttons.github">GitHub</button>
-                <button id="versionBtn" class="version-btn" type="button">0.7.3</button>
+                <button id="versionBtn" class="version-btn" type="button">0.8.0</button>
               </div>
             </section>
           </div>
@@ -332,59 +332,6 @@
                   </article>
                 </section>
 
-                <section class="health-status-card panel-surface">
-                  <div class="health-status-card__copy">
-                    <span class="eyebrow" data-translate="editor.recovery.entry_kicker">Save Safety</span>
-                    <h2 data-translate="editor.recovery.entry_title">Recovery Center</h2>
-                    <p id="recoveryEntrySummary" data-translate="editor.recovery.entry_summary">
-                      Health scan, backups and restore tools.
-                    </p>
-                  </div>
-                  <div class="health-status-card__actions">
-                    <span id="recoveryEntryStatus" class="status-pill-mini" data-translate="editor.recovery.entry_status_idle">Open when needed</span>
-                    <button id="openRecoveryCenterBtn" class="secondary-action" type="button" data-translate="editor.recovery.open_button">Open Recovery Center</button>
-                  </div>
-                </section>
-
-                <section class="save-reset-card panel-surface">
-                  <div class="save-reset-card__header">
-                    <div class="save-reset-card__copy">
-                      <span class="eyebrow" data-translate="editor.reset.kicker">Safe Value Reset</span>
-                      <h2 data-translate="editor.reset.title">Safe Value Reset</h2>
-                      <p data-translate="editor.reset.summary">
-                        Apply custom money, level and XP values to the active save with an automatic undo snapshot.
-                      </p>
-                    </div>
-                    <div class="save-reset-card__meta">
-                      <span class="status-pill-mini is-active" data-translate="editor.reset.backup_notice">A backup is created before applying changes.</span>
-                      <p id="saveResetUndoStatus" data-translate="editor.reset.undo_unavailable">No undo snapshot available.</p>
-                    </div>
-                  </div>
-
-                  <div class="save-reset-grid">
-                    <label class="save-reset-field" for="resetMoney">
-                      <span data-translate="editor.reset.fields.money">Money</span>
-                      <input id="resetMoney" type="number" step="1" inputmode="numeric" data-translate-placeholder="editor.reset.placeholders.money" placeholder="Money value">
-                    </label>
-                    <label class="save-reset-field" for="resetLevel">
-                      <span data-translate="editor.reset.fields.level">Level</span>
-                      <input id="resetLevel" type="number" step="1" min="0" inputmode="numeric" data-translate-placeholder="editor.reset.placeholders.level" placeholder="Level value">
-                    </label>
-                    <label class="save-reset-field" for="resetXp">
-                      <span data-translate="editor.reset.fields.xp">XP</span>
-                      <input id="resetXp" type="number" step="1" min="0" inputmode="numeric" data-translate-placeholder="editor.reset.placeholders.xp" placeholder="XP value">
-                    </label>
-                  </div>
-
-                  <div class="save-reset-actions">
-                    <p id="saveResetHint" data-translate="editor.reset.no_save_hint">Select a save before applying reset values.</p>
-                    <div class="save-reset-actions__buttons">
-                      <button id="applyResetValuesBtn" class="secondary-action utility-primary-action" type="button" data-translate="editor.reset.actions.apply">Apply Values</button>
-                      <button id="undoLastChangeBtn" class="secondary-action" type="button" data-translate="editor.reset.actions.undo">Undo Last Change</button>
-                    </div>
-                  </div>
-                </section>
-
                 <section class="save-tool-stage panel-surface">
                   <div class="save-stage-head">
                     <div>
@@ -399,131 +346,6 @@
                   <div class="tool-stage-shell">
                     <div id="tool-container"></div>
                   </div>
-                </section>
-              </div>
-
-              <div id="editorRecoveryView" class="save-content-scroll recovery-page" hidden>
-                <section class="recovery-header panel-surface">
-                  <div class="recovery-header__copy">
-                    <span class="eyebrow" data-translate="editor.recovery.header_kicker">Save Safety</span>
-                    <h1 data-translate="editor.recovery.header_title">Recovery Center</h1>
-                    <p data-translate="editor.recovery.header_summary">
-                      Monitor save health, manage backups and restore safely.
-                    </p>
-                  </div>
-                  <div class="recovery-actions">
-                    <button id="recoveryBackBtn" class="secondary-action" type="button" data-translate="editor.recovery.back_button">Back to Save Editor</button>
-                  </div>
-                </section>
-
-                <section class="recovery-status-grid">
-                  <article class="overview-card panel-surface">
-                    <span class="overview-label" data-translate="editor.recovery.status.profile">Active Profile</span>
-                    <strong id="recoveryStatusProfile">-</strong>
-                  </article>
-                  <article class="overview-card panel-surface">
-                    <span class="overview-label" data-translate="editor.recovery.status.save">Active Save</span>
-                    <strong id="recoveryStatusSave">-</strong>
-                  </article>
-                  <article class="overview-card panel-surface">
-                    <span class="overview-label" data-translate="editor.recovery.status.last_scan">Last Health Scan</span>
-                    <strong id="recoveryStatusScan">-</strong>
-                  </article>
-                  <article class="overview-card panel-surface">
-                    <span class="overview-label" data-translate="editor.recovery.status.backups">Backup Count</span>
-                    <strong id="recoveryStatusBackups">-</strong>
-                  </article>
-                </section>
-
-                <section class="recovery-panel-grid">
-                  <article class="recovery-panel panel-surface">
-                    <div class="recovery-panel__header">
-                      <div class="recovery-panel__title">
-                        <span id="saveHealthStatusDot" class="status-dot status-dot--idle" aria-hidden="true"></span>
-                        <div>
-                          <h2 data-translate="editor.safety.health.title">Health Monitor</h2>
-                          <p id="saveHealthStatusText" class="utility-status-card__status" data-translate="editor.safety.status.idle">Not checked</p>
-                        </div>
-                      </div>
-                      <div class="recovery-actions">
-                        <button id="saveHealthRefreshBtn" class="secondary-action" type="button" data-translate="editor.safety.actions.scan_health">Scan</button>
-                        <button id="saveHealthDeepScanBtn" class="secondary-action" type="button" data-translate="editor.safety.actions.scan_mods">Scan Mods</button>
-                      </div>
-                    </div>
-                    <div class="recovery-panel__body">
-                      <p id="saveHealthSummary" data-translate="editor.safety.health.empty_summary">
-                        Load a save to run a health scan.
-                      </p>
-                      <button id="saveHealthDetailsToggle" class="utility-inline-action" type="button" hidden data-translate="editor.safety.actions.view_details">Details</button>
-                      <div id="saveHealthDetails" class="utility-status-card__details" hidden>
-                        <div id="saveHealthProblems" class="save-health-problem-list" hidden></div>
-                      </div>
-                    </div>
-                  </article>
-
-                  <article class="recovery-panel panel-surface">
-                    <div class="recovery-panel__header">
-                      <div class="recovery-panel__title">
-                        <span id="saveBackupStatusDot" class="status-dot status-dot--idle" aria-hidden="true"></span>
-                        <div>
-                          <h2 data-translate="editor.safety.backups.title">Automatic Backups</h2>
-                          <p id="saveBackupStatusText" class="utility-status-card__status">-</p>
-                        </div>
-                      </div>
-                      <div class="recovery-actions">
-                        <button id="saveBackupRefreshBtn" class="secondary-action" type="button" data-translate="editor.safety.actions.refresh">Refresh</button>
-                        <button id="saveBackupDetailsToggle" class="utility-inline-action" type="button" hidden data-translate="editor.safety.actions.view_backups">Backups</button>
-                      </div>
-                    </div>
-                    <div class="recovery-panel__body">
-                      <p id="saveBackupSummary" data-translate="editor.safety.backups.empty_summary">
-                        Restore points appear after edits.
-                      </p>
-                      <div id="saveBackupDetails" class="utility-status-card__details" hidden>
-                        <div id="saveBackupList" class="save-backup-list backup-list" hidden></div>
-                      </div>
-                    </div>
-                  </article>
-
-                  <article class="recovery-panel panel-surface">
-                    <div class="recovery-panel__header">
-                      <div class="recovery-panel__title">
-                        <span id="restorePreviewStatusDot" class="status-dot status-dot--idle" aria-hidden="true"></span>
-                        <div>
-                          <h2 data-translate="editor.safety.restore.title">Restore Preview</h2>
-                          <p id="restorePreviewStatusText" class="utility-status-card__status" data-translate="editor.safety.restore.no_preview_status">No preview</p>
-                        </div>
-                      </div>
-                      <div class="recovery-actions">
-                        <button id="openRestorePreviewBtn" class="secondary-action" type="button" disabled data-translate="editor.safety.actions.preview">Preview</button>
-                      </div>
-                    </div>
-                    <div class="recovery-panel__body diff-preview">
-                      <p id="restorePreviewSummary" data-translate="editor.safety.restore.empty_body">
-                        Select a backup to compare changes before restoring.
-                      </p>
-                    </div>
-                  </article>
-
-                  <article class="recovery-panel panel-surface">
-                    <div class="recovery-panel__header">
-                      <div class="recovery-panel__title">
-                        <div>
-                          <h2 data-translate="editor.recovery.reports_title">Reports &amp; Logs</h2>
-                          <p class="utility-status-card__status" data-translate="editor.recovery.reports_kicker">Diagnostics</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="recovery-panel__body">
-                      <p data-translate="editor.recovery.reports_summary">
-                        Copy the current support report or export logs without leaving the recovery workflow.
-                      </p>
-                      <div class="recovery-actions">
-                        <button id="saveReportCopyBtn" class="secondary-action" type="button" data-translate="editor.safety.actions.copy_report">Copy Report</button>
-                        <button id="saveLogsExportBtn" class="secondary-action" type="button" data-translate="editor.safety.actions.export_logs">Export Logs</button>
-                      </div>
-                    </div>
-                  </article>
                 </section>
               </div>
             </div>
@@ -1236,6 +1058,135 @@
       </div>
     </div>
 
+    <div class="modal-backdrop" id="modalRecoveryCenter">
+      <div class="modal-box modal-box--xl modal-box--sheet modal-box--recovery">
+        <div id="recoveryCenterModalContent" class="recovery-page recovery-modal-scroll" aria-busy="false">
+          <section class="recovery-header panel-surface">
+            <div class="recovery-header__copy">
+              <span class="eyebrow" data-translate="editor.recovery.header_kicker">Save Safety</span>
+              <h1 data-translate="editor.recovery.header_title">Recovery Center</h1>
+              <p data-translate="editor.recovery.header_summary">
+                Monitor save health, manage backups and restore safely.
+              </p>
+            </div>
+          </section>
+
+          <section class="recovery-status-grid">
+            <article class="overview-card panel-surface">
+              <span class="overview-label" data-translate="editor.recovery.status.profile">Active Profile</span>
+              <strong id="recoveryStatusProfile">-</strong>
+            </article>
+            <article class="overview-card panel-surface">
+              <span class="overview-label" data-translate="editor.recovery.status.save">Active Save</span>
+              <strong id="recoveryStatusSave">-</strong>
+            </article>
+            <article class="overview-card panel-surface">
+              <span class="overview-label" data-translate="editor.recovery.status.last_scan">Last Health Scan</span>
+              <strong id="recoveryStatusScan">-</strong>
+            </article>
+            <article class="overview-card panel-surface">
+              <span class="overview-label" data-translate="editor.recovery.status.backups">Backup Count</span>
+              <strong id="recoveryStatusBackups">-</strong>
+            </article>
+          </section>
+
+          <section class="recovery-panel-grid">
+            <article class="recovery-panel panel-surface">
+              <div class="recovery-panel__header">
+                <div class="recovery-panel__title">
+                  <span id="saveHealthStatusDot" class="status-dot status-dot--idle" aria-hidden="true"></span>
+                  <div>
+                    <h2 data-translate="editor.safety.health.title">Health Monitor</h2>
+                    <p id="saveHealthStatusText" class="utility-status-card__status" data-translate="editor.safety.status.idle">Not checked</p>
+                  </div>
+                </div>
+                <div class="recovery-actions">
+                  <button id="saveHealthRefreshBtn" class="secondary-action" type="button" data-translate="editor.safety.actions.scan_health">Scan</button>
+                  <button id="saveHealthDeepScanBtn" class="secondary-action" type="button" data-translate="editor.safety.actions.scan_mods">Scan Mods</button>
+                </div>
+              </div>
+              <div class="recovery-panel__body">
+                <p id="saveHealthSummary" data-translate="editor.safety.health.empty_summary">
+                  Load a save to run a health scan.
+                </p>
+                <button id="saveHealthDetailsToggle" class="utility-inline-action" type="button" hidden data-translate="editor.safety.actions.view_details">Details</button>
+                <div id="saveHealthDetails" class="utility-status-card__details" hidden>
+                  <div id="saveHealthProblems" class="save-health-problem-list" hidden></div>
+                </div>
+              </div>
+            </article>
+
+            <article class="recovery-panel panel-surface">
+              <div class="recovery-panel__header">
+                <div class="recovery-panel__title">
+                  <span id="saveBackupStatusDot" class="status-dot status-dot--idle" aria-hidden="true"></span>
+                  <div>
+                    <h2 data-translate="editor.safety.backups.title">Automatic Backups</h2>
+                    <p id="saveBackupStatusText" class="utility-status-card__status">-</p>
+                  </div>
+                </div>
+                <div class="recovery-actions">
+                  <button id="saveBackupRefreshBtn" class="secondary-action" type="button" data-translate="editor.safety.actions.refresh_backups">Refresh Backups</button>
+                  <button id="saveBackupDetailsToggle" class="utility-inline-action" type="button" hidden data-translate="editor.safety.actions.view_backups">Backups</button>
+                </div>
+              </div>
+              <div class="recovery-panel__body">
+                <p id="saveBackupSummary" data-translate="editor.safety.backups.empty_summary">
+                  Restore points appear after edits.
+                </p>
+                <div id="saveBackupDetails" class="utility-status-card__details" hidden>
+                  <div id="saveBackupList" class="save-backup-list backup-list" hidden></div>
+                </div>
+              </div>
+            </article>
+
+            <article class="recovery-panel panel-surface">
+              <div class="recovery-panel__header">
+                <div class="recovery-panel__title">
+                  <span id="restorePreviewStatusDot" class="status-dot status-dot--idle" aria-hidden="true"></span>
+                  <div>
+                    <h2 data-translate="editor.safety.restore.title">Restore Preview</h2>
+                    <p id="restorePreviewStatusText" class="utility-status-card__status" data-translate="editor.safety.restore.no_preview_status">No preview</p>
+                  </div>
+                </div>
+                <div class="recovery-actions">
+                  <button id="openRestorePreviewBtn" class="secondary-action" type="button" disabled data-translate="editor.safety.actions.preview_restore">Preview Restore</button>
+                </div>
+              </div>
+              <div class="recovery-panel__body diff-preview">
+                <p id="restorePreviewSummary" data-translate="editor.safety.restore.empty_body">
+                  Select a backup to compare changes before restoring.
+                </p>
+              </div>
+            </article>
+
+            <article class="recovery-panel panel-surface">
+              <div class="recovery-panel__header">
+                <div class="recovery-panel__title">
+                  <div>
+                    <h2 data-translate="editor.recovery.reports_title">Reports &amp; Logs</h2>
+                    <p class="utility-status-card__status" data-translate="editor.recovery.reports_kicker">Diagnostics</p>
+                  </div>
+                </div>
+              </div>
+              <div class="recovery-panel__body">
+                <p data-translate="editor.recovery.reports_summary">
+                  Copy the current support report or export logs without leaving the recovery workflow.
+                </p>
+                <div class="recovery-actions">
+                  <button id="saveReportCopyBtn" class="secondary-action" type="button" data-translate="editor.safety.actions.copy_report">Copy Report</button>
+                  <button id="saveLogsExportBtn" class="secondary-action" type="button" data-translate="editor.safety.actions.export_logs">Export Logs</button>
+                </div>
+              </div>
+            </article>
+          </section>
+        </div>
+        <div class="modal-actions modal-actions--end">
+          <button id="modalRecoveryCenterClose" type="button" data-translate="modals.close">Close</button>
+        </div>
+      </div>
+    </div>
+
     <div class="modal-backdrop" id="modalRestorePreview">
       <div class="modal-box modal-box--xl modal-box--sheet">
         <div class="detail-modal-head">
@@ -1268,6 +1219,112 @@
         <div class="modal-actions modal-actions--end">
           <button id="modalRestorePreviewClose" type="button" data-translate="modals.close">Close</button>
           <button id="restoreBackupBtn" class="apply" type="button" disabled data-translate="editor.safety.actions.restore_backup">Restore Backup</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalSafeValueReset">
+      <div class="modal-box modal-box--safe-reset">
+        <div class="save-reset-card save-reset-modal-shell">
+          <div class="save-reset-card__header">
+            <div class="save-reset-card__copy">
+              <span class="eyebrow" data-translate="editor.reset.kicker">Safe Value Reset</span>
+              <h2 data-translate="editor.reset.title">Safe Value Reset</h2>
+              <p data-translate="editor.reset.summary">
+                Apply custom money, level and XP values to the active save with an automatic undo snapshot.
+              </p>
+            </div>
+            <div class="save-reset-card__meta">
+              <span class="status-pill-mini is-active" data-translate="editor.reset.backup_notice">A backup is created before applying changes.</span>
+              <p id="saveResetUndoStatus" data-translate="editor.reset.undo_unavailable">No undo snapshot available.</p>
+            </div>
+          </div>
+
+          <div class="save-reset-grid">
+            <label class="save-reset-field" for="resetMoney">
+              <span data-translate="editor.reset.fields.money">Money</span>
+              <input id="resetMoney" type="number" step="1" inputmode="numeric" data-translate-placeholder="editor.reset.placeholders.money" placeholder="Money value">
+            </label>
+            <label class="save-reset-field" for="resetLevel">
+              <span data-translate="editor.reset.fields.level">Level</span>
+              <input id="resetLevel" type="number" step="1" min="0" inputmode="numeric" data-translate-placeholder="editor.reset.placeholders.level" placeholder="Level value">
+            </label>
+            <label class="save-reset-field" for="resetXp">
+              <span data-translate="editor.reset.fields.xp">XP</span>
+              <input id="resetXp" type="number" step="1" min="0" inputmode="numeric" data-translate-placeholder="editor.reset.placeholders.xp" placeholder="XP value">
+            </label>
+          </div>
+
+          <div class="save-reset-actions">
+            <p id="saveResetHint" data-translate="editor.reset.no_save_hint">Select a save before applying reset values.</p>
+            <div class="save-reset-actions__buttons">
+              <button id="applyResetValuesBtn" class="secondary-action utility-primary-action" type="button" data-translate="editor.reset.actions.apply">Apply Values</button>
+              <button id="undoLastChangeBtn" class="secondary-action" type="button" data-translate="editor.reset.actions.undo">Undo Last Change</button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-actions modal-actions--end">
+          <button id="modalSafeValueResetClose" type="button" data-translate="modals.close">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalUserLogs">
+      <div class="modal-box modal-box--xl modal-box--sheet modal-box--user-logs">
+        <div class="detail-modal-head">
+          <div>
+            <span class="modal-kicker" data-translate="modals.user_logs.kicker">User Logs</span>
+            <h2 data-translate="modals.user_logs.title">User Logs</h2>
+            <p class="modal-description" data-translate="modals.user_logs.description">
+              Review recent user-facing actions, warnings and errors stored by the tool.
+            </p>
+          </div>
+          <div id="userLogsStatusPill" class="modal-status-pill" data-state="neutral" data-translate="modals.user_logs.status.ready">Ready</div>
+        </div>
+
+        <section class="user-logs-meta-grid">
+          <article class="detail-card user-logs-meta-card">
+            <span class="detail-card-label" data-translate="modals.user_logs.meta.path">Log File</span>
+            <strong id="userLogsPath">-</strong>
+          </article>
+          <article class="detail-card user-logs-meta-card">
+            <span class="detail-card-label" data-translate="modals.user_logs.meta.size">Size</span>
+            <strong id="userLogsSize">-</strong>
+          </article>
+          <article class="detail-card user-logs-meta-card">
+            <span class="detail-card-label" data-translate="modals.user_logs.meta.warnings">Warnings</span>
+            <strong id="userLogsWarnings">0</strong>
+          </article>
+          <article class="detail-card user-logs-meta-card">
+            <span class="detail-card-label" data-translate="modals.user_logs.meta.errors">Errors</span>
+            <strong id="userLogsErrors">0</strong>
+          </article>
+          <article class="detail-card user-logs-meta-card user-logs-meta-card--wide">
+            <span class="detail-card-label" data-translate="modals.user_logs.meta.updated">Updated</span>
+            <strong id="userLogsUpdated">-</strong>
+          </article>
+        </section>
+
+        <div class="user-logs-toolbar">
+          <div class="user-logs-filters" role="tablist" aria-label="User log filters">
+            <button class="user-logs-filter is-active" type="button" data-user-log-filter="all" data-translate="modals.user_logs.filters.all">All</button>
+            <button class="user-logs-filter" type="button" data-user-log-filter="info" data-translate="modals.user_logs.filters.info">Info</button>
+            <button class="user-logs-filter" type="button" data-user-log-filter="warnings" data-translate="modals.user_logs.filters.warnings">Warnings</button>
+            <button class="user-logs-filter" type="button" data-user-log-filter="errors" data-translate="modals.user_logs.filters.errors">Errors</button>
+          </div>
+          <div class="user-logs-toolbar__actions">
+            <button id="userLogsRefreshBtn" class="secondary-action" type="button" data-translate="modals.user_logs.actions.refresh">Refresh Logs</button>
+            <button id="userLogsExportBtn" class="secondary-action" type="button" data-translate="modals.user_logs.actions.export">Export Logs</button>
+            <button id="userLogsClearBtn" class="secondary-action" type="button" data-translate="modals.user_logs.actions.clear">Clear Logs</button>
+          </div>
+        </div>
+
+        <div class="user-logs-viewer-shell">
+          <pre id="userLogsViewer" class="user-logs-viewer">-</pre>
+        </div>
+
+        <div class="modal-actions modal-actions--end">
+          <button id="modalUserLogsClose" type="button" data-translate="modals.close">Close</button>
         </div>
       </div>
     </div>

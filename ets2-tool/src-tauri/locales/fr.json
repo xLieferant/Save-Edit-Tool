@@ -1,4 +1,4 @@
-{
+﻿{
       "app": {
             "name": "Éditeur de sauvegarde ETS2 - Édition Alex",
             "title": "ÉDITEUR DE SAUVEGARDE",
@@ -1001,6 +1001,11 @@
             "parking_doubles_error": "Échec de la mise à jour du stationnement double",
             "dev_tools_success": "Outils de développement mis à jour avec succès !",
             "dev_tools_error": "Échec de la mise à jour des outils de développement",
+            "user_logs_exported": "Les journaux ont été exportés vers Téléchargements.",
+            "user_logs_cleared": "Les journaux utilisateur ont été effacés.",
+            "user_logs_load_error": "Impossible de charger les journaux utilisateur.",
+            "user_logs_export_error": "Impossible d'exporter les journaux utilisateur.",
+            "user_logs_clear_error": "Impossible d'effacer les journaux utilisateur.",
             "profile_loaded_select_save": "Profil chargé. Veuillez sélectionner une sauvegarde.",
             "profile_load_error": "Le profil n'a pas pu être chargé !",
             "scan_saves_error": "Impossible d'analyser les sauvegardes",
@@ -1196,6 +1201,10 @@
                         "title": "Outils de développement",
                         "desc": "Accéder aux outils de développement",
                         "modalTextTitle": "Définir les paramètres de développement"
+                  },
+                  "user_logs": {
+                        "title": "User Logs",
+                        "desc": "Consultez, exportez et effacez les journaux destinés aux utilisateurs."
                   }
             },
             "language_picker": {
@@ -1314,7 +1323,35 @@
                         "unchanged": "Aucun changement sélectionné pour l'instant."
                   }
             },
-            "mod_conflict_diagnostics": {
+            "user_logs": {
+                  "kicker": "User Logs",
+                  "title": "User Logs",
+                  "description": "Consultez les actions, avertissements et erreurs récents enregistrés par l'outil.",
+                  "status": {
+                        "ready": "Prêt",
+                        "loading": "Chargement"
+                  },
+                  "empty": "Aucun journal utilisateur disponible.",
+                  "confirm_clear": "Voulez-vous vraiment effacer les journaux utilisateur ?",
+                  "filters": {
+                        "all": "Tous",
+                        "info": "Infos",
+                        "warnings": "Avertissements",
+                        "errors": "Erreurs"
+                  },
+                  "actions": {
+                        "refresh": "Actualiser les journaux",
+                        "export": "Exporter les journaux",
+                        "clear": "Effacer les journaux"
+                  },
+                  "meta": {
+                        "path": "Fichier journal",
+                        "size": "Taille",
+                        "warnings": "Avertissements",
+                        "errors": "Erreurs",
+                        "updated": "Mis à jour"
+                  }
+            },            "mod_conflict_diagnostics": {
                   "kicker": "Diagnostic d'accident",
                   "title": "Analyseur de conflits de mods",
                   "description": "Analysez les journaux de crash, les références manquantes et les mods locaux sans prétendre prouver chaque coupable.",

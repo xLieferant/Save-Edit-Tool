@@ -519,6 +519,33 @@ export const tools = {
 
   settings: [
     {
+      title: "editor.recovery.nav_button",
+      desc: "editor.recovery.entry_summary",
+      img: "images/dev.jpg",
+      action: async () => {
+        await window.openRecoveryCenterModal?.();
+      },
+      disabled: false,
+    },
+    {
+      title: "editor.reset.title",
+      desc: "editor.reset.summary",
+      img: "images/money.jpg",
+      action: async () => {
+        await window.openSafeValueResetModal?.();
+      },
+      disabled: false,
+    },
+    {
+      title: "tools.settings.user_logs.title",
+      desc: "tools.settings.user_logs.desc",
+      img: "images/dev.jpg",
+      action: async () => {
+        await window.openUserLogsModal?.();
+      },
+      disabled: false,
+    },
+    {
       title: "tools.settings.color_theme.title",
       desc: "tools.settings.color_theme.desc",
       img: "images/themeChooser.png",

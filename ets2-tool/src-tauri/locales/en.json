@@ -1018,6 +1018,11 @@
             "parking_doubles_error": "Failed to update parking doubles",
             "dev_tools_success": "Developer tools updated successfully!",
             "dev_tools_error": "Failed to update developer tools",
+            "user_logs_exported": "Logs exported to Downloads.",
+            "user_logs_cleared": "User logs cleared.",
+            "user_logs_load_error": "Could not load user logs.",
+            "user_logs_export_error": "Could not export user logs.",
+            "user_logs_clear_error": "Could not clear user logs.",
             "profile_loaded_select_save": "Profile loaded. Please select a save game.",
             "profile_load_error": "Profile could not be loaded!",
             "scan_saves_error": "Could not scan saves",
@@ -1213,6 +1218,10 @@
                         "title": "Developer Tools",
                         "desc": "Access developer tools",
                         "modalTextTitle": "Set Developer Settings"
+                  },
+                  "user_logs": {
+                        "title": "User Logs",
+                        "desc": "View, export and clear user-facing logs."
                   }
             },
             "language_picker": {
@@ -1329,6 +1338,35 @@
                         "level_clamped": "Level adjusted to the supported range {min}-{max}.",
                         "xp_clamped": "XP adjusted to the supported range 0-{maxXp}.",
                         "unchanged": "No change selected yet."
+                  }
+            },
+            "user_logs": {
+                  "kicker": "User Logs",
+                  "title": "User Logs",
+                  "description": "Review recent user-facing actions, warnings and errors stored by the tool.",
+                  "status": {
+                        "ready": "Ready",
+                        "loading": "Loading"
+                  },
+                  "empty": "No user log entries are available.",
+                  "confirm_clear": "Do you really want to clear the user logs?",
+                  "filters": {
+                        "all": "All",
+                        "info": "Info",
+                        "warnings": "Warnings",
+                        "errors": "Errors"
+                  },
+                  "actions": {
+                        "refresh": "Refresh Logs",
+                        "export": "Export Logs",
+                        "clear": "Clear Logs"
+                  },
+                  "meta": {
+                        "path": "Log File",
+                        "size": "Size",
+                        "warnings": "Warnings",
+                        "errors": "Errors",
+                        "updated": "Updated"
                   }
             },
             "mod_conflict_diagnostics": {

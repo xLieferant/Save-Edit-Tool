@@ -6187,27 +6187,6 @@ body.mode-editor .save-overview-grid {
   gap: var(--space-sm);
 }
 
-body.mode-editor .health-status-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-md);
-  padding: 18px 20px;
-  border-radius: calc(var(--radius-lg) + 2px);
-  border: 1px solid rgba(var(--accent-rgb), 0.2);
-  background:
-    radial-gradient(circle at top left, rgba(var(--accent-rgb), 0.12), transparent 40%),
-    linear-gradient(155deg, rgba(9, 18, 27, 0.94), rgba(4, 12, 19, 0.84));
-}
-
-body.mode-editor .health-status-card__copy,
-body.mode-editor .health-status-card__actions {
-  display: grid;
-  gap: 8px;
-  align-items: center;
-}
-
-body.mode-editor .health-status-card__copy h2,
 body.mode-editor .recovery-header h1,
 body.mode-editor .recovery-panel__title h2 {
   margin: 0;
@@ -6215,16 +6194,11 @@ body.mode-editor .recovery-panel__title h2 {
   line-height: 1.08;
 }
 
-body.mode-editor .health-status-card__copy p,
 body.mode-editor .recovery-header p,
 body.mode-editor .recovery-panel__body > p {
   margin: 0;
   color: var(--text-muted);
   line-height: 1.6;
-}
-
-body.mode-editor .health-status-card__actions {
-  justify-items: end;
 }
 
 body.mode-editor .save-reset-card {
@@ -6917,9 +6891,128 @@ body.mode-editor .modal-box {
   gap: 18px;
 }
 
+body.mode-editor .modal-box--recovery {
+  width: min(1240px, 100%);
+  max-height: min(90vh, 980px);
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  overflow: hidden;
+}
+
+body.mode-editor .modal-box--safe-reset {
+  width: min(760px, 100%);
+}
+
+body.mode-editor .modal-box--user-logs {
+  width: min(1180px, 100%);
+  max-height: min(90vh, 960px);
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  overflow: hidden;
+}
+
 body.mode-editor .modal-box--level {
   width: min(1100px, 100%);
   max-height: min(88vh, 920px);
+}
+
+body.mode-editor .recovery-modal-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+body.mode-editor .save-reset-modal-shell {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+body.mode-editor .user-logs-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+body.mode-editor .user-logs-meta-card {
+  display: grid;
+  gap: 8px;
+  min-height: 0;
+}
+
+body.mode-editor .user-logs-meta-card--wide {
+  grid-column: span 4;
+}
+
+body.mode-editor .user-logs-meta-card strong {
+  min-width: 0;
+  color: var(--text-main);
+  font: 600 13px/1.5 "Cascadia Code", "Consolas", monospace;
+  word-break: break-all;
+}
+
+body.mode-editor .user-logs-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+body.mode-editor .user-logs-filters,
+body.mode-editor .user-logs-toolbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+body.mode-editor .user-logs-filter {
+  min-width: 88px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--accent-rgb), 0.22);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+body.mode-editor .user-logs-filter.is-active {
+  border-color: rgba(var(--accent-rgb), 0.55);
+  background: rgba(var(--accent-rgb), 0.14);
+  color: var(--text-main);
+}
+
+body.mode-editor .user-logs-filter:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+body.mode-editor .user-logs-viewer-shell {
+  min-height: 0;
+  border-radius: calc(var(--radius-lg) + 2px);
+  border: 1px solid rgba(var(--accent-rgb), 0.18);
+  background:
+    linear-gradient(155deg, rgba(9, 18, 27, 0.98), rgba(4, 12, 19, 0.88));
+  overflow: hidden;
+}
+
+body.mode-editor .user-logs-viewer {
+  margin: 0;
+  min-height: 360px;
+  max-height: min(56vh, 620px);
+  padding: 18px 20px;
+  overflow: auto;
+  color: var(--text-main);
+  font: 500 13px/1.65 "Cascadia Code", "Consolas", monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 body.mode-editor .level-system-presets .level-system-preset-btn {
@@ -7130,7 +7223,6 @@ body.mode-editor .github-public-lock #editorFleetCard strong {
     grid-template-columns: 1fr;
   }
 
-  body.mode-editor .health-status-card,
   body.mode-editor .save-reset-card__header,
   body.mode-editor .recovery-header,
   body.mode-editor .recovery-panel__header {
@@ -7138,7 +7230,6 @@ body.mode-editor .github-public-lock #editorFleetCard strong {
     align-items: stretch;
   }
 
-  body.mode-editor .health-status-card__actions,
   body.mode-editor .save-reset-card__meta {
     justify-items: stretch;
     text-align: left;
@@ -7152,7 +7243,8 @@ body.mode-editor .github-public-lock #editorFleetCard strong {
   body.mode-editor .recovery-status-grid,
   body.mode-editor .recovery-panel-grid,
   body.mode-editor .utility-status-grid,
-  body.mode-editor .save-reset-grid {
+  body.mode-editor .save-reset-grid,
+  body.mode-editor .user-logs-meta-grid {
     grid-template-columns: 1fr;
   }
 
@@ -7171,6 +7263,26 @@ body.mode-editor .github-public-lock #editorFleetCard strong {
 
   body.mode-editor .save-reset-actions__buttons > * {
     flex: 1 1 100%;
+  }
+
+  body.mode-editor .user-logs-toolbar,
+  body.mode-editor .user-logs-filters,
+  body.mode-editor .user-logs-toolbar__actions {
+    align-items: stretch;
+  }
+
+  body.mode-editor .user-logs-filters,
+  body.mode-editor .user-logs-toolbar__actions {
+    width: 100%;
+  }
+
+  body.mode-editor .user-logs-filters > *,
+  body.mode-editor .user-logs-toolbar__actions > * {
+    flex: 1 1 100%;
+  }
+
+  body.mode-editor .user-logs-meta-card--wide {
+    grid-column: auto;
   }
 
   body.mode-editor .save-hero-actions > * {

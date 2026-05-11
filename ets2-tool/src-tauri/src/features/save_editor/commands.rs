@@ -89,6 +89,11 @@ where
     context
         .extra
         .insert("reason".to_string(), action_reason.to_string());
+    let _ = logging_service::record_info(
+        action,
+        "Write operation started for the active save.",
+        &context,
+    );
 
     let backup = match backup_service::create_backup_for_targets(
         profile_state,
@@ -424,11 +429,26 @@ pub fn apply_custom_reset_values(
     decrypt_cache: State<'_, DecryptCache>,
 ) -> Result<ApplyCustomResetValuesResultDto, String> {
     let mut trace = TraceScope::new("apply_custom_reset_values");
+    let mut context = logging_service::resolve_active_context(profile_state.inner());
     let targets = active_selected_save_targets(profile_state.inner()).map_err(|error| {
+        let _ = logging_service::record_error(
+            "safe_value_reset",
+            Some("active_save_missing"),
+            &error.user_message,
+            Some(&error.technical_details),
+            &context,
+        );
         trace.finish_error(&error.user_message);
         error.user_message
     })?;
     let values = resolve_custom_reset_values(level, xp, money).map_err(|error| {
+        let _ = logging_service::record_error(
+            "safe_value_reset",
+            Some("invalid_reset_values"),
+            &error.user_message,
+            Some(&error.technical_details),
+            &context,
+        );
         trace.finish_error(&error.user_message);
         error.user_message
     })?;
@@ -443,27 +463,54 @@ pub fn apply_custom_reset_values(
     )
     .map_err(|error| {
         let user_message = "Could not create undo snapshot";
+        let _ = logging_service::record_error(
+            "safe_value_reset",
+            Some("undo_snapshot_failed"),
+            user_message,
+            Some(&error),
+            &context,
+        );
         trace.finish_error(format!("{}: {}", user_message, error));
         user_message.to_string()
     })?;
+    context
+        .extra
+        .insert("undoBackupId".to_string(), undo_backup.backup_id.clone());
 
     let game_content = decrypt_if_needed(&targets.game_sii_path).map_err(|error| {
+        let _ = logging_service::record_error(
+            "safe_value_reset",
+            Some("read_game_sii_failed"),
+            "Could not read save file",
+            Some(&error.to_string()),
+            &context,
+        );
         trace.finish_error(format!("Could not read save file: {}", error));
         "Could not read save file".to_string()
     })?;
     let info_content = decrypt_if_needed(&targets.info_sii_path).map_err(|error| {
+        let _ = logging_service::record_error(
+            "safe_value_reset",
+            Some("read_info_sii_failed"),
+            "Could not read save file",
+            Some(&error.to_string()),
+            &context,
+        );
         trace.finish_error(format!("Could not read save file: {}", error));
         "Could not read save file".to_string()
     })?;
 
     if let Some(value) = values.money {
         dev_log!("[trace] APPLY_VALUE money={}", value);
+        context.extra.insert("money".to_string(), value.to_string());
     }
     if let Some(value) = values.level {
         dev_log!("[trace] APPLY_VALUE level={}", value);
+        context.extra.insert("level".to_string(), value.to_string());
     }
     if let Some(value) = values.xp {
         dev_log!("[trace] APPLY_VALUE xp={}", value);
+        context.extra.insert("xp".to_string(), value.to_string());
     }
 
     let updated_game = update_game_save_content(&game_content, values).map_err(|error| {
@@ -489,6 +536,11 @@ pub fn apply_custom_reset_values(
 
     dev_log!("[trace] INVALIDATE_CACHE save={}", targets.save_dir.display());
     invalidate_custom_reset_caches(profile_cache.inner(), decrypt_cache.inner(), &targets);
+    let _ = logging_service::record_info(
+        "safe_value_reset",
+        "Safe Value Reset applied to the active save.",
+        &context,
+    );
     trace.finish_ok();
 
     Ok(ApplyCustomResetValuesResultDto {
@@ -506,7 +558,15 @@ pub fn undo_last_save_change(
     decrypt_cache: State<'_, DecryptCache>,
 ) -> Result<BackupRestoreResultDto, String> {
     let mut trace = TraceScope::new("undo_last_save_change");
+    let mut context = logging_service::resolve_active_context(profile_state.inner());
     let targets = active_selected_save_targets(profile_state.inner()).map_err(|error| {
+        let _ = logging_service::record_error(
+            "undo_last_change",
+            Some("active_save_missing"),
+            &error.user_message,
+            Some(&error.technical_details),
+            &context,
+        );
         trace.finish_error(&error.user_message);
         error.user_message
     })?;
@@ -517,14 +577,31 @@ pub fn undo_last_save_change(
         backup_service::BACKUP_TYPE_UNDO_BEFORE_EDIT,
     )
     .map_err(|error| {
+        let _ = logging_service::record_error(
+            "undo_last_change",
+            Some("lookup_failed"),
+            "Undo snapshot not available.",
+            Some(&error),
+            &context,
+        );
         trace.finish_error(&error);
         error
     })?
     .ok_or_else(|| {
         let message = "Undo snapshot not found".to_string();
+        let _ = logging_service::record_error(
+            "undo_last_change",
+            Some("snapshot_missing"),
+            &message,
+            None,
+            &context,
+        );
         trace.finish_error(&message);
         message
     })?;
+    context
+        .extra
+        .insert("undoBackupId".to_string(), latest_undo.backup_id.clone());
 
     let storage_dir = backup_service::get_backup_storage_dir(&latest_undo.backup_id).map_err(|error| {
         trace.finish_error(&error);
@@ -544,6 +621,11 @@ pub fn undo_last_save_change(
     }
     profile_cache.invalidate_save_data();
     profile_cache.invalidate_vehicle_data();
+    let _ = logging_service::record_info(
+        "undo_last_change",
+        "The last save change was restored from the undo snapshot.",
+        &context,
+    );
     trace.finish_ok();
 
     Ok(execution.result)

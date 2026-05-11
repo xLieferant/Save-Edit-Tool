@@ -1,4 +1,5 @@
 use crate::dev_log;
+use crate::shared::user_log;
 use crate::models::save_game_data::SaveGameData;
 use crate::shared::decrypt::decrypt_cached_with_cache;
 use crate::shared::paths::{autosave_path, ets2_base_config_path, info_sii_from_save};
@@ -112,6 +113,7 @@ pub async fn read_all_save_data(
         data.dealers,
         data.visited_cities
     );
+    let _ = user_log::user_log_info("SaveEditor", "Save data read from the active save.");
 
     cache.cache_save_game_data(path_key, data.clone());
     trace.finish_ok();

@@ -1001,6 +1001,11 @@
             "parking_doubles_error": "Park-Doubles konnten nicht aktualisiert werden",
             "dev_tools_success": "Entwicklertools erfolgreich aktualisiert!",
             "dev_tools_error": "Entwicklertools konnten nicht aktualisiert werden",
+            "user_logs_exported": "Logs wurden in den Downloads-Ordner exportiert.",
+            "user_logs_cleared": "User Logs wurden geleert.",
+            "user_logs_load_error": "User Logs konnten nicht geladen werden.",
+            "user_logs_export_error": "User Logs konnten nicht exportiert werden.",
+            "user_logs_clear_error": "User Logs konnten nicht geleert werden.",
             "profile_loaded_select_save": "Profil geladen. Bitte wähle einen Spielstand aus.",
             "profile_load_error": "Profil konnte nicht geladen werden!",
             "scan_saves_error": "Spielstände konnten nicht gescannt werden",
@@ -1196,6 +1201,10 @@
                         "title": "Entwicklertools",
                         "desc": "Greife auf Entwicklertools zu",
                         "modalTextTitle": "Entwicklereinstellungen festlegen"
+                  },
+                  "user_logs": {
+                        "title": "User Logs",
+                        "desc": "Nutzerprotokolle ansehen, exportieren und leeren."
                   }
             },
             "language_picker": {
@@ -1312,6 +1321,35 @@
                         "level_clamped": "Level wurde auf den unterst?tzten Bereich {min}-{max} angepasst.",
                         "xp_clamped": "EP wurden auf den unterst?tzten Bereich 0-{maxXp} angepasst.",
                         "unchanged": "Derzeit ist keine ?nderung ausgew?hlt."
+                  }
+            },
+            "user_logs": {
+                  "kicker": "User Logs",
+                  "title": "User Logs",
+                  "description": "Pr?fe aktuelle Aktionen, Warnungen und Fehler, die das Tool f?r Nutzer protokolliert.",
+                  "status": {
+                        "ready": "Bereit",
+                        "loading": "L?dt"
+                  },
+                  "empty": "Es sind keine Nutzerprotokolle vorhanden.",
+                  "confirm_clear": "M?chtest du die User Logs wirklich leeren?",
+                  "filters": {
+                        "all": "Alle",
+                        "info": "Info",
+                        "warnings": "Warnungen",
+                        "errors": "Fehler"
+                  },
+                  "actions": {
+                        "refresh": "Logs aktualisieren",
+                        "export": "Logs exportieren",
+                        "clear": "Logs leeren"
+                  },
+                  "meta": {
+                        "path": "Log-Datei",
+                        "size": "Gr??e",
+                        "warnings": "Warnungen",
+                        "errors": "Fehler",
+                        "updated": "Aktualisiert"
                   }
             },
             "mod_conflict_diagnostics": {
