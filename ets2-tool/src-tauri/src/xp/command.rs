@@ -1,3 +1,6 @@
+use serde::Deserialize;
+use std::sync::OnceLock;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum JobType {
     Normal,
@@ -14,6 +17,29 @@ pub struct LevelProgress {
     pub progress_percent: f32,
 }
 
+#[derive(Debug, Clone, Copy, Deserialize)]
+struct LevelTableEntry {
+    level: u32,
+    increase: u64,
+    total_xp: u64,
+}
+
+fn level_table() -> &'static [LevelTableEntry] {
+    static LEVEL_TABLE: OnceLock<Vec<LevelTableEntry>> = OnceLock::new();
+
+    LEVEL_TABLE.get_or_init(|| {
+        serde_json::from_str(include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../src/data/level-table.json"
+        )))
+        .expect("level table must be valid JSON")
+    })
+}
+
+fn max_level() -> u32 {
+    level_table().last().map(|entry| entry.level).unwrap_or(0)
+}
+
 pub fn calculate_xp(distance_km: u32, job_type: JobType, reverse_parked: bool) -> u32 {
     let multiplier = match job_type {
         JobType::Normal => 1,
@@ -28,47 +54,52 @@ pub fn calculate_xp(distance_km: u32, job_type: JobType, reverse_parked: bool) -
 }
 
 pub fn xp_required_for_level(level: u32) -> u64 {
-    if level >= 100 {
+    let capped_level = level.min(max_level());
+    if capped_level >= max_level() {
         return 0;
     }
-    if level <= 9 {
-        let increment = (level.saturating_sub(1) as u64) * 500;
-        return 1500 + increment;
-    }
-    if level <= 49 {
-        return 2500;
-    }
-    7500
+
+    level_table()
+        .iter()
+        .find(|entry| entry.level == capped_level)
+        .map(|entry| entry.increase)
+        .unwrap_or(0)
 }
 
 pub fn total_xp_to_reach_level(level: u32) -> u64 {
-    if level <= 1 {
-        return 0;
-    }
-    let capped = level.min(100);
-    let mut total: u64 = 0;
-    let mut current_level: u32 = 1;
-    while current_level < capped {
-        total = total.saturating_add(xp_required_for_level(current_level));
-        current_level = current_level.saturating_add(1);
-    }
-    total
+    let capped_level = level.min(max_level());
+
+    level_table()
+        .iter()
+        .find(|entry| entry.level == capped_level)
+        .map(|entry| entry.total_xp)
+        .unwrap_or(0)
 }
 
 pub fn calculate_level(total_xp: u64) -> LevelProgress {
-    let mut level: u32 = 1;
-    let mut remaining: u64 = total_xp;
-    while level < 100 {
-        let required = xp_required_for_level(level);
-        if remaining < required {
-            break;
-        }
-        remaining = remaining.saturating_sub(required);
-        level = level.saturating_add(1);
-    }
+    let table = level_table();
+    let max_total_xp = total_xp_to_reach_level(max_level());
+    let clamped_xp = total_xp.min(max_total_xp);
 
-    let xp_needed_for_next_level = xp_required_for_level(level);
-    let xp_into_level = remaining;
+    let current_entry = table
+        .iter()
+        .rev()
+        .find(|entry| entry.total_xp <= clamped_xp)
+        .copied()
+        .unwrap_or(LevelTableEntry {
+            level: 0,
+            increase: 0,
+            total_xp: 0,
+        });
+
+    let level = current_entry.level;
+    let next_total_xp = table
+        .iter()
+        .find(|entry| entry.level == level.saturating_add(1))
+        .map(|entry| entry.total_xp)
+        .unwrap_or(clamped_xp);
+    let xp_needed_for_next_level = next_total_xp.saturating_sub(current_entry.total_xp);
+    let xp_into_level = clamped_xp.saturating_sub(current_entry.total_xp);
     let progress_percent = if xp_needed_for_next_level == 0 {
         100.0
     } else {
@@ -77,7 +108,7 @@ pub fn calculate_level(total_xp: u64) -> LevelProgress {
 
     LevelProgress {
         level,
-        current_xp: total_xp,
+        current_xp: clamped_xp,
         xp_into_level,
         xp_needed_for_next_level,
         progress_percent,

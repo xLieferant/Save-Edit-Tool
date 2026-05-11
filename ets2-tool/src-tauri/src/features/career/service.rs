@@ -35,6 +35,7 @@ fn to_scs_game(game: GameId) -> ScsGame {
 }
 
 pub fn start_background(app: AppHandle, runtime: Arc<CareerRuntime>) {
+    crate::dev_log!("[trace] START career_background_startup");
     std::thread::spawn(move || {
         let db_path = db::default_db_path();
         if let Err(e) = db::init_logbook(&db_path) {
@@ -244,6 +245,7 @@ pub fn start_background(app: AppHandle, runtime: Arc<CareerRuntime>) {
             std::thread::sleep(LOOP_TICK);
         }
     });
+    crate::dev_log!("[trace] END career_background_startup duration_ms=0");
 }
 
 #[cfg(target_os = "windows")]

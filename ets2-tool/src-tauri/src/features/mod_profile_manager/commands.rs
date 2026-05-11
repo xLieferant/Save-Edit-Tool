@@ -1,0 +1,405 @@
+use super::compare;
+use super::discovery::{load_manager_state, scan_inventory};
+use super::models::{DiscoveredMod, GameType, ModPreset, PresetCompareResult, PresetModEntry};
+use super::presets;
+use crate::shared::user_log;
+use crate::state::AppProfileState;
+use std::any::Any;
+use std::panic::{AssertUnwindSafe, catch_unwind};
+use tauri::{AppHandle, State};
+use uuid::Uuid;
+
+fn panic_message(payload: Box<dyn Any + Send>) -> String {
+    if let Some(message) = payload.downcast_ref::<&str>() {
+        return (*message).to_string();
+    }
+    if let Some(message) = payload.downcast_ref::<String>() {
+        return message.clone();
+    }
+    "unknown panic payload".to_string()
+}
+
+fn log_user_event(action: &str, stage: &str) {
+    if let Err(error) = user_log::write_user_log(action, stage) {
+        crate::dev_log!(
+            "[mod-profile-manager] user log write failed action='{}' stage='{}': {}",
+            action,
+            stage,
+            error
+        );
+    }
+}
+
+fn catch_command<T, F>(label: &str, action: F) -> Result<T, String>
+where
+    F: FnOnce() -> Result<T, String>,
+{
+    match catch_unwind(AssertUnwindSafe(action)) {
+        Ok(Ok(result)) => Ok(result),
+        Ok(Err(error)) => {
+            crate::dev_log!(
+                "[mod-profile-manager] command failed label='{}': {}",
+                label,
+                error
+            );
+            log_user_event(
+                &format!("mod_profile_manager error | {} | {}", label, error),
+                "error",
+            );
+            Err(error)
+        }
+        Err(payload) => {
+            let message = panic_message(payload);
+            crate::dev_log!(
+                "[mod-profile-manager] command panic caught label='{}': {}",
+                label,
+                message
+            );
+            log_user_event(
+                &format!("mod_profile_manager panic | {} | {}", label, message),
+                "error",
+            );
+            Err("The Mod Profile Manager failed unexpectedly.".to_string())
+        }
+    }
+}
+
+fn include_in_estimated_preset(item: &DiscoveredMod) -> bool {
+    item.readable && item.status != "invalid_workshop_item"
+}
+
+fn build_preset_mods(mods: &[DiscoveredMod], active_mods_reliably_known: bool) -> Vec<PresetModEntry> {
+    let mut preset_mods = mods
+        .iter()
+        .filter(|item| {
+            if active_mods_reliably_known {
+                item.enabled == Some(true)
+            } else {
+                include_in_estimated_preset(item)
+            }
+        })
+        .map(|item| PresetModEntry {
+            mod_id: item.id.clone(),
+            name: item.name.clone(),
+            source: item.source.clone(),
+            file_path: item.file_path.clone(),
+            workshop_id: item.workshop_id.clone(),
+            app_id: item.app_id.clone(),
+            enabled: true,
+            load_order_index: item.load_order_index.unwrap_or_default(),
+        })
+        .collect::<Vec<_>>();
+
+    preset_mods.sort_by(|left, right| {
+        left.load_order_index
+            .cmp(&right.load_order_index)
+            .then_with(|| left.name.to_ascii_lowercase().cmp(&right.name.to_ascii_lowercase()))
+    });
+
+    preset_mods
+}
+
+#[tauri::command]
+pub fn load_mod_profile_manager_state(
+    app: AppHandle,
+    profile_state: State<'_, AppProfileState>,
+    game: Option<String>,
+) -> Result<super::models::ModProfileManagerState, String> {
+    crate::dev_log!("[mod-profile-manager] load state requested game={:?}", game);
+    log_user_event("mod_profile_manager opened", "start");
+
+    catch_command("load_mod_profile_manager_state", || {
+        let state = load_manager_state(&app, profile_state.inner(), game.as_deref())?;
+        crate::dev_log!(
+            "[mod-profile-manager] load state completed game={} mods={} presets={} workshop_mods={} unreadable={}",
+            state.summary.selected_game.as_str(),
+            state.mods.len(),
+            state.presets.len(),
+            state.summary.steam_workshop_mods_found,
+            state.summary.unreadable_mods_count
+        );
+        log_user_event(
+            &format!(
+                "mod_profile_manager success | mods={} presets={}",
+                state.mods.len(),
+                state.presets.len()
+            ),
+            "success",
+        );
+        Ok(state)
+    })
+}
+
+#[tauri::command]
+pub fn scan_mods(
+    app: AppHandle,
+    profile_state: State<'_, AppProfileState>,
+    game: Option<String>,
+) -> Result<Vec<DiscoveredMod>, String> {
+    crate::dev_log!("[mod-profile-manager] scan requested game={:?}", game);
+    log_user_event("mod_profile_manager scan", "start");
+
+    catch_command("scan_mods", || {
+        let inventory = scan_inventory(&app, profile_state.inner(), game.as_deref())?;
+        crate::dev_log!(
+            "[mod-profile-manager] scan completed game={} local_mods={} workshop_mods={} unreadable={} steam_libraries={}",
+            inventory.summary.selected_game.as_str(),
+            inventory.summary.local_mods_found,
+            inventory.summary.steam_workshop_mods_found,
+            inventory.summary.unreadable_mods_count,
+            inventory.summary.steam_library_paths.len()
+        );
+        log_user_event(
+            &format!(
+                "mod_profile_manager scan success | local={} workshop={} unreadable={}",
+                inventory.summary.local_mods_found,
+                inventory.summary.steam_workshop_mods_found,
+                inventory.summary.unreadable_mods_count
+            ),
+            "success",
+        );
+        Ok(inventory.mods)
+    })
+}
+
+#[tauri::command]
+pub fn list_mod_presets(app: AppHandle, game: Option<String>) -> Result<Vec<ModPreset>, String> {
+    catch_command("list_mod_presets", || {
+        let game = match game.as_deref() {
+            Some(value) => Some(GameType::try_from(value)?),
+            None => None,
+        };
+        presets::list_presets(&app, game)
+    })
+}
+
+#[tauri::command]
+pub fn create_mod_preset(
+    app: AppHandle,
+    profile_state: State<'_, AppProfileState>,
+    name: String,
+    game: String,
+    notes: Option<String>,
+    preset_label: Option<String>,
+) -> Result<ModPreset, String> {
+    crate::dev_log!(
+        "[mod-profile-manager] create preset requested game={} name={}",
+        game,
+        name
+    );
+    log_user_event(&format!("mod_profile_manager create preset | {}", name), "start");
+
+    catch_command("create_mod_preset", || {
+        let game = GameType::try_from(game.as_str())?;
+        let trimmed_name = name.trim();
+        if trimmed_name.is_empty() {
+            return Err("Preset name is required.".to_string());
+        }
+
+        let inventory = scan_inventory(&app, profile_state.inner(), Some(game.as_str()))?;
+        let preset_mods =
+            build_preset_mods(&inventory.mods, inventory.summary.active_mods_reliably_known);
+        let preset_load_order_source = if inventory.summary.active_mods_reliably_known {
+            "detected".to_string()
+        } else if preset_mods.is_empty() {
+            "unknown".to_string()
+        } else {
+            inventory.summary.load_order_source.clone()
+        };
+
+        let timestamp = chrono::Local::now().to_rfc3339();
+        let preset = ModPreset {
+            id: Uuid::new_v4().to_string(),
+            name: trimmed_name.to_string(),
+            game,
+            created_at: timestamp.clone(),
+            updated_at: timestamp,
+            mods: preset_mods,
+            notes: notes.and_then(|value| {
+                let trimmed = value.trim().to_string();
+                if trimmed.is_empty() {
+                    None
+                } else {
+                    Some(trimmed)
+                }
+            }),
+            preset_label: preset_label.and_then(|value| {
+                let trimmed = value.trim().to_string();
+                if trimmed.is_empty() {
+                    None
+                } else {
+                    Some(trimmed)
+                }
+            }),
+            load_order_source: preset_load_order_source,
+        };
+
+        let preset = presets::save_preset(&app, preset)?;
+        crate::dev_log!(
+            "[mod-profile-manager] preset created id={} name={} mods={} load_order_source={}",
+            preset.id,
+            preset.name,
+            preset.mods.len(),
+            preset.load_order_source
+        );
+        log_user_event(
+            &format!(
+                "mod_profile_manager preset created | {} | mods={} | load_order_source={}",
+                preset.name,
+                preset.mods.len(),
+                preset.load_order_source
+            ),
+            "success",
+        );
+        Ok(preset)
+    })
+}
+
+#[tauri::command]
+pub fn compare_mod_preset(
+    app: AppHandle,
+    profile_state: State<'_, AppProfileState>,
+    preset_id: String,
+    game: String,
+) -> Result<PresetCompareResult, String> {
+    crate::dev_log!(
+        "[mod-profile-manager] compare preset requested preset_id={} game={}",
+        preset_id,
+        game
+    );
+    log_user_event(
+        &format!("mod_profile_manager compare preset | {}", preset_id),
+        "start",
+    );
+
+    catch_command("compare_mod_preset", || {
+        let game = GameType::try_from(game.as_str())?;
+        let result = compare::compare_preset(&app, profile_state.inner(), &preset_id, game)?;
+        crate::dev_log!(
+            "[mod-profile-manager] compare completed preset_id={} missing={} extra={} path_changes={} load_order_diff={}",
+            preset_id,
+            result.summary.missing_mods_count,
+            result.summary.extra_mods_count,
+            result.summary.changed_paths_count,
+            result.summary.load_order_differences_count
+        );
+        log_user_event(
+            &format!(
+                "mod_profile_manager compare success | missing={} extra={}",
+                result.summary.missing_mods_count,
+                result.summary.extra_mods_count
+            ),
+            "success",
+        );
+        Ok(result)
+    })
+}
+
+#[tauri::command]
+pub fn export_mod_preset(app: AppHandle, preset_id: String) -> Result<String, String> {
+    crate::dev_log!(
+        "[mod-profile-manager] export preset requested preset_id={}",
+        preset_id
+    );
+    log_user_event(
+        &format!("mod_profile_manager export preset | {}", preset_id),
+        "start",
+    );
+
+    catch_command("export_mod_preset", || {
+        let exported = presets::export_preset(&app, &preset_id)?;
+        if let Some(path) = exported {
+            crate::dev_log!(
+                "[mod-profile-manager] export preset completed preset_id={} path={}",
+                preset_id,
+                path
+            );
+            log_user_event(
+                &format!("mod_profile_manager export success | {}", path),
+                "success",
+            );
+            Ok(path)
+        } else {
+            crate::dev_log!("[mod-profile-manager] export preset canceled");
+            Ok(String::new())
+        }
+    })
+}
+
+#[tauri::command]
+pub fn import_mod_preset(app: AppHandle) -> Result<Option<ModPreset>, String> {
+    crate::dev_log!("[mod-profile-manager] import preset requested");
+    log_user_event("mod_profile_manager import preset", "start");
+
+    catch_command("import_mod_preset", || {
+        let imported = presets::import_preset(&app)?;
+        if let Some(preset) = imported.as_ref() {
+            crate::dev_log!(
+                "[mod-profile-manager] import preset completed id={} name={}",
+                preset.id,
+                preset.name
+            );
+            log_user_event(
+                &format!("mod_profile_manager import success | {}", preset.name),
+                "success",
+            );
+        } else {
+            crate::dev_log!("[mod-profile-manager] import preset canceled");
+        }
+        Ok(imported)
+    })
+}
+
+#[tauri::command]
+pub fn delete_mod_preset(app: AppHandle, preset_id: String) -> Result<(), String> {
+    crate::dev_log!(
+        "[mod-profile-manager] delete preset requested preset_id={}",
+        preset_id
+    );
+    log_user_event(
+        &format!("mod_profile_manager delete preset | {}", preset_id),
+        "start",
+    );
+
+    catch_command("delete_mod_preset", || {
+        presets::delete_preset(&app, &preset_id)?;
+        log_user_event(
+            &format!("mod_profile_manager delete success | {}", preset_id),
+            "success",
+        );
+        Ok(())
+    })
+}
+
+#[tauri::command]
+pub fn select_manual_workshop_directory(
+    app: AppHandle,
+    game: String,
+) -> Result<Option<String>, String> {
+    catch_command("select_manual_workshop_directory", || {
+        let game = GameType::try_from(game.as_str())?;
+        let picked = presets::pick_workshop_directory(&app)?;
+        if let Some(path) = picked.as_ref() {
+            presets::set_manual_workshop_path(&app, game, path.clone())?;
+            crate::dev_log!(
+                "[mod-profile-manager] manual workshop path saved game={} path={}",
+                game.as_str(),
+                path
+            );
+        }
+        Ok(picked)
+    })
+}
+
+#[tauri::command]
+pub fn clear_manual_workshop_directory(app: AppHandle, game: String) -> Result<(), String> {
+    catch_command("clear_manual_workshop_directory", || {
+        let game = GameType::try_from(game.as_str())?;
+        presets::clear_manual_workshop_path(&app, game)?;
+        crate::dev_log!(
+            "[mod-profile-manager] manual workshop path cleared game={}",
+            game.as_str()
+        );
+        Ok(())
+    })
+}

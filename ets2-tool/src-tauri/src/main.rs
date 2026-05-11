@@ -152,6 +152,7 @@ fn main() {
                 }
             }
             crate::dev_log!("[app] setup start telemetry bridge + background threads");
+            crate::dev_log!("[trace] START telemetry_bridge_startup");
             features::career::scs_sdk_telemetry::start_frontend_telemetry_bridge(
                 handle.clone(),
                 runtime.clone(),
@@ -159,6 +160,7 @@ fn main() {
             features::career::service::start_background(handle, runtime);
             let ets_db = app.state::<EtsDbState>();
             features::telemetry::scs_shared_mem::start(app.handle().clone(), ets_db.pool.clone());
+            crate::dev_log!("[trace] END telemetry_bridge_startup duration_ms=0");
             crate::dev_log!("[app] setup complete");
             Ok(())
         })
@@ -209,6 +211,15 @@ fn main() {
             features::save_editor::commands::edit_player_money,
             features::save_editor::commands::edit_player_experience,
             features::save_editor::commands::edit_skill_value,
+            features::save_editor::commands::apply_custom_reset_values,
+            features::save_editor::commands::undo_last_save_change,
+            features::save_editor::commands::get_undo_status,
+            // Save safety
+            features::backup::commands::list_active_save_backups,
+            features::backup::commands::preview_backup_restore,
+            features::backup::commands::restore_backup,
+            features::health_monitor::commands::get_active_save_health,
+            features::health_monitor::commands::apply_save_health_fix,
             // Save Analysis+
             features::save_analysis::reader::read_all_save_data,
             // features::save_analysis::reader::read_money,
@@ -216,6 +227,18 @@ fn main() {
             features::save_analysis::reader::read_traffic_value,
             features::save_analysis::quicksave::quicksave_game_info,
             features::save_analysis::quicksave::get_current_truck_summary,
+            features::save_analysis::commands::analyze_mod_conflict_diagnostics,
+            features::save_analysis::commands::export_mod_conflict_diagnostics_report,
+            features::mod_profile_manager::commands::load_mod_profile_manager_state,
+            features::mod_profile_manager::commands::scan_mods,
+            features::mod_profile_manager::commands::list_mod_presets,
+            features::mod_profile_manager::commands::create_mod_preset,
+            features::mod_profile_manager::commands::compare_mod_preset,
+            features::mod_profile_manager::commands::export_mod_preset,
+            features::mod_profile_manager::commands::import_mod_preset,
+            features::mod_profile_manager::commands::delete_mod_preset,
+            features::mod_profile_manager::commands::select_manual_workshop_directory,
+            features::mod_profile_manager::commands::clear_manual_workshop_directory,
             // Vehicles and trailers
             features::vehicles::trucks::get_all_trucks,
             features::vehicles::trucks::get_player_truck,
@@ -248,6 +271,9 @@ fn main() {
             features::language::commands::translate_command,
             // User action logging
             features::logging::commands::log_user_action,
+            features::logging::commands::log_diagnostics_event,
+            features::logging::commands::build_support_report,
+            features::logging::commands::export_logs_bundle,
             //Feature: Profile Controls move around
             features::profile_controls::commands::copy_profile_controls,
             // Hub (UI navigation)

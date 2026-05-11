@@ -74,7 +74,7 @@
             "active_game": "Aktives Spiel",
             "data_source": "Datenquelle",
             "source_live": "Live-Daten",
-            "source_mock": "Mock / Platzhalter",
+            "source_mock": "Platzhalter",
             "vtc_context_user": "Aktueller Nutzer",
             "vtc_context_profile": "Aktives Profil",
             "vtc_context_save": "Aktiver Spielstand",
@@ -841,6 +841,122 @@
                   "profile_desc": "Aktualisiere Geld, XP, Fähigkeiten und spielstandgebundene Profilwerte in einem dedizierten Bearbeitungsablauf.",
                   "settings": "Einstellungs-Bearbeitung",
                   "settings_desc": "Steuere Sprache, Konvoi, Verkehr und erweiterte Konfigurationsoptionen."
+            },
+            "reset": {
+                  "kicker": "[NEEDS TRANSLATION]",
+                  "title": "[NEEDS TRANSLATION]",
+                  "summary": "[NEEDS TRANSLATION]",
+                  "backup_notice": "[NEEDS TRANSLATION]",
+                  "undo_unavailable": "[NEEDS TRANSLATION]",
+                  "ready_hint": "[NEEDS TRANSLATION]",
+                  "no_save_hint": "[NEEDS TRANSLATION]",
+                  "undo_confirm": "[NEEDS TRANSLATION]",
+                  "fields": {
+                        "money": "[NEEDS TRANSLATION]",
+                        "level": "[NEEDS TRANSLATION]",
+                        "xp": "[NEEDS TRANSLATION]"
+                  },
+                  "placeholders": {
+                        "money": "[NEEDS TRANSLATION]",
+                        "level": "[NEEDS TRANSLATION]",
+                        "xp": "[NEEDS TRANSLATION]"
+                  },
+                  "actions": {
+                        "apply": "[NEEDS TRANSLATION]",
+                        "undo": "[NEEDS TRANSLATION]",
+                        "applying": "[NEEDS TRANSLATION]",
+                        "undo_running": "[NEEDS TRANSLATION]"
+                  },
+                  "errors": {
+                        "invalid_level": "[NEEDS TRANSLATION]",
+                        "invalid_xp": "[NEEDS TRANSLATION]",
+                        "invalid_money": "[NEEDS TRANSLATION]",
+                        "no_values": "[NEEDS TRANSLATION]"
+                  }
+            },
+            "safety": {
+                  "actions": {
+                        "scan_health": "[NEEDS TRANSLATION]",
+                        "scan_mods": "[NEEDS TRANSLATION]",
+                        "refresh": "[NEEDS TRANSLATION]",
+                        "preview": "[NEEDS TRANSLATION]",
+                        "more": "[NEEDS TRANSLATION]",
+                        "view_details": "[NEEDS TRANSLATION]",
+                        "hide_details": "[NEEDS TRANSLATION]",
+                        "view_backups": "[NEEDS TRANSLATION]",
+                        "hide_backups": "[NEEDS TRANSLATION]",
+                        "refresh_health": "[NEEDS TRANSLATION]",
+                        "copy_report": "[NEEDS TRANSLATION]",
+                        "export_logs": "[NEEDS TRANSLATION]",
+                        "refresh_backups": "[NEEDS TRANSLATION]",
+                        "preview_restore": "[NEEDS TRANSLATION]",
+                        "restore_backup": "[NEEDS TRANSLATION]"
+                  },
+                  "status": {
+                        "idle": "[NEEDS TRANSLATION]",
+                        "clean": "[NEEDS TRANSLATION]",
+                        "risky": "[NEEDS TRANSLATION]",
+                        "broken": "[NEEDS TRANSLATION]"
+                  },
+                  "health": {
+                        "kicker": "[NEEDS TRANSLATION]",
+                        "title": "[NEEDS TRANSLATION]",
+                        "empty_summary": "[NEEDS TRANSLATION]",
+                        "empty_title": "[NEEDS TRANSLATION]",
+                        "empty_body": "[NEEDS TRANSLATION]",
+                        "clean_title": "[NEEDS TRANSLATION]",
+                        "fix_confirm": "[NEEDS TRANSLATION]",
+                        "fix_apply": "[NEEDS TRANSLATION]",
+                        "fix_sync": "[NEEDS TRANSLATION]",
+                        "issues_count": "[NEEDS TRANSLATION]"
+                  },
+                  "backups": {
+                        "kicker": "[NEEDS TRANSLATION]",
+                        "title": "[NEEDS TRANSLATION]",
+                        "empty_summary": "[NEEDS TRANSLATION]",
+                        "empty_title": "[NEEDS TRANSLATION]",
+                        "empty_body": "[NEEDS TRANSLATION]",
+                        "count": "[NEEDS TRANSLATION]",
+                        "files_suffix": "[NEEDS TRANSLATION]"
+                  },
+                  "restore": {
+                        "kicker": "[NEEDS TRANSLATION]",
+                        "title": "[NEEDS TRANSLATION]",
+                        "no_preview_status": "[NEEDS TRANSLATION]",
+                        "ready_status": "[NEEDS TRANSLATION]",
+                        "empty_title": "[NEEDS TRANSLATION]",
+                        "empty_body": "[NEEDS TRANSLATION]",
+                        "confirm": "[NEEDS TRANSLATION]",
+                        "changes_suffix": "[NEEDS TRANSLATION]",
+                        "parseable": "[NEEDS TRANSLATION]",
+                        "binary": "[NEEDS TRANSLATION]"
+                  }
+            },
+            "recovery": {
+                  "entry_kicker": "[NEEDS TRANSLATION]",
+                  "entry_title": "[NEEDS TRANSLATION]",
+                  "entry_summary": "[NEEDS TRANSLATION]",
+                  "entry_empty": "[NEEDS TRANSLATION]",
+                  "entry_status_idle": "[NEEDS TRANSLATION]",
+                  "entry_status_ready": "[NEEDS TRANSLATION]",
+                  "open_button": "[NEEDS TRANSLATION]",
+                  "nav_button": "[NEEDS TRANSLATION]",
+                  "back_button": "[NEEDS TRANSLATION]",
+                  "header_kicker": "[NEEDS TRANSLATION]",
+                  "header_title": "[NEEDS TRANSLATION]",
+                  "header_summary": "[NEEDS TRANSLATION]",
+                  "loading": "[NEEDS TRANSLATION]",
+                  "no_scan": "[NEEDS TRANSLATION]",
+                  "not_loaded": "[NEEDS TRANSLATION]",
+                  "status": {
+                        "profile": "[NEEDS TRANSLATION]",
+                        "save": "[NEEDS TRANSLATION]",
+                        "last_scan": "[NEEDS TRANSLATION]",
+                        "backups": "[NEEDS TRANSLATION]"
+                  },
+                  "reports_kicker": "[NEEDS TRANSLATION]",
+                  "reports_title": "[NEEDS TRANSLATION]",
+                  "reports_summary": "[NEEDS TRANSLATION]"
             }
       },
       "status_text": {
@@ -931,7 +1047,44 @@
             "load_languages_error": "Sprachen konnten nicht geladen werden: {error}",
             "profile_share_export_success": "Profilarchiv für {profileName} erstellt.",
             "profile_share_import_success": "Geteiltes Profil als {profileName} importiert.",
-            "profile_share_action_failed": "Profilfreigabe fehlgeschlagen: {error}"
+            "profile_share_action_failed": "Profilfreigabe fehlgeschlagen: {error}",
+            "diagnostics_analysis_failed": "[NEEDS TRANSLATION]",
+            "diagnostics_export_success": "[NEEDS TRANSLATION]",
+            "diagnostics_export_failed": "[NEEDS TRANSLATION]",
+            "diagnostics_copy_summary_success": "[NEEDS TRANSLATION]",
+            "diagnostics_copy_mods_success": "[NEEDS TRANSLATION]",
+            "diagnostics_copy_failed": "[NEEDS TRANSLATION]",
+            "diagnostics_log_path_copied": "[NEEDS TRANSLATION]",
+            "diagnostics_log_open_failed": "[NEEDS TRANSLATION]",
+            "mod_profile_manager_scan_failed": "[NEEDS TRANSLATION]",
+            "mod_profile_manager_preset_created": "[NEEDS TRANSLATION]",
+            "mod_profile_manager_preset_failed": "[NEEDS TRANSLATION]",
+            "mod_profile_manager_preset_deleted": "[NEEDS TRANSLATION]",
+            "mod_profile_manager_preset_imported": "[NEEDS TRANSLATION]",
+            "mod_profile_manager_preset_exported": "[NEEDS TRANSLATION]",
+            "mod_profile_manager_preset_select_required": "[NEEDS TRANSLATION]",
+            "mod_profile_manager_compare_failed": "[NEEDS TRANSLATION]",
+            "mod_profile_manager_manual_workshop_saved": "[NEEDS TRANSLATION]",
+            "mod_profile_manager_manual_workshop_cleared": "[NEEDS TRANSLATION]",
+            "mod_profile_manager_workshop_links_copied": "[NEEDS TRANSLATION]",
+            "mod_profile_manager_path_copied": "[NEEDS TRANSLATION]",
+            "mod_profile_manager_folder_open_failed": "[NEEDS TRANSLATION]",
+            "mod_profile_manager_no_workshop_links": "[NEEDS TRANSLATION]",
+            "level_system_missing_data": "[NEEDS TRANSLATION]",
+            "level_system_load_error": "[NEEDS TRANSLATION]",
+            "level_system_apply_success": "[NEEDS TRANSLATION]",
+            "level_system_apply_error": "[NEEDS TRANSLATION]",
+            "safety_report_copied": "[NEEDS TRANSLATION]",
+            "safety_logs_exported": "[NEEDS TRANSLATION]",
+            "safety_logs_export_failed": "[NEEDS TRANSLATION]",
+            "safety_health_fix_applied": "[NEEDS TRANSLATION]",
+            "safety_health_fix_failed": "[NEEDS TRANSLATION]",
+            "safety_backup_preview_failed": "[NEEDS TRANSLATION]",
+            "safety_restore_success": "[NEEDS TRANSLATION]",
+            "safety_restore_failed": "[NEEDS TRANSLATION]",
+            "safety_copy_failed": "[NEEDS TRANSLATION]",
+            "reset_values_applied": "[NEEDS TRANSLATION]",
+            "reset_undo_restored": "[NEEDS TRANSLATION]"
       },
       "tools": {
             "truck": {
@@ -993,6 +1146,10 @@
                         "desc": "Bearbeite deine Erfahrungspunkte",
                         "modalNumberText": "Neuen XP-Wert festlegen"
                   },
+                  "level_system": {
+                        "title": "[NEEDS TRANSLATION]",
+                        "desc": "[NEEDS TRANSLATION]"
+                  },
                   "change_money": {
                         "title": "Geld-Editor",
                         "desc": "Bearbeite dein Ingame-Geld",
@@ -1016,6 +1173,14 @@
                         "title": "Modifikationen oder Steuerung verschieben",
                         "desc": "Verschiebe Mods und Steuerungen zwischen Profilen",
                         "modalTextTitle": "Mods/Steuerung verschieben"
+                  },
+                  "mod_conflict_diagnostics": {
+                        "title": "[NEEDS TRANSLATION]",
+                        "desc": "[NEEDS TRANSLATION]"
+                  },
+                  "mod_profile_manager": {
+                        "title": "[NEEDS TRANSLATION]",
+                        "desc": "[NEEDS TRANSLATION]"
                   }
             },
             "settings": {
@@ -1109,6 +1274,343 @@
                         "trip_distance": "Fahrtdistanz",
                         "garage": "Zugewiesene Garage",
                         "vehicle_id": "Fahrzeug-ID"
+                  }
+            },
+            "level_system": {
+                  "kicker": "[NEEDS TRANSLATION]",
+                  "title": "[NEEDS TRANSLATION]",
+                  "description": "[NEEDS TRANSLATION]",
+                  "mode_level": "[NEEDS TRANSLATION]",
+                  "mode_xp": "[NEEDS TRANSLATION]",
+                  "status": {
+                        "current": "[NEEDS TRANSLATION]",
+                        "target": "[NEEDS TRANSLATION]"
+                  },
+                  "current_stats": {
+                        "title": "[NEEDS TRANSLATION]",
+                        "level": "[NEEDS TRANSLATION]",
+                        "total_xp": "[NEEDS TRANSLATION]",
+                        "next_step": "[NEEDS TRANSLATION]",
+                        "progress": "[NEEDS TRANSLATION]"
+                  },
+                  "target": {
+                        "title": "[NEEDS TRANSLATION]",
+                        "selected_level": "[NEEDS TRANSLATION]",
+                        "total_xp": "[NEEDS TRANSLATION]",
+                        "increase": "[NEEDS TRANSLATION]",
+                        "next_level": "[NEEDS TRANSLATION]",
+                        "progress": "[NEEDS TRANSLATION]"
+                  },
+                  "controls": {
+                        "title": "[NEEDS TRANSLATION]",
+                        "level_slider": "[NEEDS TRANSLATION]",
+                        "level_input": "[NEEDS TRANSLATION]",
+                        "xp_input": "[NEEDS TRANSLATION]",
+                        "level_preset": "[NEEDS TRANSLATION]",
+                        "reset_current": "[NEEDS TRANSLATION]",
+                        "max_level": "[NEEDS TRANSLATION]"
+                  },
+                  "summary": {
+                        "title": "[NEEDS TRANSLATION]",
+                        "level_change": "[NEEDS TRANSLATION]",
+                        "xp_change": "[NEEDS TRANSLATION]",
+                        "delta": "[NEEDS TRANSLATION]",
+                        "mode": "[NEEDS TRANSLATION]",
+                        "unchanged": "[NEEDS TRANSLATION]"
+                  },
+                  "actions": {
+                        "apply": "[NEEDS TRANSLATION]"
+                  },
+                  "progress": {
+                        "max": "[NEEDS TRANSLATION]",
+                        "no_next_level": "[NEEDS TRANSLATION]"
+                  },
+                  "feedback": {
+                        "level_clamped": "[NEEDS TRANSLATION]",
+                        "xp_clamped": "[NEEDS TRANSLATION]",
+                        "unchanged": "[NEEDS TRANSLATION]"
+                  }
+            },
+            "mod_conflict_diagnostics": {
+                  "kicker": "[NEEDS TRANSLATION]",
+                  "title": "[NEEDS TRANSLATION]",
+                  "description": "[NEEDS TRANSLATION]",
+                  "loading_title": "[NEEDS TRANSLATION]",
+                  "loading_body": "[NEEDS TRANSLATION]",
+                  "error_title": "[NEEDS TRANSLATION]",
+                  "error_body": "[NEEDS TRANSLATION]",
+                  "empty_title": "[NEEDS TRANSLATION]",
+                  "empty_body": "[NEEDS TRANSLATION]",
+                  "overall_label": "[NEEDS TRANSLATION]",
+                  "sources": {
+                        "title": "[NEEDS TRANSLATION]",
+                        "game_log": "[NEEDS TRANSLATION]",
+                        "game_crash": "[NEEDS TRANSLATION]",
+                        "mod_folder": "[NEEDS TRANSLATION]",
+                        "indexed_mods": "[NEEDS TRANSLATION]",
+                        "extracted_errors": "[NEEDS TRANSLATION]",
+                        "active_mods": "[NEEDS TRANSLATION]"
+                  },
+                  "save_health": {
+                        "title": "[NEEDS TRANSLATION]"
+                  },
+                  "crash_summary": {
+                        "title": "[NEEDS TRANSLATION]"
+                  },
+                  "context": {
+                        "title": "[NEEDS TRANSLATION]",
+                        "game": "[NEEDS TRANSLATION]",
+                        "profile": "[NEEDS TRANSLATION]",
+                        "save": "[NEEDS TRANSLATION]",
+                        "base_path": "[NEEDS TRANSLATION]"
+                  },
+                  "suspected_mods": {
+                        "title": "[NEEDS TRANSLATION]"
+                  },
+                  "missing_references": {
+                        "title": "[NEEDS TRANSLATION]"
+                  },
+                  "broken_references": {
+                        "title": "[NEEDS TRANSLATION]"
+                  },
+                  "errors": {
+                        "title": "[NEEDS TRANSLATION]",
+                        "filter_label": "[NEEDS TRANSLATION]",
+                        "filter_all": "[NEEDS TRANSLATION]",
+                        "filter_info": "[NEEDS TRANSLATION]",
+                        "filter_warning": "[NEEDS TRANSLATION]",
+                        "filter_error": "[NEEDS TRANSLATION]",
+                        "filter_critical": "[NEEDS TRANSLATION]",
+                        "raw_line": "[NEEDS TRANSLATION]",
+                        "last_context": "[NEEDS TRANSLATION]"
+                  },
+                  "exports": {
+                        "title": "[NEEDS TRANSLATION]",
+                        "technical_log": "[NEEDS TRANSLATION]",
+                        "user_log": "[NEEDS TRANSLATION]",
+                        "log_folder": "[NEEDS TRANSLATION]"
+                  },
+                  "timeline": {
+                        "title": "[NEEDS TRANSLATION]"
+                  },
+                  "limitations": {
+                        "title": "[NEEDS TRANSLATION]"
+                  },
+                  "actions": {
+                        "back": "[NEEDS TRANSLATION]",
+                        "refresh": "[NEEDS TRANSLATION]",
+                        "export_report": "[NEEDS TRANSLATION]",
+                        "export_errors": "[NEEDS TRANSLATION]",
+                        "copy_summary": "[NEEDS TRANSLATION]",
+                        "copy_suspicious_mods": "[NEEDS TRANSLATION]",
+                        "export_crash": "[NEEDS TRANSLATION]",
+                        "open_logs": "[NEEDS TRANSLATION]"
+                  },
+                  "fields": {
+                        "package": "[NEEDS TRANSLATION]",
+                        "file": "[NEEDS TRANSLATION]",
+                        "source": "[NEEDS TRANSLATION]",
+                        "path": "[NEEDS TRANSLATION]",
+                        "readable": "[NEEDS TRANSLATION]",
+                        "manifest": "[NEEDS TRANSLATION]",
+                        "categories": "[NEEDS TRANSLATION]",
+                        "profile_inferred": "[NEEDS TRANSLATION]",
+                        "save_inferred": "[NEEDS TRANSLATION]"
+                  },
+                  "status": {
+                        "clean": "[NEEDS TRANSLATION]",
+                        "warnings": "[NEEDS TRANSLATION]",
+                        "issues_found": "[NEEDS TRANSLATION]",
+                        "not_enough_data": "[NEEDS TRANSLATION]",
+                        "low": "[NEEDS TRANSLATION]",
+                        "high": "[NEEDS TRANSLATION]",
+                        "active": "[NEEDS TRANSLATION]",
+                        "not_active": "[NEEDS TRANSLATION]",
+                        "found": "[NEEDS TRANSLATION]",
+                        "missing": "[NEEDS TRANSLATION]",
+                        "info": "[NEEDS TRANSLATION]",
+                        "warning": "[NEEDS TRANSLATION]",
+                        "error": "[NEEDS TRANSLATION]",
+                        "critical": "[NEEDS TRANSLATION]",
+                        "confirmed": "[NEEDS TRANSLATION]",
+                        "likely": "[NEEDS TRANSLATION]",
+                        "possible": "[NEEDS TRANSLATION]",
+                        "unknown": "[NEEDS TRANSLATION]",
+                        "green": "[NEEDS TRANSLATION]",
+                        "yellow": "[NEEDS TRANSLATION]",
+                        "red": "[NEEDS TRANSLATION]",
+                        "high_suspicion": "[NEEDS TRANSLATION]",
+                        "medium_suspicion": "[NEEDS TRANSLATION]",
+                        "low_suspicion": "[NEEDS TRANSLATION]"
+                  },
+                  "content": {
+                        "no_suspected_mods": "[NEEDS TRANSLATION]",
+                        "no_broken_references": "[NEEDS TRANSLATION]",
+                        "no_missing_references": "[NEEDS TRANSLATION]",
+                        "no_timeline": "[NEEDS TRANSLATION]",
+                        "no_critical_errors": "[NEEDS TRANSLATION]",
+                        "no_errors": "[NEEDS TRANSLATION]",
+                        "no_crash_context": "[NEEDS TRANSLATION]",
+                        "no_logs": "[NEEDS TRANSLATION]",
+                        "no_save_health_details": "[NEEDS TRANSLATION]",
+                        "no_limitations": "[NEEDS TRANSLATION]",
+                        "removed_suspected": "[NEEDS TRANSLATION]",
+                        "no_mod_assigned": "[NEEDS TRANSLATION]",
+                        "limit_label": "[NEEDS TRANSLATION]"
+                  }
+            },
+            "mod_profile_manager": {
+                  "kicker": "[NEEDS TRANSLATION]",
+                  "title": "[NEEDS TRANSLATION]",
+                  "description": "[NEEDS TRANSLATION]",
+                  "loading_title": "[NEEDS TRANSLATION]",
+                  "loading_body": "[NEEDS TRANSLATION]",
+                  "error_title": "[NEEDS TRANSLATION]",
+                  "error_body": "[NEEDS TRANSLATION]",
+                  "empty_title": "[NEEDS TRANSLATION]",
+                  "empty_body": "[NEEDS TRANSLATION]",
+                  "summary": {
+                        "local_mods": "[NEEDS TRANSLATION]",
+                        "workshop_mods": "[NEEDS TRANSLATION]",
+                        "unreadable_mods": "[NEEDS TRANSLATION]",
+                        "presets_saved": "[NEEDS TRANSLATION]"
+                  },
+                  "sections": {
+                        "sources": "[NEEDS TRANSLATION]",
+                        "mods": "[NEEDS TRANSLATION]",
+                        "presets": "[NEEDS TRANSLATION]",
+                        "compare": "[NEEDS TRANSLATION]",
+                        "actions": "[NEEDS TRANSLATION]",
+                        "composer": "[NEEDS TRANSLATION]"
+                  },
+                  "filters": {
+                        "game": "[NEEDS TRANSLATION]",
+                        "source": "[NEEDS TRANSLATION]",
+                        "category": "[NEEDS TRANSLATION]",
+                        "search": "[NEEDS TRANSLATION]",
+                        "search_placeholder": "[NEEDS TRANSLATION]",
+                        "all_sources": "[NEEDS TRANSLATION]",
+                        "local_source": "[NEEDS TRANSLATION]",
+                        "workshop_source": "[NEEDS TRANSLATION]",
+                        "all_categories": "[NEEDS TRANSLATION]"
+                  },
+                  "actions": {
+                        "back": "[NEEDS TRANSLATION]",
+                        "scan": "[NEEDS TRANSLATION]",
+                        "create_preset": "[NEEDS TRANSLATION]",
+                        "import_preset": "[NEEDS TRANSLATION]",
+                        "export_preset": "[NEEDS TRANSLATION]",
+                        "open": "[NEEDS TRANSLATION]",
+                        "compare": "[NEEDS TRANSLATION]",
+                        "export_row": "[NEEDS TRANSLATION]",
+                        "delete": "[NEEDS TRANSLATION]",
+                        "cancel": "[NEEDS TRANSLATION]",
+                        "save_preset": "[NEEDS TRANSLATION]",
+                        "save_current_setup": "[NEEDS TRANSLATION]",
+                        "copy_workshop_links": "[NEEDS TRANSLATION]",
+                        "open_workshop_folder": "[NEEDS TRANSLATION]",
+                        "open_local_mod_folder": "[NEEDS TRANSLATION]",
+                        "select_workshop_folder": "[NEEDS TRANSLATION]",
+                        "clear_workshop_folder": "[NEEDS TRANSLATION]"
+                  },
+                  "fields": {
+                        "category": "[NEEDS TRANSLATION]",
+                        "workshop_id": "[NEEDS TRANSLATION]",
+                        "path": "[NEEDS TRANSLATION]",
+                        "load_order": "[NEEDS TRANSLATION]",
+                        "mods": "[NEEDS TRANSLATION]",
+                        "created": "[NEEDS TRANSLATION]",
+                        "updated": "[NEEDS TRANSLATION]",
+                        "missing_count": "[NEEDS TRANSLATION]",
+                        "notes": "[NEEDS TRANSLATION]",
+                        "notes_placeholder": "[NEEDS TRANSLATION]",
+                        "preset_name": "[NEEDS TRANSLATION]",
+                        "preset_name_placeholder": "[NEEDS TRANSLATION]",
+                        "preset_label": "[NEEDS TRANSLATION]",
+                        "local_folder": "[NEEDS TRANSLATION]",
+                        "steam_libraries": "[NEEDS TRANSLATION]",
+                        "workshop_folder": "[NEEDS TRANSLATION]",
+                        "manual_workshop": "[NEEDS TRANSLATION]",
+                        "load_order_source": "[NEEDS TRANSLATION]"
+                  },
+                  "status": {
+                        "ready": "[NEEDS TRANSLATION]",
+                        "warnings": "[NEEDS TRANSLATION]",
+                        "found": "[NEEDS TRANSLATION]",
+                        "missing": "[NEEDS TRANSLATION]",
+                        "enabled": "[NEEDS TRANSLATION]",
+                        "disabled": "[NEEDS TRANSLATION]",
+                        "readable": "[NEEDS TRANSLATION]",
+                        "unreadable": "[NEEDS TRANSLATION]",
+                        "detected": "[NEEDS TRANSLATION]",
+                        "estimated": "[NEEDS TRANSLATION]",
+                        "unknown": "[NEEDS TRANSLATION]",
+                        "local": "[NEEDS TRANSLATION]",
+                        "workshop": "[NEEDS TRANSLATION]",
+                        "ok": "[NEEDS TRANSLATION]",
+                        "manifest_missing": "[NEEDS TRANSLATION]",
+                        "active_manifest_missing": "[NEEDS TRANSLATION]",
+                        "invalid_workshop_item": "[NEEDS TRANSLATION]"
+                  },
+                  "content": {
+                        "no_workshop_folder": "[NEEDS TRANSLATION]",
+                        "manager_still_works": "[NEEDS TRANSLATION]",
+                        "active_list_detected": "[NEEDS TRANSLATION]",
+                        "active_list_estimated": "[NEEDS TRANSLATION]",
+                        "active_list_unknown": "[NEEDS TRANSLATION]",
+                        "no_manual_workshop_path": "[NEEDS TRANSLATION]",
+                        "no_mods_found": "[NEEDS TRANSLATION]",
+                        "no_presets": "[NEEDS TRANSLATION]",
+                        "no_compare": "[NEEDS TRANSLATION]",
+                        "no_missing_mods": "[NEEDS TRANSLATION]",
+                        "no_extra_mods": "[NEEDS TRANSLATION]",
+                        "no_changed_paths": "[NEEDS TRANSLATION]",
+                        "no_load_order_differences": "[NEEDS TRANSLATION]",
+                        "no_duplicate_mods": "[NEEDS TRANSLATION]",
+                        "no_unreadable_mods": "[NEEDS TRANSLATION]",
+                        "no_workshop_links": "[NEEDS TRANSLATION]",
+                        "restore_not_implemented": "[NEEDS TRANSLATION]",
+                        "preset_creation_estimated": "[NEEDS TRANSLATION]",
+                        "preset_creation_unknown": "[NEEDS TRANSLATION]",
+                        "preset_creation_requires_profile": "[NEEDS TRANSLATION]",
+                        "preset_creation_ready": "[NEEDS TRANSLATION]"
+                  },
+                  "compare": {
+                        "missing_mods": "[NEEDS TRANSLATION]",
+                        "extra_mods": "[NEEDS TRANSLATION]",
+                        "changed_paths": "[NEEDS TRANSLATION]",
+                        "load_order": "[NEEDS TRANSLATION]",
+                        "duplicate_mods": "[NEEDS TRANSLATION]",
+                        "unreadable_mods": "[NEEDS TRANSLATION]",
+                        "workshop_links": "[NEEDS TRANSLATION]",
+                        "preset_path": "[NEEDS TRANSLATION]",
+                        "current_path": "[NEEDS TRANSLATION]",
+                        "preset_order": "[NEEDS TRANSLATION]",
+                        "current_order": "[NEEDS TRANSLATION]"
+                  },
+                  "categories": {
+                        "truck": "[NEEDS TRANSLATION]",
+                        "trailer": "[NEEDS TRANSLATION]",
+                        "map": "[NEEDS TRANSLATION]",
+                        "cargo": "[NEEDS TRANSLATION]",
+                        "traffic": "[NEEDS TRANSLATION]",
+                        "economy": "[NEEDS TRANSLATION]",
+                        "sound": "[NEEDS TRANSLATION]",
+                        "ui": "[NEEDS TRANSLATION]",
+                        "graphics": "[NEEDS TRANSLATION]",
+                        "tuning": "[NEEDS TRANSLATION]",
+                        "skin": "[NEEDS TRANSLATION]",
+                        "other": "[NEEDS TRANSLATION]",
+                        "unknown": "[NEEDS TRANSLATION]"
+                  },
+                  "preset_labels": {
+                        "none": "[NEEDS TRANSLATION]",
+                        "realistic_setup": "[NEEDS TRANSLATION]",
+                        "map_combo": "[NEEDS TRANSLATION]",
+                        "vanilla_plus": "[NEEDS TRANSLATION]",
+                        "youtube_recording": "[NEEDS TRANSLATION]",
+                        "hard_economy": "[NEEDS TRANSLATION]",
+                        "multiplayer_convoy": "[NEEDS TRANSLATION]"
                   }
             },
             "profile_sharing": {

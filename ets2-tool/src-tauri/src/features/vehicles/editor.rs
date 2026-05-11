@@ -1,4 +1,6 @@
 use crate::dev_log;
+use crate::features::backup::service as backup_service;
+use crate::features::logging::service as logging_service;
 use crate::shared::current_profile::{require_current_profile, require_current_save};
 use crate::shared::decrypt::decrypt_cached;
 use crate::shared::hex_float::float_to_hex;
@@ -7,7 +9,7 @@ use crate::shared::regex_helper::cragex;
 use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 use regex::{Captures, Regex};
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use tauri::command;
 
 // ---------
@@ -24,11 +26,60 @@ fn read_save_content(
     })?;
     let path = game_sii_from_save(Path::new(&save_path_str));
     let content = decrypt_cached(&path, &decrypt_cache)?;
-    Ok((content, path.to_str().unwrap().to_string()))
+    Ok((content, path.display().to_string()))
 }
 
-fn write_save_content(path: &str, content: &str) -> Result<(), String> {
-    fs::write(path, content.as_bytes()).map_err(|e| e.to_string())
+fn write_save_content(
+    profile_state: &AppProfileState,
+    path: &str,
+    content: &str,
+    action: &str,
+    action_reason: &str,
+    success_message: &str,
+) -> Result<(), String> {
+    let path_buf = PathBuf::from(path);
+    let mut context = logging_service::resolve_active_context(profile_state);
+    context.extra.insert(
+        "target".to_string(),
+        logging_service::redact_path(&path_buf.display().to_string()),
+    );
+    context
+        .extra
+        .insert("reason".to_string(), action_reason.to_string());
+
+    let backup = backup_service::create_backup_for_targets(
+        profile_state,
+        action_reason,
+        &backup_service::recommended_targets(&path_buf),
+    )
+    .map_err(|error| {
+        let _ = logging_service::record_error(
+            action,
+            Some("auto_backup_failed"),
+            "Automatic backup could not be created before the vehicle edit.",
+            Some(&error),
+            &context,
+        );
+        "Automatisches Backup konnte vor der Fahrzeugänderung nicht erstellt werden.".to_string()
+    })?;
+
+    context
+        .extra
+        .insert("backupId".to_string(), backup.backup_id);
+    fs::write(&path_buf, content.as_bytes()).map_err(|error| {
+        let technical = error.to_string();
+        let _ = logging_service::record_error(
+            action,
+            Some("write_failed"),
+            "The vehicle save could not be written.",
+            Some(&technical),
+            &context,
+        );
+        "Fahrzeugänderung konnte nicht gespeichert werden.".to_string()
+    })?;
+
+    let _ = logging_service::record_info(action, success_message, &context);
+    Ok(())
 }
 
 fn get_player_vehicle_id(content: &str, vehicle_type: &str) -> Result<String, String> {
@@ -56,7 +107,10 @@ fn extract_vehicle_block(
         .captures(content)
         .ok_or(format!("{} block for {} not found", block_type, vehicle_id))?;
 
-    let start_pos = cap.get(0).unwrap().end();
+    let full_match = cap
+        .get(0)
+        .ok_or_else(|| format!("{} block start for {} could not be resolved", block_type, vehicle_id))?;
+    let start_pos = full_match.end();
 
     // Count braces to find the matching closing brace
     let mut brace_count = 1;
@@ -80,7 +134,7 @@ fn extract_vehicle_block(
     }
 
     // Return positions INCLUDING the opening brace position
-    Ok((cap.get(0).unwrap().start(), end_pos + 1))
+    Ok((full_match.start(), end_pos + 1))
 }
 
 // #[x] : Function needs to find and delete something inside the regex
@@ -92,6 +146,9 @@ fn generic_vehicle_attribute_edit<F>(
     profile_state: tauri::State<'_, AppProfileState>,
     decrypt_cache: tauri::State<'_, DecryptCache>,
     profile_cache: tauri::State<'_, ProfileCache>,
+    action: &str,
+    action_reason: &str,
+    success_message: &str,
     unit_type: &str,          // "vehicle" or "trailer"
     player_vehicle_key: &str, // "my_truck" or "my_trailer"
     attribute_key: &str,
@@ -100,7 +157,7 @@ fn generic_vehicle_attribute_edit<F>(
 where
     F: Fn(&Captures) -> String,
 {
-    let (content, path) = read_save_content(profile_state, decrypt_cache.clone())?;
+    let (content, path) = read_save_content(profile_state.clone(), decrypt_cache.clone())?;
     let vehicle_id = get_player_vehicle_id(&content, player_vehicle_key)?;
 
     // ← CHANGED: Use proper brace matching
@@ -128,7 +185,14 @@ where
         new_block,
         &content[block_end..]
     );
-    write_save_content(&path, &new_content)?;
+    write_save_content(
+        profile_state.inner(),
+        &path,
+        &new_content,
+        action,
+        action_reason,
+        success_message,
+    )?;
 
     decrypt_cache.invalidate_path(Path::new(&path));
     profile_cache.invalidate_save_data();
@@ -153,6 +217,9 @@ pub async fn set_player_truck_license_plate(
         profile_state,
         decrypt_cache,
         profile_cache,
+        "set_player_truck_license_plate",
+        "before truck license plate edit",
+        "The player truck license plate was updated.",
         "vehicle",
         "my_truck",
         "license_plate",
@@ -176,7 +243,7 @@ pub async fn repair_player_truck(
     profile_cache: tauri::State<'_, ProfileCache>,
 ) -> Result<(), String> {
     dev_log!("Repairing player truck");
-    let (content, path) = read_save_content(profile_state, decrypt_cache.clone())?;
+    let (content, path) = read_save_content(profile_state.clone(), decrypt_cache.clone())?;
     let truck_id = get_player_vehicle_id(&content, "my_truck")?;
 
     // ← CHANGED: Use proper brace matching
@@ -201,7 +268,8 @@ pub async fn repair_player_truck(
     }
 
     // Fix wheels_wear array
-    let re_wheels = Regex::new(r"wheels_wear\[\d+\]:\s*[^ \r\n]+").unwrap();
+    let re_wheels = Regex::new(r"wheels_wear\[\d+\]:\s*[^ \r\n]+")
+        .map_err(|error| error.to_string())?;
     block = re_wheels
         .replace_all(&block, |_: &Captures| {
             format!("wheels_wear[0]: {}", float_to_hex(0.0))
@@ -214,7 +282,14 @@ pub async fn repair_player_truck(
         block,
         &content[block_end..]
     );
-    write_save_content(&path, &new_content)?;
+    write_save_content(
+        profile_state.inner(),
+        &path,
+        &new_content,
+        "repair_player_truck",
+        "before truck repair",
+        "The player truck wear values were repaired.",
+    )?;
 
     decrypt_cache.invalidate_path(Path::new(&path));
     profile_cache.invalidate_save_data();
@@ -234,6 +309,9 @@ pub async fn refuel_player_truck(
         profile_state,
         decrypt_cache,
         profile_cache,
+        "refuel_player_truck",
+        "before truck refuel edit",
+        "The player truck fuel level was restored.",
         "vehicle",
         "my_truck",
         "fuel_relative",
@@ -253,6 +331,9 @@ pub async fn set_player_truck_fuel(
         profile_state,
         decrypt_cache,
         profile_cache,
+        "set_player_truck_fuel",
+        "before truck fuel edit",
+        "The player truck fuel level was updated.",
         "vehicle",
         "my_truck",
         "fuel_relative",
@@ -273,6 +354,9 @@ pub async fn set_player_truck_wear(
         profile_state,
         decrypt_cache,
         profile_cache,
+        "set_player_truck_wear",
+        "before truck wear edit",
+        "A player truck wear value was updated.",
         "vehicle",
         "my_truck",
         &wear_type,
@@ -296,6 +380,9 @@ pub async fn set_player_trailer_license_plate(
         profile_state,
         decrypt_cache,
         profile_cache,
+        "set_player_trailer_license_plate",
+        "before trailer license plate edit",
+        "The player trailer license plate was updated.",
         "trailer",
         "my_trailer",
         "license_plate",
@@ -324,6 +411,9 @@ pub async fn edit_truck_odometer(
         profile_state,
         decrypt_cache,
         profile_cache,
+        "edit_truck_odometer",
+        "before truck odometer edit",
+        "The player truck odometer was updated.",
         "vehicle",
         "my_truck",
         "odometer",
@@ -338,7 +428,7 @@ pub async fn repair_player_trailer(
     profile_cache: tauri::State<'_, ProfileCache>,
 ) -> Result<(), String> {
     dev_log!("Repairing player trailer");
-    let (content, path) = read_save_content(profile_state, decrypt_cache.clone())?;
+    let (content, path) = read_save_content(profile_state.clone(), decrypt_cache.clone())?;
     let trailer_id = get_player_vehicle_id(&content, "my_trailer")?;
 
     dev_log!("Found trailer ID: {}", trailer_id);
@@ -370,7 +460,8 @@ pub async fn repair_player_trailer(
     }
 
     // Fix wheels_wear array - match each individual wheel
-    let re_wheels = Regex::new(r"(wheels_wear\[\d+\]:\s*)([^ \r\n]+)").unwrap();
+    let re_wheels = Regex::new(r"(wheels_wear\[\d+\]:\s*)([^ \r\n]+)")
+        .map_err(|error| error.to_string())?;
     if re_wheels.is_match(&block) {
         dev_log!("Repairing trailer wheels");
         block = re_wheels
@@ -390,7 +481,14 @@ pub async fn repair_player_trailer(
     );
 
     dev_log!("Writing repaired trailer back to file");
-    write_save_content(&path, &new_content)?;
+    write_save_content(
+        profile_state.inner(),
+        &path,
+        &new_content,
+        "repair_player_trailer",
+        "before trailer repair",
+        "The player trailer wear values were repaired.",
+    )?;
 
     decrypt_cache.invalidate_path(Path::new(&path));
     profile_cache.invalidate_save_data();
@@ -411,6 +509,9 @@ pub async fn set_player_trailer_cargo_mass(
         profile_state,
         decrypt_cache,
         profile_cache,
+        "set_player_trailer_cargo_mass",
+        "before trailer cargo mass edit",
+        "The player trailer cargo mass was updated.",
         "trailer",
         "my_trailer",
         "cargo_mass",

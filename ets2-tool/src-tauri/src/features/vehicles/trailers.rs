@@ -1,6 +1,8 @@
-use super::load_save_content;
+use super::{load_save_content, load_save_content_from_save_path, resolve_active_save_from_snapshot};
 use crate::dev_log;
 use crate::models::trailers::{ParsedTrailer, TrailerData, TrailerDefData};
+use crate::shared::paths::game_sii_from_save;
+use crate::shared::trace::TraceScope;
 use crate::shared::sii_parser::{
     get_player_id, get_vehicle_ids, parse_trailer_defs_from_sii, parse_trailers_from_sii,
     parse_trucks_from_sii,
@@ -15,7 +17,104 @@ pub async fn get_player_trailer(
     profile_cache: tauri::State<'_, ProfileCache>,
     decrypt_cache: tauri::State<'_, DecryptCache>,
 ) -> Result<Option<ParsedTrailer>, String> {
+    let mut trace = TraceScope::new("get_player_trailer");
     dev_log!("get_player_trailer: Profil {}", profile_path);
+
+    let save_path = resolve_active_save_from_snapshot(
+        profile_state.current_save.lock().unwrap().clone(),
+        profile_state.current_profile.lock().unwrap().clone(),
+    )?;
+    let path_key = game_sii_from_save(std::path::Path::new(&save_path))
+        .display()
+        .to_string();
+
+    if let Some(cached) = profile_cache.get_cached_player_trailer(&path_key) {
+        dev_log!("get_player_trailer liefert Cache");
+        trace.finish_ok();
+        return Ok(cached);
+    }
+
+    let decrypt_cache_cloned = decrypt_cache.inner().clone();
+    let worker_result = tauri::async_runtime::spawn_blocking(move || {
+        let (content, _) = load_save_content_from_save_path(&save_path, &decrypt_cache_cloned)?;
+        let trailers_data = parse_trailers_from_sii(&content);
+        let defs_data = parse_trailer_defs_from_sii(&content);
+        let parsed_trailers: Vec<ParsedTrailer> = trailers_data
+            .iter()
+            .map(|trailer_data| parsed_trailer_from_data(trailer_data, &defs_data))
+            .collect();
+        let trucks_data = parse_trucks_from_sii(&content);
+        let player_id =
+            get_player_id(&content).ok_or("Player ID nicht im economy block gefunden".to_string())?;
+        let (player_truck_id_opt, player_trailer_id_opt) = get_vehicle_ids(&content, &player_id);
+
+        let player_trailer = match player_trailer_id_opt {
+            Some(id) => {
+                let id_clean = id.trim().to_lowercase();
+                Some(
+                    parsed_trailers
+                        .iter()
+                        .find(|t| t.trailer_id.to_lowercase() == id_clean)
+                        .cloned()
+                        .ok_or(format!("Player Trailer mit ID {} nicht gefunden", id_clean))?,
+                )
+            }
+            None => None,
+        };
+
+        Ok::<(Vec<ParsedTrailer>, Option<ParsedTrailer>, Vec<crate::models::trucks::ParsedTruck>, Option<String>), String>((
+            parsed_trailers,
+            player_trailer,
+            trucks_data,
+            player_truck_id_opt,
+        ))
+    })
+    .await
+    .map_err(|error| format!("get_player_trailer join failed: {}", error))??;
+
+    let (parsed_trailers, player_trailer, trucks_data, player_truck_id_opt) = worker_result;
+    if player_trailer.is_none() {
+        dev_log!("Player has no trailer attached - this is normal");
+        profile_cache.cache_trailers(path_key.clone(), parsed_trailers.clone(), None);
+        trace.finish_ok();
+        return Ok(None);
+    }
+
+    let player_trailer = player_trailer.unwrap();
+    if let Some(player_truck_id) = player_truck_id_opt {
+        let truck_id_clean = player_truck_id.trim().to_lowercase();
+        if let Some(player_truck) = trucks_data
+            .iter()
+            .find(|t| t.truck_id.to_lowercase() == truck_id_clean)
+        {
+            dev_log!(
+                "Player Truck Data: Odometer: {}, Fuel: {}, Engine Wear: {}, Transmission Wear: {},\
+                Cabin Wear: {}, Chassis Wear: {}, Wheels Wear: {:?}",
+                player_truck.odometer,
+                player_truck.fuel_relative,
+                player_truck.engine_wear,
+                player_truck.transmission_wear,
+                player_truck.cabin_wear,
+                player_truck.chassis_wear,
+                &player_truck.wheels_wear
+            );
+        }
+    }
+
+    dev_log!(
+        "Player Trailer Data: Odometer: {}, Cargo Mass: {}, Cargo Damage: {}, Body Wear: {},\
+        Chassis Wear: {}, Wheels Wear: {:?}",
+        player_trailer.odometer,
+        player_trailer.cargo_mass,
+        player_trailer.cargo_damage,
+        player_trailer.body_wear,
+        player_trailer.chassis_wear,
+        &player_trailer.wheels_wear
+    );
+
+    profile_cache.cache_trailers(path_key, parsed_trailers, Some(player_trailer.clone()));
+    trace.finish_ok();
+    return Ok(Some(player_trailer));
 
     let (content, path_key) = load_save_content(profile_state, decrypt_cache)?;
 
@@ -94,7 +193,44 @@ pub async fn get_all_trailers(
     profile_cache: tauri::State<'_, ProfileCache>,
     decrypt_cache: tauri::State<'_, DecryptCache>,
 ) -> Result<Vec<ParsedTrailer>, String> {
+    let mut trace = TraceScope::new("get_all_trailers");
     dev_log!("get_all_trailers: Profil {}", profile_path);
+
+    let save_path = resolve_active_save_from_snapshot(
+        profile_state.current_save.lock().unwrap().clone(),
+        profile_state.current_profile.lock().unwrap().clone(),
+    )?;
+    let path_key = game_sii_from_save(std::path::Path::new(&save_path))
+        .display()
+        .to_string();
+
+    if let Some(cached) = profile_cache.get_cached_trailers(&path_key) {
+        dev_log!("get_all_trailers liefert Cache");
+        trace.finish_ok();
+        return Ok(cached);
+    }
+
+    let decrypt_cache_cloned = decrypt_cache.inner().clone();
+    let parsed_trailers = tauri::async_runtime::spawn_blocking(move || {
+        let (content, _) = load_save_content_from_save_path(&save_path, &decrypt_cache_cloned)?;
+        let trailers_data = parse_trailers_from_sii(&content);
+        let defs_data = parse_trailer_defs_from_sii(&content);
+        Ok::<Vec<ParsedTrailer>, String>(
+            trailers_data
+                .iter()
+                .map(|trailer_data| parsed_trailer_from_data(trailer_data, &defs_data))
+                .collect(),
+        )
+    })
+    .await
+    .map_err(|error| format!("get_all_trailers join failed: {}", error))??;
+
+    let player_trailer = profile_cache.get_cached_player_trailer(&path_key).flatten();
+    profile_cache.cache_trailers(path_key.clone(), parsed_trailers.clone(), player_trailer);
+
+    dev_log!("{} Trailer gefunden", parsed_trailers.len());
+    trace.finish_ok();
+    return Ok(parsed_trailers);
 
     let (content, path_key) = load_save_content(profile_state, decrypt_cache)?;
 

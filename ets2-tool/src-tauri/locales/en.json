@@ -841,6 +841,122 @@
                   "profile_desc": "Update money, XP, skills and save-bound profile values in a dedicated editing flow.",
                   "settings": "Settings Editing",
                   "settings_desc": "Control language, convoy, traffic and advanced configuration switches."
+            },
+            "reset": {
+                  "kicker": "Safe Value Reset",
+                  "title": "Safe Value Reset",
+                  "summary": "Apply custom money, level and XP values to the active save with an automatic undo snapshot.",
+                  "backup_notice": "A backup is created before applying changes.",
+                  "undo_unavailable": "No undo snapshot available.",
+                  "ready_hint": "The active save is used immediately. Leave fields empty to keep current values.",
+                  "no_save_hint": "Select a save before applying reset values.",
+                  "undo_confirm": "Do you really want to restore the save state from before the last edit?",
+                  "fields": {
+                        "money": "Money",
+                        "level": "Level",
+                        "xp": "XP"
+                  },
+                  "placeholders": {
+                        "money": "Money value",
+                        "level": "Level value",
+                        "xp": "XP value"
+                  },
+                  "actions": {
+                        "apply": "Apply Values",
+                        "undo": "Undo Last Change",
+                        "applying": "Applying...",
+                        "undo_running": "Restoring..."
+                  },
+                  "errors": {
+                        "invalid_level": "Invalid level value",
+                        "invalid_xp": "Invalid XP value",
+                        "invalid_money": "Invalid money value",
+                        "no_values": "Enter at least one reset value."
+                  }
+            },
+            "safety": {
+                  "actions": {
+                        "scan_health": "Scan Health",
+                        "scan_mods": "Scan Mods",
+                        "refresh": "Refresh",
+                        "preview": "Preview",
+                        "more": "More",
+                        "view_details": "Details",
+                        "hide_details": "Hide details",
+                        "view_backups": "Backups",
+                        "hide_backups": "Hide backups",
+                        "refresh_health": "Refresh Health",
+                        "copy_report": "Copy Report",
+                        "export_logs": "Export Logs",
+                        "refresh_backups": "Refresh Backups",
+                        "preview_restore": "Preview Restore",
+                        "restore_backup": "Restore Backup"
+                  },
+                  "status": {
+                        "idle": "Not checked",
+                        "clean": "Clean",
+                        "risky": "Risky",
+                        "broken": "Broken"
+                  },
+                  "health": {
+                        "kicker": "Save Health",
+                        "title": "Health Monitor",
+                        "empty_summary": "Load a save to run a health scan.",
+                        "empty_title": "No save selected",
+                        "empty_body": "The health monitor becomes active once a profile and save are loaded.",
+                        "clean_title": "No current issues detected",
+                        "fix_confirm": "Apply the selected safe fix to the active save?",
+                        "fix_apply": "Apply Fix",
+                        "fix_sync": "Sync XP / Level",
+                        "issues_count": "{count} issues"
+                  },
+                  "backups": {
+                        "kicker": "Recovery",
+                        "title": "Automatic Backups",
+                        "empty_summary": "Restore points appear after edits.",
+                        "empty_title": "No backups available",
+                        "empty_body": "Write operations create timestamped restore points automatically.",
+                        "count": "{count} backups",
+                        "files_suffix": "files"
+                  },
+                  "restore": {
+                        "kicker": "Diff Preview",
+                        "title": "Restore Preview",
+                        "no_preview_status": "No preview",
+                        "ready_status": "Preview ready",
+                        "empty_title": "No restore preview loaded",
+                        "empty_body": "Select a backup to compare changes before restoring.",
+                        "confirm": "Restore this backup now? A safety backup will be created first.",
+                        "changes_suffix": "changes",
+                        "parseable": "parseable",
+                        "binary": "binary"
+                  }
+            },
+            "recovery": {
+                  "entry_kicker": "Save Safety",
+                  "entry_title": "Recovery Center",
+                  "entry_summary": "Health scan, backups and restore tools.",
+                  "entry_empty": "Load a save to open health, backup and restore tools.",
+                  "entry_status_idle": "Open when needed",
+                  "entry_status_ready": "Open Recovery Center",
+                  "open_button": "Open Recovery Center",
+                  "nav_button": "Recovery Center",
+                  "back_button": "Back to Save Editor",
+                  "header_kicker": "Save Safety",
+                  "header_title": "Recovery Center",
+                  "header_summary": "Monitor save health, manage backups and restore safely.",
+                  "loading": "Loading recovery data...",
+                  "no_scan": "No scan yet",
+                  "not_loaded": "Not loaded",
+                  "status": {
+                        "profile": "Active Profile",
+                        "save": "Active Save",
+                        "last_scan": "Last Health Scan",
+                        "backups": "Backup Count"
+                  },
+                  "reports_kicker": "Diagnostics",
+                  "reports_title": "Reports & Logs",
+                  "reports_summary": "Copy the current support report or export logs without leaving the recovery workflow."
             }
       },
       "status_text": {
@@ -931,7 +1047,44 @@
             "load_languages_error": "Failed to load languages: {error}",
             "profile_share_export_success": "Profile archive created for {profileName}.",
             "profile_share_import_success": "Shared profile imported as {profileName}.",
-            "profile_share_action_failed": "Profile sharing failed: {error}"
+            "profile_share_action_failed": "Profile sharing failed: {error}",
+            "diagnostics_analysis_failed": "Diagnostics analysis failed.",
+            "diagnostics_export_success": "Diagnostic report exported to {path}.",
+            "diagnostics_export_failed": "Failed to export the diagnostic report.",
+            "diagnostics_copy_summary_success": "Diagnostics summary copied.",
+            "diagnostics_copy_mods_success": "Suspicious mods copied.",
+            "diagnostics_copy_failed": "Clipboard copy failed.",
+            "diagnostics_log_path_copied": "Log folder path copied.",
+            "diagnostics_log_open_failed": "Failed to open or copy the log folder path.",
+            "mod_profile_manager_scan_failed": "The mod profile scan failed.",
+            "mod_profile_manager_preset_created": "Preset {name} created.",
+            "mod_profile_manager_preset_failed": "The preset action failed.",
+            "mod_profile_manager_preset_deleted": "Preset deleted.",
+            "mod_profile_manager_preset_imported": "Preset {name} imported.",
+            "mod_profile_manager_preset_exported": "Preset exported to {path}.",
+            "mod_profile_manager_preset_select_required": "Select a preset first.",
+            "mod_profile_manager_compare_failed": "Preset comparison failed.",
+            "mod_profile_manager_manual_workshop_saved": "Manual workshop folder saved.",
+            "mod_profile_manager_manual_workshop_cleared": "Manual workshop folder cleared.",
+            "mod_profile_manager_workshop_links_copied": "Workshop links copied.",
+            "mod_profile_manager_path_copied": "Folder path copied.",
+            "mod_profile_manager_folder_open_failed": "The folder could not be opened or copied.",
+            "mod_profile_manager_no_workshop_links": "No workshop links are available.",
+            "level_system_missing_data": "Load a profile and save before opening the level system.",
+            "level_system_load_error": "Failed to load the level table.",
+            "level_system_apply_success": "Level {level} with {xp} XP applied.",
+            "level_system_apply_error": "Failed to apply the selected level.",
+            "safety_report_copied": "Support report copied.",
+            "safety_logs_exported": "Logs exported to {path}.",
+            "safety_logs_export_failed": "Log export failed.",
+            "safety_health_fix_applied": "Safe fix applied.",
+            "safety_health_fix_failed": "Safe fix failed.",
+            "safety_backup_preview_failed": "Backup preview failed.",
+            "safety_restore_success": "Backup restored successfully.",
+            "safety_restore_failed": "Backup restore failed.",
+            "safety_copy_failed": "Clipboard copy failed.",
+            "reset_values_applied": "Values applied successfully.",
+            "reset_undo_restored": "Last change restored."
       },
       "tools": {
             "truck": {
@@ -993,6 +1146,10 @@
                         "desc": "Edit your experience points",
                         "modalNumberText": "Set new XP value"
                   },
+                  "level_system": {
+                        "title": "Level & XP System",
+                        "desc": "Set a target level visually with the real XP table and live preview."
+                  },
                   "change_money": {
                         "title": "Money Editor",
                         "desc": "Edit your in-game money",
@@ -1016,6 +1173,14 @@
                         "title": "Move Modifications or Controls",
                         "desc": "Move mods and controls between profiles",
                         "modalTextTitle": "Move Mods/Controls"
+                  },
+                  "mod_conflict_diagnostics": {
+                        "title": "Mod Conflict Analyzer",
+                        "desc": "Analyze crash logs, broken save references and suspicious mods for the active game state."
+                  },
+                  "mod_profile_manager": {
+                        "title": "Mod Profile Manager",
+                        "desc": "Save, compare and review local plus Steam Workshop mod setups for ETS2 or ATS."
                   }
             },
             "settings": {
@@ -1109,6 +1274,343 @@
                         "trip_distance": "Trip Distance",
                         "garage": "Assigned Garage",
                         "vehicle_id": "Vehicle ID"
+                  }
+            },
+            "level_system": {
+                  "kicker": "Profile progression",
+                  "title": "Level & XP System",
+                  "description": "Choose a target level visually, preview the matching XP values and keep the save state consistent.",
+                  "mode_level": "Set by Level",
+                  "mode_xp": "Set by XP",
+                  "status": {
+                        "current": "Current",
+                        "target": "Target"
+                  },
+                  "current_stats": {
+                        "title": "Current Stats",
+                        "level": "Current Level",
+                        "total_xp": "Current XP",
+                        "next_step": "Current Step XP",
+                        "progress": "Progress"
+                  },
+                  "target": {
+                        "title": "New Target",
+                        "selected_level": "Selected Level",
+                        "total_xp": "Target XP",
+                        "increase": "XP Increase",
+                        "next_level": "Next Level",
+                        "progress": "Target Progress"
+                  },
+                  "controls": {
+                        "title": "New Target",
+                        "level_slider": "Level Slider",
+                        "level_input": "Level",
+                        "xp_input": "XP",
+                        "level_preset": "Level {level}",
+                        "reset_current": "Reset to Current",
+                        "max_level": "Max Level"
+                  },
+                  "summary": {
+                        "title": "Change Summary",
+                        "level_change": "Level Change",
+                        "xp_change": "XP Change",
+                        "delta": "XP Delta",
+                        "mode": "Mode",
+                        "unchanged": "No change"
+                  },
+                  "actions": {
+                        "apply": "Set Level & XP"
+                  },
+                  "progress": {
+                        "max": "100% | Max level",
+                        "no_next_level": "No next level"
+                  },
+                  "feedback": {
+                        "level_clamped": "Level adjusted to the supported range {min}-{max}.",
+                        "xp_clamped": "XP adjusted to the supported range 0-{maxXp}.",
+                        "unchanged": "No change selected yet."
+                  }
+            },
+            "mod_conflict_diagnostics": {
+                  "kicker": "Crash diagnostics",
+                  "title": "Mod Conflict Analyzer",
+                  "description": "Analyze crash logs, missing references and local mods without pretending to prove every culprit.",
+                  "loading_title": "Analyzing logs and local mods",
+                  "loading_body": "Reading game.log.txt, game.crash.txt and indexing local mod files.",
+                  "error_title": "Analysis failed",
+                  "error_body": "The diagnostics report could not be created.",
+                  "empty_title": "No diagnostic data found",
+                  "empty_body": "The analyzer did not find enough evidence to build a useful report.",
+                  "overall_label": "Overall analysis",
+                  "sources": {
+                        "title": "Data Sources",
+                        "game_log": "game.log.txt",
+                        "game_crash": "game.crash.txt",
+                        "mod_folder": "Mod folder",
+                        "indexed_mods": "Indexed mods",
+                        "extracted_errors": "Extracted errors",
+                        "active_mods": "Active mods"
+                  },
+                  "save_health": {
+                        "title": "Save Health"
+                  },
+                  "crash_summary": {
+                        "title": "Crash Summary"
+                  },
+                  "context": {
+                        "title": "Analysis Context",
+                        "game": "Game",
+                        "profile": "Profile",
+                        "save": "Save",
+                        "base_path": "Base path"
+                  },
+                  "suspected_mods": {
+                        "title": "Suspected Mods"
+                  },
+                  "missing_references": {
+                        "title": "Missing / Removed References"
+                  },
+                  "broken_references": {
+                        "title": "Missing / Broken References"
+                  },
+                  "errors": {
+                        "title": "Error List",
+                        "filter_label": "Severity",
+                        "filter_all": "All severities",
+                        "filter_info": "Info",
+                        "filter_warning": "Warning",
+                        "filter_error": "Error",
+                        "filter_critical": "Critical",
+                        "raw_line": "Raw line",
+                        "last_context": "Last context"
+                  },
+                  "exports": {
+                        "title": "Export / Logs",
+                        "technical_log": "Technical log",
+                        "user_log": "User log",
+                        "log_folder": "Log folder"
+                  },
+                  "timeline": {
+                        "title": "Timeline"
+                  },
+                  "limitations": {
+                        "title": "Limitations"
+                  },
+                  "actions": {
+                        "back": "Back",
+                        "refresh": "Refresh Analysis",
+                        "export_report": "Export Report",
+                        "export_errors": "Export errors.txt",
+                        "export_crash": "Export crash-report.txt",
+                        "copy_summary": "Copy summary",
+                        "copy_suspicious_mods": "Copy suspicious mods",
+                        "open_logs": "Open log folder"
+                  },
+                  "fields": {
+                        "package": "Package",
+                        "file": "File",
+                        "source": "Source",
+                        "path": "Path",
+                        "readable": "Readable",
+                        "manifest": "Manifest",
+                        "categories": "Categories",
+                        "profile_inferred": "Profile inferred",
+                        "save_inferred": "Save inferred"
+                  },
+                  "status": {
+                        "clean": "Clean",
+                        "warnings": "Warnings",
+                        "issues_found": "Issues found",
+                        "not_enough_data": "Not enough data",
+                        "low": "Low",
+                        "high": "High",
+                        "active": "Active",
+                        "not_active": "Not active",
+                        "found": "Found",
+                        "missing": "Missing",
+                        "info": "Info",
+                        "warning": "Warning",
+                        "error": "Error",
+                        "critical": "Critical",
+                        "confirmed": "Confirmed",
+                        "likely": "Likely",
+                        "possible": "Possible",
+                        "unknown": "Unknown",
+                        "green": "Green",
+                        "yellow": "Yellow",
+                        "red": "Red",
+                        "high_suspicion": "High suspicion",
+                        "medium_suspicion": "Medium suspicion",
+                        "low_suspicion": "Low suspicion"
+                  },
+                  "content": {
+                        "no_suspected_mods": "No suspicious mods detected.",
+                        "no_broken_references": "No broken references were isolated from the current save and logs.",
+                        "no_missing_references": "No missing or removed references detected.",
+                        "no_timeline": "No timeline could be created from the current evidence.",
+                        "no_critical_errors": "No recent critical error chain could be extracted.",
+                        "no_errors": "No relevant errors were extracted.",
+                        "no_crash_context": "No crash context lines were captured.",
+                        "no_logs": "No analyzer log paths available.",
+                        "no_save_health_details": "No additional save-health details were isolated.",
+                        "no_limitations": "No additional limitations were recorded.",
+                        "removed_suspected": "Potential removed mod or stale save reference.",
+                        "no_mod_assigned": "No mod could be confidently assigned.",
+                        "limit_label": "Limit"
+                  }
+            },
+            "mod_profile_manager": {
+                  "kicker": "Mod setup workflow",
+                  "title": "Mod Profile Manager",
+                  "description": "Create, compare and restore mod setups for ETS2/ATS.",
+                  "loading_title": "Scanning local mods and workshop folders",
+                  "loading_body": "Reading local mod directories, Steam libraries and saved presets.",
+                  "error_title": "Mod scan failed",
+                  "error_body": "The Mod Profile Manager could not load the requested data.",
+                  "empty_title": "No mod data found",
+                  "empty_body": "The manager did not find local mods or saved presets yet.",
+                  "summary": {
+                        "local_mods": "Local Mods found",
+                        "workshop_mods": "Steam Workshop Mods found",
+                        "unreadable_mods": "Unreadable Mods",
+                        "presets_saved": "Presets saved"
+                  },
+                  "sections": {
+                        "sources": "Source Summary",
+                        "mods": "Mod List",
+                        "presets": "Presets",
+                        "compare": "Compare View",
+                        "actions": "Actions",
+                        "composer": "Save current setup as preset"
+                  },
+                  "filters": {
+                        "game": "Game",
+                        "source": "Source",
+                        "category": "Category",
+                        "search": "Search",
+                        "search_placeholder": "Search mods",
+                        "all_sources": "All sources",
+                        "local_source": "Local",
+                        "workshop_source": "Steam Workshop",
+                        "all_categories": "All categories"
+                  },
+                  "actions": {
+                        "back": "Back",
+                        "scan": "Scan Mods",
+                        "create_preset": "Create Preset",
+                        "import_preset": "Import Preset",
+                        "export_preset": "Export Preset",
+                        "open": "Open",
+                        "compare": "Compare",
+                        "export_row": "Export",
+                        "delete": "Delete",
+                        "cancel": "Cancel",
+                        "save_preset": "Save Preset",
+                        "save_current_setup": "Save current setup as preset",
+                        "copy_workshop_links": "Copy Workshop Links",
+                        "open_workshop_folder": "Open Workshop Folder",
+                        "open_local_mod_folder": "Open Local Mod Folder",
+                        "select_workshop_folder": "Select Workshop Folder",
+                        "clear_workshop_folder": "Clear Manual Folder"
+                  },
+                  "fields": {
+                        "category": "Category",
+                        "workshop_id": "Workshop ID",
+                        "path": "Path",
+                        "load_order": "Load Order",
+                        "mods": "Mods",
+                        "created": "Created",
+                        "updated": "Last Updated",
+                        "missing_count": "Missing Mods Count",
+                        "notes": "Notes",
+                        "notes_placeholder": "Optional notes for this preset",
+                        "preset_name": "Preset Name",
+                        "preset_name_placeholder": "Preset name",
+                        "preset_label": "Preset Label",
+                        "local_folder": "Local Mod Folder",
+                        "steam_libraries": "Steam Libraries",
+                        "workshop_folder": "Workshop Folder",
+                        "manual_workshop": "Manual Workshop Folder",
+                        "load_order_source": "Load order source"
+                  },
+                  "status": {
+                        "ready": "Ready",
+                        "warnings": "Warnings",
+                        "found": "Found",
+                        "missing": "Missing",
+                        "enabled": "Enabled",
+                        "disabled": "Disabled",
+                        "readable": "Readable",
+                        "unreadable": "Unreadable",
+                        "detected": "Detected",
+                        "estimated": "Estimated",
+                        "unknown": "Unknown",
+                        "local": "Local",
+                        "workshop": "Steam Workshop",
+                        "ok": "OK",
+                        "manifest_missing": "Manifest missing",
+                        "active_manifest_missing": "Active mod without manifest",
+                        "invalid_workshop_item": "Invalid workshop item"
+                  },
+                  "content": {
+                        "no_workshop_folder": "No Steam Workshop folder found.",
+                        "manager_still_works": "Local mod scanning still works without Steam Workshop.",
+                        "active_list_detected": "Active mods and load order were read from profile.sii.",
+                        "active_list_estimated": "Active mods are not directly available. The displayed load order is estimated from the local scan.",
+                        "active_list_unknown": "Active mods and load order are not reliably available for this scan.",
+                        "no_manual_workshop_path": "No manual workshop folder set.",
+                        "no_mods_found": "No mods match the current filters.",
+                        "no_presets": "No presets saved for this game.",
+                        "no_compare": "Select a preset to compare it with the current local setup.",
+                        "no_missing_mods": "No missing mods detected.",
+                        "no_extra_mods": "No extra mods detected.",
+                        "no_changed_paths": "No changed paths detected.",
+                        "no_load_order_differences": "No load order differences detected.",
+                        "no_duplicate_mods": "No duplicate mods detected.",
+                        "no_unreadable_mods": "No unreadable mods detected.",
+                        "no_workshop_links": "No workshop links available.",
+                        "restore_not_implemented": "Automatic activation is not implemented yet for this profile format.",
+                        "preset_creation_estimated": "The current active mod list is not directly available. Saving will use the detected local inventory with an estimated load order.",
+                        "preset_creation_unknown": "The current active mod list is not available. Saving will store the current scan result as-is.",
+                        "preset_creation_requires_profile": "Preset creation needs a profile with readable profile.sii so the active mod list can be detected.",
+                        "preset_creation_ready": "The current active mod list is available. Saving the current setup will store the active mods and detected load order."
+                  },
+                  "compare": {
+                        "missing_mods": "Missing Mods",
+                        "extra_mods": "Extra Mods",
+                        "changed_paths": "Changed Paths",
+                        "load_order": "Load Order Differences",
+                        "duplicate_mods": "Duplicate Mods",
+                        "unreadable_mods": "Unreadable Mods",
+                        "workshop_links": "Workshop Links",
+                        "preset_path": "Preset path:",
+                        "current_path": "Current path:",
+                        "preset_order": "Preset order:",
+                        "current_order": "Current order:"
+                  },
+                  "categories": {
+                        "truck": "Truck",
+                        "trailer": "Trailer",
+                        "map": "Map",
+                        "cargo": "Cargo",
+                        "traffic": "Traffic",
+                        "economy": "Economy",
+                        "sound": "Sound",
+                        "ui": "UI",
+                        "graphics": "Graphics",
+                        "tuning": "Tuning",
+                        "skin": "Skin",
+                        "other": "Other",
+                        "unknown": "Unknown"
+                  },
+                  "preset_labels": {
+                        "none": "No label",
+                        "realistic_setup": "Realistic Setup",
+                        "map_combo": "Map Combo",
+                        "vanilla_plus": "Vanilla+",
+                        "youtube_recording": "YouTube Recording Setup",
+                        "hard_economy": "Hard Economy",
+                        "multiplayer_convoy": "Multiplayer / Convoy Setup"
                   }
             },
             "profile_sharing": {

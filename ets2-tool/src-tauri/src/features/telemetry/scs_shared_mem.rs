@@ -225,6 +225,7 @@ mod platform {
     }
 
     pub fn start(app: AppHandle, pool: SqlitePool) {
+        crate::dev_log!("[trace] START telemetry_shared_mem_startup");
         let stop = Arc::new(AtomicBool::new(false));
         let app_for_thread = app.clone();
         std::thread::spawn(move || {
@@ -298,6 +299,7 @@ mod platform {
                 std::thread::sleep(Duration::from_millis(250));
             }
         });
+        crate::dev_log!("[trace] END telemetry_shared_mem_startup duration_ms=0");
     }
 }
 

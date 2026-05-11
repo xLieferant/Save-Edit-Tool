@@ -1,0 +1,23 @@
+{
+  "mode_editor": "Editor",
+  "mode_career": "Career",
+  "eyebrow": "Next-generation operations platform",
+  "title": "One platform. Two realities.",
+  "summary": "Launch a logistics simulation workspace or enter the save editing environment with full awareness of impact.",
+  "metric_realtime": "Realtime telemetry",
+  "metric_realtime_desc": "Shared memory, plugin state and live vehicle signals in one command layer.",
+  "metric_platform": "Platform architecture",
+  "metric_platform_desc": "Separated simulation and utility flows inside the same desktop platform.",
+  "metric_scale": "Scalable modules",
+  "metric_scale_desc": "Career systems, installers, finance, fleet control and advanced save operations.",
+  "career_tag": "Simulation layer",
+  "editor_tag": "Utility layer",
+  "launch": "Enter",
+  "mode_editor_full": "Save Edit Tool",
+  "mode_career_full": "Career Mode",
+  "career_desc": "Company growth, dispatching, income streams, fleet supervision and live operational awareness.",
+  "editor_desc": "Direct control over money, XP, vehicles, garages and profile values in a separate workspace.",
+  "footer": "Choose the operating context first. Simulation and save manipulation remain visually and structurally separated.",
+  "home": "Open Hub",
+  "home_copy": "Return to the central launcher"
+}

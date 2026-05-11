@@ -1,0 +1,17 @@
+{
+  "title": "ETS2 Tool Launcher",
+  "kicker": "Workspace Launcher",
+  "headline": "Choose your workspace",
+  "summary": "Start the classic Save Edit Tool or switch to the dedicated Career Mode dashboard.",
+  "open": "Open",
+  "editor": {
+    "tag": "Save Editor",
+    "title": "Save Edit Tool",
+    "desc": "Existing save-editing workflow with all current tabs, tools and profile operations."
+  },
+  "career": {
+    "tag": "Career",
+    "title": "Career Mode / VTC",
+    "desc": "Standalone dashboard for company operations, members, orders, finances, fleet and stats."
+  }
+}

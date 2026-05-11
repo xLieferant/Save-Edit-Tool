@@ -3,7 +3,7 @@ use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::PathBuf;
 
-fn default_user_log_path() -> PathBuf {
+pub fn user_log_path() -> PathBuf {
     dirs::data_local_dir()
         .unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")))
         .join("SimNexusHub")
@@ -19,7 +19,7 @@ pub fn write_user_log(action: &str, stage: &str) -> Result<(), String> {
         stage.to_uppercase()
     );
 
-    let path = default_user_log_path();
+    let path = user_log_path();
     if let Some(dir) = path.parent() {
         std::fs::create_dir_all(dir).map_err(|e| format!("Could not open user log: {}", e))?;
     }

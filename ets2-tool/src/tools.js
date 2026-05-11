@@ -5,6 +5,9 @@ import {
   openModalMulti,
   openCloneProfileModal,
   openCurrentTruckModal,
+  openLevelSystemModal,
+  openModConflictDiagnosticsPage,
+  openModProfileManagerPage,
   openProfileSharingPage,
 } from "./app.js";
 
@@ -284,6 +287,7 @@ export const tools = {
       title: "tools.profile.change_xp.title",
       desc: "tools.profile.change_xp.desc",
       img: "images/xp.jpg",
+      hidden: true,
       action: async () => {
         try {
           const newValue = await openModalNumber(
@@ -484,6 +488,32 @@ export const tools = {
             console.warn("Unknown action:", choice.action);
         }
       },
+    },
+    {
+      title: "tools.profile.level_system.title",
+      desc: "tools.profile.level_system.desc",
+      img: "images/xp.jpg",
+      action: async () => {
+        await openLevelSystemModal();
+      },
+    },
+    {
+      title: "tools.profile.mod_conflict_diagnostics.title",
+      desc: "tools.profile.mod_conflict_diagnostics.desc",
+      img: "images/dev.jpg",
+      action: async () => {
+        openModConflictDiagnosticsPage();
+      },
+      disabled: false,
+    },
+    {
+      title: "tools.profile.mod_profile_manager.title",
+      desc: "tools.profile.mod_profile_manager.desc",
+      img: "images/moveMods.png",
+      action: async () => {
+        openModProfileManagerPage();
+      },
+      disabled: false,
     },
   ],
 

@@ -1,4 +1,15 @@
 import { tools } from "./tools.js";
+import {
+  clampLevel,
+  clampXp,
+  getLevelForXp,
+  getLevelIncrease,
+  getLevelProgress,
+  getMaxLevel,
+  getNextLevelEntry,
+  getXpForLevel,
+  loadLevelTable,
+} from "./js/level-system.js";
 
 /* --------------------------------------------------------------
    TOOL LOADER UND TAB HANDLING
@@ -7,6 +18,27 @@ const container = document.querySelector("#tool-container");
 const navButtons = document.querySelectorAll(".editor-tabs .nav-btn");
 export let activeTab = "profile";
 let loadToolsRenderId = 0;
+const editorTabShortcuts = {
+  F1: "truck",
+  F2: "trailer",
+  F3: "profile",
+  F4: "settings",
+};
+
+function setActiveEditorTabButton(tab) {
+  const nextButton = document.querySelector(`.editor-tabs .nav-btn[data-tab="${tab}"]`);
+  if (!nextButton) return null;
+
+  document.querySelector(".editor-tabs .nav-btn.active")?.classList.remove("active");
+  nextButton.classList.add("active");
+  return nextButton;
+}
+
+async function activateEditorTab(tab) {
+  const nextButton = setActiveEditorTabButton(tab);
+  if (!nextButton) return;
+  await loadTools(nextButton.dataset.tab);
+}
 
 export async function loadTools(tab) {
   console.log(`[app.js] Lade Tools für Tab: ${tab}`);
@@ -76,9 +108,7 @@ export async function loadTools(tab) {
 
 navButtons.forEach((btn) => {
   btn.addEventListener("click", () => {
-    document.querySelector(".editor-tabs .nav-btn.active")?.classList.remove("active");
-    btn.classList.add("active");
-    loadTools(btn.dataset.tab);
+    void activateEditorTab(btn.dataset.tab);
   });
 });
 
@@ -86,11 +116,13 @@ navButtons.forEach((btn) => {
 const defaultTabBtn = document.querySelector(".editor-tabs .nav-btn.active");
 if (defaultTabBtn) {
   if (typeof window.t === "function") {
-    loadTools(defaultTabBtn.dataset.tab);
+    void activateEditorTab(defaultTabBtn.dataset.tab);
   } else {
     window.addEventListener(
       "translations-ready",
-      () => loadTools(defaultTabBtn.dataset.tab),
+      () => {
+        void activateEditorTab(defaultTabBtn.dataset.tab);
+      },
       { once: true }
     );
   }
@@ -150,6 +182,70 @@ const modalTruckInfoBrand = document.getElementById("modalTruckInfoBrand");
 const modalTruckInfoModel = document.getElementById("modalTruckInfoModel");
 const modalTruckInfoOdometer = document.getElementById("modalTruckInfoOdometer");
 const modalTruckInfoClose = document.getElementById("modalTruckInfoClose");
+const modalLevelSystem = document.getElementById("modalLevelSystem");
+const modalLevelSystemModePill = document.getElementById("modalLevelSystemModePill");
+const levelSystemCurrentStatus = document.getElementById("levelSystemCurrentStatus");
+const levelSystemCurrentBadge = document.getElementById("levelSystemCurrentBadge");
+const levelSystemCurrentXp = document.getElementById("levelSystemCurrentXp");
+const levelSystemCurrentIncrease = document.getElementById("levelSystemCurrentIncrease");
+const levelSystemCurrentProgressText = document.getElementById("levelSystemCurrentProgressText");
+const levelSystemCurrentProgressFill = document.getElementById("levelSystemCurrentProgressFill");
+const levelSystemTargetStatus = document.getElementById("levelSystemTargetStatus");
+const levelSystemTargetBadge = document.getElementById("levelSystemTargetBadge");
+const levelSystemTargetXp = document.getElementById("levelSystemTargetXp");
+const levelSystemTargetIncrease = document.getElementById("levelSystemTargetIncrease");
+const levelSystemTargetNext = document.getElementById("levelSystemTargetNext");
+const levelSystemTargetProgressText = document.getElementById("levelSystemTargetProgressText");
+const levelSystemTargetProgressFill = document.getElementById("levelSystemTargetProgressFill");
+const levelSystemModeLevel = document.getElementById("levelSystemModeLevel");
+const levelSystemModeXp = document.getElementById("levelSystemModeXp");
+const levelSystemSliderValue = document.getElementById("levelSystemSliderValue");
+const levelSystemMinusBtn = document.getElementById("levelSystemMinusBtn");
+const levelSystemSlider = document.getElementById("levelSystemSlider");
+const levelSystemPlusBtn = document.getElementById("levelSystemPlusBtn");
+const levelSystemLevelInput = document.getElementById("levelSystemLevelInput");
+const levelSystemXpInput = document.getElementById("levelSystemXpInput");
+const levelSystemHint = document.getElementById("levelSystemHint");
+const levelSystemPresetButtons = [...document.querySelectorAll("[data-level-preset]")];
+const levelSystemResetBtn = document.getElementById("levelSystemResetBtn");
+const levelSystemMaxBtn = document.getElementById("levelSystemMaxBtn");
+const levelSystemSummaryLevel = document.getElementById("levelSystemSummaryLevel");
+const levelSystemSummaryXp = document.getElementById("levelSystemSummaryXp");
+const levelSystemSummaryDelta = document.getElementById("levelSystemSummaryDelta");
+const levelSystemSummaryMode = document.getElementById("levelSystemSummaryMode");
+const modalLevelSystemApply = document.getElementById("modalLevelSystemApply");
+const modalLevelSystemClose = document.getElementById("modalLevelSystemClose");
+const modalConflictDiagnostics = document.getElementById("modalConflictDiagnostics");
+const modalConflictDiagnosticsConfidence = document.getElementById("modalConflictDiagnosticsConfidence");
+const modalConflictDiagnosticsHealth = document.getElementById("modalConflictDiagnosticsHealth");
+const modalConflictDiagnosticsLoading = document.getElementById("modalConflictDiagnosticsLoading");
+const modalConflictDiagnosticsError = document.getElementById("modalConflictDiagnosticsError");
+const modalConflictDiagnosticsErrorText = document.getElementById("modalConflictDiagnosticsErrorText");
+const modalConflictDiagnosticsEmpty = document.getElementById("modalConflictDiagnosticsEmpty");
+const modalConflictDiagnosticsContent = document.getElementById("modalConflictDiagnosticsContent");
+const modalConflictDiagnosticsHeadline = document.getElementById("modalConflictDiagnosticsHeadline");
+const modalConflictDiagnosticsSummary = document.getElementById("modalConflictDiagnosticsSummary");
+const modalConflictDiagnosticsGuidance = document.getElementById("modalConflictDiagnosticsGuidance");
+const diagnosticsRefreshBtn = document.getElementById("diagnosticsRefreshBtn");
+const diagnosticsExportReportBtn = document.getElementById("diagnosticsExportReportBtn");
+const diagnosticsSourcesGrid = document.getElementById("diagnosticsSourcesGrid");
+const diagnosticsContextGrid = document.getElementById("diagnosticsContextGrid");
+const diagnosticsCrashPrimary = document.getElementById("diagnosticsCrashPrimary");
+const diagnosticsCrashSummary = document.getElementById("diagnosticsCrashSummary");
+const diagnosticsCrashCounts = document.getElementById("diagnosticsCrashCounts");
+const diagnosticsCrashContext = document.getElementById("diagnosticsCrashContext");
+const diagnosticsSuspectedState = document.getElementById("diagnosticsSuspectedState");
+const diagnosticsSuspectedMods = document.getElementById("diagnosticsSuspectedMods");
+const diagnosticsMissingReferences = document.getElementById("diagnosticsMissingReferences");
+const diagnosticsSeverityFilter = document.getElementById("diagnosticsSeverityFilter");
+const diagnosticsErrorsList = document.getElementById("diagnosticsErrorsList");
+const diagnosticsLogsInfo = document.getElementById("diagnosticsLogsInfo");
+const diagnosticsLimitations = document.getElementById("diagnosticsLimitations");
+const diagnosticsExportErrorsBtn = document.getElementById("diagnosticsExportErrorsBtn");
+const diagnosticsExportCrashBtn = document.getElementById("diagnosticsExportCrashBtn");
+const diagnosticsCopySummaryBtn = document.getElementById("diagnosticsCopySummaryBtn");
+const diagnosticsOpenLogFolderBtn = document.getElementById("diagnosticsOpenLogFolderBtn");
+const modalConflictDiagnosticsClose = document.getElementById("modalConflictDiagnosticsClose");
 
 const modalProfileShare = document.getElementById("modalProfileShare");
 const profileShareModeKicker = document.getElementById("profileShareModeKicker");
@@ -181,6 +277,62 @@ const modalProfileSharePrimary = document.getElementById("modalProfileSharePrima
 const modalProfileShareClose = document.getElementById("modalProfileShareClose");
 const saveImportSavesBtn = document.getElementById("saveImportSavesBtn");
 const saveExportSavesBtn = document.getElementById("saveExportSavesBtn");
+const editorModalDescriptors = [
+  { element: modalText, closeButton: modalTextCancel },
+  { element: modalNumber, closeButton: modalNumberCancel },
+  { element: modalSlider, closeButton: modalSliderCancel },
+  { element: modalMulti, closeButton: modalMultiCancelBtn },
+  { element: modalClone, closeButton: modalCloneCancel },
+  { element: modalTruckInfo, closeButton: modalTruckInfoClose },
+  { element: modalLevelSystem, closeButton: modalLevelSystemClose },
+  { element: modalConflictDiagnostics, closeButton: modalConflictDiagnosticsClose },
+  { element: modalProfileShare, closeButton: modalProfileShareClose },
+];
+
+function isEditorModalOpen(element) {
+  if (!element || element.hidden) return false;
+  return window.getComputedStyle(element).display !== "none";
+}
+
+function closeActiveEditorModal() {
+  const activeModal = [...editorModalDescriptors]
+    .reverse()
+    .find(({ element }) => isEditorModalOpen(element));
+
+  if (!activeModal?.closeButton || activeModal.closeButton.disabled) {
+    return false;
+  }
+
+  activeModal.closeButton.click();
+  return true;
+}
+
+function handleEditorShortcut(event) {
+  if (event.defaultPrevented) return;
+  if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+
+  if (event.key === "Escape") {
+    if (!closeActiveEditorModal()) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    return;
+  }
+
+  const targetTab = editorTabShortcuts[event.key];
+  if (!targetTab || event.repeat) return;
+
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  void activateEditorTab(targetTab);
+}
+
+function registerEditorShortcuts() {
+  if (window.__ets2_editor_shortcuts_registered) return;
+  window.__ets2_editor_shortcuts_registered = true;
+  document.addEventListener("keydown", handleEditorShortcut);
+}
+
+registerEditorShortcuts();
 
 function formatMetric(value, digits = 0) {
   const numeric = Number(value);
@@ -195,6 +347,17 @@ function formatDistance(value) {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return "-";
   return `${formatMetric(numeric, numeric % 1 === 0 ? 0 : 1)} km`;
+}
+
+function formatLevelBadge(level) {
+  return `L${formatMetric(level, 0)}`;
+}
+
+function formatSignedMetric(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return "0";
+  const prefix = numeric > 0 ? "+" : "";
+  return `${prefix}${formatMetric(numeric, 0)}`;
 }
 
 function safeValue(value, fallback = "-") {
@@ -223,6 +386,578 @@ function resetTruckModalPanels() {
   modalTruckInfoError.hidden = true;
   modalTruckInfoEmpty.hidden = true;
   modalTruckInfoContent.hidden = true;
+}
+
+let currentDiagnosticsReport = null;
+let currentDiagnosticsSessionId = 0;
+let currentDiagnosticsSeverityValue = "all";
+
+function resetDiagnosticsModalPanels() {
+  if (modalConflictDiagnosticsLoading) modalConflictDiagnosticsLoading.hidden = true;
+  if (modalConflictDiagnosticsError) modalConflictDiagnosticsError.hidden = true;
+  if (modalConflictDiagnosticsEmpty) modalConflictDiagnosticsEmpty.hidden = true;
+  if (modalConflictDiagnosticsContent) modalConflictDiagnosticsContent.hidden = true;
+}
+
+function setLevelSystemHint(message = "") {
+  if (!levelSystemHint) return;
+  levelSystemHint.textContent = message;
+  levelSystemHint.hidden = !message;
+}
+
+function formatLevelProgressSummary(progress, copy) {
+  if (!progress || progress.isMaxLevel) {
+    return copy.progressMax;
+  }
+
+  return `${progress.progressPercent}% | ${formatMetric(progress.xpIntoLevel, 0)} / ${formatMetric(progress.xpNeededForNextLevel, 0)}`;
+}
+
+function setDiagnosticsActionState(disabled) {
+  if (diagnosticsRefreshBtn) diagnosticsRefreshBtn.disabled = disabled;
+  if (diagnosticsExportReportBtn) diagnosticsExportReportBtn.disabled = disabled;
+  if (diagnosticsExportErrorsBtn) diagnosticsExportErrorsBtn.disabled = disabled;
+  if (diagnosticsExportCrashBtn) diagnosticsExportCrashBtn.disabled = disabled;
+  if (diagnosticsCopySummaryBtn) diagnosticsCopySummaryBtn.disabled = disabled;
+  if (diagnosticsOpenLogFolderBtn) diagnosticsOpenLogFolderBtn.disabled = disabled;
+  if (diagnosticsSeverityFilter) diagnosticsSeverityFilter.disabled = disabled;
+}
+
+function diagnosticsStatusState(value) {
+  if (value === "Clean") return "success";
+  if (value === "Warnings") return "warning";
+  if (value === "Issues found") return "error";
+  return "neutral";
+}
+
+function diagnosticsConfidenceState(value) {
+  if (value === "High") return "error";
+  if (value === "Likely") return "warning";
+  if (value === "Possible") return "warning";
+  return "neutral";
+}
+
+function diagnosticsBadgeTone(value) {
+  const normalized = String(value ?? "").toLowerCase();
+  if (normalized.includes("clean") || normalized.includes("found") || normalized.includes("active")) {
+    return "success";
+  }
+  if (
+    normalized.includes("critical")
+    || normalized.includes("error")
+    || normalized.includes("high")
+    || normalized.includes("issues found")
+    || normalized.includes("missing")
+    || normalized.includes("not active")
+  ) {
+    return "danger";
+  }
+  if (normalized.includes("warning") || normalized.includes("likely") || normalized.includes("possible")) {
+    return "warning";
+  }
+  return "neutral";
+}
+
+function createDiagnosticsCopyMap(values) {
+  return {
+    ...values,
+    status: {
+      Clean: values.statusClean,
+      Warnings: values.statusWarnings,
+      "Issues found": values.statusIssuesFound,
+      "Not enough data": values.statusNotEnoughData,
+    },
+    confidence: {
+      Low: values.confidenceLow,
+      Possible: values.confidencePossible,
+      Likely: values.confidenceLikely,
+      High: values.confidenceHigh,
+    },
+    activeState: {
+      Active: values.activeStateActive,
+      "Not active": values.activeStateNotActive,
+      Unknown: values.activeStateUnknown,
+    },
+    availability: {
+      found: values.availabilityFound,
+      missing: values.availabilityMissing,
+    },
+    severity: {
+      Info: values.severityInfo,
+      Warning: values.severityWarning,
+      Error: values.severityError,
+      Critical: values.severityCritical,
+    },
+  };
+}
+
+function createDefaultDiagnosticsCopy() {
+  return createDiagnosticsCopyMap({
+    statusClean: "Clean",
+    statusWarnings: "Warnings",
+    statusIssuesFound: "Issues found",
+    statusNotEnoughData: "Not enough data",
+    confidenceLow: "Low",
+    confidencePossible: "Possible",
+    confidenceLikely: "Likely",
+    confidenceHigh: "High",
+    activeStateActive: "Active",
+    activeStateNotActive: "Not active",
+    activeStateUnknown: "Unknown",
+    availabilityFound: "Found",
+    availabilityMissing: "Missing",
+    severityInfo: "Info",
+    severityWarning: "Warning",
+    severityError: "Error",
+    severityCritical: "Critical",
+    contextGame: "Game",
+    contextProfile: "Profile",
+    contextSave: "Save",
+    contextBasePath: "Base path",
+    sourceGameLog: "game.log.txt",
+    sourceGameCrash: "game.crash.txt",
+    sourceModFolder: "Mod folder",
+    sourceIndexedMods: "Indexed mods",
+    sourceExtractedErrors: "Extracted errors",
+    sourceActiveMods: "Active mods",
+    fieldPackage: "Package",
+    fieldFile: "File",
+    fieldSource: "Source",
+    fieldPath: "Path",
+    fieldReadable: "Readable",
+    fieldManifest: "Manifest",
+    fieldCategories: "Categories",
+    fieldProfileInferred: "Profile inferred",
+    fieldSaveInferred: "Save inferred",
+    noSuspectedMods: "No suspicious mods detected.",
+    noMissingReferences: "No missing or removed references detected.",
+    noErrors: "No relevant errors were extracted.",
+    noCrashContext: "No crash context lines were captured.",
+    noLogs: "No analyzer log paths available.",
+    noLimitations: "No limitations reported.",
+    removedSuspected: "Potential removed mod or stale save reference.",
+    noModAssigned: "No mod could be confidently assigned.",
+    filterAll: "All severities",
+    filterInfo: "Info",
+    filterWarning: "Warning",
+    filterError: "Error",
+    filterCritical: "Critical",
+    rawLineLabel: "Raw line",
+    lastContextLabel: "Last context",
+    logsTechnical: "Technical log",
+    logsUser: "User log",
+    logsFolder: "Log folder",
+    limitLabel: "Limitation",
+    errorBody: "Analysis failed.",
+  });
+}
+
+async function logDiagnosticsFrontendEvent(event, detail = "", userVisible = false) {
+  if (typeof window.invoke !== "function") return;
+
+  try {
+    await window.invoke("log_diagnostics_event", {
+      event,
+      detail: detail || null,
+      user_visible: userVisible,
+    });
+  } catch (error) {
+    console.warn("Diagnostics event log failed:", error);
+  }
+}
+
+function normalizeDiagnosticsItemArray(value, arrayKeys = []) {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => {
+    const normalized = item && typeof item === "object" ? { ...item } : {};
+    for (const key of arrayKeys) {
+      normalized[key] = Array.isArray(normalized[key]) ? normalized[key] : [];
+    }
+    return normalized;
+  });
+}
+
+function normalizeDiagnosticsReport(report) {
+  const normalized = report && typeof report === "object" ? { ...report } : {};
+  const crashSummary = normalized.crash_summary && typeof normalized.crash_summary === "object"
+    ? { ...normalized.crash_summary }
+    : {};
+
+  return {
+    ...normalized,
+    context: normalized.context && typeof normalized.context === "object" ? { ...normalized.context } : {},
+    sources: normalized.sources && typeof normalized.sources === "object" ? { ...normalized.sources } : {},
+    overview: normalized.overview && typeof normalized.overview === "object" ? { ...normalized.overview } : {},
+    crash_summary: {
+      ...crashSummary,
+      last_relevant_context: Array.isArray(crashSummary.last_relevant_context) ? crashSummary.last_relevant_context : [],
+    },
+    active_mods: Array.isArray(normalized.active_mods) ? normalized.active_mods : [],
+    suspected_mods: normalizeDiagnosticsItemArray(normalized.suspected_mods, ["reasons", "matched_paths", "category_hints"]),
+    missing_references: normalizeDiagnosticsItemArray(normalized.missing_references),
+    errors: normalizeDiagnosticsItemArray(normalized.errors),
+    logs: normalized.logs && typeof normalized.logs === "object" ? { ...normalized.logs } : {},
+    removed_mod_suspected: Boolean(normalized.removed_mod_suspected),
+    removed_mod_reason: safeValue(normalized.removed_mod_reason, ""),
+    limitations: Array.isArray(normalized.limitations) ? normalized.limitations : [],
+    raw_relevant_log_lines: Array.isArray(normalized.raw_relevant_log_lines) ? normalized.raw_relevant_log_lines : [],
+    raw_relevant_crash_lines: Array.isArray(normalized.raw_relevant_crash_lines) ? normalized.raw_relevant_crash_lines : [],
+  };
+}
+
+function diagnosticsLabel(map, value) {
+  return map?.[value] || safeValue(value, "-");
+}
+
+function formatDiagnosticsCategory(value) {
+  return safeValue(String(value ?? "").replace(/([a-z])([A-Z])/g, "$1 $2"), "-");
+}
+
+function diagnosticsLine(message) {
+  return `<p class="diagnostics-line">${escapeHtml(message)}</p>`;
+}
+
+function diagnosticsEmptyMessage(message) {
+  return `<p class="diagnostics-empty-copy">${escapeHtml(message)}</p>`;
+}
+
+function diagnosticsBadge(label, tone = "neutral") {
+  return `<span class="diagnostics-badge" data-tone="${escapeHtml(tone)}">${escapeHtml(safeValue(label, "-"))}</span>`;
+}
+
+function diagnosticsMetaLine(label, value, monospace = false) {
+  if (!value) return "";
+  return `
+    <div class="diagnostics-meta-line">
+      <span>${escapeHtml(label)}</span>
+      <strong class="${monospace ? "detail-card-value--mono" : ""}">${escapeHtml(value)}</strong>
+    </div>
+  `;
+}
+
+function diagnosticsListItem(title, body, badges = [], extra = "") {
+  const safeTitle = safeValue(title, "-");
+  const safeBody = safeValue(body, "");
+  return `
+    <article class="diagnostics-item">
+      <div class="diagnostics-item-head">
+        <strong class="diagnostics-item-title">${escapeHtml(safeTitle)}</strong>
+        ${badges.length ? `<div class="diagnostics-chip-row">${badges.join("")}</div>` : ""}
+      </div>
+      <p class="diagnostics-item-copy">${escapeHtml(safeBody)}</p>
+      ${extra}
+    </article>
+  `;
+}
+
+async function copyTextToClipboard(text) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "true");
+  textarea.style.position = "absolute";
+  textarea.style.left = "-9999px";
+  document.body.appendChild(textarea);
+  textarea.select();
+  const succeeded = document.execCommand("copy");
+  textarea.remove();
+  if (!succeeded) {
+    throw new Error("Clipboard write failed");
+  }
+}
+
+function buildDiagnosticsSummaryText(report, copy) {
+  const topSuspect = (report.suspected_mods || [])[0];
+  const lines = [
+    `Status: ${diagnosticsLabel(copy.status, report.overview.status_badge)}`,
+    report.overview.summary,
+    report.overview.confidence_note,
+    report.overview.disclaimer,
+    "",
+    `Sources: game.log.txt ${report.sources.game_log_found ? copy.availabilityFound : copy.availabilityMissing}, game.crash.txt ${report.sources.game_crash_found ? copy.availabilityFound : copy.availabilityMissing}, mod folder ${report.sources.mod_folder_found ? copy.availabilityFound : copy.availabilityMissing}`,
+    `Indexed mods: ${report.sources.indexed_mods_count} (unreadable: ${report.sources.unreadable_mods_count})`,
+    `Extracted errors: ${report.sources.extracted_errors_count}`,
+    "",
+    `Crash Summary: ${safeValue(report.crash_summary.headline)}`,
+    safeValue(report.crash_summary.summary),
+    `Primary category: ${formatDiagnosticsCategory(report.crash_summary.primary_category || "UnknownReference")}`,
+    `Errors: ${report.crash_summary.error_count} | Warnings: ${report.crash_summary.warning_count}`,
+  ];
+
+  if (topSuspect) {
+    lines.push("", `Top suspect: ${topSuspect.name} (${diagnosticsLabel(copy.confidence, topSuspect.confidence)}, ${topSuspect.score}/100)`);
+  } else if (report.removed_mod_suspected) {
+    lines.push("", report.removed_mod_reason || copy.removedSuspected);
+  }
+
+  if ((report.missing_references || []).length) {
+    lines.push("", "Missing / Removed References:");
+    for (const item of report.missing_references.slice(0, 5)) {
+      lines.push(`- [${formatDiagnosticsCategory(item.category)}] ${item.path}`);
+    }
+  }
+
+  if ((report.limitations || []).length) {
+    lines.push("", "Limitations:");
+    for (const limitation of report.limitations) {
+      lines.push(`- ${limitation}`);
+    }
+  }
+
+  return lines.filter((line) => line !== undefined && line !== null).join("\n");
+}
+
+function buildDiagnosticsModsText(report, copy) {
+  const suspects = report.suspected_mods || [];
+  if (!suspects.length) {
+    return report.removed_mod_reason || copy.noSuspectedMods;
+  }
+
+  return suspects
+    .map((item, index) => {
+      const lines = [
+        `${index + 1}. ${item.name}`,
+        `   ${diagnosticsLabel(copy.confidence, item.confidence)} | ${diagnosticsLabel(copy.activeState, item.active_state)} | ${item.score}/100`,
+      ];
+
+      if (item.package_name) lines.push(`   ${copy.fieldPackage}: ${item.package_name}`);
+      if (item.file_path) lines.push(`   ${copy.fieldFile}: ${item.file_path}`);
+      if (Array.isArray(item.category_hints) && item.category_hints.length) {
+        lines.push(`   ${copy.fieldCategories}: ${item.category_hints.map(formatDiagnosticsCategory).join(", ")}`);
+      }
+
+      for (const reason of item.reasons || []) {
+        lines.push(`   - ${reason}`);
+      }
+      for (const matchedPath of item.matched_paths || []) {
+        lines.push(`   ${copy.fieldPath}: ${matchedPath}`);
+      }
+
+      return lines.join("\n");
+    })
+    .join("\n\n");
+}
+
+function diagnosticsErrorMatchesFilter(item, filterValue) {
+  if (filterValue === "all") return true;
+  return String(item?.severity || "").toLowerCase() === filterValue;
+}
+
+function renderDiagnosticsErrorList(report, copy) {
+  if (!diagnosticsErrorsList) return;
+  const errors = Array.isArray(report?.errors) ? report.errors : [];
+  const filteredErrors = errors.filter((item) => diagnosticsErrorMatchesFilter(item, currentDiagnosticsSeverityValue));
+
+  if (!filteredErrors.length) {
+    diagnosticsErrorsList.innerHTML = diagnosticsEmptyMessage(copy.noErrors);
+    return;
+  }
+
+  const grouped = new Map();
+  for (const item of filteredErrors) {
+    const key = item.category || "UnknownReference";
+    const list = grouped.get(key) || [];
+    list.push(item);
+    grouped.set(key, list);
+  }
+
+  diagnosticsErrorsList.innerHTML = Array.from(grouped.entries())
+    .map(([category, items]) => {
+      const renderedItems = items
+        .map((item) => diagnosticsListItem(
+          item.extracted_path || `${item.source}:${item.line_number || "-"}`,
+          item.explanation || item.raw_line,
+          [
+            diagnosticsBadge(diagnosticsLabel(copy.severity, item.severity), diagnosticsBadgeTone(item.severity)),
+            diagnosticsBadge(formatDiagnosticsCategory(item.category), "neutral"),
+            diagnosticsBadge(item.source, "neutral"),
+            item.in_last_context ? diagnosticsBadge(copy.lastContextLabel, "warning") : "",
+          ].filter(Boolean),
+          [
+            item.extracted_path ? diagnosticsMetaLine(copy.fieldPath, item.extracted_path, true) : "",
+            item.line_number ? diagnosticsMetaLine(copy.fieldSource, `${item.source}:${item.line_number}`, true) : diagnosticsMetaLine(copy.fieldSource, item.source),
+            `<details class="diagnostics-raw-details"><summary>${escapeHtml(copy.rawLineLabel)}</summary><pre>${escapeHtml(item.raw_line || "-")}</pre></details>`,
+          ].join("")
+        ))
+        .join("");
+
+      return `
+        <section class="diagnostics-group">
+          <div class="diagnostics-group-head">
+            <strong>${escapeHtml(formatDiagnosticsCategory(category))}</strong>
+            ${diagnosticsBadge(String(items.length), "neutral")}
+          </div>
+          <div class="diagnostics-list diagnostics-list--compact">${renderedItems}</div>
+        </section>
+      `;
+    })
+    .join("");
+}
+
+function renderDiagnosticsSeverityFilter(copy) {
+  if (!diagnosticsSeverityFilter) return;
+  diagnosticsSeverityFilter.innerHTML = `
+    <option value="all">${escapeHtml(copy.filterAll)}</option>
+    <option value="info">${escapeHtml(copy.filterInfo)}</option>
+    <option value="warning">${escapeHtml(copy.filterWarning)}</option>
+    <option value="error">${escapeHtml(copy.filterError)}</option>
+    <option value="critical">${escapeHtml(copy.filterCritical)}</option>
+  `;
+  diagnosticsSeverityFilter.value = currentDiagnosticsSeverityValue;
+}
+
+function renderDiagnosticsReport(report, copy) {
+  const overview = report?.overview || {};
+  const sources = report?.sources || {};
+  const crashSummary = report?.crash_summary || {};
+  const context = report?.context || {};
+  const suspectedMods = Array.isArray(report?.suspected_mods) ? report.suspected_mods : [];
+  const missingReferences = Array.isArray(report?.missing_references) ? report.missing_references : [];
+  const limitations = Array.isArray(report?.limitations) ? report.limitations : [];
+  const topSuspect = suspectedMods[0] || null;
+
+  if (modalConflictDiagnosticsHeadline) modalConflictDiagnosticsHeadline.textContent = diagnosticsLabel(copy.status, overview.status_badge);
+  if (modalConflictDiagnosticsSummary) modalConflictDiagnosticsSummary.textContent = safeValue(overview.summary);
+  if (modalConflictDiagnosticsGuidance) {
+    modalConflictDiagnosticsGuidance.textContent = [safeValue(overview.confidence_note), safeValue(overview.disclaimer)]
+      .filter(Boolean)
+      .join(" ");
+  }
+
+  if (diagnosticsSourcesGrid) {
+    diagnosticsSourcesGrid.innerHTML = [
+      diagnosticsMetaLine(copy.sourceGameLog, `${diagnosticsLabel(copy.availability, sources.game_log_found ? "found" : "missing")} | ${safeValue(sources.game_log_path, "-")}`, true),
+      diagnosticsMetaLine(copy.sourceGameCrash, `${diagnosticsLabel(copy.availability, sources.game_crash_found ? "found" : "missing")} | ${safeValue(sources.game_crash_path, "-")}`, true),
+      diagnosticsMetaLine(copy.sourceModFolder, `${diagnosticsLabel(copy.availability, sources.mod_folder_found ? "found" : "missing")} | ${safeValue(sources.mod_folder_path, "-")}`, true),
+      diagnosticsMetaLine(copy.sourceIndexedMods, `${sources.indexed_mods_count ?? 0} | readable ${sources.readable_mods_count ?? 0} | unreadable ${sources.unreadable_mods_count ?? 0}`),
+      diagnosticsMetaLine(copy.sourceActiveMods, `${sources.active_mods_count ?? 0} | ${sources.active_mods_reliably_known ? diagnosticsLabel(copy.availability, "found") : diagnosticsLabel(copy.availability, "missing")}`),
+      diagnosticsMetaLine(copy.sourceExtractedErrors, String(sources.extracted_errors_count ?? 0)),
+    ].join("");
+  }
+
+  if (diagnosticsContextGrid) {
+    diagnosticsContextGrid.innerHTML = [
+      diagnosticsMetaLine(copy.contextGame, context.selected_game?.toUpperCase()),
+      diagnosticsMetaLine(copy.contextBasePath, context.base_path, true),
+      diagnosticsMetaLine(copy.contextProfile, context.profile_path, true),
+      diagnosticsMetaLine(copy.contextSave, context.save_path, true),
+      diagnosticsMetaLine(copy.fieldProfileInferred, String(Boolean(context.profile_inferred))),
+      diagnosticsMetaLine(copy.fieldSaveInferred, String(Boolean(context.save_inferred))),
+    ].join("");
+  }
+
+  if (diagnosticsCrashPrimary) {
+    diagnosticsCrashPrimary.textContent = safeValue(
+      formatDiagnosticsCategory(crashSummary.primary_category || "UnknownReference"),
+      "-"
+    );
+  }
+  if (diagnosticsCrashSummary) diagnosticsCrashSummary.textContent = safeValue(crashSummary.summary);
+  if (diagnosticsCrashCounts) {
+    diagnosticsCrashCounts.innerHTML = [
+      diagnosticsBadge(`${copy.severityError}: ${crashSummary.error_count ?? 0}`, diagnosticsBadgeTone("Error")),
+      diagnosticsBadge(`${copy.severityWarning}: ${crashSummary.warning_count ?? 0}`, diagnosticsBadgeTone("Warning")),
+      diagnosticsBadge(
+        crashSummary.crash_detected ? diagnosticsLabel(copy.availability, "found") : diagnosticsLabel(copy.availability, "missing"),
+        diagnosticsBadgeTone(crashSummary.crash_detected ? "found" : "missing")
+      ),
+    ].join("");
+  }
+  if (diagnosticsCrashContext) {
+    diagnosticsCrashContext.innerHTML = (crashSummary.last_relevant_context || []).length
+      ? crashSummary.last_relevant_context
+        .slice(0, 8)
+        .map((item) => diagnosticsLine(item))
+        .join("")
+      : diagnosticsEmptyMessage(copy.noCrashContext);
+  }
+
+  if (diagnosticsSuspectedState) {
+    diagnosticsSuspectedState.textContent = topSuspect
+      ? `${topSuspect.name} | ${diagnosticsLabel(copy.confidence, topSuspect.confidence)} | ${topSuspect.score}/100`
+      : report.removed_mod_suspected
+        ? safeValue(report.removed_mod_reason, copy.removedSuspected)
+        : copy.noModAssigned;
+  }
+  if (diagnosticsSuspectedMods) {
+    diagnosticsSuspectedMods.innerHTML = suspectedMods.length
+      ? suspectedMods.map((item) => diagnosticsListItem(
+        item.name,
+        (item.reasons || []).slice(0, 3).join(" ") || copy.noSuspectedMods,
+        [
+          diagnosticsBadge(`${item.score}/100`, diagnosticsBadgeTone(item.confidence)),
+          diagnosticsBadge(diagnosticsLabel(copy.confidence, item.confidence), diagnosticsBadgeTone(item.confidence)),
+          diagnosticsBadge(diagnosticsLabel(copy.activeState, item.active_state), diagnosticsBadgeTone(item.active_state)),
+        ],
+        [
+          diagnosticsMetaLine(copy.fieldPackage, item.package_name),
+          diagnosticsMetaLine(copy.fieldFile, item.file_path, true),
+          diagnosticsMetaLine(copy.fieldReadable, item.readable ? copy.availabilityFound : copy.availabilityMissing),
+          diagnosticsMetaLine(copy.fieldManifest, String(Boolean(item.manifest_present))),
+          Array.isArray(item.category_hints) && item.category_hints.length
+            ? diagnosticsMetaLine(copy.fieldCategories, item.category_hints.map((value) => formatDiagnosticsCategory(value)).join(", "))
+            : "",
+          (item.matched_paths || []).length
+            ? `<div class="diagnostics-chip-row">${item.matched_paths.slice(0, 5).map((asset) => diagnosticsBadge(asset, "neutral")).join("")}</div>`
+            : "",
+        ].join("")
+      )).join("")
+      : diagnosticsEmptyMessage(copy.noSuspectedMods);
+  }
+
+  if (diagnosticsMissingReferences) {
+    diagnosticsMissingReferences.innerHTML = missingReferences.length
+      ? missingReferences.map((item) => diagnosticsListItem(
+        item.path,
+        item.reason,
+        [
+          diagnosticsBadge(formatDiagnosticsCategory(item.category), "neutral"),
+          diagnosticsBadge(item.source, "neutral"),
+        ],
+        [
+          diagnosticsMetaLine(copy.fieldPath, item.path, true),
+          diagnosticsMetaLine(copy.fieldSource, item.source),
+        ].join("")
+      )).join("")
+      : diagnosticsEmptyMessage(copy.noMissingReferences);
+  }
+
+  renderDiagnosticsSeverityFilter(copy);
+  renderDiagnosticsErrorList(report, copy);
+
+  if (diagnosticsLogsInfo) {
+    const logItems = [
+      diagnosticsMetaLine(copy.logsTechnical, report.logs?.technical_log_path, true),
+      diagnosticsMetaLine(copy.logsUser, report.logs?.user_log_path, true),
+      diagnosticsMetaLine(copy.logsFolder, report.logs?.log_directory_path, true),
+    ].filter(Boolean);
+    diagnosticsLogsInfo.innerHTML = logItems.length ? logItems.join("") : diagnosticsEmptyMessage(copy.noLogs);
+  }
+
+  if (diagnosticsLimitations) {
+    diagnosticsLimitations.innerHTML = limitations.length
+      ? limitations.map((item) => diagnosticsListItem(copy.limitLabel, item)).join("")
+      : diagnosticsEmptyMessage(copy.noLimitations);
+  }
+
+  setModalPillState(
+    modalConflictDiagnosticsConfidence,
+    diagnosticsStatusState(overview.status_badge),
+    diagnosticsLabel(copy.status, overview.status_badge)
+  );
+  setModalPillState(
+    modalConflictDiagnosticsHealth,
+    diagnosticsConfidenceState(topSuspect?.confidence || "Low"),
+    topSuspect
+      ? diagnosticsLabel(copy.confidence, topSuspect.confidence)
+      : report.removed_mod_suspected
+        ? copy.removedSuspected
+        : diagnosticsLabel(copy.confidence, "Low")
+  );
 }
 
 function setProfileShareStatus(state, title, message, path = "") {
@@ -591,6 +1326,344 @@ export async function openCloneProfileModal() {
 }
 
 /* --------------------------------------------------------------
+   LEVEL / XP MODAL
+-------------------------------------------------------------- */
+export async function openLevelSystemModal() {
+  if (!modalLevelSystem) return;
+
+  if (!window.selectedProfilePath) {
+    window.showToast("toasts.profile_not_selected", "warning");
+    return;
+  }
+
+  if (!window.selectedSavePath) {
+    window.showToast("toasts.level_system_missing_data", "warning");
+    return;
+  }
+
+  if ((!window.currentProfileData || window.currentProfileData.xp === undefined) && typeof window.loadProfileData === "function") {
+    try {
+      await window.loadProfileData();
+    } catch (error) {
+      console.error("Level system data load failed:", error);
+      window.showToast("toasts.level_system_missing_data", "error");
+      return;
+    }
+  }
+
+  const table = await loadLevelTable();
+  if (!table.length) {
+    window.showToast("toasts.level_system_load_error", "error");
+    return;
+  }
+
+  const copy = {
+    modeLevel: await window.t("modals.level_system.mode_level"),
+    modeXp: await window.t("modals.level_system.mode_xp"),
+    statusCurrent: await window.t("modals.level_system.status.current"),
+    statusTarget: await window.t("modals.level_system.status.target"),
+    progressMax: await window.t("modals.level_system.progress.max"),
+    progressNoNext: await window.t("modals.level_system.progress.no_next_level"),
+    feedbackLevelClamped: await window.t("modals.level_system.feedback.level_clamped", {
+      min: 0,
+      max: getMaxLevel(table),
+    }),
+    feedbackXpClamped: await window.t("modals.level_system.feedback.xp_clamped", {
+      min: 0,
+      maxXp: formatMetric(getXpForLevel(getMaxLevel(table), table), 0),
+    }),
+    feedbackUnchanged: await window.t("modals.level_system.feedback.unchanged"),
+    presetLabel: await window.t("modals.level_system.controls.level_preset"),
+    summaryUnchanged: await window.t("modals.level_system.summary.unchanged"),
+  };
+
+  const maxLevel = getMaxLevel(table);
+  const currentRawXp = Number(window.currentProfileData?.xp ?? 0);
+  const currentXp = clampXp(currentRawXp, table);
+  const currentLevel = getLevelForXp(currentXp, table);
+  const currentLevelXp = getXpForLevel(currentLevel, table);
+  const initialMode = currentXp === currentLevelXp ? "level" : "xp";
+  const state = {
+    mode: initialMode,
+    currentXp,
+    currentLevel,
+    targetLevel: currentLevel,
+    targetXp: currentXp,
+    applying: false,
+    hint: "",
+  };
+
+  const setMode = (mode) => {
+    state.mode = mode === "xp" ? "xp" : "level";
+    if (state.mode === "level") {
+      state.targetLevel = getLevelForXp(state.targetXp, table);
+      state.targetXp = getXpForLevel(state.targetLevel, table);
+    } else {
+      state.targetXp = clampXp(state.targetXp, table);
+      state.targetLevel = getLevelForXp(state.targetXp, table);
+    }
+  };
+
+  const updateFromLevel = (value, { forceMode = true, inputOrigin = false } = {}) => {
+    const numeric = Number(value);
+    const clampedLevel = clampLevel(numeric, table);
+    if (forceMode) state.mode = "level";
+    state.targetLevel = clampedLevel;
+    state.targetXp = getXpForLevel(clampedLevel, table);
+    state.hint = inputOrigin && clampedLevel !== Math.floor(Number.isFinite(numeric) ? numeric : 0)
+      ? copy.feedbackLevelClamped
+      : "";
+    render();
+  };
+
+  const updateFromXp = (value, { inputOrigin = false } = {}) => {
+    const numeric = Number(value);
+    const clampedTargetXp = clampXp(numeric, table);
+    state.mode = "xp";
+    state.targetXp = clampedTargetXp;
+    state.targetLevel = getLevelForXp(clampedTargetXp, table);
+    state.hint = inputOrigin && clampedTargetXp !== Math.max(0, Math.floor(Number.isFinite(numeric) ? numeric : 0))
+      ? copy.feedbackXpClamped
+      : "";
+    render();
+  };
+
+  const render = () => {
+    const currentProgress = getLevelProgress(state.currentXp, table);
+    const targetProgress = getLevelProgress(state.targetXp, table);
+    const targetNextLevel = getNextLevelEntry(state.targetLevel, table);
+    const targetIncrease = getLevelIncrease(state.targetLevel, table);
+    const xpDelta = state.targetXp - state.currentXp;
+    const levelChanged = state.targetLevel !== state.currentLevel;
+    const xpChanged = state.targetXp !== state.currentXp;
+
+    setModalPillState(
+      modalLevelSystemModePill,
+      state.mode === "level" ? "success" : "warning",
+      state.mode === "level" ? copy.modeLevel : copy.modeXp
+    );
+
+    if (levelSystemCurrentStatus) levelSystemCurrentStatus.textContent = copy.statusCurrent;
+    if (levelSystemTargetStatus) levelSystemTargetStatus.textContent = copy.statusTarget;
+
+    if (levelSystemCurrentBadge) levelSystemCurrentBadge.textContent = formatLevelBadge(state.currentLevel);
+    if (levelSystemCurrentXp) levelSystemCurrentXp.textContent = formatMetric(state.currentXp, 0);
+    if (levelSystemCurrentIncrease) {
+      levelSystemCurrentIncrease.textContent = currentProgress.isMaxLevel
+        ? copy.progressMax
+        : formatMetric(getLevelIncrease(state.currentLevel, table), 0);
+    }
+    if (levelSystemCurrentProgressText) {
+      levelSystemCurrentProgressText.textContent = formatLevelProgressSummary(currentProgress, copy);
+    }
+    if (levelSystemCurrentProgressFill) {
+      levelSystemCurrentProgressFill.style.width = `${currentProgress.progressPercent}%`;
+    }
+
+    if (levelSystemTargetBadge) levelSystemTargetBadge.textContent = formatLevelBadge(state.targetLevel);
+    if (levelSystemTargetXp) levelSystemTargetXp.textContent = formatMetric(state.targetXp, 0);
+    if (levelSystemTargetIncrease) {
+      levelSystemTargetIncrease.textContent = targetProgress.isMaxLevel
+        ? copy.progressMax
+        : formatMetric(targetIncrease, 0);
+    }
+    if (levelSystemTargetNext) {
+      levelSystemTargetNext.textContent = targetNextLevel
+        ? `${formatLevelBadge(targetNextLevel.level)} | ${formatMetric(targetNextLevel.total_xp, 0)} XP`
+        : copy.progressNoNext;
+    }
+    if (levelSystemTargetProgressText) {
+      levelSystemTargetProgressText.textContent = formatLevelProgressSummary(targetProgress, copy);
+    }
+    if (levelSystemTargetProgressFill) {
+      levelSystemTargetProgressFill.style.width = `${targetProgress.progressPercent}%`;
+    }
+
+    if (levelSystemModeLevel) {
+      levelSystemModeLevel.classList.toggle("is-active", state.mode === "level");
+      levelSystemModeLevel.setAttribute("aria-pressed", state.mode === "level" ? "true" : "false");
+    }
+    if (levelSystemModeXp) {
+      levelSystemModeXp.classList.toggle("is-active", state.mode === "xp");
+      levelSystemModeXp.setAttribute("aria-pressed", state.mode === "xp" ? "true" : "false");
+    }
+
+    if (levelSystemSlider) {
+      levelSystemSlider.min = "0";
+      levelSystemSlider.max = String(maxLevel);
+      levelSystemSlider.value = String(state.targetLevel);
+      levelSystemSlider.disabled = state.mode === "xp" || state.applying;
+    }
+    if (levelSystemSliderValue) levelSystemSliderValue.textContent = formatLevelBadge(state.targetLevel);
+    if (levelSystemMinusBtn) levelSystemMinusBtn.disabled = state.mode === "xp" || state.applying || state.targetLevel <= 0;
+    if (levelSystemPlusBtn) levelSystemPlusBtn.disabled = state.mode === "xp" || state.applying || state.targetLevel >= maxLevel;
+
+    if (levelSystemLevelInput) {
+      levelSystemLevelInput.value = String(state.targetLevel);
+      levelSystemLevelInput.disabled = state.mode === "xp" || state.applying;
+    }
+    if (levelSystemXpInput) {
+      levelSystemXpInput.value = String(state.targetXp);
+      levelSystemXpInput.disabled = state.mode === "level" || state.applying;
+    }
+
+    levelSystemPresetButtons.forEach((button) => {
+      const presetLevel = Number(button.dataset.levelPreset);
+      const presetTemplate = copy.presetLabel.includes("{level}") ? copy.presetLabel : "{level}";
+      button.textContent = presetTemplate.replace("{level}", String(presetLevel));
+      button.disabled = state.applying;
+      button.classList.toggle("is-active", state.mode === "level" && presetLevel === state.targetLevel);
+    });
+
+    if (levelSystemResetBtn) levelSystemResetBtn.disabled = state.applying;
+    if (levelSystemMaxBtn) levelSystemMaxBtn.disabled = state.applying;
+
+    if (levelSystemSummaryLevel) {
+      levelSystemSummaryLevel.textContent = `${formatLevelBadge(state.currentLevel)} -> ${formatLevelBadge(state.targetLevel)}`;
+    }
+    if (levelSystemSummaryXp) {
+      levelSystemSummaryXp.textContent = `${formatMetric(state.currentXp, 0)} -> ${formatMetric(state.targetXp, 0)}`;
+    }
+    if (levelSystemSummaryDelta) {
+      levelSystemSummaryDelta.textContent = xpChanged ? `${formatSignedMetric(xpDelta)} XP` : copy.summaryUnchanged;
+    }
+    if (levelSystemSummaryMode) {
+      levelSystemSummaryMode.textContent = state.mode === "level" ? copy.modeLevel : copy.modeXp;
+    }
+
+    if (modalLevelSystemApply) {
+      modalLevelSystemApply.disabled = state.applying || (!levelChanged && !xpChanged);
+    }
+
+    if (!state.hint && !levelChanged && !xpChanged) {
+      setLevelSystemHint(copy.feedbackUnchanged);
+      return;
+    }
+
+    setLevelSystemHint(state.hint);
+  };
+
+  modalLevelSystem.style.display = "flex";
+
+  function cleanup() {
+    modalLevelSystemClose?.removeEventListener("click", cleanup);
+    modalLevelSystem?.removeEventListener("click", handleBackdropClick);
+    levelSystemModeLevel?.removeEventListener("click", handleModeLevel);
+    levelSystemModeXp?.removeEventListener("click", handleModeXp);
+    levelSystemMinusBtn?.removeEventListener("click", handleDecreaseLevel);
+    levelSystemPlusBtn?.removeEventListener("click", handleIncreaseLevel);
+    levelSystemSlider?.removeEventListener("input", handleSliderInput);
+    levelSystemLevelInput?.removeEventListener("change", handleLevelInputChange);
+    levelSystemXpInput?.removeEventListener("input", handleXpInputChange);
+    levelSystemPresetButtons.forEach((button) => button.removeEventListener("click", handlePresetClick));
+    levelSystemResetBtn?.removeEventListener("click", handleResetCurrent);
+    levelSystemMaxBtn?.removeEventListener("click", handleMaxLevel);
+    modalLevelSystemApply?.removeEventListener("click", handleApply);
+    setLevelSystemHint("");
+    modalLevelSystem.style.display = "none";
+  }
+
+  function handleBackdropClick(event) {
+    if (event.target === modalLevelSystem) {
+      cleanup();
+    }
+  }
+
+  function handleModeLevel() {
+    setMode("level");
+    state.hint = "";
+    render();
+  }
+
+  function handleModeXp() {
+    setMode("xp");
+    state.hint = "";
+    render();
+  }
+
+  function handleDecreaseLevel() {
+    updateFromLevel(state.targetLevel - 1);
+  }
+
+  function handleIncreaseLevel() {
+    updateFromLevel(state.targetLevel + 1);
+  }
+
+  function handleSliderInput(event) {
+    updateFromLevel(event.target.value);
+  }
+
+  function handleLevelInputChange(event) {
+    updateFromLevel(event.target.value, { inputOrigin: true });
+  }
+
+  function handleXpInputChange(event) {
+    updateFromXp(event.target.value, { inputOrigin: true });
+  }
+
+  function handlePresetClick(event) {
+    updateFromLevel(event.currentTarget.dataset.levelPreset);
+  }
+
+  function handleResetCurrent() {
+    state.targetXp = state.currentXp;
+    state.targetLevel = state.currentLevel;
+    state.mode = state.currentXp === getXpForLevel(state.currentLevel, table) ? "level" : "xp";
+    state.hint = "";
+    render();
+  }
+
+  function handleMaxLevel() {
+    updateFromLevel(maxLevel);
+  }
+
+  async function handleApply() {
+    state.applying = true;
+    state.hint = "";
+    render();
+
+    try {
+      await window.invoke("edit_level", { xp: state.targetXp });
+      if (typeof window.loadProfileData === "function") {
+        await window.loadProfileData();
+      }
+      if (window.currentProfileData) {
+        window.currentProfileData.xp = state.targetXp;
+      }
+      if (typeof window.refreshOperationalOverview === "function") {
+        await window.refreshOperationalOverview();
+      }
+      window.showToast("toasts.level_system_apply_success", {
+        level: state.targetLevel,
+        xp: formatMetric(state.targetXp, 0),
+      }, "success");
+      cleanup();
+    } catch (error) {
+      console.error("Level system apply failed:", error);
+      window.showToast("toasts.level_system_apply_error", "error");
+      state.applying = false;
+      render();
+    }
+  }
+
+  modalLevelSystemClose?.addEventListener("click", cleanup);
+  modalLevelSystem?.addEventListener("click", handleBackdropClick);
+  levelSystemModeLevel?.addEventListener("click", handleModeLevel);
+  levelSystemModeXp?.addEventListener("click", handleModeXp);
+  levelSystemMinusBtn?.addEventListener("click", handleDecreaseLevel);
+  levelSystemPlusBtn?.addEventListener("click", handleIncreaseLevel);
+  levelSystemSlider?.addEventListener("input", handleSliderInput);
+  levelSystemLevelInput?.addEventListener("change", handleLevelInputChange);
+  levelSystemXpInput?.addEventListener("input", handleXpInputChange);
+  levelSystemPresetButtons.forEach((button) => button.addEventListener("click", handlePresetClick));
+  levelSystemResetBtn?.addEventListener("click", handleResetCurrent);
+  levelSystemMaxBtn?.addEventListener("click", handleMaxLevel);
+  modalLevelSystemApply?.addEventListener("click", handleApply);
+
+  render();
+}
+
+/* --------------------------------------------------------------
    CURRENT TRUCK MODAL
 -------------------------------------------------------------- */
 export async function openCurrentTruckModal() {
@@ -667,6 +1740,292 @@ export async function openCurrentTruckModal() {
     setModalPillState(modalTruckInfoState, "error", errorLabel);
     if (window.logUserAction) window.logUserAction("view_current_truck", "error");
   }
+}
+
+/* --------------------------------------------------------------
+   MOD CONFLICT DIAGNOSTICS MODAL
+-------------------------------------------------------------- */
+export async function openModConflictDiagnosticsModal(options = {}) {
+  if (!modalConflictDiagnostics) return;
+
+  const openSurface = typeof options.openSurface === "function"
+    ? options.openSurface
+    : () => {
+        modalConflictDiagnostics.style.display = "flex";
+      };
+  const closeSurface = typeof options.closeSurface === "function"
+    ? options.closeSurface
+    : () => {
+        modalConflictDiagnostics.style.display = "none";
+      };
+  const allowBackdropClose = options.allowBackdropClose ?? true;
+  const onClose = typeof options.onClose === "function" ? options.onClose : null;
+
+  const sessionId = ++currentDiagnosticsSessionId;
+  let copy = createDefaultDiagnosticsCopy();
+  let activeRun = 0;
+
+  function isStaleRun(runId) {
+    return sessionId !== currentDiagnosticsSessionId || runId !== activeRun;
+  }
+
+  currentDiagnosticsReport = null;
+  openSurface();
+  await logDiagnosticsFrontendEvent("modal_opened", "Mod Conflict Analyzer opened", false);
+  if (window.logUserAction) window.logUserAction("mod_conflict_analyzer", "start");
+
+  async function exportDiagnosticsReport(formatted) {
+    if (!currentDiagnosticsReport) return;
+    try {
+      const exportPath = await window.invoke("export_mod_conflict_diagnostics_report", {
+        report: currentDiagnosticsReport,
+        formatted,
+      });
+      if (!exportPath) return;
+      window.showToast("toasts.diagnostics_export_success", { path: exportPath }, "success");
+    } catch (error) {
+      console.error("Diagnostics export failed:", error);
+      await logDiagnosticsFrontendEvent(
+        "export_failed",
+        safeValue(error?.message || error, "Unknown export failure"),
+        true
+      );
+      window.showToast("toasts.diagnostics_export_failed", "error");
+    }
+  }
+
+  async function handleExportReport() {
+    await exportDiagnosticsReport(true);
+  }
+
+  async function handleExportErrors() {
+    await exportDiagnosticsReport(false);
+  }
+
+  async function handleExportCrash() {
+    await exportDiagnosticsReport(true);
+  }
+
+  async function handleCopySummary() {
+    if (!currentDiagnosticsReport) return;
+    try {
+      await copyTextToClipboard(buildDiagnosticsSummaryText(currentDiagnosticsReport, copy));
+      window.showToast("toasts.diagnostics_copy_summary_success", "success");
+    } catch (error) {
+      console.error("Summary copy failed:", error);
+      window.showToast("toasts.diagnostics_copy_failed", "error");
+    }
+  }
+
+  async function handleOpenLogs() {
+    const logDirectory = safeValue(currentDiagnosticsReport?.logs?.log_directory_path, "");
+    if (!logDirectory) return;
+
+    try {
+      const tauriOpener = window.__TAURI__?.opener;
+      if (typeof tauriOpener?.openPath === "function") {
+        await tauriOpener.openPath(logDirectory);
+        return;
+      }
+
+      await copyTextToClipboard(logDirectory);
+      window.showToast("toasts.diagnostics_log_path_copied", "success");
+    } catch (error) {
+      console.error("Log folder open failed:", error);
+      try {
+        await copyTextToClipboard(logDirectory);
+        window.showToast("toasts.diagnostics_log_path_copied", "success");
+      } catch (copyError) {
+        console.error("Log folder copy failed:", copyError);
+        window.showToast("toasts.diagnostics_log_open_failed", "error");
+      }
+    }
+  }
+
+  async function handleRefresh() {
+    await runAnalysis();
+  }
+
+  function cleanup() {
+    if (sessionId === currentDiagnosticsSessionId) {
+      currentDiagnosticsSessionId += 1;
+    }
+    modalConflictDiagnosticsClose?.removeEventListener("click", cleanup);
+    if (allowBackdropClose) {
+      modalConflictDiagnostics.removeEventListener("click", handleBackdropClick);
+    }
+    diagnosticsRefreshBtn?.removeEventListener("click", handleRefresh);
+    diagnosticsExportReportBtn?.removeEventListener("click", handleExportReport);
+    diagnosticsExportErrorsBtn?.removeEventListener("click", handleExportErrors);
+    diagnosticsExportCrashBtn?.removeEventListener("click", handleExportCrash);
+    diagnosticsCopySummaryBtn?.removeEventListener("click", handleCopySummary);
+    diagnosticsOpenLogFolderBtn?.removeEventListener("click", handleOpenLogs);
+    diagnosticsSeverityFilter?.removeEventListener("change", handleSeverityFilterChange);
+    currentDiagnosticsReport = null;
+    closeSurface();
+    onClose?.();
+  }
+
+  function handleBackdropClick(event) {
+    if (event.target === modalConflictDiagnostics) {
+      cleanup();
+    }
+  }
+
+  modalConflictDiagnosticsClose?.addEventListener("click", cleanup);
+  if (allowBackdropClose) {
+    modalConflictDiagnostics.addEventListener("click", handleBackdropClick);
+  }
+  diagnosticsRefreshBtn?.addEventListener("click", handleRefresh);
+  diagnosticsExportReportBtn?.addEventListener("click", handleExportReport);
+  diagnosticsExportErrorsBtn?.addEventListener("click", handleExportErrors);
+  diagnosticsExportCrashBtn?.addEventListener("click", handleExportCrash);
+  diagnosticsCopySummaryBtn?.addEventListener("click", handleCopySummary);
+  diagnosticsOpenLogFolderBtn?.addEventListener("click", handleOpenLogs);
+  diagnosticsSeverityFilter?.addEventListener("change", handleSeverityFilterChange);
+
+  function handleSeverityFilterChange(event) {
+    currentDiagnosticsSeverityValue = safeValue(event?.target?.value, "all").toLowerCase();
+    if (currentDiagnosticsReport) {
+      renderDiagnosticsErrorList(currentDiagnosticsReport, copy);
+    }
+  }
+
+  async function loadDiagnosticsCopy() {
+    return createDiagnosticsCopyMap({
+      statusClean: await window.t("modals.mod_conflict_diagnostics.status.clean"),
+      statusWarnings: await window.t("modals.mod_conflict_diagnostics.status.warnings"),
+      statusIssuesFound: await window.t("modals.mod_conflict_diagnostics.status.issues_found"),
+      statusNotEnoughData: await window.t("modals.mod_conflict_diagnostics.status.not_enough_data"),
+      confidenceLow: await window.t("modals.mod_conflict_diagnostics.status.low"),
+      confidencePossible: await window.t("modals.mod_conflict_diagnostics.status.possible"),
+      confidenceLikely: await window.t("modals.mod_conflict_diagnostics.status.likely"),
+      confidenceHigh: await window.t("modals.mod_conflict_diagnostics.status.high"),
+      activeStateActive: await window.t("modals.mod_conflict_diagnostics.status.active"),
+      activeStateNotActive: await window.t("modals.mod_conflict_diagnostics.status.not_active"),
+      activeStateUnknown: await window.t("modals.mod_conflict_diagnostics.status.unknown"),
+      availabilityFound: await window.t("modals.mod_conflict_diagnostics.status.found"),
+      availabilityMissing: await window.t("modals.mod_conflict_diagnostics.status.missing"),
+      severityInfo: await window.t("modals.mod_conflict_diagnostics.status.info"),
+      severityWarning: await window.t("modals.mod_conflict_diagnostics.status.warning"),
+      severityError: await window.t("modals.mod_conflict_diagnostics.status.error"),
+      severityCritical: await window.t("modals.mod_conflict_diagnostics.status.critical"),
+      contextGame: await window.t("modals.mod_conflict_diagnostics.context.game"),
+      contextProfile: await window.t("modals.mod_conflict_diagnostics.context.profile"),
+      contextSave: await window.t("modals.mod_conflict_diagnostics.context.save"),
+      contextBasePath: await window.t("modals.mod_conflict_diagnostics.context.base_path"),
+      sourceGameLog: await window.t("modals.mod_conflict_diagnostics.sources.game_log"),
+      sourceGameCrash: await window.t("modals.mod_conflict_diagnostics.sources.game_crash"),
+      sourceModFolder: await window.t("modals.mod_conflict_diagnostics.sources.mod_folder"),
+      sourceIndexedMods: await window.t("modals.mod_conflict_diagnostics.sources.indexed_mods"),
+      sourceExtractedErrors: await window.t("modals.mod_conflict_diagnostics.sources.extracted_errors"),
+      sourceActiveMods: await window.t("modals.mod_conflict_diagnostics.sources.active_mods"),
+      fieldPackage: await window.t("modals.mod_conflict_diagnostics.fields.package"),
+      fieldFile: await window.t("modals.mod_conflict_diagnostics.fields.file"),
+      fieldSource: await window.t("modals.mod_conflict_diagnostics.fields.source"),
+      fieldPath: await window.t("modals.mod_conflict_diagnostics.fields.path"),
+      fieldReadable: await window.t("modals.mod_conflict_diagnostics.fields.readable"),
+      fieldManifest: await window.t("modals.mod_conflict_diagnostics.fields.manifest"),
+      fieldCategories: await window.t("modals.mod_conflict_diagnostics.fields.categories"),
+      fieldProfileInferred: await window.t("modals.mod_conflict_diagnostics.fields.profile_inferred"),
+      fieldSaveInferred: await window.t("modals.mod_conflict_diagnostics.fields.save_inferred"),
+      noSuspectedMods: await window.t("modals.mod_conflict_diagnostics.content.no_suspected_mods"),
+      noMissingReferences: await window.t("modals.mod_conflict_diagnostics.content.no_missing_references"),
+      noErrors: await window.t("modals.mod_conflict_diagnostics.content.no_errors"),
+      noCrashContext: await window.t("modals.mod_conflict_diagnostics.content.no_crash_context"),
+      noLogs: await window.t("modals.mod_conflict_diagnostics.content.no_logs"),
+      noLimitations: await window.t("modals.mod_conflict_diagnostics.content.no_limitations"),
+      removedSuspected: await window.t("modals.mod_conflict_diagnostics.content.removed_suspected"),
+      noModAssigned: await window.t("modals.mod_conflict_diagnostics.content.no_mod_assigned"),
+      filterAll: await window.t("modals.mod_conflict_diagnostics.errors.filter_all"),
+      filterInfo: await window.t("modals.mod_conflict_diagnostics.errors.filter_info"),
+      filterWarning: await window.t("modals.mod_conflict_diagnostics.errors.filter_warning"),
+      filterError: await window.t("modals.mod_conflict_diagnostics.errors.filter_error"),
+      filterCritical: await window.t("modals.mod_conflict_diagnostics.errors.filter_critical"),
+      rawLineLabel: await window.t("modals.mod_conflict_diagnostics.errors.raw_line"),
+      lastContextLabel: await window.t("modals.mod_conflict_diagnostics.errors.last_context"),
+      logsTechnical: await window.t("modals.mod_conflict_diagnostics.exports.technical_log"),
+      logsUser: await window.t("modals.mod_conflict_diagnostics.exports.user_log"),
+      logsFolder: await window.t("modals.mod_conflict_diagnostics.exports.log_folder"),
+      limitLabel: await window.t("modals.mod_conflict_diagnostics.content.limit_label"),
+      errorBody: await window.t("modals.mod_conflict_diagnostics.error_body"),
+    });
+  }
+
+  async function runAnalysis() {
+    const runId = ++activeRun;
+    currentDiagnosticsSeverityValue = "all";
+    currentDiagnosticsReport = null;
+    resetDiagnosticsModalPanels();
+    setDiagnosticsActionState(true);
+    if (modalConflictDiagnosticsErrorText) modalConflictDiagnosticsErrorText.textContent = "";
+    setModalPillState(modalConflictDiagnosticsConfidence, "loading", copy.statusNotEnoughData);
+    setModalPillState(modalConflictDiagnosticsHealth, "loading", await window.t("modals.mod_conflict_diagnostics.loading_title"));
+    if (modalConflictDiagnosticsLoading) modalConflictDiagnosticsLoading.hidden = false;
+
+    try {
+      copy = await loadDiagnosticsCopy();
+      if (isStaleRun(runId)) return;
+
+      setModalPillState(modalConflictDiagnosticsConfidence, "loading", copy.statusNotEnoughData);
+      setModalPillState(modalConflictDiagnosticsHealth, "loading", await window.t("modals.mod_conflict_diagnostics.loading_title"));
+      await logDiagnosticsFrontendEvent("analysis_started", "Invoking analyze_mod_conflict_diagnostics", false);
+
+      const report = normalizeDiagnosticsReport(await window.invoke("analyze_mod_conflict_diagnostics"));
+      if (isStaleRun(runId)) return;
+      currentDiagnosticsReport = report;
+
+      const hasVisibleData = Boolean(
+        (report.sources?.game_log_found)
+        || (report.sources?.game_crash_found)
+        || (report.sources?.mod_folder_found)
+        || (report.suspected_mods || []).length
+        || (report.missing_references || []).length
+        || (report.errors || []).length
+        || (report.limitations || []).length
+      );
+
+      resetDiagnosticsModalPanels();
+      if (!hasVisibleData) {
+        if (modalConflictDiagnosticsEmpty) modalConflictDiagnosticsEmpty.hidden = false;
+        setModalPillState(modalConflictDiagnosticsConfidence, "neutral", diagnosticsLabel(copy.status, "Not enough data"));
+        setModalPillState(modalConflictDiagnosticsHealth, "neutral", diagnosticsLabel(copy.confidence, "Low"));
+        await logDiagnosticsFrontendEvent("analysis_empty", "Analyzer returned no visible data", false);
+        return;
+      }
+
+      renderDiagnosticsReport(report, copy);
+      if (isStaleRun(runId)) return;
+
+      if (modalConflictDiagnosticsContent) modalConflictDiagnosticsContent.hidden = false;
+      setDiagnosticsActionState(false);
+      if (diagnosticsOpenLogFolderBtn) {
+        diagnosticsOpenLogFolderBtn.disabled = !safeValue(report.logs?.log_directory_path, "");
+      }
+      await logDiagnosticsFrontendEvent(
+        "analysis_complete",
+        `suspects=${report.suspected_mods.length} missing_refs=${report.missing_references.length} errors=${report.errors.length}`,
+        false
+      );
+      if (window.logUserAction) window.logUserAction("mod_conflict_analyzer", "success");
+    } catch (error) {
+      console.error("Diagnostics analysis failed:", error);
+      if (isStaleRun(runId)) return;
+      const errorMessage = safeValue(error?.message || error, "Analyzer failed to load this data.");
+      resetDiagnosticsModalPanels();
+      if (modalConflictDiagnosticsError) modalConflictDiagnosticsError.hidden = false;
+      if (modalConflictDiagnosticsErrorText) {
+        modalConflictDiagnosticsErrorText.textContent = `${copy.errorBody} ${errorMessage}`.trim();
+      }
+      setModalPillState(modalConflictDiagnosticsConfidence, "error", copy.severityError);
+      setModalPillState(modalConflictDiagnosticsHealth, "error", copy.statusIssuesFound);
+      await logDiagnosticsFrontendEvent("analysis_failed", errorMessage, true);
+      if (window.logUserAction) window.logUserAction("mod_conflict_analyzer", "error");
+      window.showToast("toasts.diagnostics_analysis_failed", "error");
+    }
+  }
+
+  await runAnalysis();
 }
 
 /* --------------------------------------------------------------
@@ -1084,6 +2443,14 @@ export function openProfileSharingPage(mode = "export") {
     window.selectedProfilePath ? String(window.selectedProfilePath) : ""
   );
   window.location.href = `/pages/profile-sharing/index.html?mode=${encodeURIComponent(activeMode)}`;
+}
+
+export function openModConflictDiagnosticsPage() {
+  window.location.href = "/pages/mod-conflict-analyzer/index.html";
+}
+
+export function openModProfileManagerPage() {
+  window.location.href = "/pages/mod-profile-manager/index.html";
 }
 
 if (saveImportSavesBtn) {

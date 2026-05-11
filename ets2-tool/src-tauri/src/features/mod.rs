@@ -1,3 +1,4 @@
+pub mod backup;
 pub mod auth;
 pub mod bank;
 pub mod career;
@@ -9,9 +10,11 @@ pub mod employees;
 pub mod ets2save;
 pub mod events;
 pub mod fleet;
+pub mod health_monitor;
 pub mod hub;
 pub mod language;
 pub mod logging;
+pub mod mod_profile_manager;
 pub mod profile_clone;
 pub mod profile_controls;
 pub mod profile_manager;

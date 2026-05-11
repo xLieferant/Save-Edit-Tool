@@ -1,4 +1,6 @@
 use crate::dev_log;
+use crate::features::backup::service as backup_service;
+use crate::features::logging::service as logging_service;
 use crate::shared::current_profile::require_current_profile;
 use crate::shared::decrypt::decrypt_if_needed;
 use crate::shared::paths::{autosave_path, ets2_base_config_path};
@@ -6,6 +8,7 @@ use crate::state::{AppProfileState, ProfileCache};
 use regex::Regex;
 use serde::Deserialize;
 use serde_json::Value;
+use std::path::Path;
 use tauri::State;
 
 use std::fs;
@@ -31,6 +34,59 @@ fn value_to_string(v: &Value) -> String {
         }
         _ => v.to_string(),
     }
+}
+
+fn write_text_with_auto_backup(
+    profile_state: &AppProfileState,
+    path: &Path,
+    action: &str,
+    action_reason: &str,
+    success_message: &str,
+    content: &str,
+) -> Result<(), String> {
+    let mut context = logging_service::resolve_active_context(profile_state);
+    context.extra.insert(
+        "target".to_string(),
+        logging_service::redact_path(&path.display().to_string()),
+    );
+    context
+        .extra
+        .insert("reason".to_string(), action_reason.to_string());
+
+    let backup = backup_service::create_backup_for_targets(
+        profile_state,
+        action_reason,
+        &backup_service::recommended_targets(path),
+    )
+    .map_err(|error| {
+        let _ = logging_service::record_error(
+            action,
+            Some("auto_backup_failed"),
+            "Automatic backup could not be created before the setting was applied.",
+            Some(&error),
+            &context,
+        );
+        "Automatisches Backup konnte vor dem Anwenden der Einstellung nicht erstellt werden."
+            .to_string()
+    })?;
+
+    context
+        .extra
+        .insert("backupId".to_string(), backup.backup_id);
+    fs::write(path, content.as_bytes()).map_err(|error| {
+        let technical = error.to_string();
+        let _ = logging_service::record_error(
+            action,
+            Some("write_failed"),
+            "The setting change could not be written.",
+            Some(&technical),
+            &context,
+        );
+        "Einstellungsänderung konnte nicht gespeichert werden.".to_string()
+    })?;
+
+    let _ = logging_service::record_info(action, success_message, &context);
+    Ok(())
 }
 
 #[command]
@@ -90,8 +146,14 @@ pub fn apply_setting(
             let new_content = re.replace(&content, replacement).to_string();
 
             // 5. Schreiben
-            fs::write(&path, new_content)
-                .map_err(|e| format!("Fehler beim Schreiben der Config: {}", e))?;
+            write_text_with_auto_backup(
+                profile_state.inner(),
+                &path,
+                "apply_setting_global_config",
+                &format!("before apply setting {}", config_key),
+                "A global config setting was updated.",
+                &new_content,
+            )?;
 
             profile_cache.invalidate_base_config();
             dev_log!(
@@ -106,7 +168,7 @@ pub fn apply_setting(
         // ---------------------------------------------------------------------
         "money" | "xp" => {
             // 1. Profil prüfen
-            let profile = require_current_profile(profile_state)?;
+            let profile = require_current_profile(profile_state.clone())?;
 
             let path = autosave_path(&profile);
 
@@ -123,7 +185,8 @@ pub fn apply_setting(
                 _ => unreachable!(),
             };
 
-            let re = Regex::new(regex_str).unwrap();
+            let re = Regex::new(regex_str)
+                .map_err(|e| format!("Fehler beim Vorbereiten der Save-Regel: {}", e))?;
             if !re.is_match(&content) {
                 return Err(format!(
                     "Eintrag für '{}' in game.sii nicht gefunden.",
@@ -136,8 +199,14 @@ pub fn apply_setting(
             let new_content = re.replace(&content, replacement).to_string();
 
             // 5. Schreiben
-            fs::write(&path, new_content.as_bytes())
-                .map_err(|e| format!("Fehler beim Schreiben des Savegames: {}", e))?;
+            write_text_with_auto_backup(
+                profile_state.inner(),
+                &path,
+                "apply_setting_save",
+                &format!("before apply setting {}", payload.key),
+                "A save setting was updated.",
+                &new_content,
+            )?;
 
             profile_cache.invalidate_save_data();
             dev_log!(
