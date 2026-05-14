@@ -1864,6 +1864,113 @@ input[type="checkbox"]:checked + .checkboxSlider::before {
   background: rgba(255, 77, 79, 0.12);
 }
 
+.modal-box--update {
+  width: min(760px, calc(100vw - 30px));
+}
+
+.update-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.update-progress-panel,
+.update-release-notes {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.update-progress-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.update-progress-track {
+  position: relative;
+  width: 100%;
+  height: 14px;
+  overflow: hidden;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--accent-rgb), 0.18);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+    rgba(255, 255, 255, 0.05);
+}
+
+.update-progress-fill {
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background:
+    linear-gradient(135deg, rgba(var(--accent-rgb), 0.98), rgba(58, 236, 255, 0.8));
+  box-shadow:
+    0 0 18px rgba(var(--accent-rgb), 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24);
+  transition: width 180ms ease;
+}
+
+.update-progress-fill.is-indeterminate {
+  width: 38%;
+  animation: update-progress-indeterminate 1.15s ease-in-out infinite;
+}
+
+.update-progress-copy,
+.update-restart-note {
+  margin: 0;
+  color: var(--text-soft);
+}
+
+.update-restart-note {
+  font-size: 12px;
+}
+
+.update-modal-note {
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
+  background: rgba(var(--accent-rgb), 0.08);
+  color: var(--text-main);
+  line-height: 1.55;
+}
+
+.update-modal-note[data-tone="warning"] {
+  border-color: rgba(255, 165, 0, 0.26);
+  background: rgba(255, 165, 0, 0.1);
+  color: var(--warning);
+}
+
+.update-modal-note[data-tone="error"] {
+  border-color: rgba(255, 77, 79, 0.28);
+  background: rgba(255, 77, 79, 0.1);
+  color: var(--danger);
+}
+
+.update-release-notes-text {
+  margin: 0;
+  max-height: 240px;
+  overflow: auto;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.18);
+  color: var(--text-soft);
+  white-space: pre-wrap;
+  word-break: break-word;
+  font: 500 13px/1.65 "Consolas", "Courier New", monospace;
+}
+
+@keyframes update-progress-indeterminate {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
+
 .modal-empty-state,
 .share-status-card,
 .detail-hero-card,
@@ -3009,6 +3116,10 @@ body.mode-editor.profile-share-page-body .app-shell {
 
   .modal-status-pill {
     width: 100%;
+  }
+
+  .update-modal-grid {
+    grid-template-columns: 1fr;
   }
 
   .mod-profile-page-topbar,

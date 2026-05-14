@@ -66,6 +66,36 @@
                   "desc": "Tableau de bord autonome pour les opérations de l'entreprise, les membres, les commandes, les finances, la flotte et les statistiques."
             }
       },
+      "update": {
+            "window_title": "Mise à jour SimNexusHub",
+            "title": "Nouvelle mise à jour disponible",
+            "available": "Une nouvelle version est prête à être téléchargée et installée.",
+            "current_version": "Version actuelle",
+            "new_version": "Nouvelle version",
+            "release_date": "Date de publication",
+            "download_size": "Taille du téléchargement",
+            "release_notes": "Notes de version",
+            "release_notes_empty": "Aucune note de version n’a été fournie pour cette mise à jour.",
+            "download": "Télécharger la mise à jour",
+            "later": "Plus tard",
+            "view_changelog": "Voir le changelog",
+            "hide_changelog": "Masquer le changelog",
+            "ready": "Prêt",
+            "preparing": "Préparation du téléchargement...",
+            "downloading": "Téléchargement de la mise à jour...",
+            "installing": "Installation de la mise à jour...",
+            "restarting": "Redémarrage de l’application...",
+            "download_finished": "Téléchargement terminé.",
+            "download_failed": "Le téléchargement de la mise à jour a échoué. Veuillez réessayer.",
+            "install_failed": "L’installation de la mise à jour a échoué.",
+            "check_failed": "Impossible de rechercher des mises à jour.",
+            "no_update_available": "Aucune mise à jour disponible. Vous disposez déjà de la dernière version.",
+            "progress": "Progression",
+            "downloaded_of_total": "{downloaded} / {total}",
+            "downloaded": "{downloaded} téléchargés",
+            "status": "Statut",
+            "restart_notice": "L’application se fermera brièvement pendant l’installation de la mise à jour."
+      },
       "career_mode": {
             "title": "Tableau de bord du mode carrière",
             "kicker": "Mode Carrière",
@@ -862,6 +892,9 @@
                         "scan_health": "Analyser l??tat",
                         "scan_mods": "Analyser les mods",
                         "refresh": "Actualiser",
+                        "retry_analysis": "Relancer l'analyse",
+                        "deep_scan": "Analyse approfondie",
+                        "deep_scan_warning": "L'analyse approfondie peut prendre plus de temps et certains mods prot?g?s ne peuvent pas ?tre inspect?s.",
                         "preview": "Aperçu",
                         "more": "Plus",
                         "view_details": "Détails",
@@ -1037,6 +1070,7 @@
             "profile_share_import_success": "Profil partagé importé en tant que {profileName}.",
             "profile_share_action_failed": "Échec du partage de profil : {erreur}",
             "diagnostics_analysis_failed": "L'analyse des diagnostics a échoué.",
+            "diagnostics_analysis_timed_out": "L'analyse des mods a expir?. Certains fichiers ont ?t? ignor?s.",
             "diagnostics_export_success": "Rapport de diagnostic exporté vers {path}.",
             "diagnostics_export_failed": "Échec de l'exportation du rapport de diagnostic.",
             "diagnostics_copy_summary_success": "Résumé des diagnostics copié.",
@@ -1045,6 +1079,7 @@
             "diagnostics_log_path_copied": "Chemin du dossier de journaux copié.",
             "diagnostics_log_open_failed": "Échec de l'ouverture ou de la copie du chemin du dossier de journaux.",
             "mod_profile_manager_scan_failed": "L'analyse du profil du mod a échoué.",
+            "mod_profile_manager_scan_timed_out": "L'analyse des mods a expir?. Certains mods ont ?t? ignor?s.",
             "mod_profile_manager_preset_created": "Préréglage {nom} créé.",
             "mod_profile_manager_preset_failed": "L'action prédéfinie a échoué.",
             "mod_profile_manager_preset_deleted": "Préréglage supprimé.",
@@ -1419,12 +1454,16 @@
                   "actions": {
                         "back": "Retour",
                         "refresh": "Actualiser l'analyse",
+                        "retry_analysis": "Relancer l'analyse",
+                        "deep_scan": "Analyse approfondie",
+                        "deep_scan_warning": "L'analyse approfondie peut prendre plus de temps et certains mods prot?g?s ne peuvent pas ?tre inspect?s.",
                         "export_report": "Exporter le rapport",
                         "export_errors": "Exporter les erreurs.txt",
                         "export_crash": "Exporter le fichier crash-report.txt",
                         "copy_summary": "Copier le résumé",
                         "copy_suspicious_mods": "Copiez les mods suspects",
-                        "open_logs": "Ouvrir le dossier des journaux"
+                        "open_logs": "Ouvrir le dossier des journaux",
+                        "open_log_folder": "Ouvrir le dossier des journaux"
                   },
                   "fields": {
                         "package": "Forfait",
@@ -1474,6 +1513,8 @@
                         "no_logs": "Aucun chemin de journal de l'analyseur disponible.",
                         "no_save_health_details": "Aucun détail supplémentaire sur la sauvegarde de la santé n’a été isolé.",
                         "no_limitations": "Aucune limitation supplémentaire n’a été enregistrée.",
+                        "protected_mods_title": "Mods prot?g?s ou illisibles d?tect?s",
+                        "protected_mods_hint": "Ceci est courant pour les mods .scs d'ETS2 et ne signifie pas n?cessairement que le mod est cass?.",
                         "removed_suspected": "Mod potentiellement supprimé ou référence de sauvegarde obsolète.",
                         "no_mod_assigned": "Aucun mod n'a pu être attribué en toute confiance.",
                         "limit_label": "Limite"
@@ -1728,6 +1769,8 @@
             "label_color_theme_neon": "Néon",
             "label_language": "Langue",
             "label_developer": "Développeur",
-            "label_console": "Console"
+            "label_console": "Console",
+            "label_toggle_on": "Activ?",
+            "label_toggle_off": "D?sactiv?"
       }
 }

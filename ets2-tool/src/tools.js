@@ -504,7 +504,7 @@ export const tools = {
       action: async () => {
         openModConflictDiagnosticsPage();
       },
-      disabled: false,
+      disabled: true,
     },
     {
       title: "tools.profile.mod_profile_manager.title",
@@ -513,7 +513,7 @@ export const tools = {
       action: async () => {
         openModProfileManagerPage();
       },
-      disabled: false,
+      disabled: true,
     },
   ],
 

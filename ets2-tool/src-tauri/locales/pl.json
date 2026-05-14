@@ -66,6 +66,36 @@
                   "desc": "Samodzielny pulpit nawigacyjny dla operacji firmy, członków, zamówień, finansów, floty i statystyk."
             }
       },
+      "update": {
+            "window_title": "Aktualizacja SimNexusHub",
+            "title": "Dostępna nowa aktualizacja",
+            "available": "Nowa wersja jest gotowa do pobrania i instalacji.",
+            "current_version": "Obecna wersja",
+            "new_version": "Nowa wersja",
+            "release_date": "Data wydania",
+            "download_size": "Rozmiar pobierania",
+            "release_notes": "Informacje o wydaniu",
+            "release_notes_empty": "Dla tej aktualizacji nie podano informacji o wydaniu.",
+            "download": "Pobierz aktualizację",
+            "later": "Później",
+            "view_changelog": "Pokaż changelog",
+            "hide_changelog": "Ukryj changelog",
+            "ready": "Gotowe",
+            "preparing": "Przygotowywanie pobierania...",
+            "downloading": "Pobieranie aktualizacji...",
+            "installing": "Instalowanie aktualizacji...",
+            "restarting": "Ponowne uruchamianie aplikacji...",
+            "download_finished": "Pobieranie zakończone.",
+            "download_failed": "Pobieranie aktualizacji nie powiodło się. Spróbuj ponownie.",
+            "install_failed": "Instalacja aktualizacji nie powiodła się.",
+            "check_failed": "Nie udało się sprawdzić aktualizacji.",
+            "no_update_available": "Brak dostępnej aktualizacji. Masz już najnowszą wersję.",
+            "progress": "Postęp",
+            "downloaded_of_total": "{downloaded} / {total}",
+            "downloaded": "{downloaded} pobrano",
+            "status": "Status",
+            "restart_notice": "Aplikacja zostanie na chwilę zamknięta podczas instalacji aktualizacji."
+      },
       "career_mode": {
             "title": "Panel trybu kariery",
             "kicker": "Tryb kariery",
@@ -862,6 +892,9 @@
                         "scan_health": "Skanuj stan",
                         "scan_mods": "Skanuj mody",
                         "refresh": "Odśwież",
+                        "retry_analysis": "Pon?w analiz?",
+                        "deep_scan": "Skanowanie g??bokie",
+                        "deep_scan_warning": "Skanowanie g??bokie mo?e potrwa? d?u?ej, a niekt?rych chronionych mod?w nie da si? sprawdzi?.",
                         "preview": "Podgląd",
                         "more": "Więcej",
                         "view_details": "Szczegóły",
@@ -1037,6 +1070,7 @@
             "profile_share_import_success": "Udostępniony profil zaimportowany jako {profileName}.",
             "profile_share_action_failed": "Udostępnienie profilu nie powiodło się: {błąd}",
             "diagnostics_analysis_failed": "Analiza diagnostyczna nie powiodła się.",
+            "diagnostics_analysis_timed_out": "Limit czasu analizy mod?w zosta? przekroczony. Niekt?re pliki pomini?to.",
             "diagnostics_export_success": "Raport diagnostyczny wyeksportowany do {path}.",
             "diagnostics_export_failed": "Nie udało się wyeksportować raportu diagnostycznego.",
             "diagnostics_copy_summary_success": "Skopiowano podsumowanie diagnostyki.",
@@ -1045,6 +1079,7 @@
             "diagnostics_log_path_copied": "Skopiowano ścieżkę folderu dziennika.",
             "diagnostics_log_open_failed": "Nie udało się otworzyć lub skopiować ścieżki folderu dziennika.",
             "mod_profile_manager_scan_failed": "Skanowanie profilu moda nie powiodło się.",
+            "mod_profile_manager_scan_timed_out": "Limit czasu skanowania mod?w zosta? przekroczony. Niekt?re mody pomini?to.",
             "mod_profile_manager_preset_created": "Utworzono ustawienie wstępne {name}.",
             "mod_profile_manager_preset_failed": "Zaprogramowana akcja nie powiodła się.",
             "mod_profile_manager_preset_deleted": "Ustawienie wstępne usunięte.",
@@ -1419,12 +1454,16 @@
                   "actions": {
                         "back": "Powrót",
                         "refresh": "Odśwież analizę",
+                        "retry_analysis": "Pon?w analiz?",
+                        "deep_scan": "Skanowanie g??bokie",
+                        "deep_scan_warning": "Skanowanie g??bokie mo?e potrwa? d?u?ej, a niekt?rych chronionych mod?w nie da si? sprawdzi?.",
                         "export_report": "Eksportuj raport",
                         "export_errors": "Eksportuj pliki błędów.txt",
                         "export_crash": "Eksportuj raport o awarii.txt",
                         "copy_summary": "Skopiuj podsumowanie",
                         "copy_suspicious_mods": "Skopiuj podejrzane mody",
-                        "open_logs": "Otwórz folder dziennika"
+                        "open_logs": "Otwórz folder dziennika",
+                        "open_log_folder": "Otw?rz folder dziennik?w"
                   },
                   "fields": {
                         "package": "Pakiet",
@@ -1474,6 +1513,8 @@
                         "no_logs": "Brak dostępnych ścieżek dziennika analizatora.",
                         "no_save_health_details": "Nie wyizolowano żadnych dodatkowych szczegółów dotyczących oszczędzania zdrowia.",
                         "no_limitations": "Nie odnotowano żadnych dodatkowych ograniczeń.",
+                        "protected_mods_title": "Wykryto chronione lub nieczytelne mody",
+                        "protected_mods_hint": "To cz?ste w przypadku mod?w ETS2 .scs i nie musi oznacza?, ?e mod jest uszkodzony.",
                         "removed_suspected": "Potencjalnie usunięty mod lub nieaktualne odniesienie do zapisu.",
                         "no_mod_assigned": "Nie można było z całą pewnością przypisać żadnego moda.",
                         "limit_label": "Limit"
@@ -1728,6 +1769,8 @@
             "label_color_theme_neon": "neon",
             "label_language": "Język",
             "label_developer": "Deweloper",
-            "label_console": "Konsola"
+            "label_console": "Konsola",
+            "label_toggle_on": "W??czone",
+            "label_toggle_off": "Wy??czone"
       }
 }

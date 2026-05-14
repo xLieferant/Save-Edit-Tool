@@ -239,7 +239,8 @@ const diagnosticsCrashCounts = document.getElementById("diagnosticsCrashCounts")
 const diagnosticsCrashContext = document.getElementById("diagnosticsCrashContext");
 const diagnosticsSuspectedState = document.getElementById("diagnosticsSuspectedState");
 const diagnosticsSuspectedMods = document.getElementById("diagnosticsSuspectedMods");
-const diagnosticsMissingReferences = document.getElementById("diagnosticsMissingReferences");
+const diagnosticsMissingReferences = document.getElementById("diagnosticsMissingReferences")
+  || document.getElementById("diagnosticsBrokenReferences");
 const diagnosticsSeverityFilter = document.getElementById("diagnosticsSeverityFilter");
 const diagnosticsErrorsList = document.getElementById("diagnosticsErrorsList");
 const diagnosticsLogsInfo = document.getElementById("diagnosticsLogsInfo");
@@ -249,6 +250,8 @@ const diagnosticsExportCrashBtn = document.getElementById("diagnosticsExportCras
 const diagnosticsCopySummaryBtn = document.getElementById("diagnosticsCopySummaryBtn");
 const diagnosticsOpenLogFolderBtn = document.getElementById("diagnosticsOpenLogFolderBtn");
 const modalConflictDiagnosticsClose = document.getElementById("modalConflictDiagnosticsClose");
+const modalConflictDiagnosticsRetryBtn = document.getElementById("modalConflictDiagnosticsRetryBtn");
+const modalConflictDiagnosticsDeepBtn = document.getElementById("modalConflictDiagnosticsDeepBtn");
 const modalRecoveryCenter = document.getElementById("modalRecoveryCenter");
 const modalRecoveryCenterClose = document.getElementById("modalRecoveryCenterClose");
 const modalRestorePreview = document.getElementById("modalRestorePreview");
@@ -406,6 +409,8 @@ function resetTruckModalPanels() {
 let currentDiagnosticsReport = null;
 let currentDiagnosticsSessionId = 0;
 let currentDiagnosticsSeverityValue = "all";
+let isModAnalysisRunning = false;
+const MAX_RENDERED_DIAGNOSTICS_ITEMS = 50;
 
 function resetDiagnosticsModalPanels() {
   if (modalConflictDiagnosticsLoading) modalConflictDiagnosticsLoading.hidden = true;
@@ -439,6 +444,8 @@ function setDiagnosticsActionState(disabled) {
   if (diagnosticsCopySummaryBtn) diagnosticsCopySummaryBtn.disabled = disabled;
   if (diagnosticsOpenLogFolderBtn) diagnosticsOpenLogFolderBtn.disabled = disabled;
   if (diagnosticsSeverityFilter) diagnosticsSeverityFilter.disabled = disabled;
+  if (modalConflictDiagnosticsRetryBtn) modalConflictDiagnosticsRetryBtn.disabled = disabled;
+  if (modalConflictDiagnosticsDeepBtn) modalConflictDiagnosticsDeepBtn.disabled = disabled;
 }
 
 function diagnosticsStatusState(value) {
@@ -773,7 +780,9 @@ function diagnosticsErrorMatchesFilter(item, filterValue) {
 function renderDiagnosticsErrorList(report, copy) {
   if (!diagnosticsErrorsList) return;
   const errors = Array.isArray(report?.errors) ? report.errors : [];
-  const filteredErrors = errors.filter((item) => diagnosticsErrorMatchesFilter(item, currentDiagnosticsSeverityValue));
+  const filteredErrors = errors
+    .filter((item) => diagnosticsErrorMatchesFilter(item, currentDiagnosticsSeverityValue))
+    .slice(0, MAX_RENDERED_DIAGNOSTICS_ITEMS);
 
   if (!filteredErrors.length) {
     diagnosticsErrorsList.innerHTML = diagnosticsEmptyMessage(copy.noErrors);
@@ -838,10 +847,18 @@ function renderDiagnosticsReport(report, copy) {
   const sources = report?.sources || {};
   const crashSummary = report?.crash_summary || {};
   const context = report?.context || {};
-  const suspectedMods = Array.isArray(report?.suspected_mods) ? report.suspected_mods : [];
-  const missingReferences = Array.isArray(report?.missing_references) ? report.missing_references : [];
-  const unreadableMods = Array.isArray(report?.unreadable_mods) ? report.unreadable_mods : [];
-  const limitations = Array.isArray(report?.limitations) ? report.limitations : [];
+  const suspectedMods = Array.isArray(report?.suspected_mods)
+    ? report.suspected_mods.slice(0, MAX_RENDERED_DIAGNOSTICS_ITEMS)
+    : [];
+  const missingReferences = Array.isArray(report?.missing_references)
+    ? report.missing_references.slice(0, MAX_RENDERED_DIAGNOSTICS_ITEMS)
+    : [];
+  const unreadableMods = Array.isArray(report?.unreadable_mods)
+    ? report.unreadable_mods.slice(0, MAX_RENDERED_DIAGNOSTICS_ITEMS)
+    : [];
+  const limitations = Array.isArray(report?.limitations)
+    ? report.limitations.slice(0, MAX_RENDERED_DIAGNOSTICS_ITEMS)
+    : [];
   const topSuspect = suspectedMods[0] || null;
 
   if (modalConflictDiagnosticsHeadline) modalConflictDiagnosticsHeadline.textContent = diagnosticsLabel(copy.status, overview.status_badge);
@@ -1850,6 +1867,10 @@ export async function openCurrentTruckModal() {
 -------------------------------------------------------------- */
 export async function openModConflictDiagnosticsModal(options = {}) {
   if (!modalConflictDiagnostics) return;
+  if (isModAnalysisRunning) {
+    window.showToast("Mod analysis already running", "warning");
+    return;
+  }
 
   const openSurface = typeof options.openSurface === "function"
     ? options.openSurface
@@ -1867,7 +1888,6 @@ export async function openModConflictDiagnosticsModal(options = {}) {
   const sessionId = ++currentDiagnosticsSessionId;
   let copy = createDefaultDiagnosticsCopy();
   let activeRun = 0;
-  let isDiagnosticsRunning = false;
 
   function isStaleRun(runId) {
     return sessionId !== currentDiagnosticsSessionId || runId !== activeRun;
@@ -1947,7 +1967,7 @@ export async function openModConflictDiagnosticsModal(options = {}) {
   }
 
   async function handleRefresh() {
-    if (isDiagnosticsRunning) return;
+    if (isModAnalysisRunning) return;
     await runAnalysis();
   }
 
@@ -1968,6 +1988,8 @@ export async function openModConflictDiagnosticsModal(options = {}) {
     diagnosticsExportCrashBtn?.removeEventListener("click", handleExportCrash);
     diagnosticsCopySummaryBtn?.removeEventListener("click", handleCopySummary);
     diagnosticsOpenLogFolderBtn?.removeEventListener("click", handleOpenLogs);
+    modalConflictDiagnosticsRetryBtn?.removeEventListener("click", handleRefresh);
+    modalConflictDiagnosticsDeepBtn?.removeEventListener("click", handleDeepScan);
     diagnosticsSeverityFilter?.removeEventListener("change", handleSeverityFilterChange);
     currentDiagnosticsReport = null;
     closeSurface();
@@ -1993,6 +2015,8 @@ export async function openModConflictDiagnosticsModal(options = {}) {
   diagnosticsExportCrashBtn?.addEventListener("click", handleExportCrash);
   diagnosticsCopySummaryBtn?.addEventListener("click", handleCopySummary);
   diagnosticsOpenLogFolderBtn?.addEventListener("click", handleOpenLogs);
+  modalConflictDiagnosticsRetryBtn?.addEventListener("click", handleRefresh);
+  modalConflictDiagnosticsDeepBtn?.addEventListener("click", handleDeepScan);
   diagnosticsSeverityFilter?.addEventListener("change", handleSeverityFilterChange);
 
   function handleSeverityFilterChange(event) {
@@ -2069,8 +2093,11 @@ export async function openModConflictDiagnosticsModal(options = {}) {
 
   async function runAnalysis(command = "analyze_mod_conflict_diagnostics") {
     const runId = ++activeRun;
-    if (isDiagnosticsRunning) return;
-    isDiagnosticsRunning = true;
+    if (isModAnalysisRunning) {
+      await logDiagnosticsFrontendEvent("analysis_already_running", "Mod analysis already running", false);
+      throw new Error("Mod analysis already running");
+    }
+    isModAnalysisRunning = true;
     currentDiagnosticsSeverityValue = "all";
     currentDiagnosticsReport = null;
     resetDiagnosticsModalPanels();
@@ -2122,12 +2149,6 @@ export async function openModConflictDiagnosticsModal(options = {}) {
       if (diagnosticsOpenLogFolderBtn) {
         diagnosticsOpenLogFolderBtn.disabled = !safeValue(report.logs?.log_directory_path, "");
       }
-      if (diagnosticsDeepScanBtn) {
-        diagnosticsDeepScanBtn.disabled = false;
-      }
-      if (diagnosticsDeepScanFooterBtn) {
-        diagnosticsDeepScanFooterBtn.disabled = false;
-      }
       await logDiagnosticsFrontendEvent(
         "analysis_complete",
         `suspects=${report.suspected_mods.length} missing_refs=${report.missing_references.length} errors=${report.errors.length}`,
@@ -2135,7 +2156,9 @@ export async function openModConflictDiagnosticsModal(options = {}) {
       );
       if (window.logUserAction) window.logUserAction("mod_conflict_analyzer", "success");
     } catch (error) {
-      console.error("Diagnostics analysis failed:", error);
+      if (safeValue(error?.message || error, "") !== "Mod analysis already running") {
+        console.error("Diagnostics analysis failed:", error);
+      }
       if (isStaleRun(runId)) return;
       const errorMessage = safeValue(error?.message || error, "Analyzer failed to load this data.");
       resetDiagnosticsModalPanels();
@@ -2147,9 +2170,14 @@ export async function openModConflictDiagnosticsModal(options = {}) {
       setModalPillState(modalConflictDiagnosticsHealth, "error", copy.statusIssuesFound);
       await logDiagnosticsFrontendEvent("analysis_failed", errorMessage, true);
       if (window.logUserAction) window.logUserAction("mod_conflict_analyzer", "error");
-      window.showToast("toasts.diagnostics_analysis_failed", "error");
+      window.showToast(
+        errorMessage === "Mod analysis already running"
+          ? errorMessage
+          : "toasts.diagnostics_analysis_failed",
+        errorMessage === "Mod analysis already running" ? "warning" : "error"
+      );
     } finally {
-      isDiagnosticsRunning = false;
+      isModAnalysisRunning = false;
       if (!isStaleRun(runId)) {
         setDiagnosticsActionState(false);
       }
@@ -2157,7 +2185,7 @@ export async function openModConflictDiagnosticsModal(options = {}) {
   }
 
   async function handleDeepScan() {
-    if (isDiagnosticsRunning) return;
+    if (isModAnalysisRunning) return;
     if (!window.confirm(copy.deepScanWarning)) return;
     await runAnalysis("analyze_mod_conflict_diagnostics_deep");
   }
@@ -2585,12 +2613,12 @@ export function openProfileSharingPage(mode = "export") {
 }
 
 export function openModConflictDiagnosticsPage() {
-  window.location.href = "/pages/mod-conflict-analyzer/index.html";
+  window.showToast?.("toasts.coming_soon", "warning");
 }
 
 export function openModProfileManagerPage() {
   console.info("[trace] START open_mod_manager");
-  window.location.href = "/pages/mod-profile-manager/index.html";
+  window.showToast?.("toasts.coming_soon", "warning");
 }
 
 if (saveImportSavesBtn) {

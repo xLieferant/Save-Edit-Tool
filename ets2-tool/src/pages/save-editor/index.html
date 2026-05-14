@@ -819,6 +819,70 @@
 
     </div>
 
+    <div class="modal-backdrop" id="modalAppUpdate" aria-hidden="true">
+      <div class="modal-box modal-box--sheet modal-box--update">
+        <div class="detail-modal-head">
+          <div>
+            <span class="modal-kicker" data-translate="update.window_title">SimNexusHub Update</span>
+            <h2 data-translate="update.title">New Update Available</h2>
+            <p class="modal-description" data-translate="update.available">
+              A new version is ready to download and install.
+            </p>
+          </div>
+          <div id="modalAppUpdatePhasePill" class="modal-status-pill" data-state="success" data-translate="update.ready">Ready</div>
+        </div>
+
+        <div class="update-modal-grid">
+          <article class="detail-card">
+            <span class="detail-card-label" data-translate="update.current_version">Current Version</span>
+            <strong id="modalAppUpdateCurrentVersion" class="detail-card-value">-</strong>
+          </article>
+          <article class="detail-card">
+            <span class="detail-card-label" data-translate="update.new_version">New Version</span>
+            <strong id="modalAppUpdateNewVersion" class="detail-card-value">-</strong>
+          </article>
+          <article class="detail-card">
+            <span class="detail-card-label" data-translate="update.release_date">Release Date</span>
+            <strong id="modalAppUpdateReleaseDate" class="detail-card-value">-</strong>
+          </article>
+          <article class="detail-card">
+            <span class="detail-card-label" data-translate="update.download_size">Download Size</span>
+            <strong id="modalAppUpdateDownloadSize" class="detail-card-value">-</strong>
+          </article>
+        </div>
+
+        <section class="detail-card update-progress-panel">
+          <div class="update-progress-head">
+            <span class="detail-card-label" data-translate="update.progress">Progress</span>
+            <strong id="modalAppUpdateProgressPercent" class="detail-card-value">--</strong>
+          </div>
+          <p id="modalAppUpdateStatusText" class="modal-description">-</p>
+          <div class="update-progress-track" aria-hidden="true">
+            <div id="modalAppUpdateProgressFill" class="update-progress-fill"></div>
+          </div>
+          <p id="modalAppUpdateDownloadedText" class="update-progress-copy">-</p>
+          <p id="modalAppUpdateRestartNotice" class="update-restart-note" data-translate="update.restart_notice">
+            The app will close briefly while the update is installed.
+          </p>
+        </section>
+
+        <div id="modalAppUpdateNote" class="update-modal-note" data-tone="info" hidden></div>
+
+        <section id="modalAppUpdateReleaseNotesSection" class="detail-card update-release-notes" hidden>
+          <div class="update-progress-head">
+            <span class="detail-card-label" data-translate="update.release_notes">Release Notes</span>
+          </div>
+          <pre id="modalAppUpdateReleaseNotesText" class="update-release-notes-text"></pre>
+        </section>
+
+        <div class="modal-actions modal-actions--end">
+          <button id="modalAppUpdateLater" type="button" data-translate="update.later">Later</button>
+          <button id="modalAppUpdateViewChangelog" type="button" data-translate="update.view_changelog" hidden>View Changelog</button>
+          <button id="modalAppUpdateDownload" class="apply" type="button" data-translate="update.download">Download Update</button>
+        </div>
+      </div>
+    </div>
+
     <div class="modal-backdrop" id="modalText">
       <div class="modal-box">
         <h2 id="modalTextTitle">Modal Title</h2>
@@ -972,6 +1036,10 @@
         <div id="modalConflictDiagnosticsError" class="modal-empty-state modal-empty-state--error" hidden>
           <strong data-translate="modals.mod_conflict_diagnostics.error_title">Analysis failed</strong>
           <p id="modalConflictDiagnosticsErrorText"></p>
+          <div class="modal-actions modal-actions--end">
+            <button id="modalConflictDiagnosticsRetryBtn" type="button" data-translate="modals.mod_conflict_diagnostics.actions.retry_analysis">Retry Analysis</button>
+            <button id="modalConflictDiagnosticsDeepBtn" type="button" data-translate="modals.mod_conflict_diagnostics.actions.deep_scan">Deep Scan</button>
+          </div>
         </div>
 
         <div id="modalConflictDiagnosticsEmpty" class="modal-empty-state" hidden>

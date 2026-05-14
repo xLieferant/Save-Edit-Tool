@@ -66,6 +66,36 @@
                   "desc": "Panel de control independiente para operaciones de la empresa, miembros, pedidos, finanzas, flota y estadísticas."
             }
       },
+      "update": {
+            "window_title": "Actualización de SimNexusHub",
+            "title": "Nueva actualización disponible",
+            "available": "Hay una nueva versión lista para descargar e instalar.",
+            "current_version": "Versión actual",
+            "new_version": "Nueva versión",
+            "release_date": "Fecha de lanzamiento",
+            "download_size": "Tamaño de descarga",
+            "release_notes": "Notas de la versión",
+            "release_notes_empty": "No se proporcionaron notas para esta actualización.",
+            "download": "Descargar actualización",
+            "later": "Más tarde",
+            "view_changelog": "Ver changelog",
+            "hide_changelog": "Ocultar changelog",
+            "ready": "Listo",
+            "preparing": "Preparando la descarga...",
+            "downloading": "Descargando actualización...",
+            "installing": "Instalando la actualización...",
+            "restarting": "Reiniciando la aplicación...",
+            "download_finished": "Descarga completada.",
+            "download_failed": "La descarga de la actualización ha fallado. Inténtalo de nuevo.",
+            "install_failed": "La instalación de la actualización ha fallado.",
+            "check_failed": "No se pudo comprobar si hay actualizaciones.",
+            "no_update_available": "No hay actualizaciones disponibles. Ya tienes la versión más reciente.",
+            "progress": "Progreso",
+            "downloaded_of_total": "{downloaded} / {total}",
+            "downloaded": "{downloaded} descargados",
+            "status": "Estado",
+            "restart_notice": "La aplicación se cerrará brevemente mientras se instala la actualización."
+      },
       "career_mode": {
             "title": "Panel del modo carrera",
             "kicker": "Modo carrera",
@@ -862,6 +892,9 @@
                         "scan_health": "Analizar estado",
                         "scan_mods": "Analizar mods",
                         "refresh": "Actualizar",
+                        "retry_analysis": "Reintentar an?lisis",
+                        "deep_scan": "Escaneo profundo",
+                        "deep_scan_warning": "El escaneo profundo puede tardar m?s y es posible que no se puedan inspeccionar algunos mods protegidos.",
                         "preview": "Vista previa",
                         "more": "Más",
                         "view_details": "Detalles",
@@ -1037,6 +1070,7 @@
             "profile_share_import_success": "Perfil compartido importado como {profileName}.",
             "profile_share_action_failed": "Error al compartir perfil: {error}",
             "diagnostics_analysis_failed": "El análisis de diagnóstico falló.",
+            "diagnostics_analysis_timed_out": "El an?lisis de mods agot? el tiempo de espera. Se omitieron algunos archivos.",
             "diagnostics_export_success": "Informe de diagnóstico exportado a {ruta}.",
             "diagnostics_export_failed": "No se pudo exportar el informe de diagnóstico.",
             "diagnostics_copy_summary_success": "Resumen de diagnóstico copiado.",
@@ -1045,6 +1079,7 @@
             "diagnostics_log_path_copied": "Se copió la ruta de la carpeta de registro.",
             "diagnostics_log_open_failed": "No se pudo abrir o copiar la ruta de la carpeta de registro.",
             "mod_profile_manager_scan_failed": "El análisis del perfil del mod falló.",
+            "mod_profile_manager_scan_timed_out": "El escaneo de mods agot? el tiempo de espera. Se omitieron algunos mods.",
             "mod_profile_manager_preset_created": "Preajuste {nombre} creado.",
             "mod_profile_manager_preset_failed": "La acción preestablecida falló.",
             "mod_profile_manager_preset_deleted": "Preajuste eliminado.",
@@ -1420,12 +1455,16 @@
                   "actions": {
                         "back": "Atrás",
                         "refresh": "Actualizar análisis",
+                        "retry_analysis": "Reintentar an?lisis",
+                        "deep_scan": "Escaneo profundo",
+                        "deep_scan_warning": "El escaneo profundo puede tardar m?s y es posible que no se puedan inspeccionar algunos mods protegidos.",
                         "export_report": "Informe de exportación",
                         "export_errors": "Exportar errores.txt",
                         "export_crash": "Exportar crash-report.txt",
                         "copy_summary": "Copiar resumen",
                         "copy_suspicious_mods": "Copiar mods sospechosos",
-                        "open_logs": "Abrir carpeta de registro"
+                        "open_logs": "Abrir carpeta de registro",
+                        "open_log_folder": "Abrir carpeta de registros"
                   },
                   "fields": {
                         "package": "Paquete",
@@ -1475,6 +1514,8 @@
                         "no_logs": "No hay rutas de registro del analizador disponibles.",
                         "no_save_health_details": "No se aislaron detalles adicionales de salvación.",
                         "no_limitations": "No se registraron limitaciones adicionales.",
+                        "protected_mods_title": "Se detectaron mods protegidos o ilegibles",
+                        "protected_mods_hint": "Esto es com?n en los mods .scs de ETS2 y no significa necesariamente que el mod est? roto.",
                         "removed_suspected": "Posible mod eliminado o referencia guardada obsoleta.",
                         "no_mod_assigned": "No se pudo asignar ningún mod con seguridad.",
                         "limit_label": "Límite"
@@ -1729,6 +1770,8 @@
             "label_color_theme_neon": "neón",
             "label_language": "Idioma",
             "label_developer": "Desarrollador",
-            "label_console": "Consola"
+            "label_console": "Consola",
+            "label_toggle_on": "Activado",
+            "label_toggle_off": "Desactivado"
       }
 }

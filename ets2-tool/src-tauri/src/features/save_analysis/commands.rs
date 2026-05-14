@@ -1,6 +1,7 @@
 use super::export;
 use super::models::ModConflictAnalysisReport;
 use super::service;
+use crate::shared::current_profile::snapshot_resolved_save_context;
 use crate::shared::user_log;
 use crate::state::{AppProfileState, DecryptCache};
 use std::any::Any;
@@ -21,7 +22,7 @@ fn panic_message(payload: Box<dyn Any + Send>) -> String {
 }
 
 #[tauri::command]
-pub fn analyze_mod_conflict_diagnostics(
+pub async fn analyze_mod_conflict_diagnostics(
     profile_state: State<'_, AppProfileState>,
     decrypt_cache: State<'_, DecryptCache>,
 ) -> Result<ModConflictAnalysisReport, String> {
@@ -33,9 +34,35 @@ pub fn analyze_mod_conflict_diagnostics(
         return Err("Mod analysis already running".to_string());
     }
 
-    let result = match catch_unwind(AssertUnwindSafe(|| {
-        service::analyze_mod_conflict_diagnostics(profile_state.inner(), decrypt_cache.inner())
-    })) {
+    let selected_game = match profile_state.selected_game.lock() {
+        Ok(value) => value.clone(),
+        Err(_) => {
+            MOD_ANALYSIS_RUNNING.store(false, Ordering::SeqCst);
+            return Err("selected_game lock poisoned".to_string());
+        }
+    };
+    let resolved_context = match snapshot_resolved_save_context(profile_state.inner()) {
+        Ok(value) => value,
+        Err(error) => {
+            MOD_ANALYSIS_RUNNING.store(false, Ordering::SeqCst);
+            return Err(format!("Failed to resolve active save context: {}", error));
+        }
+    };
+    let decrypt_cache = decrypt_cache.inner().clone();
+
+    let result = match tauri::async_runtime::spawn_blocking(move || {
+        catch_unwind(AssertUnwindSafe(|| {
+            service::analyze_mod_conflict_diagnostics_from_snapshot(
+                selected_game,
+                resolved_context,
+                &decrypt_cache,
+                service::AnalysisMode::Light,
+            )
+        }))
+    })
+    .await
+    {
+        Ok(inner) => match inner {
         Ok(Ok(report)) => {
             crate::dev_log!(
                 "[diagnostics] command completed successfully: status={} suspects={} missing_refs={} limitations={}",
@@ -65,6 +92,8 @@ pub fn analyze_mod_conflict_diagnostics(
             );
             Err(safe_message)
         }
+        },
+        Err(error) => Err(format!("Analyzer task failed to join: {}", error)),
     };
     MOD_ANALYSIS_RUNNING.store(false, Ordering::SeqCst);
     crate::dev_log!(
@@ -81,7 +110,7 @@ pub fn analyze_mod_conflict_diagnostics(
 }
 
 #[tauri::command]
-pub fn analyze_mod_conflict_diagnostics_deep(
+pub async fn analyze_mod_conflict_diagnostics_deep(
     profile_state: State<'_, AppProfileState>,
     decrypt_cache: State<'_, DecryptCache>,
 ) -> Result<ModConflictAnalysisReport, String> {
@@ -93,9 +122,35 @@ pub fn analyze_mod_conflict_diagnostics_deep(
         return Err("Mod analysis already running".to_string());
     }
 
-    let result = match catch_unwind(AssertUnwindSafe(|| {
-        service::analyze_mod_conflict_diagnostics_deep(profile_state.inner(), decrypt_cache.inner())
-    })) {
+    let selected_game = match profile_state.selected_game.lock() {
+        Ok(value) => value.clone(),
+        Err(_) => {
+            MOD_ANALYSIS_RUNNING.store(false, Ordering::SeqCst);
+            return Err("selected_game lock poisoned".to_string());
+        }
+    };
+    let resolved_context = match snapshot_resolved_save_context(profile_state.inner()) {
+        Ok(value) => value,
+        Err(error) => {
+            MOD_ANALYSIS_RUNNING.store(false, Ordering::SeqCst);
+            return Err(format!("Failed to resolve active save context: {}", error));
+        }
+    };
+    let decrypt_cache = decrypt_cache.inner().clone();
+
+    let result = match tauri::async_runtime::spawn_blocking(move || {
+        catch_unwind(AssertUnwindSafe(|| {
+            service::analyze_mod_conflict_diagnostics_from_snapshot(
+                selected_game,
+                resolved_context,
+                &decrypt_cache,
+                service::AnalysisMode::Deep,
+            )
+        }))
+    })
+    .await
+    {
+        Ok(inner) => match inner {
         Ok(Ok(report)) => Ok(report),
         Ok(Err(error)) => {
             crate::dev_log!("[diagnostics] deep command returned error: {}", error);
@@ -114,6 +169,8 @@ pub fn analyze_mod_conflict_diagnostics_deep(
             );
             Err("Analyzer deep scan failed unexpectedly.".to_string())
         }
+        },
+        Err(error) => Err(format!("Analyzer deep task failed to join: {}", error)),
     };
 
     MOD_ANALYSIS_RUNNING.store(false, Ordering::SeqCst);

@@ -66,6 +66,36 @@
                   "desc": "Dashboard autonomo per operazioni aziendali, membri, ordini, finanze, flotta e statistiche."
             }
       },
+      "update": {
+            "window_title": "Aggiornamento SimNexusHub",
+            "title": "Nuovo aggiornamento disponibile",
+            "available": "È disponibile una nuova versione pronta per il download e l'installazione.",
+            "current_version": "Versione attuale",
+            "new_version": "Nuova versione",
+            "release_date": "Data di rilascio",
+            "download_size": "Dimensione del download",
+            "release_notes": "Note di rilascio",
+            "release_notes_empty": "Per questo aggiornamento non sono state fornite note di rilascio.",
+            "download": "Scarica aggiornamento",
+            "later": "Più tardi",
+            "view_changelog": "Visualizza changelog",
+            "hide_changelog": "Nascondi changelog",
+            "ready": "Pronto",
+            "preparing": "Preparazione del download...",
+            "downloading": "Download dell'aggiornamento...",
+            "installing": "Installazione dell'aggiornamento...",
+            "restarting": "Riavvio dell'app...",
+            "download_finished": "Download completato.",
+            "download_failed": "Il download dell'aggiornamento non è riuscito. Riprova.",
+            "install_failed": "L'installazione dell'aggiornamento non è riuscita.",
+            "check_failed": "Impossibile verificare la disponibilità di aggiornamenti.",
+            "no_update_available": "Nessun aggiornamento disponibile. Hai già la versione più recente.",
+            "progress": "Avanzamento",
+            "downloaded_of_total": "{downloaded} / {total}",
+            "downloaded": "{downloaded} scaricati",
+            "status": "Stato",
+            "restart_notice": "L'app verrà chiusa brevemente durante l'installazione dell'aggiornamento."
+      },
       "career_mode": {
             "title": "Dashboard della modalità Carriera",
             "kicker": "Modalità Carriera",
@@ -862,6 +892,9 @@
                         "scan_health": "Analizza integrit?",
                         "scan_mods": "Analizza mod",
                         "refresh": "Aggiorna",
+                        "retry_analysis": "Riprova analisi",
+                        "deep_scan": "Scansione approfondita",
+                        "deep_scan_warning": "La scansione approfondita potrebbe richiedere pi? tempo e alcuni mod protetti potrebbero non essere ispezionabili.",
                         "preview": "Anteprima",
                         "more": "Di più",
                         "view_details": "Dettagli",
@@ -1037,6 +1070,7 @@
             "profile_share_import_success": "Profilo condiviso importato come {profileName}.",
             "profile_share_action_failed": "Condivisione del profilo non riuscita: {errore}",
             "diagnostics_analysis_failed": "L'analisi diagnostica non è riuscita.",
+            "diagnostics_analysis_timed_out": "L'analisi delle mod ha raggiunto il timeout. Alcuni file sono stati saltati.",
             "diagnostics_export_success": "Report diagnostico esportato in {path}.",
             "diagnostics_export_failed": "Impossibile esportare il rapporto diagnostico.",
             "diagnostics_copy_summary_success": "Riepilogo della diagnostica copiato.",
@@ -1045,6 +1079,7 @@
             "diagnostics_log_path_copied": "Percorso della cartella di registro copiato.",
             "diagnostics_log_open_failed": "Impossibile aprire o copiare il percorso della cartella di registro.",
             "mod_profile_manager_scan_failed": "La scansione del profilo mod non è riuscita.",
+            "mod_profile_manager_scan_timed_out": "La scansione delle mod ha raggiunto il timeout. Alcune mod sono state saltate.",
             "mod_profile_manager_preset_created": "Preimpostazione {nome} creata.",
             "mod_profile_manager_preset_failed": "L'azione preimpostata non è riuscita.",
             "mod_profile_manager_preset_deleted": "Preimpostazione eliminata.",
@@ -1419,12 +1454,16 @@
                   "actions": {
                         "back": "Indietro",
                         "refresh": "Aggiorna analisi",
+                        "retry_analysis": "Riprova analisi",
+                        "deep_scan": "Scansione approfondita",
+                        "deep_scan_warning": "La scansione approfondita potrebbe richiedere pi? tempo e alcuni mod protetti potrebbero non essere ispezionabili.",
                         "export_report": "Rapporto sull'esportazione",
                         "export_errors": "Esporta errori.txt",
                         "export_crash": "Esporta crash-report.txt",
                         "copy_summary": "Copia riepilogo",
                         "copy_suspicious_mods": "Copia mod sospette",
-                        "open_logs": "Apri la cartella di registro"
+                        "open_logs": "Apri la cartella di registro",
+                        "open_log_folder": "Apri cartella dei registri"
                   },
                   "fields": {
                         "package": "Pacchetto",
@@ -1474,6 +1513,8 @@
                         "no_logs": "Nessun percorso di registro dell'analizzatore disponibile.",
                         "no_save_health_details": "Non sono stati isolati ulteriori dettagli relativi al salvataggio.",
                         "no_limitations": "Non sono state registrate ulteriori limitazioni.",
+                        "protected_mods_title": "Rilevati mod protetti o illeggibili",
+                        "protected_mods_hint": "Questo ? comune per i mod .scs di ETS2 e non significa necessariamente che il mod sia danneggiato.",
                         "removed_suspected": "Potenziale mod rimossa o riferimento di salvataggio obsoleto.",
                         "no_mod_assigned": "Nessuna mod può essere assegnata con sicurezza.",
                         "limit_label": "Limite"
@@ -1728,6 +1769,8 @@
             "label_color_theme_neon": "neon",
             "label_language": "Lingua",
             "label_developer": "Sviluppatore",
-            "label_console": "Console"
+            "label_console": "Console",
+            "label_toggle_on": "Attivato",
+            "label_toggle_off": "Disattivato"
       }
 }

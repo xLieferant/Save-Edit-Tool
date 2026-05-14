@@ -3,11 +3,13 @@ use super::models::{
     DiagnosticsContext, MissingReference, ModConflictAnalysisReport, SuspectedMod,
 };
 use crate::shared::current_profile::snapshot_resolved_save_context;
+use crate::shared::current_profile::ResolvedSaveContext;
 use crate::shared::decrypt::decrypt_if_needed;
 use crate::shared::paths::{game_crash_path, game_log_path, game_sii_from_save, get_base_path, mod_directory_path};
 use crate::shared::{logs, user_log};
 use crate::state::{AppProfileState, DecryptCache};
 use chrono::Local;
+use once_cell::sync::Lazy;
 use regex::Regex;
 use std::any::Any;
 use std::collections::{BTreeSet, HashMap, HashSet};
@@ -30,8 +32,39 @@ const ANALYZER_MAX_FOLDER_DEPTH: usize = 2;
 const ANALYZER_MAX_FOLDER_FILES: usize = 250;
 const ANALYZER_MAX_ARCHIVE_ENTRIES: usize = 250;
 const ANALYZER_MAX_MANIFEST_BYTES: u64 = 128 * 1024;
+const ANALYZER_MAX_DEEP_ARCHIVE_BYTES: u64 = 512 * 1024 * 1024;
 const ANALYZER_LOG_TAIL_BYTES: u64 = 512 * 1024;
 const ANALYZER_DEEP_SCAN_TIMEOUT: Duration = Duration::from_secs(20);
+const ANALYZER_LIGHT_MAX_LOG_LINES: usize = 1500;
+const ANALYZER_DEEP_MAX_LOG_LINES: usize = 4000;
+const ANALYZER_MAX_RENDER_ERRORS: usize = 100;
+const ANALYZER_MAX_RENDER_REFERENCES: usize = 50;
+const ANALYZER_MAX_RENDER_RAW_LINES: usize = 100;
+const ANALYZER_MAX_RENDER_ACTIVE_MODS: usize = 50;
+const ANALYZER_MAX_RENDER_LIMITATIONS: usize = 50;
+const ANALYZER_MAX_RENDER_UNREADABLE_MODS: usize = 50;
+
+static ACTIVE_MODS_RE: Lazy<Option<Regex>> = Lazy::new(|| {
+    Regex::new(r#"active_mods\[\d+\]:\s*"([^"]+)""#).ok()
+});
+static COMPATIBLE_VERSIONS_RE: Lazy<Option<Regex>> = Lazy::new(|| {
+    Regex::new(r#"compatible_versions\[\d+\]:\s*"([^"]+)""#).ok()
+});
+static DATA_PATH_RE: Lazy<Option<Regex>> = Lazy::new(|| {
+    Regex::new(r#"data_path:\s*"([^"]+)""#).ok()
+});
+static ASSET_RE: Lazy<Option<Regex>> = Lazy::new(|| {
+    Regex::new(r#"([A-Za-z0-9_/\.-]+\.(?:sii|sui|pmd|pmg|mat|tobj|dds|ogg|bank|unit))"#).ok()
+});
+static WINDOWS_PATH_RE: Lazy<Option<Regex>> = Lazy::new(|| {
+    Regex::new(r#"([A-Za-z]:\\[^"\r\n]+)"#).ok()
+});
+static ASSET_PREFIX_RE: Lazy<Option<Regex>> = Lazy::new(|| {
+    Regex::new(r#"(/(?:def|vehicle|model|material|map|ui|sound|prefab)[^"\s]*)"#).ok()
+});
+static ASSET_EXT_RE: Lazy<Option<Regex>> = Lazy::new(|| {
+    Regex::new(r#"([A-Za-z0-9_/\.-]+\.(?:sii|sui|pmd|pmg|mat|tobj|dds|ogg|bank|unit))"#).ok()
+});
 
 const COMMON_TOKENS: &[&str] = &[
     "accessory",
@@ -127,8 +160,22 @@ struct CandidateScore {
     reasons: Vec<String>,
 }
 
+#[derive(Debug, Clone, Default)]
+struct ModLookupIndex {
+    exact_paths_to_mods: HashMap<String, Vec<usize>>,
+    file_name_to_mods: HashMap<String, Vec<usize>>,
+    alias_lookup: HashSet<String>,
+    token_lookup: HashSet<String>,
+}
+
+#[derive(Debug, Clone, Default)]
+struct ErrorScanStats {
+    lines_scanned: usize,
+    matches: usize,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum AnalysisMode {
+pub enum AnalysisMode {
     Light,
     Deep,
 }
@@ -300,22 +347,110 @@ fn read_plain_text_tail_lossy(label: &str, path: &Path, max_bytes: u64) -> Resul
     }
 }
 
+fn should_load_game_sii(mode: AnalysisMode, active_mods_reliably_known: bool) -> bool {
+    mode == AnalysisMode::Deep || !active_mods_reliably_known
+}
+
+fn phase_start(label: &str) -> Instant {
+    crate::dev_log!("[diagnostics] START {}", label);
+    Instant::now()
+}
+
+fn phase_end(label: &str, started_at: Instant, extra: &str) {
+    if extra.is_empty() {
+        crate::dev_log!(
+            "[diagnostics] END {} duration_ms={}",
+            label,
+            started_at.elapsed().as_millis()
+        );
+    } else {
+        crate::dev_log!(
+            "[diagnostics] END {} duration_ms={} {}",
+            label,
+            started_at.elapsed().as_millis(),
+            extra
+        );
+    }
+}
+
+fn mark_analysis_timed_out(limitations: &mut Vec<String>, timed_out: &mut bool, started_at: Instant) {
+    if *timed_out {
+        return;
+    }
+    *timed_out = true;
+    record_limitation(
+        limitations,
+        "Analysis timed out. Partial results shown.".to_string(),
+        false,
+    );
+    crate::dev_log!(
+        "[diagnostics] timeout after_ms={}",
+        started_at.elapsed().as_millis()
+    );
+}
+
+fn budget_exceeded(started_at: Instant, mode: AnalysisMode) -> bool {
+    started_at.elapsed() > mode.timeout()
+}
+
+fn relevant_log_line_limit(mode: AnalysisMode) -> usize {
+    match mode {
+        AnalysisMode::Light => ANALYZER_LIGHT_MAX_LOG_LINES,
+        AnalysisMode::Deep => ANALYZER_DEEP_MAX_LOG_LINES,
+    }
+}
+
+fn tail_lines<'a>(content: &'a str, max_lines: usize) -> Vec<(usize, &'a str)> {
+    let lines = content.lines().collect::<Vec<_>>();
+    let start = lines.len().saturating_sub(max_lines);
+    lines[start..]
+        .iter()
+        .enumerate()
+        .map(|(offset, line)| (start + offset + 1, *line))
+        .collect()
+}
+
 pub fn analyze_mod_conflict_diagnostics(
     profile_state: &AppProfileState,
     decrypt_cache: &DecryptCache,
 ) -> Result<ModConflictAnalysisReport, String> {
-    analyze_mod_conflict_diagnostics_with_mode(profile_state, decrypt_cache, AnalysisMode::Light)
+    let selected_game = profile_state
+        .selected_game
+        .lock()
+        .map_err(|_| "selected_game lock poisoned".to_string())?
+        .clone();
+    let resolved_context = snapshot_resolved_save_context(profile_state)
+        .map_err(|error| format!("Failed to resolve active save context: {}", error))?;
+    analyze_mod_conflict_diagnostics_from_snapshot(
+        selected_game,
+        resolved_context,
+        decrypt_cache,
+        AnalysisMode::Light,
+    )
 }
 
 pub fn analyze_mod_conflict_diagnostics_deep(
     profile_state: &AppProfileState,
     decrypt_cache: &DecryptCache,
 ) -> Result<ModConflictAnalysisReport, String> {
-    analyze_mod_conflict_diagnostics_with_mode(profile_state, decrypt_cache, AnalysisMode::Deep)
+    let selected_game = profile_state
+        .selected_game
+        .lock()
+        .map_err(|_| "selected_game lock poisoned".to_string())?
+        .clone();
+    let resolved_context = snapshot_resolved_save_context(profile_state)
+        .map_err(|error| format!("Failed to resolve active save context: {}", error))?;
+    analyze_mod_conflict_diagnostics_from_snapshot(
+        selected_game,
+        resolved_context,
+        decrypt_cache,
+        AnalysisMode::Deep,
+    )
 }
 
-fn analyze_mod_conflict_diagnostics_with_mode(
-    profile_state: &AppProfileState,
+pub fn analyze_mod_conflict_diagnostics_from_snapshot(
+    selected_game: String,
+    resolved_context: ResolvedSaveContext,
     decrypt_cache: &DecryptCache,
     mode: AnalysisMode,
 ) -> Result<ModConflictAnalysisReport, String> {
@@ -326,14 +461,6 @@ fn analyze_mod_conflict_diagnostics_with_mode(
     }
 
     let generated_at = Local::now().to_rfc3339();
-    let selected_game = profile_state
-        .selected_game
-        .lock()
-        .map_err(|_| "selected_game lock poisoned".to_string())?
-        .clone();
-    let resolved_context = snapshot_resolved_save_context(profile_state)
-        .map_err(|error| format!("Failed to resolve active save context: {}", error))?;
-
     let mut limitations = Vec::new();
     let base_path = get_base_path(&selected_game);
     let log_path = game_log_path(&selected_game);
@@ -378,32 +505,40 @@ fn analyze_mod_conflict_diagnostics_with_mode(
         &mut limitations,
         false,
     );
-    let game_sii = read_optional_text(
-        "game.sii",
-        game_sii_path.as_deref(),
-        decrypt_cache,
-        &mut limitations,
-        false,
-    );
-
     let active_mods = profile_sii
         .content
         .as_deref()
         .map(parse_active_mods)
         .unwrap_or_default();
     let active_mods_reliably_known = profile_sii.content.is_some();
+    let game_sii = if should_load_game_sii(mode, active_mods_reliably_known) {
+        read_optional_text(
+            "game.sii",
+            game_sii_path.as_deref(),
+            decrypt_cache,
+            &mut limitations,
+            false,
+        )
+    } else {
+        crate::dev_log!("[diagnostics] game.sii skipped reason=light_mode_not_required");
+        OptionalText::missing(game_sii_path.as_deref())
+    };
 
     let (mut indexed_mods, scan_timed_out) = mod_path
         .as_deref()
         .map(|path| scan_installed_mods(path, &mut limitations, started_at, mode))
         .unwrap_or_else(|| (Vec::new(), false));
     let mod_folder_found = mod_path.as_deref().map(Path::exists).unwrap_or(false);
+    let mut analysis_timed_out = scan_timed_out;
+    let match_active_started = phase_start("match_active_mods_to_files");
     apply_active_states(&mut indexed_mods, &active_mods, active_mods_reliably_known);
+    phase_end("match_active_mods_to_files", match_active_started, "");
     let unreadable_mods = indexed_mods
         .iter()
         .filter(|item| !item.readable)
         .map(|item| item.name.clone())
         .collect::<Vec<_>>();
+    let mod_lookup = build_mod_lookup_index(&indexed_mods);
 
     crate::dev_log!(
         "[diagnostics] sources loaded active_mods={} indexed_mods={} readable_mods={} unreadable_mods={}",
@@ -413,16 +548,45 @@ fn analyze_mod_conflict_diagnostics_with_mode(
         indexed_mods.iter().filter(|item| !item.readable).count()
     );
 
-    let mut log_errors = game_log
+    if budget_exceeded(started_at, mode) {
+        mark_analysis_timed_out(&mut limitations, &mut analysis_timed_out, started_at);
+    }
+
+    let parse_game_log_started = phase_start("parse_game_log_errors");
+    let (mut log_errors, log_stats) = game_log
         .content
         .as_deref()
-        .map(|content| extract_log_errors("game.log.txt", content))
+        .map(|content| extract_log_errors("game.log.txt", content, relevant_log_line_limit(mode)))
         .unwrap_or_default();
-    let mut crash_errors = game_crash
+    phase_end(
+        "parse_game_log_errors",
+        parse_game_log_started,
+        &format!(
+            "lines_scanned={} matches={}",
+            log_stats.lines_scanned,
+            log_stats.matches
+        ),
+    );
+
+    if budget_exceeded(started_at, mode) {
+        mark_analysis_timed_out(&mut limitations, &mut analysis_timed_out, started_at);
+    }
+
+    let parse_crash_log_started = phase_start("parse_crash_log_errors");
+    let (mut crash_errors, crash_stats) = game_crash
         .content
         .as_deref()
-        .map(|content| extract_crash_errors("game.crash.txt", content))
+        .map(|content| extract_crash_errors("game.crash.txt", content, relevant_log_line_limit(mode)))
         .unwrap_or_default();
+    phase_end(
+        "parse_crash_log_errors",
+        parse_crash_log_started,
+        &format!(
+            "lines_scanned={} matches={}",
+            crash_stats.lines_scanned,
+            crash_stats.matches
+        ),
+    );
 
     mark_last_context(&mut log_errors, LAST_CONTEXT_COUNT);
     mark_last_context(&mut crash_errors, LAST_CONTEXT_COUNT);
@@ -431,29 +595,42 @@ fn analyze_mod_conflict_diagnostics_with_mode(
     errors.extend(log_errors.iter().cloned());
     errors.extend(crash_errors.iter().cloned());
 
-    let mut missing_references = build_missing_active_mod_references(&active_mods, &indexed_mods);
+    let mut missing_references = build_missing_active_mod_references(&active_mods, &mod_lookup);
     let mut save_state_errors = Vec::new();
     if let Some(content) = game_sii.content.as_deref() {
         let custom_save_refs = extract_custom_save_references(content, &active_mods);
         let (save_missing_refs, save_errors) =
-            build_save_missing_references(&custom_save_refs, &indexed_mods);
+            build_save_missing_references(&custom_save_refs, &mod_lookup);
         missing_references.extend(save_missing_refs);
         save_state_errors.extend(save_errors);
     }
 
+    if budget_exceeded(started_at, mode) {
+        mark_analysis_timed_out(&mut limitations, &mut analysis_timed_out, started_at);
+    }
+
     let (log_missing_refs, log_missing_errors) =
-        build_unmatched_path_references(&errors, &indexed_mods);
+        build_unmatched_path_references(&errors, &mod_lookup);
     missing_references.extend(log_missing_refs);
     save_state_errors.extend(log_missing_errors);
 
     errors.extend(save_state_errors);
     deduplicate_missing_references(&mut missing_references);
     sort_errors(&mut errors);
+    errors.truncate(ANALYZER_MAX_RENDER_ERRORS);
+    missing_references.truncate(ANALYZER_MAX_RENDER_REFERENCES);
 
+    let detect_started = phase_start("detect_probable_mod_causes");
     let suspected_mods = rank_suspected_mods(
         &indexed_mods,
         &errors,
         active_mods_reliably_known,
+        &mod_lookup,
+    );
+    phase_end(
+        "detect_probable_mod_causes",
+        detect_started,
+        &format!("candidates={}", suspected_mods.len()),
     );
 
     let removed_mod_suspected = suspected_mods.is_empty()
@@ -471,7 +648,7 @@ fn analyze_mod_conflict_diagnostics_with_mode(
 
     let sources = AnalysisSources {
         analysis_mode: mode.as_str().to_string(),
-        analysis_timed_out: scan_timed_out,
+        analysis_timed_out,
         game_log_found: game_log.found,
         game_log_path: game_log.path,
         game_crash_found: game_crash.found,
@@ -486,6 +663,7 @@ fn analyze_mod_conflict_diagnostics_with_mode(
         extracted_errors_count: errors.len(),
     };
 
+    let build_result_started = phase_start("build_diagnostics_result");
     let crash_summary = build_crash_summary(&errors, game_crash.found);
     let overview = build_overview(
         &sources,
@@ -499,20 +677,24 @@ fn analyze_mod_conflict_diagnostics_with_mode(
     let raw_relevant_log_lines = log_errors
         .iter()
         .map(render_raw_line)
+        .take(ANALYZER_MAX_RENDER_RAW_LINES / 2)
         .collect::<Vec<_>>();
     let raw_relevant_crash_lines = crash_errors
         .iter()
         .map(render_raw_line)
+        .take(ANALYZER_MAX_RENDER_RAW_LINES / 2)
         .collect::<Vec<_>>();
     let active_mod_names = active_mods
         .iter()
         .map(|item| item.display_name.clone())
+        .take(ANALYZER_MAX_RENDER_ACTIVE_MODS)
         .collect::<Vec<_>>();
     let logs = AnalyzerLogPaths {
         technical_log_path: Some(path_to_string(&logs::technical_log_path())),
         user_log_path: Some(path_to_string(&user_log::user_log_path())),
         log_directory_path: logs::log_directory_path().map(|path| path_to_string(&path)),
     };
+    phase_end("build_diagnostics_result", build_result_started, "");
 
     crate::dev_log!(
         "[diagnostics] {} scan completed entries={}",
@@ -538,7 +720,8 @@ fn analyze_mod_conflict_diagnostics_with_mode(
         crate::dev_log!("[diagnostics] user log write failed: {}", error);
     }
 
-    Ok(ModConflictAnalysisReport {
+    let serialize_started = phase_start("serialize_diagnostics_result");
+    let report = ModConflictAnalysisReport {
         generated_at,
         report_version: "mod-conflict-analyzer.mvp.v1".to_string(),
         context: DiagnosticsContext {
@@ -556,14 +739,30 @@ fn analyze_mod_conflict_diagnostics_with_mode(
         suspected_mods,
         missing_references,
         errors,
-        unreadable_mods,
+        unreadable_mods: unreadable_mods
+            .into_iter()
+            .take(ANALYZER_MAX_RENDER_UNREADABLE_MODS)
+            .collect(),
         removed_mod_suspected,
         removed_mod_reason,
         logs,
         raw_relevant_log_lines,
         raw_relevant_crash_lines,
-        limitations,
-    })
+        limitations: limitations
+            .into_iter()
+            .take(ANALYZER_MAX_RENDER_LIMITATIONS)
+            .collect(),
+    };
+    let serialized_len = serde_json::to_vec(&report)
+        .map(|payload| payload.len())
+        .unwrap_or(0);
+    phase_end(
+        "serialize_diagnostics_result",
+        serialize_started,
+        &format!("bytes={}", serialized_len),
+    );
+
+    Ok(report)
 }
 
 fn read_optional_text(
@@ -633,31 +832,42 @@ fn read_optional_text(
     }
 }
 
-fn extract_log_errors(source: &str, content: &str) -> Vec<AnalyzedError> {
-    let mut errors = content
-        .lines()
-        .enumerate()
-        .filter_map(|(index, line)| build_error_from_line(source, index + 1, line, false))
+fn extract_log_errors(
+    source: &str,
+    content: &str,
+    max_lines: usize,
+) -> (Vec<AnalyzedError>, ErrorScanStats) {
+    let lines = tail_lines(content, max_lines);
+    let mut errors = lines
+        .iter()
+        .filter_map(|(line_number, line)| build_error_from_line(source, *line_number, line, false))
         .collect::<Vec<_>>();
     if errors.len() > MAX_RELEVANT_LOG_LINES {
         let keep_from = errors.len().saturating_sub(MAX_RELEVANT_LOG_LINES);
         errors = errors.split_off(keep_from);
     }
-    errors
+    let stats = ErrorScanStats {
+        lines_scanned: lines.len(),
+        matches: errors.len(),
+    };
+    (errors, stats)
 }
 
-fn extract_crash_errors(source: &str, content: &str) -> Vec<AnalyzedError> {
-    let mut entries = content
-        .lines()
-        .enumerate()
-        .filter_map(|(index, line)| build_error_from_line(source, index + 1, line, true))
+fn extract_crash_errors(
+    source: &str,
+    content: &str,
+    max_lines: usize,
+) -> (Vec<AnalyzedError>, ErrorScanStats) {
+    let lines = tail_lines(content, max_lines);
+    let mut entries = lines
+        .iter()
+        .filter_map(|(line_number, line)| build_error_from_line(source, *line_number, line, true))
         .collect::<Vec<_>>();
 
     if entries.is_empty() {
-        let mut fallback = content
-            .lines()
-            .enumerate()
-            .filter_map(|(index, line)| {
+        let mut fallback = lines
+            .iter()
+            .filter_map(|(line_number, line)| {
                 let trimmed = line.trim();
                 if trimmed.is_empty() {
                     return None;
@@ -666,7 +876,7 @@ fn extract_crash_errors(source: &str, content: &str) -> Vec<AnalyzedError> {
                     source: source.to_string(),
                     severity: "Critical".to_string(),
                     category: "CrashContext".to_string(),
-                    line_number: Some(index + 1),
+                    line_number: Some(*line_number),
                     raw_line: trimmed.to_string(),
                     extracted_path: extract_path_from_line(trimmed),
                     explanation: "This line comes directly from game.crash.txt and provides crash context, but not proof of a single culprit mod."
@@ -679,14 +889,22 @@ fn extract_crash_errors(source: &str, content: &str) -> Vec<AnalyzedError> {
             let keep_from = fallback.len().saturating_sub(MAX_RELEVANT_CRASH_LINES);
             fallback = fallback.split_off(keep_from);
         }
-        return fallback;
+        let stats = ErrorScanStats {
+            lines_scanned: lines.len(),
+            matches: fallback.len(),
+        };
+        return (fallback, stats);
     }
 
     if entries.len() > MAX_RELEVANT_CRASH_LINES {
         let keep_from = entries.len().saturating_sub(MAX_RELEVANT_CRASH_LINES);
         entries = entries.split_off(keep_from);
     }
-    entries
+    let stats = ErrorScanStats {
+        lines_scanned: lines.len(),
+        matches: entries.len(),
+    };
+    (entries, stats)
 }
 
 fn build_error_from_line(
@@ -734,13 +952,11 @@ fn mark_last_context(errors: &mut [AnalyzedError], count: usize) {
 
 fn build_missing_active_mod_references(
     active_mods: &[ActiveModEntry],
-    indexed_mods: &[IndexedMod],
+    mod_lookup: &ModLookupIndex,
 ) -> Vec<MissingReference> {
     let mut references = Vec::new();
     for active_mod in active_mods {
-        let matched = indexed_mods
-            .iter()
-            .any(|indexed_mod| active_mod_matches_indexed_mod(active_mod, indexed_mod));
+        let matched = active_mod_matches_lookup(active_mod, mod_lookup);
         if matched {
             continue;
         }
@@ -757,13 +973,13 @@ fn build_missing_active_mod_references(
 
 fn build_save_missing_references(
     custom_save_refs: &[String],
-    indexed_mods: &[IndexedMod],
+    mod_lookup: &ModLookupIndex,
 ) -> (Vec<MissingReference>, Vec<AnalyzedError>) {
     let mut refs = Vec::new();
     let mut errors = Vec::new();
 
     for asset_path in custom_save_refs {
-        if path_matches_any_mod(asset_path, indexed_mods) {
+        if path_matches_any_mod(asset_path, mod_lookup) {
             continue;
         }
 
@@ -795,7 +1011,7 @@ fn build_save_missing_references(
 
 fn build_unmatched_path_references(
     errors: &[AnalyzedError],
-    indexed_mods: &[IndexedMod],
+    mod_lookup: &ModLookupIndex,
 ) -> (Vec<MissingReference>, Vec<AnalyzedError>) {
     let mut refs = Vec::new();
     let mut synthetic_errors = Vec::new();
@@ -804,7 +1020,7 @@ fn build_unmatched_path_references(
         let Some(path) = item.extracted_path.as_deref() else {
             continue;
         };
-        if path_matches_any_mod(path, indexed_mods) {
+        if path_matches_any_mod(path, mod_lookup) {
             continue;
         }
         if item.source != "game.log.txt" && item.source != "game.crash.txt" {
@@ -858,12 +1074,62 @@ fn rank_suspected_mods(
     indexed_mods: &[IndexedMod],
     errors: &[AnalyzedError],
     active_mods_reliably_known: bool,
+    mod_lookup: &ModLookupIndex,
 ) -> Vec<SuspectedMod> {
+    let mut match_signals = vec![MatchSignals::default(); indexed_mods.len()];
+    let mut matched_paths = vec![BTreeSet::new(); indexed_mods.len()];
+    let error_categories = errors
+        .iter()
+        .map(|error| error.category.clone())
+        .collect::<HashSet<_>>();
+
+    for error in errors {
+        let mut matched_indices = Vec::new();
+        if let Some(path) = error.extracted_path.as_deref() {
+            if let Some(indices) = mod_lookup.exact_paths_to_mods.get(path) {
+                matched_indices.extend(indices.iter().copied());
+                for index in indices {
+                    matched_paths[*index].insert(path.to_string());
+                }
+            } else if let Some(file_name) = file_name_from_path(path) {
+                if let Some(indices) = mod_lookup.file_name_to_mods.get(&file_name) {
+                    matched_indices.extend(indices.iter().copied());
+                    for index in indices {
+                        match_signals[*index].partial_path_match = true;
+                        matched_paths[*index].insert(path.to_string());
+                    }
+                }
+            }
+        }
+
+        for index in matched_indices {
+            match_signals[index].exact_path_match = true;
+            if error.in_last_context {
+                match_signals[index].crash_context_match = true;
+            }
+        }
+    }
+
     let mut suspects = Vec::new();
 
-    for indexed_mod in indexed_mods {
-        let signals = collect_match_signals(indexed_mod, errors);
-        let candidate = score_candidate(indexed_mod, &signals, active_mods_reliably_known);
+    for (index, indexed_mod) in indexed_mods.iter().enumerate() {
+        let mut signals = match_signals[index].clone();
+        signals.active_match = indexed_mod.active_state == "Active";
+        signals.category_match = indexed_mod
+            .category_hints
+            .iter()
+            .any(|category| error_categories.contains(category));
+        signals.label_hint_match = indexed_mod
+            .label_hints
+            .iter()
+            .any(|category| error_categories.contains(category));
+
+        let candidate = score_candidate(
+            indexed_mod,
+            &signals,
+            active_mods_reliably_known,
+            &matched_paths[index],
+        );
         if candidate.score <= 0 {
             continue;
         }
@@ -895,40 +1161,11 @@ fn rank_suspected_mods(
     suspects
 }
 
-fn collect_match_signals(indexed_mod: &IndexedMod, errors: &[AnalyzedError]) -> MatchSignals {
-    let mut signals = MatchSignals::default();
-
-    for error in errors {
-        if let Some(path) = error.extracted_path.as_deref() {
-            if indexed_mod.path_set.contains(path) {
-                signals.exact_path_match = true;
-                if error.in_last_context {
-                    signals.crash_context_match = true;
-                }
-            } else if find_partial_path_match(indexed_mod, path).is_some() {
-                signals.partial_path_match = true;
-                if error.in_last_context {
-                    signals.crash_context_match = true;
-                }
-            }
-        }
-
-        if indexed_mod.category_hints.contains(&error.category) {
-            signals.category_match = true;
-        }
-        if indexed_mod.label_hints.contains(&error.category) {
-            signals.label_hint_match = true;
-        }
-    }
-
-    signals.active_match = indexed_mod.active_state == "Active";
-    signals
-}
-
 fn score_candidate(
     indexed_mod: &IndexedMod,
     signals: &MatchSignals,
     active_mods_reliably_known: bool,
+    matched_paths_for_mod: &BTreeSet<String>,
 ) -> CandidateScore {
     let mut score = 0i32;
     let mut reasons = Vec::new();
@@ -976,11 +1213,8 @@ fn score_candidate(
     }
 
     if signals.exact_path_match || signals.partial_path_match {
-        for path in &indexed_mod.indexed_paths {
+        for path in matched_paths_for_mod.iter().take(5) {
             matched_paths.insert(path.clone());
-            if matched_paths.len() >= 5 {
-                break;
-            }
         }
     }
 
@@ -1110,10 +1344,8 @@ fn build_overview(
 }
 
 fn parse_active_mods(profile_content: &str) -> Vec<ActiveModEntry> {
-    let Some(re) = compile_regex(
-        r#"active_mods\[\d+\]:\s*"([^"]+)""#,
-        "parse_active_mods",
-    ) else {
+    let Some(re) = ACTIVE_MODS_RE.as_ref() else {
+        crate::dev_log!("[diagnostics] regex compile failed in parse_active_mods");
         return Vec::new();
     };
 
@@ -1222,7 +1454,7 @@ fn scan_installed_mods(
         }
 
         if mode == AnalysisMode::Light {
-            if is_archive == Some(true) {
+            if !path.is_dir() && is_known_mod_file {
                 crate::dev_log!(
                     "[diagnostics] archive deep scan skipped path={} reason=auto_light_mode",
                     path.display()
@@ -1303,11 +1535,15 @@ fn inspect_installed_mod_entry(
     if is_archive {
         inspect_archive_mod_entry(path, started_at, mode)
     } else {
-        inspect_folder_mod_entry(path, started_at)
+        inspect_folder_mod_entry(path, started_at, mode.timeout())
     }
 }
 
-fn inspect_folder_mod_entry(path: &Path, started_at: Instant) -> Result<IndexedMod, String> {
+fn inspect_folder_mod_entry(
+    path: &Path,
+    started_at: Instant,
+    timeout: Duration,
+) -> Result<IndexedMod, String> {
     let mut manifest_summary = ManifestSummary::default();
     let mut manifest_present = false;
     let mut indexed_paths = Vec::new();
@@ -1315,7 +1551,7 @@ fn inspect_folder_mod_entry(path: &Path, started_at: Instant) -> Result<IndexedM
 
     let mut files_seen = 0usize;
     for entry in WalkDir::new(path).follow_links(false).max_depth(ANALYZER_MAX_FOLDER_DEPTH) {
-        if started_at.elapsed() > ANALYZER_SCAN_TIMEOUT {
+        if started_at.elapsed() > timeout {
             break;
         }
         let entry = match entry {
@@ -1372,6 +1608,15 @@ fn inspect_archive_mod_entry(path: &Path, started_at: Instant, mode: AnalysisMod
         );
         return Ok(scan_mods_light_metadata_only(path));
     }
+    let archive_size = fs::metadata(path)
+        .map_err(|error| format!("archive_metadata_failed: {}", error))?
+        .len();
+    if archive_size > ANALYZER_MAX_DEEP_ARCHIVE_BYTES {
+        return Err(format!(
+            "archive size limit exceeded ({} bytes)",
+            archive_size
+        ));
+    }
     let file = File::open(path).map_err(|error| error.to_string())?;
     let mut archive = ZipArchive::new(file).map_err(|error| error.to_string())?;
 
@@ -1380,7 +1625,7 @@ fn inspect_archive_mod_entry(path: &Path, started_at: Instant, mode: AnalysisMod
     let mut indexed_paths = Vec::new();
 
     for index in 0..archive.len().min(ANALYZER_MAX_ARCHIVE_ENTRIES) {
-        if started_at.elapsed() > ANALYZER_SCAN_TIMEOUT {
+        if started_at.elapsed() > mode.timeout() {
             break;
         }
         let mut entry = archive.by_index(index).map_err(|error| error.to_string())?;
@@ -1585,6 +1830,62 @@ fn active_mod_matches_indexed_mod(active_mod: &ActiveModEntry, indexed_mod: &Ind
     false
 }
 
+fn active_mod_matches_lookup(active_mod: &ActiveModEntry, mod_lookup: &ModLookupIndex) -> bool {
+    if active_mod
+        .tokens
+        .iter()
+        .any(|token| mod_lookup.token_lookup.contains(token))
+    {
+        return true;
+    }
+
+    [
+        normalize_alias(&active_mod.display_name),
+        normalize_alias(&active_mod.identifier),
+        normalize_alias(&active_mod.raw),
+    ]
+    .iter()
+    .any(|alias| !alias.is_empty() && mod_lookup.alias_lookup.contains(alias))
+}
+
+fn build_mod_lookup_index(indexed_mods: &[IndexedMod]) -> ModLookupIndex {
+    let mut lookup = ModLookupIndex::default();
+
+    for (index, indexed_mod) in indexed_mods.iter().enumerate() {
+        for path in &indexed_mod.indexed_paths {
+            lookup
+                .exact_paths_to_mods
+                .entry(path.clone())
+                .or_default()
+                .push(index);
+        }
+        for file_name in &indexed_mod.file_names {
+            lookup
+                .file_name_to_mods
+                .entry(file_name.clone())
+                .or_default()
+                .push(index);
+        }
+        lookup.token_lookup.extend(indexed_mod.tokens.iter().cloned());
+        for alias in [
+            normalize_alias(&indexed_mod.name),
+            normalize_alias(indexed_mod.package_name.as_deref().unwrap_or_default()),
+            normalize_alias(
+                Path::new(&indexed_mod.file_path)
+                    .file_stem()
+                    .and_then(|value| value.to_str())
+                    .unwrap_or_default(),
+            ),
+        ] {
+            if !alias.is_empty() {
+                lookup.alias_lookup.insert(alias);
+            }
+        }
+    }
+
+    lookup
+}
+
 fn parse_manifest_text(text: &str) -> ManifestSummary {
     let display_name = capture_manifest_value(text, "display_name")
         .or_else(|| capture_manifest_value(text, "name"))
@@ -1592,10 +1893,8 @@ fn parse_manifest_text(text: &str) -> ManifestSummary {
     let package_name = capture_manifest_value(text, "package_name")
         .or_else(|| capture_manifest_value(text, "name"));
 
-    let Some(compat_re) = compile_regex(
-        r#"compatible_versions\[\d+\]:\s*"([^"]+)""#,
-        "parse_manifest_text.compatible_versions",
-    ) else {
+    let Some(compat_re) = COMPATIBLE_VERSIONS_RE.as_ref() else {
+        crate::dev_log!("[diagnostics] regex compile failed in parse_manifest_text.compatible_versions");
         return ManifestSummary {
             display_name,
             package_name,
@@ -1629,16 +1928,12 @@ fn capture_manifest_value(text: &str, key: &str) -> Option<String> {
 
 fn extract_custom_save_references(save_content: &str, active_mods: &[ActiveModEntry]) -> Vec<String> {
     let mut references = BTreeSet::new();
-    let Some(data_path_re) = compile_regex(
-        r#"data_path:\s*"([^"]+)""#,
-        "extract_custom_save_references.data_path",
-    ) else {
+    let Some(data_path_re) = DATA_PATH_RE.as_ref() else {
+        crate::dev_log!("[diagnostics] regex compile failed in extract_custom_save_references.data_path");
         return Vec::new();
     };
-    let Some(asset_re) = compile_regex(
-        r#"([A-Za-z0-9_/\.-]+\.(?:sii|sui|pmd|pmg|mat|tobj|dds|ogg|bank|unit))"#,
-        "extract_custom_save_references.asset_re",
-    ) else {
+    let Some(asset_re) = ASSET_RE.as_ref() else {
+        crate::dev_log!("[diagnostics] regex compile failed in extract_custom_save_references.asset_re");
         return Vec::new();
     };
 
@@ -1732,22 +2027,11 @@ fn is_relevant_crash_line(line: &str) -> bool {
 }
 
 fn extract_path_from_line(line: &str) -> Option<String> {
-    let patterns = [
-        compile_regex(
-            r#"([A-Za-z]:\\[^"\r\n]+)"#,
-            "extract_path_from_line.windows_path",
-        ),
-        compile_regex(
-            r#"(/(?:def|vehicle|model|material|map|ui|sound|prefab)[^"\s]*)"#,
-            "extract_path_from_line.asset_prefix",
-        ),
-        compile_regex(
-            r#"([A-Za-z0-9_/\.-]+\.(?:sii|sui|pmd|pmg|mat|tobj|dds|ogg|bank|unit))"#,
-            "extract_path_from_line.asset_ext",
-        ),
-    ];
-
-    for pattern in patterns {
+    for pattern in [
+        WINDOWS_PATH_RE.as_ref(),
+        ASSET_PREFIX_RE.as_ref(),
+        ASSET_EXT_RE.as_ref(),
+    ] {
         let Some(pattern) = pattern else {
             continue;
         };
@@ -1957,32 +2241,13 @@ fn classify_label_hints(label: &str) -> BTreeSet<String> {
     hints
 }
 
-fn path_matches_any_mod(path: &str, indexed_mods: &[IndexedMod]) -> bool {
-    indexed_mods.iter().any(|indexed_mod| {
-        indexed_mod.path_set.contains(path) || find_partial_path_match(indexed_mod, path).is_some()
-    })
-}
-
-fn find_partial_path_match(indexed_mod: &IndexedMod, path: &str) -> Option<String> {
-    let mut best_match: Option<(usize, String)> = None;
-    let target_file_name = file_name_from_path(path);
-
-    for indexed_path in &indexed_mod.indexed_paths {
-        let overlap = trailing_segment_overlap(indexed_path, path);
-        let same_file_name = match (file_name_from_path(indexed_path), target_file_name.clone()) {
-            (Some(left), Some(right)) => left == right,
-            _ => false,
-        };
-
-        if overlap >= 2 || (overlap == 1 && same_file_name) {
-            match best_match.as_ref() {
-                Some((current_overlap, _)) if *current_overlap >= overlap => {}
-                _ => best_match = Some((overlap, indexed_path.clone())),
-            }
-        }
+fn path_matches_any_mod(path: &str, mod_lookup: &ModLookupIndex) -> bool {
+    if mod_lookup.exact_paths_to_mods.contains_key(path) {
+        return true;
     }
-
-    best_match.map(|(_, path)| path)
+    file_name_from_path(path)
+        .map(|file_name| mod_lookup.file_name_to_mods.contains_key(&file_name))
+        .unwrap_or(false)
 }
 
 fn normalize_indexed_path(path: &str) -> String {
