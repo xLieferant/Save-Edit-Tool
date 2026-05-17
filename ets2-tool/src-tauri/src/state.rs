@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Arc, Condvar, Mutex, RwLock};
 
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
@@ -13,9 +13,23 @@ use crate::models::save_game_data::SaveGameData;
 use crate::models::trailers::ParsedTrailer;
 use crate::models::trucks::ParsedTruck;
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct DecryptCache {
-    pub files: Mutex<HashMap<PathBuf, String>>,
+    pub files: Arc<Mutex<HashMap<PathBuf, String>>>,
+    pub inflight: Arc<Mutex<HashMap<PathBuf, Arc<InFlightDecrypt>>>>,
+}
+
+#[derive(Default)]
+pub struct InFlightDecrypt {
+    pub state: Mutex<InFlightState>,
+    pub condvar: Condvar,
+}
+
+#[derive(Clone, Default)]
+pub enum InFlightState {
+    #[default]
+    Pending,
+    Ready(Result<String, String>),
 }
 
 impl DecryptCache {

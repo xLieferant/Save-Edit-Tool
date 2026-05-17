@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <title data-translate="modals.mod_conflict_diagnostics.title">Mod Conflict Analyzer</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="mode-editor diagnostics-page-body">
+    <div class="app-shell diagnostics-page-shell">
+      <section id="modalConflictDiagnostics" class="diagnostics-page-frame panel-surface">
+        <div class="diagnostics-page-topbar">
+          <button
+            id="modalConflictDiagnosticsClose"
+            class="nav-action diagnostics-page-back"
+            type="button"
+            data-translate="modals.mod_conflict_diagnostics.actions.back"
+          >
+            Back
+          </button>
+          <div class="diagnostics-page-actions">
+            <button
+              id="diagnosticsRefreshBtn"
+              class="nav-action"
+              type="button"
+              data-translate="modals.mod_conflict_diagnostics.actions.refresh"
+            >
+              Refresh Analysis
+            </button>
+            <button
+              id="diagnosticsExportReportBtn"
+              class="apply"
+              type="button"
+              data-translate="modals.mod_conflict_diagnostics.actions.export_report"
+            >
+              Export Report
+            </button>
+          </div>
+        </div>
+
+        <div class="detail-modal-head">
+          <div>
+            <span class="modal-kicker" data-translate="modals.mod_conflict_diagnostics.kicker">Crash diagnostics</span>
+            <h2 data-translate="modals.mod_conflict_diagnostics.title">Mod Conflict Analyzer</h2>
+            <p class="modal-description" data-translate="modals.mod_conflict_diagnostics.description">
+              Analyze crash logs, broken save references and suspicious mods without pretending to prove every culprit.
+            </p>
+          </div>
+          <div class="diagnostics-head-aside">
+            <div id="modalConflictDiagnosticsConfidence" class="modal-status-pill" data-state="neutral">-</div>
+            <div id="modalConflictDiagnosticsHealth" class="modal-status-pill" data-state="neutral">-</div>
+          </div>
+        </div>
+
+        <div id="modalConflictDiagnosticsLoading" class="modal-empty-state" hidden>
+          <strong data-translate="modals.mod_conflict_diagnostics.loading_title">Analyzing logs and local mods</strong>
+          <p data-translate="modals.mod_conflict_diagnostics.loading_body">Reading game.log.txt, game.crash.txt and indexing local mod files.</p>
+        </div>
+
+        <div id="modalConflictDiagnosticsError" class="modal-empty-state modal-empty-state--error" hidden>
+          <strong data-translate="modals.mod_conflict_diagnostics.error_title">Analysis failed</strong>
+          <p id="modalConflictDiagnosticsErrorText"></p>
+        </div>
+
+        <div id="modalConflictDiagnosticsEmpty" class="modal-empty-state" hidden>
+          <strong data-translate="modals.mod_conflict_diagnostics.empty_title">No diagnostic data found</strong>
+          <p data-translate="modals.mod_conflict_diagnostics.empty_body">The analyzer did not find enough evidence to build a useful report.</p>
+        </div>
+
+        <div id="modalConflictDiagnosticsContent" class="diagnostics-modal-scroll" hidden>
+          <section class="detail-hero-card diagnostics-hero-card">
+            <div class="diagnostics-hero-copy">
+              <span class="detail-card-label" data-translate="modals.mod_conflict_diagnostics.overall_label">Overall analysis</span>
+              <h3 id="modalConflictDiagnosticsHeadline" class="detail-hero-title">-</h3>
+              <p id="modalConflictDiagnosticsSummary" class="detail-hero-copy">-</p>
+              <p id="modalConflictDiagnosticsGuidance" class="diagnostics-guidance-copy">-</p>
+            </div>
+          </section>
+
+          <div class="diagnostics-grid diagnostics-grid--top">
+            <section class="detail-card diagnostics-panel">
+              <div class="diagnostics-panel-head">
+                <span class="detail-card-label" data-translate="modals.mod_conflict_diagnostics.sources.title">Data Sources</span>
+              </div>
+              <div id="diagnosticsSourcesGrid" class="diagnostics-context-grid"></div>
+              <div id="diagnosticsContextGrid" class="diagnostics-context-grid diagnostics-context-grid--stack"></div>
+            </section>
+
+            <section class="detail-card diagnostics-panel">
+              <div class="diagnostics-panel-head">
+                <span class="detail-card-label" data-translate="modals.mod_conflict_diagnostics.crash_summary.title">Crash Summary</span>
+              </div>
+              <strong id="diagnosticsCrashPrimary" class="diagnostics-inline-status">-</strong>
+              <p id="diagnosticsCrashSummary" class="diagnostics-panel-copy">-</p>
+              <div id="diagnosticsCrashCounts" class="diagnostics-chip-row"></div>
+              <div id="diagnosticsCrashContext" class="diagnostics-list diagnostics-list--compact"></div>
+            </section>
+          </div>
+
+          <section class="detail-card diagnostics-panel diagnostics-panel--wide">
+            <div class="diagnostics-panel-head">
+              <span class="detail-card-label" data-translate="modals.mod_conflict_diagnostics.suspected_mods.title">Suspected Mods</span>
+            </div>
+            <p id="diagnosticsSuspectedState" class="diagnostics-panel-copy">-</p>
+            <div id="diagnosticsSuspectedMods" class="diagnostics-list"></div>
+          </section>
+
+          <section class="detail-card diagnostics-panel diagnostics-panel--wide">
+            <div class="diagnostics-panel-head">
+              <span class="detail-card-label" data-translate="modals.mod_conflict_diagnostics.missing_references.title">Missing / Removed References</span>
+            </div>
+            <div id="diagnosticsMissingReferences" class="diagnostics-list"></div>
+          </section>
+
+          <section class="detail-card diagnostics-panel diagnostics-panel--wide">
+            <div class="diagnostics-panel-head diagnostics-panel-head--wrap">
+              <span class="detail-card-label" data-translate="modals.mod_conflict_diagnostics.errors.title">Error List</span>
+              <label class="diagnostics-filter">
+                <span data-translate="modals.mod_conflict_diagnostics.errors.filter_label">Severity</span>
+                <select id="diagnosticsSeverityFilter"></select>
+              </label>
+            </div>
+            <div id="diagnosticsErrorsList" class="diagnostics-list"></div>
+          </section>
+
+          <div class="diagnostics-grid diagnostics-grid--bottom">
+            <section class="detail-card diagnostics-panel diagnostics-panel--wide">
+              <div class="diagnostics-panel-head">
+                <span class="detail-card-label" data-translate="modals.mod_conflict_diagnostics.exports.title">Export / Logs</span>
+              </div>
+              <div class="diagnostics-hero-actions diagnostics-hero-actions--page diagnostics-hero-actions--wrap">
+                <button id="diagnosticsExportErrorsBtn" class="apply" type="button" data-translate="modals.mod_conflict_diagnostics.actions.export_errors">Export errors.txt</button>
+                <button id="diagnosticsExportCrashBtn" type="button" data-translate="modals.mod_conflict_diagnostics.actions.export_crash">Export crash-report.txt</button>
+                <button id="diagnosticsCopySummaryBtn" type="button" data-translate="modals.mod_conflict_diagnostics.actions.copy_summary">Copy summary</button>
+                <button id="diagnosticsOpenLogFolderBtn" type="button" data-translate="modals.mod_conflict_diagnostics.actions.open_logs">Open log folder</button>
+              </div>
+              <div id="diagnosticsLogsInfo" class="diagnostics-list diagnostics-list--compact"></div>
+            </section>
+
+            <section class="detail-card diagnostics-panel">
+              <div class="diagnostics-panel-head">
+                <span class="detail-card-label" data-translate="modals.mod_conflict_diagnostics.limitations.title">Limitations</span>
+              </div>
+              <div id="diagnosticsLimitations" class="diagnostics-list diagnostics-list--compact"></div>
+            </section>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script type="module">
+      const tauri = window.__TAURI__;
+      const invokeRaw = tauri?.core?.invoke;
+
+      window.invoke = async (command, args = {}) => {
+        if (!invokeRaw) {
+          throw new Error("Tauri API not available");
+        }
+        return invokeRaw(command, args);
+      };
+
+      async function t(key, params = {}) {
+        if (!invokeRaw) {
+          let text = String(key ?? "");
+          for (const [name, value] of Object.entries(params)) {
+            text = text.replaceAll(`{${name}}`, String(value));
+          }
+          return text;
+        }
+
+        const translated = await invokeRaw("translate_command", { key });
+        let text = String(translated ?? key);
+        for (const [name, value] of Object.entries(params)) {
+          text = text.replaceAll(`{${name}}`, String(value));
+        }
+        return text;
+      }
+
+      async function translateUi() {
+        const textNodes = document.querySelectorAll("[data-translate]");
+        for (const element of textNodes) {
+          const key = element.getAttribute("data-translate");
+          element.textContent = await t(key);
+        }
+      }
+
+      window.t = t;
+      window.translateUI = translateUi;
+      window.logUserAction = async function (action, stage = "start") {
+        if (!invokeRaw) return;
+        try {
+          await invokeRaw("log_user_action", { action, stage });
+        } catch (error) {
+          console.warn("[mod-conflict-analyzer] log_user_action failed", error);
+        }
+      };
+
+      window.showToast = async function (messageOrKey, options = {}, type = "info") {
+        const resolvedOptions = typeof options === "string" ? {} : options;
+        const resolvedType = typeof options === "string" ? options : type;
+        const message = await t(messageOrKey, resolvedOptions);
+        const toast = document.createElement("div");
+        toast.className = `toast toast-${resolvedType}`;
+        toast.innerHTML = `<span class="toast-icon">${resolvedType === "success" ? "OK" : resolvedType === "error" ? "ER" : resolvedType === "warning" ? "!" : "i"}</span><span class="toast-text"></span>`;
+        toast.querySelector(".toast-text").textContent = message;
+        document.body.appendChild(toast);
+        requestAnimationFrame(() => toast.classList.add("show"));
+        setTimeout(() => {
+          toast.classList.remove("show");
+          setTimeout(() => toast.remove(), 300);
+        }, 4500);
+      };
+
+      const savedTheme = localStorage.getItem("theme") || "neon";
+      document.body.classList.remove("theme-dark", "theme-light", "theme-neon");
+      document.body.classList.add(`theme-${savedTheme}`);
+
+      const saveEditorPath = "/pages/save-editor/index.html";
+
+      async function navigateBackToSaveEditor() {
+        if (invokeRaw) {
+          try {
+            await invokeRaw("hub_set_mode", { mode: "editor" });
+          } catch (error) {
+            console.warn("[mod-conflict-analyzer] hub_set_mode failed", error);
+          }
+        }
+        window.location.href = saveEditorPath;
+      }
+
+      await translateUi();
+      document.title = await t("modals.mod_conflict_diagnostics.title");
+
+      const { openModConflictDiagnosticsModal } = await import("/app.js");
+      await openModConflictDiagnosticsModal({
+        openSurface: () => {},
+        closeSurface: () => {},
+        allowBackdropClose: false,
+        onClose: navigateBackToSaveEditor,
+      });
+    </script>
+  </body>
+</html>

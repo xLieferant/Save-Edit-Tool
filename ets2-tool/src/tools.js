@@ -5,6 +5,9 @@ import {
   openModalMulti,
   openCloneProfileModal,
   openCurrentTruckModal,
+  openLevelSystemModal,
+  openModConflictDiagnosticsPage,
+  openModProfileManagerPage,
   openProfileSharingPage,
 } from "./app.js";
 
@@ -284,6 +287,7 @@ export const tools = {
       title: "tools.profile.change_xp.title",
       desc: "tools.profile.change_xp.desc",
       img: "images/xp.jpg",
+      hidden: true,
       action: async () => {
         try {
           const newValue = await openModalNumber(
@@ -485,9 +489,62 @@ export const tools = {
         }
       },
     },
+    {
+      title: "tools.profile.level_system.title",
+      desc: "tools.profile.level_system.desc",
+      img: "images/xp.jpg",
+      action: async () => {
+        await openLevelSystemModal();
+      },
+    },
+    {
+      title: "tools.profile.mod_conflict_diagnostics.title",
+      desc: "tools.profile.mod_conflict_diagnostics.desc",
+      img: "images/dev.jpg",
+      action: async () => {
+        openModConflictDiagnosticsPage();
+      },
+      disabled: true,
+    },
+    {
+      title: "tools.profile.mod_profile_manager.title",
+      desc: "tools.profile.mod_profile_manager.desc",
+      img: "images/moveMods.png",
+      action: async () => {
+        openModProfileManagerPage();
+      },
+      disabled: true,
+    },
   ],
 
   settings: [
+    {
+      title: "editor.recovery.nav_button",
+      desc: "editor.recovery.entry_summary",
+      img: "images/dev.jpg",
+      action: async () => {
+        await window.openRecoveryCenterModal?.();
+      },
+      disabled: false,
+    },
+    {
+      title: "editor.reset.title",
+      desc: "editor.reset.summary",
+      img: "images/money.jpg",
+      action: async () => {
+        await window.openSafeValueResetModal?.();
+      },
+      disabled: false,
+    },
+    {
+      title: "tools.settings.user_logs.title",
+      desc: "tools.settings.user_logs.desc",
+      img: "images/dev.jpg",
+      action: async () => {
+        await window.openUserLogsModal?.();
+      },
+      disabled: false,
+    },
     {
       title: "tools.settings.color_theme.title",
       desc: "tools.settings.color_theme.desc",

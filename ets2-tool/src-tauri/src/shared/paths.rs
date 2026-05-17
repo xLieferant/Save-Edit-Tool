@@ -24,6 +24,18 @@ pub fn get_base_path(game: &str) -> Option<PathBuf> {
     }
 }
 
+pub fn game_log_path(game: &str) -> Option<PathBuf> {
+    get_base_path(game).map(|base_path| base_path.join("game.log.txt"))
+}
+
+pub fn game_crash_path(game: &str) -> Option<PathBuf> {
+    get_base_path(game).map(|base_path| base_path.join("game.crash.txt"))
+}
+
+pub fn mod_directory_path(game: &str) -> Option<PathBuf> {
+    get_base_path(game).map(|base_path| base_path.join("mod"))
+}
+
 pub fn autosave_path(profile_path: &str) -> PathBuf {
     Path::new(profile_path)
         .join("save")
@@ -50,7 +62,10 @@ pub fn ets2_base_config_path() -> Option<PathBuf> {
 pub fn game_sii_from_save(save_path: &Path) -> PathBuf {
     if save_path.is_file() {
         // info.sii → Parent nehmen
-        save_path.parent().unwrap().join("game.sii")
+        return save_path
+            .parent()
+            .map(|parent| parent.join("game.sii"))
+            .unwrap_or_else(|| save_path.with_file_name("game.sii"));
     } else {
         save_path.join("game.sii")
     }
@@ -58,7 +73,10 @@ pub fn game_sii_from_save(save_path: &Path) -> PathBuf {
 
 pub fn info_sii_from_save(save_path: &Path) -> PathBuf {
     if save_path.is_file() {
-        save_path.parent().unwrap().join("info.sii")
+        return save_path
+            .parent()
+            .map(|parent| parent.join("info.sii"))
+            .unwrap_or_else(|| save_path.with_file_name("info.sii"));
     } else {
         save_path.join("info.sii")
     }

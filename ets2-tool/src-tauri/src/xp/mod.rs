@@ -32,33 +32,23 @@ mod tests {
 
     #[test]
     fn level_progression_boundaries() {
-        assert_eq!(total_xp_to_reach_level(1), 0);
-        assert_eq!(total_xp_to_reach_level(2), 1500);
-        assert_eq!(xp_required_for_level(1), 1500);
-        assert_eq!(xp_required_for_level(9), 5500);
-        assert_eq!(xp_required_for_level(10), 2500);
-        assert_eq!(xp_required_for_level(50), 7500);
+        assert_eq!(total_xp_to_reach_level(0), 0);
+        assert_eq!(total_xp_to_reach_level(1), 200);
+        assert_eq!(total_xp_to_reach_level(25), 68200);
+        assert_eq!(xp_required_for_level(0), 200);
+        assert_eq!(xp_required_for_level(25), 5900);
+        assert_eq!(xp_required_for_level(29), 6800);
+        assert_eq!(xp_required_for_level(256), 0);
     }
 
     #[test]
-    fn transition_level_9_to_10() {
-        let before = total_xp_to_reach_level(10) - 1;
-        let after = total_xp_to_reach_level(10);
+    fn transition_level_24_to_25() {
+        let before = total_xp_to_reach_level(25) - 1;
+        let after = total_xp_to_reach_level(25);
         let progress_before = calculate_level(before);
         let progress_after = calculate_level(after);
-        assert_eq!(progress_before.level, 9);
-        assert_eq!(progress_after.level, 10);
-        assert_eq!(progress_after.xp_into_level, 0);
-    }
-
-    #[test]
-    fn transition_level_49_to_50() {
-        let before = total_xp_to_reach_level(50) - 1;
-        let after = total_xp_to_reach_level(50);
-        let progress_before = calculate_level(before);
-        let progress_after = calculate_level(after);
-        assert_eq!(progress_before.level, 49);
-        assert_eq!(progress_after.level, 50);
+        assert_eq!(progress_before.level, 24);
+        assert_eq!(progress_after.level, 25);
         assert_eq!(progress_after.xp_into_level, 0);
     }
 
@@ -71,6 +61,19 @@ mod tests {
         assert_eq!(progress_before.level, 99);
         assert_eq!(progress_after.level, 100);
         assert_eq!(progress_after.xp_into_level, 0);
+    }
+
+    #[test]
+    fn max_level_caps_progress() {
+        let before = total_xp_to_reach_level(256) - 1;
+        let after = total_xp_to_reach_level(256);
+        let progress_before = calculate_level(before);
+        let progress_after = calculate_level(after);
+        assert_eq!(progress_before.level, 255);
+        assert_eq!(progress_after.level, 256);
+        assert_eq!(progress_after.xp_into_level, 0);
         assert_eq!(progress_after.xp_needed_for_next_level, 0);
+        assert_eq!(progress_after.current_xp, total_xp_to_reach_level(256));
+        assert!(progress_before.progress_percent > 0.0);
     }
 }

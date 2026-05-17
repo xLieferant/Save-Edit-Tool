@@ -1,0 +1,10 @@
+{
+  "loading_profile": "Loading profile...",
+  "loading_save": "Loading save...",
+  "profile_loaded": "Profile loaded. Please select a save.",
+  "save_loaded": "Save loaded successfully.",
+  "profile_error": "Error loading profile.",
+  "scanning_profiles": "Scanning profiles...",
+  "profiles_found": "{count} profiles found",
+  "scan_failed": "Scan failed."
+}

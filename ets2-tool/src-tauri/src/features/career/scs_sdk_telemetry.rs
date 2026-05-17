@@ -215,20 +215,28 @@ mod platform {
     }
 
     pub fn start_terminal_telemetry_loop() {
+        crate::dev_log!("[trace] START telemetry_terminal_startup");
         if let Err(error) = thread::Builder::new()
             .name("scs-sdk-telemetry-terminal".to_string())
             .spawn(telemetry_loop)
         {
             eprintln!("Failed to start telemetry thread: {error}");
+            crate::dev_log!("[trace] ERROR telemetry_terminal_startup: {}", error);
+        } else {
+            crate::dev_log!("[trace] END telemetry_terminal_startup duration_ms=0");
         }
     }
 
     pub fn start_frontend_telemetry_bridge(app: AppHandle, runtime: Arc<CareerRuntime>) {
+        crate::dev_log!("[trace] START telemetry_bridge_startup_thread");
         if let Err(error) = thread::Builder::new()
             .name("scs-sdk-telemetry-frontend".to_string())
             .spawn(move || frontend_telemetry_loop(app, runtime))
         {
             eprintln!("Failed to start telemetry frontend thread: {error}");
+            crate::dev_log!("[trace] ERROR telemetry_bridge_startup_thread: {}", error);
+        } else {
+            crate::dev_log!("[trace] END telemetry_bridge_startup_thread duration_ms=0");
         }
     }
 

@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <title data-translate="modals.mod_profile_manager.title">Mod Profile Manager</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="mode-editor mod-profile-page-body">
+    <div class="app-shell mod-profile-page-shell">
+      <section id="modProfileManagerPage" class="mod-profile-page-frame panel-surface">
+        <div class="mod-profile-page-topbar">
+          <button
+            id="modProfileManagerBack"
+            class="nav-action mod-profile-page-back"
+            type="button"
+            data-translate="modals.mod_profile_manager.actions.back"
+          >
+            Back
+          </button>
+          <div class="mod-profile-page-actions">
+            <button id="modProfileScanBtn" class="nav-action" type="button" data-translate="modals.mod_profile_manager.actions.scan">
+              Scan Mods
+            </button>
+            <button id="modProfileCreatePresetBtn" class="nav-action" type="button" data-translate="modals.mod_profile_manager.actions.create_preset">
+              Create Preset
+            </button>
+            <button id="modProfileImportPresetBtn" class="nav-action" type="button" data-translate="modals.mod_profile_manager.actions.import_preset">
+              Import Preset
+            </button>
+            <button id="modProfileExportPresetBtn" class="apply" type="button" data-translate="modals.mod_profile_manager.actions.export_preset">
+              Export Preset
+            </button>
+          </div>
+        </div>
+
+        <div class="detail-modal-head">
+          <div>
+            <span class="modal-kicker" data-translate="modals.mod_profile_manager.kicker">Mod setup workflow</span>
+            <h2 data-translate="modals.mod_profile_manager.title">Mod Profile Manager</h2>
+            <p class="modal-description" data-translate="modals.mod_profile_manager.description">
+              Create, compare and restore mod setups for ETS2/ATS.
+            </p>
+          </div>
+          <div class="diagnostics-head-aside">
+            <div id="modProfileManagerStatusPill" class="modal-status-pill" data-state="neutral">-</div>
+            <div id="modProfileManagerGamePill" class="modal-status-pill" data-state="neutral">-</div>
+          </div>
+        </div>
+
+        <div id="modProfileManagerLoading" class="modal-empty-state" hidden>
+          <strong data-translate="modals.mod_profile_manager.loading_title">Scanning local mods and workshop folders</strong>
+          <p data-translate="modals.mod_profile_manager.loading_body">Reading local mod directories, Steam libraries and saved presets.</p>
+        </div>
+
+        <div id="modProfileManagerError" class="modal-empty-state modal-empty-state--error" hidden>
+          <strong data-translate="modals.mod_profile_manager.error_title">Mod scan failed</strong>
+          <p id="modProfileManagerErrorText"></p>
+        </div>
+
+        <div id="modProfileManagerEmpty" class="modal-empty-state" hidden>
+          <strong data-translate="modals.mod_profile_manager.empty_title">No mod data found</strong>
+          <p data-translate="modals.mod_profile_manager.empty_body">The manager did not find local mods or saved presets yet.</p>
+        </div>
+
+        <div id="modProfileManagerContent" class="mod-profile-scroll" hidden>
+          <section class="mod-profile-summary-grid" id="modProfileSummaryGrid"></section>
+
+          <section class="detail-card mod-profile-section">
+            <div class="mod-profile-section-head">
+              <span class="detail-card-label" data-translate="modals.mod_profile_manager.sections.sources">Source Summary</span>
+            </div>
+            <div id="modProfileSourcesList" class="mod-profile-source-list"></div>
+            <div class="mod-profile-source-actions">
+              <button id="manualWorkshopSelectBtn" class="secondary-action" type="button" data-translate="modals.mod_profile_manager.actions.select_workshop_folder">
+                Select Workshop Folder
+              </button>
+              <button id="manualWorkshopClearBtn" class="secondary-action" type="button" data-translate="modals.mod_profile_manager.actions.clear_workshop_folder">
+                Clear Manual Folder
+              </button>
+            </div>
+          </section>
+
+          <section class="detail-card mod-profile-section">
+            <div class="mod-profile-toolbar">
+              <label class="mod-profile-filter">
+                <span data-translate="modals.mod_profile_manager.filters.game">Game</span>
+                <select id="modProfileGameFilter"></select>
+              </label>
+              <label class="mod-profile-filter">
+                <span data-translate="modals.mod_profile_manager.filters.source">Source</span>
+                <select id="modProfileSourceFilter"></select>
+              </label>
+              <label class="mod-profile-filter">
+                <span data-translate="modals.mod_profile_manager.filters.category">Category</span>
+                <select id="modProfileCategoryFilter"></select>
+              </label>
+              <label class="mod-profile-filter mod-profile-filter--grow">
+                <span data-translate="modals.mod_profile_manager.filters.search">Search</span>
+                <input id="modProfileSearchInput" type="search" data-translate-placeholder="modals.mod_profile_manager.filters.search_placeholder" placeholder="Search mods" />
+              </label>
+            </div>
+          </section>
+
+          <section class="detail-card mod-profile-section mod-profile-section--wide">
+            <div class="mod-profile-section-head">
+              <span class="detail-card-label" data-translate="modals.mod_profile_manager.sections.mods">Mod List</span>
+            </div>
+            <div id="modProfileModList" class="mod-profile-list"></div>
+          </section>
+
+          <section id="modProfilePresetComposer" class="detail-card mod-profile-section mod-profile-section--wide" hidden>
+            <div class="mod-profile-section-head">
+              <span class="detail-card-label" data-translate="modals.mod_profile_manager.sections.composer">Save current setup as preset</span>
+            </div>
+            <div class="mod-profile-composer-grid">
+              <label class="mod-profile-field">
+                <span data-translate="modals.mod_profile_manager.fields.preset_name">Preset Name</span>
+                <input id="modProfilePresetNameInput" type="text" data-translate-placeholder="modals.mod_profile_manager.fields.preset_name_placeholder" placeholder="Preset name" />
+              </label>
+              <label class="mod-profile-field">
+                <span data-translate="modals.mod_profile_manager.fields.preset_label">Preset Label</span>
+                <select id="modProfilePresetLabelSelect"></select>
+              </label>
+              <label class="mod-profile-field mod-profile-field--wide">
+                <span data-translate="modals.mod_profile_manager.fields.notes">Notes</span>
+                <textarea id="modProfilePresetNotesInput" rows="4" data-translate-placeholder="modals.mod_profile_manager.fields.notes_placeholder" placeholder="Optional notes"></textarea>
+              </label>
+            </div>
+            <p id="modProfilePresetHint" class="mod-profile-hint"></p>
+            <div class="mod-profile-composer-actions">
+              <button id="modProfilePresetSaveBtn" class="apply" type="button" data-translate="modals.mod_profile_manager.actions.save_preset">
+                Save Preset
+              </button>
+              <button id="modProfilePresetCancelBtn" type="button" data-translate="modals.mod_profile_manager.actions.cancel">
+                Cancel
+              </button>
+            </div>
+          </section>
+
+          <section class="detail-card mod-profile-section mod-profile-section--wide">
+            <div class="mod-profile-section-head">
+              <span class="detail-card-label" data-translate="modals.mod_profile_manager.sections.presets">Presets</span>
+            </div>
+            <div id="modProfilePresetList" class="mod-profile-list"></div>
+          </section>
+
+          <section class="detail-card mod-profile-section mod-profile-section--wide">
+            <div class="mod-profile-section-head">
+              <span class="detail-card-label" data-translate="modals.mod_profile_manager.sections.compare">Compare View</span>
+            </div>
+            <p id="modProfileCompareSummary" class="mod-profile-hint"></p>
+            <div id="modProfileCompareContent" class="mod-profile-compare-grid"></div>
+          </section>
+
+          <section class="detail-card mod-profile-section">
+            <div class="mod-profile-section-head">
+              <span class="detail-card-label" data-translate="modals.mod_profile_manager.sections.actions">Actions</span>
+            </div>
+            <div class="mod-profile-page-actions mod-profile-page-actions--stack">
+              <button id="saveCurrentPresetBtn" class="apply" type="button" data-translate="modals.mod_profile_manager.actions.save_current_setup">
+                Save current setup as preset
+              </button>
+              <button id="copyWorkshopLinksBtn" type="button" data-translate="modals.mod_profile_manager.actions.copy_workshop_links">
+                Copy Workshop Links
+              </button>
+              <button id="openWorkshopFolderBtn" type="button" data-translate="modals.mod_profile_manager.actions.open_workshop_folder">
+                Open Workshop Folder
+              </button>
+              <button id="openLocalModFolderBtn" type="button" data-translate="modals.mod_profile_manager.actions.open_local_mod_folder">
+                Open Local Mod Folder
+              </button>
+            </div>
+            <p class="mod-profile-hint" data-translate="modals.mod_profile_manager.content.restore_not_implemented">
+              Automatic activation is not implemented yet for this profile format.
+            </p>
+          </section>
+        </div>
+      </section>
+    </div>
+
+    <script type="module">
+      const tauri = window.__TAURI__;
+      const invokeRaw = tauri?.core?.invoke;
+
+      window.invoke = async (command, args = {}) => {
+        if (!invokeRaw) {
+          throw new Error("Tauri API not available");
+        }
+        return invokeRaw(command, args);
+      };
+
+      async function t(key, params = {}) {
+        if (!invokeRaw) {
+          let text = String(key ?? "");
+          for (const [name, value] of Object.entries(params)) {
+            text = text.replaceAll(`{${name}}`, String(value));
+          }
+          return text;
+        }
+
+        const translated = await invokeRaw("translate_command", { key });
+        let text = String(translated ?? key);
+        for (const [name, value] of Object.entries(params)) {
+          text = text.replaceAll(`{${name}}`, String(value));
+        }
+        return text;
+      }
+
+      async function translateUi() {
+        for (const element of document.querySelectorAll("[data-translate]")) {
+          const key = element.getAttribute("data-translate");
+          element.textContent = await t(key);
+        }
+        for (const element of document.querySelectorAll("[data-translate-placeholder]")) {
+          const key = element.getAttribute("data-translate-placeholder");
+          element.setAttribute("placeholder", await t(key));
+        }
+      }
+
+      window.t = t;
+      window.translateUI = translateUi;
+      window.logUserAction = async function (action, stage = "start") {
+        if (!invokeRaw) return;
+        try {
+          await invokeRaw("log_user_action", { action, stage });
+        } catch (error) {
+          console.warn("[mod-profile-manager] log_user_action failed", error);
+        }
+      };
+
+      window.showToast = async function (messageOrKey, options = {}, type = "info") {
+        const resolvedOptions = typeof options === "string" ? {} : options;
+        const resolvedType = typeof options === "string" ? options : type;
+        const message = await t(messageOrKey, resolvedOptions);
+        const toast = document.createElement("div");
+        toast.className = `toast toast-${resolvedType}`;
+        toast.innerHTML = `<span class="toast-icon">${resolvedType === "success" ? "OK" : resolvedType === "error" ? "ER" : resolvedType === "warning" ? "!" : "i"}</span><span class="toast-text"></span>`;
+        toast.querySelector(".toast-text").textContent = message;
+        document.body.appendChild(toast);
+        requestAnimationFrame(() => toast.classList.add("show"));
+        setTimeout(() => {
+          toast.classList.remove("show");
+          setTimeout(() => toast.remove(), 300);
+        }, 4500);
+      };
+
+      const savedTheme = localStorage.getItem("theme") || "neon";
+      document.body.classList.remove("theme-dark", "theme-light", "theme-neon");
+      document.body.classList.add(`theme-${savedTheme}`);
+
+      const saveEditorPath = "/pages/save-editor/index.html";
+
+      async function navigateBackToSaveEditor() {
+        if (invokeRaw) {
+          try {
+            await invokeRaw("hub_set_mode", { mode: "editor" });
+          } catch (error) {
+            console.warn("[mod-profile-manager] hub_set_mode failed", error);
+          }
+        }
+        window.location.href = saveEditorPath;
+      }
+
+      const elements = {
+        statusPill: document.getElementById("modProfileManagerStatusPill"),
+        gamePill: document.getElementById("modProfileManagerGamePill"),
+        loading: document.getElementById("modProfileManagerLoading"),
+        error: document.getElementById("modProfileManagerError"),
+        errorText: document.getElementById("modProfileManagerErrorText"),
+        empty: document.getElementById("modProfileManagerEmpty"),
+        content: document.getElementById("modProfileManagerContent"),
+        summaryGrid: document.getElementById("modProfileSummaryGrid"),
+        sourcesList: document.getElementById("modProfileSourcesList"),
+        gameFilter: document.getElementById("modProfileGameFilter"),
+        sourceFilter: document.getElementById("modProfileSourceFilter"),
+        categoryFilter: document.getElementById("modProfileCategoryFilter"),
+        searchInput: document.getElementById("modProfileSearchInput"),
+        modList: document.getElementById("modProfileModList"),
+        presetList: document.getElementById("modProfilePresetList"),
+        compareSummary: document.getElementById("modProfileCompareSummary"),
+        compareContent: document.getElementById("modProfileCompareContent"),
+        composer: document.getElementById("modProfilePresetComposer"),
+        presetNameInput: document.getElementById("modProfilePresetNameInput"),
+        presetLabelSelect: document.getElementById("modProfilePresetLabelSelect"),
+        presetNotesInput: document.getElementById("modProfilePresetNotesInput"),
+        presetSaveBtn: document.getElementById("modProfilePresetSaveBtn"),
+        presetCancelBtn: document.getElementById("modProfilePresetCancelBtn"),
+        presetHint: document.getElementById("modProfilePresetHint"),
+        selectManualWorkshopBtn: document.getElementById("manualWorkshopSelectBtn"),
+        clearManualWorkshopBtn: document.getElementById("manualWorkshopClearBtn"),
+        openWorkshopFolderBtn: document.getElementById("openWorkshopFolderBtn"),
+        openLocalModFolderBtn: document.getElementById("openLocalModFolderBtn"),
+        copyWorkshopLinksBtn: document.getElementById("copyWorkshopLinksBtn"),
+        saveCurrentPresetBtn: document.getElementById("saveCurrentPresetBtn"),
+        scanBtn: document.getElementById("modProfileScanBtn"),
+        createPresetBtn: document.getElementById("modProfileCreatePresetBtn"),
+        importPresetBtn: document.getElementById("modProfileImportPresetBtn"),
+        exportPresetBtn: document.getElementById("modProfileExportPresetBtn"),
+      };
+
+      let copy = {};
+      let managerState = null;
+      let compareResult = null;
+      let selectedGame = "ets2";
+      let selectedPresetId = "";
+      let sourceFilterValue = "all";
+      let categoryFilterValue = "all";
+      let searchValue = "";
+      let isModScanRunning = false;
+
+      function warnMissingElement(name) {
+        console.warn(`[mod-profile-manager] Missing element: ${name}`);
+      }
+
+      function safeBind(element, eventName, handler, name) {
+        if (!element) {
+          warnMissingElement(name);
+          return;
+        }
+        element.addEventListener(eventName, handler);
+      }
+
+      function setPill(element, state, text) {
+        if (!element) return;
+        element.dataset.state = state;
+        element.textContent = text;
+      }
+
+      function setLoading(loading) {
+        if (elements.loading) elements.loading.hidden = !loading;
+        if (elements.error) elements.error.hidden = true;
+        if (elements.empty) elements.empty.hidden = true;
+        if (elements.content) elements.content.hidden = true;
+      }
+
+      function showError(message) {
+        if (elements.loading) elements.loading.hidden = true;
+        if (elements.error) elements.error.hidden = false;
+        if (elements.empty) elements.empty.hidden = true;
+        if (elements.content) elements.content.hidden = true;
+        if (elements.errorText) elements.errorText.textContent = message;
+      }
+
+      function showEmpty() {
+        if (elements.loading) elements.loading.hidden = true;
+        if (elements.error) elements.error.hidden = true;
+        if (elements.empty) elements.empty.hidden = false;
+        if (elements.content) elements.content.hidden = true;
+      }
+
+      function showContent() {
+        if (elements.loading) elements.loading.hidden = true;
+        if (elements.error) elements.error.hidden = true;
+        if (elements.empty) elements.empty.hidden = true;
+        if (elements.content) elements.content.hidden = false;
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll("\"", "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function safeValue(value, fallback = "-") {
+        if (value === null || value === undefined) return fallback;
+        const text = String(value).trim();
+        return text ? text : fallback;
+      }
+
+      function sourceLabel(source) {
+        return source === "SteamWorkshop" ? copy.sourceWorkshop : source === "LocalModFolder" ? copy.sourceLocal : copy.statusUnknown;
+      }
+
+      function categoryLabel(category) {
+        return copy.categoryMap[category] || category || copy.statusUnknown;
+      }
+
+      function statusLabel(status) {
+        return copy.statusMap[status] || status || copy.statusUnknown;
+      }
+
+      function loadOrderSourceDescription(summary) {
+        const source = summary?.load_order_source || "unknown";
+        if (source === "detected") return copy.contentActiveListDetected;
+        if (source === "estimated") return copy.contentActiveListEstimated;
+        return copy.contentActiveListUnknown;
+      }
+
+      function boolLabel(value, positive, negative, unknown = copy.statusUnknown) {
+        if (value === true) return positive;
+        if (value === false) return negative;
+        return unknown;
+      }
+
+      function renderSummaryCards(state) {
+        const summary = state.summary;
+        const cards = [
+          { label: copy.summaryLocalMods, value: summary.local_mods_found },
+          { label: copy.summaryWorkshopMods, value: summary.steam_workshop_mods_found },
+          { label: copy.summaryUnreadable, value: summary.unreadable_mods_count },
+          { label: copy.summaryPresets, value: summary.presets_saved },
+        ];
+
+        elements.summaryGrid.innerHTML = cards
+          .map(
+            (card) => `
+              <article class="detail-card mod-profile-summary-card">
+                <span class="detail-card-label">${escapeHtml(card.label)}</span>
+                <strong class="detail-card-value">${escapeHtml(card.value)}</strong>
+              </article>
+            `
+          )
+          .join("");
+      }
+
+      function renderSources(state) {
+        const summary = state.summary;
+        const workshopSources = Array.isArray(summary.workshop_sources) ? summary.workshop_sources : [];
+        const workshopSourceMarkup = workshopSources.length
+          ? workshopSources.map((item) => `
+              <article class="mod-profile-meta-card">
+                <span>${escapeHtml(item.manual ? copy.fieldsManualWorkshop : copy.fieldsWorkshopFolder)}</span>
+                <strong class="detail-card-value--mono">${escapeHtml(item.path)}</strong>
+                <p class="mod-profile-meta-copy">${escapeHtml(item.exists ? copy.statusFound : copy.contentNoWorkshopFolder)}</p>
+              </article>
+            `).join("")
+          : `
+              <article class="mod-profile-meta-card">
+                <span>${escapeHtml(copy.fieldsWorkshopFolder)}</span>
+                <strong>${escapeHtml(copy.contentNoWorkshopFolder)}</strong>
+                <p class="mod-profile-meta-copy">${escapeHtml(copy.contentManagerStillWorks)}</p>
+              </article>
+            `;
+
+        elements.sourcesList.innerHTML = `
+          <div class="mod-profile-source-grid">
+            <article class="mod-profile-meta-card">
+              <span>${escapeHtml(copy.fieldsLocalFolder)}</span>
+              <strong class="detail-card-value--mono">${escapeHtml(safeValue(summary.local_mod_folder_path, copy.statusMissing))}</strong>
+              <p class="mod-profile-meta-copy">${escapeHtml(summary.local_mod_folder_found ? copy.statusFound : copy.statusMissing)}</p>
+            </article>
+            <article class="mod-profile-meta-card">
+              <span>${escapeHtml(copy.fieldsSteamLibraries)}</span>
+              <strong>${escapeHtml(summary.steam_library_paths.length)}</strong>
+              <p class="mod-profile-meta-copy">${escapeHtml(summary.steam_install_found ? copy.statusFound : copy.statusMissing)}</p>
+            </article>
+            <article class="mod-profile-meta-card">
+              <span>${escapeHtml(copy.fieldsLoadOrderSource)}</span>
+              <strong>${escapeHtml(statusLabel(summary.load_order_source))}</strong>
+              <p class="mod-profile-meta-copy">${escapeHtml(loadOrderSourceDescription(summary))}</p>
+            </article>
+            <article class="mod-profile-meta-card">
+              <span>${escapeHtml(copy.fieldsManualWorkshop)}</span>
+              <strong class="detail-card-value--mono">${escapeHtml(safeValue(summary.manual_workshop_path, copy.contentNoManualWorkshopPath))}</strong>
+              <p class="mod-profile-meta-copy">${escapeHtml(summary.manual_workshop_path ? copy.statusFound : copy.contentNoManualWorkshopPath)}</p>
+            </article>
+          </div>
+          <div class="mod-profile-source-grid mod-profile-source-grid--stack">
+            ${workshopSourceMarkup}
+          </div>
+        `;
+      }
+
+      function filteredMods() {
+        if (!managerState) return [];
+        return managerState.mods.filter((item) => {
+          if (sourceFilterValue === "local" && item.source !== "LocalModFolder") return false;
+          if (sourceFilterValue === "workshop" && item.source !== "SteamWorkshop") return false;
+          if (categoryFilterValue !== "all" && !(item.categories || []).includes(categoryFilterValue)) return false;
+          if (searchValue) {
+            const haystack = [
+              item.name,
+              item.file_path,
+              item.workshop_id,
+              item.author,
+              item.version,
+            ].join(" ").toLowerCase();
+            if (!haystack.includes(searchValue)) return false;
+          }
+          return true;
+        });
+      }
+
+      function renderModList() {
+        const mods = filteredMods();
+        if (!mods.length) {
+          elements.modList.innerHTML = `<div class="mod-profile-empty">${escapeHtml(copy.contentNoModsFound)}</div>`;
+          return;
+        }
+
+        elements.modList.innerHTML = mods
+          .map((item) => {
+            const categoryMarkup = (item.categories || [])
+              .map((category) => `<span class="diagnostics-badge">${escapeHtml(categoryLabel(category))}</span>`)
+              .join("");
+
+            const workshopLink = item.workshop_url
+              ? `<a class="mod-profile-link" href="${escapeHtml(item.workshop_url)}" target="_blank" rel="noreferrer">${escapeHtml(item.workshop_id || item.workshop_url)}</a>`
+              : escapeHtml(safeValue(item.workshop_id, copy.statusUnknown));
+
+            return `
+              <article class="mod-profile-item ${item.enabled === true ? "is-active" : ""}">
+                <div class="mod-profile-item-head">
+                  <div>
+                    <h3 class="diagnostics-item-title">${escapeHtml(item.name)}</h3>
+                    <div class="diagnostics-chip-row">
+                      <span class="diagnostics-badge">${escapeHtml(sourceLabel(item.source))}</span>
+                      <span class="diagnostics-badge">${escapeHtml(statusLabel(item.status))}</span>
+                      <span class="diagnostics-badge">${escapeHtml(boolLabel(item.readable, copy.statusReadable, copy.statusUnreadable))}</span>
+                      <span class="diagnostics-badge">${escapeHtml(boolLabel(item.enabled, copy.statusEnabled, copy.statusDisabled))}</span>
+                    </div>
+                  </div>
+                  <div class="mod-profile-item-order">${escapeHtml(item.load_order_index ?? copy.statusUnknown)}</div>
+                </div>
+                <div class="mod-profile-meta-grid">
+                  <div class="diagnostics-meta-line">
+                    <span>${escapeHtml(copy.fieldsCategory)}</span>
+                    <strong>${categoryMarkup || escapeHtml(copy.statusUnknown)}</strong>
+                  </div>
+                  <div class="diagnostics-meta-line">
+                    <span>${escapeHtml(copy.fieldsWorkshopId)}</span>
+                    <strong>${workshopLink}</strong>
+                  </div>
+                  <div class="diagnostics-meta-line">
+                    <span>${escapeHtml(copy.fieldsPath)}</span>
+                    <strong class="detail-card-value--mono">${escapeHtml(item.file_path)}</strong>
+                  </div>
+                  <div class="diagnostics-meta-line">
+                    <span>${escapeHtml(copy.fieldsLoadOrder)}</span>
+                    <strong>${escapeHtml(statusLabel(item.load_order_source))}</strong>
+                  </div>
+                </div>
+              </article>
+            `;
+          })
+          .join("");
+      }
+
+      function renderPresetList() {
+        const presets = Array.isArray(managerState?.presets) ? managerState.presets : [];
+        if (!presets.length) {
+          elements.presetList.innerHTML = `<div class="mod-profile-empty">${escapeHtml(copy.contentNoPresets)}</div>`;
+          return;
+        }
+
+        elements.presetList.innerHTML = presets
+          .map((preset) => {
+            const missingCount = countMissingForPreset(preset);
+            const selectedClass = preset.id === selectedPresetId ? " is-selected" : "";
+            const presetLabel = preset.preset_label
+              ? copy.presetLabels[preset.preset_label] || preset.preset_label
+              : copy.presetLabels[""];
+            return `
+              <article class="mod-profile-item${selectedClass}">
+                <div class="mod-profile-item-head">
+                  <div>
+                    <h3 class="diagnostics-item-title">${escapeHtml(preset.name)}</h3>
+                    <div class="diagnostics-chip-row">
+                      <span class="diagnostics-badge">${escapeHtml((preset.game || selectedGame).toUpperCase())}</span>
+                      <span class="diagnostics-badge">${escapeHtml(safeValue(presetLabel, copy.statusUnknown))}</span>
+                      <span class="diagnostics-badge">${escapeHtml(`${preset.mods.length} ${copy.fieldsMods}`)}</span>
+                    </div>
+                  </div>
+                  <div class="mod-profile-item-actions">
+                    <button class="table-action" type="button" data-action="open" data-preset-id="${escapeHtml(preset.id)}">${escapeHtml(copy.actionOpen)}</button>
+                    <button class="table-action" type="button" data-action="compare" data-preset-id="${escapeHtml(preset.id)}">${escapeHtml(copy.actionCompare)}</button>
+                    <button class="table-action" type="button" data-action="export" data-preset-id="${escapeHtml(preset.id)}">${escapeHtml(copy.actionExportRow)}</button>
+                    <button class="table-action" type="button" data-action="delete" data-preset-id="${escapeHtml(preset.id)}">${escapeHtml(copy.actionDelete)}</button>
+                  </div>
+                </div>
+                <div class="mod-profile-meta-grid">
+                  <div class="diagnostics-meta-line">
+                    <span>${escapeHtml(copy.fieldsCreated)}</span>
+                    <strong>${escapeHtml(formatDate(preset.created_at))}</strong>
+                  </div>
+                  <div class="diagnostics-meta-line">
+                    <span>${escapeHtml(copy.fieldsUpdated)}</span>
+                    <strong>${escapeHtml(formatDate(preset.updated_at))}</strong>
+                  </div>
+                  <div class="diagnostics-meta-line">
+                    <span>${escapeHtml(copy.fieldsMissingCount)}</span>
+                    <strong>${escapeHtml(missingCount)}</strong>
+                  </div>
+                  <div class="diagnostics-meta-line">
+                    <span>${escapeHtml(copy.fieldsLoadOrderSource)}</span>
+                    <strong>${escapeHtml(statusLabel(preset.load_order_source || "unknown"))}</strong>
+                  </div>
+                  <div class="diagnostics-meta-line">
+                    <span>${escapeHtml(copy.fieldsNotes)}</span>
+                    <strong>${escapeHtml(safeValue(preset.notes, copy.statusUnknown))}</strong>
+                  </div>
+                </div>
+              </article>
+            `;
+          })
+          .join("");
+      }
+
+      function renderCompare() {
+        if (!compareResult) {
+          elements.compareSummary.textContent = copy.contentNoCompare;
+          elements.compareContent.innerHTML = "";
+          return;
+        }
+
+        elements.compareSummary.textContent = `${compareResult.preset.name} | ${compareResult.summary.missing_mods_count} ${copy.compareMissing} | ${compareResult.summary.extra_mods_count} ${copy.compareExtra} | ${compareResult.summary.duplicate_mods_count} ${copy.compareDuplicates} | ${copy.fieldsLoadOrderSource}: ${statusLabel(compareResult.load_order_source)}`;
+        elements.compareContent.innerHTML = [
+          renderCompareGroup(copy.compareMissing, compareResult.missing_mods, (item) => `
+            <article class="mod-profile-compare-item">
+              <strong>${escapeHtml(item.preset_mod.name)}</strong>
+              <p>${escapeHtml(item.reason)}</p>
+              <p class="detail-card-value--mono">${escapeHtml(item.preset_mod.file_path)}</p>
+              ${item.workshop_url ? `<a class="mod-profile-link" href="${escapeHtml(item.workshop_url)}" target="_blank" rel="noreferrer">${escapeHtml(item.workshop_url)}</a>` : ""}
+            </article>
+          `, copy.contentNoMissingMods),
+          renderCompareGroup(copy.compareExtra, compareResult.extra_mods, (item) => `
+            <article class="mod-profile-compare-item">
+              <strong>${escapeHtml(item.current_mod.name)}</strong>
+              <p>${escapeHtml(item.reason)}</p>
+              <p class="detail-card-value--mono">${escapeHtml(item.current_mod.file_path)}</p>
+            </article>
+          `, copy.contentNoExtraMods),
+          renderCompareGroup(copy.compareChangedPaths, compareResult.changed_paths, (item) => `
+            <article class="mod-profile-compare-item">
+              <strong>${escapeHtml(item.preset_mod.name)}</strong>
+              <p>${escapeHtml(copy.comparePresetPath)} ${escapeHtml(item.preset_mod.file_path)}</p>
+              <p>${escapeHtml(copy.compareCurrentPath)} ${escapeHtml(item.current_path)}</p>
+            </article>
+          `, copy.contentNoChangedPaths),
+          renderCompareGroup(copy.compareLoadOrder, compareResult.load_order_differences, (item) => `
+            <article class="mod-profile-compare-item">
+              <strong>${escapeHtml(item.preset_mod.name)}</strong>
+              <p>${escapeHtml(copy.comparePresetOrder)} ${escapeHtml(item.preset_mod.load_order_index)}</p>
+              <p>${escapeHtml(copy.compareCurrentOrder)} ${escapeHtml(item.current_index ?? copy.statusUnknown)}</p>
+            </article>
+          `, copy.contentNoLoadOrderDifferences),
+          renderCompareGroup(copy.compareDuplicates, compareResult.duplicate_mods, (item) => `
+            <article class="mod-profile-compare-item">
+              <strong>${escapeHtml(item.name || item.mod_id || copy.statusUnknown)}</strong>
+              <p>${escapeHtml(item.mod_id || copy.statusUnknown)}</p>
+              <p class="detail-card-value--mono">${escapeHtml((item.file_paths || []).join(" | "))}</p>
+            </article>
+          `, copy.contentNoDuplicateMods),
+          renderCompareGroup(copy.compareUnreadable, compareResult.unreadable_mods, (item) => `
+            <article class="mod-profile-compare-item">
+              <strong>${escapeHtml(item.name)}</strong>
+              <p class="detail-card-value--mono">${escapeHtml(item.file_path)}</p>
+            </article>
+          `, copy.contentNoUnreadableMods),
+          renderCompareGroup(copy.compareWorkshopLinks, compareResult.workshop_links, (item) => `
+            <article class="mod-profile-compare-item">
+              <a class="mod-profile-link" href="${escapeHtml(item)}" target="_blank" rel="noreferrer">${escapeHtml(item)}</a>
+            </article>
+          `, copy.contentNoWorkshopLinks),
+        ].join("");
+      }
+
+      function renderCompareGroup(title, items, renderItem, emptyText) {
+        const body = Array.isArray(items) && items.length
+          ? items.map(renderItem).join("")
+          : `<div class="mod-profile-empty">${escapeHtml(emptyText)}</div>`;
+        return `
+          <section class="mod-profile-compare-section">
+            <div class="mod-profile-section-head">
+              <span class="detail-card-label">${escapeHtml(title)}</span>
+            </div>
+            <div class="mod-profile-compare-list">${body}</div>
+          </section>
+        `;
+      }
+
+      function updateCategoryFilterOptions() {
+        const categories = new Set();
+        for (const item of managerState?.mods || []) {
+          for (const category of item.categories || []) {
+            categories.add(category);
+          }
+        }
+
+        const options = [
+          `<option value="all">${escapeHtml(copy.filterAllCategories)}</option>`,
+          ...Array.from(categories)
+            .sort()
+            .map((category) => `<option value="${escapeHtml(category)}"${category === categoryFilterValue ? " selected" : ""}>${escapeHtml(categoryLabel(category))}</option>`),
+        ];
+        elements.categoryFilter.innerHTML = options.join("");
+        if (!categories.has(categoryFilterValue)) {
+          categoryFilterValue = "all";
+          elements.categoryFilter.value = "all";
+        }
+      }
+
+      function countMissingForPreset(preset) {
+        const mods = managerState?.mods || [];
+        return preset.mods.filter((presetMod) => !mods.some((currentMod) => simplePresetMatch(presetMod, currentMod))).length;
+      }
+
+      function simplePresetMatch(presetMod, currentMod) {
+        if (presetMod.mod_id && presetMod.mod_id === currentMod.id) return true;
+        if (presetMod.workshop_id && presetMod.workshop_id === currentMod.workshop_id) return true;
+        if (normalizePath(presetMod.file_path) === normalizePath(currentMod.file_path)) return true;
+        return normalizeToken(presetMod.name) === normalizeToken(currentMod.name);
+      }
+
+      function normalizePath(value) {
+        return String(value || "").trim().replaceAll("\\", "/").toLowerCase();
+      }
+
+      function normalizeToken(value) {
+        return String(value || "")
+          .split(/[^a-z0-9]+/i)
+          .filter(Boolean)
+          .join("_")
+          .toLowerCase();
+      }
+
+      function formatDate(value) {
+        if (!value) return copy.statusUnknown;
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return String(value);
+        return date.toLocaleString();
+      }
+
+      function updateStatusPills(state, hasWarnings = false) {
+        setPill(elements.statusPill, hasWarnings ? "warning" : "success", hasWarnings ? copy.statusWarnings : copy.statusReady);
+        setPill(elements.gamePill, "neutral", state.summary.selected_game.toUpperCase());
+      }
+
+      async function openPathOrCopy(path) {
+        if (!path) {
+          window.showToast("toasts.mod_profile_manager_folder_open_failed", "warning");
+          return;
+        }
+        const opener = window.__TAURI__?.opener?.openPath;
+        if (typeof opener === "function") {
+          try {
+            await opener(path);
+            return;
+          } catch (error) {
+            console.warn("[mod-profile-manager] openPath failed", error);
+          }
+        }
+        try {
+          await navigator.clipboard.writeText(path);
+          window.showToast("toasts.mod_profile_manager_path_copied", "success");
+        } catch (error) {
+          console.error("Clipboard copy failed:", error);
+          window.showToast("toasts.mod_profile_manager_folder_open_failed", "error");
+        }
+      }
+
+      async function loadCopy() {
+        copy = {
+          summaryLocalMods: await t("modals.mod_profile_manager.summary.local_mods"),
+          summaryWorkshopMods: await t("modals.mod_profile_manager.summary.workshop_mods"),
+          summaryUnreadable: await t("modals.mod_profile_manager.summary.unreadable_mods"),
+          summaryPresets: await t("modals.mod_profile_manager.summary.presets_saved"),
+          sourceLocal: await t("modals.mod_profile_manager.status.local"),
+          sourceWorkshop: await t("modals.mod_profile_manager.status.workshop"),
+          statusReady: await t("modals.mod_profile_manager.status.ready"),
+          statusWarnings: await t("modals.mod_profile_manager.status.warnings"),
+          statusFound: await t("modals.mod_profile_manager.status.found"),
+          statusMissing: await t("modals.mod_profile_manager.status.missing"),
+          statusEnabled: await t("modals.mod_profile_manager.status.enabled"),
+          statusDisabled: await t("modals.mod_profile_manager.status.disabled"),
+          statusReadable: await t("modals.mod_profile_manager.status.readable"),
+          statusUnreadable: await t("modals.mod_profile_manager.status.unreadable"),
+          statusDetected: await t("modals.mod_profile_manager.status.detected"),
+          statusUnknown: await t("modals.mod_profile_manager.status.unknown"),
+          filterAllSources: await t("modals.mod_profile_manager.filters.all_sources"),
+          filterLocal: await t("modals.mod_profile_manager.filters.local_source"),
+          filterWorkshop: await t("modals.mod_profile_manager.filters.workshop_source"),
+          filterAllCategories: await t("modals.mod_profile_manager.filters.all_categories"),
+          actionOpen: await t("modals.mod_profile_manager.actions.open"),
+          actionCompare: await t("modals.mod_profile_manager.actions.compare"),
+          actionExportRow: await t("modals.mod_profile_manager.actions.export_row"),
+          actionDelete: await t("modals.mod_profile_manager.actions.delete"),
+          fieldsCategory: await t("modals.mod_profile_manager.fields.category"),
+          fieldsWorkshopId: await t("modals.mod_profile_manager.fields.workshop_id"),
+          fieldsPath: await t("modals.mod_profile_manager.fields.path"),
+          fieldsLoadOrder: await t("modals.mod_profile_manager.fields.load_order"),
+          fieldsMods: await t("modals.mod_profile_manager.fields.mods"),
+          fieldsCreated: await t("modals.mod_profile_manager.fields.created"),
+          fieldsUpdated: await t("modals.mod_profile_manager.fields.updated"),
+          fieldsMissingCount: await t("modals.mod_profile_manager.fields.missing_count"),
+          fieldsNotes: await t("modals.mod_profile_manager.fields.notes"),
+          fieldsLocalFolder: await t("modals.mod_profile_manager.fields.local_folder"),
+          fieldsSteamLibraries: await t("modals.mod_profile_manager.fields.steam_libraries"),
+          fieldsWorkshopFolder: await t("modals.mod_profile_manager.fields.workshop_folder"),
+          fieldsManualWorkshop: await t("modals.mod_profile_manager.fields.manual_workshop"),
+          fieldsLoadOrderSource: await t("modals.mod_profile_manager.fields.load_order_source"),
+          contentNoWorkshopFolder: await t("modals.mod_profile_manager.content.no_workshop_folder"),
+          contentManagerStillWorks: await t("modals.mod_profile_manager.content.manager_still_works"),
+          contentActiveListDetected: await t("modals.mod_profile_manager.content.active_list_detected"),
+          contentActiveListEstimated: await t("modals.mod_profile_manager.content.active_list_estimated"),
+          contentActiveListUnknown: await t("modals.mod_profile_manager.content.active_list_unknown"),
+          contentNoManualWorkshopPath: await t("modals.mod_profile_manager.content.no_manual_workshop_path"),
+          contentNoModsFound: await t("modals.mod_profile_manager.content.no_mods_found"),
+          contentNoPresets: await t("modals.mod_profile_manager.content.no_presets"),
+          contentNoCompare: await t("modals.mod_profile_manager.content.no_compare"),
+          contentNoMissingMods: await t("modals.mod_profile_manager.content.no_missing_mods"),
+          contentNoExtraMods: await t("modals.mod_profile_manager.content.no_extra_mods"),
+          contentNoChangedPaths: await t("modals.mod_profile_manager.content.no_changed_paths"),
+          contentNoLoadOrderDifferences: await t("modals.mod_profile_manager.content.no_load_order_differences"),
+          contentNoDuplicateMods: await t("modals.mod_profile_manager.content.no_duplicate_mods"),
+          contentNoUnreadableMods: await t("modals.mod_profile_manager.content.no_unreadable_mods"),
+          contentNoWorkshopLinks: await t("modals.mod_profile_manager.content.no_workshop_links"),
+          contentPresetEstimated: await t("modals.mod_profile_manager.content.preset_creation_estimated"),
+          contentPresetUnknown: await t("modals.mod_profile_manager.content.preset_creation_unknown"),
+          contentPresetReady: await t("modals.mod_profile_manager.content.preset_creation_ready"),
+          compareMissing: await t("modals.mod_profile_manager.compare.missing_mods"),
+          compareExtra: await t("modals.mod_profile_manager.compare.extra_mods"),
+          compareChangedPaths: await t("modals.mod_profile_manager.compare.changed_paths"),
+          compareLoadOrder: await t("modals.mod_profile_manager.compare.load_order"),
+          compareDuplicates: await t("modals.mod_profile_manager.compare.duplicate_mods"),
+          compareUnreadable: await t("modals.mod_profile_manager.compare.unreadable_mods"),
+          compareWorkshopLinks: await t("modals.mod_profile_manager.compare.workshop_links"),
+          comparePresetPath: await t("modals.mod_profile_manager.compare.preset_path"),
+          compareCurrentPath: await t("modals.mod_profile_manager.compare.current_path"),
+          comparePresetOrder: await t("modals.mod_profile_manager.compare.preset_order"),
+          compareCurrentOrder: await t("modals.mod_profile_manager.compare.current_order"),
+          categoryMap: {
+            Truck: await t("modals.mod_profile_manager.categories.truck"),
+            Trailer: await t("modals.mod_profile_manager.categories.trailer"),
+            Map: await t("modals.mod_profile_manager.categories.map"),
+            Cargo: await t("modals.mod_profile_manager.categories.cargo"),
+            Traffic: await t("modals.mod_profile_manager.categories.traffic"),
+            Economy: await t("modals.mod_profile_manager.categories.economy"),
+            Sound: await t("modals.mod_profile_manager.categories.sound"),
+            Ui: await t("modals.mod_profile_manager.categories.ui"),
+            Graphics: await t("modals.mod_profile_manager.categories.graphics"),
+            Tuning: await t("modals.mod_profile_manager.categories.tuning"),
+            Skin: await t("modals.mod_profile_manager.categories.skin"),
+            Other: await t("modals.mod_profile_manager.categories.other"),
+            Unknown: await t("modals.mod_profile_manager.categories.unknown"),
+          },
+          statusMap: {
+            ok: await t("modals.mod_profile_manager.status.ok"),
+            manifest_missing: await t("modals.mod_profile_manager.status.manifest_missing"),
+            active_manifest_missing: await t("modals.mod_profile_manager.status.active_manifest_missing"),
+            unreadable: await t("modals.mod_profile_manager.status.unreadable"),
+            invalid_workshop_item: await t("modals.mod_profile_manager.status.invalid_workshop_item"),
+            detected: await t("modals.mod_profile_manager.status.detected"),
+            estimated: await t("modals.mod_profile_manager.status.estimated"),
+            unknown: await t("modals.mod_profile_manager.status.unknown"),
+          },
+          presetLabels: {
+            "": await t("modals.mod_profile_manager.preset_labels.none"),
+            realistic_setup: await t("modals.mod_profile_manager.preset_labels.realistic_setup"),
+            map_combo: await t("modals.mod_profile_manager.preset_labels.map_combo"),
+            vanilla_plus: await t("modals.mod_profile_manager.preset_labels.vanilla_plus"),
+            youtube_recording: await t("modals.mod_profile_manager.preset_labels.youtube_recording"),
+            hard_economy: await t("modals.mod_profile_manager.preset_labels.hard_economy"),
+            multiplayer_convoy: await t("modals.mod_profile_manager.preset_labels.multiplayer_convoy"),
+          },
+        };
+      }
+
+      function populateStaticFilters() {
+        elements.gameFilter.innerHTML = `
+          <option value="ets2">ETS2</option>
+          <option value="ats">ATS</option>
+        `;
+        elements.sourceFilter.innerHTML = `
+          <option value="all">${escapeHtml(copy.filterAllSources)}</option>
+          <option value="local">${escapeHtml(copy.filterLocal)}</option>
+          <option value="workshop">${escapeHtml(copy.filterWorkshop)}</option>
+        `;
+        elements.sourceFilter.value = sourceFilterValue;
+        elements.gameFilter.value = selectedGame;
+
+        elements.presetLabelSelect.innerHTML = Object.entries(copy.presetLabels)
+          .map(([value, label]) => `<option value="${escapeHtml(value)}">${escapeHtml(label)}</option>`)
+          .join("");
+      }
+
+      function setBusyState(running) {
+        isModScanRunning = Boolean(running);
+        const scanLocked = isModScanRunning;
+        [
+          elements.scanBtn,
+          elements.createPresetBtn,
+          elements.importPresetBtn,
+          elements.exportPresetBtn,
+          elements.selectManualWorkshopBtn,
+          elements.clearManualWorkshopBtn,
+        ].forEach((element) => {
+          if (element) element.disabled = scanLocked;
+        });
+      }
+
+      async function loadState(game = selectedGame, preserveCompare = false, command = "scan_mods_light") {
+        selectedGame = game;
+        setLoading(true);
+        setBusyState(true);
+        setPill(elements.statusPill, "neutral", copy.statusReady);
+        setPill(elements.gamePill, "neutral", selectedGame.toUpperCase());
+
+        try {
+          const state = await window.invoke(command, { game });
+          managerState = state;
+          selectedGame = state.summary.selected_game || game;
+          if (elements.gameFilter) elements.gameFilter.value = selectedGame;
+          updateCategoryFilterOptions();
+          renderSummaryCards(state);
+          renderSources(state);
+          renderModList();
+          renderPresetList();
+
+          const hasWarnings = (state.warnings || []).length > 0 || !state.summary.steam_install_found;
+          updateStatusPills(state, hasWarnings);
+
+          if (!preserveCompare) {
+            compareResult = null;
+          }
+          renderCompare();
+
+          const hasAnyData = (state.mods || []).length > 0 || (state.presets || []).length > 0;
+          if (!hasAnyData) {
+            showEmpty();
+          } else {
+            showContent();
+          }
+
+          updateComposerState();
+          if (state.summary?.scan_timed_out) {
+            window.showToast("toasts.mod_profile_manager_scan_timed_out", "warning");
+          }
+          if (window.logUserAction) window.logUserAction("mod_profile_manager", "success");
+        } catch (error) {
+          const message = error?.message || String(error);
+          console.error("Mod profile manager load failed:", error);
+          showError(message);
+          setPill(elements.statusPill, "error", copy.statusUnknown);
+          if (window.logUserAction) window.logUserAction("mod_profile_manager", "error");
+          window.showToast("toasts.mod_profile_manager_scan_failed", "error");
+        } finally {
+          setBusyState(false);
+        }
+      }
+
+      function updateComposerState() {
+        if (!managerState?.summary) {
+          elements.presetHint.textContent = "";
+          elements.presetSaveBtn.disabled = true;
+          return;
+        }
+
+        const loadOrderSource = managerState.summary.load_order_source || "unknown";
+        if (loadOrderSource === "detected") {
+          elements.presetHint.textContent = copy.contentPresetReady;
+        } else if (loadOrderSource === "estimated") {
+          elements.presetHint.textContent = copy.contentPresetEstimated;
+        } else {
+          elements.presetHint.textContent = copy.contentPresetUnknown;
+        }
+        elements.presetSaveBtn.disabled = false;
+      }
+
+      async function handleCreatePreset() {
+        const name = elements.presetNameInput.value.trim();
+        if (!name) {
+          elements.presetNameInput.focus();
+          return;
+        }
+
+        try {
+          const preset = await window.invoke("create_mod_preset", {
+            name,
+            game: selectedGame,
+            notes: elements.presetNotesInput.value.trim() || null,
+            presetLabel: elements.presetLabelSelect.value || null,
+          });
+          selectedPresetId = preset.id;
+          elements.presetNameInput.value = "";
+          elements.presetNotesInput.value = "";
+          elements.presetLabelSelect.value = "";
+          elements.composer.hidden = true;
+          await loadState(selectedGame, false);
+          window.showToast("toasts.mod_profile_manager_preset_created", { name: preset.name }, "success");
+        } catch (error) {
+          console.error("Create preset failed:", error);
+          window.showToast("toasts.mod_profile_manager_preset_failed", "error");
+        }
+      }
+
+      async function handlePresetAction(action, presetId) {
+        selectedPresetId = presetId;
+        if (action === "open" || action === "compare") {
+          await runCompare(presetId);
+          renderPresetList();
+          return;
+        }
+
+        if (action === "export") {
+          try {
+            const path = await window.invoke("export_mod_preset", { presetId });
+            if (path) {
+              window.showToast("toasts.mod_profile_manager_preset_exported", { path }, "success");
+            }
+          } catch (error) {
+            console.error("Export preset failed:", error);
+            window.showToast("toasts.mod_profile_manager_preset_failed", "error");
+          }
+          return;
+        }
+
+        if (action === "delete") {
+          try {
+            await window.invoke("delete_mod_preset", { presetId });
+            if (selectedPresetId === presetId) {
+              selectedPresetId = "";
+              compareResult = null;
+            }
+            await loadState(selectedGame, false);
+            window.showToast("toasts.mod_profile_manager_preset_deleted", "success");
+          } catch (error) {
+            console.error("Delete preset failed:", error);
+            window.showToast("toasts.mod_profile_manager_preset_failed", "error");
+          }
+        }
+      }
+
+      async function runCompare(presetId = selectedPresetId) {
+        if (!presetId) {
+          window.showToast("toasts.mod_profile_manager_preset_select_required", "warning");
+          return;
+        }
+
+        try {
+          compareResult = await window.invoke("compare_mod_preset", {
+            presetId,
+            game: selectedGame,
+          });
+          renderCompare();
+          renderPresetList();
+        } catch (error) {
+          console.error("Compare preset failed:", error);
+          window.showToast("toasts.mod_profile_manager_compare_failed", "error");
+        }
+      }
+
+      async function handleImportPreset() {
+        try {
+          const preset = await window.invoke("import_mod_preset");
+          if (preset) {
+            selectedPresetId = preset.id;
+            await loadState(selectedGame, false);
+            window.showToast("toasts.mod_profile_manager_preset_imported", { name: preset.name }, "success");
+          }
+        } catch (error) {
+          console.error("Import preset failed:", error);
+          window.showToast("toasts.mod_profile_manager_preset_failed", "error");
+        }
+      }
+
+      async function handleHeaderExport() {
+        if (!selectedPresetId) {
+          window.showToast("toasts.mod_profile_manager_preset_select_required", "warning");
+          return;
+        }
+        try {
+          const path = await window.invoke("export_mod_preset", { presetId: selectedPresetId });
+          if (path) {
+            window.showToast("toasts.mod_profile_manager_preset_exported", { path }, "success");
+          }
+        } catch (error) {
+          console.error("Header export preset failed:", error);
+          window.showToast("toasts.mod_profile_manager_preset_failed", "error");
+        }
+      }
+
+      async function handleManualWorkshopSelect() {
+        try {
+          const path = await window.invoke("select_manual_workshop_directory", { game: selectedGame });
+          if (path) {
+            await loadState(selectedGame, false);
+            window.showToast("toasts.mod_profile_manager_manual_workshop_saved", "success");
+          }
+        } catch (error) {
+          console.error("Manual workshop selection failed:", error);
+          window.showToast("toasts.mod_profile_manager_scan_failed", "error");
+        }
+      }
+
+      async function handleManualWorkshopClear() {
+        try {
+          await window.invoke("clear_manual_workshop_directory", { game: selectedGame });
+          await loadState(selectedGame, false);
+          window.showToast("toasts.mod_profile_manager_manual_workshop_cleared", "success");
+        } catch (error) {
+          console.error("Manual workshop clear failed:", error);
+          window.showToast("toasts.mod_profile_manager_scan_failed", "error");
+        }
+      }
+
+      async function handleCopyWorkshopLinks() {
+        const links = compareResult?.workshop_links || [];
+        if (!links.length) {
+          window.showToast("toasts.mod_profile_manager_no_workshop_links", "warning");
+          return;
+        }
+        try {
+          await navigator.clipboard.writeText(links.join("\n"));
+          window.showToast("toasts.mod_profile_manager_workshop_links_copied", "success");
+        } catch (error) {
+          console.error("Copy workshop links failed:", error);
+          window.showToast("toasts.mod_profile_manager_folder_open_failed", "error");
+        }
+      }
+
+      function firstWorkshopPath() {
+        const sources = managerState?.summary?.workshop_sources || [];
+        const existing = sources.find((item) => item.exists);
+        return existing?.path || managerState?.summary?.manual_workshop_path || "";
+      }
+
+      safeBind(elements.presetList, "click", (event) => {
+        const button = event.target.closest("[data-action][data-preset-id]");
+        if (!button) return;
+        handlePresetAction(button.dataset.action, button.dataset.presetId);
+      }, "presetList");
+
+      safeBind(elements.gameFilter, "change", async () => {
+        selectedGame = elements.gameFilter.value;
+        try {
+          await window.invoke("set_selected_game", { game: selectedGame });
+        } catch (error) {
+          console.warn("[mod-profile-manager] set_selected_game failed", error);
+        }
+        compareResult = null;
+        await loadState(selectedGame, false, "scan_mods_light");
+      }, "gameFilter");
+      safeBind(elements.sourceFilter, "change", () => {
+        sourceFilterValue = elements.sourceFilter.value;
+        renderModList();
+      }, "sourceFilter");
+      safeBind(elements.categoryFilter, "change", () => {
+        categoryFilterValue = elements.categoryFilter.value;
+        renderModList();
+      }, "categoryFilter");
+      safeBind(elements.searchInput, "input", () => {
+        searchValue = elements.searchInput.value.trim().toLowerCase();
+        renderModList();
+      }, "searchInput");
+
+      safeBind(elements.scanBtn, "click", async () => {
+        if (isModScanRunning) return;
+        await loadState(selectedGame, false, "scan_mods_deep");
+      }, "scanBtn");
+      safeBind(elements.createPresetBtn, "click", () => {
+        elements.composer.hidden = false;
+        elements.presetNameInput?.focus();
+      }, "createPresetBtn");
+      safeBind(elements.importPresetBtn, "click", handleImportPreset, "importPresetBtn");
+      safeBind(elements.exportPresetBtn, "click", handleHeaderExport, "exportPresetBtn");
+      safeBind(elements.saveCurrentPresetBtn, "click", () => {
+        elements.composer.hidden = false;
+        elements.presetNameInput?.focus();
+      }, "saveCurrentPresetBtn");
+      safeBind(elements.presetSaveBtn, "click", handleCreatePreset, "presetSaveBtn");
+      safeBind(elements.presetCancelBtn, "click", () => {
+        elements.composer.hidden = true;
+      }, "presetCancelBtn");
+      safeBind(elements.copyWorkshopLinksBtn, "click", handleCopyWorkshopLinks, "copyWorkshopLinksBtn");
+      safeBind(elements.openWorkshopFolderBtn, "click", () => openPathOrCopy(firstWorkshopPath()), "openWorkshopFolderBtn");
+      safeBind(elements.openLocalModFolderBtn, "click", () => openPathOrCopy(managerState?.summary?.local_mod_folder_path || ""), "openLocalModFolderBtn");
+      safeBind(elements.selectManualWorkshopBtn, "click", handleManualWorkshopSelect, "selectManualWorkshopBtn");
+      safeBind(elements.clearManualWorkshopBtn, "click", handleManualWorkshopClear, "clearManualWorkshopBtn");
+
+      await translateUi();
+      await loadCopy();
+      populateStaticFilters();
+      document.title = await t("modals.mod_profile_manager.title");
+
+      document.getElementById("modProfileManagerBack")?.addEventListener(
+        "click",
+        async (event) => {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          await navigateBackToSaveEditor();
+        },
+        true
+      );
+
+      setTimeout(() => {
+        void loadState(selectedGame, false, "scan_mods_light");
+      }, 0);
+    </script>
+  </body>
+</html>

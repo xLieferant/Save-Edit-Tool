@@ -12,6 +12,12 @@
   --career-scrollbar-track: rgba(255, 255, 255, 0.03);
   --career-scrollbar-thumb: rgba(151, 178, 220, 0.24);
   --career-scrollbar-thumb-hover: rgba(151, 178, 220, 0.38);
+  --career-dropdown-surface: #111925;
+  --career-dropdown-surface-strong: #0b121b;
+  --career-dropdown-border: rgba(120, 152, 199, 0.42);
+  --career-dropdown-text: #eef5ff;
+  --career-dropdown-hover: rgba(82, 126, 190, 0.28);
+  --career-dropdown-active: rgba(82, 126, 190, 0.38);
 }
 
 * {
@@ -100,6 +106,41 @@ body.career-page {
 .career-user-auth-field input:focus-visible {
   outline: none;
   box-shadow: var(--career-focus);
+}
+
+.career-page select {
+  color-scheme: dark;
+}
+
+.career-page select:hover,
+.career-member-role-select:hover {
+  border-color: #5d8fda;
+}
+
+.career-page select:active,
+.career-member-role-select:active {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01)),
+    var(--career-dropdown-surface-strong);
+}
+
+.career-page select option,
+.career-page select optgroup {
+  background: var(--career-dropdown-surface-strong);
+  color: var(--career-dropdown-text);
+}
+
+.career-page select option:hover,
+.career-page select option:focus,
+.career-page select option:active {
+  background: var(--career-dropdown-hover);
+  color: var(--career-dropdown-text);
+}
+
+.career-page select option:checked,
+.career-page select option[selected] {
+  background: var(--career-dropdown-active);
+  color: var(--career-dropdown-text);
 }
 
 .career-nav-toggle {
@@ -898,7 +939,6 @@ body.career-page {
 }
 
 .career-field input,
-.career-field select,
 .career-field textarea {
   width: 100%;
   min-height: 42px;
@@ -909,6 +949,21 @@ body.career-page {
   padding: 10px 12px;
   font: inherit;
   transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.career-field select {
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid var(--career-dropdown-border);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02)),
+    var(--career-dropdown-surface);
+  color: var(--career-dropdown-text);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
 }
 
 .career-field textarea {
@@ -982,10 +1037,13 @@ body.career-page {
 .career-member-role-select {
   min-height: 36px;
   border-radius: 8px;
-  border: 1px solid #2f4668;
-  background: rgba(10, 16, 28, 0.92);
-  color: #e3ecfa;
+  border: 1px solid var(--career-dropdown-border);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02)),
+    var(--career-dropdown-surface);
+  color: var(--career-dropdown-text);
   padding: 0 10px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .career-mini-btn {

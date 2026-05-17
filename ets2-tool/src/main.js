@@ -1,5 +1,6 @@
 import { loadTools, activeTab, openCloneProfileModal, openModalMulti, openModalText } from "./app.js";
 import { updateToolImagesForGame } from "./tools.js";
+import { getLevelForXp, getLevelProgress, loadLevelTable } from "./js/level-system.js";
 
 // Allow loading the UI in a normal browser (no Tauri APIs) so the HTML preview
 // still has working click handlers and basic navigation.
@@ -17,6 +18,37 @@ const listen = hasTauri ? tauri.event.listen : async () => () => {};
 let applySetting = () => {};
 let checkUpdaterOnStartup = () => {};
 let manualUpdateCheck = () => {};
+let scheduleSaveSafetyRefresh = () => {};
+
+const SAVE_MUTATION_COMMANDS = new Set([
+  "apply_custom_reset_values",
+  "apply_save_health_fix",
+  "apply_setting",
+  "edit_config_value",
+  "edit_console_value",
+  "edit_convoy_value",
+  "edit_developer_value",
+  "edit_level",
+  "edit_money",
+  "edit_parking_doubles_value",
+  "edit_player_experience",
+  "edit_player_money",
+  "edit_save_config_value",
+  "edit_skill_value",
+  "edit_traffic_value",
+  "edit_truck_odometer",
+  "edit_xp",
+  "refuel_player_truck",
+  "repair_player_trailer",
+  "repair_player_truck",
+  "restore_backup",
+  "undo_last_save_change",
+  "set_player_trailer_cargo_mass",
+  "set_player_trailer_license_plate",
+  "set_player_truck_fuel",
+  "set_player_truck_license_plate",
+  "set_player_truck_wear",
+]);
 
 let lastSelectedGame = null;
 const CAREER_LOAD_ERROR = "Career Mode failed to load";
@@ -97,9 +129,18 @@ async function safeInvoke(command, args = {}, options = {}) {
     }
     const result = await tauriInvoke(command, args);
     console.log("[invoke:ok]", command, result);
+    if (SAVE_MUTATION_COMMANDS.has(command)) {
+      scheduleSaveSafetyRefresh(command, result);
+    }
     return result;
   } catch (error) {
     console.error("[invoke:fail]", command, error);
+    if (hasTauri && command !== "log_user_action") {
+      tauriInvoke("log_user_action", {
+        action: `tauri_command_${command}`,
+        stage: "error",
+      }).catch(() => {});
+    }
     if (!silent && ["hub_get_mode", "career_get_status", "career_get_overview"].includes(command)) {
       showCareerLoadFailure(error);
     }
@@ -194,8 +235,32 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
-function deriveLevel(xp) {
-  return Math.max(1, Math.floor(Number(xp ?? 0) / 1500) + 1);
+async function copyTextToClipboard(text) {
+  const value = String(text ?? "");
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+
+  const input = document.createElement("textarea");
+  input.value = value;
+  input.setAttribute("readonly", "true");
+  input.style.position = "fixed";
+  input.style.opacity = "0";
+  document.body.appendChild(input);
+  input.select();
+  document.execCommand("copy");
+  input.remove();
+}
+
+function deriveLevel(xp, levelTable = []) {
+  return getLevelForXp(xp, levelTable);
+}
+
+function formatLevelProgressText(progress, maxLabel) {
+  if (!progress) return "-";
+  if (progress.isMaxLevel) return maxLabel;
+  return `${Math.round(progress.progressPercent)}% | ${Math.round(progress.xpIntoLevel)} / ${Math.round(progress.xpNeededForNextLevel)}`;
 }
 
 function getThemeFallbackIcon() {
@@ -390,6 +455,67 @@ document.addEventListener("DOMContentLoaded", async () => {
     editorFleetCard: document.getElementById("editorFleetCard"),
     editorStageTitle: document.getElementById("editorStageTitle"),
     editorStageSummary: document.getElementById("editorStageSummary"),
+    modalRecoveryCenter: document.getElementById("modalRecoveryCenter"),
+    modalRecoveryCenterClose: document.getElementById("modalRecoveryCenterClose"),
+    recoveryCenterModalContent: document.getElementById("recoveryCenterModalContent"),
+    saveResetUndoStatus: document.getElementById("saveResetUndoStatus"),
+    saveResetHint: document.getElementById("saveResetHint"),
+    resetMoney: document.getElementById("resetMoney"),
+    resetLevel: document.getElementById("resetLevel"),
+    resetXp: document.getElementById("resetXp"),
+    applyResetValuesBtn: document.getElementById("applyResetValuesBtn"),
+    undoLastChangeBtn: document.getElementById("undoLastChangeBtn"),
+    modalSafeValueReset: document.getElementById("modalSafeValueReset"),
+    modalSafeValueResetClose: document.getElementById("modalSafeValueResetClose"),
+    modalUserLogs: document.getElementById("modalUserLogs"),
+    modalUserLogsClose: document.getElementById("modalUserLogsClose"),
+    userLogsStatusPill: document.getElementById("userLogsStatusPill"),
+    userLogsPath: document.getElementById("userLogsPath"),
+    userLogsSize: document.getElementById("userLogsSize"),
+    userLogsWarnings: document.getElementById("userLogsWarnings"),
+    userLogsErrors: document.getElementById("userLogsErrors"),
+    userLogsUpdated: document.getElementById("userLogsUpdated"),
+    userLogsViewer: document.getElementById("userLogsViewer"),
+    userLogsRefreshBtn: document.getElementById("userLogsRefreshBtn"),
+    userLogsExportBtn: document.getElementById("userLogsExportBtn"),
+    userLogsClearBtn: document.getElementById("userLogsClearBtn"),
+    userLogsFilterButtons: [...document.querySelectorAll("[data-user-log-filter]")],
+    recoveryStatusProfile: document.getElementById("recoveryStatusProfile"),
+    recoveryStatusSave: document.getElementById("recoveryStatusSave"),
+    recoveryStatusScan: document.getElementById("recoveryStatusScan"),
+    recoveryStatusBackups: document.getElementById("recoveryStatusBackups"),
+    saveHealthStatusDot: document.getElementById("saveHealthStatusDot"),
+    saveHealthStatusText: document.getElementById("saveHealthStatusText"),
+    saveHealthSummary: document.getElementById("saveHealthSummary"),
+    saveHealthDetailsToggle: document.getElementById("saveHealthDetailsToggle"),
+    saveHealthDetails: document.getElementById("saveHealthDetails"),
+    saveHealthProblems: document.getElementById("saveHealthProblems"),
+    saveHealthRefreshBtn: document.getElementById("saveHealthRefreshBtn"),
+    saveHealthDeepScanBtn: document.getElementById("saveHealthDeepScanBtn"),
+    saveReportCopyBtn: document.getElementById("saveReportCopyBtn"),
+    saveLogsExportBtn: document.getElementById("saveLogsExportBtn"),
+    saveBackupStatusDot: document.getElementById("saveBackupStatusDot"),
+    saveBackupRefreshBtn: document.getElementById("saveBackupRefreshBtn"),
+    saveBackupStatusText: document.getElementById("saveBackupStatusText"),
+    saveBackupSummary: document.getElementById("saveBackupSummary"),
+    saveBackupDetailsToggle: document.getElementById("saveBackupDetailsToggle"),
+    saveBackupDetails: document.getElementById("saveBackupDetails"),
+    saveBackupList: document.getElementById("saveBackupList"),
+    restorePreviewStatusDot: document.getElementById("restorePreviewStatusDot"),
+    restorePreviewStatusText: document.getElementById("restorePreviewStatusText"),
+    restorePreviewSummary: document.getElementById("restorePreviewSummary"),
+    openRestorePreviewBtn: document.getElementById("openRestorePreviewBtn"),
+    modalRestorePreview: document.getElementById("modalRestorePreview"),
+    modalRestorePreviewClose: document.getElementById("modalRestorePreviewClose"),
+    restorePreviewModalSummary: document.getElementById("restorePreviewModalSummary"),
+    restorePreviewModalState: document.getElementById("restorePreviewModalState"),
+    restorePreviewModalContent: document.getElementById("restorePreviewModalContent"),
+    restorePreviewLabel: document.getElementById("restorePreviewLabel"),
+    restorePreviewMeta: document.getElementById("restorePreviewMeta"),
+    restorePreviewEmpty: document.getElementById("restorePreviewEmpty"),
+    restorePreviewNotes: document.getElementById("restorePreviewNotes"),
+    restorePreviewFiles: document.getElementById("restorePreviewFiles"),
+    restoreBackupBtn: document.getElementById("restoreBackupBtn"),
     statusGameRunning: document.getElementById("statusGameRunning"),
     statusPluginInstalled: document.getElementById("statusPluginInstalled"),
     statusSdkConnected: document.getElementById("statusSdkConnected"),
@@ -556,6 +682,32 @@ document.addEventListener("DOMContentLoaded", async () => {
     bridgeOfflineDetail: await t("career.plugin.bridge_offline_detail"),
     engineOn: await t("career.status.engine_on"),
     engineOff: await t("career.status.engine_off"),
+    saveSafetyIdle: await t("editor.safety.status.idle"),
+    saveSafetyNoBackup: await t("editor.safety.backups.empty_summary"),
+    saveSafetyNoSelection: await t("editor.safety.health.empty_summary"),
+    saveSafetyPreviewEmpty: await t("editor.safety.restore.empty_body"),
+    saveSafetyNoPreview: await t("editor.safety.restore.no_preview_status"),
+    saveSafetyPreviewReady: await t("editor.safety.restore.ready_status"),
+    saveSafetyRestoreConfirm: await t("editor.safety.restore.confirm"),
+    recoveryLoading: await t("editor.recovery.loading"),
+    recoveryNoScan: await t("editor.recovery.no_scan"),
+    recoveryNotLoaded: await t("editor.recovery.not_loaded"),
+    resetNoSaveHint: await t("editor.reset.no_save_hint"),
+    resetReadyHint: await t("editor.reset.ready_hint"),
+    resetUndoUnavailable: await t("editor.reset.undo_unavailable"),
+    resetApplyLabel: await t("editor.reset.actions.apply"),
+    resetUndoLabel: await t("editor.reset.actions.undo"),
+    resetApplyBusy: await t("editor.reset.actions.applying"),
+    resetUndoBusy: await t("editor.reset.actions.undo_running"),
+    resetUndoConfirm: await t("editor.reset.undo_confirm"),
+    resetInvalidLevel: await t("editor.reset.errors.invalid_level"),
+    resetInvalidXp: await t("editor.reset.errors.invalid_xp"),
+    resetInvalidMoney: await t("editor.reset.errors.invalid_money"),
+    resetNoValues: await t("editor.reset.errors.no_values"),
+    userLogsReady: await t("modals.user_logs.status.ready"),
+    userLogsLoading: await t("modals.user_logs.status.loading"),
+    userLogsEmpty: await t("modals.user_logs.empty"),
+    userLogsClearConfirm: await t("modals.user_logs.confirm_clear"),
   };
   const careerUi = {
     noActiveTrip: await t("career.dashboard.no_active_trip"),
@@ -586,6 +738,28 @@ document.addEventListener("DOMContentLoaded", async () => {
     player: await t("career.shared.player"),
   };
   let careerOverview = null;
+  let activeSaveHealthReport = null;
+  let activeSaveBackups = [];
+  let activeRestorePreview = null;
+  let pendingSaveSafetyRefresh = null;
+  let pendingSaveSafetyRetry = null;
+  let activeSaveSafetyRefresh = null;
+  let queuedSaveSafetyRefresh = null;
+  let recoveryHasLoaded = false;
+  let recoveryDataDirty = false;
+  let recoveryLoading = false;
+  let saveEditorLoadInProgress = false;
+  let isApplyingResetValues = false;
+  let isUndoRunning = false;
+  let userLogsLoading = false;
+  let userLogsExporting = false;
+  let userLogsClearing = false;
+  let activeUserLogsFilter = "all";
+  let activeUndoStatus = {
+    canUndo: false,
+    lastUndoLabel: null,
+    lastUndoTimestamp: null,
+  };
   let careerOnboardingState = null;
   let cachedCompanyList = [];
   let cachedCompanyListAt = 0;
@@ -1054,11 +1228,14 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const renderCareerDetailPanel = async (panel) => {
     const overview = careerOverview;
+    const levelTable = await loadLevelTable();
     const fallbackCompanyName = refs.profileNameDisplay?.textContent?.trim() || uiText.noCompany;
     const companyName = overview?.economy?.companyName || fallbackCompanyName;
     const money = overview?.bank?.cashBalance ?? Number(window.currentProfileData?.money ?? 0);
     const xp = overview?.reputation?.xpPoints ?? Number(window.currentProfileData?.xp ?? 0);
-    const level = overview?.reputation?.level ?? deriveLevel(xp);
+    const level = xp !== null && xp !== undefined
+      ? deriveLevel(xp, levelTable)
+      : (overview?.reputation?.level ?? 0);
     const staff = overview?.employees || [];
     const totalSalary = staff.reduce((sum, member) => sum + Number(member.salary ?? 0), 0);
     const leadDriver = staff.find((member) => String(member.role).toLowerCase() === "driver") || staff[0] || null;
@@ -1801,11 +1978,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (refs.editorStageSummary) refs.editorStageSummary.textContent = await t(meta.summary);
   };
 
-  const updateOperationalOverview = () => {
+  const updateOperationalOverview = async () => {
+    const levelTable = await loadLevelTable();
+    const progressMaxLabel = await t("modals.level_system.progress.max");
     const overview = careerOverview;
     const money = Number(window.currentProfileData?.money ?? 0);
     const xp = Number(window.currentProfileData?.xp ?? 0);
-    const level = deriveLevel(xp);
+    const level = deriveLevel(xp, levelTable);
     const truckCount = window.allTrucks?.length || 0;
     const trailerCount = window.allTrailers?.length || 0;
     const profileLabel = window.selectedProfilePath
@@ -1838,8 +2017,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
 
     const cashBalance = asNumberOrNull(overview?.bank?.cashBalance);
-    const careerLevel = asNumberOrNull(overview?.reputation?.level);
     const careerXp = asNumberOrNull(overview?.reputation?.xpPoints);
+    const careerProgress = careerXp === null ? null : getLevelProgress(careerXp, levelTable);
+    const careerLevel = careerProgress ? careerProgress.level : asNumberOrNull(overview?.reputation?.level);
     const fleetTrucks = asNumberOrNull(overview?.fleetOverview?.trucks);
     const fleetTrailers = asNumberOrNull(overview?.fleetOverview?.trailers);
     const careerFleet =
@@ -1888,23 +2068,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       refs.careerProfileAvatar.onerror = () => handleIconError(refs.careerProfileAvatar);
     }
 
-    const levelSpan = 1500;
-    const xpIntoLevel =
-      careerXp === null
-        ? 0
-        : ((Number(careerXp) % levelSpan) + levelSpan) % levelSpan;
-    const progress =
-      careerXp === null || levelSpan <= 0
-        ? 0
-        : Math.max(0, Math.min(xpIntoLevel / levelSpan, 1));
-
     if (refs.careerLevelValue) refs.careerLevelValue.textContent = careerLevel === null ? emptyMetric : `L${careerLevel}`;
     if (refs.careerXpValue) refs.careerXpValue.textContent = careerXp === null ? emptyMetric : formatTelemetryNumber(careerXp, 0);
-    if (refs.careerLevelProgressFill) refs.careerLevelProgressFill.style.width = `${Math.round(progress * 100)}%`;
+    if (refs.careerLevelProgressFill) refs.careerLevelProgressFill.style.width = `${careerProgress ? Math.round(careerProgress.progressPercent) : 0}%`;
     if (refs.careerLevelProgressText) {
       refs.careerLevelProgressText.textContent = careerXp === null
         ? emptyMetric
-        : `${Math.round(progress * 100)}% • ${Math.round(xpIntoLevel)} / ${levelSpan}`;
+        : formatLevelProgressText(careerProgress, progressMaxLabel);
     }
 
     setTextOrEmpty(refs.careerJobsTotalValue, asNumberOrNull(jobStats?.totalJobs), (v) => String(Math.max(0, Math.floor(v))));
@@ -1937,12 +2107,322 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderRecentJobs();
     renderCareerActivityFeed();
     renderCareerLogbook();
+    await syncRecoveryPresentation();
+  };
+
+  const isModalOpen = (element) => {
+    if (!element) return false;
+    return window.getComputedStyle(element).display !== "none";
+  };
+
+  const isRecoveryViewActive = () => isModalOpen(refs.modalRecoveryCenter);
+  const setRecoveryNavActive = () => {};
+
+  const syncRecoveryControls = () => {
+    const hasSave = Boolean(window.selectedSavePath);
+    const hasHealthProblems = Boolean(activeSaveHealthReport?.problems?.length);
+    const hasBackups = activeSaveBackups.length > 0;
+    const hasPreview = Boolean(activeRestorePreview?.backupId);
+
+    if (refs.recoveryCenterModalContent) {
+      refs.recoveryCenterModalContent.setAttribute("aria-busy", recoveryLoading ? "true" : "false");
+    }
+    if (refs.saveHealthRefreshBtn) refs.saveHealthRefreshBtn.disabled = recoveryLoading || !hasSave;
+    if (refs.saveHealthDeepScanBtn) refs.saveHealthDeepScanBtn.disabled = recoveryLoading || !hasSave;
+    if (refs.saveBackupRefreshBtn) refs.saveBackupRefreshBtn.disabled = recoveryLoading || !hasSave;
+    if (refs.saveReportCopyBtn) refs.saveReportCopyBtn.disabled = recoveryLoading || !hasSave;
+    if (refs.saveLogsExportBtn) refs.saveLogsExportBtn.disabled = recoveryLoading || !hasSave;
+    if (refs.saveHealthDetailsToggle) refs.saveHealthDetailsToggle.disabled = recoveryLoading || !hasHealthProblems;
+    if (refs.saveBackupDetailsToggle) refs.saveBackupDetailsToggle.disabled = recoveryLoading || !hasBackups;
+    if (refs.openRestorePreviewBtn) refs.openRestorePreviewBtn.disabled = recoveryLoading || !hasPreview;
+    if (refs.restoreBackupBtn) refs.restoreBackupBtn.disabled = recoveryLoading || !hasPreview;
+  };
+
+  const syncRecoveryPresentation = async () => {
+    const hasSave = Boolean(window.selectedSavePath);
+    const profileLabel = window.selectedProfilePath
+      ? refs.profileNameDisplay?.textContent?.trim() || uiText.noProfile
+      : uiText.noProfile;
+    const saveLabel = hasSave
+      ? refs.saveNameDisplay?.textContent?.trim() || uiText.noSave
+      : uiText.noSave;
+    const healthStatusKey = String(activeSaveHealthReport?.status || "idle").toLowerCase();
+    const healthStatusLabel = activeSaveHealthReport
+      ? await t(`editor.safety.status.${healthStatusKey}`)
+      : uiText.saveSafetyIdle;
+    const lastScanLabel = activeSaveHealthReport?.generatedAtUtc
+      ? formatDateTime(activeSaveHealthReport.generatedAtUtc)
+      : hasSave
+        ? recoveryLoading
+          ? uiText.recoveryLoading
+          : recoveryHasLoaded
+            ? uiText.recoveryNoScan
+            : uiText.recoveryNotLoaded
+        : uiText.noSave;
+    const backupLabel = hasSave
+      ? recoveryHasLoaded
+        ? await t("editor.safety.backups.count", { count: activeSaveBackups.length })
+        : uiText.recoveryNotLoaded
+      : uiText.noSave;
+    if (refs.recoveryStatusProfile) refs.recoveryStatusProfile.textContent = profileLabel;
+    if (refs.recoveryStatusSave) refs.recoveryStatusSave.textContent = saveLabel;
+    if (refs.recoveryStatusScan) refs.recoveryStatusScan.textContent = lastScanLabel;
+    if (refs.recoveryStatusBackups) refs.recoveryStatusBackups.textContent = backupLabel;
+    syncRecoveryControls();
+  };
+
+  const clearSafeResetInputs = () => {
+    if (refs.resetMoney) refs.resetMoney.value = "";
+    if (refs.resetLevel) refs.resetLevel.value = "";
+    if (refs.resetXp) refs.resetXp.value = "";
+  };
+
+  const syncSafeResetCard = () => {
+    const hasSave = Boolean(window.selectedSavePath);
+    const busy = isApplyingResetValues || isUndoRunning;
+    const disableInputs = busy || !hasSave;
+    const disableApply = busy || !hasSave;
+    const disableUndo = busy || !hasSave || !activeUndoStatus?.canUndo;
+    const undoLabel = activeUndoStatus?.canUndo
+      ? `${activeUndoStatus.lastUndoLabel || uiText.resetUndoLabel} | ${formatDateTime(activeUndoStatus.lastUndoTimestamp)}`
+      : uiText.resetUndoUnavailable;
+
+    [refs.resetMoney, refs.resetLevel, refs.resetXp].forEach((input) => {
+      if (!input) return;
+      input.disabled = disableInputs;
+    });
+
+    if (refs.applyResetValuesBtn) {
+      refs.applyResetValuesBtn.disabled = disableApply;
+      refs.applyResetValuesBtn.textContent = isApplyingResetValues ? uiText.resetApplyBusy : uiText.resetApplyLabel;
+    }
+    if (refs.undoLastChangeBtn) {
+      refs.undoLastChangeBtn.disabled = disableUndo;
+      refs.undoLastChangeBtn.textContent = isUndoRunning ? uiText.resetUndoBusy : uiText.resetUndoLabel;
+    }
+    if (refs.saveResetHint) {
+      refs.saveResetHint.textContent = hasSave ? uiText.resetReadyHint : uiText.resetNoSaveHint;
+    }
+    if (refs.saveResetUndoStatus) {
+      refs.saveResetUndoStatus.textContent = undoLabel;
+    }
+  };
+
+  const refreshUndoStatus = async () => {
+    if (!hasTauri || !window.selectedSavePath) {
+      activeUndoStatus = {
+        canUndo: false,
+        lastUndoLabel: null,
+        lastUndoTimestamp: null,
+      };
+      syncSafeResetCard();
+      return;
+    }
+
+    try {
+      activeUndoStatus = await invoke("get_undo_status");
+    } catch (error) {
+      console.error("Undo status refresh failed:", error);
+      activeUndoStatus = {
+        canUndo: false,
+        lastUndoLabel: null,
+        lastUndoTimestamp: null,
+      };
+    }
+    syncSafeResetCard();
+  };
+
+  const closeRecoveryCenterModal = () => {
+    if (refs.modalRecoveryCenter) refs.modalRecoveryCenter.style.display = "none";
+    setRecoveryNavActive(false);
+    closeRestorePreviewModal();
+  };
+
+  const openRecoveryCenterModal = async () => {
+    closeNavDrawer();
+    if (refs.modalRecoveryCenter) refs.modalRecoveryCenter.style.display = "flex";
+    setRecoveryNavActive(true);
+    void window.logUserAction?.("recovery_center", "start");
+    await syncRecoveryPresentation();
+    if (hasTauri && window.selectedSavePath && (!recoveryHasLoaded || recoveryDataDirty)) {
+      await refreshSaveSafety({ preservePreview: true });
+    }
+  };
+
+  const closeSafeValueResetModal = () => {
+    if (refs.modalSafeValueReset) refs.modalSafeValueReset.style.display = "none";
+  };
+
+  const openSafeValueResetModal = async () => {
+    closeNavDrawer();
+    if (refs.modalSafeValueReset) refs.modalSafeValueReset.style.display = "flex";
+    void window.logUserAction?.("safe_value_reset", "start");
+    syncSafeResetCard();
+    await refreshUndoStatus();
+  };
+
+  const formatLogSize = (bytes) => {
+    const value = Number(bytes ?? 0);
+    if (!Number.isFinite(value) || value <= 0) return "0 B";
+    if (value >= 1024 * 1024) return `${(value / (1024 * 1024)).toFixed(2)} MB`;
+    if (value >= 1024) return `${(value / 1024).toFixed(1)} KB`;
+    return `${Math.round(value)} B`;
+  };
+
+  const getUserLogsLevelFilter = () => {
+    switch (activeUserLogsFilter) {
+      case "info":
+        return "INFO";
+      case "warnings":
+        return "WARN";
+      case "errors":
+        return "ERROR";
+      default:
+        return null;
+    }
+  };
+
+  const setUserLogsStatus = (state, label) => {
+    setModalStatus(refs.userLogsStatusPill, state, label);
+  };
+
+  const syncUserLogsControls = () => {
+    const busy = userLogsLoading || userLogsExporting || userLogsClearing;
+    refs.userLogsFilterButtons.forEach((button) => {
+      button.classList.toggle("is-active", button.dataset.userLogFilter === activeUserLogsFilter);
+      button.disabled = busy;
+    });
+    if (refs.userLogsRefreshBtn) refs.userLogsRefreshBtn.disabled = busy;
+    if (refs.userLogsExportBtn) refs.userLogsExportBtn.disabled = busy;
+    if (refs.userLogsClearBtn) refs.userLogsClearBtn.disabled = busy;
+    setUserLogsStatus(busy ? "loading" : "neutral", busy ? uiText.userLogsLoading : uiText.userLogsReady);
+  };
+
+  const renderUserLogsStatus = (status) => {
+    if (!status) return;
+    if (refs.userLogsPath) refs.userLogsPath.textContent = status.logFilePath || "-";
+    if (refs.userLogsSize) refs.userLogsSize.textContent = formatLogSize(status.logSizeBytes);
+    if (refs.userLogsWarnings) refs.userLogsWarnings.textContent = String(status.warningCount ?? 0);
+    if (refs.userLogsErrors) refs.userLogsErrors.textContent = String(status.errorCount ?? 0);
+    if (refs.userLogsUpdated) refs.userLogsUpdated.textContent = status.lastModifiedUtc ? formatDateTime(status.lastModifiedUtc) : "-";
+  };
+
+  const renderUserLogsViewer = (entries) => {
+    if (!refs.userLogsViewer) return;
+    refs.userLogsViewer.textContent = entries?.length
+      ? entries.map((entry) => entry.rawLine || `[${entry.timestamp}] [${entry.level}] [${entry.module}] ${entry.message}`).join("\n")
+      : uiText.userLogsEmpty;
+  };
+
+  const refreshUserLogs = async () => {
+    if (userLogsLoading) return;
+    userLogsLoading = true;
+    syncUserLogsControls();
+
+    try {
+      const [entries, status] = await Promise.all([
+        invoke("get_user_logs", {
+          levelFilter: getUserLogsLevelFilter(),
+          maxLines: 600,
+        }),
+        invoke("get_log_status"),
+      ]);
+      renderUserLogsViewer(entries);
+      renderUserLogsStatus(status);
+      setUserLogsStatus("success", uiText.userLogsReady);
+    } catch (error) {
+      console.error("User log refresh failed:", error);
+      renderUserLogsViewer([]);
+      setUserLogsStatus("error", uiText.userLogsReady);
+      window.showToast("toasts.user_logs_load_error", {}, "error");
+    } finally {
+      userLogsLoading = false;
+      syncUserLogsControls();
+    }
+  };
+
+  const closeUserLogsModal = () => {
+    if (refs.modalUserLogs) refs.modalUserLogs.style.display = "none";
+  };
+
+  const openUserLogsModal = async () => {
+    closeNavDrawer();
+    if (refs.modalUserLogs) refs.modalUserLogs.style.display = "flex";
+    void window.logUserAction?.("user_logs", "start");
+    syncUserLogsControls();
+    await refreshUserLogs();
+  };
+
+  const exportUserLogs = async () => {
+    if (userLogsExporting || userLogsLoading || userLogsClearing) return;
+    userLogsExporting = true;
+    syncUserLogsControls();
+    try {
+      await invoke("export_user_logs");
+      window.showToast("toasts.user_logs_exported", {}, "success");
+      await refreshUserLogs();
+    } catch (error) {
+      console.error("User log export failed:", error);
+      window.showToast("toasts.user_logs_export_error", {}, "error");
+    } finally {
+      userLogsExporting = false;
+      syncUserLogsControls();
+    }
+  };
+
+  const clearUserLogs = async () => {
+    if (userLogsClearing || userLogsLoading || userLogsExporting) return;
+    const confirmed = window.confirm(uiText.userLogsClearConfirm);
+    if (!confirmed) return;
+
+    userLogsClearing = true;
+    syncUserLogsControls();
+    try {
+      await invoke("clear_user_logs");
+      window.showToast("toasts.user_logs_cleared", {}, "success");
+      await refreshUserLogs();
+    } catch (error) {
+      console.error("User log clear failed:", error);
+      window.showToast("toasts.user_logs_clear_error", {}, "error");
+    } finally {
+      userLogsClearing = false;
+      syncUserLogsControls();
+    }
+  };
+
+  const parseOptionalIntegerInput = (element, errorMessage, { min = null } = {}) => {
+    const raw = String(element?.value ?? "").trim();
+    if (!raw) return null;
+    const value = Number(raw);
+    if (!Number.isFinite(value) || !Number.isInteger(value)) {
+      throw new Error(errorMessage);
+    }
+    if (min !== null && value < min) {
+      throw new Error(errorMessage);
+    }
+    return value;
+  };
+
+  const collectCustomResetValues = () => {
+    const money = parseOptionalIntegerInput(refs.resetMoney, uiText.resetInvalidMoney);
+    const level = parseOptionalIntegerInput(refs.resetLevel, uiText.resetInvalidLevel, { min: 0 });
+    const xp = parseOptionalIntegerInput(refs.resetXp, uiText.resetInvalidXp, { min: 0 });
+
+    if (money === null && level === null && xp === null) {
+      throw new Error(uiText.resetNoValues);
+    }
+
+    return {
+      money,
+      level,
+      xp,
+    };
   };
 
   const renderCareerOverview = async (overview) => {
     careerOverview = overview;
     clearCareerLoadFailure();
-    updateOperationalOverview();
+    await updateOperationalOverview();
     if (overview?.lastTelemetry) {
       renderTelemetry(overview.lastTelemetry);
     }
@@ -1973,8 +2453,519 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
 
   const refreshCareerPanel = async () => {
-    updateOperationalOverview();
+    await updateOperationalOverview();
     await showCareerPanel(activeCareerPanel);
+  };
+
+  const setStatusDotTone = (element, tone = "idle") => {
+    if (!element) return;
+    element.classList.remove("status-dot--clean", "status-dot--risky", "status-dot--broken", "status-dot--idle");
+    element.classList.add("status-dot", `status-dot--${tone}`);
+  };
+
+  const setModalStatus = (element, state, label) => {
+    if (!element) return;
+    element.dataset.state = state;
+    element.textContent = label;
+  };
+
+  const closeRestorePreviewModal = () => {
+    if (!refs.modalRestorePreview) return;
+    refs.modalRestorePreview.style.display = "none";
+  };
+
+  const openRestorePreviewModal = () => {
+    if (!refs.modalRestorePreview || !activeRestorePreview?.backupId) return;
+    refs.modalRestorePreview.style.display = "flex";
+  };
+
+  const getRestorePreviewTone = (preview) => {
+    if (!preview?.backupId) return "idle";
+    const hasRiskyChanges = (preview.files || []).some((file) => String(file.status || "identical").toLowerCase() !== "identical");
+    return hasRiskyChanges ? "risky" : "clean";
+  };
+
+  const syncSaveHealthDetailsToggle = async () => {
+    const problemCount = activeSaveHealthReport?.problems?.length || 0;
+    const hasProblems = problemCount > 0;
+    const isOpen = hasProblems && refs.saveHealthDetails ? !refs.saveHealthDetails.hidden : false;
+    if (refs.saveHealthDetailsToggle) {
+      refs.saveHealthDetailsToggle.hidden = !hasProblems;
+      refs.saveHealthDetailsToggle.disabled = recoveryLoading || !hasProblems;
+      refs.saveHealthDetailsToggle.textContent = hasProblems
+        ? isOpen
+          ? await t("editor.safety.actions.hide_details")
+          : await t("editor.safety.health.issues_count", { count: problemCount })
+        : await t("editor.safety.actions.view_details");
+      refs.saveHealthDetailsToggle.setAttribute("aria-expanded", String(isOpen));
+    }
+    if (!hasProblems && refs.saveHealthDetails) refs.saveHealthDetails.hidden = true;
+  };
+
+  const syncSaveBackupDetailsToggle = async () => {
+    const hasBackups = activeSaveBackups.length > 0;
+    const isOpen = hasBackups && refs.saveBackupDetails ? !refs.saveBackupDetails.hidden : false;
+    if (refs.saveBackupDetailsToggle) {
+      refs.saveBackupDetailsToggle.hidden = !hasBackups;
+      refs.saveBackupDetailsToggle.disabled = recoveryLoading || !hasBackups;
+      refs.saveBackupDetailsToggle.textContent = hasBackups
+        ? isOpen
+          ? await t("editor.safety.actions.hide_backups")
+          : await t("editor.safety.actions.view_backups")
+        : await t("editor.safety.actions.view_backups");
+      refs.saveBackupDetailsToggle.setAttribute("aria-expanded", String(isOpen));
+    }
+    if (!hasBackups && refs.saveBackupDetails) refs.saveBackupDetails.hidden = true;
+  };
+
+  const resetSaveSafetyUi = async () => {
+    clearTimeout(pendingSaveSafetyRetry);
+    pendingSaveSafetyRetry = null;
+    queuedSaveSafetyRefresh = null;
+    recoveryHasLoaded = false;
+    recoveryLoading = false;
+    activeSaveHealthReport = null;
+    activeSaveBackups = [];
+    activeRestorePreview = null;
+    closeRestorePreviewModal();
+
+    setStatusDotTone(refs.saveHealthStatusDot, "idle");
+    if (refs.saveHealthStatusText) refs.saveHealthStatusText.textContent = uiText.saveSafetyIdle;
+    if (refs.saveHealthSummary) refs.saveHealthSummary.textContent = uiText.saveSafetyNoSelection;
+    if (refs.saveHealthProblems) {
+      refs.saveHealthProblems.hidden = true;
+      refs.saveHealthProblems.innerHTML = "";
+    }
+    if (refs.saveHealthDetails) refs.saveHealthDetails.hidden = true;
+    await syncSaveHealthDetailsToggle();
+
+    setStatusDotTone(refs.saveBackupStatusDot, "idle");
+    if (refs.saveBackupStatusText) refs.saveBackupStatusText.textContent = await t("editor.safety.backups.count", { count: 0 });
+    if (refs.saveBackupSummary) refs.saveBackupSummary.textContent = uiText.saveSafetyNoBackup;
+    if (refs.saveBackupList) {
+      refs.saveBackupList.hidden = true;
+      refs.saveBackupList.innerHTML = "";
+    }
+    if (refs.saveBackupDetails) refs.saveBackupDetails.hidden = true;
+    await syncSaveBackupDetailsToggle();
+
+    setStatusDotTone(refs.restorePreviewStatusDot, "idle");
+    if (refs.restorePreviewStatusText) refs.restorePreviewStatusText.textContent = uiText.saveSafetyNoPreview;
+    if (refs.restorePreviewSummary) refs.restorePreviewSummary.textContent = uiText.saveSafetyPreviewEmpty;
+    if (refs.openRestorePreviewBtn) refs.openRestorePreviewBtn.disabled = true;
+    if (refs.restorePreviewModalSummary) refs.restorePreviewModalSummary.textContent = uiText.saveSafetyPreviewEmpty;
+    if (refs.restorePreviewLabel) refs.restorePreviewLabel.textContent = "-";
+    if (refs.restorePreviewMeta) refs.restorePreviewMeta.textContent = "-";
+    if (refs.restoreBackupBtn) refs.restoreBackupBtn.disabled = true;
+    if (refs.restorePreviewNotes) {
+      refs.restorePreviewNotes.hidden = true;
+      refs.restorePreviewNotes.innerHTML = "";
+    }
+    if (refs.restorePreviewFiles) {
+      refs.restorePreviewFiles.hidden = true;
+      refs.restorePreviewFiles.innerHTML = "";
+    }
+    if (refs.restorePreviewModalContent) refs.restorePreviewModalContent.hidden = true;
+    if (refs.restorePreviewEmpty) refs.restorePreviewEmpty.hidden = false;
+    setModalStatus(refs.restorePreviewModalState, "neutral", uiText.saveSafetyNoPreview);
+    await syncRecoveryPresentation();
+  };
+
+  const renderSaveHealthReport = async (report) => {
+    activeSaveHealthReport = report;
+    const problems = Array.isArray(report?.problems) ? report.problems : [];
+    const statusKey = String(report?.status || "clean").toLowerCase();
+    const statusTone = statusKey === "broken" ? "broken" : statusKey === "risky" ? "risky" : "clean";
+    const statusLabel = await t(`editor.safety.status.${statusKey}`);
+    const applyFixLabel = await t("editor.safety.health.fix_apply");
+    const syncFixLabel = await t("editor.safety.health.fix_sync");
+
+    setStatusDotTone(refs.saveHealthStatusDot, statusTone);
+    if (refs.saveHealthStatusText) refs.saveHealthStatusText.textContent = statusLabel;
+    if (refs.saveHealthSummary) refs.saveHealthSummary.textContent = report?.summary || uiText.saveSafetyNoSelection;
+
+    if (!problems.length) {
+      if (refs.saveHealthProblems) {
+        refs.saveHealthProblems.hidden = true;
+        refs.saveHealthProblems.innerHTML = "";
+      }
+      if (refs.saveHealthDetails) refs.saveHealthDetails.hidden = true;
+      await syncSaveHealthDetailsToggle();
+      await syncRecoveryPresentation();
+      return;
+    }
+
+    if (!refs.saveHealthProblems) return;
+
+    refs.saveHealthProblems.hidden = false;
+    refs.saveHealthProblems.innerHTML = problems.map((problem) => {
+      const evidence = Array.isArray(problem.evidence) && problem.evidence.length
+        ? `<ul class="save-problem-evidence">${problem.evidence.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
+        : "";
+      const fixButton = problem.autoFixAvailable && problem.fixId
+        ? `<button class="utility-inline-action" type="button" data-save-health-fix="${escapeHtml(problem.fixId)}">${escapeHtml(problem.fixId === "sync_player_xp_level" ? syncFixLabel : applyFixLabel)}</button>`
+        : "";
+      return `
+        <article class="save-problem-card">
+          <div class="save-problem-head">
+            <div class="save-problem-copy">
+              <strong class="save-problem-title">${escapeHtml(problem.title)}</strong>
+              <p>${escapeHtml(problem.description || "")}</p>
+            </div>
+            <div class="save-problem-badges">
+              <span class="save-problem-badge" data-severity="${escapeHtml(problem.severity)}">${escapeHtml(problem.severity)}</span>
+              <span class="save-problem-badge">${escapeHtml(problem.category)}</span>
+            </div>
+          </div>
+          <p>${escapeHtml(problem.suggestion || "")}</p>
+          ${evidence}
+          ${fixButton ? `<div class="save-problem-actions">${fixButton}</div>` : ""}
+        </article>
+      `;
+    }).join("");
+
+    await syncSaveHealthDetailsToggle();
+    await syncRecoveryPresentation();
+  };
+
+  const renderSaveBackups = async (backups) => {
+    activeSaveBackups = Array.isArray(backups) ? backups : [];
+    const previewLabel = await t("editor.safety.actions.preview");
+    const filesSuffix = await t("editor.safety.backups.files_suffix");
+    const latestBackup = activeSaveBackups[0] || null;
+
+    setStatusDotTone(refs.saveBackupStatusDot, activeSaveBackups.length ? "clean" : "idle");
+    if (refs.saveBackupStatusText) {
+      refs.saveBackupStatusText.textContent = await t("editor.safety.backups.count", { count: activeSaveBackups.length });
+    }
+    if (refs.saveBackupSummary) {
+      refs.saveBackupSummary.textContent = latestBackup
+        ? `${formatDateTime(latestBackup.createdAtUtc)} | ${latestBackup.actionReason || "-"}`
+        : uiText.saveSafetyNoBackup;
+    }
+
+    if (!activeSaveBackups.length) {
+      if (refs.saveBackupList) {
+        refs.saveBackupList.hidden = true;
+        refs.saveBackupList.innerHTML = "";
+      }
+      if (refs.saveBackupDetails) refs.saveBackupDetails.hidden = true;
+      await syncSaveBackupDetailsToggle();
+      await syncRecoveryPresentation();
+      return;
+    }
+
+    if (!refs.saveBackupList) return;
+
+    refs.saveBackupList.hidden = false;
+    refs.saveBackupList.innerHTML = activeSaveBackups.map((backup) => {
+      const selected = activeRestorePreview?.backupId === backup.backupId;
+      return `
+        <article class="save-backup-card${selected ? " is-selected" : ""}">
+          <div class="save-backup-head">
+            <div>
+              <strong class="save-backup-title">${escapeHtml(backup.actionReason || "-")}</strong>
+              <p class="save-backup-meta">${escapeHtml(formatDateTime(backup.createdAtUtc))}</p>
+            </div>
+            <span class="save-backup-tag">${escapeHtml(String(backup.fileCount || 0))} ${escapeHtml(filesSuffix)}</span>
+          </div>
+          <p class="save-backup-meta">${escapeHtml([backup.profileName || "-", backup.saveName || "-"].join(" | "))}</p>
+          <div class="save-backup-actions">
+            <button class="utility-inline-action" type="button" data-backup-preview="${escapeHtml(backup.backupId)}">${escapeHtml(previewLabel)}</button>
+          </div>
+        </article>
+      `;
+    }).join("");
+
+    await syncSaveBackupDetailsToggle();
+    await syncRecoveryPresentation();
+  };
+
+  const renderRestorePreview = async (preview) => {
+    activeRestorePreview = preview;
+    const changesSuffix = await t("editor.safety.restore.changes_suffix");
+    const parseableLabel = await t("editor.safety.restore.parseable");
+    const binaryLabel = await t("editor.safety.restore.binary");
+    const tone = getRestorePreviewTone(preview);
+    const modalState = tone === "risky" ? "warning" : tone === "broken" ? "error" : preview?.backupId ? "success" : "neutral";
+
+    setStatusDotTone(refs.restorePreviewStatusDot, tone);
+    if (refs.restorePreviewStatusText) {
+      refs.restorePreviewStatusText.textContent = preview?.backupId ? uiText.saveSafetyPreviewReady : uiText.saveSafetyNoPreview;
+    }
+    if (refs.restorePreviewSummary) {
+      refs.restorePreviewSummary.textContent = preview?.backupId
+        ? `${formatDateTime(preview.createdAtUtc)} | ${preview.actionReason || "-"}`
+        : uiText.saveSafetyPreviewEmpty;
+    }
+    if (refs.openRestorePreviewBtn) refs.openRestorePreviewBtn.disabled = !preview?.backupId;
+    if (refs.restorePreviewModalSummary) {
+      refs.restorePreviewModalSummary.textContent = preview?.backupId
+        ? [preview.profileName || "-", preview.saveName || "-"].join(" | ")
+        : uiText.saveSafetyPreviewEmpty;
+    }
+    if (refs.restorePreviewLabel) refs.restorePreviewLabel.textContent = preview?.backupId ? preview.actionReason || "-" : "-";
+    if (refs.restorePreviewMeta) {
+      refs.restorePreviewMeta.textContent = preview?.backupId
+        ? formatDateTime(preview.createdAtUtc)
+        : "-";
+    }
+    if (refs.restoreBackupBtn) refs.restoreBackupBtn.disabled = !preview?.backupId;
+    setModalStatus(
+      refs.restorePreviewModalState,
+      modalState,
+      preview?.backupId ? uiText.saveSafetyPreviewReady : uiText.saveSafetyNoPreview
+    );
+
+    if (!preview) {
+      if (refs.restorePreviewEmpty) refs.restorePreviewEmpty.hidden = false;
+      if (refs.restorePreviewModalContent) refs.restorePreviewModalContent.hidden = true;
+      if (refs.restorePreviewNotes) {
+        refs.restorePreviewNotes.hidden = true;
+        refs.restorePreviewNotes.innerHTML = "";
+      }
+      if (refs.restorePreviewFiles) {
+        refs.restorePreviewFiles.hidden = true;
+        refs.restorePreviewFiles.innerHTML = "";
+      }
+      await renderSaveBackups(activeSaveBackups);
+      await syncRecoveryPresentation();
+      return;
+    }
+
+    if (refs.restorePreviewEmpty) refs.restorePreviewEmpty.hidden = true;
+    if (refs.restorePreviewModalContent) refs.restorePreviewModalContent.hidden = false;
+
+    if (refs.restorePreviewNotes) {
+      refs.restorePreviewNotes.hidden = !(preview.notes?.length);
+      refs.restorePreviewNotes.innerHTML = (preview.notes || [])
+        .map((note) => `<div class="save-restore-note">${escapeHtml(note)}</div>`)
+        .join("");
+    }
+
+    if (refs.restorePreviewFiles) {
+      refs.restorePreviewFiles.hidden = false;
+      refs.restorePreviewFiles.innerHTML = (preview.files || []).map((file) => {
+        const changes = (file.changes || []).map((change) => `
+          <li class="save-restore-change">
+            <code>${escapeHtml(change.key)}</code>
+            <span>${escapeHtml(change.previousValue || "-")} -> ${escapeHtml(change.nextValue || "-")}</span>
+          </li>
+        `).join("");
+        const checksumMeta = `<p class="save-restore-file-copy"><code>${escapeHtml(file.checksumBefore)}</code> -> <code>${escapeHtml(file.checksumAfter)}</code></p>`;
+        return `
+          <article class="save-restore-file">
+            <div class="save-restore-file-head">
+              <div>
+                <strong>${escapeHtml(file.relativePath || "-")}</strong>
+                <p class="save-restore-file-copy">${escapeHtml(file.changeCount || 0)} ${escapeHtml(changesSuffix)}</p>
+              </div>
+              <div class="save-restore-meta">
+                <span class="save-restore-badge" data-status="${escapeHtml(file.status || "identical")}">${escapeHtml(file.status || "identical")}</span>
+                <span class="save-restore-badge">${escapeHtml(file.parseable ? parseableLabel : binaryLabel)}</span>
+              </div>
+            </div>
+            ${checksumMeta}
+            ${changes ? `<ul class="save-restore-change-list">${changes}</ul>` : ""}
+          </article>
+        `;
+      }).join("");
+    }
+
+    await renderSaveBackups(activeSaveBackups);
+    await syncRecoveryPresentation();
+  };
+
+  const refreshSaveSafety = async ({ preservePreview = true } = {}) => {
+    if (!window.selectedProfilePath || !window.selectedSavePath) {
+      clearTimeout(pendingSaveSafetyRetry);
+      pendingSaveSafetyRetry = null;
+      queuedSaveSafetyRefresh = null;
+      await resetSaveSafetyUi();
+      return;
+    }
+
+    if (!isRecoveryViewActive()) {
+      recoveryDataDirty = true;
+      clearTimeout(pendingSaveSafetyRetry);
+      pendingSaveSafetyRetry = null;
+      await syncRecoveryPresentation();
+      return activeSaveSafetyRefresh || Promise.resolve();
+    }
+
+    if (activeSaveSafetyRefresh) {
+      queuedSaveSafetyRefresh = { preservePreview };
+      return activeSaveSafetyRefresh;
+    }
+
+    activeSaveSafetyRefresh = (async () => {
+      recoveryLoading = true;
+      syncRecoveryControls();
+      await syncRecoveryPresentation();
+      try {
+        const [health, backups] = await Promise.all([
+          invoke("get_active_save_health"),
+          invoke("list_active_save_backups"),
+        ]);
+        await renderSaveHealthReport(health);
+        await renderSaveBackups(backups);
+        recoveryHasLoaded = true;
+        recoveryDataDirty = Boolean(health?.modScanPending);
+
+        const preservedPreview = preservePreview && activeRestorePreview?.backupId
+          ? backups.find((backup) => backup.backupId === activeRestorePreview.backupId)?.backupId || null
+          : null;
+        if (preservedPreview) {
+          const preview = await invoke("preview_backup_restore", { backupId: preservedPreview });
+          await renderRestorePreview(preview);
+        } else {
+          await renderRestorePreview(null);
+        }
+
+        if (health?.modScanPending) {
+          clearTimeout(pendingSaveSafetyRetry);
+          pendingSaveSafetyRetry = setTimeout(() => {
+            pendingSaveSafetyRetry = null;
+            if (!isRecoveryViewActive()) {
+              recoveryDataDirty = true;
+              void syncRecoveryPresentation();
+              return;
+            }
+            void refreshSaveSafety({ preservePreview: true });
+          }, 2500);
+        } else {
+          clearTimeout(pendingSaveSafetyRetry);
+          pendingSaveSafetyRetry = null;
+        }
+      } catch (error) {
+        clearTimeout(pendingSaveSafetyRetry);
+        pendingSaveSafetyRetry = null;
+        recoveryHasLoaded = false;
+        recoveryDataDirty = true;
+        console.error("Save safety refresh failed:", error);
+        setStatusDotTone(refs.saveHealthStatusDot, "broken");
+        if (refs.saveHealthStatusText) refs.saveHealthStatusText.textContent = await t("editor.safety.status.broken");
+        if (refs.saveHealthSummary) refs.saveHealthSummary.textContent = error?.toString?.() || "Save safety refresh failed.";
+        await syncRecoveryPresentation();
+      } finally {
+        recoveryLoading = false;
+        syncRecoveryControls();
+        activeSaveSafetyRefresh = null;
+        if (queuedSaveSafetyRefresh && window.selectedProfilePath && window.selectedSavePath) {
+          const nextRefresh = queuedSaveSafetyRefresh;
+          queuedSaveSafetyRefresh = null;
+          void refreshSaveSafety(nextRefresh);
+        } else {
+          queuedSaveSafetyRefresh = null;
+        }
+        await syncRecoveryPresentation();
+      }
+    })();
+
+    return activeSaveSafetyRefresh;
+  };
+
+  const previewBackupRestore = async (backupId) => {
+    if (!backupId) return;
+    const preview = await invoke("preview_backup_restore", { backupId });
+    await renderRestorePreview(preview);
+    openRestorePreviewModal();
+  };
+
+  const applySaveHealthFix = async (fixId) => {
+    if (!fixId) return;
+    const confirmed = window.confirm(await t("editor.safety.health.fix_confirm"));
+    if (!confirmed) return;
+    await invoke("apply_save_health_fix", { fixId, confirmed: true });
+    await loadSelectedSave();
+    window.showToast("toasts.safety_health_fix_applied", {}, "success");
+  };
+
+  const restoreSelectedBackup = async () => {
+    if (!activeRestorePreview?.backupId) return;
+    const confirmed = window.confirm(uiText.saveSafetyRestoreConfirm);
+    if (!confirmed) return;
+    await invoke("restore_backup", { backupId: activeRestorePreview.backupId, confirmed: true });
+    closeRestorePreviewModal();
+    await loadSelectedSave();
+    window.showToast("toasts.safety_restore_success", {}, "success");
+  };
+
+  const copySupportReport = async () => {
+    const report = await invoke("build_support_report");
+    await copyTextToClipboard(report);
+    window.showToast("toasts.safety_report_copied", {}, "success");
+  };
+
+  const exportLogsBundle = async () => {
+    const path = await invoke("export_logs_bundle");
+    if (!path) return;
+    window.showToast("toasts.safety_logs_exported", { path }, "success");
+  };
+
+  const applySafeResetValues = async () => {
+    if (!window.selectedSavePath || isApplyingResetValues) return;
+
+    try {
+      isApplyingResetValues = true;
+      syncSafeResetCard();
+      const { money, level, xp } = collectCustomResetValues();
+      await invoke("apply_custom_reset_values", { money, level, xp });
+      await loadSelectedSave();
+      await refreshUndoStatus();
+      window.showToast("toasts.reset_values_applied", {}, "success");
+    } catch (error) {
+      console.error("Apply reset values failed:", error);
+      window.showToast(String(error?.message || error || uiText.resetNoValues), "error");
+    } finally {
+      isApplyingResetValues = false;
+      syncSafeResetCard();
+    }
+  };
+
+  const undoLastSaveChange = async () => {
+    if (!window.selectedSavePath || isUndoRunning || !activeUndoStatus?.canUndo) return;
+
+    const confirmed = window.confirm(uiText.resetUndoConfirm);
+    if (!confirmed) return;
+
+    try {
+      isUndoRunning = true;
+      syncSafeResetCard();
+      await invoke("undo_last_save_change");
+      await loadSelectedSave();
+      await refreshUndoStatus();
+      window.showToast("toasts.reset_undo_restored", {}, "success");
+    } catch (error) {
+      console.error("Undo last save change failed:", error);
+      window.showToast(String(error?.message || error || uiText.resetUndoUnavailable), "error");
+    } finally {
+      isUndoRunning = false;
+      syncSafeResetCard();
+    }
+  };
+
+  scheduleSaveSafetyRefresh = () => {
+    recoveryDataDirty = Boolean(window.selectedSavePath);
+    recoveryHasLoaded = false;
+    clearTimeout(pendingSaveSafetyRefresh);
+    pendingSaveSafetyRefresh = setTimeout(() => {
+      pendingSaveSafetyRefresh = null;
+      if (!window.selectedSavePath) {
+        void syncRecoveryPresentation();
+        return;
+      }
+      if (saveEditorLoadInProgress) {
+        void syncRecoveryPresentation();
+        return;
+      }
+      if (!isRecoveryViewActive()) {
+        void syncRecoveryPresentation();
+        return;
+      }
+      void refreshSaveSafety({ preservePreview: true });
+    }, 300);
+    void syncRecoveryPresentation();
   };
 
   const updateUIWithCurrentQuicksave = () => {
@@ -2596,7 +3587,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   await updateEditorStage(activeTab);
   await showCareerPanel("dashboard");
-  updateOperationalOverview();
+  await updateOperationalOverview();
 
   if (refs.versionBtn) {
     refs.versionBtn.textContent = `v${await appVersion()}`;
@@ -3027,6 +4018,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   window.loadBaseConfig = loadBaseConfig;
   window.loadAllTrucks = loadAllTrucks;
   window.loadAllTrailers = loadAllTrailers;
+  window.refreshOperationalOverview = updateOperationalOverview;
+  window.openRecoveryCenterModal = openRecoveryCenterModal;
+  window.openSafeValueResetModal = openSafeValueResetModal;
+  window.openUserLogsModal = openUserLogsModal;
+  syncSafeResetCard();
+  syncUserLogsControls();
 
   const syncSelectedGameUi = async () => {
     try {
@@ -3051,15 +4048,29 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const loadSelectedSave = async () => {
     window.logUserAction("load_save", "start");
+    saveEditorLoadInProgress = true;
     try {
       refs.profileStatus.textContent = uiText.loadingSave;
+      clearSafeResetInputs();
+      activeUndoStatus = {
+        canUndo: false,
+        lastUndoLabel: null,
+        lastUndoTimestamp: null,
+      };
+      syncSafeResetCard();
+      recoveryDataDirty = true;
+      recoveryHasLoaded = false;
       await loadProfileData();
       await loadQuicksave();
       await loadProfileSaveConfig();
       await loadBaseConfig();
       await loadAllTrucks();
       await loadAllTrailers();
-      updateOperationalOverview();
+      await resetSaveSafetyUi();
+      if (isRecoveryViewActive()) {
+        await refreshSaveSafety({ preservePreview: true });
+      }
+      await updateOperationalOverview();
       await showCareerPanel(activeCareerPanel);
       refs.profileStatus.textContent = uiText.saveLoaded;
       window.showToast("toasts.save_loaded_success", {}, "success");
@@ -3069,6 +4080,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.error(error);
       window.showToast("toasts.save_load_error", {}, "error");
       window.logUserAction("load_save", "error");
+    } finally {
+      saveEditorLoadInProgress = false;
     }
   };
 
@@ -3136,6 +4149,16 @@ document.addEventListener("DOMContentLoaded", async () => {
       window.playerTruck = null;
       window.allTrailers = [];
       window.playerTrailer = null;
+      clearSafeResetInputs();
+      activeUndoStatus = {
+        canUndo: false,
+        lastUndoLabel: null,
+        lastUndoTimestamp: null,
+      };
+      syncSafeResetCard();
+      recoveryDataDirty = false;
+      recoveryHasLoaded = false;
+      await resetSaveSafetyUi();
       const cached = JSON.parse(localStorage.getItem("ets2_profiles_cache") || "[]");
       const profileInfo = cached.find((profile) => profile.path === window.selectedProfilePath);
       window.selectedProfileHasAvatar = !!profileInfo?.avatar;
@@ -3147,7 +4170,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
       updateDropdownSelectionState(refs.profileDropdownList, window.selectedProfilePath);
       updateDropdownSelectionState(refs.saveDropdownList, window.selectedSavePath);
-      updateOperationalOverview();
+      await updateOperationalOverview();
       await showCareerPanel(activeCareerPanel);
       refs.profileStatus.textContent = uiText.profileLoaded;
       window.showToast("toasts.profile_loaded_select_save", {}, "info");
@@ -3197,7 +4220,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           return;
         }
       }
-      updateOperationalOverview();
+      await updateOperationalOverview();
       window.logUserAction("scan_profiles", "success");
     } catch (error) {
       console.error(error);
@@ -3206,6 +4229,148 @@ document.addEventListener("DOMContentLoaded", async () => {
       window.logUserAction("scan_profiles", "error");
     }
   };
+
+  refs.applyResetValuesBtn?.addEventListener("click", async () => {
+    await applySafeResetValues();
+  });
+
+  refs.undoLastChangeBtn?.addEventListener("click", async () => {
+    await undoLastSaveChange();
+  });
+
+  refs.modalRecoveryCenterClose?.addEventListener("click", closeRecoveryCenterModal);
+
+  refs.modalRecoveryCenter?.addEventListener("click", (event) => {
+    if (event.target === refs.modalRecoveryCenter) {
+      closeRecoveryCenterModal();
+    }
+  });
+
+  refs.modalSafeValueResetClose?.addEventListener("click", closeSafeValueResetModal);
+
+  refs.modalSafeValueReset?.addEventListener("click", (event) => {
+    if (event.target === refs.modalSafeValueReset) {
+      closeSafeValueResetModal();
+    }
+  });
+
+  refs.modalUserLogsClose?.addEventListener("click", closeUserLogsModal);
+
+  refs.modalUserLogs?.addEventListener("click", (event) => {
+    if (event.target === refs.modalUserLogs) {
+      closeUserLogsModal();
+    }
+  });
+
+  refs.userLogsRefreshBtn?.addEventListener("click", async () => {
+    await refreshUserLogs();
+  });
+
+  refs.userLogsExportBtn?.addEventListener("click", async () => {
+    await exportUserLogs();
+  });
+
+  refs.userLogsClearBtn?.addEventListener("click", async () => {
+    await clearUserLogs();
+  });
+
+  refs.userLogsFilterButtons.forEach((button) => {
+    button.addEventListener("click", async () => {
+      const nextFilter = button.dataset.userLogFilter || "all";
+      if (nextFilter === activeUserLogsFilter) return;
+      activeUserLogsFilter = nextFilter;
+      syncUserLogsControls();
+      await refreshUserLogs();
+    });
+  });
+
+  refs.saveHealthRefreshBtn?.addEventListener("click", () => {
+    void refreshSaveSafety({ preservePreview: true });
+  });
+
+  refs.saveHealthDeepScanBtn?.addEventListener("click", () => {
+    recoveryDataDirty = true;
+    void refreshSaveSafety({ preservePreview: true });
+  });
+
+  refs.saveBackupRefreshBtn?.addEventListener("click", () => {
+    void refreshSaveSafety({ preservePreview: true });
+  });
+
+  refs.saveHealthDetailsToggle?.addEventListener("click", async () => {
+    if (!activeSaveHealthReport?.problems?.length || !refs.saveHealthDetails) return;
+    refs.saveHealthDetails.hidden = !refs.saveHealthDetails.hidden;
+    await syncSaveHealthDetailsToggle();
+  });
+
+  refs.saveBackupDetailsToggle?.addEventListener("click", async () => {
+    if (!activeSaveBackups.length || !refs.saveBackupDetails) return;
+    refs.saveBackupDetails.hidden = !refs.saveBackupDetails.hidden;
+    await syncSaveBackupDetailsToggle();
+  });
+
+  refs.saveReportCopyBtn?.addEventListener("click", async () => {
+    try {
+      await copySupportReport();
+    } catch (error) {
+      console.error("Copy report failed:", error);
+      window.showToast("toasts.safety_copy_failed", {}, "error");
+    }
+  });
+
+  refs.saveLogsExportBtn?.addEventListener("click", async () => {
+    try {
+      await exportLogsBundle();
+    } catch (error) {
+      console.error("Export logs failed:", error);
+      window.showToast("toasts.safety_logs_export_failed", {}, "error");
+    }
+  });
+
+  refs.saveHealthProblems?.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-save-health-fix]");
+    if (!button) return;
+    try {
+      await applySaveHealthFix(button.dataset.saveHealthFix);
+    } catch (error) {
+      console.error("Save health fix failed:", error);
+      window.showToast("toasts.safety_health_fix_failed", {}, "error");
+    }
+  });
+
+  refs.saveBackupList?.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-backup-preview]");
+    if (!button) return;
+    try {
+      await previewBackupRestore(button.dataset.backupPreview);
+    } catch (error) {
+      console.error("Backup preview failed:", error);
+      window.showToast("toasts.safety_backup_preview_failed", {}, "error");
+    }
+  });
+
+  refs.openRestorePreviewBtn?.addEventListener("click", () => {
+    openRestorePreviewModal();
+  });
+
+  refs.restoreBackupBtn?.addEventListener("click", async () => {
+    try {
+      await restoreSelectedBackup();
+    } catch (error) {
+      console.error("Backup restore failed:", error);
+      window.showToast("toasts.safety_restore_failed", {}, "error");
+    }
+  });
+
+  refs.modalRestorePreviewClose?.addEventListener("click", () => {
+    closeRestorePreviewModal();
+  });
+
+  refs.modalRestorePreview?.addEventListener("click", (event) => {
+    if (event.target === refs.modalRestorePreview) {
+      closeRestorePreviewModal();
+    }
+  });
 
   refs.refreshBtn?.addEventListener("click", () => scanProfiles({ saveToBackend: true, showToasts: true }));
 
@@ -3349,6 +4514,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   } catch {}
 
+    await resetSaveSafetyUi();
+    closeRecoveryCenterModal();
+    closeSafeValueResetModal();
+    closeUserLogsModal();
     await scanProfiles({ saveToBackend: true, showToasts: true });
     window.addEventListener("resize", () => {
       if (!isCompactShell()) closeNavDrawer();

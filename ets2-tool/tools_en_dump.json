@@ -1,0 +1,134 @@
+{
+  "truck": {
+    "current_truck": {
+      "title": "My Current Truck",
+      "desc": "Open a fast summary of the active truck from the current save."
+    },
+    "repair_truck": {
+      "title": "Repair Truck",
+      "desc": "Repair your truck",
+      "modalSliderText": "Repair all truck damage?"
+    },
+    "advanced_repair": {
+      "title": "Advanced Repair",
+      "desc": "Advanced repair options",
+      "modalSliderText": "Set wear levels for truck components"
+    },
+    "fuel_level": {
+      "title": "Fuel Level",
+      "desc": "Edit your fuel level",
+      "modalNumberText": "Set fuel level (0 to 100)%"
+    },
+    "full_refuel": {
+      "title": "Full Refuel",
+      "desc": "Refuel your truck to full",
+      "modalSliderText": "Refuel truck to 100%?"
+    },
+    "truck_mileage": {
+      "title": "Truck Mileage",
+      "desc": "Edit your truck mileage",
+      "modalNumberText": "Set odometer value in kilometers"
+    },
+    "truck_license_plate": {
+      "title": "Truck License Plate",
+      "desc": "Edit your truck license plate",
+      "modalTextTitle": "Enter new license plate"
+    }
+  },
+  "trailer": {
+    "repair_trailer": {
+      "title": "Repair Trailer",
+      "desc": "Repair your trailer",
+      "modalSliderText": "Repair all trailer damage?"
+    },
+    "trailer_license_plate": {
+      "title": "Trailer License Plate",
+      "desc": "Edit your trailer license plate",
+      "modalTextTitle": "Enter new license plate"
+    },
+    "modify_job_weight": {
+      "title": "Modify Job Weight",
+      "desc": "Edit your current job weight",
+      "modalNumberText": "Set job weight in kilograms"
+    }
+  },
+  "profile": {
+    "change_xp": {
+      "title": "XP Editor",
+      "desc": "Edit your experience points",
+      "modalNumberText": "Set new XP value"
+    },
+    "level_system": {
+      "title": "Level & XP System",
+      "desc": "Set a target level visually with the real XP table and live preview."
+    },
+    "change_money": {
+      "title": "Money Editor",
+      "desc": "Edit your in-game money",
+      "modalNumberText": "Set new money value"
+    },
+    "change_skill_points": {
+      "title": "Skill Points",
+      "desc": "Edit your skill points",
+      "modalTextTitle": "Set experience points"
+    },
+    "profile_stats": {
+      "title": "Profile Stats",
+      "desc": "View your profile statistics",
+      "modalTextTitle": "Profile Statistics shown"
+    },
+    "profile_sharing": {
+      "title": "Profile Sharing",
+      "desc": "Export the selected profile as a shareable ZIP archive and import received profile archives."
+    },
+    "move_mods": {
+      "title": "Move Modifications or Controls",
+      "desc": "Move mods and controls between profiles",
+      "modalTextTitle": "Move Mods/Controls"
+    },
+    "mod_conflict_diagnostics": {
+      "title": "Mod Conflict Analyzer",
+      "desc": "Analyze crash logs, broken save references and suspicious mods for the active game state."
+    },
+    "mod_profile_manager": {
+      "title": "Mod Profile Manager",
+      "desc": "Save, compare and review local plus Steam Workshop mod setups for ETS2 or ATS."
+    }
+  },
+  "settings": {
+    "color_theme": {
+      "title": "Color theme",
+      "desc": "Change the app color theme",
+      "modalTextTitle": "Select a color theme"
+    },
+    "convoy": {
+      "title": "Convoy Settings",
+      "desc": "Configure Convoy integration",
+      "modalTextTitle": "Enable '128' Convoy support"
+    },
+    "language": {
+      "title": "Language",
+      "desc": "Change your language",
+      "modalTextTitle": "Select your language"
+    },
+    "traffic_values": {
+      "title": "Traffic Values",
+      "desc": "Edit traffic density and speed",
+      "modalTextTitle": "Set traffic density (0-10)"
+    },
+    "parking_doubles": {
+      "title": "Parking Doubles",
+      "desc": "Enable or disable parking doubles",
+      "modalTextTitle": "Toggle parking doubles feature"
+    },
+    "dev_tools": {
+      "title": "Developer Tools",
+      "desc": "Access developer tools",
+      "modalTextTitle": "Set Developer Settings"
+    }
+  },
+  "language_picker": {
+    "title": "Language",
+    "desc": "Change your language"
+  }
+}

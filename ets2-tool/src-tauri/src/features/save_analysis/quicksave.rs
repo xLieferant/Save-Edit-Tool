@@ -1,11 +1,11 @@
 use crate::dev_log;
 use crate::models::quicksave_game_info::{CurrentTruckSummary, GameDataQuicksave};
-use crate::shared::current_profile::require_current_profile;
-use crate::shared::decrypt::decrypt_cached;
+use crate::shared::decrypt::decrypt_cached_with_cache;
 use crate::shared::paths::game_sii_from_save;
 use crate::shared::regex_helper::cragex;
+use crate::shared::trace::TraceScope;
 use crate::state::{AppProfileState, DecryptCache, ProfileCache};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use tauri::command;
 use tauri::State;
 
@@ -15,83 +15,39 @@ pub async fn quicksave_game_info(
     profile_cache: State<'_, ProfileCache>,
     decrypt_cache: State<'_, DecryptCache>,
 ) -> Result<GameDataQuicksave, String> {
-    let profile = require_current_profile(profile_state.clone())?;
-    let save = resolve_active_save(&profile_state, &profile);
+    let mut trace = TraceScope::new("quicksave_game_info");
+    let current_profile = profile_state
+        .current_profile
+        .lock()
+        .map_err(|_| "AppProfileState current_profile lock poisoned".to_string())?
+        .clone();
+    let current_save = profile_state
+        .current_save
+        .lock()
+        .map_err(|_| "AppProfileState current_save lock poisoned".to_string())?
+        .clone();
+    let save = resolve_active_save_from_snapshot(current_save, current_profile)?;
     let path = game_sii_from_save(Path::new(&save));
     let path_key = path.display().to_string();
 
     if let Some(cached) = profile_cache.get_quicksave_data(&path_key) {
         dev_log!("quicksave_game_info cache hit");
+        trace.finish_ok();
         return Ok(cached);
     }
 
-    let content = decrypt_cached(&path, &decrypt_cache).map_err(|error| {
-        dev_log!("quicksave_game_info failed: {}", error);
-        error
-    })?;
+    let decrypt_cache = decrypt_cache.inner().clone();
+    let path_for_worker = path.clone();
+    let (result, truck_summary) = tauri::async_runtime::spawn_blocking(move || {
+        build_quicksave_game_info_from_path(path_for_worker, &decrypt_cache)
+    })
+    .await
+    .map_err(|error| format!("quicksave_game_info join failed: {}", error))??;
 
-    let (player_id, player_block) = extract_first_block(&content, "player")?
-        .ok_or_else(|| "Player block not found".to_string())?;
-    let player_my_truck = extract_reference_value(&player_block, "my_truck");
-    let player_my_trailer = extract_reference_value(&player_block, "my_trailer");
-
-    let player_xp = extract_integer_field(&content, "experience_points");
-    let bank_id = extract_first_block(&content, "bank")?.map(|(id, _)| id);
-
-    let skill = |name: &str| -> Option<i64> { extract_integer_field(&content, name) };
-
-    let truck_summary = match profile_cache.get_current_truck_summary(&path_key) {
-        Some(cached) => cached,
-        None => {
-            let parsed = parse_current_truck_summary_from_content(&content)?;
-            profile_cache.cache_current_truck_summary(path_key.clone(), parsed.clone());
-            parsed
-        }
-    };
-
-    let result = GameDataQuicksave {
-        player_id: Some(player_id),
-        bank_id,
-        player_xp,
-        player_my_truck: player_my_truck.clone(),
-        player_my_trailer,
-        adr: skill("adr"),
-        long_dist: skill("long_dist"),
-        heavy: skill("heavy"),
-        fragile: skill("fragile"),
-        urgent: skill("urgent"),
-        mechanical: skill("mechanical"),
-        vehicle_id: player_my_truck,
-        brand_path: None,
-        license_plate: truck_summary
-            .as_ref()
-            .and_then(|summary| summary.cleaned_plate.clone()),
-        odometer: truck_summary
-            .as_ref()
-            .and_then(|summary| summary.odometer_km),
-        trip_fuel_l: None,
-        truck_brand: None,
-        truck_model: None,
-        truck_brand_label: truck_summary
-            .as_ref()
-            .and_then(|summary| summary.brand_label.clone()),
-        truck_model_label: truck_summary
-            .as_ref()
-            .and_then(|summary| summary.model_label.clone()),
-        truck_display_name: truck_summary
-            .as_ref()
-            .and_then(|summary| summary.display_name.clone()),
-        trailer_brand: None,
-        trailer_model: None,
-        trailer_license_plate: None,
-        trailer_odometer: None,
-        trailer_odometer_float: None,
-        trailer_wear_float: None,
-        trailer_wheels_float: None,
-    };
-
+    profile_cache.cache_current_truck_summary(path_key.clone(), truck_summary);
     dev_log!("quicksave_game_info parsed");
     profile_cache.cache_quicksave_data(path_key, result.clone());
+    trace.finish_ok();
     Ok(result)
 }
 
@@ -101,8 +57,18 @@ pub async fn get_current_truck_summary(
     profile_cache: State<'_, ProfileCache>,
     decrypt_cache: State<'_, DecryptCache>,
 ) -> Result<Option<CurrentTruckSummary>, String> {
-    let profile = require_current_profile(profile_state.clone())?;
-    let save = resolve_active_save(&profile_state, &profile);
+    let mut trace = TraceScope::new("get_current_truck_summary");
+    let current_profile = profile_state
+        .current_profile
+        .lock()
+        .map_err(|_| "AppProfileState current_profile lock poisoned".to_string())?
+        .clone();
+    let current_save = profile_state
+        .current_save
+        .lock()
+        .map_err(|_| "AppProfileState current_save lock poisoned".to_string())?
+        .clone();
+    let save = resolve_active_save_from_snapshot(current_save, current_profile)?;
     let path = game_sii_from_save(Path::new(&save));
     let path_key = path.display().to_string();
 
@@ -110,6 +76,7 @@ pub async fn get_current_truck_summary(
 
     if let Some(cached) = profile_cache.get_current_truck_summary(&path_key) {
         dev_log!("truck_summary cache hit");
+        trace.finish_ok();
         return Ok(cached);
     }
 
@@ -117,6 +84,7 @@ pub async fn get_current_truck_summary(
         let summary = summary_from_quicksave(&quicksave);
         profile_cache.cache_current_truck_summary(path_key, summary.clone());
         dev_log!("truck_summary cache hit");
+        trace.finish_ok();
         return Ok(summary);
     }
 
@@ -124,31 +92,33 @@ pub async fn get_current_truck_summary(
 
     if !path.is_file() {
         profile_cache.cache_current_truck_summary(path_key, None);
+        trace.finish_ok();
         return Ok(None);
     }
 
-    let content = decrypt_cached(&path, &decrypt_cache).map_err(|error| {
-        dev_log!("truck_summary failed: {}", error);
-        error
-    })?;
-
-    let summary = parse_current_truck_summary_from_content(&content).map_err(|error| {
-        dev_log!("truck_summary failed: {}", error);
-        error
-    })?;
+    let decrypt_cache = decrypt_cache.inner().clone();
+    let path_for_worker = path.clone();
+    let summary = tauri::async_runtime::spawn_blocking(move || {
+        build_current_truck_summary_from_path(path_for_worker, &decrypt_cache)
+    })
+    .await
+    .map_err(|error| format!("get_current_truck_summary join failed: {}", error))??;
 
     dev_log!("truck_summary parsed successfully");
     profile_cache.cache_current_truck_summary(path_key, summary.clone());
+    trace.finish_ok();
     Ok(summary)
 }
 
-fn resolve_active_save(profile_state: &State<'_, AppProfileState>, profile: &str) -> String {
-    profile_state
-        .current_save
-        .lock()
-        .unwrap()
-        .clone()
-        .unwrap_or_else(|| format!("{}/save/quicksave", profile))
+fn resolve_active_save_from_snapshot(
+    current_save: Option<String>,
+    current_profile: Option<String>,
+) -> Result<String, String> {
+    if let Some(save) = current_save {
+        return Ok(save);
+    }
+    let profile = current_profile.ok_or_else(|| "Kein Profil geladen.".to_string())?;
+    Ok(format!("{}/save/quicksave", profile))
 }
 
 fn summary_from_quicksave(data: &GameDataQuicksave) -> Option<CurrentTruckSummary> {
@@ -484,4 +454,86 @@ fn non_empty_option(value: String) -> Option<String> {
     } else {
         Some(trimmed.to_string())
     }
+}
+
+fn build_quicksave_game_info_from_path(
+    path: PathBuf,
+    decrypt_cache: &DecryptCache,
+) -> Result<(GameDataQuicksave, Option<CurrentTruckSummary>), String> {
+    let content = decrypt_cached_with_cache(&path, decrypt_cache).map_err(|error| {
+        dev_log!("quicksave_game_info failed: {}", error);
+        error
+    })?;
+    let mut parser_trace = TraceScope::with_fields(
+        "quicksave_game_info parser",
+        &[("path", path.display().to_string())],
+    );
+
+    let (player_id, player_block) = extract_first_block(&content, "player")?
+        .ok_or_else(|| "Player block not found".to_string())?;
+    let player_my_truck = extract_reference_value(&player_block, "my_truck");
+    let player_my_trailer = extract_reference_value(&player_block, "my_trailer");
+    let player_xp = extract_integer_field(&content, "experience_points");
+    let bank_id = extract_first_block(&content, "bank")?.map(|(id, _)| id);
+    let skill = |name: &str| -> Option<i64> { extract_integer_field(&content, name) };
+    let truck_summary = parse_current_truck_summary_from_content(&content)?;
+
+    let result = GameDataQuicksave {
+        player_id: Some(player_id),
+        bank_id,
+        player_xp,
+        player_my_truck: player_my_truck.clone(),
+        player_my_trailer,
+        adr: skill("adr"),
+        long_dist: skill("long_dist"),
+        heavy: skill("heavy"),
+        fragile: skill("fragile"),
+        urgent: skill("urgent"),
+        mechanical: skill("mechanical"),
+        vehicle_id: player_my_truck,
+        brand_path: None,
+        license_plate: truck_summary
+            .as_ref()
+            .and_then(|summary| summary.cleaned_plate.clone()),
+        odometer: truck_summary
+            .as_ref()
+            .and_then(|summary| summary.odometer_km),
+        trip_fuel_l: None,
+        truck_brand: None,
+        truck_model: None,
+        truck_brand_label: truck_summary
+            .as_ref()
+            .and_then(|summary| summary.brand_label.clone()),
+        truck_model_label: truck_summary
+            .as_ref()
+            .and_then(|summary| summary.model_label.clone()),
+        truck_display_name: truck_summary
+            .as_ref()
+            .and_then(|summary| summary.display_name.clone()),
+        trailer_brand: None,
+        trailer_model: None,
+        trailer_license_plate: None,
+        trailer_odometer: None,
+        trailer_odometer_float: None,
+        trailer_wear_float: None,
+        trailer_wheels_float: None,
+    };
+
+    parser_trace.finish_ok();
+    Ok((result, truck_summary))
+}
+
+fn build_current_truck_summary_from_path(
+    path: PathBuf,
+    decrypt_cache: &DecryptCache,
+) -> Result<Option<CurrentTruckSummary>, String> {
+    let content = decrypt_cached_with_cache(&path, decrypt_cache).map_err(|error| {
+        dev_log!("truck_summary failed: {}", error);
+        error
+    })?;
+
+    parse_current_truck_summary_from_content(&content).map_err(|error| {
+        dev_log!("truck_summary failed: {}", error);
+        error
+    })
 }

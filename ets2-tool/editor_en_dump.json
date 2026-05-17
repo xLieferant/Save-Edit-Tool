@@ -1,0 +1,161 @@
+{
+  "eyebrow": "Save utility workspace",
+  "title": "High-control save editing",
+  "summary": "Separate utility mode for direct save manipulation with a clear warning barrier between simulation and editing.",
+  "warning_label": "Critical note",
+  "warning_title": "Editing can permanently disrupt progression and balance.",
+  "safe_desc": "Safe Mode emphasizes guided actions and lowers the visual intensity of risky operations.",
+  "advanced_desc": "Advanced Mode surfaces direct manipulation areas and assumes you understand the balance impact.",
+  "safe_mode": "Safe Mode",
+  "advanced_mode": "Advanced Mode",
+  "import": "Import Saves",
+  "export": "Export Saves",
+  "actions_label": "Tool Categories",
+  "quick_actions": "Workspace Actions",
+  "status_label": "Workspace Status",
+  "profile_card": "Active Profile",
+  "save_card": "Active Save",
+  "balance_card": "Balance",
+  "xp_card": "XP",
+  "level_card": "Level",
+  "fleet_card": "Fleet Assets",
+  "clone_button": "Clone Profile",
+  "refresh_button": "Scan Profiles",
+  "no_profile": "No profile selected",
+  "no_save": "No save selected",
+  "empty_title": "No tools available",
+  "empty_desc": "This category does not expose tools in the current workspace state.",
+  "tab": {
+    "truck": "Truck",
+    "trailer": "Trailer",
+    "profile": "Profile",
+    "settings": "Settings"
+  },
+  "stage_label": "Current Module",
+  "stage": {
+    "truck": "Truck Editing",
+    "truck_desc": "Repair, fuel, mileage and registration changes for the active truck profile.",
+    "trailer": "Trailer Editing",
+    "trailer_desc": "Adjust trailer condition, cargo weight and trailer identity data.",
+    "profile": "Profile Editing",
+    "profile_desc": "Update money, XP, skills and save-bound profile values in a dedicated editing flow.",
+    "settings": "Settings Editing",
+    "settings_desc": "Control language, convoy, traffic and advanced configuration switches."
+  },
+  "reset": {
+    "kicker": "Safe Value Reset",
+    "title": "Safe Value Reset",
+    "summary": "Apply custom money, level and XP values to the active save with an automatic undo snapshot.",
+    "backup_notice": "A backup is created before applying changes.",
+    "undo_unavailable": "No undo snapshot available.",
+    "ready_hint": "The active save is used immediately. Leave fields empty to keep current values.",
+    "no_save_hint": "Select a save before applying reset values.",
+    "undo_confirm": "Do you really want to restore the save state from before the last edit?",
+    "fields": {
+      "money": "Money",
+      "level": "Level",
+      "xp": "XP"
+    },
+    "placeholders": {
+      "money": "Money value",
+      "level": "Level value",
+      "xp": "XP value"
+    },
+    "actions": {
+      "apply": "Apply Values",
+      "undo": "Undo Last Change",
+      "applying": "Applying...",
+      "undo_running": "Restoring..."
+    },
+    "errors": {
+      "invalid_level": "Invalid level value",
+      "invalid_xp": "Invalid XP value",
+      "invalid_money": "Invalid money value",
+      "no_values": "Enter at least one reset value."
+    }
+  },
+  "safety": {
+    "actions": {
+      "scan_health": "Scan Health",
+      "scan_mods": "Scan Mods",
+      "refresh": "Refresh",
+      "preview": "Preview",
+      "more": "More",
+      "view_details": "Details",
+      "hide_details": "Hide details",
+      "view_backups": "Backups",
+      "hide_backups": "Hide backups",
+      "refresh_health": "Refresh Health",
+      "copy_report": "Copy Report",
+      "export_logs": "Export Logs",
+      "refresh_backups": "Refresh Backups",
+      "preview_restore": "Preview Restore",
+      "restore_backup": "Restore Backup"
+    },
+    "status": {
+      "idle": "Not checked",
+      "clean": "Clean",
+      "risky": "Risky",
+      "broken": "Broken"
+    },
+    "health": {
+      "kicker": "Save Health",
+      "title": "Health Monitor",
+      "empty_summary": "Load a save to run a health scan.",
+      "empty_title": "No save selected",
+      "empty_body": "The health monitor becomes active once a profile and save are loaded.",
+      "clean_title": "No current issues detected",
+      "fix_confirm": "Apply the selected safe fix to the active save?",
+      "fix_apply": "Apply Fix",
+      "fix_sync": "Sync XP / Level",
+      "issues_count": "{count} issues"
+    },
+    "backups": {
+      "kicker": "Recovery",
+      "title": "Automatic Backups",
+      "empty_summary": "Restore points appear after edits.",
+      "empty_title": "No backups available",
+      "empty_body": "Write operations create timestamped restore points automatically.",
+      "count": "{count} backups",
+      "files_suffix": "files"
+    },
+    "restore": {
+      "kicker": "Diff Preview",
+      "title": "Restore Preview",
+      "no_preview_status": "No preview",
+      "ready_status": "Preview ready",
+      "empty_title": "No restore preview loaded",
+      "empty_body": "Select a backup to compare changes before restoring.",
+      "confirm": "Restore this backup now? A safety backup will be created first.",
+      "changes_suffix": "changes",
+      "parseable": "parseable",
+      "binary": "binary"
+    }
+  },
+  "recovery": {
+    "entry_kicker": "Save Safety",
+    "entry_title": "Recovery Center",
+    "entry_summary": "Health scan, backups and restore tools.",
+    "entry_empty": "Load a save to open health, backup and restore tools.",
+    "entry_status_idle": "Open when needed",
+    "entry_status_ready": "Open Recovery Center",
+    "open_button": "Open Recovery Center",
+    "nav_button": "Recovery Center",
+    "back_button": "Back to Save Editor",
+    "header_kicker": "Save Safety",
+    "header_title": "Recovery Center",
+    "header_summary": "Monitor save health, manage backups and restore safely.",
+    "loading": "Loading recovery data...",
+    "no_scan": "No scan yet",
+    "not_loaded": "Not loaded",
+    "status": {
+      "profile": "Active Profile",
+      "save": "Active Save",
+      "last_scan": "Last Health Scan",
+      "backups": "Backup Count"
+    },
+    "reports_kicker": "Diagnostics",
+    "reports_title": "Reports & Logs",
+    "reports_summary": "Copy the current support report or export logs without leaving the recovery workflow."
+  }
+}

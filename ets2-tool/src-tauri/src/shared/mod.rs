@@ -11,4 +11,5 @@ pub mod paths;
 pub mod regex_helper;
 pub mod sii_parser;
 pub mod sqlite_schema;
+pub mod trace;
 pub mod user_log;

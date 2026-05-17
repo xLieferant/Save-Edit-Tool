@@ -4,13 +4,15 @@ use crate::models::profile_info::ProfileInfo;
 use crate::models::profile_info::SaveKind;
 use crate::models::save_info::SaveInfo;
 use crate::shared::current_profile::set_current_profile;
-use crate::shared::decrypt::decrypt_if_needed;
+use crate::shared::decrypt::{clear_decrypt_cache, decrypt_if_needed};
 use crate::shared::extract::extract_profile_name;
 use crate::shared::extract_save_name::extract_save_name;
 use crate::shared::hex_float::decode_hex_folder_name;
 use crate::shared::paths::ats_base_path;
 use crate::shared::paths::ets2_base_path;
 use crate::shared::paths::get_base_path;
+use crate::shared::trace::{lock_mutex, TraceScope};
+use crate::shared::user_log;
 use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -112,17 +114,26 @@ pub fn set_active_profile(
     cache: State<'_, DecryptCache>,
     profile_cache: State<'_, ProfileCache>,
 ) -> Result<(), String> {
-    // Profil setzen
-    *profile_state.current_profile.lock().unwrap() = Some(profile_path.clone());
+    let mut trace = TraceScope::with_fields(
+        "set_active_profile",
+        &[("path", profile_path.clone())],
+    );
+    *lock_mutex("profile_state.current_profile", &profile_state.current_profile)? =
+        Some(profile_path.clone());
 
     // 🔥 Cache vollständig leeren
-    cache.files.lock().unwrap().clear();
+    clear_decrypt_cache(cache.inner())?;
     profile_cache.reset_profile(Some(profile_path.clone()));
 
     dev_log!(
         "Aktives Profil gesetzt & DecryptCache geleert: {}",
         profile_path
     );
+    let _ = user_log::user_log_info(
+        "ProfileManager",
+        format!("Active profile set: {}", profile_path),
+    );
+    trace.finish_ok();
     Ok(())
 }
 
@@ -133,11 +144,13 @@ pub fn set_current_save(
     cache: State<'_, DecryptCache>,
     profile_cache: State<'_, ProfileCache>,
 ) -> Result<(), String> {
-    *state.current_save.lock().unwrap() = Some(save_path.clone());
-    // Cache leeren
-    cache.files.lock().unwrap().clear();
+    let mut trace = TraceScope::with_fields("set_current_save", &[("path", save_path.clone())]);
+    *lock_mutex("profile_state.current_save", &state.current_save)? = Some(save_path.clone());
+    clear_decrypt_cache(cache.inner())?;
     profile_cache.set_save_path(Some(save_path.clone()));
     dev_log!("Aktiver Save gesetzt: {}", save_path);
+    let _ = user_log::user_log_info("SaveEditor", format!("Active save set: {}", save_path));
+    trace.finish_ok();
     Ok(())
 }
 
@@ -148,16 +161,35 @@ pub fn switch_profile(
     profile_cache: State<'_, ProfileCache>,
 ) -> Result<(), String> {
     // 🔥 Cache vollständig leeren
-    cache.files.lock().unwrap().clear();
+    clear_decrypt_cache(cache.inner())?;
+    let mut trace = TraceScope::with_fields(
+        "switch_profile",
+        &[("path", new_profile_path.clone())],
+    );
     profile_cache.reset_profile(Some(new_profile_path.clone()));
 
     dev_log!("Profil gewechselt: {} → Cache geleert", new_profile_path);
 
+    trace.finish_ok();
     Ok(())
 }
 
 #[command]
-pub fn find_profile_saves(profile_path: String) -> Result<Vec<SaveInfo>, String> {
+pub async fn find_profile_saves(profile_path: String) -> Result<Vec<SaveInfo>, String> {
+    let mut trace = TraceScope::with_fields(
+        "find_profile_saves",
+        &[("path", profile_path.clone())],
+    );
+    let result = tauri::async_runtime::spawn_blocking(move || scan_profile_saves(&profile_path))
+        .await
+        .map_err(|error| format!("find_profile_saves join failed: {}", error))?;
+    if let Err(error) = result.as_ref() {
+        trace.finish_error(error);
+        return Err(error.clone());
+    }
+    trace.finish_ok();
+    return result;
+
     use std::fs;
     use std::path::{Path, PathBuf};
 
@@ -242,6 +274,7 @@ fn classify_save_folder(folder: &str) -> SaveKind {
 
 #[command]
 pub fn find_ets2_profiles(state: State<'_, AppProfileState>) -> Vec<ProfileInfo> {
+    let _ = user_log::user_log_info("ProfileManager", "Profile search started.");
     dev_log!("Starte Profil-Suche…");
     let mut found_profiles = Vec::new();
 
@@ -341,6 +374,10 @@ pub fn find_ets2_profiles(state: State<'_, AppProfileState>) -> Vec<ProfileInfo>
         "Profil-Suche abgeschlossen. Gefunden: {}",
         found_profiles.len()
     );
+    let _ = user_log::user_log_info(
+        "ProfileManager",
+        format!("Profile search completed. Found {} profiles.", found_profiles.len()),
+    );
     found_profiles
 }
 
@@ -352,11 +389,17 @@ pub fn load_profile(
     cache: State<'_, DecryptCache>,
     profile_cache: State<'_, ProfileCache>,
 ) -> Result<String, String> {
+    let mut trace = TraceScope::with_fields(
+        "load_profile",
+        &[("path", profile_path.clone())],
+    );
     let save_path_str = save_path.ok_or_else(|| "Kein Save angegeben".to_string())?;
     let save_to_load = PathBuf::from(save_path_str);
 
     if !save_to_load.exists() {
-        return Err(format!("Save nicht gefunden: {}", save_to_load.display()));
+        let error = format!("Save nicht gefunden: {}", save_to_load.display());
+        trace.finish_error(&error);
+        return Err(error);
     }
 
     // Profil setzen
@@ -380,5 +423,78 @@ pub fn load_profile(
         profile_path,
         save_to_load.display()
     );
+    trace.finish_ok();
     Ok("Profil geladen".into())
+}
+
+fn scan_profile_saves(profile_path: &str) -> Result<Vec<SaveInfo>, String> {
+    use std::path::Path;
+
+    let save_root = Path::new(profile_path).join("save");
+    if !save_root.is_dir() {
+        return Err("Save-Ordner nicht gefunden".into());
+    }
+
+    let entries = fs::read_dir(&save_root)
+        .map_err(|e| format!("Save-Ordner konnte nicht gelesen werden: {}", e))?;
+    let mut saves = Vec::new();
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if !path.is_dir() {
+            continue;
+        }
+
+        let folder = match path.file_name().and_then(|n| n.to_str()) {
+            Some(f) => f.to_string(),
+            None => continue,
+        };
+
+        let kind = classify_save_folder(&folder);
+        if kind == SaveKind::Invalid {
+            continue;
+        }
+
+        let info_sii = path.join("info.sii");
+        let mut save = SaveInfo {
+            path: path.display().to_string(),
+            folder: folder.clone(),
+            name: None,
+            success: false,
+            message: None,
+            kind,
+        };
+
+        if info_sii.is_file() {
+            let mut parse_trace = TraceScope::with_fields(
+                "scan_saves.info_sii",
+                &[("path", info_sii.display().to_string())],
+            );
+            match decrypt_if_needed(&info_sii) {
+                Ok(text) => {
+                    save.name = extract_save_name(&text);
+                    save.success = save.name.is_some();
+                    if !save.success {
+                        save.message = Some("Kein Save-Name gefunden".into());
+                        save.kind = SaveKind::Invalid;
+                    }
+                    parse_trace.finish_ok();
+                }
+                Err(error) => {
+                    parse_trace.finish_error(&error);
+                    save.message = Some(error);
+                    save.success = false;
+                    save.kind = SaveKind::Invalid;
+                }
+            }
+        } else {
+            save.message = Some("info.sii fehlt".into());
+            save.success = false;
+            save.kind = SaveKind::Invalid;
+        }
+
+        saves.push(save);
+    }
+
+    Ok(saves)
 }

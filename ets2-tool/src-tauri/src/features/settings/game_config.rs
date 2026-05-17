@@ -5,6 +5,7 @@ use crate::models::save_game_config::SaveGameConfig;
 use crate::shared::decrypt::decrypt_if_needed;
 use crate::shared::paths::ets2_base_config_path;
 use crate::shared::paths::quicksave_config_path;
+use crate::shared::trace::TraceScope;
 use crate::state::ProfileCache;
 use regex::Regex;
 use std::fs;
@@ -13,10 +14,12 @@ use tauri::{State, command};
 //* Liest die globale config.cfg im Basis-Verzeichnis des Spiels *//
 #[command]
 pub fn read_base_config(cache: State<'_, ProfileCache>) -> Result<BaseGameConfig, String> {
+    let mut trace = TraceScope::new("read_base_config");
     dev_log!("Lese globale Config");
 
     if let Some(cached) = cache.get_base_config() {
         dev_log!("Base config aus Cache geliefert");
+        trace.finish_ok();
         return Ok(cached);
     }
 
@@ -26,6 +29,7 @@ pub fn read_base_config(cache: State<'_, ProfileCache>) -> Result<BaseGameConfig
         None => {
             let err_msg = "Konnte Standardpfad zur globalen config.cfg nicht ermitteln.";
             dev_log!("{}", err_msg);
+            trace.finish_error(err_msg);
             return Err(err_msg.into());
         }
     };
@@ -34,6 +38,7 @@ pub fn read_base_config(cache: State<'_, ProfileCache>) -> Result<BaseGameConfig
     if !path.exists() {
         let err_msg = format!("Die Datei wurde nicht gefunden unter: {:?}", path);
         dev_log!("{}", err_msg);
+        trace.finish_error(&err_msg);
         return Err(err_msg);
     }
 
@@ -67,7 +72,7 @@ pub fn read_base_config(cache: State<'_, ProfileCache>) -> Result<BaseGameConfig
     );
 
     cache.cache_base_config(data.clone());
-
+    trace.finish_ok();
     Ok(data)
 }
 
@@ -79,12 +84,17 @@ pub fn read_save_config(
     profile_path: &str,
     cache: State<'_, ProfileCache>,
 ) -> Result<SaveGameConfig, String> {
+    let mut trace = TraceScope::with_fields(
+        "read_save_config",
+        &[("path", profile_path.to_string())],
+    );
     // Wir nehmen den übergebenen profile_path direkt.
 
     dev_log!("Lese Config aus Profilpfad: {}", profile_path);
 
     if let Some(cached) = cache.get_save_config() {
         dev_log!("Save config aus Cache geliefert");
+        trace.finish_ok();
         return Ok(cached);
     }
 
@@ -95,6 +105,7 @@ pub fn read_save_config(
     if !path.exists() {
         let err_msg = format!("Error: Die Datei wurde nicht gefunden unter: {:?}", path);
         dev_log!("{}", err_msg);
+        trace.finish_error(&err_msg);
         return Err(err_msg);
     }
 
@@ -115,5 +126,6 @@ pub fn read_save_config(
     );
 
     cache.cache_save_config(data.clone());
+    trace.finish_ok();
     Ok(data)
 }
