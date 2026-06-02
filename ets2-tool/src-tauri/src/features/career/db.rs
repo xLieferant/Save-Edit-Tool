@@ -1,6 +1,7 @@
 use rusqlite::Connection;
 use std::path::{Path, PathBuf};
 
+use crate::features::career::analytics;
 use crate::features::career::dispatcher;
 use crate::features::career::job_log;
 use crate::features::{auth, companies, vtc};
@@ -65,6 +66,7 @@ pub fn init_logbook(db_path: &Path) -> Result<(), String> {
     fleet::ensure_tables(&conn)?;
     dispatcher::ensure_tables(&conn)?;
     job_log::ensure_tables(&conn)?;
+    analytics::ensure_tables(&conn)?;
 
     auth::db::ensure_tables(&conn)?;
     companies::db::ensure_tables(&conn)?;

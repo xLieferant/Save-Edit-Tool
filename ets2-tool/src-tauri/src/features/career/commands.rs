@@ -12,6 +12,9 @@ use crate::events::{
     EVT_DISPATCHER_ASSIGN_PREPARE_ERROR, EVT_DISPATCHER_ASSIGN_PREPARE_PROGRESS,
     EVT_DISPATCHER_JOB_UPDATED,
 };
+use crate::features::career::analytics::{
+    self, AnalyticsFilters, AnalyticsJobHistoryResponse, AnalyticsScanResult, AnalyticsSummary,
+};
 use crate::features::career::dispatcher::{
     self, DispatcherCompanyContact, DispatcherCreateOfferInput, DispatcherGenerationConfigInput,
     DispatcherGenerationStatus, DispatcherHistoryResponse, DispatcherJobDetails,
@@ -225,6 +228,57 @@ pub fn career_get_job_stats(career: State<'_, CareerState>) -> Result<JobStats, 
     let conn = Connection::open(db_path).map_err(|e| e.to_string())?;
     job_log::ensure_tables(&conn)?;
     job_log::load_job_stats(&conn)
+}
+
+#[command]
+pub fn career_get_analytics_summary(
+    filters: Option<AnalyticsFilters>,
+    career: State<'_, CareerState>,
+) -> Result<AnalyticsSummary, String> {
+    crate::dev_log!("[career] command: career_get_analytics_summary");
+    let conn = open_connection(career.runtime.as_ref())?;
+    analytics::load_summary(&conn, filters)
+}
+
+#[command]
+pub fn career_get_analytics_job_history(
+    filters: Option<AnalyticsFilters>,
+    career: State<'_, CareerState>,
+) -> Result<AnalyticsJobHistoryResponse, String> {
+    crate::dev_log!("[career] command: career_get_analytics_job_history");
+    let conn = open_connection(career.runtime.as_ref())?;
+    analytics::load_history(&conn, filters)
+}
+
+#[command]
+pub fn career_scan_profile_job_history(
+    profile_path: Option<String>,
+    career: State<'_, CareerState>,
+    profile: State<'_, AppProfileState>,
+) -> Result<AnalyticsScanResult, String> {
+    crate::dev_log!("[career] command: career_scan_profile_job_history");
+    let selected_profile = profile_path
+        .filter(|value| !value.trim().is_empty())
+        .or_else(|| profile.current_profile.lock().ok().and_then(|value| value.clone()))
+        .ok_or_else(|| "No profile path available for analytics scan.".to_string())?;
+    let selected_game = profile
+        .selected_game
+        .lock()
+        .map_err(|_| "AppProfileState selected_game lock poisoned".to_string())?
+        .clone();
+    let conn = open_connection(career.runtime.as_ref())?;
+    analytics::scan_profile_job_history(&conn, &selected_profile, Some(&selected_game))
+}
+
+#[command]
+pub fn career_export_analytics_csv(
+    app: AppHandle,
+    filters: Option<AnalyticsFilters>,
+    career: State<'_, CareerState>,
+) -> Result<Option<String>, String> {
+    crate::dev_log!("[career] command: career_export_analytics_csv");
+    let conn = open_connection(career.runtime.as_ref())?;
+    analytics::export_csv(&app, &conn, filters)
 }
 
 #[command]

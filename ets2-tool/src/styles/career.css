@@ -1556,3 +1556,217 @@ body.career-page {
     max-height: min(70vh, 560px);
   }
 }
+
+body.theme-neon-red.career-page {
+  --career-shadow: 0 18px 36px rgba(0, 0, 0, 0.34);
+  --career-shadow-strong: 0 24px 48px rgba(0, 0, 0, 0.42);
+  --career-focus: 0 0 0 3px rgba(255, 74, 104, 0.24);
+  --career-scrollbar-track: rgba(255, 255, 255, 0.03);
+  --career-scrollbar-thumb: rgba(196, 60, 86, 0.28);
+  --career-scrollbar-thumb-hover: rgba(216, 88, 112, 0.42);
+  --career-dropdown-surface: #1a0d11;
+  --career-dropdown-surface-strong: #14090d;
+  --career-dropdown-border: rgba(196, 82, 104, 0.42);
+  --career-dropdown-text: #fff4f6;
+  --career-dropdown-hover: rgba(255, 74, 104, 0.26);
+  --career-dropdown-active: rgba(255, 74, 104, 0.34);
+  background:
+    radial-gradient(circle at 12% 10%, rgba(255, 52, 86, 0.14), transparent 24%),
+    radial-gradient(circle at 86% 14%, rgba(148, 24, 54, 0.16), transparent 26%),
+    linear-gradient(160deg, #12060a 0%, #0b0508 52%, #050304 100%);
+  color: #f7ecee;
+}
+
+body.theme-neon-red.career-page .career-topbar,
+body.theme-neon-red.career-page .career-sidebar,
+body.theme-neon-red.career-page .career-panel,
+body.theme-neon-red.career-page .career-card,
+body.theme-neon-red.career-page .career-widget,
+body.theme-neon-red.career-page .career-status-card,
+body.theme-neon-red.career-page .career-metric-card,
+body.theme-neon-red.career-page .dispatcher-generation-card,
+body.theme-neon-red.career-page .dispatcher-generation-controls,
+body.theme-neon-red.career-page .dispatcher-detail-card,
+body.theme-neon-red.career-page .career-user-menu-dropdown,
+body.theme-neon-red.career-page .career-user-dropdown-meta,
+body.theme-neon-red.career-page .career-setting-row,
+body.theme-neon-red.career-page .career-toggle-field,
+body.theme-neon-red.career-page .career-table-wrap,
+body.theme-neon-red.career-page .career-empty,
+body.theme-neon-red.career-page .career-definition-grid div {
+  border-color: rgba(184, 70, 90, 0.24);
+  background: linear-gradient(160deg, rgba(25, 10, 15, 0.96), rgba(14, 7, 10, 0.94));
+  box-shadow: var(--career-shadow);
+}
+
+body.theme-neon-red.career-page .career-card--highlight,
+body.theme-neon-red.career-page .career-level-badge {
+  border-color: rgba(255, 88, 116, 0.4);
+  background: linear-gradient(155deg, rgba(58, 14, 24, 0.98), rgba(31, 9, 14, 0.95));
+  box-shadow: 0 20px 34px rgba(0, 0, 0, 0.34), 0 0 28px rgba(255, 58, 92, 0.14);
+}
+
+body.theme-neon-red.career-page .career-progress-fill {
+  background: linear-gradient(90deg, #ff3f69, #c91b46);
+  box-shadow: 0 0 18px rgba(255, 63, 105, 0.22);
+}
+
+body.theme-neon-red.career-page .career-burger,
+body.theme-neon-red.career-page .career-topbar-btn,
+body.theme-neon-red.career-page .career-user-menu-btn,
+body.theme-neon-red.career-page .career-user-menu-item,
+body.theme-neon-red.career-page .career-icon-btn,
+body.theme-neon-red.career-page .career-nav-btn,
+body.theme-neon-red.career-page .career-action-btn,
+body.theme-neon-red.career-page .career-mini-btn,
+body.theme-neon-red.career-page .dispatcher-tab-btn {
+  border-color: rgba(184, 70, 90, 0.34);
+  color: #fff1f4;
+}
+
+body.theme-neon-red.career-page .career-topbar-btn,
+body.theme-neon-red.career-page .career-action-btn,
+body.theme-neon-red.career-page .career-mini-btn,
+body.theme-neon-red.career-page .dispatcher-tab-btn.is-active,
+body.theme-neon-red.career-page .career-nav-btn.is-active {
+  background: linear-gradient(145deg, #7d1831, #541121);
+  box-shadow: 0 10px 22px rgba(74, 13, 29, 0.28);
+}
+
+body.theme-neon-red.career-page .career-burger,
+body.theme-neon-red.career-page .career-user-menu-btn,
+body.theme-neon-red.career-page .career-user-menu-item,
+body.theme-neon-red.career-page .career-icon-btn,
+body.theme-neon-red.career-page .career-nav-btn,
+body.theme-neon-red.career-page .dispatcher-tab-btn,
+body.theme-neon-red.career-page .career-member-role-select {
+  background: linear-gradient(145deg, rgba(32, 10, 16, 0.96), rgba(20, 7, 11, 0.94));
+}
+
+body.theme-neon-red.career-page .career-burger:hover,
+body.theme-neon-red.career-page .career-topbar-btn:hover,
+body.theme-neon-red.career-page .career-user-menu-btn:hover,
+body.theme-neon-red.career-page .career-user-menu-item:hover,
+body.theme-neon-red.career-page .career-icon-btn:hover,
+body.theme-neon-red.career-page .career-nav-btn:hover,
+body.theme-neon-red.career-page .career-action-btn:hover,
+body.theme-neon-red.career-page .career-mini-btn:hover,
+body.theme-neon-red.career-page .dispatcher-tab-btn:hover {
+  border-color: rgba(255, 98, 126, 0.56);
+  filter: brightness(1.05);
+}
+
+body.theme-neon-red.career-page .career-field input,
+body.theme-neon-red.career-page .career-field textarea,
+body.theme-neon-red.career-page .career-user-auth-field input {
+  border-color: rgba(184, 70, 90, 0.26);
+  background: rgba(19, 8, 11, 0.92);
+  color: #fff4f6;
+}
+
+body.theme-neon-red.career-page .career-field select,
+body.theme-neon-red.career-page .career-member-role-select {
+  border-color: var(--career-dropdown-border);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.015)),
+    var(--career-dropdown-surface);
+  color: var(--career-dropdown-text);
+}
+
+body.theme-neon-red.career-page .career-field input:focus,
+body.theme-neon-red.career-page .career-field textarea:focus,
+body.theme-neon-red.career-page .career-field select:focus,
+body.theme-neon-red.career-page .career-user-auth-field input:focus {
+  border-color: rgba(255, 98, 126, 0.62);
+  box-shadow: var(--career-focus);
+}
+
+body.theme-neon-red.career-page .career-brand-kicker,
+body.theme-neon-red.career-page .career-status-card span,
+body.theme-neon-red.career-page .career-status-card small,
+body.theme-neon-red.career-page .career-panel-head p,
+body.theme-neon-red.career-page .career-metric-card span,
+body.theme-neon-red.career-page .career-card-head p,
+body.theme-neon-red.career-page .career-level-stat,
+body.theme-neon-red.career-page .career-level-progress-meta,
+body.theme-neon-red.career-page .career-stat-row,
+body.theme-neon-red.career-page .career-active-job-row,
+body.theme-neon-red.career-page .career-field span,
+body.theme-neon-red.career-page .career-toggle-field span,
+body.theme-neon-red.career-page .career-inline-info,
+body.theme-neon-red.career-page .career-note,
+body.theme-neon-red.career-page .dispatcher-generation-card span,
+body.theme-neon-red.career-page .dispatcher-generation-card small,
+body.theme-neon-red.career-page .dispatcher-detail-grid dt,
+body.theme-neon-red.career-page .dispatcher-detail-notes p,
+body.theme-neon-red.career-page .dispatcher-action-hints p,
+body.theme-neon-red.career-page .dispatcher-row-secondary,
+body.theme-neon-red.career-page .career-table th {
+  color: #c9a3ac;
+}
+
+body.theme-neon-red.career-page .career-brand h1,
+body.theme-neon-red.career-page .career-status-card strong,
+body.theme-neon-red.career-page .career-panel-head h2,
+body.theme-neon-red.career-page .career-metric-card strong,
+body.theme-neon-red.career-page .career-card-head h3,
+body.theme-neon-red.career-page .career-level-badge strong,
+body.theme-neon-red.career-page .career-stat-row strong,
+body.theme-neon-red.career-page .career-active-job-row strong,
+body.theme-neon-red.career-page .career-table td,
+body.theme-neon-red.career-page .dispatcher-generation-card strong,
+body.theme-neon-red.career-page .dispatcher-detail-grid dd,
+body.theme-neon-red.career-page .dispatcher-row-primary,
+body.theme-neon-red.career-page .dispatcher-write-report h4,
+body.theme-neon-red.career-page .dispatcher-write-report pre {
+  color: #fff4f6;
+}
+
+body.theme-neon-red.career-page .dispatcher-write-btn {
+  border-color: rgba(255, 110, 138, 0.42);
+  background: linear-gradient(180deg, #7d1831, #4b0f1d);
+  color: #ffe1e7;
+}
+
+body.theme-neon-red.career-page .dispatcher-badge,
+body.theme-neon-red.career-page .dispatcher-status-pill {
+  border-color: rgba(184, 70, 90, 0.34);
+  background: rgba(61, 14, 24, 0.28);
+  color: #ffd6de;
+}
+
+body.theme-neon-red.career-page .dispatcher-badge.is-contract,
+body.theme-neon-red.career-page .dispatcher-badge.is-link-completed,
+body.theme-neon-red.career-page .dispatcher-status-pill.is-completed,
+body.theme-neon-red.career-page .dispatcher-status-pill.is-accepted,
+body.theme-neon-red.career-page .dispatcher-status-pill.is-in_transit {
+  border-color: rgba(78, 190, 122, 0.4);
+  color: #d6f5e0;
+  background: rgba(20, 64, 35, 0.28);
+}
+
+body.theme-neon-red.career-page .dispatcher-badge.is-offer,
+body.theme-neon-red.career-page .dispatcher-badge.is-pending,
+body.theme-neon-red.career-page .dispatcher-badge.is-link-pending,
+body.theme-neon-red.career-page .dispatcher-badge.is-requires-load,
+body.theme-neon-red.career-page .dispatcher-status-pill.is-delayed,
+body.theme-neon-red.career-page .dispatcher-status-pill.is-problematic {
+  border-color: rgba(214, 140, 44, 0.42);
+  color: #ffe0af;
+  background: rgba(80, 45, 14, 0.3);
+}
+
+body.theme-neon-red.career-page .dispatcher-badge.is-link-error,
+body.theme-neon-red.career-page .dispatcher-status-pill.is-expired,
+body.theme-neon-red.career-page .dispatcher-status-pill.is-rejected,
+body.theme-neon-red.career-page .dispatcher-status-pill.is-cancelled,
+body.theme-neon-red.career-page .dispatcher-status-pill.is-failed,
+body.theme-neon-red.career-page .dispatcher-status-pill.is-abandoned {
+  border-color: rgba(220, 74, 96, 0.44);
+  color: #ffd8e0;
+  background: rgba(89, 18, 33, 0.34);
+}
+
+body.theme-neon-red.career-page #cmDispatcherMarketBody tr.is-selected td {
+  background: rgba(124, 20, 44, 0.26);
+}

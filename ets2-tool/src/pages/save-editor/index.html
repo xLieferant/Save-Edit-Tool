@@ -819,6 +819,19 @@
 
     </div>
 
+    <button
+      id="wikiHelpBtn"
+      class="wiki-help-btn"
+      type="button"
+      aria-haspopup="dialog"
+      aria-controls="modalWiki"
+      aria-label="Open in-app help and wiki"
+      data-translate-aria-label="modals.wiki.button_aria_label"
+    >
+      <span class="wiki-help-btn__icon" aria-hidden="true">?</span>
+      <span class="wiki-help-btn__label" data-translate="modals.wiki.button_label">Help</span>
+    </button>
+
     <div class="modal-backdrop" id="modalAppUpdate" aria-hidden="true">
       <div class="modal-box modal-box--sheet modal-box--update">
         <div class="detail-modal-head">
@@ -890,6 +903,169 @@
         <div class="modal-actions">
           <button id="modalTextCancel" data-translate="modals.cancel">Close</button>
           <button id="modalTextApply" class="apply" data-translate="modals.apply">Apply</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalWiki">
+      <div
+        class="modal-box modal-box--xl modal-box--wiki"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modalWikiTitle"
+        aria-describedby="modalWikiDescription"
+      >
+        <div class="wiki-modal-head">
+          <div>
+            <span class="modal-kicker" data-translate="modals.wiki.kicker">In-App Help</span>
+            <h2 id="modalWikiTitle" tabindex="-1" data-translate="modals.wiki.title">Wiki &amp; Help</h2>
+            <p id="modalWikiDescription" class="modal-description" data-translate="modals.wiki.description">
+              Quick guidance for editor workflows, shortcuts, safety features and accessibility inside the app.
+            </p>
+          </div>
+          <button
+            id="modalWikiCloseTop"
+            class="wiki-close-btn"
+            type="button"
+            aria-label="Close help dialog"
+            data-translate="modals.close"
+            data-translate-aria-label="modals.wiki.close_aria_label"
+          >
+            Close
+          </button>
+        </div>
+
+        <div class="wiki-layout">
+          <nav
+            id="wikiIndexNav"
+            class="wiki-index"
+            aria-label="Wiki sections"
+            data-translate-aria-label="modals.wiki.nav_aria_label"
+          >
+            <a href="#wikiSectionWelcome" class="wiki-index__link" data-translate="modals.wiki.sections.welcome.title">Welcome</a>
+            <a href="#wikiSectionShortcuts" class="wiki-index__link" data-translate="modals.wiki.sections.shortcuts.title">Shortcuts</a>
+            <a href="#wikiSectionSaveEditor" class="wiki-index__link" data-translate="modals.wiki.sections.save_editor.title">Save Edit Tool</a>
+            <a href="#wikiSectionCareer" class="wiki-index__link" data-translate="modals.wiki.sections.career.title">Career Mode / VTC</a>
+            <a href="#wikiSectionHealth" class="wiki-index__link" data-translate="modals.wiki.sections.health.title">Save Health Monitor</a>
+            <a href="#wikiSectionBackup" class="wiki-index__link" data-translate="modals.wiki.sections.backup.title">Auto Backup &amp; Restore</a>
+            <a href="#wikiSectionLogging" class="wiki-index__link" data-translate="modals.wiki.sections.logging.title">Logging &amp; Error Reports</a>
+            <a href="#wikiSectionUpdates" class="wiki-index__link" data-translate="modals.wiki.sections.updates.title">Updates</a>
+            <a href="#wikiSectionAccessibility" class="wiki-index__link" data-translate="modals.wiki.sections.accessibility.title">Accessibility / Bedienung</a>
+          </nav>
+
+          <div class="wiki-content">
+            <section id="wikiSectionWelcome" class="wiki-section">
+              <h3 data-translate="modals.wiki.sections.welcome.title">Welcome</h3>
+              <p data-translate="modals.wiki.sections.welcome.body">
+                Welcome to the SimNexus / ETS2 Save Edit Tool. This wiki explains the main areas, shortcuts and features directly inside the app.
+              </p>
+            </section>
+
+            <section id="wikiSectionShortcuts" class="wiki-section">
+              <h3 data-translate="modals.wiki.sections.shortcuts.title">Shortcuts</h3>
+              <div class="wiki-shortcut-list" role="list">
+                <div class="wiki-shortcut-item" role="listitem">
+                  <kbd>F1</kbd>
+                  <span data-translate="modals.wiki.sections.shortcuts.f1">Open the Truck section.</span>
+                </div>
+                <div class="wiki-shortcut-item" role="listitem">
+                  <kbd>F2</kbd>
+                  <span data-translate="modals.wiki.sections.shortcuts.f2">Open the Trailer section.</span>
+                </div>
+                <div class="wiki-shortcut-item" role="listitem">
+                  <kbd>F3</kbd>
+                  <span data-translate="modals.wiki.sections.shortcuts.f3">Open the Profile section.</span>
+                </div>
+                <div class="wiki-shortcut-item" role="listitem">
+                  <kbd>F4</kbd>
+                  <span data-translate="modals.wiki.sections.shortcuts.f4">Open the Settings section.</span>
+                </div>
+                <div class="wiki-shortcut-item" role="listitem">
+                  <kbd>ESC</kbd>
+                  <span data-translate="modals.wiki.sections.shortcuts.esc">Close open modals or windows when possible.</span>
+                </div>
+              </div>
+            </section>
+
+            <section id="wikiSectionSaveEditor" class="wiki-section">
+              <h3 data-translate="modals.wiki.sections.save_editor.title">Save Edit Tool</h3>
+              <ul class="wiki-bullet-list">
+                <li data-translate="modals.wiki.sections.save_editor.item_truck">Edit truck values such as wear, fuel, mileage and identity fields.</li>
+                <li data-translate="modals.wiki.sections.save_editor.item_trailer">Edit trailer values such as condition, cargo mass and trailer identity data.</li>
+                <li data-translate="modals.wiki.sections.save_editor.item_profile">Edit profile values such as money, XP, level and related progress data.</li>
+                <li data-translate="modals.wiki.sections.save_editor.item_validate">Review values before writing changes to the active save.</li>
+                <li data-translate="modals.wiki.sections.save_editor.item_backup">When backup and restore workflows are available, use them before applying risky changes.</li>
+              </ul>
+            </section>
+
+            <section id="wikiSectionCareer" class="wiki-section">
+              <h3 data-translate="modals.wiki.sections.career.title">Career Mode / VTC</h3>
+              <ul class="wiki-bullet-list">
+                <li data-translate="modals.wiki.sections.career.item_dispatcher">Dispatcher workflows help coordinate job generation, assignment and routing decisions.</li>
+                <li data-translate="modals.wiki.sections.career.item_jobs">Jobs, offers, active contracts and history provide operational visibility for current and past work.</li>
+                <li data-translate="modals.wiki.sections.career.item_company">The company profile area covers company identity, visibility and organization settings.</li>
+                <li data-translate="modals.wiki.sections.career.item_members">Members and roles define access, responsibilities and company participation.</li>
+                <li data-translate="modals.wiki.sections.career.item_fleet">Fleet panels summarize trucks, assignments, readiness and maintenance state.</li>
+                <li data-translate="modals.wiki.sections.career.item_stats">Balance, statistics and achievements help track long-term company progress.</li>
+              </ul>
+            </section>
+
+            <section id="wikiSectionHealth" class="wiki-section">
+              <h3 data-translate="modals.wiki.sections.health.title">Save Health Monitor</h3>
+              <ul class="wiki-bullet-list">
+                <li data-translate="modals.wiki.sections.health.item_status">Save health can report states such as Clean, Risky or Broken.</li>
+                <li data-translate="modals.wiki.sections.health.item_mods">Missing mods can lead to incomplete loads or unstable save behavior.</li>
+                <li data-translate="modals.wiki.sections.health.item_refs">Broken references indicate objects or links that can no longer be resolved safely.</li>
+                <li data-translate="modals.wiki.sections.health.item_xp">Inconsistent XP or level values can produce progression errors after editing.</li>
+                <li data-translate="modals.wiki.sections.health.item_fixes">Review hints and proposed fixes before applying any automated repair step.</li>
+              </ul>
+            </section>
+
+            <section id="wikiSectionBackup" class="wiki-section">
+              <h3 data-translate="modals.wiki.sections.backup.title">Auto Backup &amp; Restore</h3>
+              <ul class="wiki-bullet-list">
+                <li data-translate="modals.wiki.sections.backup.item_snapshots">Automatic snapshots can be created before write operations.</li>
+                <li data-translate="modals.wiki.sections.backup.item_restore">Restore workflows allow returning to a previous save state when needed.</li>
+                <li data-translate="modals.wiki.sections.backup.item_diff">If a diff preview is available, inspect it before restoring or overwriting data.</li>
+                <li data-translate="modals.wiki.sections.backup.item_why">Backups matter because save edits can affect progression, references and game stability.</li>
+              </ul>
+            </section>
+
+            <section id="wikiSectionLogging" class="wiki-section">
+              <h3 data-translate="modals.wiki.sections.logging.title">Logging &amp; Error Reports</h3>
+              <ul class="wiki-bullet-list">
+                <li data-translate="modals.wiki.sections.logging.item_reports">User-facing error reports should explain what failed in a readable way.</li>
+                <li data-translate="modals.wiki.sections.logging.item_copy">Use Copy Report when you need to share diagnostic output quickly.</li>
+                <li data-translate="modals.wiki.sections.logging.item_export">Use Export Logs when a longer support or debugging trail is required.</li>
+                <li data-translate="modals.wiki.sections.logging.item_levels">When both are available, user logs focus on workflows while developer logs include deeper technical traces.</li>
+              </ul>
+            </section>
+
+            <section id="wikiSectionUpdates" class="wiki-section">
+              <h3 data-translate="modals.wiki.sections.updates.title">Updates</h3>
+              <ul class="wiki-bullet-list">
+                <li data-translate="modals.wiki.sections.updates.item_check">Check for updates from inside the app when update functionality is available.</li>
+                <li data-translate="modals.wiki.sections.updates.item_download">Download the update package before installation starts.</li>
+                <li data-translate="modals.wiki.sections.updates.item_install">Install updates with the built-in flow instead of replacing files manually.</li>
+                <li data-translate="modals.wiki.sections.updates.item_relaunch">Relaunch the app after installation if prompted.</li>
+                <li data-translate="modals.wiki.sections.updates.item_progress">Use the progress display to monitor download and install status.</li>
+              </ul>
+            </section>
+
+            <section id="wikiSectionAccessibility" class="wiki-section">
+              <h3 data-translate="modals.wiki.sections.accessibility.title">Accessibility / Bedienung</h3>
+              <ul class="wiki-bullet-list">
+                <li data-translate="modals.wiki.sections.accessibility.item_keyboard">Most core actions should remain reachable with keyboard navigation.</li>
+                <li data-translate="modals.wiki.sections.accessibility.item_focus">Visible focus states make navigation and active controls easier to track.</li>
+                <li data-translate="modals.wiki.sections.accessibility.item_contrast">Readable contrast helps when working for long sessions in dark UI themes.</li>
+                <li data-translate="modals.wiki.sections.accessibility.item_help">The help button keeps this wiki reachable at any time inside the app.</li>
+              </ul>
+            </section>
+          </div>
+        </div>
+
+        <div class="modal-actions modal-actions--end">
+          <button id="modalWikiClose" type="button" data-translate="modals.close">Close</button>
         </div>
       </div>
     </div>

@@ -193,6 +193,116 @@
             "career_settings_saved": "Karriereeinstellungen gespeichert.",
             "member_role_saved": "Mitgliederrolle aktualisiert.",
             "settings_note": "API-, Sync- und Telemetrie-Konfigurations-Hooks sind als Platzhalter vorbereitet.",
+            "analytics": {
+                  "summary_text": "[NEEDS TRANSLATION] Job analytics, partial save imports and local tracking exports.",
+                  "export": "[NEEDS TRANSLATION] Export to Excel (CSV)",
+                  "scan_save_data": "[NEEDS TRANSLATION] Analyze Save Data",
+                  "enable_tracking": "[NEEDS TRANSLATION] Enable Tracking",
+                  "note": "[NEEDS TRANSLATION] Note: ETS2/ATS do not necessarily store a complete historical job list. The tool only imports data that is still present in the save/profile. For complete tracking, new jobs are logged in the local database after tracking is enabled.",
+                  "partial_data": "[NEEDS TRANSLATION] Partial data detected. Save imports and older local entries may not contain complete profit, cost or delivery timing fields.",
+                  "local_tracking_hint": "[NEEDS TRANSLATION] Live telemetry and local job logging provide the most reliable history after tracking is enabled.",
+                  "loading_title": "[NEEDS TRANSLATION] Loading analytics",
+                  "loading_body": "[NEEDS TRANSLATION] Building job history, charts and filter options from the local database.",
+                  "error_title": "[NEEDS TRANSLATION] Analytics could not be loaded",
+                  "empty": {
+                        "title": "[NEEDS TRANSLATION] No job data available yet.",
+                        "body": "[NEEDS TRANSLATION] The tool can analyze existing save data when those details are still stored in the profile. For complete tracking, new jobs are logged automatically in the local database from now on.",
+                        "no_chart_data": "[NEEDS TRANSLATION] No chart data available for the current filter set.",
+                        "no_rows": "[NEEDS TRANSLATION] No matching jobs found for the current filters."
+                  },
+                  "filters": {
+                        "from": "[NEEDS TRANSLATION] From",
+                        "to": "[NEEDS TRANSLATION] To",
+                        "profile": "[NEEDS TRANSLATION] Profile",
+                        "game": "Game",
+                        "status": "Status",
+                        "cargo": "[NEEDS TRANSLATION] Cargo",
+                        "cargo_placeholder": "[NEEDS TRANSLATION] Search cargo",
+                        "source_city": "[NEEDS TRANSLATION] Source City",
+                        "destination_city": "[NEEDS TRANSLATION] Destination City",
+                        "all": "[NEEDS TRANSLATION] All"
+                  },
+                  "apply_filters": "[NEEDS TRANSLATION] Apply Filters",
+                  "reset_filters": "[NEEDS TRANSLATION] Reset Filters",
+                  "charts": {
+                        "revenue_over_time": "[NEEDS TRANSLATION] Revenue Over Time",
+                        "profit_over_time": "[NEEDS TRANSLATION] Profit Over Time",
+                        "jobs_per_day": "[NEEDS TRANSLATION] Jobs Per Day",
+                        "top_cargo": "[NEEDS TRANSLATION] Top Cargo",
+                        "top_routes": "[NEEDS TRANSLATION] Top Routes",
+                        "damage_cost": "[NEEDS TRANSLATION] Damage / Cost Analysis"
+                  },
+                  "aria": {
+                        "refresh_button": "[NEEDS TRANSLATION] Refresh analytics",
+                        "export_button": "[NEEDS TRANSLATION] Export analytics CSV",
+                        "scan_button": "[NEEDS TRANSLATION] Analyze save data for analytics",
+                        "enable_tracking_button": "[NEEDS TRANSLATION] Enable local analytics tracking",
+                        "source_summary": "[NEEDS TRANSLATION] Analytics source summary",
+                        "summary_cards": "[NEEDS TRANSLATION] Analytics summary cards",
+                        "job_history_table": "[NEEDS TRANSLATION] Analytics job history"
+                  },
+                  "table": {
+                        "date": "[NEEDS TRANSLATION] Date",
+                        "profile": "[NEEDS TRANSLATION] Profile",
+                        "game": "Game",
+                        "job_uid": "[NEEDS TRANSLATION] Job ID",
+                        "status": "Status",
+                        "cargo": "[NEEDS TRANSLATION] Cargo",
+                        "source_city": "[NEEDS TRANSLATION] Source City",
+                        "destination_city": "[NEEDS TRANSLATION] Destination City",
+                        "source_company": "[NEEDS TRANSLATION] Source Company",
+                        "destination_company": "[NEEDS TRANSLATION] Destination Company",
+                        "distance": "[NEEDS TRANSLATION] Distance",
+                        "revenue": "[NEEDS TRANSLATION] Revenue",
+                        "costs": "[NEEDS TRANSLATION] Costs",
+                        "damage": "[NEEDS TRANSLATION] Damage",
+                        "penalties": "[NEEDS TRANSLATION] Penalties",
+                        "profit": "[NEEDS TRANSLATION] Profit",
+                        "xp": "XP",
+                        "level": "[NEEDS TRANSLATION] Level",
+                        "truck": "[NEEDS TRANSLATION] Truck",
+                        "trailer": "[NEEDS TRANSLATION] Trailer",
+                        "driven_with_truck": "[NEEDS TRANSLATION] Driven with Truck",
+                        "source": "[NEEDS TRANSLATION] Source",
+                        "yes": "[NEEDS TRANSLATION] Yes",
+                        "no": "[NEEDS TRANSLATION] No"
+                  },
+                  "summary": {
+                        "total_jobs": "[NEEDS TRANSLATION] Tracked Jobs",
+                        "total_revenue": "[NEEDS TRANSLATION] Total Revenue",
+                        "total_costs": "[NEEDS TRANSLATION] Total Costs",
+                        "total_profit": "[NEEDS TRANSLATION] Profit / Loss",
+                        "total_distance": "[NEEDS TRANSLATION] Distance Driven",
+                        "avg_profit_job": "[NEEDS TRANSLATION] Avg Profit / Job",
+                        "avg_profit_km": "[NEEDS TRANSLATION] Avg Profit / km",
+                        "damaged_deliveries": "[NEEDS TRANSLATION] Damaged Deliveries",
+                        "on_time_deliveries": "[NEEDS TRANSLATION] On-time Deliveries",
+                        "late_deliveries": "[NEEDS TRANSLATION] Late Deliveries"
+                  },
+                  "sources": {
+                        "local_tracking": "[NEEDS TRANSLATION] Local Tracking",
+                        "save_import": "[NEEDS TRANSLATION] Save Import",
+                        "partial_save_data": "[NEEDS TRANSLATION] Partial Save Data",
+                        "unknown": "[NEEDS TRANSLATION] Unknown"
+                  },
+                  "messages": {
+                        "tracking_enabled": "[NEEDS TRANSLATION] Local job tracking enabled.",
+                        "scan_success": "[NEEDS TRANSLATION] Save analysis completed.",
+                        "scan_failed": "[NEEDS TRANSLATION] Save analysis failed.",
+                        "export_success": "[NEEDS TRANSLATION] Analytics export written:",
+                        "export_canceled": "[NEEDS TRANSLATION] Analytics export canceled.",
+                        "export_failed": "[NEEDS TRANSLATION] Analytics export failed.",
+                        "refresh_failed": "[NEEDS TRANSLATION] Analytics refresh failed.",
+                        "api_unavailable": "[NEEDS TRANSLATION] Tauri API not available."
+                  },
+                  "status": {
+                        "active": "[NEEDS TRANSLATION] Active",
+                        "completed": "[NEEDS TRANSLATION] Completed",
+                        "failed": "[NEEDS TRANSLATION] Failed",
+                        "cancelled": "[NEEDS TRANSLATION] Cancelled",
+                        "unknown": "[NEEDS TRANSLATION] Unknown"
+                  }
+            },
             "dispatcher": {
                   "nav_title": "Dispatcher",
                   "summary": "Markt, Angebote, aktive Zuweisungen, Firmenbeziehungen und Auftragsverlauf.",
@@ -388,6 +498,7 @@
                   "balance": "Kontostand",
                   "insurance": "Versicherung",
                   "statistics": "Statistiken",
+                  "analytics": "[NEEDS TRANSLATION] Analytics",
                   "achievements": "Erfolge",
                   "company": "Meine Firma",
                   "store": "Shop",
@@ -855,6 +966,59 @@
                   "settings": "Einstellungs-Bearbeitung",
                   "settings_desc": "Sprache, Convoy, Verkehr und erweiterte Konfigurationsschalter steuern."
             },
+            "skilltree": {
+                  "title": "[NEEDS TRANSLATION] Skilltree Editor",
+                  "subtitle": "[NEEDS TRANSLATION] Adjust your driver skills visually.",
+                  "summary_progress": "[NEEDS TRANSLATION] Overall Progress",
+                  "summary_assigned": "[NEEDS TRANSLATION] Assigned Levels",
+                  "summary_peak": "[NEEDS TRANSLATION] Highest Skill",
+                  "summary_status": "Status",
+                  "summary_open": "[NEEDS TRANSLATION] Open Levels",
+                  "status_ready": "[NEEDS TRANSLATION] Ready",
+                  "status_unsaved": "[NEEDS TRANSLATION] Unsaved Changes",
+                  "status_saving": "[NEEDS TRANSLATION] Applying Changes",
+                  "status_maxed": "[NEEDS TRANSLATION] Fully Maxed",
+                  "status_empty": "[NEEDS TRANSLATION] No Skills Assigned",
+                  "status_requires_save": "[NEEDS TRANSLATION] Load a Save",
+                  "empty_title": "[NEEDS TRANSLATION] No active save loaded",
+                  "empty_body": "[NEEDS TRANSLATION] Select a profile and a save to edit skill values visually.",
+                  "note": "[NEEDS TRANSLATION] Changes are written to the active save only after you apply them.",
+                  "progress_value": "{value}%",
+                  "assigned_value": "{value} / {max}",
+                  "remaining_value": "[NEEDS TRANSLATION] {value} remaining",
+                  "peak_value": "{skill} (L{level})",
+                  "peak_none": "[NEEDS TRANSLATION] No skill assigned",
+                  "level_zero": "[NEEDS TRANSLATION] Not Assigned",
+                  "level_max": "[NEEDS TRANSLATION] Max Level",
+                  "level_value": "[NEEDS TRANSLATION] Level {level} / {max}",
+                  "actions": {
+                        "apply": "[NEEDS TRANSLATION] Apply Skill Changes",
+                        "reset": "[NEEDS TRANSLATION] Reset Draft",
+                        "clear": "[NEEDS TRANSLATION] Set All to 0",
+                        "max": "[NEEDS TRANSLATION] Set All to Max"
+                  },
+                  "detail": {
+                        "title": "[NEEDS TRANSLATION] Skill Details",
+                        "hint": "[NEEDS TRANSLATION] Higher levels strengthen the selected specialization in the active profile.",
+                        "current": "[NEEDS TRANSLATION] Current Level",
+                        "description": "Beschreibung",
+                        "controls": "[NEEDS TRANSLATION] Level Control",
+                        "reset": "[NEEDS TRANSLATION] Reset Skill",
+                        "selected_fallback": "[NEEDS TRANSLATION] Select a skill node to inspect and edit it."
+                  },
+                  "skills": {
+                        "groups": {
+                              "cargo": "[NEEDS TRANSLATION] Cargo Certifications",
+                              "operations": "[NEEDS TRANSLATION] Route Efficiency"
+                        },
+                        "adr_desc": "[NEEDS TRANSLATION] Unlocks hazardous cargo certifications step by step.",
+                        "long_dist_desc": "[NEEDS TRANSLATION] Improves long-distance haul progression and efficiency.",
+                        "heavy_desc": "[NEEDS TRANSLATION] Expands access to heavier, higher-value cargo.",
+                        "fragile_desc": "[NEEDS TRANSLATION] Improves handling of delicate and damage-sensitive freight.",
+                        "urgent_desc": "[NEEDS TRANSLATION] Boosts time-critical delivery specialization.",
+                        "mechanical_desc": "[NEEDS TRANSLATION] Represents eco driving and vehicle handling efficiency."
+                  }
+            },
             "reset": {
                   "kicker": "Sicheres Zur?cksetzen von Werten",
                   "title": "Sicheres Zur?cksetzen von Werten",
@@ -1258,6 +1422,83 @@
             "cancel": "Abbrechen",
             "close": "Schließen",
             "apply": "Anwenden",
+            "wiki": {
+                  "button_label": "[NEEDS TRANSLATION] Help",
+                  "button_aria_label": "[NEEDS TRANSLATION] Open in-app help and wiki",
+                  "close_aria_label": "[NEEDS TRANSLATION] Close help dialog",
+                  "nav_aria_label": "[NEEDS TRANSLATION] Wiki sections",
+                  "kicker": "[NEEDS TRANSLATION] In-App Help",
+                  "title": "[NEEDS TRANSLATION] Wiki & Help",
+                  "description": "[NEEDS TRANSLATION] Quick guidance for editor workflows, shortcuts, safety features and accessibility inside the app.",
+                  "sections": {
+                        "welcome": {
+                              "title": "[NEEDS TRANSLATION] Welcome",
+                              "body": "[NEEDS TRANSLATION] Welcome to the SimNexus / ETS2 Save Edit Tool. This wiki explains the main areas, shortcuts and features directly inside the app."
+                        },
+                        "shortcuts": {
+                              "title": "[NEEDS TRANSLATION] Shortcuts",
+                              "f1": "[NEEDS TRANSLATION] Open the Truck section.",
+                              "f2": "[NEEDS TRANSLATION] Open the Trailer section.",
+                              "f3": "[NEEDS TRANSLATION] Open the Profile section.",
+                              "f4": "[NEEDS TRANSLATION] Open the Settings section.",
+                              "esc": "[NEEDS TRANSLATION] Close open modals or windows when possible."
+                        },
+                        "save_editor": {
+                              "title": "[NEEDS TRANSLATION] Save Edit Tool",
+                              "item_truck": "[NEEDS TRANSLATION] Edit truck values such as wear, fuel, mileage and identity fields.",
+                              "item_trailer": "[NEEDS TRANSLATION] Edit trailer values such as condition, cargo mass and trailer identity data.",
+                              "item_profile": "[NEEDS TRANSLATION] Edit profile values such as money, XP, level and related progress data.",
+                              "item_validate": "[NEEDS TRANSLATION] Review values before writing changes to the active save.",
+                              "item_backup": "[NEEDS TRANSLATION] When backup and restore workflows are available, use them before applying risky changes."
+                        },
+                        "career": {
+                              "title": "[NEEDS TRANSLATION] Career Mode / VTC",
+                              "item_dispatcher": "[NEEDS TRANSLATION] Dispatcher workflows help coordinate job generation, assignment and routing decisions.",
+                              "item_jobs": "[NEEDS TRANSLATION] Jobs, offers, active contracts and history provide operational visibility for current and past work.",
+                              "item_company": "[NEEDS TRANSLATION] The company profile area covers company identity, visibility and organization settings.",
+                              "item_members": "[NEEDS TRANSLATION] Members and roles define access, responsibilities and company participation.",
+                              "item_fleet": "[NEEDS TRANSLATION] Fleet panels summarize trucks, assignments, readiness and maintenance state.",
+                              "item_stats": "[NEEDS TRANSLATION] Balance, statistics and achievements help track long-term company progress."
+                        },
+                        "health": {
+                              "title": "[NEEDS TRANSLATION] Save Health Monitor",
+                              "item_status": "[NEEDS TRANSLATION] Save health can report states such as Clean, Risky or Broken.",
+                              "item_mods": "[NEEDS TRANSLATION] Missing mods can lead to incomplete loads or unstable save behavior.",
+                              "item_refs": "[NEEDS TRANSLATION] Broken references indicate objects or links that can no longer be resolved safely.",
+                              "item_xp": "[NEEDS TRANSLATION] Inconsistent XP or level values can produce progression errors after editing.",
+                              "item_fixes": "[NEEDS TRANSLATION] Review hints and proposed fixes before applying any automated repair step."
+                        },
+                        "backup": {
+                              "title": "[NEEDS TRANSLATION] Auto Backup & Restore",
+                              "item_snapshots": "[NEEDS TRANSLATION] Automatic snapshots can be created before write operations.",
+                              "item_restore": "[NEEDS TRANSLATION] Restore workflows allow returning to a previous save state when needed.",
+                              "item_diff": "[NEEDS TRANSLATION] If a diff preview is available, inspect it before restoring or overwriting data.",
+                              "item_why": "[NEEDS TRANSLATION] Backups matter because save edits can affect progression, references and game stability."
+                        },
+                        "logging": {
+                              "title": "[NEEDS TRANSLATION] Logging & Error Reports",
+                              "item_reports": "[NEEDS TRANSLATION] User-facing error reports should explain what failed in a readable way.",
+                              "item_copy": "[NEEDS TRANSLATION] Use Copy Report when you need to share diagnostic output quickly.",
+                              "item_export": "[NEEDS TRANSLATION] Use Export Logs when a longer support or debugging trail is required.",
+                              "item_levels": "[NEEDS TRANSLATION] When both are available, user logs focus on workflows while developer logs include deeper technical traces."
+                        },
+                        "updates": {
+                              "title": "[NEEDS TRANSLATION] Updates",
+                              "item_check": "[NEEDS TRANSLATION] Check for updates from inside the app when update functionality is available.",
+                              "item_download": "[NEEDS TRANSLATION] Download the update package before installation starts.",
+                              "item_install": "[NEEDS TRANSLATION] Install updates with the built-in flow instead of replacing files manually.",
+                              "item_relaunch": "[NEEDS TRANSLATION] Relaunch the app after installation if prompted.",
+                              "item_progress": "[NEEDS TRANSLATION] Use the progress display to monitor download and install status."
+                        },
+                        "accessibility": {
+                              "title": "[NEEDS TRANSLATION] Accessibility / Controls",
+                              "item_keyboard": "[NEEDS TRANSLATION] Most core actions should remain reachable with keyboard navigation.",
+                              "item_focus": "[NEEDS TRANSLATION] Visible focus states make navigation and active controls easier to track.",
+                              "item_contrast": "[NEEDS TRANSLATION] Readable contrast helps when working for long sessions in dark UI themes.",
+                              "item_help": "[NEEDS TRANSLATION] The help button keeps this wiki reachable at any time inside the app."
+                        }
+                  }
+            },
             "clone_profile": {
                   "title": "Profil klonen",
                   "source": "Quelle: {profileName}",
@@ -1765,6 +2006,7 @@
             "label_color_theme_dark": "dunkel",
             "label_color_theme_light": "hell",
             "label_color_theme_neon": "neon",
+            "label_color_theme_neon_red": "[NEEDS TRANSLATION] neon red",
             "label_language": "Sprache",
             "label_developer": "Entwickler",
             "label_console": "Konsole",

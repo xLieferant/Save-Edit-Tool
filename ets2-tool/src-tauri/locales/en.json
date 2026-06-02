@@ -193,6 +193,116 @@
             "career_settings_saved": "Career settings saved.",
             "member_role_saved": "Member role updated.",
             "settings_note": "API, sync and telemetry configuration hooks are prepared as placeholders.",
+            "analytics": {
+                  "summary_text": "Job analytics, partial save imports and local tracking exports.",
+                  "export": "Export to Excel (CSV)",
+                  "scan_save_data": "Analyze Save Data",
+                  "enable_tracking": "Enable Tracking",
+                  "note": "Note: ETS2/ATS do not necessarily store a complete historical job list. The tool only imports data that is still present in the save/profile. For complete tracking, new jobs are logged in the local database after tracking is enabled.",
+                  "partial_data": "Partial data detected. Save imports and older local entries may not contain complete profit, cost or delivery timing fields.",
+                  "local_tracking_hint": "Live telemetry and local job logging provide the most reliable history after tracking is enabled.",
+                  "loading_title": "Loading analytics",
+                  "loading_body": "Building job history, charts and filter options from the local database.",
+                  "error_title": "Analytics could not be loaded",
+                  "empty": {
+                        "title": "No job data available yet.",
+                        "body": "The tool can analyze existing save data when those details are still stored in the profile. For complete tracking, new jobs are logged automatically in the local database from now on.",
+                        "no_chart_data": "No chart data available for the current filter set.",
+                        "no_rows": "No matching jobs found for the current filters."
+                  },
+                  "filters": {
+                        "from": "From",
+                        "to": "To",
+                        "profile": "Profile",
+                        "game": "Game",
+                        "status": "Status",
+                        "cargo": "Cargo",
+                        "cargo_placeholder": "Search cargo",
+                        "source_city": "Source City",
+                        "destination_city": "Destination City",
+                        "all": "All"
+                  },
+                  "apply_filters": "Apply Filters",
+                  "reset_filters": "Reset Filters",
+                  "charts": {
+                        "revenue_over_time": "Revenue Over Time",
+                        "profit_over_time": "Profit Over Time",
+                        "jobs_per_day": "Jobs Per Day",
+                        "top_cargo": "Top Cargo",
+                        "top_routes": "Top Routes",
+                        "damage_cost": "Damage / Cost Analysis"
+                  },
+                  "aria": {
+                        "refresh_button": "Refresh analytics",
+                        "export_button": "Export analytics CSV",
+                        "scan_button": "Analyze save data for analytics",
+                        "enable_tracking_button": "Enable local analytics tracking",
+                        "source_summary": "Analytics source summary",
+                        "summary_cards": "Analytics summary cards",
+                        "job_history_table": "Analytics job history"
+                  },
+                  "table": {
+                        "date": "Date",
+                        "profile": "Profile",
+                        "game": "Game",
+                        "job_uid": "Job ID",
+                        "status": "Status",
+                        "cargo": "Cargo",
+                        "source_city": "Source City",
+                        "destination_city": "Destination City",
+                        "source_company": "Source Company",
+                        "destination_company": "Destination Company",
+                        "distance": "Distance",
+                        "revenue": "Revenue",
+                        "costs": "Costs",
+                        "damage": "Damage",
+                        "penalties": "Penalties",
+                        "profit": "Profit",
+                        "xp": "XP",
+                        "level": "Level",
+                        "truck": "Truck",
+                        "trailer": "Trailer",
+                        "driven_with_truck": "Driven with Truck",
+                        "source": "Source",
+                        "yes": "Yes",
+                        "no": "No"
+                  },
+                  "summary": {
+                        "total_jobs": "Tracked Jobs",
+                        "total_revenue": "Total Revenue",
+                        "total_costs": "Total Costs",
+                        "total_profit": "Profit / Loss",
+                        "total_distance": "Distance Driven",
+                        "avg_profit_job": "Avg Profit / Job",
+                        "avg_profit_km": "Avg Profit / km",
+                        "damaged_deliveries": "Damaged Deliveries",
+                        "on_time_deliveries": "On-time Deliveries",
+                        "late_deliveries": "Late Deliveries"
+                  },
+                  "sources": {
+                        "local_tracking": "Local Tracking",
+                        "save_import": "Save Import",
+                        "partial_save_data": "Partial Save Data",
+                        "unknown": "Unknown"
+                  },
+                  "messages": {
+                        "tracking_enabled": "Local job tracking enabled.",
+                        "scan_success": "Save analysis completed.",
+                        "scan_failed": "Save analysis failed.",
+                        "export_success": "Analytics export written:",
+                        "export_canceled": "Analytics export canceled.",
+                        "export_failed": "Analytics export failed.",
+                        "refresh_failed": "Analytics refresh failed.",
+                        "api_unavailable": "Tauri API not available."
+                  },
+                  "status": {
+                        "active": "Active",
+                        "completed": "Completed",
+                        "failed": "Failed",
+                        "cancelled": "Cancelled",
+                        "unknown": "Unknown"
+                  }
+            },
             "dispatcher": {
                   "nav_title": "Dispatcher",
                   "summary": "Market, offers, active assignments, company relationships and job history.",
@@ -388,6 +498,7 @@
                   "balance": "Balance",
                   "insurance": "Insurance",
                   "statistics": "Statistics",
+                  "analytics": "Analytics",
                   "achievements": "Achievements",
                   "company": "My Company",
                   "store": "Store",
@@ -872,6 +983,59 @@
                   "settings": "Settings Editing",
                   "settings_desc": "Control language, convoy, traffic and advanced configuration switches."
             },
+            "skilltree": {
+                  "title": "Skilltree Editor",
+                  "subtitle": "Adjust your driver skills visually.",
+                  "summary_progress": "Overall Progress",
+                  "summary_assigned": "Assigned Levels",
+                  "summary_peak": "Highest Skill",
+                  "summary_status": "Status",
+                  "summary_open": "Open Levels",
+                  "status_ready": "Ready",
+                  "status_unsaved": "Unsaved Changes",
+                  "status_saving": "Applying Changes",
+                  "status_maxed": "Fully Maxed",
+                  "status_empty": "No Skills Assigned",
+                  "status_requires_save": "Load a Save",
+                  "empty_title": "No active save loaded",
+                  "empty_body": "Select a profile and a save to edit skill values visually.",
+                  "note": "Changes are written to the active save only after you apply them.",
+                  "progress_value": "{value}%",
+                  "assigned_value": "{value} / {max}",
+                  "remaining_value": "{value} remaining",
+                  "peak_value": "{skill} (L{level})",
+                  "peak_none": "No skill assigned",
+                  "level_zero": "Not Assigned",
+                  "level_max": "Max Level",
+                  "level_value": "Level {level} / {max}",
+                  "actions": {
+                        "apply": "Apply Skill Changes",
+                        "reset": "Reset Draft",
+                        "clear": "Set All to 0",
+                        "max": "Set All to Max"
+                  },
+                  "detail": {
+                        "title": "Skill Details",
+                        "hint": "Higher levels strengthen the selected specialization in the active profile.",
+                        "current": "Current Level",
+                        "description": "Description",
+                        "controls": "Level Control",
+                        "reset": "Reset Skill",
+                        "selected_fallback": "Select a skill node to inspect and edit it."
+                  },
+                  "skills": {
+                        "groups": {
+                              "cargo": "Cargo Certifications",
+                              "operations": "Route Efficiency"
+                        },
+                        "adr_desc": "Unlocks hazardous cargo certifications step by step.",
+                        "long_dist_desc": "Improves long-distance haul progression and efficiency.",
+                        "heavy_desc": "Expands access to heavier, higher-value cargo.",
+                        "fragile_desc": "Improves handling of delicate and damage-sensitive freight.",
+                        "urgent_desc": "Boosts time-critical delivery specialization.",
+                        "mechanical_desc": "Represents eco driving and vehicle handling efficiency."
+                  }
+            },
             "reset": {
                   "kicker": "Safe Value Reset",
                   "title": "Safe Value Reset",
@@ -1275,6 +1439,83 @@
             "cancel": "Cancel",
             "close": "Close",
             "apply": "Apply",
+            "wiki": {
+                  "button_label": "Help",
+                  "button_aria_label": "Open in-app help and wiki",
+                  "close_aria_label": "Close help dialog",
+                  "nav_aria_label": "Wiki sections",
+                  "kicker": "In-App Help",
+                  "title": "Wiki & Help",
+                  "description": "Quick guidance for editor workflows, shortcuts, safety features and accessibility inside the app.",
+                  "sections": {
+                        "welcome": {
+                              "title": "Welcome",
+                              "body": "Welcome to the SimNexus / ETS2 Save Edit Tool. This wiki explains the main areas, shortcuts and features directly inside the app."
+                        },
+                        "shortcuts": {
+                              "title": "Shortcuts",
+                              "f1": "Open the Truck section.",
+                              "f2": "Open the Trailer section.",
+                              "f3": "Open the Profile section.",
+                              "f4": "Open the Settings section.",
+                              "esc": "Close open modals or windows when possible."
+                        },
+                        "save_editor": {
+                              "title": "Save Edit Tool",
+                              "item_truck": "Edit truck values such as wear, fuel, mileage and identity fields.",
+                              "item_trailer": "Edit trailer values such as condition, cargo mass and trailer identity data.",
+                              "item_profile": "Edit profile values such as money, XP, level and related progress data.",
+                              "item_validate": "Review values before writing changes to the active save.",
+                              "item_backup": "When backup and restore workflows are available, use them before applying risky changes."
+                        },
+                        "career": {
+                              "title": "Career Mode / VTC",
+                              "item_dispatcher": "Dispatcher workflows help coordinate job generation, assignment and routing decisions.",
+                              "item_jobs": "Jobs, offers, active contracts and history provide operational visibility for current and past work.",
+                              "item_company": "The company profile area covers company identity, visibility and organization settings.",
+                              "item_members": "Members and roles define access, responsibilities and company participation.",
+                              "item_fleet": "Fleet panels summarize trucks, assignments, readiness and maintenance state.",
+                              "item_stats": "Balance, statistics and achievements help track long-term company progress."
+                        },
+                        "health": {
+                              "title": "Save Health Monitor",
+                              "item_status": "Save health can report states such as Clean, Risky or Broken.",
+                              "item_mods": "Missing mods can lead to incomplete loads or unstable save behavior.",
+                              "item_refs": "Broken references indicate objects or links that can no longer be resolved safely.",
+                              "item_xp": "Inconsistent XP or level values can produce progression errors after editing.",
+                              "item_fixes": "Review hints and proposed fixes before applying any automated repair step."
+                        },
+                        "backup": {
+                              "title": "Auto Backup & Restore",
+                              "item_snapshots": "Automatic snapshots can be created before write operations.",
+                              "item_restore": "Restore workflows allow returning to a previous save state when needed.",
+                              "item_diff": "If a diff preview is available, inspect it before restoring or overwriting data.",
+                              "item_why": "Backups matter because save edits can affect progression, references and game stability."
+                        },
+                        "logging": {
+                              "title": "Logging & Error Reports",
+                              "item_reports": "User-facing error reports should explain what failed in a readable way.",
+                              "item_copy": "Use Copy Report when you need to share diagnostic output quickly.",
+                              "item_export": "Use Export Logs when a longer support or debugging trail is required.",
+                              "item_levels": "When both are available, user logs focus on workflows while developer logs include deeper technical traces."
+                        },
+                        "updates": {
+                              "title": "Updates",
+                              "item_check": "Check for updates from inside the app when update functionality is available.",
+                              "item_download": "Download the update package before installation starts.",
+                              "item_install": "Install updates with the built-in flow instead of replacing files manually.",
+                              "item_relaunch": "Relaunch the app after installation if prompted.",
+                              "item_progress": "Use the progress display to monitor download and install status."
+                        },
+                        "accessibility": {
+                              "title": "Accessibility / Controls",
+                              "item_keyboard": "Most core actions should remain reachable with keyboard navigation.",
+                              "item_focus": "Visible focus states make navigation and active controls easier to track.",
+                              "item_contrast": "Readable contrast helps when working for long sessions in dark UI themes.",
+                              "item_help": "The help button keeps this wiki reachable at any time inside the app."
+                        }
+                  }
+            },
             "clone_profile": {
                   "title": "Clone Profile",
                   "source": "Source: {profileName}",
@@ -1782,6 +2023,7 @@
             "label_color_theme_dark": "dark",
             "label_color_theme_light": "light",
             "label_color_theme_neon": "neon",
+            "label_color_theme_neon_red": "neon red",
             "label_language": "Language",
             "label_developer": "Developer",
             "label_console": "Console",

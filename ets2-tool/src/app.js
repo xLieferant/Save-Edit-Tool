@@ -10,6 +10,7 @@ import {
   getXpForLevel,
   loadLevelTable,
 } from "./js/level-system.js";
+import { mountSkilltreeEditor } from "./js/skilltree.js";
 
 /* --------------------------------------------------------------
    TOOL LOADER UND TAB HANDLING
@@ -48,6 +49,7 @@ export async function loadTools(tab) {
   container.innerHTML = "";
   const renderId = ++loadToolsRenderId;
   const toolList = tools[tab] || [];
+  const hasEmbeddedSkilltree = tab === "profile";
   const tabLabelKeyMap = {
     truck: "editor.tab.truck",
     trailer: "editor.tab.trailer",
@@ -57,7 +59,15 @@ export async function loadTools(tab) {
 
   document.dispatchEvent(new CustomEvent("editor-tab-changed", { detail: { tab } }));
 
-  if (!toolList.length) {
+  if (hasEmbeddedSkilltree) {
+    const skilltreeRoot = document.createElement("section");
+    skilltreeRoot.className = "skilltree-shell";
+    container.appendChild(skilltreeRoot);
+    await mountSkilltreeEditor(skilltreeRoot);
+    if (renderId !== loadToolsRenderId) return;
+  }
+
+  if (!toolList.length && !hasEmbeddedSkilltree) {
     container.innerHTML = `
       <article class="tool-card">
         <div class="tool-content">
@@ -130,7 +140,7 @@ if (defaultTabBtn) {
 
 document.addEventListener("DOMContentLoaded", () => {
   const savedTheme = localStorage.getItem("theme") || "neon";
-  document.body.classList.remove("theme-dark", "theme-light", "theme-neon");
+  document.body.classList.remove("theme-dark", "theme-light", "theme-neon", "theme-neon-red");
   document.body.classList.add(`theme-${savedTheme}`);
 });
 
@@ -143,6 +153,12 @@ const modalTextTitle = document.querySelector("#modalTextTitle");
 const modalTextInput = document.querySelector("#modalTextInput");
 const modalTextApply = document.getElementById("modalTextApply");
 const modalTextCancel = document.getElementById("modalTextCancel");
+const modalWiki = document.getElementById("modalWiki");
+const modalWikiTitle = document.getElementById("modalWikiTitle");
+const modalWikiClose = document.getElementById("modalWikiClose");
+const modalWikiCloseTop = document.getElementById("modalWikiCloseTop");
+const wikiHelpBtn = document.getElementById("wikiHelpBtn");
+const wikiIndexNav = document.getElementById("wikiIndexNav");
 
 const modalNumber = document.querySelector("#modalNumber");
 const modalNumberTitle = document.querySelector("#modalNumberTitle");
@@ -293,6 +309,7 @@ const saveImportSavesBtn = document.getElementById("saveImportSavesBtn");
 const saveExportSavesBtn = document.getElementById("saveExportSavesBtn");
 const editorModalDescriptors = [
   { element: modalText, closeButton: modalTextCancel },
+  { element: modalWiki, closeButton: modalWikiClose },
   { element: modalNumber, closeButton: modalNumberCancel },
   { element: modalSlider, closeButton: modalSliderCancel },
   { element: modalMulti, closeButton: modalMultiCancelBtn },
@@ -306,6 +323,17 @@ const editorModalDescriptors = [
   { element: modalUserLogs, closeButton: modalUserLogsClose },
   { element: modalProfileShare, closeButton: modalProfileShareClose },
 ];
+
+const WIKI_FOCUSABLE_SELECTOR = [
+  "a[href]",
+  "button:not([disabled])",
+  "textarea:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "[tabindex]:not([tabindex='-1'])",
+].join(", ");
+
+let lastWikiTrigger = null;
 
 function isEditorModalOpen(element) {
   if (!element || element.hidden) return false;
@@ -351,6 +379,110 @@ function registerEditorShortcuts() {
 }
 
 registerEditorShortcuts();
+
+function getWikiFocusableElements() {
+  if (!modalWiki) return [];
+  return [...modalWiki.querySelectorAll(WIKI_FOCUSABLE_SELECTOR)].filter((element) => {
+    return !element.hasAttribute("hidden") && window.getComputedStyle(element).display !== "none";
+  });
+}
+
+function handleWikiFocusTrap(event) {
+  if (event.key !== "Tab" || !isEditorModalOpen(modalWiki)) return;
+
+  const focusable = getWikiFocusableElements();
+  if (!focusable.length) {
+    event.preventDefault();
+    modalWikiTitle?.focus();
+    return;
+  }
+
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  const active = document.activeElement;
+
+  if (event.shiftKey && active === first) {
+    event.preventDefault();
+    last.focus();
+    return;
+  }
+
+  if (!event.shiftKey && active === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
+async function syncWikiAccessibilityCopy() {
+  if (typeof window.t !== "function") return;
+
+  const helpLabel = await window.t("modals.wiki.button_aria_label");
+  const closeLabel = await window.t("modals.wiki.close_aria_label");
+  const navLabel = await window.t("modals.wiki.nav_aria_label");
+
+  wikiHelpBtn?.setAttribute("aria-label", helpLabel);
+  modalWikiCloseTop?.setAttribute("aria-label", closeLabel);
+  wikiIndexNav?.setAttribute("aria-label", navLabel);
+}
+
+if (typeof window.t === "function") {
+  void syncWikiAccessibilityCopy();
+} else {
+  window.addEventListener(
+    "translations-ready",
+    () => {
+      void syncWikiAccessibilityCopy();
+    },
+    { once: true }
+  );
+}
+
+function closeWikiModal() {
+  if (!modalWiki) return;
+  document.removeEventListener("keydown", handleWikiFocusTrap);
+  modalWiki.style.display = "none";
+
+  const restoreTarget = lastWikiTrigger && document.contains(lastWikiTrigger)
+    ? lastWikiTrigger
+    : wikiHelpBtn;
+  lastWikiTrigger = null;
+  restoreTarget?.focus();
+}
+
+export async function openWikiModal() {
+  if (!modalWiki) return;
+  lastWikiTrigger = document.activeElement instanceof HTMLElement ? document.activeElement : wikiHelpBtn;
+  modalWiki.style.display = "flex";
+  document.addEventListener("keydown", handleWikiFocusTrap);
+
+  window.requestAnimationFrame(() => {
+    modalWikiTitle?.focus();
+  });
+}
+
+if (wikiHelpBtn) {
+  wikiHelpBtn.addEventListener("click", () => {
+    void openWikiModal();
+  });
+}
+
+modalWikiClose?.addEventListener("click", closeWikiModal);
+modalWikiCloseTop?.addEventListener("click", closeWikiModal);
+modalWiki?.addEventListener("click", (event) => {
+  if (event.target === modalWiki) {
+    closeWikiModal();
+  }
+});
+wikiIndexNav?.addEventListener("click", (event) => {
+  const targetLink = event.target.closest("a[href^='#wikiSection']");
+  if (!targetLink) return;
+
+  const targetSection = document.querySelector(targetLink.getAttribute("href"));
+  if (!targetSection) return;
+
+  event.preventDefault();
+  targetSection.scrollIntoView({ behavior: "smooth", block: "start" });
+});
 
 function formatMetric(value, digits = 0) {
   const numeric = Number(value);

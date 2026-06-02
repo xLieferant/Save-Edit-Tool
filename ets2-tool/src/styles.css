@@ -10,6 +10,9 @@
   --text-soft: rgba(255, 255, 255, 0.64);
   --accent: #00ffff;
   --accent-rgb: 0, 255, 255;
+  --accent-secondary: #0b5c66;
+  --accent-secondary-rgb: 11, 92, 102;
+  --accent-contrast: #031014;
   --accent-soft: rgba(0, 255, 255, 0.14);
   --accent-surface: rgba(0, 255, 255, 0.11);
   --panel-border: rgba(255, 255, 255, 0.12);
@@ -65,6 +68,9 @@ body.theme-dark {
   --text-soft: rgba(255, 255, 255, 0.64);
   --accent: #00ffff;
   --accent-rgb: 0, 255, 255;
+  --accent-secondary: #0b5c66;
+  --accent-secondary-rgb: 11, 92, 102;
+  --accent-contrast: #031014;
   --accent-soft: rgba(0, 255, 255, 0.14);
   --accent-surface: rgba(0, 255, 255, 0.11);
   --panel-border: rgba(255, 255, 255, 0.12);
@@ -83,6 +89,9 @@ body.theme-light {
   --text-soft: rgba(15, 23, 42, 0.64);
   --accent: #0066ff;
   --accent-rgb: 0, 102, 255;
+  --accent-secondary: #204a9b;
+  --accent-secondary-rgb: 32, 74, 155;
+  --accent-contrast: #f8fbff;
   --accent-soft: rgba(0, 102, 255, 0.12);
   --accent-surface: rgba(0, 102, 255, 0.09);
   --panel-border: rgba(15, 23, 42, 0.12);
@@ -106,6 +115,9 @@ body.theme-neon {
   --text-soft: rgba(138, 245, 214, 0.72);
   --accent: #00ff9c;
   --accent-rgb: 0, 255, 156;
+  --accent-secondary: #0a5a3d;
+  --accent-secondary-rgb: 10, 90, 61;
+  --accent-contrast: #031014;
   --accent-soft: rgba(0, 255, 156, 0.16);
   --accent-surface: rgba(0, 255, 156, 0.11);
   --panel-border: rgba(0, 255, 156, 0.24);
@@ -113,6 +125,40 @@ body.theme-neon {
   --surface-shadow: 0 30px 90px rgba(0, 0, 0, 0.5);
   --surface-glow: 0 0 30px rgba(0, 255, 156, 0.28);
   --scroll-mask-size: 20px;
+}
+
+body.theme-neon-red {
+  --bg-main: #070406;
+  --bg-elevated: #11070b;
+  --bg-panel: rgba(26, 9, 14, 0.82);
+  --bg-panel-strong: rgba(20, 7, 11, 0.94);
+  --bg-card: rgba(255, 53, 95, 0.08);
+  --bg-card-soft: rgba(255, 53, 95, 0.04);
+  --text-main: #fff5f7;
+  --text-muted: #d8a8b2;
+  --text-soft: rgba(255, 225, 231, 0.72);
+  --accent: #ff355f;
+  --accent-rgb: 255, 53, 95;
+  --accent-secondary: #8f1937;
+  --accent-secondary-rgb: 143, 25, 55;
+  --accent-contrast: #18060b;
+  --accent-soft: rgba(255, 53, 95, 0.18);
+  --accent-surface: rgba(255, 53, 95, 0.12);
+  --panel-border: rgba(255, 104, 132, 0.26);
+  --card-border: rgba(255, 104, 132, 0.18);
+  --surface-shadow: 0 30px 90px rgba(0, 0, 0, 0.56);
+  --surface-glow: 0 0 34px rgba(255, 53, 95, 0.22);
+  --scroll-mask-size: 20px;
+  --dropdown-surface: #190d11;
+  --dropdown-surface-strong: #12080c;
+  --dropdown-border: rgba(255, 104, 132, 0.32);
+  --dropdown-text: #fff5f7;
+  --dropdown-text-muted: #f0cad2;
+  --dropdown-hover: rgba(255, 53, 95, 0.18);
+  --dropdown-active: rgba(255, 53, 95, 0.24);
+  --status-glow: 0 0 22px rgba(255, 53, 95, 0.48);
+  --status-glow-soft: 0 0 36px rgba(255, 53, 95, 0.22);
+  --focus-ring: 0 0 0 3px rgba(255, 53, 95, 0.22);
 }
 
 * {
@@ -528,7 +574,7 @@ select option:disabled {
 }
 
 .mode-btn.active {
-  color: #031014;
+  color: var(--accent-contrast);
   background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.95), rgba(var(--accent-rgb), 0.7));
   box-shadow: 0 12px 30px rgba(var(--accent-rgb), 0.22);
 }
@@ -731,6 +777,19 @@ select option:disabled {
   box-shadow: 0 0 18px rgba(56, 189, 248, 0.4);
 }
 
+body.theme-neon-red #statusPluginInstalled.is-active,
+body.theme-neon-red #statusSdkConnected.is-active {
+  background: linear-gradient(135deg, rgba(255, 53, 95, 0.18), rgba(255, 255, 255, 0.02));
+  border-color: rgba(255, 104, 132, 0.5);
+  color: #ffe5ea;
+}
+
+body.theme-neon-red #statusPluginInstalled.is-active .status-lamp,
+body.theme-neon-red #statusSdkConnected.is-active .status-lamp {
+  background: #ff355f;
+  box-shadow: 0 0 18px rgba(255, 53, 95, 0.36);
+}
+
 #statusSdkConnected.is-active {
   background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(255, 255, 255, 0.02));
   border-color: rgba(168, 85, 247, 0.6);
@@ -863,6 +922,9 @@ body.mode-career .nav-wrapper {
 .nav-action:focus-visible,
 .version-btn:focus-visible,
 .refresh-btn:focus-visible,
+.wiki-help-btn:focus-visible,
+.wiki-close-btn:focus-visible,
+.wiki-index__link:focus-visible,
 .profile-bar .profile-picker:focus-visible,
 .profile-bar .save-picker:focus-visible,
 .profile-bar .profile-picker button:focus-visible,
@@ -1307,7 +1369,7 @@ body.mode-editor #careerView {
   min-height: 44px;
   padding: 10px 16px;
   background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.94), rgba(var(--accent-rgb), 0.66));
-  color: #041014;
+  color: var(--accent-contrast);
   font-weight: 700;
   cursor: pointer;
   box-shadow: 0 10px 24px rgba(var(--accent-rgb), 0.16);
@@ -1377,7 +1439,7 @@ body.mode-editor #careerView {
 
 .game-switch button.active {
   background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.94), rgba(var(--accent-rgb), 0.66));
-  color: #041014;
+  color: var(--accent-contrast);
   box-shadow: var(--surface-glow);
 }
 
@@ -1604,6 +1666,239 @@ body.mode-editor #careerView {
 
 .modal-actions--end {
   justify-content: flex-end;
+}
+
+.wiki-help-btn {
+  position: fixed;
+  right: clamp(16px, 2vw, 28px);
+  bottom: clamp(16px, 2vw, 28px);
+  z-index: 9500;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 54px;
+  padding: 0 18px 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--accent-rgb), 0.28);
+  background:
+    linear-gradient(135deg, rgba(var(--accent-rgb), 0.16), rgba(var(--accent-secondary-rgb), 0.26)),
+    rgba(8, 12, 20, 0.92);
+  color: var(--text-main);
+  font: inherit;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.34),
+    0 0 0 1px rgba(var(--accent-rgb), 0.08),
+    0 0 26px rgba(var(--accent-rgb), 0.16);
+  transition:
+    transform var(--interactive-fast) ease,
+    border-color var(--interactive-fast) ease,
+    box-shadow var(--interactive-fast) ease,
+    background var(--interactive-fast) ease;
+}
+
+.wiki-help-btn:hover {
+  transform: translateY(-2px);
+  border-color: rgba(var(--accent-rgb), 0.42);
+  box-shadow:
+    0 22px 46px rgba(0, 0, 0, 0.38),
+    0 0 0 1px rgba(var(--accent-rgb), 0.14),
+    0 0 32px rgba(var(--accent-rgb), 0.22);
+}
+
+.wiki-help-btn__icon {
+  width: 28px;
+  height: 28px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.92), rgba(var(--accent-secondary-rgb), 0.94));
+  color: var(--accent-contrast);
+  box-shadow: 0 0 18px rgba(var(--accent-rgb), 0.28);
+}
+
+.wiki-help-btn__label {
+  white-space: nowrap;
+}
+
+.modal-box--wiki {
+  width: min(1040px, calc(100vw - 30px));
+  max-height: min(88vh, 940px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 20px;
+  overflow: hidden;
+}
+
+.wiki-modal-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.wiki-close-btn {
+  flex: 0 0 auto;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--accent-rgb), 0.24);
+  background: rgba(var(--accent-rgb), 0.08);
+  color: var(--text-main);
+  font: inherit;
+  cursor: pointer;
+}
+
+.wiki-layout {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
+  gap: 18px;
+}
+
+.wiki-index,
+.wiki-content {
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.wiki-index {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 4px 6px 4px 0;
+}
+
+.wiki-index__link {
+  display: block;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(var(--accent-rgb), 0.14);
+  background:
+    linear-gradient(145deg, rgba(var(--accent-rgb), 0.08), rgba(255, 255, 255, 0.02));
+  color: var(--text-main);
+  text-decoration: none;
+  transition:
+    transform var(--interactive-fast) ease,
+    border-color var(--interactive-fast) ease,
+    background var(--interactive-fast) ease,
+    box-shadow var(--interactive-fast) ease;
+}
+
+.wiki-index__link:hover {
+  transform: translateY(-1px);
+  border-color: rgba(var(--accent-rgb), 0.3);
+  background:
+    linear-gradient(145deg, rgba(var(--accent-rgb), 0.14), rgba(255, 255, 255, 0.03));
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.18);
+}
+
+.wiki-content {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+}
+
+.wiki-section {
+  padding: 18px 20px;
+  border-radius: 18px;
+  border: 1px solid rgba(var(--accent-rgb), 0.16);
+  background:
+    radial-gradient(circle at top left, rgba(var(--accent-rgb), 0.12), transparent 36%),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02)),
+    linear-gradient(180deg, rgba(7, 12, 20, 0.92), rgba(10, 16, 24, 0.84));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 16px 36px rgba(0, 0, 0, 0.18);
+}
+
+.wiki-section h3 {
+  margin: 0 0 10px;
+  color: var(--accent);
+  font-size: clamp(18px, 1.6vw, 22px);
+}
+
+.wiki-section p,
+.wiki-bullet-list {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.wiki-bullet-list {
+  padding-left: 20px;
+  display: grid;
+  gap: 10px;
+}
+
+.wiki-shortcut-list {
+  display: grid;
+  gap: 10px;
+}
+
+.wiki-shortcut-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(var(--accent-rgb), 0.14);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.wiki-shortcut-item kbd {
+  min-width: 52px;
+  display: inline-flex;
+  justify-content: center;
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(var(--accent-rgb), 0.24);
+  background: rgba(var(--accent-rgb), 0.14);
+  color: var(--text-main);
+  font: 700 12px/1 "Cascadia Code", "Consolas", monospace;
+  letter-spacing: 0.08em;
+}
+
+@media (max-width: 920px) {
+  .modal-box--wiki {
+    width: min(100vw - 20px, 1040px);
+    max-height: calc(100vh - 20px);
+  }
+
+  .wiki-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .wiki-index {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    padding-right: 0;
+  }
+
+  .wiki-help-btn {
+    padding-right: 14px;
+  }
+}
+
+@media (max-width: 640px) {
+  .wiki-modal-head {
+    flex-direction: column;
+  }
+
+  .wiki-close-btn {
+    width: 100%;
+  }
+
+  .wiki-shortcut-item {
+    grid-template-columns: 1fr;
+  }
+
+  .wiki-shortcut-item kbd {
+    min-width: 0;
+    width: fit-content;
+  }
 }
 
 .modal-actions--end button {
@@ -2364,7 +2659,7 @@ input[type="checkbox"]:checked + .checkboxSlider::before {
 .level-system-badge--accent {
   background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.95), rgba(var(--accent-rgb), 0.68));
   border-color: rgba(var(--accent-rgb), 0.4);
-  color: #031014;
+  color: var(--accent-contrast);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.16),
     0 18px 38px rgba(var(--accent-rgb), 0.18);
@@ -2441,7 +2736,7 @@ input[type="checkbox"]:checked + .checkboxSlider::before {
 
 .level-system-mode-btn.is-active,
 .level-system-preset-btn.is-active {
-  color: #031014;
+  color: var(--accent-contrast);
   border-color: rgba(var(--accent-rgb), 0.4);
   background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.95), rgba(var(--accent-rgb), 0.72));
   box-shadow: 0 14px 28px rgba(var(--accent-rgb), 0.18);
@@ -3501,6 +3796,14 @@ body.mode-career {
   --panel-border: rgba(56, 189, 248, 0.18);
 }
 
+body.mode-career.theme-neon-red {
+  --accent: #ff355f;
+  --accent-rgb: 255, 53, 95;
+  --accent-soft: rgba(255, 53, 95, 0.18);
+  --accent-surface: rgba(255, 53, 95, 0.12);
+  --panel-border: rgba(255, 104, 132, 0.2);
+}
+
 body.mode-editor.editor-advanced {
   --accent: #f97316;
   --accent-rgb: 249, 115, 22;
@@ -3668,6 +3971,13 @@ body {
   background:
     linear-gradient(160deg, rgba(56, 189, 248, 0.18), rgba(255, 255, 255, 0.03)),
     rgba(6, 11, 22, 0.94);
+}
+
+body.theme-neon-red .hub-mode-career,
+body.theme-neon-red .plan-card.featured {
+  background:
+    linear-gradient(160deg, rgba(255, 53, 95, 0.16), rgba(255, 255, 255, 0.03)),
+    rgba(15, 7, 12, 0.92);
 }
 
 .hub-mode-editor {
@@ -4221,6 +4531,11 @@ body {
 .priority.high {
   background: rgba(56, 189, 248, 0.14);
   color: #67e8f9;
+}
+
+body.theme-neon-red .priority.high {
+  background: rgba(255, 53, 95, 0.14);
+  color: #ffc8d3;
 }
 
 .priority.medium {
@@ -5705,7 +6020,7 @@ body.mode-editor .mode-btn {
 }
 
 body.mode-editor .mode-btn.active {
-  color: #031014;
+  color: var(--accent-contrast);
   background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.95), rgba(var(--accent-rgb), 0.72));
   box-shadow: 0 12px 28px rgba(var(--accent-rgb), 0.2);
 }
@@ -5897,7 +6212,7 @@ body.mode-editor .game-switch button.active,
 body.mode-editor .preset-btn.active,
 body.mode-editor .nav-btn.active,
 body.mode-editor .nav-action.active {
-  color: #031014;
+  color: var(--accent-contrast);
   border-color: rgba(var(--accent-rgb), 0.45);
   background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.95), rgba(var(--accent-rgb), 0.72));
   box-shadow: 0 16px 32px rgba(var(--accent-rgb), 0.2);
@@ -6241,7 +6556,7 @@ body.mode-editor .dropdown-item-status {
 }
 
 body.mode-editor .dropdown-item.is-selected .dropdown-item-status {
-  color: #031014;
+  color: var(--accent-contrast);
   background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.96), rgba(var(--accent-rgb), 0.7));
   box-shadow: 0 0 18px rgba(var(--accent-rgb), 0.22);
   transform: scale(1);
@@ -6306,7 +6621,8 @@ body.mode-editor .workspace-main {
   min-height: 0;
   padding: var(--space-md);
   border-radius: calc(var(--radius-lg) + 2px);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 body.mode-editor .save-editor-view.workspace-view.is-active {
@@ -6317,20 +6633,20 @@ body.mode-editor .save-editor-view.workspace-view.is-active {
 
 body.mode-editor .save-editor-shell {
   display: block;
-  height: 100%;
-  min-height: 0;
+  height: auto;
+  min-height: 100%;
 }
 
 body.mode-editor .save-content-scroll {
   display: grid;
   align-content: start;
   gap: var(--space-md);
-  height: 100%;
-  min-height: 0;
-  overflow-y: auto;
+  height: auto;
+  min-height: 100%;
+  overflow: visible;
   overflow-x: hidden;
   padding-right: 6px;
-  padding-bottom: 2px;
+  padding-bottom: var(--space-lg);
   container-type: inline-size;
 }
 
@@ -6530,7 +6846,7 @@ body.mode-editor .save-reset-actions .utility-primary-action {
   min-width: 148px;
   border-color: rgba(var(--accent-rgb), 0.45);
   background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.94), rgba(var(--accent-rgb), 0.72));
-  color: #031014;
+  color: var(--accent-contrast);
   box-shadow: 0 14px 30px rgba(0, 0, 0, 0.24);
 }
 
@@ -7143,6 +7459,14 @@ body.mode-editor .modal-box--user-logs {
   overflow: hidden;
 }
 
+body.mode-editor .modal-box--wiki {
+  width: min(1040px, 100%);
+  max-height: min(88vh, 940px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+}
+
 body.mode-editor .modal-box--level {
   width: min(1100px, 100%);
   max-height: min(88vh, 920px);
@@ -7301,7 +7625,7 @@ body.mode-editor .modal-actions .apply,
 body.mode-editor .tool-card button,
 body.mode-editor .preset-btn.active {
   background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.95), rgba(var(--accent-rgb), 0.72));
-  color: #031014;
+  color: var(--accent-contrast);
 }
 
 body.mode-editor .modal-row {
@@ -7598,5 +7922,726 @@ body.mode-editor .github-public-lock #editorFleetCard strong {
 
   body.mode-editor .status-pill {
     padding: 8px 12px;
+  }
+}
+
+body.mode-editor.theme-neon-red {
+  --border-subtle: rgba(255, 118, 143, 0.18);
+}
+
+body.mode-editor.theme-neon-red .command-header,
+body.mode-editor.theme-neon-red .editor-sidebar,
+body.mode-editor.theme-neon-red .workspace-main,
+body.mode-editor.theme-neon-red .overview-card,
+body.mode-editor.theme-neon-red .save-tool-stage,
+body.mode-editor.theme-neon-red .save-hero,
+body.mode-editor.theme-neon-red .user-menu-dropdown,
+body.mode-editor.theme-neon-red .modal-box {
+  background:
+    radial-gradient(circle at top left, rgba(255, 53, 95, 0.16), transparent 34%),
+    radial-gradient(circle at top right, rgba(255, 122, 83, 0.08), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015)),
+    linear-gradient(160deg, rgba(18, 7, 11, 0.96), rgba(11, 5, 8, 0.9));
+  border-color: rgba(255, 112, 141, 0.18);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 26px 68px rgba(0, 0, 0, 0.34),
+    0 0 0 1px rgba(255, 53, 95, 0.06);
+}
+
+body.mode-editor .command-header {
+  overflow: hidden;
+}
+
+body.mode-editor .command-header::after {
+  content: "";
+  position: absolute;
+  inset: auto -8% -72% 38%;
+  height: 150px;
+  background: radial-gradient(circle, rgba(var(--accent-rgb), 0.18), transparent 68%);
+  pointer-events: none;
+}
+
+body.mode-editor .editor-sidebar-block {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(255, 255, 255, 0.04);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015)),
+    linear-gradient(155deg, rgba(14, 8, 12, 0.88), rgba(9, 6, 9, 0.72));
+}
+
+body.mode-editor .editor-sidebar-block::before,
+body.mode-editor .overview-card::before,
+body.mode-editor .save-tool-stage::before,
+body.mode-editor .tool-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.52), rgba(var(--accent-rgb), 0.04), transparent 82%);
+  pointer-events: none;
+}
+
+body.mode-editor .editor-sidebar .nav-btn,
+body.mode-editor .game-switch button,
+body.mode-editor .nav-action,
+body.mode-editor .version-btn,
+body.mode-editor .preset-btn,
+body.mode-editor .secondary-action,
+body.mode-editor .table-action,
+body.mode-editor .tool-card button,
+body.mode-editor .modal-actions button {
+  position: relative;
+  overflow: hidden;
+  min-height: 48px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.025)),
+    linear-gradient(145deg, rgba(22, 11, 15, 0.78), rgba(13, 8, 11, 0.76));
+}
+
+body.mode-editor .editor-sidebar .nav-btn::after,
+body.mode-editor .game-switch button::after,
+body.mode-editor .nav-action::after,
+body.mode-editor .version-btn::after,
+body.mode-editor .preset-btn::after,
+body.mode-editor .secondary-action::after,
+body.mode-editor .table-action::after,
+body.mode-editor .tool-card button::after,
+body.mode-editor .modal-actions button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 16%, rgba(255, 255, 255, 0.12), transparent 58%);
+  opacity: 0;
+  transform: translateX(-24%);
+  transition: opacity var(--interactive-fast) ease, transform 260ms ease;
+  pointer-events: none;
+}
+
+body.mode-editor .editor-sidebar .nav-btn:hover::after,
+body.mode-editor .game-switch button:hover::after,
+body.mode-editor .nav-action:hover::after,
+body.mode-editor .version-btn:hover::after,
+body.mode-editor .preset-btn:hover::after,
+body.mode-editor .secondary-action:hover::after,
+body.mode-editor .table-action:hover::after,
+body.mode-editor .tool-card button:hover::after,
+body.mode-editor .modal-actions button:hover::after {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+body.mode-editor .editor-sidebar .nav-btn.active,
+body.mode-editor .game-switch button.active,
+body.mode-editor .preset-btn.active,
+body.mode-editor .nav-action.active,
+body.mode-editor .table-action,
+body.mode-editor .tool-card button,
+body.mode-editor .modal-actions .apply {
+  border-color: rgba(var(--accent-rgb), 0.42);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.025)),
+    linear-gradient(135deg, rgba(var(--accent-rgb), 0.94), rgba(164, 24, 52, 0.82));
+  box-shadow:
+    0 16px 34px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(var(--accent-rgb), 0.14),
+    0 0 24px rgba(var(--accent-rgb), 0.16);
+}
+
+body.mode-editor .secondary-action,
+body.mode-editor .preset-btn,
+body.mode-editor .nav-action,
+body.mode-editor .version-btn {
+  color: var(--text-soft);
+}
+
+body.mode-editor .secondary-action:hover:not(:disabled),
+body.mode-editor .preset-btn:hover:not(:disabled),
+body.mode-editor .nav-action:hover:not(:disabled),
+body.mode-editor .version-btn:hover:not(:disabled) {
+  color: var(--text-main);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03)),
+    linear-gradient(145deg, rgba(31, 14, 20, 0.86), rgba(17, 8, 12, 0.8));
+}
+
+body.mode-editor .overview-card,
+body.mode-editor .save-tool-stage,
+body.mode-editor .tool-card,
+body.mode-editor .modal-empty-state,
+body.mode-editor .detail-card,
+body.mode-editor .user-logs-meta-card {
+  position: relative;
+  overflow: hidden;
+}
+
+body.mode-editor .overview-card {
+  background:
+    radial-gradient(circle at 90% 16%, rgba(var(--accent-rgb), 0.1), transparent 26%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+    linear-gradient(160deg, rgba(14, 8, 12, 0.92), rgba(11, 6, 9, 0.78));
+  border-color: rgba(255, 118, 143, 0.14);
+}
+
+body.mode-editor .overview-card strong {
+  letter-spacing: -0.03em;
+}
+
+body.mode-editor .save-stage-head {
+  align-items: start;
+}
+
+body.mode-editor .save-stage-head h2,
+body.mode-editor .tool-content h3,
+body.mode-editor .skilltree-heading h3,
+body.mode-editor .skilltree-detail h3 {
+  letter-spacing: -0.03em;
+}
+
+body.mode-editor .tool-stage-shell {
+  min-height: 0;
+}
+
+body.mode-editor #tool-container {
+  align-items: start;
+}
+
+body.mode-editor .skilltree-shell {
+  grid-column: 1 / -1;
+}
+
+body.mode-editor .skilltree-surface {
+  display: grid;
+  gap: clamp(18px, 2vw, 24px);
+  padding: clamp(18px, 2vw, 28px);
+  border-radius: calc(var(--radius-lg) + 4px);
+  border: 1px solid rgba(var(--accent-rgb), 0.18);
+  background:
+    radial-gradient(circle at top left, rgba(var(--accent-rgb), 0.16), transparent 34%),
+    radial-gradient(circle at 86% 8%, rgba(255, 130, 92, 0.08), transparent 24%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+    linear-gradient(160deg, rgba(19, 7, 11, 0.96), rgba(12, 5, 8, 0.9));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 24px 62px rgba(0, 0, 0, 0.28);
+}
+
+body.mode-editor .skilltree-surface--empty {
+  min-height: 320px;
+  align-content: start;
+}
+
+body.mode-editor .skilltree-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+body.mode-editor .skilltree-heading {
+  display: grid;
+  gap: 8px;
+  max-width: 64ch;
+}
+
+body.mode-editor .skilltree-heading h3,
+body.mode-editor .skilltree-heading p {
+  margin: 0;
+}
+
+body.mode-editor .skilltree-heading p,
+body.mode-editor .skilltree-note,
+body.mode-editor .skilltree-detail-hint,
+body.mode-editor .skilltree-empty-state p,
+body.mode-editor .skilltree-card-copy p,
+body.mode-editor .skilltree-summary-card small,
+body.mode-editor .skilltree-detail-card p {
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+body.mode-editor .skilltree-status-pill {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--accent-rgb), 0.24);
+  background: rgba(var(--accent-rgb), 0.08);
+  color: var(--text-main);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+body.mode-editor .skilltree-status-pill[data-state="dirty"],
+body.mode-editor .skilltree-status-pill[data-state="saving"],
+body.mode-editor .skilltree-status-pill[data-state="maxed"] {
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.92), rgba(176, 27, 57, 0.82));
+  color: var(--accent-contrast);
+  box-shadow: 0 0 22px rgba(var(--accent-rgb), 0.18);
+}
+
+body.mode-editor .skilltree-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+body.mode-editor .skilltree-summary-card {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)),
+    rgba(255, 255, 255, 0.02);
+}
+
+body.mode-editor .skilltree-summary-card span,
+body.mode-editor .skilltree-detail-card span,
+body.mode-editor .skilltree-card-group,
+body.mode-editor .skilltree-group-label,
+body.mode-editor .skilltree-detail-kicker {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+body.mode-editor .skilltree-summary-card strong {
+  font-size: clamp(18px, 1.8vw, 24px);
+  line-height: 1.15;
+  color: var(--text-main);
+}
+
+body.mode-editor .skilltree-summary-progress {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+}
+
+body.mode-editor .skilltree-summary-progress span,
+body.mode-editor .skilltree-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.98), rgba(255, 126, 88, 0.78));
+  box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.22);
+}
+
+body.mode-editor .skilltree-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(320px, 0.9fr);
+  gap: 18px;
+  min-height: 0;
+}
+
+body.mode-editor .skilltree-canvas,
+body.mode-editor .skilltree-group,
+body.mode-editor .skilltree-detail {
+  min-height: 0;
+}
+
+body.mode-editor .skilltree-canvas {
+  display: grid;
+  gap: 16px;
+}
+
+body.mode-editor .skilltree-group {
+  display: grid;
+  gap: 12px;
+}
+
+body.mode-editor .skilltree-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+body.mode-editor .skilltree-group-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 14px;
+}
+
+body.mode-editor .skilltree-card {
+  display: grid;
+  gap: 14px;
+  min-height: 220px;
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015)),
+    linear-gradient(155deg, rgba(18, 8, 12, 0.92), rgba(11, 6, 9, 0.78));
+  cursor: pointer;
+  transition:
+    transform var(--interactive-fast) ease,
+    border-color var(--interactive-fast) ease,
+    box-shadow var(--interactive-fast) ease,
+    background var(--interactive-fast) ease;
+}
+
+body.mode-editor .skilltree-card:hover,
+body.mode-editor .skilltree-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(var(--accent-rgb), 0.28);
+  box-shadow:
+    0 18px 36px rgba(0, 0, 0, 0.24),
+    0 0 0 1px rgba(var(--accent-rgb), 0.08);
+  outline: none;
+}
+
+body.mode-editor .skilltree-card.is-selected {
+  border-color: rgba(var(--accent-rgb), 0.36);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.018)),
+    linear-gradient(145deg, rgba(37, 12, 18, 0.94), rgba(15, 7, 10, 0.82));
+  box-shadow:
+    0 20px 42px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(var(--accent-rgb), 0.12),
+    0 0 28px rgba(var(--accent-rgb), 0.14);
+}
+
+body.mode-editor .skilltree-card.is-maxed {
+  border-color: rgba(255, 136, 74, 0.34);
+}
+
+body.mode-editor .skilltree-card-head,
+body.mode-editor .skilltree-progress-shell,
+body.mode-editor .skilltree-stepper,
+body.mode-editor .skilltree-actions,
+body.mode-editor .skilltree-detail-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+body.mode-editor .skilltree-card-badge,
+body.mode-editor .skilltree-detail-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
+  background: rgba(var(--accent-rgb), 0.08);
+  color: var(--text-main);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+body.mode-editor .skilltree-card-copy,
+body.mode-editor .skilltree-detail-top,
+body.mode-editor .skilltree-detail-grid,
+body.mode-editor .skilltree-level-grid,
+body.mode-editor .skilltree-empty-state {
+  display: grid;
+  gap: 12px;
+}
+
+body.mode-editor .skilltree-card-copy h3,
+body.mode-editor .skilltree-card-copy p,
+body.mode-editor .skilltree-empty-state strong,
+body.mode-editor .skilltree-empty-state p,
+body.mode-editor .skilltree-detail-top h3,
+body.mode-editor .skilltree-detail-card p {
+  margin: 0;
+}
+
+body.mode-editor .skilltree-progress-bar {
+  flex: 1 1 auto;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+body.mode-editor .skilltree-progress-value {
+  flex: 0 0 auto;
+  color: var(--text-main);
+  font-size: 13px;
+}
+
+body.mode-editor .skilltree-node-track,
+body.mode-editor .skilltree-level-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+
+body.mode-editor .skilltree-node,
+body.mode-editor .skilltree-level-btn {
+  min-height: 40px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-soft);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform var(--interactive-fast) ease,
+    border-color var(--interactive-fast) ease,
+    background var(--interactive-fast) ease,
+    box-shadow var(--interactive-fast) ease,
+    color var(--interactive-fast) ease;
+}
+
+body.mode-editor .skilltree-node span {
+  pointer-events: none;
+}
+
+body.mode-editor .skilltree-node.is-zero {
+  border-style: dashed;
+}
+
+body.mode-editor .skilltree-node.is-active,
+body.mode-editor .skilltree-level-btn.is-active {
+  color: var(--accent-contrast);
+  border-color: rgba(var(--accent-rgb), 0.34);
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.94), rgba(176, 27, 57, 0.78));
+  box-shadow: 0 10px 24px rgba(var(--accent-rgb), 0.16);
+}
+
+body.mode-editor .skilltree-node.is-current,
+body.mode-editor .skilltree-level-btn.is-active {
+  box-shadow:
+    0 12px 28px rgba(var(--accent-rgb), 0.18),
+    0 0 0 3px rgba(var(--accent-rgb), 0.14);
+}
+
+body.mode-editor .skilltree-node:hover,
+body.mode-editor .skilltree-node:focus-visible,
+body.mode-editor .skilltree-level-btn:hover,
+body.mode-editor .skilltree-level-btn:focus-visible,
+body.mode-editor .skilltree-stepper-btn:hover,
+body.mode-editor .skilltree-stepper-btn:focus-visible,
+body.mode-editor .skilltree-detail-reset:hover,
+body.mode-editor .skilltree-detail-reset:focus-visible {
+  border-color: rgba(var(--accent-rgb), 0.3);
+  color: var(--text-main);
+  outline: none;
+}
+
+body.mode-editor .skilltree-detail {
+  align-content: start;
+  gap: 16px;
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.018)),
+    linear-gradient(155deg, rgba(18, 8, 12, 0.94), rgba(11, 6, 9, 0.82));
+}
+
+body.mode-editor .skilltree-detail-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body.mode-editor .skilltree-detail-card {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+body.mode-editor .skilltree-detail-card strong {
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+body.mode-editor .skilltree-stepper {
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(var(--accent-rgb), 0.16);
+  background: rgba(var(--accent-rgb), 0.05);
+}
+
+body.mode-editor .skilltree-stepper-btn {
+  width: 42px;
+  min-width: 42px;
+  min-height: 42px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-main);
+  font: inherit;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+body.mode-editor .skilltree-stepper-value {
+  display: grid;
+  gap: 4px;
+  text-align: center;
+}
+
+body.mode-editor .skilltree-stepper-value span {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+body.mode-editor .skilltree-stepper-value strong {
+  font-size: 16px;
+  color: var(--text-main);
+}
+
+body.mode-editor .skilltree-actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+body.mode-editor .skilltree-actions .table-action,
+body.mode-editor .skilltree-actions .secondary-action,
+body.mode-editor .skilltree-detail-reset {
+  width: auto;
+  min-width: 156px;
+}
+
+body.mode-editor .skilltree-empty-state {
+  align-content: center;
+  min-height: 220px;
+  padding: 24px;
+  border-radius: 20px;
+  border: 1px dashed rgba(var(--accent-rgb), 0.24);
+  background:
+    linear-gradient(180deg, rgba(var(--accent-rgb), 0.06), rgba(255, 255, 255, 0.02)),
+    rgba(255, 255, 255, 0.02);
+}
+
+body.mode-editor .tool-card {
+  min-height: 336px;
+  border-radius: 22px;
+  border-color: rgba(255, 255, 255, 0.06);
+  background:
+    radial-gradient(circle at 88% 14%, rgba(var(--accent-rgb), 0.12), transparent 24%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 24%),
+    linear-gradient(180deg, rgba(18, 8, 12, 0.98), rgba(11, 6, 9, 0.95));
+}
+
+body.mode-editor .tool-card:hover {
+  transform: translateY(-5px);
+  box-shadow:
+    0 22px 40px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(var(--accent-rgb), 0.1);
+}
+
+body.mode-editor .tool-card img {
+  aspect-ratio: 16 / 8.5;
+  filter: saturate(0.9) contrast(1.04);
+}
+
+body.mode-editor .modal-box input,
+body.mode-editor .modal-box textarea,
+body.mode-editor .modal-box select,
+body.mode-editor .save-reset-field input {
+  border-radius: 16px;
+  border-color: rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02)),
+    rgba(255, 255, 255, 0.02);
+  color: var(--text-main);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+body.mode-editor .modal-box input:focus-visible,
+body.mode-editor .modal-box textarea:focus-visible,
+body.mode-editor .modal-box select:focus-visible,
+body.mode-editor .save-reset-field input:focus-visible,
+body.mode-editor .skilltree-card:focus-visible,
+body.mode-editor .skilltree-node:focus-visible,
+body.mode-editor .skilltree-level-btn:focus-visible,
+body.mode-editor .skilltree-stepper-btn:focus-visible {
+  box-shadow:
+    0 0 0 1px rgba(var(--accent-rgb), 0.14),
+    0 0 0 4px rgba(var(--accent-rgb), 0.16);
+}
+
+body.mode-editor .modal-actions {
+  padding-top: 4px;
+}
+
+body.mode-editor .modal-empty-state,
+body.mode-editor .detail-card,
+body.mode-editor .user-logs-meta-card {
+  border-color: rgba(255, 255, 255, 0.06);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)),
+    rgba(255, 255, 255, 0.02);
+}
+
+body.mode-editor .modal-empty-state strong,
+body.mode-editor .detail-card-value,
+body.mode-editor .user-logs-meta-card strong {
+  color: var(--text-main);
+}
+
+@media (max-width: 1220px) {
+  body.mode-editor .skilltree-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  body.mode-editor .skilltree-workspace {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  body.mode-editor .skilltree-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  body.mode-editor .skilltree-status-pill {
+    align-self: flex-start;
+  }
+
+  body.mode-editor .skilltree-group-grid {
+    grid-template-columns: 1fr;
+  }
+
+  body.mode-editor .skilltree-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  body.mode-editor .skilltree-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  body.mode-editor .skilltree-node-track,
+  body.mode-editor .skilltree-level-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  body.mode-editor .skilltree-actions .table-action,
+  body.mode-editor .skilltree-actions .secondary-action,
+  body.mode-editor .skilltree-detail-reset {
+    width: 100%;
+    min-width: 0;
+  }
+
+  body.mode-editor .skilltree-stepper {
+    flex-wrap: wrap;
+    justify-content: center;
   }
 }

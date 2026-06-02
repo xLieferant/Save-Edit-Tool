@@ -7,7 +7,7 @@ use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use sqlx::{Row, SqlitePool};
 
 const APP_RUNTIME_DIR_NAME: &str = "SimNexusHub";
-const RUNTIME_MIGRATIONS: [(&str, &str); 13] = [
+const RUNTIME_MIGRATIONS: [(&str, &str); 14] = [
     (
         "2026-04-06_create_ets_profiles.sql",
         include_str!("migrations/2026-04-06_create_ets_profiles.sql"),
@@ -59,6 +59,10 @@ const RUNTIME_MIGRATIONS: [(&str, &str); 13] = [
     (
         "2026-05-10_add_backup_type_to_ets_save_backups.sql",
         include_str!("migrations/2026-05-10_add_backup_type_to_ets_save_backups.sql"),
+    ),
+    (
+        "2026-05-22_create_career_job_history.sql",
+        include_str!("migrations/2026-05-22_create_career_job_history.sql"),
     ),
 ];
 
