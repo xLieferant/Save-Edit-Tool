@@ -1547,13 +1547,16 @@
             },
             "level_system": {
                   "kicker": "Profilfortschritt",
-                  "title": "Level- & EP-System",
-                  "description": "W?hle ein Ziel-Level visuell aus, sieh die passenden EP-Werte in der Vorschau und halte den Speicherstand konsistent.",
-                  "mode_level": "Nach Level festlegen",
-                  "mode_xp": "Nach EP festlegen",
+                  "title": "Level & XP",
+                  "description": "Setze deinen Profilfortschritt per Level oder exakter XP.",
+                  "mode_level": "Nach Level setzen",
+                  "mode_level_desc": "Gib ein Level ein und pruefe die berechnete XP.",
+                  "mode_xp": "Nach XP setzen",
+                  "mode_xp_desc": "Gib exakte XP ein und pruefe das resultierende Level.",
                   "status": {
                         "current": "Aktuell",
-                        "target": "Ziel"
+                        "target": "Ziel",
+                        "applying": "Wird angewendet"
                   },
                   "current_stats": {
                         "title": "Aktuelle Werte",
@@ -1570,11 +1573,22 @@
                         "next_level": "N?chstes Level",
                         "progress": "Zielfortschritt"
                   },
+                  "preview": {
+                        "title": "Zielvorschau",
+                        "target_level": "Ziel-Level",
+                        "target_xp": "Ziel-XP",
+                        "entered": "Eingegeben",
+                        "calculated": "Berechnet"
+                  },
                   "controls": {
-                        "title": "Neues Ziel",
+                        "title": "Eingabe",
                         "level_slider": "Level-Regler",
                         "level_input": "Level",
-                        "xp_input": "EP",
+                        "level_placeholder": "Level eingeben",
+                        "level_help": "XP wird aus der gemeinsamen Level-Tabelle berechnet.",
+                        "xp_input": "XP",
+                        "xp_placeholder": "XP eingeben",
+                        "xp_help": "Das Level wird aus der gemeinsamen Level-Tabelle berechnet.",
                         "level_preset": "Level {level}",
                         "reset_current": "Auf aktuell zur?cksetzen",
                         "max_level": "Max. Level"
@@ -1597,7 +1611,10 @@
                   "feedback": {
                         "level_clamped": "Level wurde auf den unterst?tzten Bereich {min}-{max} angepasst.",
                         "xp_clamped": "EP wurden auf den unterst?tzten Bereich 0-{maxXp} angepasst.",
-                        "unchanged": "Derzeit ist keine ?nderung ausgew?hlt."
+                        "required": "Gib einen Wert ein, um den Ziel-Fortschritt zu berechnen.",
+                        "invalid": "Gib eine gueltige ganze Zahl ein.",
+                        "unchanged": "Derzeit ist keine Aenderung ausgewaehlt.",
+                        "apply_error": "Die Level-Aenderung konnte nicht angewendet werden."
                   }
             },
             "user_logs": {

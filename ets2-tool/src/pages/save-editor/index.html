@@ -1584,156 +1584,86 @@
         <div class="detail-modal-head">
           <div>
             <span class="modal-kicker" data-translate="modals.level_system.kicker">Profile progression</span>
-            <h2 data-translate="modals.level_system.title">Level &amp; XP System</h2>
+            <h2 data-translate="modals.level_system.title">Level &amp; XP</h2>
             <p class="modal-description" data-translate="modals.level_system.description">
-              Choose a target level visually, preview the matching XP values and keep the save state consistent.
+              Set your profile progression by level or exact XP.
             </p>
           </div>
           <div id="modalLevelSystemModePill" class="modal-status-pill" data-state="neutral">-</div>
         </div>
 
-        <div class="level-system-scroll">
-          <section class="detail-card level-system-panel">
-            <div class="diagnostics-panel-head">
-              <span class="detail-card-label" data-translate="modals.level_system.current_stats.title">Current Stats</span>
-              <strong id="levelSystemCurrentStatus" class="diagnostics-inline-status">-</strong>
-            </div>
-
-            <div class="level-system-stat-grid">
-              <article class="detail-card level-system-badge-card">
-                <span class="detail-card-label" data-translate="modals.level_system.current_stats.level">Current Level</span>
-                <strong id="levelSystemCurrentBadge" class="level-system-badge">L0</strong>
-              </article>
-              <article class="detail-card">
-                <span class="detail-card-label" data-translate="modals.level_system.current_stats.total_xp">Current XP</span>
-                <strong id="levelSystemCurrentXp" class="detail-card-value">0</strong>
-              </article>
-              <article class="detail-card">
-                <span class="detail-card-label" data-translate="modals.level_system.current_stats.next_step">Current Step</span>
-                <strong id="levelSystemCurrentIncrease" class="detail-card-value">0</strong>
-              </article>
-            </div>
-
-            <div class="level-system-progress">
-              <div class="level-system-progress-head">
-                <span class="detail-card-label" data-translate="modals.level_system.current_stats.progress">Progress</span>
-                <strong id="levelSystemCurrentProgressText">-</strong>
-              </div>
-              <div class="level-system-progress-bar">
-                <div id="levelSystemCurrentProgressFill" class="level-system-progress-fill"></div>
-              </div>
-            </div>
+        <div class="modal-body level-system-scroll">
+          <section class="level-system-mode-grid" role="group" aria-label="Level edit mode">
+            <button id="levelSystemModeLevel" class="level-system-mode-btn level-system-mode-card" type="button" aria-pressed="true">
+              <span data-translate="modals.level_system.mode_level">Set by Level</span>
+              <small data-translate="modals.level_system.mode_level_desc">Enter a level and preview the calculated XP.</small>
+            </button>
+            <button id="levelSystemModeXp" class="level-system-mode-btn level-system-mode-card" type="button" aria-pressed="false">
+              <span data-translate="modals.level_system.mode_xp">Set by XP</span>
+              <small data-translate="modals.level_system.mode_xp_desc">Enter exact XP and preview the resulting level.</small>
+            </button>
           </section>
 
-          <section class="detail-card detail-hero-card level-system-panel level-system-panel--hero">
-            <div class="diagnostics-panel-head">
-              <span class="detail-card-label" data-translate="modals.level_system.target.title">New Target</span>
-              <strong id="levelSystemTargetStatus" class="diagnostics-inline-status">-</strong>
-            </div>
-
-            <div class="level-system-stat-grid">
-              <article class="detail-card level-system-badge-card level-system-badge-card--accent">
-                <span class="detail-card-label" data-translate="modals.level_system.target.selected_level">Selected Level</span>
-                <strong id="levelSystemTargetBadge" class="level-system-badge level-system-badge--accent">L0</strong>
-              </article>
-              <article class="detail-card">
-                <span class="detail-card-label" data-translate="modals.level_system.target.total_xp">Target XP</span>
-                <strong id="levelSystemTargetXp" class="detail-card-value">0</strong>
-              </article>
-              <article class="detail-card">
-                <span class="detail-card-label" data-translate="modals.level_system.target.increase">XP Increase</span>
-                <strong id="levelSystemTargetIncrease" class="detail-card-value">0</strong>
-              </article>
-              <article class="detail-card detail-card--wide">
-                <span class="detail-card-label" data-translate="modals.level_system.target.next_level">Next Level</span>
-                <strong id="levelSystemTargetNext" class="detail-card-value">-</strong>
-              </article>
-            </div>
-
-            <div class="level-system-progress">
-              <div class="level-system-progress-head">
-                <span class="detail-card-label" data-translate="modals.level_system.target.progress">Target Progress</span>
-                <strong id="levelSystemTargetProgressText">-</strong>
+          <section class="level-system-dashboard-grid">
+            <article class="detail-card level-system-panel level-system-compact-card">
+              <div class="diagnostics-panel-head">
+                <span class="detail-card-label" data-translate="modals.level_system.current_stats.title">Current Values</span>
+                <strong id="levelSystemCurrentStatus" class="diagnostics-inline-status">-</strong>
               </div>
-              <div class="level-system-progress-bar">
-                <div id="levelSystemTargetProgressFill" class="level-system-progress-fill"></div>
+
+              <div class="level-system-value-grid">
+                <div class="level-system-value-tile">
+                  <span class="detail-card-label" data-translate="modals.level_system.current_stats.level">Current Level</span>
+                  <strong id="levelSystemCurrentBadge" class="level-system-badge">L0</strong>
+                </div>
+                <div class="level-system-value-tile">
+                  <span class="detail-card-label" data-translate="modals.level_system.current_stats.total_xp">Current XP</span>
+                  <strong id="levelSystemCurrentXp" class="detail-card-value">0</strong>
+                </div>
               </div>
-            </div>
+            </article>
+
+            <article class="detail-card detail-hero-card level-system-panel level-system-compact-card">
+              <div class="diagnostics-panel-head">
+                <span class="detail-card-label" data-translate="modals.level_system.preview.title">Target Preview</span>
+                <strong id="levelSystemTargetStatus" class="diagnostics-inline-status">-</strong>
+              </div>
+
+              <div class="level-system-value-grid">
+                <div class="level-system-value-tile">
+                  <span class="detail-card-label" data-translate="modals.level_system.preview.target_level">Target Level</span>
+                  <strong id="levelSystemTargetBadge" class="level-system-badge level-system-badge--accent">L0</strong>
+                  <em id="levelSystemTargetLevelMeta" class="level-system-value-tag">-</em>
+                </div>
+                <div class="level-system-value-tile">
+                  <span class="detail-card-label" data-translate="modals.level_system.preview.target_xp">Target XP</span>
+                  <strong id="levelSystemTargetXp" class="detail-card-value">0</strong>
+                  <em id="levelSystemTargetXpMeta" class="level-system-value-tag">-</em>
+                </div>
+              </div>
+            </article>
           </section>
 
-          <section class="detail-card level-system-panel">
+          <section class="detail-card level-system-panel level-system-input-panel">
             <div class="level-system-controls-head">
               <div>
-                <span class="detail-card-label" data-translate="modals.level_system.controls.title">New Target</span>
-              </div>
-
-              <div class="level-system-mode-switch" role="group">
-                <button id="levelSystemModeLevel" class="level-system-mode-btn" type="button" data-translate="modals.level_system.mode_level">Set by Level</button>
-                <button id="levelSystemModeXp" class="level-system-mode-btn" type="button" data-translate="modals.level_system.mode_xp">Set by XP</button>
+                <span class="detail-card-label" data-translate="modals.level_system.controls.title">Input</span>
               </div>
             </div>
 
-            <div class="level-system-slider-head">
-              <span class="detail-card-label" data-translate="modals.level_system.controls.level_slider">Level Slider</span>
-              <strong id="levelSystemSliderValue" class="detail-card-value">L0</strong>
-            </div>
+            <label id="levelSystemLevelField" class="level-system-input-card">
+              <span class="modal-label" data-translate="modals.level_system.controls.level_input">Level</span>
+              <input id="levelSystemLevelInput" type="number" min="0" max="256" step="1" placeholder="Enter level" data-translate-placeholder="modals.level_system.controls.level_placeholder" />
+              <small data-translate="modals.level_system.controls.level_help">XP will be calculated from the level table.</small>
+            </label>
 
-            <div class="level-system-slider-row">
-              <button id="levelSystemMinusBtn" class="level-system-step-btn" type="button">-</button>
-              <input id="levelSystemSlider" class="level-system-slider" type="range" min="0" max="256" step="1" value="0" />
-              <button id="levelSystemPlusBtn" class="level-system-step-btn" type="button">+</button>
-            </div>
-
-            <div class="level-system-input-grid">
-              <label class="modal-row">
-                <span class="modal-label" data-translate="modals.level_system.controls.level_input">Level</span>
-                <input id="levelSystemLevelInput" type="number" min="0" max="256" step="1" />
-              </label>
-              <label class="modal-row">
-                <span class="modal-label" data-translate="modals.level_system.controls.xp_input">XP</span>
-                <input id="levelSystemXpInput" type="number" min="0" step="1" />
-              </label>
-            </div>
-
-            <div class="level-system-presets">
-              <button class="preset-btn level-system-preset-btn" type="button" data-level-preset="10"></button>
-              <button class="preset-btn level-system-preset-btn" type="button" data-level-preset="25"></button>
-              <button class="preset-btn level-system-preset-btn" type="button" data-level-preset="50"></button>
-              <button class="preset-btn level-system-preset-btn" type="button" data-level-preset="100"></button>
-              <button class="preset-btn level-system-preset-btn" type="button" data-level-preset="250"></button>
-            </div>
-
-            <div class="level-system-quick-actions">
-              <button id="levelSystemResetBtn" type="button" data-translate="modals.level_system.controls.reset_current">Reset to Current</button>
-              <button id="levelSystemMaxBtn" type="button" data-translate="modals.level_system.controls.max_level">Max Level</button>
-            </div>
+            <label id="levelSystemXpField" class="level-system-input-card">
+              <span class="modal-label" data-translate="modals.level_system.controls.xp_input">XP</span>
+              <input id="levelSystemXpInput" type="number" min="0" step="1" placeholder="Enter XP" data-translate-placeholder="modals.level_system.controls.xp_placeholder" />
+              <small data-translate="modals.level_system.controls.xp_help">Level will be calculated from the level table.</small>
+            </label>
 
             <p id="levelSystemHint" class="level-system-hint" hidden></p>
-          </section>
-
-          <section class="detail-card level-system-panel">
-            <div class="diagnostics-panel-head">
-              <span class="detail-card-label" data-translate="modals.level_system.summary.title">Change Summary</span>
-            </div>
-
-            <div class="level-system-summary-grid">
-              <article class="detail-card">
-                <span class="detail-card-label" data-translate="modals.level_system.summary.level_change">Level Change</span>
-                <strong id="levelSystemSummaryLevel" class="detail-card-value">-</strong>
-              </article>
-              <article class="detail-card">
-                <span class="detail-card-label" data-translate="modals.level_system.summary.xp_change">XP Change</span>
-                <strong id="levelSystemSummaryXp" class="detail-card-value">-</strong>
-              </article>
-              <article class="detail-card">
-                <span class="detail-card-label" data-translate="modals.level_system.summary.delta">XP Delta</span>
-                <strong id="levelSystemSummaryDelta" class="detail-card-value">-</strong>
-              </article>
-              <article class="detail-card">
-                <span class="detail-card-label" data-translate="modals.level_system.summary.mode">Mode</span>
-                <strong id="levelSystemSummaryMode" class="detail-card-value">-</strong>
-              </article>
-            </div>
           </section>
         </div>
 

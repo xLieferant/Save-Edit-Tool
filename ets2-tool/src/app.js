@@ -3,10 +3,7 @@ import {
   clampLevel,
   clampXp,
   getLevelForXp,
-  getLevelIncrease,
-  getLevelProgress,
   getMaxLevel,
-  getNextLevelEntry,
   getXpForLevel,
   loadLevelTable,
 } from "./js/level-system.js";
@@ -251,32 +248,18 @@ const modalLevelSystemModePill = document.getElementById("modalLevelSystemModePi
 const levelSystemCurrentStatus = document.getElementById("levelSystemCurrentStatus");
 const levelSystemCurrentBadge = document.getElementById("levelSystemCurrentBadge");
 const levelSystemCurrentXp = document.getElementById("levelSystemCurrentXp");
-const levelSystemCurrentIncrease = document.getElementById("levelSystemCurrentIncrease");
-const levelSystemCurrentProgressText = document.getElementById("levelSystemCurrentProgressText");
-const levelSystemCurrentProgressFill = document.getElementById("levelSystemCurrentProgressFill");
 const levelSystemTargetStatus = document.getElementById("levelSystemTargetStatus");
 const levelSystemTargetBadge = document.getElementById("levelSystemTargetBadge");
 const levelSystemTargetXp = document.getElementById("levelSystemTargetXp");
-const levelSystemTargetIncrease = document.getElementById("levelSystemTargetIncrease");
-const levelSystemTargetNext = document.getElementById("levelSystemTargetNext");
-const levelSystemTargetProgressText = document.getElementById("levelSystemTargetProgressText");
-const levelSystemTargetProgressFill = document.getElementById("levelSystemTargetProgressFill");
 const levelSystemModeLevel = document.getElementById("levelSystemModeLevel");
 const levelSystemModeXp = document.getElementById("levelSystemModeXp");
-const levelSystemSliderValue = document.getElementById("levelSystemSliderValue");
-const levelSystemMinusBtn = document.getElementById("levelSystemMinusBtn");
-const levelSystemSlider = document.getElementById("levelSystemSlider");
-const levelSystemPlusBtn = document.getElementById("levelSystemPlusBtn");
+const levelSystemLevelField = document.getElementById("levelSystemLevelField");
+const levelSystemXpField = document.getElementById("levelSystemXpField");
 const levelSystemLevelInput = document.getElementById("levelSystemLevelInput");
 const levelSystemXpInput = document.getElementById("levelSystemXpInput");
 const levelSystemHint = document.getElementById("levelSystemHint");
-const levelSystemPresetButtons = [...document.querySelectorAll("[data-level-preset]")];
-const levelSystemResetBtn = document.getElementById("levelSystemResetBtn");
-const levelSystemMaxBtn = document.getElementById("levelSystemMaxBtn");
-const levelSystemSummaryLevel = document.getElementById("levelSystemSummaryLevel");
-const levelSystemSummaryXp = document.getElementById("levelSystemSummaryXp");
-const levelSystemSummaryDelta = document.getElementById("levelSystemSummaryDelta");
-const levelSystemSummaryMode = document.getElementById("levelSystemSummaryMode");
+const levelSystemTargetLevelMeta = document.getElementById("levelSystemTargetLevelMeta");
+const levelSystemTargetXpMeta = document.getElementById("levelSystemTargetXpMeta");
 const modalLevelSystemApply = document.getElementById("modalLevelSystemApply");
 const modalLevelSystemClose = document.getElementById("modalLevelSystemClose");
 const modalConflictDiagnostics = document.getElementById("modalConflictDiagnostics");
@@ -552,13 +535,6 @@ function formatLevelBadge(level) {
   return `L${formatMetric(level, 0)}`;
 }
 
-function formatSignedMetric(value) {
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return "0";
-  const prefix = numeric > 0 ? "+" : "";
-  return `${prefix}${formatMetric(numeric, 0)}`;
-}
-
 function safeValue(value, fallback = "-") {
   if (value === null || value === undefined) return fallback;
   const text = String(value).trim();
@@ -604,14 +580,6 @@ function setLevelSystemHint(message = "") {
   if (!levelSystemHint) return;
   levelSystemHint.textContent = message;
   levelSystemHint.hidden = !message;
-}
-
-function formatLevelProgressSummary(progress, copy) {
-  if (!progress || progress.isMaxLevel) {
-    return copy.progressMax;
-  }
-
-  return `${progress.progressPercent}% | ${formatMetric(progress.xpIntoLevel, 0)} / ${formatMetric(progress.xpNeededForNextLevel, 0)}`;
 }
 
 function setDiagnosticsActionState(disabled) {
@@ -1663,8 +1631,9 @@ export async function openLevelSystemModal() {
     modeXp: await window.t("modals.level_system.mode_xp"),
     statusCurrent: await window.t("modals.level_system.status.current"),
     statusTarget: await window.t("modals.level_system.status.target"),
-    progressMax: await window.t("modals.level_system.progress.max"),
-    progressNoNext: await window.t("modals.level_system.progress.no_next_level"),
+    statusApplying: await window.t("modals.level_system.status.applying"),
+    previewEntered: await window.t("modals.level_system.preview.entered"),
+    previewCalculated: await window.t("modals.level_system.preview.calculated"),
     feedbackLevelClamped: await window.t("modals.level_system.feedback.level_clamped", {
       min: 0,
       max: getMaxLevel(table),
@@ -1673,14 +1642,16 @@ export async function openLevelSystemModal() {
       min: 0,
       maxXp: formatMetric(getXpForLevel(getMaxLevel(table), table), 0),
     }),
+    feedbackRequired: await window.t("modals.level_system.feedback.required"),
+    feedbackInvalid: await window.t("modals.level_system.feedback.invalid"),
     feedbackUnchanged: await window.t("modals.level_system.feedback.unchanged"),
-    presetLabel: await window.t("modals.level_system.controls.level_preset"),
-    summaryUnchanged: await window.t("modals.level_system.summary.unchanged"),
+    feedbackApplyError: await window.t("modals.level_system.feedback.apply_error"),
   };
 
   const maxLevel = getMaxLevel(table);
-  const currentRawXp = Number(window.currentProfileData?.xp ?? 0);
-  const currentXp = clampXp(currentRawXp, table);
+  const maxXp = getXpForLevel(maxLevel, table);
+  const currentRawXp = Math.max(0, Math.floor(Number(window.currentProfileData?.xp ?? 0)));
+  const currentXp = Number.isFinite(currentRawXp) ? currentRawXp : 0;
   const currentLevel = getLevelForXp(currentXp, table);
   const currentLevelXp = getXpForLevel(currentLevel, table);
   const initialMode = currentXp === currentLevelXp ? "level" : "xp";
@@ -1690,58 +1661,101 @@ export async function openLevelSystemModal() {
     currentLevel,
     targetLevel: currentLevel,
     targetXp: currentXp,
+    levelInput: String(currentLevel),
+    xpInput: String(currentXp),
+    valid: true,
     applying: false,
     hint: "",
   };
 
+  const parseIntegerInput = (value) => {
+    const raw = String(value ?? "").trim();
+    if (!raw) {
+      return { valid: false, reason: "required", value: 0 };
+    }
+
+    const numeric = Number(raw);
+    if (!Number.isFinite(numeric)) {
+      return { valid: false, reason: "invalid", value: 0 };
+    }
+
+    return { valid: true, value: Math.floor(numeric) };
+  };
+
+  const hasTargetChange = () => state.targetLevel !== state.currentLevel || state.targetXp !== state.currentXp;
+
   const setMode = (mode) => {
     state.mode = mode === "xp" ? "xp" : "level";
     if (state.mode === "level") {
-      state.targetLevel = getLevelForXp(state.targetXp, table);
+      state.targetLevel = clampLevel(state.targetLevel, table);
       state.targetXp = getXpForLevel(state.targetLevel, table);
+      state.levelInput = String(state.targetLevel);
     } else {
       state.targetXp = clampXp(state.targetXp, table);
       state.targetLevel = getLevelForXp(state.targetXp, table);
+      state.xpInput = String(state.targetXp);
     }
+    state.valid = true;
+    state.hint = "";
   };
 
-  const updateFromLevel = (value, { forceMode = true, inputOrigin = false } = {}) => {
-    const numeric = Number(value);
-    const clampedLevel = clampLevel(numeric, table);
-    if (forceMode) state.mode = "level";
+  const updateFromLevel = (value, { inputOrigin = false } = {}) => {
+    state.mode = "level";
+    state.levelInput = String(value ?? "");
+    const parsed = parseIntegerInput(value);
+    if (!parsed.valid) {
+      state.valid = false;
+      state.hint = parsed.reason === "required" ? copy.feedbackRequired : copy.feedbackInvalid;
+      render();
+      return;
+    }
+
+    const clampedLevel = clampLevel(parsed.value, table);
+    state.valid = true;
     state.targetLevel = clampedLevel;
     state.targetXp = getXpForLevel(clampedLevel, table);
-    state.hint = inputOrigin && clampedLevel !== Math.floor(Number.isFinite(numeric) ? numeric : 0)
+    state.xpInput = String(state.targetXp);
+    state.hint = inputOrigin && clampedLevel !== parsed.value
       ? copy.feedbackLevelClamped
       : "";
     render();
   };
 
   const updateFromXp = (value, { inputOrigin = false } = {}) => {
-    const numeric = Number(value);
-    const clampedTargetXp = clampXp(numeric, table);
     state.mode = "xp";
+    state.xpInput = String(value ?? "");
+    const parsed = parseIntegerInput(value);
+    if (!parsed.valid) {
+      state.valid = false;
+      state.hint = parsed.reason === "required" ? copy.feedbackRequired : copy.feedbackInvalid;
+      render();
+      return;
+    }
+
+    const clampedTargetXp = clampXp(parsed.value, table);
+    state.valid = true;
     state.targetXp = clampedTargetXp;
     state.targetLevel = getLevelForXp(clampedTargetXp, table);
-    state.hint = inputOrigin && clampedTargetXp !== Math.max(0, Math.floor(Number.isFinite(numeric) ? numeric : 0))
+    state.levelInput = String(state.targetLevel);
+    state.hint = inputOrigin && clampedTargetXp !== parsed.value
       ? copy.feedbackXpClamped
       : "";
     render();
   };
 
   const render = () => {
-    const currentProgress = getLevelProgress(state.currentXp, table);
-    const targetProgress = getLevelProgress(state.targetXp, table);
-    const targetNextLevel = getNextLevelEntry(state.targetLevel, table);
-    const targetIncrease = getLevelIncrease(state.targetLevel, table);
-    const xpDelta = state.targetXp - state.currentXp;
-    const levelChanged = state.targetLevel !== state.currentLevel;
-    const xpChanged = state.targetXp !== state.currentXp;
+    const changed = hasTargetChange();
+    const statusState = state.applying ? "loading" : state.valid ? "success" : "error";
+    const statusText = state.applying
+      ? copy.statusApplying
+      : state.mode === "level"
+        ? copy.modeLevel
+        : copy.modeXp;
 
     setModalPillState(
       modalLevelSystemModePill,
-      state.mode === "level" ? "success" : "warning",
-      state.mode === "level" ? copy.modeLevel : copy.modeXp
+      statusState,
+      statusText
     );
 
     if (levelSystemCurrentStatus) levelSystemCurrentStatus.textContent = copy.statusCurrent;
@@ -1749,35 +1763,16 @@ export async function openLevelSystemModal() {
 
     if (levelSystemCurrentBadge) levelSystemCurrentBadge.textContent = formatLevelBadge(state.currentLevel);
     if (levelSystemCurrentXp) levelSystemCurrentXp.textContent = formatMetric(state.currentXp, 0);
-    if (levelSystemCurrentIncrease) {
-      levelSystemCurrentIncrease.textContent = currentProgress.isMaxLevel
-        ? copy.progressMax
-        : formatMetric(getLevelIncrease(state.currentLevel, table), 0);
-    }
-    if (levelSystemCurrentProgressText) {
-      levelSystemCurrentProgressText.textContent = formatLevelProgressSummary(currentProgress, copy);
-    }
-    if (levelSystemCurrentProgressFill) {
-      levelSystemCurrentProgressFill.style.width = `${currentProgress.progressPercent}%`;
-    }
 
-    if (levelSystemTargetBadge) levelSystemTargetBadge.textContent = formatLevelBadge(state.targetLevel);
-    if (levelSystemTargetXp) levelSystemTargetXp.textContent = formatMetric(state.targetXp, 0);
-    if (levelSystemTargetIncrease) {
-      levelSystemTargetIncrease.textContent = targetProgress.isMaxLevel
-        ? copy.progressMax
-        : formatMetric(targetIncrease, 0);
+    if (levelSystemTargetBadge) levelSystemTargetBadge.textContent = state.valid ? formatLevelBadge(state.targetLevel) : "-";
+    if (levelSystemTargetXp) levelSystemTargetXp.textContent = state.valid ? formatMetric(state.targetXp, 0) : "-";
+    if (levelSystemTargetLevelMeta) {
+      levelSystemTargetLevelMeta.textContent = state.mode === "xp" ? copy.previewCalculated : copy.previewEntered;
+      levelSystemTargetLevelMeta.classList.toggle("is-calculated", state.mode === "xp");
     }
-    if (levelSystemTargetNext) {
-      levelSystemTargetNext.textContent = targetNextLevel
-        ? `${formatLevelBadge(targetNextLevel.level)} | ${formatMetric(targetNextLevel.total_xp, 0)} XP`
-        : copy.progressNoNext;
-    }
-    if (levelSystemTargetProgressText) {
-      levelSystemTargetProgressText.textContent = formatLevelProgressSummary(targetProgress, copy);
-    }
-    if (levelSystemTargetProgressFill) {
-      levelSystemTargetProgressFill.style.width = `${targetProgress.progressPercent}%`;
+    if (levelSystemTargetXpMeta) {
+      levelSystemTargetXpMeta.textContent = state.mode === "level" ? copy.previewCalculated : copy.previewEntered;
+      levelSystemTargetXpMeta.classList.toggle("is-calculated", state.mode === "level");
     }
 
     if (levelSystemModeLevel) {
@@ -1789,54 +1784,33 @@ export async function openLevelSystemModal() {
       levelSystemModeXp.setAttribute("aria-pressed", state.mode === "xp" ? "true" : "false");
     }
 
-    if (levelSystemSlider) {
-      levelSystemSlider.min = "0";
-      levelSystemSlider.max = String(maxLevel);
-      levelSystemSlider.value = String(state.targetLevel);
-      levelSystemSlider.disabled = state.mode === "xp" || state.applying;
+    if (levelSystemLevelField) {
+      levelSystemLevelField.hidden = false;
+      levelSystemLevelField.classList.toggle("is-active", state.mode === "level");
     }
-    if (levelSystemSliderValue) levelSystemSliderValue.textContent = formatLevelBadge(state.targetLevel);
-    if (levelSystemMinusBtn) levelSystemMinusBtn.disabled = state.mode === "xp" || state.applying || state.targetLevel <= 0;
-    if (levelSystemPlusBtn) levelSystemPlusBtn.disabled = state.mode === "xp" || state.applying || state.targetLevel >= maxLevel;
+    if (levelSystemXpField) {
+      levelSystemXpField.hidden = false;
+      levelSystemXpField.classList.toggle("is-active", state.mode === "xp");
+    }
 
     if (levelSystemLevelInput) {
-      levelSystemLevelInput.value = String(state.targetLevel);
-      levelSystemLevelInput.disabled = state.mode === "xp" || state.applying;
+      levelSystemLevelInput.value = state.levelInput;
+      levelSystemLevelInput.min = "0";
+      levelSystemLevelInput.max = String(maxLevel);
+      levelSystemLevelInput.disabled = state.applying;
     }
     if (levelSystemXpInput) {
-      levelSystemXpInput.value = String(state.targetXp);
-      levelSystemXpInput.disabled = state.mode === "level" || state.applying;
-    }
-
-    levelSystemPresetButtons.forEach((button) => {
-      const presetLevel = Number(button.dataset.levelPreset);
-      const presetTemplate = copy.presetLabel.includes("{level}") ? copy.presetLabel : "{level}";
-      button.textContent = presetTemplate.replace("{level}", String(presetLevel));
-      button.disabled = state.applying;
-      button.classList.toggle("is-active", state.mode === "level" && presetLevel === state.targetLevel);
-    });
-
-    if (levelSystemResetBtn) levelSystemResetBtn.disabled = state.applying;
-    if (levelSystemMaxBtn) levelSystemMaxBtn.disabled = state.applying;
-
-    if (levelSystemSummaryLevel) {
-      levelSystemSummaryLevel.textContent = `${formatLevelBadge(state.currentLevel)} -> ${formatLevelBadge(state.targetLevel)}`;
-    }
-    if (levelSystemSummaryXp) {
-      levelSystemSummaryXp.textContent = `${formatMetric(state.currentXp, 0)} -> ${formatMetric(state.targetXp, 0)}`;
-    }
-    if (levelSystemSummaryDelta) {
-      levelSystemSummaryDelta.textContent = xpChanged ? `${formatSignedMetric(xpDelta)} XP` : copy.summaryUnchanged;
-    }
-    if (levelSystemSummaryMode) {
-      levelSystemSummaryMode.textContent = state.mode === "level" ? copy.modeLevel : copy.modeXp;
+      levelSystemXpInput.value = state.xpInput;
+      levelSystemXpInput.min = "0";
+      levelSystemXpInput.max = String(maxXp);
+      levelSystemXpInput.disabled = state.applying;
     }
 
     if (modalLevelSystemApply) {
-      modalLevelSystemApply.disabled = state.applying || (!levelChanged && !xpChanged);
+      modalLevelSystemApply.disabled = state.applying || !state.valid || !changed;
     }
 
-    if (!state.hint && !levelChanged && !xpChanged) {
+    if (!state.hint && !changed) {
       setLevelSystemHint(copy.feedbackUnchanged);
       return;
     }
@@ -1851,14 +1825,10 @@ export async function openLevelSystemModal() {
     modalLevelSystem?.removeEventListener("click", handleBackdropClick);
     levelSystemModeLevel?.removeEventListener("click", handleModeLevel);
     levelSystemModeXp?.removeEventListener("click", handleModeXp);
-    levelSystemMinusBtn?.removeEventListener("click", handleDecreaseLevel);
-    levelSystemPlusBtn?.removeEventListener("click", handleIncreaseLevel);
-    levelSystemSlider?.removeEventListener("input", handleSliderInput);
-    levelSystemLevelInput?.removeEventListener("change", handleLevelInputChange);
+    levelSystemLevelInput?.removeEventListener("focus", handleLevelInputFocus);
+    levelSystemXpInput?.removeEventListener("focus", handleXpInputFocus);
+    levelSystemLevelInput?.removeEventListener("input", handleLevelInputChange);
     levelSystemXpInput?.removeEventListener("input", handleXpInputChange);
-    levelSystemPresetButtons.forEach((button) => button.removeEventListener("click", handlePresetClick));
-    levelSystemResetBtn?.removeEventListener("click", handleResetCurrent);
-    levelSystemMaxBtn?.removeEventListener("click", handleMaxLevel);
     modalLevelSystemApply?.removeEventListener("click", handleApply);
     setLevelSystemHint("");
     modalLevelSystem.style.display = "none";
@@ -1882,16 +1852,18 @@ export async function openLevelSystemModal() {
     render();
   }
 
-  function handleDecreaseLevel() {
-    updateFromLevel(state.targetLevel - 1);
+  function handleLevelInputFocus() {
+    if (state.mode !== "level") {
+      setMode("level");
+      render();
+    }
   }
 
-  function handleIncreaseLevel() {
-    updateFromLevel(state.targetLevel + 1);
-  }
-
-  function handleSliderInput(event) {
-    updateFromLevel(event.target.value);
+  function handleXpInputFocus() {
+    if (state.mode !== "xp") {
+      setMode("xp");
+      render();
+    }
   }
 
   function handleLevelInputChange(event) {
@@ -1902,23 +1874,13 @@ export async function openLevelSystemModal() {
     updateFromXp(event.target.value, { inputOrigin: true });
   }
 
-  function handlePresetClick(event) {
-    updateFromLevel(event.currentTarget.dataset.levelPreset);
-  }
-
-  function handleResetCurrent() {
-    state.targetXp = state.currentXp;
-    state.targetLevel = state.currentLevel;
-    state.mode = state.currentXp === getXpForLevel(state.currentLevel, table) ? "level" : "xp";
-    state.hint = "";
-    render();
-  }
-
-  function handleMaxLevel() {
-    updateFromLevel(maxLevel);
-  }
-
   async function handleApply() {
+    if (!state.valid || !hasTargetChange()) {
+      state.hint = state.valid ? copy.feedbackUnchanged : copy.feedbackInvalid;
+      render();
+      return;
+    }
+
     state.applying = true;
     state.hint = "";
     render();
@@ -1943,6 +1905,7 @@ export async function openLevelSystemModal() {
       console.error("Level system apply failed:", error);
       window.showToast("toasts.level_system_apply_error", "error");
       state.applying = false;
+      state.hint = String(error?.message || error || copy.feedbackApplyError);
       render();
     }
   }
@@ -1951,17 +1914,16 @@ export async function openLevelSystemModal() {
   modalLevelSystem?.addEventListener("click", handleBackdropClick);
   levelSystemModeLevel?.addEventListener("click", handleModeLevel);
   levelSystemModeXp?.addEventListener("click", handleModeXp);
-  levelSystemMinusBtn?.addEventListener("click", handleDecreaseLevel);
-  levelSystemPlusBtn?.addEventListener("click", handleIncreaseLevel);
-  levelSystemSlider?.addEventListener("input", handleSliderInput);
-  levelSystemLevelInput?.addEventListener("change", handleLevelInputChange);
+  levelSystemLevelInput?.addEventListener("focus", handleLevelInputFocus);
+  levelSystemXpInput?.addEventListener("focus", handleXpInputFocus);
+  levelSystemLevelInput?.addEventListener("input", handleLevelInputChange);
   levelSystemXpInput?.addEventListener("input", handleXpInputChange);
-  levelSystemPresetButtons.forEach((button) => button.addEventListener("click", handlePresetClick));
-  levelSystemResetBtn?.addEventListener("click", handleResetCurrent);
-  levelSystemMaxBtn?.addEventListener("click", handleMaxLevel);
   modalLevelSystemApply?.addEventListener("click", handleApply);
 
   render();
+  requestAnimationFrame(() => {
+    modalLevelSystem.querySelector(".level-system-scroll")?.scrollTo({ top: 0, left: 0 });
+  });
 }
 
 /* --------------------------------------------------------------

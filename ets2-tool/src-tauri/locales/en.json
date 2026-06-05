@@ -1564,16 +1564,19 @@
             },
             "level_system": {
                   "kicker": "Profile progression",
-                  "title": "Level & XP System",
-                  "description": "Choose a target level visually, preview the matching XP values and keep the save state consistent.",
+                  "title": "Level & XP",
+                  "description": "Set your profile progression by level or exact XP.",
                   "mode_level": "Set by Level",
+                  "mode_level_desc": "Enter a level and preview the calculated XP.",
                   "mode_xp": "Set by XP",
+                  "mode_xp_desc": "Enter exact XP and preview the resulting level.",
                   "status": {
                         "current": "Current",
-                        "target": "Target"
+                        "target": "Target",
+                        "applying": "Applying"
                   },
                   "current_stats": {
-                        "title": "Current Stats",
+                        "title": "Current Values",
                         "level": "Current Level",
                         "total_xp": "Current XP",
                         "next_step": "Current Step XP",
@@ -1587,11 +1590,22 @@
                         "next_level": "Next Level",
                         "progress": "Target Progress"
                   },
+                  "preview": {
+                        "title": "Target Preview",
+                        "target_level": "Target Level",
+                        "target_xp": "Target XP",
+                        "entered": "Entered",
+                        "calculated": "Calculated"
+                  },
                   "controls": {
-                        "title": "New Target",
+                        "title": "Input",
                         "level_slider": "Level Slider",
                         "level_input": "Level",
+                        "level_placeholder": "Enter level",
+                        "level_help": "XP will be calculated from the shared level table.",
                         "xp_input": "XP",
+                        "xp_placeholder": "Enter XP",
+                        "xp_help": "Level will be calculated from the shared level table.",
                         "level_preset": "Level {level}",
                         "reset_current": "Reset to Current",
                         "max_level": "Max Level"
@@ -1614,7 +1628,10 @@
                   "feedback": {
                         "level_clamped": "Level adjusted to the supported range {min}-{max}.",
                         "xp_clamped": "XP adjusted to the supported range 0-{maxXp}.",
-                        "unchanged": "No change selected yet."
+                        "required": "Enter a value to calculate the target progression.",
+                        "invalid": "Enter a valid whole number.",
+                        "unchanged": "No change selected yet.",
+                        "apply_error": "The level change could not be applied."
                   }
             },
             "user_logs": {
