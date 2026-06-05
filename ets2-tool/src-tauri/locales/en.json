@@ -986,6 +986,10 @@
             "skilltree": {
                   "title": "Skilltree Editor",
                   "subtitle": "Adjust your driver skills visually.",
+                  "launch_kicker": "Driver specialization",
+                  "launch_desc": "Open the focused skilltree workspace for ADR, cargo and driving specializations.",
+                  "launch_action": "Open Skilltree",
+                  "modal_desc": "Edit driver skills in a focused workspace without changing the backend save logic.",
                   "summary_progress": "Overall Progress",
                   "summary_assigned": "Assigned Levels",
                   "summary_peak": "Highest Skill",

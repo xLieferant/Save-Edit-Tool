@@ -212,18 +212,6 @@
 
             <section class="editor-sidebar-block">
               <div class="editor-sidebar-block-head">
-                <span class="editor-section-label" data-translate="editor.actions_label">Tool Categories</span>
-              </div>
-              <div class="nav-main editor-tabs">
-                <button class="nav-btn" data-tab="truck" type="button" data-translate="editor.tab.truck">Truck</button>
-                <button class="nav-btn" data-tab="trailer" type="button" data-translate="editor.tab.trailer">Trailer</button>
-                <button class="nav-btn active" data-tab="profile" type="button" data-translate="editor.tab.profile">Profile</button>
-                <button class="nav-btn" data-tab="settings" type="button" data-translate="editor.tab.settings">Settings</button>
-              </div>
-            </section>
-
-            <section class="editor-sidebar-block">
-              <div class="editor-sidebar-block-head">
                 <span class="editor-section-label" data-translate="editor.quick_actions">Workspace Actions</span>
               </div>
               <div class="editor-quick-actions">
@@ -347,7 +335,17 @@
                   </div>
                 </section>
               </div>
+
             </div>
+
+            <nav class="editor-bottom-tabs" aria-label="Editor tool categories">
+              <div class="editor-bottom-tabs-inner nav-main editor-tabs panel-surface">
+                <button class="nav-btn" data-tab="truck" type="button" data-translate="editor.tab.truck">Truck</button>
+                <button class="nav-btn" data-tab="trailer" type="button" data-translate="editor.tab.trailer">Trailer</button>
+                <button class="nav-btn active" data-tab="profile" type="button" data-translate="editor.tab.profile">Profile</button>
+                <button class="nav-btn" data-tab="settings" type="button" data-translate="editor.tab.settings">Settings</button>
+              </div>
+            </nav>
           </section>
 
           <section id="careerView" class="workspace-view career-view">
@@ -814,6 +812,7 @@
               <div id="careerDetailHost" class="career-detail-host panel-surface"></div>
             </div>
           </section>
+
         </section>
       </div>
 
@@ -1742,6 +1741,25 @@
           <button id="modalLevelSystemClose" type="button" data-translate="modals.close">Close</button>
           <button id="modalLevelSystemApply" class="apply" type="button" data-translate="modals.level_system.actions.apply">Set Level &amp; XP</button>
         </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalSkilltree">
+      <div class="modal-box modal-box--xl modal-box--sheet modal-box--skilltree" role="dialog" aria-modal="true">
+        <div class="detail-modal-head">
+          <div>
+            <span class="modal-kicker" data-translate="editor.skilltree.launch_kicker">Driver specialization</span>
+            <h2 data-translate="editor.skilltree.title">Skilltree Editor</h2>
+            <p class="modal-description" data-translate="editor.skilltree.modal_desc">
+              Edit driver skills in a focused workspace without changing the backend save logic.
+            </p>
+          </div>
+          <button id="modalSkilltreeClose" class="modal-icon-close" type="button" data-translate-aria-label="modals.close" aria-label="Close">
+            <span aria-hidden="true">X</span>
+          </button>
+        </div>
+
+        <div id="skilltreeModalRoot" class="skilltree-modal-root"></div>
       </div>
     </div>
 

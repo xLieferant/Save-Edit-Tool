@@ -969,6 +969,10 @@
             "skilltree": {
                   "title": "[NEEDS TRANSLATION] Skilltree Editor",
                   "subtitle": "[NEEDS TRANSLATION] Adjust your driver skills visually.",
+                  "launch_kicker": "[NEEDS TRANSLATION] Driver specialization",
+                  "launch_desc": "[NEEDS TRANSLATION] Open the focused skilltree workspace for ADR, cargo and driving specializations.",
+                  "launch_action": "[NEEDS TRANSLATION] Open Skilltree",
+                  "modal_desc": "[NEEDS TRANSLATION] Edit driver skills in a focused workspace without changing the backend save logic.",
                   "summary_progress": "[NEEDS TRANSLATION] Overall Progress",
                   "summary_assigned": "[NEEDS TRANSLATION] Assigned Levels",
                   "summary_peak": "[NEEDS TRANSLATION] Highest Skill",

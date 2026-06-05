@@ -17,6 +17,9 @@ import { mountSkilltreeEditor } from "./js/skilltree.js";
 -------------------------------------------------------------- */
 const container = document.querySelector("#tool-container");
 const navButtons = document.querySelectorAll(".editor-tabs .nav-btn");
+const skilltreeModal = document.getElementById("modalSkilltree");
+const skilltreeModalRoot = document.getElementById("skilltreeModalRoot");
+const skilltreeModalClose = document.getElementById("modalSkilltreeClose");
 export let activeTab = "profile";
 let loadToolsRenderId = 0;
 const editorTabShortcuts = {
@@ -49,7 +52,7 @@ export async function loadTools(tab) {
   container.innerHTML = "";
   const renderId = ++loadToolsRenderId;
   const toolList = tools[tab] || [];
-  const hasEmbeddedSkilltree = tab === "profile";
+  const hasSkilltreeLauncher = tab === "profile";
   const tabLabelKeyMap = {
     truck: "editor.tab.truck",
     trailer: "editor.tab.trailer",
@@ -59,15 +62,13 @@ export async function loadTools(tab) {
 
   document.dispatchEvent(new CustomEvent("editor-tab-changed", { detail: { tab } }));
 
-  if (hasEmbeddedSkilltree) {
-    const skilltreeRoot = document.createElement("section");
-    skilltreeRoot.className = "skilltree-shell";
-    container.appendChild(skilltreeRoot);
-    await mountSkilltreeEditor(skilltreeRoot);
+  if (hasSkilltreeLauncher) {
+    const launcherCard = await createSkilltreeLauncherCard();
     if (renderId !== loadToolsRenderId) return;
+    container.appendChild(launcherCard);
   }
 
-  if (!toolList.length && !hasEmbeddedSkilltree) {
+  if (!toolList.length && !hasSkilltreeLauncher) {
     container.innerHTML = `
       <article class="tool-card">
         <div class="tool-content">
@@ -116,6 +117,53 @@ export async function loadTools(tab) {
   }
 }
 
+async function createSkilltreeLauncherCard() {
+  const card = document.createElement("div");
+  card.className = "tool-card skilltree-launch-card";
+
+  const title = await window.t("editor.skilltree.title");
+  const desc = await window.t("editor.skilltree.launch_desc");
+  const kicker = await window.t("editor.skilltree.launch_kicker");
+  const open = await window.t("editor.skilltree.launch_action");
+
+  card.innerHTML = `
+    <div class="skilltree-launch-visual" aria-hidden="true">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    <div class="tool-content">
+        <span class="overview-label">${kicker}</span>
+        <h3>${title}</h3>
+        <p>${desc}</p>
+        <button type="button">${open}</button>
+    </div>
+  `;
+
+  card.querySelector("button")?.addEventListener("click", openSkilltreeModal);
+  return card;
+}
+
+async function openSkilltreeModal() {
+  if (!skilltreeModal || !skilltreeModalRoot) return;
+
+  skilltreeModal.style.display = "flex";
+  await mountSkilltreeEditor(skilltreeModalRoot);
+  skilltreeModalClose?.focus();
+}
+
+function closeSkilltreeModal() {
+  if (!skilltreeModal) return;
+  skilltreeModal.style.display = "none";
+}
+
+skilltreeModalClose?.addEventListener("click", closeSkilltreeModal);
+skilltreeModal?.addEventListener("click", (event) => {
+  if (event.target === skilltreeModal) {
+    closeSkilltreeModal();
+  }
+});
+
 navButtons.forEach((btn) => {
   btn.addEventListener("click", () => {
     void activateEditorTab(btn.dataset.tab);
@@ -139,7 +187,7 @@ if (defaultTabBtn) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  const savedTheme = localStorage.getItem("theme") || "neon";
+  const savedTheme = localStorage.getItem("theme") || "neon-red";
   document.body.classList.remove("theme-dark", "theme-light", "theme-neon", "theme-neon-red");
   document.body.classList.add(`theme-${savedTheme}`);
 });
@@ -322,6 +370,7 @@ const editorModalDescriptors = [
   { element: modalSafeValueReset, closeButton: modalSafeValueResetClose },
   { element: modalUserLogs, closeButton: modalUserLogsClose },
   { element: modalProfileShare, closeButton: modalProfileShareClose },
+  { element: skilltreeModal, closeButton: skilltreeModalClose },
 ];
 
 const WIKI_FOCUSABLE_SELECTOR = [

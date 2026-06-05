@@ -1902,7 +1902,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           "career.settings.title",
           "career.settings.summary",
           buildDetailCards([
-            { label: await t("career.settings.theme"), value: localStorage.getItem("theme") || "neon" },
+            { label: await t("career.settings.theme"), value: localStorage.getItem("theme") || "neon-red" },
             { label: await t("career.settings.language"), value: careerUi.systemControlled },
             { label: await t("career.settings.modules"), value: careerUi.modulesValue },
           ])
@@ -2993,7 +2993,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const openColorSchemeModal = async () => {
     try {
-      const currentTheme = localStorage.getItem("theme") || "neon";
+      const currentTheme = localStorage.getItem("theme") || "neon-red";
       const themeMap = {
         "label.label_color_theme_dark": "dark",
         "label.label_color_theme_light": "light",

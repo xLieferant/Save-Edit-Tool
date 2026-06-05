@@ -128,26 +128,26 @@ body.theme-neon {
 }
 
 body.theme-neon-red {
-  --bg-main: #070406;
-  --bg-elevated: #11070b;
-  --bg-panel: rgba(26, 9, 14, 0.82);
-  --bg-panel-strong: rgba(20, 7, 11, 0.94);
-  --bg-card: rgba(255, 53, 95, 0.08);
-  --bg-card-soft: rgba(255, 53, 95, 0.04);
-  --text-main: #fff5f7;
-  --text-muted: #d8a8b2;
-  --text-soft: rgba(255, 225, 231, 0.72);
-  --accent: #ff355f;
-  --accent-rgb: 255, 53, 95;
-  --accent-secondary: #8f1937;
-  --accent-secondary-rgb: 143, 25, 55;
-  --accent-contrast: #18060b;
-  --accent-soft: rgba(255, 53, 95, 0.18);
-  --accent-surface: rgba(255, 53, 95, 0.12);
-  --panel-border: rgba(255, 104, 132, 0.26);
-  --card-border: rgba(255, 104, 132, 0.18);
-  --surface-shadow: 0 30px 90px rgba(0, 0, 0, 0.56);
-  --surface-glow: 0 0 34px rgba(255, 53, 95, 0.22);
+  --bg-main: #07080d;
+  --bg-elevated: #0d0a10;
+  --bg-panel: rgba(20, 13, 18, 0.84);
+  --bg-panel-strong: rgba(13, 9, 14, 0.95);
+  --bg-card: rgba(255, 59, 91, 0.075);
+  --bg-card-soft: rgba(255, 255, 255, 0.035);
+  --text-main: #fff7f9;
+  --text-muted: #caa4ad;
+  --text-soft: rgba(255, 226, 232, 0.72);
+  --accent: #ff365a;
+  --accent-rgb: 255, 54, 90;
+  --accent-secondary: #b01838;
+  --accent-secondary-rgb: 176, 24, 56;
+  --accent-contrast: #17070c;
+  --accent-soft: rgba(255, 54, 90, 0.17);
+  --accent-surface: rgba(255, 54, 90, 0.105);
+  --panel-border: rgba(255, 108, 134, 0.22);
+  --card-border: rgba(255, 108, 134, 0.16);
+  --surface-shadow: 0 30px 90px rgba(0, 0, 0, 0.58);
+  --surface-glow: 0 0 34px rgba(255, 54, 90, 0.2);
   --scroll-mask-size: 20px;
   --dropdown-surface: #190d11;
   --dropdown-surface-strong: #12080c;
@@ -159,6 +159,9 @@ body.theme-neon-red {
   --status-glow: 0 0 22px rgba(255, 53, 95, 0.48);
   --status-glow-soft: 0 0 36px rgba(255, 53, 95, 0.22);
   --focus-ring: 0 0 0 3px rgba(255, 53, 95, 0.22);
+  --scrollbar-track: rgba(255, 54, 90, 0.055);
+  --scrollbar-thumb: rgba(255, 88, 118, 0.34);
+  --scrollbar-thumb-hover: rgba(255, 112, 140, 0.56);
 }
 
 * {
@@ -178,6 +181,7 @@ html {
 .table-scroll,
 .career-auth-card,
 .modal-box,
+.skilltree-modal-root,
 .share-modal-scroll,
 .profile-bar .custom-dropdown-list,
 .profile-bar .dropdown-list,
@@ -197,6 +201,7 @@ body.mode-editor .status-cluster {
 .table-scroll::-webkit-scrollbar,
 .career-auth-card::-webkit-scrollbar,
 .modal-box::-webkit-scrollbar,
+.skilltree-modal-root::-webkit-scrollbar,
 .share-modal-scroll::-webkit-scrollbar,
 .profile-bar .custom-dropdown-list::-webkit-scrollbar,
 .profile-bar .dropdown-list::-webkit-scrollbar,
@@ -215,6 +220,7 @@ body.mode-editor .status-cluster::-webkit-scrollbar {
 .table-scroll::-webkit-scrollbar-track,
 .career-auth-card::-webkit-scrollbar-track,
 .modal-box::-webkit-scrollbar-track,
+.skilltree-modal-root::-webkit-scrollbar-track,
 .share-modal-scroll::-webkit-scrollbar-track,
 .profile-bar .custom-dropdown-list::-webkit-scrollbar-track,
 .profile-bar .dropdown-list::-webkit-scrollbar-track,
@@ -233,6 +239,7 @@ body.mode-editor .status-cluster::-webkit-scrollbar-track {
 .table-scroll::-webkit-scrollbar-thumb,
 .career-auth-card::-webkit-scrollbar-thumb,
 .modal-box::-webkit-scrollbar-thumb,
+.skilltree-modal-root::-webkit-scrollbar-thumb,
 .share-modal-scroll::-webkit-scrollbar-thumb,
 .profile-bar .custom-dropdown-list::-webkit-scrollbar-thumb,
 .profile-bar .dropdown-list::-webkit-scrollbar-thumb,
@@ -253,6 +260,7 @@ body.mode-editor .status-cluster::-webkit-scrollbar-thumb {
 .table-scroll:hover::-webkit-scrollbar-thumb,
 .career-auth-card:hover::-webkit-scrollbar-thumb,
 .modal-box:hover::-webkit-scrollbar-thumb,
+.skilltree-modal-root:hover::-webkit-scrollbar-thumb,
 .share-modal-scroll:hover::-webkit-scrollbar-thumb,
 .profile-bar .custom-dropdown-list:hover::-webkit-scrollbar-thumb,
 .profile-bar .dropdown-list:hover::-webkit-scrollbar-thumb,
@@ -6065,6 +6073,8 @@ body.mode-editor .workspace-shell {
   display: grid;
   grid-template-columns: clamp(320px, 26vw, 420px) minmax(0, 1fr);
   gap: var(--space-sm);
+  flex: 1 1 auto;
+  height: 100%;
   min-height: 0;
   align-items: stretch;
 }
@@ -6075,6 +6085,7 @@ body.mode-editor #careerSidebar {
 
 body.mode-editor .editor-sidebar {
   min-height: 0;
+  max-height: 100%;
   padding: 0;
   border-radius: calc(var(--radius-lg) + 2px);
   overflow: hidden;
@@ -6083,9 +6094,12 @@ body.mode-editor .editor-sidebar {
 body.mode-editor .editor-sidebar-scroll {
   display: grid;
   gap: var(--space-md);
+  align-content: start;
   min-height: 0;
+  max-height: 100%;
   width: 100%;
   padding: var(--space-md);
+  overflow-x: hidden;
   overflow-y: auto;
 }
 
@@ -7760,7 +7774,10 @@ body.mode-editor .github-public-lock #editorFleetCard strong {
     top: var(--space-xs);
     left: var(--space-xs);
     bottom: var(--space-xs);
+    height: auto;
+    max-height: calc(100dvh - (var(--space-xs) * 2));
     width: min(400px, calc(100vw - (var(--space-xs) * 2)));
+    flex-basis: auto;
     transform: translateX(calc(-100% - 16px));
     opacity: 0;
     pointer-events: none;
@@ -7777,6 +7794,10 @@ body.mode-editor .github-public-lock #editorFleetCard strong {
     transform: translateX(0);
     opacity: 1;
     pointer-events: auto;
+  }
+
+  body.mode-editor .editor-sidebar-scroll {
+    padding: 10px;
   }
 
   body.mode-editor .save-hero {
@@ -7913,7 +7934,7 @@ body.mode-editor .github-public-lock #editorFleetCard strong {
   body.mode-editor .save-tool-stage,
   body.mode-editor .overview-card,
   body.mode-editor .editor-sidebar-block {
-    padding: var(--space-sm);
+    padding: 10px;
   }
 
   body.mode-editor .picker-menu {
@@ -7926,7 +7947,7 @@ body.mode-editor .github-public-lock #editorFleetCard strong {
 }
 
 body.mode-editor.theme-neon-red {
-  --border-subtle: rgba(255, 118, 143, 0.18);
+  --border-subtle: rgba(255, 118, 143, 0.16);
 }
 
 body.mode-editor.theme-neon-red .command-header,
@@ -7938,15 +7959,14 @@ body.mode-editor.theme-neon-red .save-hero,
 body.mode-editor.theme-neon-red .user-menu-dropdown,
 body.mode-editor.theme-neon-red .modal-box {
   background:
-    radial-gradient(circle at top left, rgba(255, 53, 95, 0.16), transparent 34%),
-    radial-gradient(circle at top right, rgba(255, 122, 83, 0.08), transparent 28%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015)),
-    linear-gradient(160deg, rgba(18, 7, 11, 0.96), rgba(11, 5, 8, 0.9));
-  border-color: rgba(255, 112, 141, 0.18);
+    radial-gradient(circle at top left, rgba(255, 54, 90, 0.1), transparent 30%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.018)),
+    linear-gradient(160deg, rgba(14, 12, 18, 0.97), rgba(8, 9, 14, 0.94));
+  border-color: rgba(255, 112, 141, 0.15);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 26px 68px rgba(0, 0, 0, 0.34),
-    0 0 0 1px rgba(255, 53, 95, 0.06);
+    0 24px 62px rgba(0, 0, 0, 0.36),
+    0 0 0 1px rgba(255, 54, 90, 0.045);
 }
 
 body.mode-editor .command-header {
@@ -8069,6 +8089,203 @@ body.mode-editor .version-btn:hover:not(:disabled) {
     linear-gradient(145deg, rgba(31, 14, 20, 0.86), rgba(17, 8, 12, 0.8));
 }
 
+body.mode-editor .workspace-shell {
+  display: flex;
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+  overflow: hidden;
+  align-items: stretch;
+}
+
+body.mode-editor .editor-sidebar {
+  flex: 0 0 clamp(284px, 22vw, 344px);
+  width: clamp(284px, 22vw, 344px);
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+body.mode-editor .editor-sidebar-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  align-content: start;
+  gap: 10px;
+  padding: 12px;
+}
+
+body.mode-editor .workspace-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+body.mode-editor .editor-sidebar-block {
+  gap: 8px;
+  padding: 12px;
+  border-radius: 16px;
+}
+
+body.mode-editor .editor-sidebar-block:not(:last-child) {
+  padding-bottom: 12px;
+}
+
+body.mode-editor .editor-sidebar-block-head {
+  gap: 8px;
+  min-height: 18px;
+}
+
+body.mode-editor .editor-section-label {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+
+body.mode-editor .profile-status {
+  min-height: 0;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+body.mode-editor .editor-session-panel {
+  --picker-control-min-height: 62px;
+  --picker-control-padding: 10px 12px;
+  --picker-control-radius: 15px;
+  --picker-control-gap: 10px;
+  --picker-item-min-height: 46px;
+  --picker-item-padding: 10px 12px;
+}
+
+body.mode-editor .editor-session-grid,
+body.mode-editor .editor-picker-stack,
+body.mode-editor .editor-picker-actions,
+body.mode-editor .editor-tabs,
+body.mode-editor .editor-quick-actions {
+  gap: 8px;
+}
+
+body.mode-editor .game-switch {
+  gap: 8px;
+}
+
+body.mode-editor .game-switch button,
+body.mode-editor .editor-sidebar .nav-btn,
+body.mode-editor .editor-sidebar .nav-action,
+body.mode-editor .editor-sidebar .version-btn {
+  min-height: 38px;
+  padding: 8px 11px;
+  border-radius: 13px;
+  font-size: 13px;
+  line-height: 1.25;
+  font-weight: 650;
+}
+
+body.mode-editor .editor-picker-action {
+  min-height: 38px;
+}
+
+body.mode-editor .editor-picker {
+  min-height: var(--picker-control-min-height);
+  padding: var(--picker-control-padding);
+  border-radius: var(--picker-control-radius);
+  gap: var(--picker-control-gap);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.035),
+    0 8px 18px rgba(0, 0, 0, 0.12);
+}
+
+body.mode-editor .picker-leading {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+}
+
+body.mode-editor .picker-copy {
+  gap: 3px;
+}
+
+body.mode-editor .picker-label {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+}
+
+body.mode-editor .picker-value {
+  -webkit-line-clamp: 2;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+body.mode-editor .picker-toggle {
+  width: 32px;
+  height: 32px;
+  border-radius: 11px;
+}
+
+body.mode-editor .game-switch button img {
+  width: 20px;
+  height: 20px;
+}
+
+body.mode-editor .editor-sidebar .nav-btn.active,
+body.mode-editor .game-switch button.active,
+body.mode-editor .editor-sidebar .nav-action.active {
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.24),
+    0 0 0 1px rgba(var(--accent-rgb), 0.12),
+    0 0 18px rgba(var(--accent-rgb), 0.13);
+}
+
+body.mode-editor.theme-neon-red .editor-sidebar-block {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.016)),
+    linear-gradient(155deg, rgba(15, 13, 18, 0.9), rgba(9, 9, 14, 0.82));
+  border-color: rgba(255, 116, 142, 0.11);
+}
+
+body.mode-editor.theme-neon-red .editor-picker,
+body.mode-editor.theme-neon-red .editor-sidebar .nav-btn,
+body.mode-editor.theme-neon-red .editor-sidebar .nav-action,
+body.mode-editor.theme-neon-red .editor-sidebar .version-btn,
+body.mode-editor.theme-neon-red .game-switch button {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.048), rgba(255, 255, 255, 0.018)),
+    rgba(12, 12, 17, 0.82);
+  border-color: rgba(255, 116, 142, 0.12);
+}
+
+body.mode-editor.theme-neon-red .editor-sidebar .nav-btn:hover,
+body.mode-editor.theme-neon-red .editor-sidebar .nav-action:hover,
+body.mode-editor.theme-neon-red .editor-sidebar .version-btn:hover,
+body.mode-editor.theme-neon-red .game-switch button:hover,
+body.mode-editor.theme-neon-red .editor-picker:hover {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.024)),
+    rgba(18, 14, 20, 0.9);
+  border-color: rgba(var(--accent-rgb), 0.28);
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(var(--accent-rgb), 0.07);
+}
+
+body.mode-editor.theme-neon-red .editor-sidebar .nav-btn.active,
+body.mode-editor.theme-neon-red .game-switch button.active,
+body.mode-editor.theme-neon-red .editor-sidebar .nav-action.active {
+  color: #fff8fa;
+  border-color: rgba(var(--accent-rgb), 0.44);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.035)),
+    linear-gradient(135deg, rgba(255, 54, 90, 0.88), rgba(155, 20, 47, 0.84));
+}
+
 body.mode-editor .overview-card,
 body.mode-editor .save-tool-stage,
 body.mode-editor .tool-card,
@@ -8112,6 +8329,84 @@ body.mode-editor #tool-container {
 
 body.mode-editor .skilltree-shell {
   grid-column: 1 / -1;
+}
+
+body.mode-editor .skilltree-launch-card {
+  min-height: 336px;
+  grid-template-rows: minmax(136px, 0.62fr) auto;
+}
+
+body.mode-editor .skilltree-launch-visual {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: center;
+  gap: 14px;
+  min-height: 142px;
+  padding: 24px;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgba(var(--accent-rgb), 0.18);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(var(--accent-rgb), 0.18), transparent 52%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.018));
+}
+
+body.mode-editor .skilltree-launch-visual::before {
+  content: "";
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  top: 50%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb), 0.7), transparent);
+  box-shadow: 0 0 18px rgba(var(--accent-rgb), 0.28);
+}
+
+body.mode-editor .skilltree-launch-visual span {
+  position: relative;
+  z-index: 1;
+  display: block;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--accent-rgb), 0.42);
+  background:
+    radial-gradient(circle, rgba(var(--accent-rgb), 0.9), rgba(var(--accent-rgb), 0.2) 48%, rgba(255, 255, 255, 0.04) 50%);
+  box-shadow:
+    0 0 0 8px rgba(var(--accent-rgb), 0.08),
+    0 0 28px rgba(var(--accent-rgb), 0.24);
+}
+
+body.mode-editor .modal-box--skilltree {
+  width: min(1240px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  overflow: hidden;
+}
+
+body.mode-editor .modal-icon-close {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+}
+
+body.mode-editor .skilltree-modal-root {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+body.mode-editor .modal-box--skilltree .skilltree-surface {
+  min-height: 0;
 }
 
 body.mode-editor .skilltree-surface {
@@ -8643,5 +8938,1431 @@ body.mode-editor .user-logs-meta-card strong {
   body.mode-editor .skilltree-stepper {
     flex-wrap: wrap;
     justify-content: center;
+  }
+}
+
+/* Save Editor Red Neon system pass */
+body.mode-editor.theme-neon-red {
+  --bg-main: #07090f;
+  --bg-elevated: #0b0e15;
+  --bg-panel: rgba(13, 16, 24, 0.88);
+  --bg-panel-strong: rgba(10, 12, 19, 0.96);
+  --bg-card: rgba(255, 255, 255, 0.045);
+  --bg-card-soft: rgba(255, 255, 255, 0.028);
+  --text-main: #f8fafc;
+  --text-muted: #9da7b7;
+  --text-soft: rgba(226, 232, 240, 0.72);
+  --accent: #ff3158;
+  --accent-rgb: 255, 49, 88;
+  --accent-secondary: #b91c3f;
+  --accent-secondary-rgb: 185, 28, 63;
+  --accent-contrast: #fff7fa;
+  --accent-soft: rgba(255, 49, 88, 0.14);
+  --accent-surface: rgba(255, 49, 88, 0.09);
+  --panel-border: rgba(148, 163, 184, 0.14);
+  --card-border: rgba(148, 163, 184, 0.12);
+  --border-subtle: rgba(148, 163, 184, 0.14);
+  --border-strong: rgba(255, 82, 117, 0.34);
+  --surface-shadow: 0 22px 56px rgba(0, 0, 0, 0.42);
+  --surface-shadow-soft: 0 14px 34px rgba(0, 0, 0, 0.26);
+  --surface-glow: 0 0 28px rgba(255, 49, 88, 0.16);
+  --focus-ring: 0 0 0 3px rgba(255, 49, 88, 0.18);
+  --scrollbar-track: rgba(148, 163, 184, 0.055);
+  --scrollbar-thumb: rgba(255, 74, 110, 0.34);
+  --scrollbar-thumb-hover: rgba(255, 96, 128, 0.55);
+}
+
+body.mode-editor {
+  --editor-topbar-min: 76px;
+  --editor-sidebar-width: clamp(300px, 23vw, 356px);
+  --editor-gap: 16px;
+  --editor-pad: 16px;
+  --editor-radius-sm: 10px;
+  --editor-radius-md: 14px;
+  --editor-radius-lg: 18px;
+  --editor-radius-xl: 22px;
+  --editor-control-height: 40px;
+  --editor-card-min: 298px;
+  --editor-card-max: 360px;
+}
+
+body.mode-editor .app-shell {
+  grid-template-rows: minmax(var(--editor-topbar-min), auto) minmax(0, 1fr);
+  gap: var(--editor-gap);
+  padding: var(--editor-pad);
+}
+
+body.mode-editor .command-header {
+  min-height: var(--editor-topbar-min);
+  padding: 12px 16px;
+  border-radius: var(--editor-radius-xl);
+  overflow: visible;
+}
+
+body.mode-editor.theme-neon-red .command-header,
+body.mode-editor.theme-neon-red .editor-sidebar,
+body.mode-editor.theme-neon-red .workspace-main,
+body.mode-editor.theme-neon-red .save-hero,
+body.mode-editor.theme-neon-red .save-tool-stage,
+body.mode-editor.theme-neon-red .overview-card,
+body.mode-editor.theme-neon-red .modal-box,
+body.mode-editor.theme-neon-red .user-menu-dropdown {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.052), rgba(255, 255, 255, 0.018)),
+    linear-gradient(160deg, rgba(13, 16, 24, 0.96), rgba(8, 10, 16, 0.94));
+  border-color: var(--panel-border);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.045),
+    var(--surface-shadow-soft);
+}
+
+body.mode-editor .command-header::after,
+body.mode-editor .editor-sidebar-block::before,
+body.mode-editor .overview-card::before,
+body.mode-editor .save-tool-stage::before,
+body.mode-editor .tool-card::before {
+  opacity: 0.72;
+}
+
+body.mode-editor .header-row-top {
+  grid-template-columns: minmax(240px, auto) minmax(360px, 1fr) minmax(320px, auto);
+  gap: 16px;
+}
+
+body.mode-editor .logo {
+  gap: 12px;
+}
+
+body.mode-editor .logo img {
+  width: 48px;
+  height: 48px;
+  border-radius: 13px;
+  box-shadow:
+    0 0 0 1px rgba(var(--accent-rgb), 0.24),
+    0 0 22px rgba(var(--accent-rgb), 0.16);
+}
+
+body.mode-editor .logo-title {
+  font-size: 20px;
+  letter-spacing: 0.08em;
+}
+
+body.mode-editor .logo-subtitle,
+body.mode-editor .hub-home-copy,
+body.mode-editor .status-text {
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}
+
+body.mode-editor .header-center {
+  justify-content: center;
+  gap: 10px;
+}
+
+body.mode-editor .hub-home-btn,
+body.mode-editor .mode-switch,
+body.mode-editor .user-menu-btn,
+body.mode-editor .status-pill {
+  border-radius: var(--editor-radius-md);
+  border-color: var(--card-border);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018)),
+    rgba(255, 255, 255, 0.018);
+}
+
+body.mode-editor .hub-home-btn {
+  min-height: 46px;
+  padding: 8px 12px;
+}
+
+body.mode-editor .mode-switch {
+  min-height: 46px;
+  padding: 4px;
+}
+
+body.mode-editor .mode-btn {
+  min-height: 36px;
+  padding: 8px 13px;
+  border-radius: 11px;
+  letter-spacing: 0.06em;
+}
+
+body.mode-editor .mode-btn.active {
+  color: #fff8fa;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.03)),
+    linear-gradient(135deg, rgba(var(--accent-rgb), 0.9), rgba(172, 24, 55, 0.84));
+  box-shadow: 0 10px 24px rgba(var(--accent-rgb), 0.16);
+}
+
+body.mode-editor .status-cluster {
+  gap: 8px;
+}
+
+body.mode-editor .status-pill {
+  min-width: 124px;
+  min-height: 38px;
+  padding: 7px 10px;
+}
+
+body.mode-editor .user-menu-btn {
+  min-height: 42px;
+  padding: 6px 9px;
+}
+
+body.mode-editor .user-menu-icon {
+  width: 30px;
+  height: 30px;
+}
+
+body.mode-editor .workspace-shell {
+  display: flex;
+  gap: var(--editor-gap);
+  min-height: 0;
+  overflow: hidden;
+}
+
+body.mode-editor .editor-sidebar {
+  flex: 0 0 var(--editor-sidebar-width);
+  width: var(--editor-sidebar-width);
+  min-width: 300px;
+  height: 100%;
+  min-height: 0;
+  border-radius: var(--editor-radius-xl);
+}
+
+body.mode-editor .editor-sidebar-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 14px;
+  gap: 12px;
+  scrollbar-gutter: auto;
+}
+
+body.mode-editor .editor-sidebar-block {
+  padding: 12px;
+  gap: 9px;
+  border-radius: var(--editor-radius-lg);
+  border-color: rgba(148, 163, 184, 0.1);
+}
+
+body.mode-editor.theme-neon-red .editor-sidebar-block {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.038), rgba(255, 255, 255, 0.014)),
+    rgba(255, 255, 255, 0.012);
+}
+
+body.mode-editor .editor-sidebar-block:not(:last-child) {
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+}
+
+body.mode-editor .editor-section-label,
+body.mode-editor .overview-label,
+body.mode-editor .picker-label,
+body.mode-editor .modal-label,
+body.mode-editor .modal-kicker,
+body.mode-editor .warning-label {
+  letter-spacing: 0.08em;
+  font-size: 10px;
+}
+
+body.mode-editor .profile-status {
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+body.mode-editor .editor-session-panel {
+  --picker-control-min-height: 64px;
+  --picker-control-padding: 10px 12px;
+  --picker-control-radius: 14px;
+  --picker-control-gap: 10px;
+  --picker-item-min-height: 44px;
+  --picker-item-padding: 10px 12px;
+}
+
+body.mode-editor .editor-session-grid,
+body.mode-editor .editor-picker-stack,
+body.mode-editor .editor-picker-actions,
+body.mode-editor .editor-tabs,
+body.mode-editor .editor-quick-actions,
+body.mode-editor .game-switch {
+  gap: 8px;
+}
+
+body.mode-editor .editor-picker {
+  border-color: rgba(148, 163, 184, 0.12);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.014)),
+    rgba(255, 255, 255, 0.014);
+}
+
+body.mode-editor .picker-leading {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+}
+
+body.mode-editor .picker-copy {
+  gap: 4px;
+}
+
+body.mode-editor .picker-value {
+  -webkit-line-clamp: 2;
+  font-size: 13px;
+  line-height: 1.32;
+}
+
+body.mode-editor .picker-toggle {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+}
+
+body.mode-editor .game-switch button,
+body.mode-editor .editor-sidebar .nav-btn,
+body.mode-editor .editor-sidebar .nav-action,
+body.mode-editor .editor-sidebar .version-btn,
+body.mode-editor .preset-btn,
+body.mode-editor .secondary-action,
+body.mode-editor .table-action,
+body.mode-editor .modal-actions button {
+  min-height: var(--editor-control-height);
+  padding: 8px 12px;
+  border-radius: var(--editor-radius-md);
+  font-size: 13px;
+  letter-spacing: 0.01em;
+}
+
+body.mode-editor .editor-sidebar .version-btn {
+  min-height: 34px;
+  font-size: 12px;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.014);
+}
+
+body.mode-editor .game-switch button.active,
+body.mode-editor .editor-sidebar .nav-btn.active,
+body.mode-editor .editor-sidebar .nav-action.active,
+body.mode-editor .preset-btn.active {
+  color: #fff8fa;
+  border-color: var(--border-strong);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03)),
+    linear-gradient(135deg, rgba(var(--accent-rgb), 0.88), rgba(166, 24, 54, 0.82));
+  box-shadow:
+    0 12px 24px rgba(0, 0, 0, 0.24),
+    0 0 18px rgba(var(--accent-rgb), 0.14);
+}
+
+body.mode-editor .workspace-main {
+  padding: 16px;
+  border-radius: var(--editor-radius-xl);
+}
+
+body.mode-editor .save-content-scroll {
+  gap: 16px;
+  max-width: 1680px;
+  width: 100%;
+  margin: 0 auto;
+  padding-right: 4px;
+  padding-bottom: 20px;
+}
+
+body.mode-editor .save-hero {
+  grid-template-columns: minmax(0, 1.55fr) minmax(260px, 0.72fr);
+  gap: 18px;
+  padding: 22px 24px;
+  border-radius: var(--editor-radius-xl);
+}
+
+body.mode-editor.theme-neon-red .save-hero {
+  background:
+    radial-gradient(circle at 14% 0%, rgba(var(--accent-rgb), 0.12), transparent 30%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.052), rgba(255, 255, 255, 0.018)),
+    linear-gradient(160deg, rgba(13, 16, 24, 0.96), rgba(8, 10, 16, 0.94));
+}
+
+body.mode-editor .save-hero-copy {
+  gap: 12px;
+}
+
+body.mode-editor .save-hero-copy h1 {
+  max-width: 780px;
+  font-size: clamp(30px, 2.8vw, 42px);
+  letter-spacing: 0;
+}
+
+body.mode-editor .save-hero-copy p {
+  max-width: 760px;
+  font-size: 14px;
+}
+
+body.mode-editor .save-hero-actions {
+  gap: 10px;
+  margin-top: 2px;
+}
+
+body.mode-editor .save-warning-card {
+  padding: 16px;
+  border-radius: var(--editor-radius-lg);
+  border-color: rgba(245, 158, 11, 0.2);
+  background:
+    linear-gradient(180deg, rgba(245, 158, 11, 0.085), rgba(255, 255, 255, 0.018)),
+    rgba(255, 255, 255, 0.014);
+}
+
+body.mode-editor .save-warning-card h2,
+body.mode-editor .save-stage-head h2 {
+  font-size: clamp(19px, 1.55vw, 24px);
+  letter-spacing: 0;
+}
+
+body.mode-editor .save-warning-card p,
+body.mode-editor .save-stage-head p,
+body.mode-editor .tool-content p {
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+body.mode-editor .save-overview-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+body.mode-editor .overview-card {
+  min-height: 108px;
+  padding: 16px;
+  border-radius: var(--editor-radius-lg);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.043), rgba(255, 255, 255, 0.016)),
+    rgba(255, 255, 255, 0.012);
+}
+
+body.mode-editor .overview-card strong {
+  font-size: clamp(20px, 1.6vw, 27px);
+  letter-spacing: 0;
+}
+
+body.mode-editor .save-tool-stage {
+  padding: 18px;
+  gap: 16px;
+  border-radius: var(--editor-radius-xl);
+}
+
+body.mode-editor .save-stage-head {
+  grid-template-columns: minmax(280px, 0.8fr) minmax(320px, 1.2fr);
+  gap: 16px;
+  align-items: start;
+}
+
+body.mode-editor #tool-container {
+  grid-template-columns: repeat(auto-fit, minmax(236px, 1fr));
+  gap: 14px;
+  align-items: stretch;
+}
+
+@media (min-width: 1500px) {
+  body.mode-editor #tool-container {
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  }
+}
+
+body.mode-editor .tool-card {
+  min-height: var(--editor-card-min);
+  max-height: var(--editor-card-max);
+  border-radius: var(--editor-radius-lg);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.044), rgba(255, 255, 255, 0.014)),
+    rgba(255, 255, 255, 0.012);
+}
+
+body.mode-editor .tool-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(var(--accent-rgb), 0.26);
+  box-shadow:
+    0 18px 34px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(var(--accent-rgb), 0.06);
+}
+
+body.mode-editor .tool-card img {
+  aspect-ratio: 16 / 7.8;
+  max-height: 132px;
+  object-fit: cover;
+}
+
+body.mode-editor .tool-content {
+  gap: 10px;
+  padding: 14px;
+}
+
+body.mode-editor .tool-content h3 {
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+body.mode-editor .tool-card button {
+  min-height: 38px;
+  padding: 8px 14px;
+  border-radius: var(--editor-radius-md);
+  color: #fff8fa;
+}
+
+body.mode-editor .modal-backdrop {
+  padding: 18px;
+  background: rgba(3, 6, 12, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+body.mode-editor .modal-box {
+  width: min(520px, 100%);
+  max-height: calc(100dvh - 36px);
+  padding: 0;
+  border-radius: var(--editor-radius-xl);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+body.mode-editor .modal-box > h2,
+body.mode-editor .modal-box > input,
+body.mode-editor .modal-box > select,
+body.mode-editor .modal-box > textarea,
+body.mode-editor .modal-box > #modalMultiContent,
+body.mode-editor .modal-box > p,
+body.mode-editor .modal-box > .toggle-switch,
+body.mode-editor .modal-box > .clone-options {
+  margin-left: 20px;
+  margin-right: 20px;
+}
+
+body.mode-editor .modal-box > input,
+body.mode-editor .modal-box > select,
+body.mode-editor .modal-box > textarea,
+body.mode-editor .modal-box > #modalMultiContent {
+  width: auto;
+}
+
+body.mode-editor .modal-box > h2,
+body.mode-editor .detail-modal-head {
+  padding: 18px 20px 14px;
+  margin: 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+body.mode-editor .modal-box > h2 {
+  font-size: 21px;
+}
+
+body.mode-editor .detail-modal-head {
+  gap: 16px;
+}
+
+body.mode-editor .modal-description {
+  max-width: 72ch;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+body.mode-editor .modal-actions {
+  margin-top: auto;
+  padding: 14px 20px 18px;
+  border-top-color: rgba(148, 163, 184, 0.1);
+  background: rgba(255, 255, 255, 0.012);
+}
+
+body.mode-editor .modal-box--safe-reset,
+body.mode-editor .modal-box--share {
+  width: min(760px, 100%);
+}
+
+body.mode-editor .modal-box--wiki,
+body.mode-editor .modal-box--level,
+body.mode-editor .modal-box--recovery,
+body.mode-editor .modal-box--user-logs {
+  width: min(1080px, 100%);
+}
+
+body.mode-editor .modal-box--skilltree {
+  width: min(1240px, 100%);
+  max-height: calc(100dvh - 36px);
+}
+
+body.mode-editor .level-system-scroll,
+body.mode-editor .recovery-modal-scroll,
+body.mode-editor .diagnostics-modal-scroll,
+body.mode-editor .share-modal-scroll,
+body.mode-editor .skilltree-modal-root {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+body.mode-editor .modal-icon-close {
+  width: 38px;
+  height: 38px;
+  min-height: 38px;
+  border-radius: 12px;
+}
+
+body.mode-editor .modal-box input,
+body.mode-editor .modal-box textarea,
+body.mode-editor .modal-box select,
+body.mode-editor .save-reset-field input {
+  min-height: 42px;
+  border-radius: var(--editor-radius-md);
+  border-color: rgba(148, 163, 184, 0.14);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.016)),
+    rgba(255, 255, 255, 0.014);
+}
+
+@media (max-width: 1360px) {
+  body.mode-editor {
+    --editor-sidebar-width: clamp(292px, 25vw, 332px);
+  }
+
+  body.mode-editor .header-row-top {
+    grid-template-columns: minmax(220px, auto) minmax(0, 1fr);
+  }
+
+  body.mode-editor .header-right {
+    grid-column: 1 / -1;
+  }
+
+  body.mode-editor .save-overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1100px) {
+  body.mode-editor .save-hero,
+  body.mode-editor .save-stage-head {
+    grid-template-columns: 1fr;
+  }
+
+  body.mode-editor #tool-container {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  body.mode-editor {
+    --editor-sidebar-width: min(390px, calc(100vw - 20px));
+    --editor-pad: 10px;
+    --editor-gap: 10px;
+  }
+
+  body.mode-editor .workspace-shell {
+    display: block;
+  }
+
+  body.mode-editor .editor-sidebar {
+    width: var(--editor-sidebar-width);
+    min-width: 0;
+    max-height: calc(100dvh - 20px);
+  }
+
+  body.mode-editor .header-row-top {
+    grid-template-columns: 1fr;
+  }
+
+  body.mode-editor .command-header {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  body.mode-editor .save-overview-grid,
+  body.mode-editor #tool-container {
+    grid-template-columns: 1fr;
+  }
+
+  body.mode-editor .save-hero,
+  body.mode-editor .save-tool-stage,
+  body.mode-editor .workspace-main {
+    padding: 12px;
+  }
+
+  body.mode-editor .modal-backdrop {
+    padding: 10px;
+  }
+
+  body.mode-editor .modal-box,
+  body.mode-editor .modal-box--skilltree {
+    max-height: calc(100dvh - 20px);
+  }
+}
+
+@media (max-height: 720px) {
+  body.mode-editor {
+    --editor-topbar-min: 64px;
+    --editor-pad: 10px;
+    --editor-gap: 10px;
+    --editor-control-height: 36px;
+  }
+
+  body.mode-editor .command-header {
+    padding: 9px 12px;
+  }
+
+  body.mode-editor .logo img {
+    width: 40px;
+    height: 40px;
+  }
+
+  body.mode-editor .editor-sidebar-scroll {
+    padding: 10px;
+    gap: 9px;
+  }
+
+  body.mode-editor .editor-sidebar-block {
+    padding: 10px;
+  }
+}
+
+/* Final Save Editor scroll layout fix */
+body.mode-editor {
+  --editor-sidebar-width: clamp(340px, 24vw, 376px);
+}
+
+body.mode-editor .app-shell {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
+body.mode-editor .workspace-shell {
+  display: flex;
+  min-height: 0;
+  height: auto;
+  overflow: hidden;
+  align-items: stretch;
+}
+
+body.mode-editor .editor-sidebar {
+  flex: 0 0 var(--editor-sidebar-width);
+  width: var(--editor-sidebar-width);
+  min-width: 328px;
+  max-width: 376px;
+  min-height: 0;
+  height: auto;
+  align-self: stretch;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+body.mode-editor .editor-sidebar-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  padding: 14px 12px 14px 14px;
+  gap: 12px;
+
+  box-sizing: border-box;
+  scrollbar-gutter: stable;
+
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+body.mode-editor .workspace-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: hidden;
+  overflow-x: hidden;
+  position: relative;
+  padding: 24px 28px;
+  box-sizing: border-box;
+}
+
+body.mode-editor .save-editor-view.workspace-view.is-active {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+body.mode-editor .save-editor-shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 100%;
+  min-width: 0;
+}
+
+body.mode-editor .save-content-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  gap: 18px;
+  padding-right: 0;
+  padding-bottom: 104px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+body.mode-editor .save-hero,
+body.mode-editor .save-overview-grid,
+body.mode-editor .save-tool-stage,
+body.mode-editor .tool-stage-shell,
+body.mode-editor #tool-container {
+  width: 100%;
+}
+
+.editor-bottom-tabs {
+  display: none;
+}
+
+body.mode-editor .editor-bottom-tabs {
+  display: block;
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  z-index: 120;
+  width: fit-content;
+  min-width: 320px;
+  max-width: min(720px, calc(100% - 24px));
+  pointer-events: none;
+}
+
+body.mode-editor .editor-bottom-tabs-inner {
+  pointer-events: auto;
+  width: 100%;
+  max-width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  border-radius: 20px 20px 0 0;
+  border: 1px solid rgba(255, 59, 79, 0.2);
+  border-bottom: 0;
+  background:
+    linear-gradient(180deg, rgba(18, 22, 31, 0.92), rgba(8, 10, 15, 0.96));
+  box-shadow:
+    0 -8px 24px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-sizing: border-box;
+}
+
+body.mode-editor .editor-bottom-tabs .nav-btn {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+  border-radius: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+body.mode-editor .editor-bottom-tabs .nav-btn.active {
+  box-shadow:
+    0 12px 24px rgba(0, 0, 0, 0.24),
+    0 0 18px rgba(var(--accent-rgb), 0.14);
+}
+
+body.mode-editor .save-overview-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+}
+
+body.mode-editor .overview-card,
+body.mode-editor .save-tool-stage {
+  width: 100%;
+}
+
+body.mode-editor #tool-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 18px;
+  width: 100%;
+  align-items: stretch;
+}
+
+body.mode-editor .tool-card {
+  min-width: 0;
+  height: 100%;
+}
+
+@media (max-width: 900px) {
+  body.mode-editor {
+    --editor-sidebar-width: min(390px, calc(100vw - 20px));
+  }
+
+  body.mode-editor .workspace-shell {
+    display: block;
+  }
+
+  body.mode-editor .editor-sidebar {
+    width: var(--editor-sidebar-width);
+    min-width: 0;
+    max-width: none;
+    max-height: calc(100dvh - 20px);
+    flex-basis: auto;
+  }
+
+  body.mode-editor .workspace-main {
+    padding: 18px;
+  }
+
+  body.mode-editor .editor-bottom-tabs {
+    left: 50%;
+    bottom: 0;
+    min-width: 280px;
+    width: fit-content;
+    max-width: calc(100% - 16px);
+    transform: translateX(-50%);
+  }
+
+  body.mode-editor .save-content-scroll {
+    padding-bottom: 96px;
+  }
+
+  body.mode-editor .editor-bottom-tabs-inner {
+    padding: 8px 10px 10px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    max-width: none;
+  }
+}
+
+@media (max-width: 720px) {
+  body.mode-editor .workspace-main {
+    padding: 14px;
+  }
+
+  body.mode-editor .save-content-scroll {
+    padding-bottom: 136px;
+  }
+
+  body.mode-editor .editor-bottom-tabs-inner {
+    grid-template-columns: repeat(4, minmax(88px, 1fr));
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+}
+
+@media (max-height: 720px) {
+  body.mode-editor .editor-sidebar-scroll {
+    padding: 10px;
+    gap: 9px;
+  }
+
+  body.mode-editor .editor-bottom-tabs {
+    min-width: 260px;
+  }
+}
+
+@media (min-width: 1800px) {
+  body.mode-editor #tool-container {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  }
+}
+
+/* Sidebar-Blöcke etwas luftiger */
+body.mode-editor .editor-sidebar-block {
+  padding: 15px;
+  gap: 12px;
+
+  display: flex;
+  flex-direction: column;
+
+  box-sizing: border-box;
+}
+
+/* Status-Text: nicht mehr so gequetscht */
+body.mode-editor .profile-status {
+  display: block;
+  min-height: auto;
+
+  padding: 10px 12px;
+  border-radius: 12px;
+
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(255, 255, 255, 0.022);
+
+  font-size: 12.75px;
+  line-height: 1.45;
+
+  overflow-wrap: anywhere;
+}
+
+/* Picker nicht zu groß, aber lesbar */
+body.mode-editor .editor-session-panel {
+  --picker-control-min-height: 64px;
+  --picker-control-padding: 11px 12px;
+  --picker-control-gap: 11px;
+}
+
+body.mode-editor .editor-picker {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-width: 0;
+}
+
+body.mode-editor .editor-picker--save {
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-width: 0;
+}
+
+body.mode-editor .picker-value {
+  -webkit-line-clamp: 2;
+  font-size: 13.5px;
+  line-height: 1.35;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Buttons einheitlich */
+body.mode-editor .editor-sidebar .nav-btn,
+body.mode-editor .editor-sidebar .nav-action,
+body.mode-editor .game-switch button {
+  min-height: 42px;
+  padding-inline: 14px;
+  box-sizing: border-box;
+}
+
+/* Version kompakter */
+body.mode-editor .editor-sidebar .version-btn {
+  min-height: 34px;
+  justify-content: center;
+  padding-inline: 12px;
+  box-sizing: border-box;
+}
+
+/* Game-Switch sauber verteilen */
+body.mode-editor .game-switch {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+body.mode-editor .game-switch button {
+  min-width: 0;
+}
+
+/* =========================================================
+   Global scroll architecture rebuild
+   Fixes app, workspace, sidebar and modal scrolling
+   for small desktop windows / Tauri viewport layouts
+   ========================================================= */
+html,
+body {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+body {
+  overflow: hidden;
+}
+
+body.mode-editor {
+  --modal-viewport-gap: clamp(12px, 2vw, 24px);
+}
+
+#app,
+.app-shell,
+body.mode-editor .app-shell,
+body.mode-editor.diagnostics-page-body .app-shell,
+body.mode-editor.mod-profile-page-body .app-shell,
+body.mode-editor.profile-share-page-body .app-shell {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+body.mode-editor .command-header {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+body.mode-editor .workspace-shell {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  align-items: stretch;
+}
+
+body.mode-editor .editor-sidebar {
+  display: flex;
+  flex: 0 0 var(--editor-sidebar-width);
+  flex-direction: column;
+  width: var(--editor-sidebar-width);
+  min-width: 328px;
+  max-width: 376px;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  align-self: stretch;
+  box-sizing: border-box;
+}
+
+body.mode-editor .editor-sidebar-scroll {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  height: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 14px 12px 18px 14px;
+  gap: 12px;
+  box-sizing: border-box;
+  scrollbar-gutter: stable;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+body.mode-editor .workspace-main {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  overflow-x: hidden;
+  position: relative;
+  padding: 24px 28px;
+  box-sizing: border-box;
+}
+
+body.mode-editor .workspace-view,
+body.mode-editor .workspace-view.is-active,
+body.mode-editor .save-editor-view.workspace-view.is-active,
+body.mode-editor .save-editor-shell,
+body.mode-editor .save-content,
+body.mode-editor .tool-stage-shell,
+body.mode-editor #tool-container {
+  min-width: 0;
+  min-height: 0;
+}
+
+body.mode-editor .workspace-view.is-active,
+body.mode-editor .save-editor-view.workspace-view.is-active,
+body.mode-editor .save-editor-shell {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
+body.mode-editor .save-editor-view.workspace-view.is-active {
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+body.mode-editor .save-content-scroll {
+  display: grid;
+  align-content: start;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  max-width: 1680px;
+  margin: 0 auto;
+  gap: 18px;
+  padding-right: 4px;
+  padding-bottom: 104px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  scrollbar-gutter: stable;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+body.mode-editor .editor-bottom-tabs {
+  flex: 0 0 auto;
+}
+
+body.mode-editor .modal-backdrop {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100dvh;
+  z-index: 9999;
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--modal-viewport-gap);
+  box-sizing: border-box;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+body.mode-editor .modal,
+body.mode-editor .modal-content,
+body.mode-editor .modal-card,
+body.mode-editor .modal-panel,
+body.mode-editor .dialog,
+body.mode-editor .dialog-content,
+body.mode-editor .modal-box {
+  width: min(520px, calc(100vw - (var(--modal-viewport-gap) * 2)));
+  max-width: 100%;
+  max-height: calc(100dvh - (var(--modal-viewport-gap) * 2));
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+body.mode-editor .modal-box--sheet {
+  width: min(760px, calc(100vw - (var(--modal-viewport-gap) * 2)));
+}
+
+body.mode-editor .modal-box--xl,
+body.mode-editor .modal-box--wiki,
+body.mode-editor .modal-box--level,
+body.mode-editor .modal-box--recovery,
+body.mode-editor .modal-box--user-logs {
+  width: min(1080px, calc(100vw - (var(--modal-viewport-gap) * 2)));
+}
+
+body.mode-editor .modal-box--skilltree {
+  width: min(1240px, calc(100vw - (var(--modal-viewport-gap) * 2)));
+}
+
+body.mode-editor .modal-box--share {
+  width: min(1380px, calc(100vw - (var(--modal-viewport-gap) * 2)));
+}
+
+body.mode-editor .modal-box--wiki,
+body.mode-editor .modal-box--level,
+body.mode-editor .modal-box--recovery,
+body.mode-editor .modal-box--safe-reset,
+body.mode-editor .modal-box--skilltree {
+  overflow: hidden;
+}
+
+body.mode-editor .modal-box > h2,
+body.mode-editor .detail-modal-head,
+body.mode-editor .wiki-modal-head,
+body.mode-editor .modal-footer,
+body.mode-editor .dialog-footer,
+body.mode-editor .modal-actions {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+body.mode-editor .modal-actions {
+  margin-top: auto;
+}
+
+body.mode-editor .modal-box > #modalMultiContent,
+body.mode-editor .modal-box > .clone-options,
+body.mode-editor .modal-body,
+body.mode-editor .dialog-body,
+body.mode-editor .save-reset-modal-shell,
+body.mode-editor .recovery-modal-scroll,
+body.mode-editor .diagnostics-modal-scroll,
+body.mode-editor .level-system-scroll,
+body.mode-editor .share-modal-scroll,
+body.mode-editor .skilltree-modal-root,
+body.mode-editor .wiki-layout,
+body.mode-editor .wiki-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+body.mode-editor .modal-box > #modalMultiContent,
+body.mode-editor .modal-box > .clone-options,
+body.mode-editor .save-reset-modal-shell,
+body.mode-editor .wiki-layout,
+body.mode-editor .wiki-content {
+  display: grid;
+  align-content: start;
+}
+
+body.mode-editor .recovery-modal-scroll,
+body.mode-editor .diagnostics-modal-scroll,
+body.mode-editor .level-system-scroll,
+body.mode-editor .share-modal-scroll,
+body.mode-editor .skilltree-modal-root {
+  padding-right: 4px;
+}
+
+body.mode-editor .user-logs-viewer-shell {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+body.mode-editor .user-logs-viewer {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  height: 100%;
+}
+
+body.mode-editor .update-release-notes {
+  min-height: 0;
+}
+
+body.mode-editor .update-release-notes-text {
+  max-height: min(40vh, 360px);
+  overflow: auto;
+}
+
+body.mode-editor .profile-share-page-frame,
+body.mode-editor .mod-profile-page-frame,
+body.mode-editor .diagnostics-page-frame {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+body.mode-editor .profile-share-page-frame .share-modal-scroll,
+body.mode-editor .diagnostics-page-frame .diagnostics-modal-scroll {
+  min-width: 0;
+  min-height: 0;
+}
+
+@media (min-height: 720px) {
+  body.mode-editor .modal-backdrop {
+    align-items: center;
+  }
+
+  body.mode-editor .modal,
+  body.mode-editor .modal-content,
+  body.mode-editor .modal-card,
+  body.mode-editor .modal-panel,
+  body.mode-editor .dialog,
+  body.mode-editor .dialog-content,
+  body.mode-editor .modal-box {
+    margin: auto 0;
+  }
+}
+
+@media (max-width: 900px) {
+  body.mode-editor .workspace-shell {
+    display: block;
+    height: 100%;
+  }
+
+  body.mode-editor .editor-sidebar {
+    width: var(--editor-sidebar-width);
+    min-width: 0;
+    max-width: none;
+    height: auto;
+    max-height: calc(100dvh - 20px);
+    flex-basis: auto;
+  }
+
+  body.mode-editor .workspace-main {
+    height: 100%;
+    padding: 18px;
+  }
+
+  body.mode-editor .save-content-scroll {
+    padding-bottom: 96px;
+  }
+}
+
+@media (max-width: 720px) {
+  body.mode-editor .workspace-main {
+    padding: 14px;
+  }
+
+  body.mode-editor .save-content-scroll {
+    padding-bottom: 136px;
+  }
+}
+
+@media (max-height: 720px) {
+  body.mode-editor {
+    --modal-viewport-gap: 10px;
+  }
+
+  body.mode-editor .modal-backdrop {
+    align-items: flex-start;
+    padding-block: 12px;
+  }
+
+  body.mode-editor .modal,
+  body.mode-editor .modal-content,
+  body.mode-editor .modal-card,
+  body.mode-editor .modal-panel,
+  body.mode-editor .dialog,
+  body.mode-editor .dialog-content,
+  body.mode-editor .modal-box {
+    max-height: calc(100dvh - 24px);
+    margin: 0;
+  }
+
+  body.mode-editor .editor-sidebar-scroll {
+    padding: 10px 10px 14px;
+    gap: 9px;
+  }
+
+  body.mode-editor .save-content-scroll,
+  body.mode-editor .editor-sidebar-scroll {
+    overscroll-behavior: contain;
+  }
+}
+
+@media (max-height: 560px) {
+  body.mode-editor {
+    --modal-viewport-gap: 8px;
+  }
+
+  body.mode-editor .workspace-main {
+    padding: 12px;
+  }
+
+  body.mode-editor .save-content-scroll {
+    padding-bottom: 148px;
   }
 }

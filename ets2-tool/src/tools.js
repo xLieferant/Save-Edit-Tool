@@ -552,7 +552,7 @@ export const tools = {
       img: "images/themeChooser.png",
       action: async () => {
         try {
-          const currentTheme = localStorage.getItem("theme") || "neon";
+          const currentTheme = localStorage.getItem("theme") || "neon-red";
           
           // Internal values map
           const themeMap = {
