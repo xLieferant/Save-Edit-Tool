@@ -3295,6 +3295,275 @@ body.mode-editor.profile-share-page-body .app-shell {
   text-decoration: underline;
 }
 
+.mod-profile-manager-modal {
+  width: min(1180px, calc(100vw - 36px));
+  max-height: min(86vh, 920px);
+  overflow: hidden;
+}
+
+.mod-profile-manager-modal .detail-modal-head {
+  margin-bottom: 14px;
+}
+
+.mod-profile-manager-head-aside {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.mod-profile-manager-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.mod-profile-manager-body {
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  grid-template-columns: minmax(260px, 0.82fr) minmax(0, 1.8fr);
+  gap: 16px;
+  padding-right: 4px;
+}
+
+.mod-sandbox-sidebar,
+.mod-sandbox-editor,
+.mod-sandbox-editor-content,
+.mod-sandbox-list,
+.mod-workshop-list {
+  min-width: 0;
+}
+
+.mod-sandbox-sidebar,
+.mod-sandbox-editor {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  background: var(--bg-card-soft);
+}
+
+.mod-profile-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mod-profile-panel-head p {
+  margin: 4px 0 0;
+  color: var(--text-soft);
+  line-height: 1.45;
+}
+
+.mod-sandbox-list,
+.mod-workshop-list,
+.mod-sandbox-editor-content {
+  display: grid;
+  gap: 12px;
+}
+
+.mod-sandbox-card,
+.mod-workshop-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+}
+
+.mod-sandbox-card.is-selected,
+.mod-workshop-card[data-enabled="true"] {
+  border-color: rgba(var(--accent-rgb), 0.34);
+  background: var(--accent-surface);
+}
+
+.mod-sandbox-card h3,
+.mod-workshop-card h3 {
+  margin: 0;
+  color: var(--text-main);
+  font-size: 15px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.mod-sandbox-card p,
+.mod-workshop-card p {
+  margin: 0;
+  color: var(--text-soft);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.mod-sandbox-card-meta,
+.mod-workshop-card-meta,
+.mod-workshop-card-actions,
+.mod-sandbox-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.mod-sandbox-card-actions,
+.mod-workshop-card-actions {
+  justify-content: flex-end;
+}
+
+.mod-status-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 4px 9px;
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  color: var(--text-soft);
+  background: var(--bg-card-soft);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.mod-status-badge[data-state="found"] {
+  border-color: rgba(99, 199, 104, 0.36);
+  color: var(--success);
+}
+
+.mod-status-badge[data-state="missing"] {
+  border-color: rgba(255, 165, 0, 0.36);
+  color: var(--warning);
+}
+
+.mod-status-badge[data-state="unknown"] {
+  border-color: var(--card-border);
+  color: var(--text-muted);
+}
+
+.mod-active-save-grid,
+.mod-sandbox-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.mod-active-save-card {
+  gap: 8px;
+  min-width: 0;
+}
+
+.mod-active-save-card strong {
+  overflow-wrap: anywhere;
+}
+
+.mod-workshop-add-card {
+  display: grid;
+  gap: 12px;
+}
+
+.mod-workshop-add-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.mod-workshop-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-soft);
+  font-weight: 700;
+}
+
+.mod-workshop-toggle input {
+  width: 18px;
+  height: 18px;
+}
+
+.mod-apply-result {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card-soft);
+}
+
+.mod-apply-result-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text-main);
+}
+
+.mod-apply-result-grid {
+  display: grid;
+  gap: 8px;
+  color: var(--text-soft);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.mod-apply-skipped,
+.mod-apply-skipped-list {
+  display: grid;
+  gap: 10px;
+}
+
+.mod-apply-skipped {
+  padding-top: 4px;
+}
+
+.mod-apply-skipped-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+}
+
+.mod-apply-skipped-item span,
+.mod-apply-skipped-item small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.mod-apply-skipped-item span {
+  color: var(--text-main);
+  font-weight: 700;
+}
+
+.mod-apply-skipped-item small {
+  margin-top: 3px;
+  color: var(--text-soft);
+}
+
+@media (max-width: 920px) {
+  .mod-profile-manager-body,
+  .mod-active-save-grid,
+  .mod-sandbox-form-grid,
+  .mod-workshop-add-row {
+    grid-template-columns: 1fr;
+  }
+
+  .mod-profile-manager-modal {
+    max-height: 90vh;
+  }
+
+  .mod-apply-skipped-item {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
 .diagnostics-page-frame .diagnostics-modal-scroll {
   min-height: 0;
   padding-right: 4px;

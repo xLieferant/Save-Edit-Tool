@@ -1258,6 +1258,27 @@
             "mod_profile_manager_path_copied": "Ordnerpfad kopiert.",
             "mod_profile_manager_folder_open_failed": "Der Ordner konnte nicht ge?ffnet oder kopiert werden.",
             "mod_profile_manager_no_workshop_links": "Keine Workshop-Links verf?gbar.",
+            "mod_sandbox_load_failed": "[NEEDS TRANSLATION] Mod sandboxes could not be loaded.",
+            "mod_sandbox_created": "[NEEDS TRANSLATION] Sandbox created.",
+            "mod_sandbox_create_failed": "[NEEDS TRANSLATION] Sandbox could not be created.",
+            "mod_sandbox_deleted": "[NEEDS TRANSLATION] Sandbox deleted.",
+            "mod_sandbox_delete_failed": "[NEEDS TRANSLATION] Sandbox could not be deleted.",
+            "mod_sandbox_input_required": "[NEEDS TRANSLATION] Select a sandbox and enter a Workshop link or ID.",
+            "mod_sandbox_mod_added": "[NEEDS TRANSLATION] Workshop mod added.",
+            "mod_sandbox_mod_add_failed": "[NEEDS TRANSLATION] Workshop mod could not be added.",
+            "mod_sandbox_mod_removed": "[NEEDS TRANSLATION] Workshop mod removed.",
+            "mod_sandbox_mod_remove_failed": "[NEEDS TRANSLATION] Workshop mod could not be removed.",
+            "mod_sandbox_saved": "[NEEDS TRANSLATION] Sandbox saved.",
+            "mod_sandbox_save_failed": "[NEEDS TRANSLATION] Sandbox could not be saved.",
+            "mod_sandbox_no_active_profile": "[NEEDS TRANSLATION] Load an ETS2 profile and save before applying a sandbox.",
+            "mod_sandbox_applied": "[NEEDS TRANSLATION] Sandbox applied to the active save.",
+            "mod_sandbox_applied_with_skips": "[NEEDS TRANSLATION] Sandbox applied. Some mods were skipped.",
+            "mod_sandbox_apply_failed": "[NEEDS TRANSLATION] Sandbox could not be applied.",
+            "mod_sandbox_open_workshop_failed": "[NEEDS TRANSLATION] Steam Workshop could not be opened.",
+            "mod_sandbox_open_steam_console_failed": "Steam Console konnte nicht ge\u00f6ffnet werden. Pr\u00fcfe, ob Steam installiert ist.",
+            "mod_sandbox_download_check_failed": "[NEEDS TRANSLATION] Download status could not be checked.",
+            "mod_sandbox_test_preset_imported": "[NEEDS TRANSLATION] Test preset imported.",
+            "mod_sandbox_test_preset_failed": "[NEEDS TRANSLATION] Test preset could not be imported.",
             "level_system_missing_data": "Lade ein Profil und einen Speicherstand, bevor du das Level-System ?ffnest.",
             "level_system_load_error": "Level-Tabelle konnte nicht geladen werden.",
             "level_system_apply_success": "Level {level} mit {xp} EP angewendet.",
@@ -1895,6 +1916,83 @@
                         "preset_creation_unknown": "Die aktuelle aktive Mod-Liste ist nicht verf?gbar. Beim Speichern wird das aktuelle Scan-Ergebnis unver?ndert ?bernommen.",
                         "preset_creation_requires_profile": "Für die Preset-Erstellung ist ein Profil mit einer lesbaren Datei „profile.sii“ erforderlich, damit die aktive Mod-Liste erkannt werden kann.",
                         "preset_creation_ready": "Die aktuell aktive Mod-Liste ist verfügbar. Beim Speichern des aktuellen Setups werden die aktiven Mods und die erkannte Ladereihenfolge gespeichert."
+                  },
+                  "sandbox": {
+                        "kicker": "[NEEDS TRANSLATION] Sandbox mod profiles",
+                        "title": "[NEEDS TRANSLATION] Mod Profile Manager",
+                        "description": "[NEEDS TRANSLATION] Manage ETS2 Steam Workshop mod lists and write enabled mods to the active save.",
+                        "default_title": "[NEEDS TRANSLATION] New Sandbox",
+                        "confirm_delete": "[NEEDS TRANSLATION] Delete this sandbox?",
+                        "confirm_force_clear": "[NEEDS TRANSLATION] No enabled installed mods were found. Applying now will remove all active mods from the save. Continue?",
+                        "actions": {
+                              "new_sandbox": "[NEEDS TRANSLATION] New Sandbox",
+                              "create_test_preset": "[NEEDS TRANSLATION] Create Test Preset",
+                              "open_steam_console": "[NEEDS TRANSLATION] Open Steam Console",
+                              "select": "[NEEDS TRANSLATION] Select",
+                              "delete": "[NEEDS TRANSLATION] Delete",
+                              "add_mod": "[NEEDS TRANSLATION] Add Mod",
+                              "open_workshop": "[NEEDS TRANSLATION] Workshop Page",
+                              "subscribe": "[NEEDS TRANSLATION] Subscribe",
+                              "check_download": "[NEEDS TRANSLATION] Check Local",
+                              "remove_mod": "[NEEDS TRANSLATION] Remove",
+                              "save_sandbox": "[NEEDS TRANSLATION] Save Sandbox",
+                              "apply_sandbox": "[NEEDS TRANSLATION] Apply to Active Save"
+                        },
+                        "sections": {
+                              "sandboxes": "[NEEDS TRANSLATION] Sandboxes",
+                              "add_mod": "[NEEDS TRANSLATION] Add Workshop Mod",
+                              "mods": "[NEEDS TRANSLATION] Mods"
+                        },
+                        "fields": {
+                              "active_profile": "[NEEDS TRANSLATION] Active Profile",
+                              "active_save": "[NEEDS TRANSLATION] Active Save",
+                              "title": "[NEEDS TRANSLATION] Title",
+                              "description": "[NEEDS TRANSLATION] Description",
+                              "app_id": "[NEEDS TRANSLATION] AppID"
+                        },
+                        "placeholders": {
+                              "title": "[NEEDS TRANSLATION] Sandbox title",
+                              "description": "[NEEDS TRANSLATION] Describe this mod setup",
+                              "workshop_input": "[NEEDS TRANSLATION] 3710074411 or Steam Workshop URL"
+                        },
+                        "help": {
+                              "workshop_input": "[NEEDS TRANSLATION] Paste a Steam Workshop URL or raw Workshop ID."
+                        },
+                        "empty": {
+                              "title": "[NEEDS TRANSLATION] No sandboxes saved",
+                              "body": "[NEEDS TRANSLATION] Create a sandbox to start collecting Workshop mods.",
+                              "select_title": "[NEEDS TRANSLATION] Select or create a sandbox",
+                              "select_body": "[NEEDS TRANSLATION] The selected sandbox can be edited and applied to the active save.",
+                              "mods_title": "[NEEDS TRANSLATION] No Workshop mods in this sandbox",
+                              "mods_body": "[NEEDS TRANSLATION] Add a Steam Workshop URL or ID to build this setup."
+                        },
+                        "status": {
+                              "active_save_ready": "[NEEDS TRANSLATION] Active save ready",
+                              "no_active_save": "[NEEDS TRANSLATION] No active save",
+                              "load_failed": "[NEEDS TRANSLATION] Load failed",
+                              "mod_add_failed": "[NEEDS TRANSLATION] Add failed",
+                              "applied": "[NEEDS TRANSLATION] Applied",
+                              "applied_with_skips": "[NEEDS TRANSLATION] Applied with warnings",
+                              "apply_failed": "[NEEDS TRANSLATION] Apply failed",
+                              "download_found": "[NEEDS TRANSLATION] Local found",
+                              "download_missing": "[NEEDS TRANSLATION] Not downloaded",
+                              "download_unknown": "[NEEDS TRANSLATION] Not checked"
+                        },
+                        "apply_result": {
+                              "success_title": "[NEEDS TRANSLATION] Sandbox was applied",
+                              "warning_title": "[NEEDS TRANSLATION] Sandbox was applied with warnings",
+                              "applied_mods": "[NEEDS TRANSLATION] {count} mods applied",
+                              "removed_mods": "[NEEDS TRANSLATION] {count} old active mods removed",
+                              "backup_created": "[NEEDS TRANSLATION] Backup created",
+                              "skipped_title": "[NEEDS TRANSLATION] Skipped mods"
+                        },
+                        "skipped_reasons": {
+                              "disabled_in_sandbox": "[NEEDS TRANSLATION] disabled in sandbox",
+                              "not_installed": "[NEEDS TRANSLATION] not installed locally",
+                              "invalid_mod_id": "[NEEDS TRANSLATION] invalid Workshop ID",
+                              "not_ets2_workshop_mod": "[NEEDS TRANSLATION] not an ETS2 Workshop mod",
+                              "unknown": "[NEEDS TRANSLATION] unknown reason"
+                        }
                   },
                   "compare": {
                         "missing_mods": "Fehlende Mods",

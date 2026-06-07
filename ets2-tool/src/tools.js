@@ -514,7 +514,7 @@ export const tools = {
       action: async () => {
         openModProfileManagerPage();
       },
-      disabled: true,
+      disabled: false,
     },
   ],
 

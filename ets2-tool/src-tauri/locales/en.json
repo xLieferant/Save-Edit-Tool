@@ -1275,6 +1275,27 @@
             "mod_profile_manager_path_copied": "Folder path copied.",
             "mod_profile_manager_folder_open_failed": "The folder could not be opened or copied.",
             "mod_profile_manager_no_workshop_links": "No workshop links are available.",
+            "mod_sandbox_load_failed": "Mod sandboxes could not be loaded.",
+            "mod_sandbox_created": "Sandbox created.",
+            "mod_sandbox_create_failed": "Sandbox could not be created.",
+            "mod_sandbox_deleted": "Sandbox deleted.",
+            "mod_sandbox_delete_failed": "Sandbox could not be deleted.",
+            "mod_sandbox_input_required": "Select a sandbox and enter a Workshop link or ID.",
+            "mod_sandbox_mod_added": "Workshop mod added.",
+            "mod_sandbox_mod_add_failed": "Workshop mod could not be added.",
+            "mod_sandbox_mod_removed": "Workshop mod removed.",
+            "mod_sandbox_mod_remove_failed": "Workshop mod could not be removed.",
+            "mod_sandbox_saved": "Sandbox saved.",
+            "mod_sandbox_save_failed": "Sandbox could not be saved.",
+            "mod_sandbox_no_active_profile": "Load an ETS2 profile and save before applying a sandbox.",
+            "mod_sandbox_applied": "Sandbox applied to the active save.",
+            "mod_sandbox_applied_with_skips": "Sandbox applied. Some mods were skipped.",
+            "mod_sandbox_apply_failed": "Sandbox could not be applied.",
+            "mod_sandbox_open_workshop_failed": "Steam Workshop could not be opened.",
+            "mod_sandbox_open_steam_console_failed": "Steam Console could not be opened. Check if Steam is installed.",
+            "mod_sandbox_download_check_failed": "Download status could not be checked.",
+            "mod_sandbox_test_preset_imported": "Test preset imported.",
+            "mod_sandbox_test_preset_failed": "Test preset could not be imported.",
             "level_system_missing_data": "Load a profile and save before opening the level system.",
             "level_system_load_error": "Failed to load the level table.",
             "level_system_apply_success": "Level {level} with {xp} XP applied.",
@@ -1912,6 +1933,83 @@
                         "preset_creation_unknown": "The current active mod list is not available. Saving will store the current scan result as-is.",
                         "preset_creation_requires_profile": "Preset creation needs a profile with readable profile.sii so the active mod list can be detected.",
                         "preset_creation_ready": "The current active mod list is available. Saving the current setup will store the active mods and detected load order."
+                  },
+                  "sandbox": {
+                        "kicker": "Sandbox mod profiles",
+                        "title": "Mod Profile Manager",
+                        "description": "Manage ETS2 Steam Workshop mod lists and write enabled mods to the active save.",
+                        "default_title": "New Sandbox",
+                        "confirm_delete": "Delete this sandbox?",
+                        "confirm_force_clear": "No enabled installed mods were found. Applying now will remove all active mods from the save. Continue?",
+                        "actions": {
+                              "new_sandbox": "New Sandbox",
+                              "create_test_preset": "Create Test Preset",
+                              "open_steam_console": "Open Steam Console",
+                              "select": "Select",
+                              "delete": "Delete",
+                              "add_mod": "Add Mod",
+                              "open_workshop": "Workshop Page",
+                              "subscribe": "Subscribe",
+                              "check_download": "Check Local",
+                              "remove_mod": "Remove",
+                              "save_sandbox": "Save Sandbox",
+                              "apply_sandbox": "Apply to Active Save"
+                        },
+                        "sections": {
+                              "sandboxes": "Sandboxes",
+                              "add_mod": "Add Workshop Mod",
+                              "mods": "Mods"
+                        },
+                        "fields": {
+                              "active_profile": "Active Profile",
+                              "active_save": "Active Save",
+                              "title": "Title",
+                              "description": "Description",
+                              "app_id": "AppID"
+                        },
+                        "placeholders": {
+                              "title": "Sandbox title",
+                              "description": "Describe this mod setup",
+                              "workshop_input": "3710074411 or Steam Workshop URL"
+                        },
+                        "help": {
+                              "workshop_input": "Paste a Steam Workshop URL or raw Workshop ID."
+                        },
+                        "empty": {
+                              "title": "No sandboxes saved",
+                              "body": "Create a sandbox to start collecting Workshop mods.",
+                              "select_title": "Select or create a sandbox",
+                              "select_body": "The selected sandbox can be edited and applied to the active save.",
+                              "mods_title": "No Workshop mods in this sandbox",
+                              "mods_body": "Add a Steam Workshop URL or ID to build this setup."
+                        },
+                        "status": {
+                              "active_save_ready": "Active save ready",
+                              "no_active_save": "No active save",
+                              "load_failed": "Load failed",
+                              "mod_add_failed": "Add failed",
+                              "applied": "Applied",
+                              "applied_with_skips": "Applied with warnings",
+                              "apply_failed": "Apply failed",
+                              "download_found": "Local found",
+                              "download_missing": "Not downloaded",
+                              "download_unknown": "Not checked"
+                        },
+                        "apply_result": {
+                              "success_title": "Sandbox was applied",
+                              "warning_title": "Sandbox was applied with warnings",
+                              "applied_mods": "{count} mods applied",
+                              "removed_mods": "{count} old active mods removed",
+                              "backup_created": "Backup created",
+                              "skipped_title": "Skipped mods"
+                        },
+                        "skipped_reasons": {
+                              "disabled_in_sandbox": "disabled in sandbox",
+                              "not_installed": "not installed locally",
+                              "invalid_mod_id": "invalid Workshop ID",
+                              "not_ets2_workshop_mod": "not an ETS2 Workshop mod",
+                              "unknown": "unknown reason"
+                        }
                   },
                   "compare": {
                         "missing_mods": "Missing Mods",

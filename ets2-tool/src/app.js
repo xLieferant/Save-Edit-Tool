@@ -307,6 +307,29 @@ const modalSafeValueReset = document.getElementById("modalSafeValueReset");
 const modalSafeValueResetClose = document.getElementById("modalSafeValueResetClose");
 const modalUserLogs = document.getElementById("modalUserLogs");
 const modalUserLogsClose = document.getElementById("modalUserLogsClose");
+const modalModProfileManager = document.getElementById("modalModProfileManager");
+const modalModProfileManagerClose = document.getElementById("modalModProfileManagerClose");
+const modProfileManagerStatusPill = document.getElementById("modProfileManagerStatusPill");
+const modProfileManagerProfilePill = document.getElementById("modProfileManagerProfilePill");
+const modSandboxNewBtn = document.getElementById("modSandboxNewBtn");
+const modSandboxTestPresetBtn = document.getElementById("modSandboxTestPresetBtn");
+const modSteamConsoleBtn = document.getElementById("modSteamConsoleBtn");
+const modSandboxCount = document.getElementById("modSandboxCount");
+const modSandboxList = document.getElementById("modSandboxList");
+const modSandboxEmpty = document.getElementById("modSandboxEmpty");
+const modSandboxEditorEmpty = document.getElementById("modSandboxEditorEmpty");
+const modSandboxEditorContent = document.getElementById("modSandboxEditorContent");
+const modActiveProfileName = document.getElementById("modActiveProfileName");
+const modActiveSaveName = document.getElementById("modActiveSaveName");
+const modSandboxTitleInput = document.getElementById("modSandboxTitleInput");
+const modSandboxDescriptionInput = document.getElementById("modSandboxDescriptionInput");
+const modWorkshopInput = document.getElementById("modWorkshopInput");
+const modAddWorkshopBtn = document.getElementById("modAddWorkshopBtn");
+const modSandboxActiveCount = document.getElementById("modSandboxActiveCount");
+const modSelectedModsList = document.getElementById("modSelectedModsList");
+const modApplySandboxResult = document.getElementById("modApplySandboxResult");
+const modSaveSandboxBtn = document.getElementById("modSaveSandboxBtn");
+const modApplySandboxBtn = document.getElementById("modApplySandboxBtn");
 
 const modalProfileShare = document.getElementById("modalProfileShare");
 const profileShareModeKicker = document.getElementById("profileShareModeKicker");
@@ -352,6 +375,7 @@ const editorModalDescriptors = [
   { element: modalRestorePreview, closeButton: modalRestorePreviewClose },
   { element: modalSafeValueReset, closeButton: modalSafeValueResetClose },
   { element: modalUserLogs, closeButton: modalUserLogsClose },
+  { element: modalModProfileManager, closeButton: modalModProfileManagerClose },
   { element: modalProfileShare, closeButton: modalProfileShareClose },
   { element: skilltreeModal, closeButton: skilltreeModalClose },
 ];
@@ -2761,8 +2785,668 @@ export function openModConflictDiagnosticsPage() {
 
 export function openModProfileManagerPage() {
   console.info("[trace] START open_mod_manager");
-  window.showToast?.("toasts.coming_soon", "warning");
+  void openModProfileManagerModal();
 }
+
+const modProfileManagerState = {
+  collection: { sandboxes: [] },
+  selectedSandboxId: null,
+  downloadStatus: new Map(),
+  busy: false,
+};
+
+function normalizeSandboxCollection(collection) {
+  return {
+    sandboxes: Array.isArray(collection?.sandboxes) ? collection.sandboxes : [],
+  };
+}
+
+function getSelectedModSandbox() {
+  return modProfileManagerState.collection.sandboxes.find(
+    (sandbox) => sandbox.id === modProfileManagerState.selectedSandboxId
+  ) || null;
+}
+
+function getEnabledModCount(sandbox) {
+  return (sandbox?.mods || []).filter((mod) => mod.enabled).length;
+}
+
+function shortPathLabel(path) {
+  const value = String(path || "").replace(/\\/g, "/");
+  if (!value) return "-";
+  const segments = value.split("/").filter(Boolean);
+  return segments.slice(-2).join(" / ") || value;
+}
+
+function downloadStatusKey(mod) {
+  return `${mod.app_id}:${mod.id}`;
+}
+
+function setModProfileBusy(busy) {
+  modProfileManagerState.busy = busy;
+  [
+    modSandboxNewBtn,
+    modSandboxTestPresetBtn,
+    modSteamConsoleBtn,
+    modAddWorkshopBtn,
+    modSaveSandboxBtn,
+    modApplySandboxBtn,
+  ].forEach((button) => {
+    if (button) button.disabled = busy;
+  });
+}
+
+async function setModProfileStatus(key, state = "neutral", params = {}) {
+  if (!modProfileManagerStatusPill) return;
+  modProfileManagerStatusPill.dataset.state = state;
+  modProfileManagerStatusPill.textContent = await window.t(key, params);
+}
+
+async function updateModProfileContextLabels() {
+  if (modActiveProfileName) {
+    modActiveProfileName.textContent = window.selectedProfilePath
+      ? shortPathLabel(window.selectedProfilePath)
+      : await window.t("editor.no_profile");
+  }
+  if (modActiveSaveName) {
+    modActiveSaveName.textContent = window.selectedSavePath
+      ? shortPathLabel(window.selectedSavePath)
+      : await window.t("editor.no_save");
+  }
+  if (modProfileManagerProfilePill) {
+    const hasProfile = Boolean(window.selectedProfilePath);
+    const hasSave = Boolean(window.selectedSavePath);
+    modProfileManagerProfilePill.dataset.state = hasProfile && hasSave ? "success" : "warning";
+    modProfileManagerProfilePill.textContent = hasProfile && hasSave
+      ? await window.t("modals.mod_profile_manager.sandbox.status.active_save_ready")
+      : await window.t("modals.mod_profile_manager.sandbox.status.no_active_save");
+  }
+}
+
+export async function openModProfileManagerModal() {
+  if (!modalModProfileManager) return;
+
+  modalModProfileManager.style.display = "flex";
+  clearApplySandboxResult();
+  await updateModProfileContextLabels();
+  await setModProfileStatus("modals.mod_profile_manager.status.ready", "neutral");
+  await loadModSandboxesIntoModal();
+  modSandboxTitleInput?.focus();
+}
+
+function closeModProfileManagerModal() {
+  if (!modalModProfileManager) return;
+  modalModProfileManager.style.display = "none";
+}
+
+export async function loadModSandboxesIntoModal() {
+  setModProfileBusy(true);
+  try {
+    modProfileManagerState.collection = normalizeSandboxCollection(
+      await window.invoke("load_mod_sandboxes")
+    );
+    if (
+      modProfileManagerState.selectedSandboxId &&
+      !getSelectedModSandbox()
+    ) {
+      modProfileManagerState.selectedSandboxId = null;
+    }
+    if (!modProfileManagerState.selectedSandboxId) {
+      modProfileManagerState.selectedSandboxId =
+        modProfileManagerState.collection.sandboxes[0]?.id || null;
+    }
+    await renderModSandboxList();
+    await renderSelectedModSandbox();
+    await setModProfileStatus("modals.mod_profile_manager.status.ready", "success");
+  } catch (error) {
+    console.error("Mod sandbox load failed:", error);
+    window.showToast?.("toasts.mod_sandbox_load_failed", "error");
+    await setModProfileStatus("modals.mod_profile_manager.sandbox.status.load_failed", "error");
+  } finally {
+    setModProfileBusy(false);
+  }
+}
+
+export async function renderModSandboxList() {
+  if (!modSandboxList || !modSandboxEmpty) return;
+
+  const sandboxes = modProfileManagerState.collection.sandboxes;
+  if (modSandboxCount) modSandboxCount.textContent = String(sandboxes.length);
+  modSandboxEmpty.hidden = sandboxes.length > 0;
+
+  const selectLabel = await window.t("modals.mod_profile_manager.sandbox.actions.select");
+  const deleteLabel = await window.t("modals.mod_profile_manager.sandbox.actions.delete");
+  const enabledLabel = await window.t("modals.mod_profile_manager.status.enabled");
+  const modsLabel = await window.t("modals.mod_profile_manager.fields.mods");
+
+  modSandboxList.innerHTML = sandboxes.map((sandbox) => {
+    const enabledCount = getEnabledModCount(sandbox);
+    const totalCount = Array.isArray(sandbox.mods) ? sandbox.mods.length : 0;
+    const selected = sandbox.id === modProfileManagerState.selectedSandboxId;
+    return `
+      <article class="mod-sandbox-card ${selected ? "is-selected" : ""}">
+        <div>
+          <h3>${escapeHtml(sandbox.title || sandbox.id)}</h3>
+          <p>${escapeHtml(sandbox.description || "-")}</p>
+        </div>
+        <div class="mod-sandbox-card-meta">
+          <span class="mod-status-badge">${escapeHtml(String(enabledCount))} ${escapeHtml(enabledLabel)}</span>
+          <span class="mod-status-badge">${escapeHtml(String(totalCount))} ${escapeHtml(modsLabel)}</span>
+        </div>
+        <div class="mod-sandbox-card-actions">
+          <button class="secondary-action" type="button" data-mod-sandbox-select="${escapeHtml(sandbox.id)}">${escapeHtml(selectLabel)}</button>
+          <button type="button" data-mod-sandbox-delete="${escapeHtml(sandbox.id)}">${escapeHtml(deleteLabel)}</button>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+export async function renderSelectedModSandbox() {
+  await updateModProfileContextLabels();
+  const sandbox = getSelectedModSandbox();
+  const hasSandbox = Boolean(sandbox);
+
+  if (modSandboxEditorEmpty) modSandboxEditorEmpty.hidden = hasSandbox;
+  if (modSandboxEditorContent) modSandboxEditorContent.hidden = !hasSandbox;
+  if (modSaveSandboxBtn) modSaveSandboxBtn.disabled = !hasSandbox || modProfileManagerState.busy;
+  if (modApplySandboxBtn) modApplySandboxBtn.disabled = !hasSandbox || modProfileManagerState.busy;
+
+  if (!sandbox) {
+    if (modSandboxTitleInput) modSandboxTitleInput.value = "";
+    if (modSandboxDescriptionInput) modSandboxDescriptionInput.value = "";
+    if (modSelectedModsList) modSelectedModsList.innerHTML = "";
+    if (modSandboxActiveCount) modSandboxActiveCount.textContent = "0";
+    return;
+  }
+
+  if (modSandboxTitleInput) modSandboxTitleInput.value = sandbox.title || "";
+  if (modSandboxDescriptionInput) modSandboxDescriptionInput.value = sandbox.description || "";
+  if (modSandboxActiveCount) {
+    modSandboxActiveCount.textContent = String(getEnabledModCount(sandbox));
+  }
+  await renderSelectedSandboxMods(sandbox);
+}
+
+async function renderSelectedSandboxMods(sandbox) {
+  if (!modSelectedModsList) return;
+
+  const mods = Array.isArray(sandbox.mods) ? sandbox.mods : [];
+  if (!mods.length) {
+    modSelectedModsList.innerHTML = `
+      <div class="modal-empty-state">
+        <strong>${escapeHtml(await window.t("modals.mod_profile_manager.sandbox.empty.mods_title"))}</strong>
+        <p>${escapeHtml(await window.t("modals.mod_profile_manager.sandbox.empty.mods_body"))}</p>
+      </div>
+    `;
+    return;
+  }
+
+  const enabledLabel = await window.t("modals.mod_profile_manager.status.enabled");
+  const disabledLabel = await window.t("modals.mod_profile_manager.status.disabled");
+  const openLabel = await window.t("modals.mod_profile_manager.sandbox.actions.open_workshop");
+  const subscribeLabel = await window.t("modals.mod_profile_manager.sandbox.actions.subscribe");
+  const checkLabel = await window.t("modals.mod_profile_manager.sandbox.actions.check_download");
+  const removeLabel = await window.t("modals.mod_profile_manager.sandbox.actions.remove_mod");
+  const appLabel = await window.t("modals.mod_profile_manager.sandbox.fields.app_id");
+  const idLabel = await window.t("modals.mod_profile_manager.fields.workshop_id");
+  const foundLabel = await window.t("modals.mod_profile_manager.sandbox.status.download_found");
+  const missingLabel = await window.t("modals.mod_profile_manager.sandbox.status.download_missing");
+  const unknownLabel = await window.t("modals.mod_profile_manager.sandbox.status.download_unknown");
+
+  modSelectedModsList.innerHTML = mods.map((mod) => {
+    const status = modProfileManagerState.downloadStatus.get(downloadStatusKey(mod));
+    const statusState = status === true ? "found" : status === false ? "missing" : "unknown";
+    const statusLabel = status === true ? foundLabel : status === false ? missingLabel : unknownLabel;
+    return `
+      <article class="mod-workshop-card" data-enabled="${mod.enabled ? "true" : "false"}">
+        <div class="mod-profile-panel-head">
+          <div>
+            <h3>${escapeHtml(mod.name || String(mod.id))}</h3>
+            <p>${escapeHtml(idLabel)}: ${escapeHtml(String(mod.id))} | ${escapeHtml(appLabel)}: ${escapeHtml(String(mod.app_id))}</p>
+          </div>
+          <span class="mod-status-badge" data-state="${escapeHtml(statusState)}">${escapeHtml(statusLabel)}</span>
+        </div>
+        <div class="mod-workshop-card-meta">
+          <label class="mod-workshop-toggle">
+            <input type="checkbox" data-mod-toggle="${escapeHtml(String(mod.id))}" ${mod.enabled ? "checked" : ""}>
+            <span>${escapeHtml(mod.enabled ? enabledLabel : disabledLabel)}</span>
+          </label>
+        </div>
+        <div class="mod-workshop-card-actions">
+          <button class="secondary-action" type="button" data-mod-open="${escapeHtml(String(mod.id))}">${escapeHtml(openLabel)}</button>
+          <button class="secondary-action" type="button" data-mod-subscribe="${escapeHtml(String(mod.id))}">${escapeHtml(subscribeLabel)}</button>
+          <button class="secondary-action" type="button" data-mod-check="${escapeHtml(String(mod.id))}">${escapeHtml(checkLabel)}</button>
+          <button type="button" data-mod-remove="${escapeHtml(String(mod.id))}">${escapeHtml(removeLabel)}</button>
+        </div>
+      </article>
+    `;
+  }).join("");
+}
+
+function syncSelectedSandboxDraft() {
+  const sandbox = getSelectedModSandbox();
+  if (!sandbox) return null;
+  sandbox.title = modSandboxTitleInput?.value.trim() || sandbox.title;
+  sandbox.description = modSandboxDescriptionInput?.value.trim() || "";
+  return sandbox;
+}
+
+export async function createModSandbox() {
+  clearApplySandboxResult();
+  setModProfileBusy(true);
+  try {
+    const title = await window.t("modals.mod_profile_manager.sandbox.default_title");
+    modProfileManagerState.collection = normalizeSandboxCollection(
+      await window.invoke("create_mod_sandbox", { title, description: "" })
+    );
+    modProfileManagerState.selectedSandboxId =
+      modProfileManagerState.collection.sandboxes.at(-1)?.id || null;
+    await renderModSandboxList();
+    await renderSelectedModSandbox();
+    window.showToast?.("toasts.mod_sandbox_created", "success");
+  } catch (error) {
+    console.error("Mod sandbox create failed:", error);
+    window.showToast?.("toasts.mod_sandbox_create_failed", "error");
+  } finally {
+    setModProfileBusy(false);
+  }
+}
+
+export async function createTestModSandboxPreset() {
+  clearApplySandboxResult();
+  setModProfileBusy(true);
+  try {
+    modProfileManagerState.collection = normalizeSandboxCollection(
+      await window.invoke("upsert_test_sandbox_preset")
+    );
+    modProfileManagerState.selectedSandboxId = "test";
+    await renderModSandboxList();
+    await renderSelectedModSandbox();
+    window.showToast?.("toasts.mod_sandbox_test_preset_imported", "success");
+  } catch (error) {
+    console.error("Test mod sandbox preset import failed:", error);
+    window.showToast?.("toasts.mod_sandbox_test_preset_failed", "error");
+  } finally {
+    setModProfileBusy(false);
+  }
+}
+
+export async function deleteModSandbox(sandboxId = modProfileManagerState.selectedSandboxId) {
+  if (!sandboxId) return;
+  const confirmed = window.confirm(await window.t("modals.mod_profile_manager.sandbox.confirm_delete"));
+  if (!confirmed) return;
+
+  clearApplySandboxResult();
+  setModProfileBusy(true);
+  try {
+    modProfileManagerState.collection = normalizeSandboxCollection(
+      await window.invoke("delete_mod_sandbox", { sandboxId })
+    );
+    modProfileManagerState.selectedSandboxId =
+      modProfileManagerState.collection.sandboxes[0]?.id || null;
+    await renderModSandboxList();
+    await renderSelectedModSandbox();
+    window.showToast?.("toasts.mod_sandbox_deleted", "success");
+  } catch (error) {
+    console.error("Mod sandbox delete failed:", error);
+    window.showToast?.("toasts.mod_sandbox_delete_failed", "error");
+  } finally {
+    setModProfileBusy(false);
+  }
+}
+
+export async function addWorkshopModToCurrentSandbox() {
+  const sandbox = getSelectedModSandbox();
+  const workshopInput = modWorkshopInput?.value.trim() || "";
+  if (!sandbox || !workshopInput) {
+    window.showToast?.("toasts.mod_sandbox_input_required", "warning");
+    return;
+  }
+
+  clearApplySandboxResult();
+  setModProfileBusy(true);
+  try {
+    modProfileManagerState.collection = normalizeSandboxCollection(
+      await window.invoke("add_mod_to_sandbox", {
+        sandboxId: sandbox.id,
+        workshopInput,
+        manualFallback: true,
+      })
+    );
+    modProfileManagerState.selectedSandboxId = sandbox.id;
+    if (modWorkshopInput) modWorkshopInput.value = "";
+    await renderModSandboxList();
+    await renderSelectedModSandbox();
+    window.showToast?.("toasts.mod_sandbox_mod_added", "success");
+  } catch (error) {
+    console.error("Workshop mod add failed:", error);
+    window.showToast?.("toasts.mod_sandbox_mod_add_failed", "error");
+    await setModProfileStatus("modals.mod_profile_manager.sandbox.status.mod_add_failed", "error");
+  } finally {
+    setModProfileBusy(false);
+  }
+}
+
+export async function removeWorkshopModFromCurrentSandbox(modId) {
+  const sandbox = getSelectedModSandbox();
+  if (!sandbox) return;
+
+  clearApplySandboxResult();
+  setModProfileBusy(true);
+  try {
+    modProfileManagerState.collection = normalizeSandboxCollection(
+      await window.invoke("remove_mod_from_sandbox", {
+        sandboxId: sandbox.id,
+        modId: Number(modId),
+      })
+    );
+    modProfileManagerState.selectedSandboxId = sandbox.id;
+    await renderModSandboxList();
+    await renderSelectedModSandbox();
+    window.showToast?.("toasts.mod_sandbox_mod_removed", "success");
+  } catch (error) {
+    console.error("Workshop mod remove failed:", error);
+    window.showToast?.("toasts.mod_sandbox_mod_remove_failed", "error");
+  } finally {
+    setModProfileBusy(false);
+  }
+}
+
+export async function toggleWorkshopModEnabled(modId, enabled) {
+  const sandbox = getSelectedModSandbox();
+  if (!sandbox) return;
+
+  clearApplySandboxResult();
+  try {
+    modProfileManagerState.collection = normalizeSandboxCollection(
+      await window.invoke("toggle_mod_in_sandbox", {
+        sandboxId: sandbox.id,
+        modId: Number(modId),
+        enabled: Boolean(enabled),
+      })
+    );
+    modProfileManagerState.selectedSandboxId = sandbox.id;
+    await renderModSandboxList();
+    await renderSelectedModSandbox();
+  } catch (error) {
+    console.error("Workshop mod toggle failed:", error);
+    window.showToast?.("toasts.mod_sandbox_save_failed", "error");
+  }
+}
+
+export async function saveCurrentModSandbox() {
+  const sandbox = syncSelectedSandboxDraft();
+  if (!sandbox) return;
+
+  clearApplySandboxResult();
+  setModProfileBusy(true);
+  try {
+    await window.invoke("save_mod_sandboxes", {
+      collection: modProfileManagerState.collection,
+    });
+    await renderModSandboxList();
+    await renderSelectedModSandbox();
+    window.showToast?.("toasts.mod_sandbox_saved", "success");
+  } catch (error) {
+    console.error("Mod sandbox save failed:", error);
+    window.showToast?.("toasts.mod_sandbox_save_failed", "error");
+  } finally {
+    setModProfileBusy(false);
+  }
+}
+
+async function translateSkippedModReason(reason) {
+  const key = `modals.mod_profile_manager.sandbox.skipped_reasons.${reason || "unknown"}`;
+  const translated = await window.t(key);
+  return translated === key
+    ? await window.t("modals.mod_profile_manager.sandbox.skipped_reasons.unknown")
+    : translated;
+}
+
+async function renderApplySandboxResult(result) {
+  if (!modApplySandboxResult || !result) return;
+
+  const skippedMods = Array.isArray(result.skipped_mods) ? result.skipped_mods : [];
+  const appliedCount = Number(result.applied_mod_count || 0);
+  const removedCount = Number(result.removed_existing_mod_count || 0);
+  const title = skippedMods.length
+    ? await window.t("modals.mod_profile_manager.sandbox.apply_result.warning_title")
+    : await window.t("modals.mod_profile_manager.sandbox.apply_result.success_title");
+  const skippedTitle = await window.t("modals.mod_profile_manager.sandbox.apply_result.skipped_title");
+  const appliedLabel = await window.t("modals.mod_profile_manager.sandbox.apply_result.applied_mods", { count: appliedCount });
+  const removedLabel = await window.t("modals.mod_profile_manager.sandbox.apply_result.removed_mods", { count: removedCount });
+  const backupLabel = await window.t("modals.mod_profile_manager.sandbox.apply_result.backup_created");
+  const openLabel = await window.t("modals.mod_profile_manager.sandbox.actions.open_workshop");
+
+  const skippedMarkup = skippedMods.length
+    ? `
+      <div class="mod-apply-skipped">
+        <strong>${escapeHtml(skippedTitle)}</strong>
+        <div class="mod-apply-skipped-list">
+          ${(
+            await Promise.all(skippedMods.map(async (mod) => {
+              const reason = await translateSkippedModReason(mod.reason);
+              const title = mod.title || mod.mod_id;
+              const canOpen = mod.reason === "not_installed" && /^\d+$/.test(String(mod.mod_id || ""));
+              return `
+                <article class="mod-apply-skipped-item">
+                  <div>
+                    <span>${escapeHtml(title)}</span>
+                    <small>${escapeHtml(reason)}</small>
+                  </div>
+                  ${canOpen ? `<button class="secondary-action" type="button" data-mod-skipped-open="${escapeHtml(String(mod.mod_id))}">${escapeHtml(openLabel)}</button>` : ""}
+                </article>
+              `;
+            }))
+          ).join("")}
+        </div>
+      </div>
+    `
+    : "";
+
+  modApplySandboxResult.hidden = false;
+  modApplySandboxResult.innerHTML = `
+    <div class="mod-apply-result-head">
+      <strong>${escapeHtml(title)}</strong>
+    </div>
+    <div class="mod-apply-result-grid">
+      <span>${escapeHtml(appliedLabel)}</span>
+      <span>${escapeHtml(removedLabel)}</span>
+      <span>${escapeHtml(backupLabel)}: ${escapeHtml(result.backup_path || "-")}</span>
+    </div>
+    ${skippedMarkup}
+  `;
+}
+
+function clearApplySandboxResult() {
+  if (!modApplySandboxResult) return;
+  modApplySandboxResult.hidden = true;
+  modApplySandboxResult.innerHTML = "";
+}
+
+export async function applyCurrentSandboxToActiveProfile() {
+  const sandbox = syncSelectedSandboxDraft();
+  if (!sandbox) return;
+  if (!window.selectedProfilePath || !window.selectedSavePath) {
+    window.showToast?.("toasts.mod_sandbox_no_active_profile", "warning");
+    await setModProfileStatus("modals.mod_profile_manager.sandbox.status.no_active_save", "warning");
+    return;
+  }
+
+  setModProfileBusy(true);
+  try {
+    await window.invoke("save_mod_sandboxes", {
+      collection: modProfileManagerState.collection,
+    });
+    const result = await window.invoke("apply_sandbox_to_active_profile", {
+      sandboxId: sandbox.id,
+      forceClear: false,
+    });
+    console.info("[mod-profile-manager] apply result:", result);
+    await renderApplySandboxResult(result);
+    if (Array.isArray(result?.skipped_mods) && result.skipped_mods.length) {
+      window.showToast?.("toasts.mod_sandbox_applied_with_skips", "warning");
+      await setModProfileStatus("modals.mod_profile_manager.sandbox.status.applied_with_skips", "warning");
+    } else {
+      window.showToast?.("toasts.mod_sandbox_applied", "success");
+      await setModProfileStatus("modals.mod_profile_manager.sandbox.status.applied", "success");
+    }
+  } catch (error) {
+    if (String(error || "").includes("Refusing to clear all active mods without force")) {
+      const confirmed = window.confirm(
+        await window.t("modals.mod_profile_manager.sandbox.confirm_force_clear")
+      );
+      if (!confirmed) {
+        await setModProfileStatus("modals.mod_profile_manager.sandbox.status.apply_failed", "warning");
+        return;
+      }
+      if (confirmed) {
+        try {
+          const result = await window.invoke("apply_sandbox_to_active_profile", {
+            sandboxId: sandbox.id,
+            forceClear: true,
+          });
+          console.info("[mod-profile-manager] force apply result:", result);
+          await renderApplySandboxResult(result);
+          window.showToast?.("toasts.mod_sandbox_applied_with_skips", "warning");
+          await setModProfileStatus("modals.mod_profile_manager.sandbox.status.applied_with_skips", "warning");
+          return;
+        } catch (forceError) {
+          console.error("Mod sandbox force apply failed:", forceError);
+          window.showToast?.("toasts.mod_sandbox_apply_failed", "error");
+          await setModProfileStatus("modals.mod_profile_manager.sandbox.status.apply_failed", "error");
+          return;
+        }
+      }
+    }
+    console.error("Mod sandbox apply failed:", error);
+    window.showToast?.("toasts.mod_sandbox_apply_failed", "error");
+    await setModProfileStatus("modals.mod_profile_manager.sandbox.status.apply_failed", "error");
+  } finally {
+    setModProfileBusy(false);
+  }
+}
+
+export async function openWorkshopPageFromModal(modId) {
+  try {
+    await window.invoke("open_workshop_page", { modId: String(modId) });
+  } catch (error) {
+    console.error("Open Workshop page failed:", error);
+    window.showToast?.("toasts.mod_sandbox_open_workshop_failed", "error");
+  }
+}
+
+async function openWorkshopSubscribePageFromModal(modId) {
+  try {
+    await window.invoke("open_workshop_subscribe_page", { modId: String(modId) });
+  } catch (error) {
+    console.error("Open Workshop subscribe page failed:", error);
+    window.showToast?.("toasts.mod_sandbox_open_workshop_failed", "error");
+  }
+}
+
+export async function checkWorkshopModDownloadStatus(modId) {
+  const sandbox = getSelectedModSandbox();
+  const workshopMod = sandbox?.mods?.find((mod) => mod.id === Number(modId));
+  if (!workshopMod) return;
+
+  try {
+    const downloaded = await window.invoke("check_workshop_mod_downloaded", {
+      appId: workshopMod.app_id,
+      modId: workshopMod.id,
+    });
+    modProfileManagerState.downloadStatus.set(downloadStatusKey(workshopMod), Boolean(downloaded));
+    await renderSelectedModSandbox();
+  } catch (error) {
+    console.error("Workshop download check failed:", error);
+    modProfileManagerState.downloadStatus.delete(downloadStatusKey(workshopMod));
+    window.showToast?.("toasts.mod_sandbox_download_check_failed", "error");
+  }
+}
+
+modSandboxList?.addEventListener("click", async (event) => {
+  const selectButton = event.target.closest("[data-mod-sandbox-select]");
+  if (selectButton) {
+    modProfileManagerState.selectedSandboxId = selectButton.dataset.modSandboxSelect;
+    clearApplySandboxResult();
+    await renderModSandboxList();
+    await renderSelectedModSandbox();
+    return;
+  }
+
+  const deleteButton = event.target.closest("[data-mod-sandbox-delete]");
+  if (deleteButton) {
+    await deleteModSandbox(deleteButton.dataset.modSandboxDelete);
+  }
+});
+
+modSelectedModsList?.addEventListener("change", async (event) => {
+  const toggle = event.target.closest("[data-mod-toggle]");
+  if (toggle) {
+    await toggleWorkshopModEnabled(toggle.dataset.modToggle, toggle.checked);
+  }
+});
+
+modSelectedModsList?.addEventListener("click", async (event) => {
+  const openButton = event.target.closest("[data-mod-open]");
+  if (openButton) {
+    await openWorkshopPageFromModal(openButton.dataset.modOpen);
+    return;
+  }
+
+  const subscribeButton = event.target.closest("[data-mod-subscribe]");
+  if (subscribeButton) {
+    await openWorkshopSubscribePageFromModal(subscribeButton.dataset.modSubscribe);
+    return;
+  }
+
+  const checkButton = event.target.closest("[data-mod-check]");
+  if (checkButton) {
+    await checkWorkshopModDownloadStatus(checkButton.dataset.modCheck);
+    return;
+  }
+
+  const removeButton = event.target.closest("[data-mod-remove]");
+  if (removeButton) {
+    await removeWorkshopModFromCurrentSandbox(removeButton.dataset.modRemove);
+  }
+});
+
+modApplySandboxResult?.addEventListener("click", async (event) => {
+  const openButton = event.target.closest("[data-mod-skipped-open]");
+  if (openButton) {
+    await openWorkshopPageFromModal(openButton.dataset.modSkippedOpen);
+  }
+});
+
+modSandboxNewBtn?.addEventListener("click", createModSandbox);
+modSandboxTestPresetBtn?.addEventListener("click", createTestModSandboxPreset);
+modAddWorkshopBtn?.addEventListener("click", addWorkshopModToCurrentSandbox);
+modWorkshopInput?.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    void addWorkshopModToCurrentSandbox();
+  }
+});
+modSaveSandboxBtn?.addEventListener("click", saveCurrentModSandbox);
+modApplySandboxBtn?.addEventListener("click", applyCurrentSandboxToActiveProfile);
+modSteamConsoleBtn?.addEventListener("click", async () => {
+  try {
+    await window.invoke("open_steam_console");
+  } catch (error) {
+    console.error("Open Steam console failed:", error);
+    window.showToast?.("toasts.mod_sandbox_open_steam_console_failed", "error");
+  }
+});
+modalModProfileManagerClose?.addEventListener("click", closeModProfileManagerModal);
+modalModProfileManager?.addEventListener("click", (event) => {
+  if (event.target === modalModProfileManager) {
+    closeModProfileManagerModal();
+  }
+});
+
+window.openModProfileManagerModal = openModProfileManagerModal;
 
 if (saveImportSavesBtn) {
   saveImportSavesBtn.addEventListener("click", () => {

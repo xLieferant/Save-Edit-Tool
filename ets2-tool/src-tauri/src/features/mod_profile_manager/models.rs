@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, de};
 
 fn default_load_order_unknown() -> String {
     "unknown".to_string()
@@ -242,4 +242,107 @@ pub(crate) struct ManualWorkshopPath {
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub(crate) struct ModProfileManagerSettings {
     pub manual_workshop_paths: Vec<ManualWorkshopPath>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct WorkshopMod {
+    #[serde(deserialize_with = "deserialize_u64_from_string_or_number")]
+    pub id: u64,
+    #[serde(alias = "title")]
+    pub name: String,
+    #[serde(default = "default_ets2_app_id")]
+    pub app_id: u32,
+    pub enabled: bool,
+    #[serde(default)]
+    pub url: Option<String>,
+    #[serde(default)]
+    pub status: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ModSandbox {
+    pub id: String,
+    pub title: String,
+    pub description: String,
+    pub mods: Vec<WorkshopMod>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SandboxCollection {
+    pub sandboxes: Vec<ModSandbox>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ApplySandboxResult {
+    pub sandbox_id: String,
+    pub sandbox_title: String,
+    pub game_sii_path: String,
+    pub backup_path: String,
+    pub applied_mods: Vec<AppliedWorkshopMod>,
+    pub skipped_mods: Vec<SkippedWorkshopMod>,
+    pub removed_existing_mod_count: usize,
+    pub applied_mod_count: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct AppliedWorkshopMod {
+    pub mod_id: String,
+    pub title: Option<String>,
+    pub workshop_path: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SkippedWorkshopMod {
+    pub mod_id: String,
+    pub title: Option<String>,
+    pub reason: String,
+}
+
+fn default_ets2_app_id() -> u32 {
+    227300
+}
+
+fn deserialize_u64_from_string_or_number<'de, D>(deserializer: D) -> Result<u64, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    struct U64StringOrNumberVisitor;
+
+    impl<'de> de::Visitor<'de> for U64StringOrNumberVisitor {
+        type Value = u64;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            formatter.write_str("a numeric Workshop ID as number or string")
+        }
+
+        fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E> {
+            Ok(value)
+        }
+
+        fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            u64::try_from(value).map_err(|_| E::custom("Workshop ID must not be negative"))
+        }
+
+        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            value
+                .trim()
+                .parse::<u64>()
+                .map_err(|error| E::custom(format!("Invalid Workshop ID: {error}")))
+        }
+
+        fn visit_string<E>(self, value: String) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            self.visit_str(&value)
+        }
+    }
+
+    deserializer.deserialize_any(U64StringOrNumberVisitor)
 }
