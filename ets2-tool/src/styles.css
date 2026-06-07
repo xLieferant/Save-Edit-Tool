@@ -132,7 +132,7 @@ body.theme-neon-red {
   --bg-elevated: #0d0a10;
   --bg-panel: rgba(20, 13, 18, 0.84);
   --bg-panel-strong: rgba(13, 9, 14, 0.95);
-  --bg-card: rgba(255, 59, 91, 0.075);
+  --bg-card: rgba(var(--accent-rgb), 0.075);
   --bg-card-soft: rgba(255, 255, 255, 0.035);
   --text-main: #fff7f9;
   --text-muted: #caa4ad;
@@ -2208,7 +2208,7 @@ input[type="checkbox"]:checked + .checkboxSlider::before {
   height: 100%;
   border-radius: inherit;
   background:
-    linear-gradient(135deg, rgba(var(--accent-rgb), 0.98), rgba(58, 236, 255, 0.8));
+    linear-gradient(135deg, rgba(var(--accent-rgb), 0.98), rgba(var(--accent-secondary-rgb), 0.8));
   box-shadow:
     0 0 18px rgba(var(--accent-rgb), 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.24);
@@ -8065,7 +8065,7 @@ body.mode-editor .modal-actions .apply {
   border-color: rgba(var(--accent-rgb), 0.42);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.025)),
-    linear-gradient(135deg, rgba(var(--accent-rgb), 0.94), rgba(164, 24, 52, 0.82));
+    linear-gradient(135deg, rgba(var(--accent-rgb), 0.94), rgba(var(--accent-secondary-rgb), 0.82));
   box-shadow:
     0 16px 34px rgba(0, 0, 0, 0.28),
     0 0 0 1px rgba(var(--accent-rgb), 0.14),
@@ -8440,7 +8440,7 @@ body.mode-editor .skilltree-status-pill {
 body.mode-editor .skilltree-status-pill[data-state="dirty"],
 body.mode-editor .skilltree-status-pill[data-state="saving"],
 body.mode-editor .skilltree-status-pill[data-state="maxed"] {
-  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.92), rgba(176, 27, 57, 0.82));
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.92), rgba(var(--accent-secondary-rgb), 0.82));
   color: var(--accent-contrast);
   box-shadow: 0 0 22px rgba(var(--accent-rgb), 0.18);
 }
@@ -8492,7 +8492,7 @@ body.mode-editor .skilltree-progress-fill {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.98), rgba(255, 126, 88, 0.78));
+  background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.98), rgba(var(--accent-secondary-rgb), 0.78));
   box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.22);
 }
 
@@ -8668,7 +8668,7 @@ body.mode-editor .skilltree-node.is-active,
 body.mode-editor .skilltree-level-btn.is-active {
   color: var(--accent-contrast);
   border-color: rgba(var(--accent-rgb), 0.34);
-  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.94), rgba(176, 27, 57, 0.78));
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.94), rgba(var(--accent-secondary-rgb), 0.78));
   box-shadow: 0 10px 24px rgba(var(--accent-rgb), 0.16);
 }
 
@@ -9052,7 +9052,7 @@ body.mode-editor .mode-btn.active {
   color: #fff8fa;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.03)),
-    linear-gradient(135deg, rgba(var(--accent-rgb), 0.9), rgba(172, 24, 55, 0.84));
+    linear-gradient(135deg, rgba(var(--accent-rgb), 0.9), rgba(var(--accent-secondary-rgb), 0.84));
   box-shadow: 0 10px 24px rgba(var(--accent-rgb), 0.16);
 }
 
@@ -9210,7 +9210,7 @@ body.mode-editor .preset-btn.active {
   border-color: var(--border-strong);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03)),
-    linear-gradient(135deg, rgba(var(--accent-rgb), 0.88), rgba(166, 24, 54, 0.82));
+    linear-gradient(135deg, rgba(var(--accent-rgb), 0.88), rgba(var(--accent-secondary-rgb), 0.82));
   box-shadow:
     0 12px 24px rgba(0, 0, 0, 0.24),
     0 0 18px rgba(var(--accent-rgb), 0.14);
@@ -9619,7 +9619,7 @@ body.mode-editor .editor-bottom-tabs-inner {
   gap: 8px;
   padding: 10px 12px 12px;
   border-radius: 20px 20px 0 0;
-  border: 1px solid rgba(255, 59, 79, 0.2);
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
   border-bottom: 0;
   background:
     linear-gradient(180deg, rgba(18, 22, 31, 0.92), rgba(8, 10, 15, 0.96));
@@ -10543,6 +10543,346 @@ body.mode-editor #modalLevelSystem .modal-actions {
   }
 }
 
+/* =========================================================
+   Accent theme system rebuild
+   Restores four distinct color schemes for existing theme classes
+   ========================================================= */
+
+:root {
+  --bg: var(--bg-main);
+  --bg-soft: var(--bg-card-soft);
+  --bg-input: rgba(2, 6, 14, 0.48);
+  --text: var(--text-main);
+  --text-info: var(--accent);
+  --border: var(--panel-border);
+  --border-soft: var(--card-border);
+  --accent-strong: #67e8f9;
+  --accent-hover: rgba(var(--accent-rgb), 0.22);
+  --accent-border: rgba(var(--accent-rgb), 0.34);
+  --accent-glow: 0 0 30px rgba(var(--accent-rgb), 0.28);
+  --bg-text-info: var(--text-info);
+  --bg-textinfo: var(--text-info);
+  --textinfo: var(--text-info);
+}
+
+body.theme-dark,
+body.accent-blue,
+body[data-theme="dark"],
+body[data-accent="blue"],
+html[data-theme="dark"] body,
+html[data-accent="blue"] body,
+body.mode-editor.theme-dark,
+body.mode-editor.theme-dark.editor-advanced,
+body.mode-career.theme-dark {
+  --bg-main: #06111d;
+  --bg-elevated: #0a1726;
+  --bg-panel: rgba(8, 23, 38, 0.86);
+  --bg-panel-strong: rgba(5, 16, 28, 0.94);
+  --bg-card: rgba(56, 189, 248, 0.075);
+  --bg-card-soft: rgba(56, 189, 248, 0.04);
+  --bg-soft: rgba(56, 189, 248, 0.04);
+  --bg-input: rgba(3, 12, 24, 0.74);
+  --text-main: #f5fbff;
+  --text: #f5fbff;
+  --text-muted: #9cc9dc;
+  --text-soft: rgba(214, 244, 255, 0.72);
+  --text-info: #67e8f9;
+  --accent: #38bdf8;
+  --accent-rgb: 56, 189, 248;
+  --accent-secondary: #0e7490;
+  --accent-secondary-rgb: 14, 116, 144;
+  --accent-strong: #67e8f9;
+  --accent-contrast: #03131f;
+  --accent-soft: rgba(56, 189, 248, 0.18);
+  --accent-surface: rgba(56, 189, 248, 0.12);
+  --accent-hover: rgba(56, 189, 248, 0.24);
+  --accent-border: rgba(56, 189, 248, 0.42);
+  --accent-glow: 0 0 30px rgba(56, 189, 248, 0.3);
+  --panel-border: rgba(56, 189, 248, 0.22);
+  --card-border: rgba(56, 189, 248, 0.16);
+  --border: rgba(56, 189, 248, 0.22);
+  --border-soft: rgba(56, 189, 248, 0.16);
+  --border-subtle: rgba(56, 189, 248, 0.16);
+  --border-strong: rgba(56, 189, 248, 0.38);
+  --surface-glow: 0 0 30px rgba(56, 189, 248, 0.26);
+  --status-glow: 0 0 22px rgba(56, 189, 248, 0.52);
+  --status-glow-soft: 0 0 36px rgba(56, 189, 248, 0.22);
+  --focus-ring: 0 0 0 3px rgba(56, 189, 248, 0.22);
+  --dropdown-hover: rgba(56, 189, 248, 0.18);
+  --dropdown-active: rgba(56, 189, 248, 0.24);
+  --scrollbar-track: rgba(56, 189, 248, 0.05);
+  --scrollbar-thumb: rgba(56, 189, 248, 0.28);
+  --scrollbar-thumb-hover: rgba(56, 189, 248, 0.46);
+  --bg-text-info: var(--text-info);
+  --bg-textinfo: var(--text-info);
+  --textinfo: var(--text-info);
+  color-scheme: dark;
+}
+
+body.theme-light,
+body.accent-purple,
+body[data-theme="light"],
+body[data-accent="purple"],
+html[data-theme="light"] body,
+html[data-accent="purple"] body,
+body.mode-editor.theme-light,
+body.mode-editor.theme-light.editor-advanced,
+body.mode-career.theme-light {
+  --bg-main: #f7f2ff;
+  --bg-elevated: #ffffff;
+  --bg-panel: rgba(255, 255, 255, 0.9);
+  --bg-panel-strong: rgba(255, 255, 255, 0.96);
+  --bg-card: rgba(124, 58, 237, 0.075);
+  --bg-card-soft: rgba(124, 58, 237, 0.04);
+  --bg-soft: rgba(124, 58, 237, 0.04);
+  --bg-input: rgba(255, 255, 255, 0.82);
+  --text-main: #160827;
+  --text: #160827;
+  --text-muted: #5b4b6f;
+  --text-soft: rgba(22, 8, 39, 0.66);
+  --text-info: #7c3aed;
+  --accent: #7c3aed;
+  --accent-rgb: 124, 58, 237;
+  --accent-secondary: #a855f7;
+  --accent-secondary-rgb: 168, 85, 247;
+  --accent-strong: #6d28d9;
+  --accent-contrast: #ffffff;
+  --accent-soft: rgba(124, 58, 237, 0.16);
+  --accent-surface: rgba(124, 58, 237, 0.1);
+  --accent-hover: rgba(124, 58, 237, 0.2);
+  --accent-border: rgba(124, 58, 237, 0.36);
+  --accent-glow: 0 0 30px rgba(124, 58, 237, 0.24);
+  --panel-border: rgba(124, 58, 237, 0.18);
+  --card-border: rgba(124, 58, 237, 0.14);
+  --border: rgba(124, 58, 237, 0.18);
+  --border-soft: rgba(124, 58, 237, 0.14);
+  --border-subtle: rgba(124, 58, 237, 0.14);
+  --border-strong: rgba(124, 58, 237, 0.32);
+  --surface-glow: 0 0 30px rgba(124, 58, 237, 0.2);
+  --status-glow: 0 0 22px rgba(124, 58, 237, 0.42);
+  --status-glow-soft: 0 0 36px rgba(124, 58, 237, 0.18);
+  --focus-ring: 0 0 0 3px rgba(124, 58, 237, 0.2);
+  --dropdown-surface: #ffffff;
+  --dropdown-surface-strong: #f7f2ff;
+  --dropdown-border: rgba(124, 58, 237, 0.24);
+  --dropdown-text: #160827;
+  --dropdown-text-muted: #5b4b6f;
+  --dropdown-hover: rgba(124, 58, 237, 0.14);
+  --dropdown-active: rgba(124, 58, 237, 0.2);
+  --scrollbar-track: rgba(124, 58, 237, 0.06);
+  --scrollbar-thumb: rgba(124, 58, 237, 0.28);
+  --scrollbar-thumb-hover: rgba(124, 58, 237, 0.44);
+  --bg-text-info: var(--text-info);
+  --bg-textinfo: var(--text-info);
+  --textinfo: var(--text-info);
+  color-scheme: light;
+}
+
+body.theme-neon,
+body.accent-green,
+body[data-theme="neon"],
+body[data-accent="green"],
+html[data-theme="neon"] body,
+html[data-accent="green"] body,
+body.mode-editor.theme-neon,
+body.mode-editor.theme-neon.editor-advanced,
+body.mode-career.theme-neon {
+  --bg-main: #04140d;
+  --bg-elevated: #071c13;
+  --bg-panel: rgba(5, 28, 19, 0.86);
+  --bg-panel-strong: rgba(3, 20, 12, 0.94);
+  --bg-card: rgba(16, 243, 154, 0.08);
+  --bg-card-soft: rgba(16, 243, 154, 0.04);
+  --bg-soft: rgba(16, 243, 154, 0.04);
+  --bg-input: rgba(2, 17, 10, 0.74);
+  --text-main: #f3fff9;
+  --text: #f3fff9;
+  --text-muted: #9af5cf;
+  --text-soft: rgba(219, 255, 238, 0.72);
+  --text-info: #6ee7b7;
+  --accent: #10f39a;
+  --accent-rgb: 16, 243, 154;
+  --accent-secondary: #047857;
+  --accent-secondary-rgb: 4, 120, 87;
+  --accent-strong: #6ee7b7;
+  --accent-contrast: #03140c;
+  --accent-soft: rgba(16, 243, 154, 0.18);
+  --accent-surface: rgba(16, 243, 154, 0.12);
+  --accent-hover: rgba(16, 243, 154, 0.24);
+  --accent-border: rgba(16, 243, 154, 0.42);
+  --accent-glow: 0 0 30px rgba(16, 243, 154, 0.3);
+  --panel-border: rgba(16, 243, 154, 0.22);
+  --card-border: rgba(16, 243, 154, 0.16);
+  --border: rgba(16, 243, 154, 0.22);
+  --border-soft: rgba(16, 243, 154, 0.16);
+  --border-subtle: rgba(16, 243, 154, 0.16);
+  --border-strong: rgba(16, 243, 154, 0.38);
+  --surface-glow: 0 0 30px rgba(16, 243, 154, 0.28);
+  --status-glow: 0 0 22px rgba(16, 243, 154, 0.52);
+  --status-glow-soft: 0 0 36px rgba(16, 243, 154, 0.22);
+  --focus-ring: 0 0 0 3px rgba(16, 243, 154, 0.22);
+  --dropdown-hover: rgba(16, 243, 154, 0.18);
+  --dropdown-active: rgba(16, 243, 154, 0.24);
+  --scrollbar-track: rgba(16, 243, 154, 0.05);
+  --scrollbar-thumb: rgba(16, 243, 154, 0.28);
+  --scrollbar-thumb-hover: rgba(16, 243, 154, 0.46);
+  --bg-text-info: var(--text-info);
+  --bg-textinfo: var(--text-info);
+  --textinfo: var(--text-info);
+  color-scheme: dark;
+}
+
+body.theme-neon-red,
+body.accent-red,
+body[data-theme="neon-red"],
+body[data-accent="red"],
+html[data-theme="neon-red"] body,
+html[data-accent="red"] body,
+body.mode-editor.theme-neon-red,
+body.mode-editor.theme-neon-red.editor-advanced,
+body.mode-career.theme-neon-red {
+  --bg-main: #14070c;
+  --bg-elevated: #1b0b12;
+  --bg-panel: rgba(30, 10, 18, 0.88);
+  --bg-panel-strong: rgba(20, 7, 12, 0.96);
+  --bg-card: rgba(255, 49, 88, 0.08);
+  --bg-card-soft: rgba(255, 49, 88, 0.04);
+  --bg-soft: rgba(255, 49, 88, 0.04);
+  --bg-input: rgba(20, 7, 12, 0.76);
+  --text-main: #fff7fa;
+  --text: #fff7fa;
+  --text-muted: #f0b0c0;
+  --text-soft: rgba(255, 226, 232, 0.72);
+  --text-info: #ff6b86;
+  --accent: #ff3158;
+  --accent-rgb: 255, 49, 88;
+  --accent-secondary: #b91c3f;
+  --accent-secondary-rgb: 185, 28, 63;
+  --accent-strong: #ff6b86;
+  --accent-contrast: #fff7fa;
+  --accent-soft: rgba(255, 49, 88, 0.18);
+  --accent-surface: rgba(255, 49, 88, 0.12);
+  --accent-hover: rgba(255, 49, 88, 0.24);
+  --accent-border: rgba(255, 49, 88, 0.42);
+  --accent-glow: 0 0 30px rgba(255, 49, 88, 0.3);
+  --panel-border: rgba(255, 49, 88, 0.22);
+  --card-border: rgba(255, 49, 88, 0.16);
+  --border: rgba(255, 49, 88, 0.22);
+  --border-soft: rgba(255, 49, 88, 0.16);
+  --border-subtle: rgba(255, 49, 88, 0.16);
+  --border-strong: rgba(255, 49, 88, 0.38);
+  --surface-glow: 0 0 30px rgba(255, 49, 88, 0.24);
+  --status-glow: 0 0 22px rgba(255, 49, 88, 0.48);
+  --status-glow-soft: 0 0 36px rgba(255, 49, 88, 0.22);
+  --focus-ring: 0 0 0 3px rgba(255, 49, 88, 0.22);
+  --dropdown-surface: #190d11;
+  --dropdown-surface-strong: #12080c;
+  --dropdown-border: rgba(255, 49, 88, 0.32);
+  --dropdown-text: #fff5f7;
+  --dropdown-text-muted: #f0cad2;
+  --dropdown-hover: rgba(255, 49, 88, 0.18);
+  --dropdown-active: rgba(255, 49, 88, 0.24);
+  --scrollbar-track: rgba(255, 49, 88, 0.055);
+  --scrollbar-thumb: rgba(255, 49, 88, 0.34);
+  --scrollbar-thumb-hover: rgba(255, 49, 88, 0.56);
+  --bg-text-info: var(--text-info);
+  --bg-textinfo: var(--text-info);
+  --textinfo: var(--text-info);
+  color-scheme: dark;
+}
+
+body.mode-editor.editor-advanced:not(.theme-dark):not(.theme-light):not(.theme-neon):not(.theme-neon-red) {
+  --accent: #38bdf8;
+  --accent-rgb: 56, 189, 248;
+  --accent-secondary: #0e7490;
+  --accent-secondary-rgb: 14, 116, 144;
+  --accent-strong: #67e8f9;
+  --accent-contrast: #03131f;
+  --accent-soft: rgba(56, 189, 248, 0.18);
+  --accent-surface: rgba(56, 189, 248, 0.12);
+  --accent-hover: rgba(56, 189, 248, 0.24);
+  --accent-border: rgba(56, 189, 248, 0.42);
+  --accent-glow: 0 0 30px rgba(56, 189, 248, 0.3);
+  --panel-border: rgba(56, 189, 248, 0.22);
+  --card-border: rgba(56, 189, 248, 0.16);
+}
+
+body.theme-dark,
+body.theme-light,
+body.theme-neon,
+body.theme-neon-red,
+body.accent-blue,
+body.accent-purple,
+body.accent-green,
+body.accent-red {
+  accent-color: var(--accent);
+  color: var(--text-main);
+  background:
+    radial-gradient(circle at 12% 18%, rgba(var(--accent-rgb), 0.18), transparent 24%),
+    radial-gradient(circle at 82% 12%, rgba(var(--accent-secondary-rgb), 0.14), transparent 24%),
+    linear-gradient(165deg, var(--bg-main) 0%, var(--bg-elevated) 54%, var(--bg-main) 100%);
+}
+
+body.mode-editor .mode-btn.active,
+body.mode-career .mode-btn.active,
+body.mode-editor .game-switch button.active,
+body.mode-editor .preset-btn.active,
+body.mode-editor .editor-sidebar .nav-btn.active,
+body.mode-editor .editor-sidebar .nav-action.active,
+body.mode-editor .editor-bottom-tabs .nav-btn.active,
+body.mode-editor #modalLevelSystem .level-system-mode-card.is-active,
+body.mode-editor #modalLevelSystem .level-system-input-card.is-active,
+body.mode-editor .level-system-badge--accent {
+  color: var(--accent-contrast) !important;
+  border-color: var(--accent-border) !important;
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.94), rgba(var(--accent-secondary-rgb), 0.84)) !important;
+  box-shadow:
+    0 14px 30px rgba(var(--accent-rgb), 0.18),
+    var(--accent-glow) !important;
+}
+
+body.mode-editor .editor-bottom-tabs-inner,
+body.mode-editor .editor-sidebar-block,
+body.mode-editor .editor-session-panel,
+body.mode-editor .overview-card,
+body.mode-editor .save-tool-stage,
+body.mode-editor .tool-card,
+body.mode-editor .modal-box {
+  border-color: var(--panel-border) !important;
+}
+
+body.mode-editor .game-switch button:hover,
+body.mode-editor .preset-btn:hover,
+body.mode-editor .editor-sidebar .nav-btn:hover,
+body.mode-editor .editor-sidebar .nav-action:hover,
+body.mode-editor .editor-bottom-tabs .nav-btn:hover,
+body.mode-editor .tool-card:hover,
+body.mode-editor #modalLevelSystem .level-system-mode-card:hover,
+body.mode-editor #modalLevelSystem .level-system-input-card:hover {
+  border-color: var(--accent-border) !important;
+  box-shadow:
+    0 0 0 1px rgba(var(--accent-rgb), 0.08),
+    0 16px 32px rgba(var(--accent-rgb), 0.12) !important;
+}
+
+body.mode-editor .table-action,
+body.mode-editor .tool-card button,
+body.mode-editor .modal-actions button:not(.modal-cancel-btn),
+body.mode-editor #modalLevelSystem .level-system-apply {
+  border-color: var(--accent-border) !important;
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.92), rgba(var(--accent-secondary-rgb), 0.78)) !important;
+  color: var(--accent-contrast) !important;
+  box-shadow: 0 12px 26px rgba(var(--accent-rgb), 0.16) !important;
+}
+
+body.mode-editor input:focus-visible,
+body.mode-editor textarea:focus-visible,
+body.mode-editor select:focus-visible,
+body.mode-editor button:focus-visible {
+  border-color: var(--accent-border) !important;
+  box-shadow: var(--focus-ring) !important;
+}
+
 @media (max-height: 500px) {
   .modal-backdrop,
   .modal-overlay,
@@ -11095,4 +11435,64 @@ body.mode-editor #modalLevelSystem .modal-actions {
   body.mode-editor #modalLevelSystem .modal-box--level {
     max-height: calc(100dvh - 24px) !important;
   }
+}
+/* =========================================================
+   Accent theme EOF guard
+   Reasserts selected accent values after late modal overrides
+   ========================================================= */
+
+body.theme-dark,
+body.mode-editor.theme-dark,
+body.mode-editor.theme-dark.editor-advanced,
+body.mode-career.theme-dark {
+  --accent: #38bdf8;
+  --accent-rgb: 56, 189, 248;
+  --accent-secondary: #0e7490;
+  --accent-secondary-rgb: 14, 116, 144;
+  --accent-soft: rgba(56, 189, 248, 0.18);
+  --accent-glow: 0 0 30px rgba(56, 189, 248, 0.3);
+  --accent-border: rgba(56, 189, 248, 0.42);
+  --text-info: #67e8f9;
+}
+
+body.theme-light,
+body.mode-editor.theme-light,
+body.mode-editor.theme-light.editor-advanced,
+body.mode-career.theme-light {
+  --accent: #7c3aed;
+  --accent-rgb: 124, 58, 237;
+  --accent-secondary: #a855f7;
+  --accent-secondary-rgb: 168, 85, 247;
+  --accent-soft: rgba(124, 58, 237, 0.16);
+  --accent-glow: 0 0 30px rgba(124, 58, 237, 0.24);
+  --accent-border: rgba(124, 58, 237, 0.36);
+  --text-info: #7c3aed;
+}
+
+body.theme-neon,
+body.mode-editor.theme-neon,
+body.mode-editor.theme-neon.editor-advanced,
+body.mode-career.theme-neon {
+  --accent: #10f39a;
+  --accent-rgb: 16, 243, 154;
+  --accent-secondary: #047857;
+  --accent-secondary-rgb: 4, 120, 87;
+  --accent-soft: rgba(16, 243, 154, 0.18);
+  --accent-glow: 0 0 30px rgba(16, 243, 154, 0.3);
+  --accent-border: rgba(16, 243, 154, 0.42);
+  --text-info: #6ee7b7;
+}
+
+body.theme-neon-red,
+body.mode-editor.theme-neon-red,
+body.mode-editor.theme-neon-red.editor-advanced,
+body.mode-career.theme-neon-red {
+  --accent: #ff3158;
+  --accent-rgb: 255, 49, 88;
+  --accent-secondary: #b91c3f;
+  --accent-secondary-rgb: 185, 28, 63;
+  --accent-soft: rgba(255, 49, 88, 0.18);
+  --accent-glow: 0 0 30px rgba(255, 49, 88, 0.3);
+  --accent-border: rgba(255, 49, 88, 0.42);
+  --text-info: #ff6b86;
 }
