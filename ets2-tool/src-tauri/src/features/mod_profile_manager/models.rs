@@ -259,6 +259,17 @@ pub struct WorkshopMod {
     pub status: Option<String>,
 }
 
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct WorkshopInstallStatus {
+    pub mod_id: String,
+    pub app_id: String,
+    pub installed: bool,
+    pub workshop_path: Option<String>,
+    pub checked_libraries: Vec<String>,
+    pub checked_paths: Vec<String>,
+    pub reason: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ModSandbox {
     pub id: String,
@@ -282,6 +293,9 @@ pub struct ApplySandboxResult {
     pub skipped_mods: Vec<SkippedWorkshopMod>,
     pub removed_existing_mod_count: usize,
     pub applied_mod_count: usize,
+    pub validation: ValidateActivePresetModsResult,
+    pub success: bool,
+    pub message: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -296,6 +310,140 @@ pub struct SkippedWorkshopMod {
     pub mod_id: String,
     pub title: Option<String>,
     pub reason: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ReplaceActivePresetModsResult {
+    pub content: String,
+    pub removed_mod_count: usize,
+    pub written_mod_count: usize,
+    pub expected_mod_refs: Vec<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ValidateActivePresetModsResult {
+    pub success: bool,
+    pub expected_count: usize,
+    pub actual_count: usize,
+    pub expected_mod_refs: Vec<String>,
+    pub actual_mod_refs: Vec<String>,
+    pub missing_mod_refs: Vec<String>,
+    pub unexpected_mod_refs: Vec<String>,
+    pub order_matches: bool,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ActiveModBlockSnapshot {
+    pub field_name: String,
+    pub count: usize,
+    pub mod_refs: Vec<String>,
+    pub indices: Vec<usize>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SandboxPresetCollection {
+    pub sandbox_presets: Vec<SandboxModPreset>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SandboxModPreset {
+    pub id: String,
+    pub title: String,
+    pub description: Option<String>,
+    #[serde(default)]
+    pub load_order_locked: Option<bool>,
+    pub mods: Vec<SandboxPresetMod>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SandboxPresetMod {
+    pub steam_id: String,
+    pub required: bool,
+    pub display_name: Option<String>,
+    #[serde(default)]
+    pub load_order: usize,
+    #[serde(default)]
+    pub workshop_url: Option<String>,
+    #[serde(default)]
+    pub steam_protocol_url: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SandboxPresetModStatus {
+    pub steam_id: String,
+    pub display_name: Option<String>,
+    pub required: bool,
+    pub load_order: usize,
+    pub found: bool,
+    pub local_path: Option<String>,
+    pub workshop_url: String,
+    pub steam_protocol_url: String,
+    pub checked_paths: Vec<String>,
+    pub reason: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SandboxPresetCheckResult {
+    pub preset_id: String,
+    pub title: String,
+    pub ready: bool,
+    pub missing_mods: Vec<SandboxPresetModStatus>,
+    pub found_mods: Vec<SandboxPresetModStatus>,
+    pub all_mods: Vec<SandboxPresetModStatus>,
+    pub checked_libraries: Vec<String>,
+    pub checked_at: String,
+    pub message: String,
+    pub progress_log: Vec<String>,
+    pub cache_path: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SandboxPresetActivationResult {
+    pub preset_id: String,
+    pub title: String,
+    pub success: bool,
+    pub error_code: Option<String>,
+    pub written_mods: Vec<String>,
+    pub verified_mods: Vec<String>,
+    pub written_mod_refs: Vec<String>,
+    pub backup_path: Option<String>,
+    pub cache_path: Option<String>,
+    pub mod_cache_path: Option<String>,
+    pub save_path: Option<String>,
+    pub message: String,
+    pub progress_log: Vec<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SandboxModCacheEntry {
+    pub preset_id: String,
+    pub title: String,
+    pub checked_at: String,
+    pub checked_libraries: Vec<String>,
+    pub mods: Vec<SandboxPresetModStatus>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SandboxModCacheFile {
+    pub entries: Vec<SandboxModCacheEntry>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SandboxActiveModsBackupCacheEntry {
+    pub preset_id: String,
+    pub title: String,
+    pub save_path: String,
+    pub file_path: String,
+    pub field_name: String,
+    pub original_count: usize,
+    pub original_mod_refs: Vec<String>,
+    pub original_indices: Vec<usize>,
+    pub timestamp: String,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SandboxActiveModsBackupCacheFile {
+    pub entries: Vec<SandboxActiveModsBackupCacheEntry>,
 }
 
 fn default_ets2_app_id() -> u32 {

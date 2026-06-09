@@ -1294,8 +1294,10 @@
             "mod_sandbox_open_workshop_failed": "Steam Workshop could not be opened.",
             "mod_sandbox_open_steam_console_failed": "Steam Console could not be opened. Check if Steam is installed.",
             "mod_sandbox_download_check_failed": "Download status could not be checked.",
+            "mod_sandbox_download_status_refreshed": "Download status refreshed.",
             "mod_sandbox_test_preset_imported": "Test preset imported.",
             "mod_sandbox_test_preset_failed": "Test preset could not be imported.",
+            "mod_sandbox_apply_success_validated": "{applied_mod_count} mod(s) were set. {removed_existing_mod_count} old mod(s) were removed. The game.sii was re-read and validated successfully. Backup: {backup_path}",
             "level_system_missing_data": "Load a profile and save before opening the level system.",
             "level_system_load_error": "Failed to load the level table.",
             "level_system_apply_success": "Level {level} with {xp} XP applied.",
@@ -1935,80 +1937,89 @@
                         "preset_creation_ready": "The current active mod list is available. Saving the current setup will store the active mods and detected load order."
                   },
                   "sandbox": {
-                        "kicker": "Sandbox mod profiles",
+                        "kicker": "Sandbox preset workflow",
                         "title": "Mod Profile Manager",
-                        "description": "Manage ETS2 Steam Workshop mod lists and write enabled mods to the active save.",
-                        "default_title": "New Sandbox",
-                        "confirm_delete": "Delete this sandbox?",
-                        "confirm_force_clear": "No enabled installed mods were found. Applying now will remove all active mods from the save. Continue?",
+                        "description": "Load bundled sandbox presets, validate local Workshop installs and write the preset to the active save.",
                         "actions": {
-                              "new_sandbox": "New Sandbox",
-                              "create_test_preset": "Create Test Preset",
+                              "reload_presets": "Reload Presets",
                               "open_steam_console": "Open Steam Console",
-                              "select": "Select",
-                              "delete": "Delete",
-                              "add_mod": "Add Mod",
-                              "open_workshop": "Workshop Page",
-                              "subscribe": "Subscribe",
-                              "check_download": "Check Local",
-                              "remove_mod": "Remove",
-                              "save_sandbox": "Save Sandbox",
-                              "apply_sandbox": "Apply to Active Save"
+                              "open_workshop": "Open Workshop",
+                              "open_in_steam": "Open in Steam",
+                              "check_mods": "Check Mods",
+                              "activate_preset": "Activate Preset"
                         },
                         "sections": {
-                              "sandboxes": "Sandboxes",
-                              "add_mod": "Add Workshop Mod",
-                              "mods": "Mods"
+                              "presets": "Sandbox Presets",
+                              "progress": "Preset Workflow"
                         },
                         "fields": {
                               "active_profile": "Active Profile",
                               "active_save": "Active Save",
-                              "title": "Title",
-                              "description": "Description",
-                              "app_id": "AppID"
-                        },
-                        "placeholders": {
-                              "title": "Sandbox title",
-                              "description": "Describe this mod setup",
-                              "workshop_input": "3710074411 or Steam Workshop URL"
-                        },
-                        "help": {
-                              "workshop_input": "Paste a Steam Workshop URL or raw Workshop ID."
+                              "steam_id": "Steam ID",
+                              "mod_name": "Mod Name",
+                              "load_order": "Load Order",
+                              "local_path": "Local Path",
+                              "status": "Status",
+                              "verified_mods": "Verified Mods"
                         },
                         "empty": {
-                              "title": "No sandboxes saved",
-                              "body": "Create a sandbox to start collecting Workshop mods.",
-                              "select_title": "Select or create a sandbox",
-                              "select_body": "The selected sandbox can be edited and applied to the active save.",
-                              "mods_title": "No Workshop mods in this sandbox",
-                              "mods_body": "Add a Steam Workshop URL or ID to build this setup."
+                              "title": "No presets available",
+                              "body": "No sandbox presets are bundled yet."
                         },
                         "status": {
                               "active_save_ready": "Active save ready",
                               "no_active_save": "No active save",
                               "load_failed": "Load failed",
-                              "mod_add_failed": "Add failed",
-                              "applied": "Applied",
-                              "applied_with_skips": "Applied with warnings",
-                              "apply_failed": "Apply failed",
-                              "download_found": "Local found",
-                              "download_missing": "Not downloaded",
-                              "download_unknown": "Not checked"
+                              "checking": "Checking mods",
+                              "check_failed": "Check failed",
+                              "ready": "Ready",
+                              "mod_missing": "Mod missing",
+                              "activated": "Active",
+                              "error": "Error"
+                        },
+                        "preset_status": {
+                              "not_checked": "Not checked",
+                              "ready": "Ready",
+                              "mod_missing": "Mod missing",
+                              "activating": "Activating",
+                              "activated": "Active",
+                              "error": "Error"
+                        },
+                        "hints": {
+                              "progress": "The latest sandbox preset operation is logged here.",
+                              "not_checked": "Check the preset mods before activation.",
+                              "ready": "The preset is ready to be written to the active save.",
+                              "activating": "The preset is currently being written and verified.",
+                              "missing_install": "This mod is not installed locally. Open the Steam Workshop page, subscribe to the mod, wait for Steam to finish downloading it, then click Check Mods again."
+                        },
+                        "progress": {
+                              "preset_loaded": "Preset loaded",
+                              "mods_checked": "Mods checked",
+                              "profile_opened": "Profile opened",
+                              "active_mods_read": "actived_mods read",
+                              "backup_created": "Backup created",
+                              "active_mods_written": "actived_mods written",
+                              "follow_up_successful": "Follow-up check successful"
                         },
                         "apply_result": {
-                              "success_title": "Sandbox was applied",
-                              "warning_title": "Sandbox was applied with warnings",
                               "applied_mods": "{count} mods applied",
-                              "removed_mods": "{count} old active mods removed",
-                              "backup_created": "Backup created",
-                              "skipped_title": "Skipped mods"
+                              "backup_created": "Backup created"
                         },
-                        "skipped_reasons": {
-                              "disabled_in_sandbox": "disabled in sandbox",
-                              "not_installed": "not installed locally",
-                              "invalid_mod_id": "invalid Workshop ID",
-                              "not_ets2_workshop_mod": "not an ETS2 Workshop mod",
-                              "unknown": "unknown reason"
+                        "popup": {
+                              "success_title": "Preset activated",
+                              "success_message": "Sandbox preset \"{title}\" was activated successfully.",
+                              "check_success_title": "Mods checked",
+                              "check_success_message": "All required mods for preset \"{title}\" are available locally.",
+                              "check_failed_message": "The preset check could not be completed.",
+                              "mod_missing_title": "Mod not found",
+                              "mod_missing_message": "At least one required Steam Workshop mod is missing locally.",
+                              "save_failed_title": "Saving failed",
+                              "save_failed_message": "The save file could not be written successfully.",
+                              "verification_failed_title": "Verification failed",
+                              "verification_failed_message": "The file was written, but the mod ID could not be confirmed after reading it again.",
+                              "no_active_save_message": "Load an active profile and save before activating a sandbox preset.",
+                              "active_mods_missing_message": "The active save does not contain an actived_mods/active_mods block.",
+                              "error_title": "Sandbox preset error"
                         }
                   },
                   "compare": {

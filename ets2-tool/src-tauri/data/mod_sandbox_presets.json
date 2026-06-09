@@ -1,0 +1,20 @@
+{
+  "sandbox_presets": [
+    {
+      "id": "sandbox_1_test",
+      "title": "Test",
+      "description": "Test preset for Mod Profile Manager sandbox validation.",
+      "load_order_locked": true,
+      "mods": [
+        {
+          "steam_id": "3710074411",
+          "required": true,
+          "display_name": "Test",
+          "load_order": 0,
+          "workshop_url": "https://steamcommunity.com/sharedfiles/filedetails/?id=3710074411",
+          "steam_protocol_url": "steam://url/CommunityFilePage/3710074411"
+        }
+      ]
+    }
+  ]
+}

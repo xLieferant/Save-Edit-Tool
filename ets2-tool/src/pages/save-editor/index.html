@@ -1596,25 +1596,12 @@
         </div>
 
         <div class="mod-profile-manager-toolbar">
-          <button id="modSandboxNewBtn" class="secondary-action" type="button" data-translate="modals.mod_profile_manager.sandbox.actions.new_sandbox">New Sandbox</button>
-          <button id="modSandboxTestPresetBtn" class="secondary-action" type="button" data-translate="modals.mod_profile_manager.sandbox.actions.create_test_preset">Create Test Preset</button>
+          <button id="modSandboxReloadBtn" class="secondary-action" type="button" data-translate="modals.mod_profile_manager.sandbox.actions.reload_presets">Reload Presets</button>
           <button id="modSteamConsoleBtn" class="secondary-action" type="button" data-translate="modals.mod_profile_manager.sandbox.actions.open_steam_console">Open Steam Console</button>
         </div>
 
-        <div class="mod-profile-manager-body">
-          <aside class="mod-sandbox-sidebar">
-            <div class="mod-profile-panel-head">
-              <span class="detail-card-label" data-translate="modals.mod_profile_manager.sandbox.sections.sandboxes">Sandboxes</span>
-              <strong id="modSandboxCount">0</strong>
-            </div>
-            <div id="modSandboxList" class="mod-sandbox-list"></div>
-            <div id="modSandboxEmpty" class="modal-empty-state" hidden>
-              <strong data-translate="modals.mod_profile_manager.sandbox.empty.title">No sandboxes saved</strong>
-              <p data-translate="modals.mod_profile_manager.sandbox.empty.body">Create a sandbox to start collecting Workshop mods.</p>
-            </div>
-          </aside>
-
-          <section class="mod-sandbox-editor">
+        <div class="mod-profile-manager-body mod-profile-manager-body--sandbox">
+          <section class="mod-sandbox-editor mod-sandbox-editor--full">
             <div class="mod-active-save-grid">
               <article class="detail-card mod-active-save-card">
                 <span class="detail-card-label" data-translate="modals.mod_profile_manager.sandbox.fields.active_profile">Active Profile</span>
@@ -1626,53 +1613,36 @@
               </article>
             </div>
 
-            <div id="modSandboxEditorEmpty" class="modal-empty-state">
-              <strong data-translate="modals.mod_profile_manager.sandbox.empty.select_title">Select or create a sandbox</strong>
-              <p data-translate="modals.mod_profile_manager.sandbox.empty.select_body">The selected sandbox can be edited and applied to the active save.</p>
-            </div>
-
-            <div id="modSandboxEditorContent" class="mod-sandbox-editor-content" hidden>
-              <div class="mod-sandbox-form-grid">
-                <label class="mod-profile-field" for="modSandboxTitleInput">
-                  <span data-translate="modals.mod_profile_manager.sandbox.fields.title">Title</span>
-                  <input id="modSandboxTitleInput" type="text" data-translate-placeholder="modals.mod_profile_manager.sandbox.placeholders.title" placeholder="Sandbox title">
-                </label>
-                <label class="mod-profile-field mod-profile-field--wide" for="modSandboxDescriptionInput">
-                  <span data-translate="modals.mod_profile_manager.sandbox.fields.description">Description</span>
-                  <textarea id="modSandboxDescriptionInput" rows="3" data-translate-placeholder="modals.mod_profile_manager.sandbox.placeholders.description" placeholder="Describe this mod setup"></textarea>
-                </label>
+            <section class="detail-card mod-workshop-add-card">
+              <div class="mod-profile-panel-head">
+                <div>
+                  <span class="detail-card-label" data-translate="modals.mod_profile_manager.sandbox.sections.presets">Sandbox Presets</span>
+                  <strong id="modSandboxCount">0</strong>
+                </div>
               </div>
+              <div id="modSandboxPresetList" class="sandbox-preset-list"></div>
+              <div id="modSandboxEmpty" class="modal-empty-state" hidden>
+                <strong data-translate="modals.mod_profile_manager.sandbox.empty.title">No presets available</strong>
+                <p data-translate="modals.mod_profile_manager.sandbox.empty.body">No sandbox presets are bundled yet.</p>
+              </div>
+            </section>
 
-              <section class="detail-card mod-workshop-add-card">
-                <div class="mod-profile-panel-head">
-                  <div>
-                    <span class="detail-card-label" data-translate="modals.mod_profile_manager.sandbox.sections.add_mod">Add Workshop Mod</span>
-                    <p data-translate="modals.mod_profile_manager.sandbox.help.workshop_input">Paste a Steam Workshop URL or raw Workshop ID.</p>
-                  </div>
+            <section class="detail-card mod-workshop-add-card">
+              <div class="mod-profile-panel-head">
+                <div>
+                  <span class="detail-card-label" data-translate="modals.mod_profile_manager.sandbox.sections.progress">Preset Workflow</span>
+                  <p data-translate="modals.mod_profile_manager.sandbox.hints.progress">The latest sandbox preset operation is logged here.</p>
                 </div>
-                <div class="mod-workshop-add-row">
-                  <input id="modWorkshopInput" type="text" inputmode="url" data-translate-placeholder="modals.mod_profile_manager.sandbox.placeholders.workshop_input" placeholder="3710074411 or Steam Workshop URL">
-                  <button id="modAddWorkshopBtn" class="secondary-action" type="button" data-translate="modals.mod_profile_manager.sandbox.actions.add_mod">Add Mod</button>
-                </div>
-              </section>
+              </div>
+              <div id="modSandboxProgressList" class="sandbox-progress-list"></div>
+            </section>
 
-              <section class="mod-profile-section">
-                <div class="mod-profile-panel-head">
-                  <span class="detail-card-label" data-translate="modals.mod_profile_manager.sandbox.sections.mods">Mods</span>
-                  <strong id="modSandboxActiveCount">0</strong>
-                </div>
-                <div id="modSelectedModsList" class="mod-workshop-list"></div>
-              </section>
-
-              <section id="modApplySandboxResult" class="mod-apply-result" hidden></section>
-            </div>
+            <section id="modApplySandboxResult" class="mod-apply-result" hidden></section>
           </section>
         </div>
 
         <div class="modal-actions modal-actions--end">
           <button id="modalModProfileManagerClose" type="button" data-translate="modals.close">Close</button>
-          <button id="modSaveSandboxBtn" type="button" data-translate="modals.mod_profile_manager.sandbox.actions.save_sandbox">Save Sandbox</button>
-          <button id="modApplySandboxBtn" class="apply" type="button" data-translate="modals.mod_profile_manager.sandbox.actions.apply_sandbox">Apply to Active Save</button>
         </div>
       </div>
     </div>

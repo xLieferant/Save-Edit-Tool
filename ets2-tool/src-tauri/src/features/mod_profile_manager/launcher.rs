@@ -11,6 +11,18 @@ pub fn open_workshop_page(mod_id: &str) -> Result<(), String> {
     open_steam_uri(&format!("steam://url/SteamWorkshopPage/{mod_id}"))
 }
 
+pub fn open_sandbox_mod_workshop_page(mod_id: &str) -> Result<(), String> {
+    let mod_id = validate_workshop_id(mod_id)?;
+    open_external_url(&format!(
+        "https://steamcommunity.com/sharedfiles/filedetails/?id={mod_id}"
+    ))
+}
+
+pub fn open_sandbox_mod_in_steam(mod_id: &str) -> Result<(), String> {
+    let mod_id = validate_workshop_id(mod_id)?;
+    open_steam_uri(&format!("steam://url/CommunityFilePage/{mod_id}"))
+}
+
 pub fn open_workshop_subscribe_page(mod_id: &str) -> Result<(), String> {
     let mod_id = validate_workshop_id(mod_id)?;
     open_steam_uri(&format!(
@@ -20,6 +32,47 @@ pub fn open_workshop_subscribe_page(mod_id: &str) -> Result<(), String> {
 
 pub fn open_protocol_url(url: &str) -> Result<(), String> {
     open_steam_uri(url)
+}
+
+pub fn open_external_url(url: &str) -> Result<(), String> {
+    let value = sanitize_external_url(url)?;
+
+    if cfg!(target_os = "windows") {
+        for (name, command, args) in [
+            ("explorer", "explorer.exe", vec![value.as_str()]),
+            ("cmd_start", "cmd", vec!["/C", "start", "", value.as_str()]),
+        ] {
+            let result = run_command_status(command, &args);
+            match result {
+                Ok(true) => {
+                    println!("[mod-profile-manager] open_external_url fallback={name} success");
+                    return Ok(());
+                }
+                Ok(false) => {
+                    println!("[mod-profile-manager] open_external_url fallback={name} failed status");
+                }
+                Err(error) => {
+                    println!("[mod-profile-manager] open_external_url fallback={name} error={error}");
+                }
+            }
+        }
+
+        return Err("External URL could not be opened.".to_string());
+    }
+
+    let result = if cfg!(target_os = "linux") {
+        run_command_status("xdg-open", &[value.as_str()])
+    } else if cfg!(target_os = "macos") {
+        run_command_status("open", &[value.as_str()])
+    } else {
+        return Err("Unsupported operating system.".to_string());
+    };
+
+    match result {
+        Ok(true) => Ok(()),
+        Ok(false) => Err("External URL could not be opened.".to_string()),
+        Err(error) => Err(format!("External URL could not be opened. ({error})")),
+    }
 }
 
 pub fn sanitize_steam_uri(input: &str) -> Result<String, String> {
@@ -43,6 +96,19 @@ pub fn sanitize_steam_uri(input: &str) -> Result<String, String> {
     }
 
     println!("[mod-profile-manager] sanitize_steam_uri output={value:?}");
+    Ok(value.to_string())
+}
+
+pub fn sanitize_external_url(input: &str) -> Result<String, String> {
+    let value = input.trim().trim_matches(|character| {
+        matches!(character, '"' | '\'' | '`' | '\\') || character.is_whitespace()
+    });
+    if !(value.starts_with("https://") || value.starts_with("http://")) {
+        return Err(format!("Invalid external URL: {value}"));
+    }
+    if value.contains('\0') {
+        return Err("Invalid external URL: contains NUL byte.".to_string());
+    }
     Ok(value.to_string())
 }
 

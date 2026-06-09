@@ -1277,8 +1277,10 @@
             "mod_sandbox_open_workshop_failed": "[NEEDS TRANSLATION] Steam Workshop could not be opened.",
             "mod_sandbox_open_steam_console_failed": "Steam Console konnte nicht ge\u00f6ffnet werden. Pr\u00fcfe, ob Steam installiert ist.",
             "mod_sandbox_download_check_failed": "[NEEDS TRANSLATION] Download status could not be checked.",
+            "mod_sandbox_download_status_refreshed": "[NEEDS TRANSLATION] Download status refreshed.",
             "mod_sandbox_test_preset_imported": "[NEEDS TRANSLATION] Test preset imported.",
             "mod_sandbox_test_preset_failed": "[NEEDS TRANSLATION] Test preset could not be imported.",
+            "mod_sandbox_apply_success_validated": "[NEEDS TRANSLATION] {applied_mod_count} mod(s) were set. {removed_existing_mod_count} old mod(s) were removed. The game.sii was re-read and validated successfully. Backup: {backup_path}",
             "level_system_missing_data": "Lade ein Profil und einen Speicherstand, bevor du das Level-System ?ffnest.",
             "level_system_load_error": "Level-Tabelle konnte nicht geladen werden.",
             "level_system_apply_success": "Level {level} mit {xp} EP angewendet.",
@@ -1918,80 +1920,89 @@
                         "preset_creation_ready": "Die aktuell aktive Mod-Liste ist verfügbar. Beim Speichern des aktuellen Setups werden die aktiven Mods und die erkannte Ladereihenfolge gespeichert."
                   },
                   "sandbox": {
-                        "kicker": "[NEEDS TRANSLATION] Sandbox mod profiles",
-                        "title": "[NEEDS TRANSLATION] Mod Profile Manager",
-                        "description": "[NEEDS TRANSLATION] Manage ETS2 Steam Workshop mod lists and write enabled mods to the active save.",
-                        "default_title": "[NEEDS TRANSLATION] New Sandbox",
-                        "confirm_delete": "[NEEDS TRANSLATION] Delete this sandbox?",
-                        "confirm_force_clear": "[NEEDS TRANSLATION] No enabled installed mods were found. Applying now will remove all active mods from the save. Continue?",
+                        "kicker": "Sandbox-Preset-Workflow",
+                        "title": "Mod-Profil-Manager",
+                        "description": "Gebündelte Sandbox-Presets laden, lokale Workshop-Installationen prüfen und das Preset in den aktiven Spielstand schreiben.",
                         "actions": {
-                              "new_sandbox": "[NEEDS TRANSLATION] New Sandbox",
-                              "create_test_preset": "[NEEDS TRANSLATION] Create Test Preset",
-                              "open_steam_console": "[NEEDS TRANSLATION] Open Steam Console",
-                              "select": "[NEEDS TRANSLATION] Select",
-                              "delete": "[NEEDS TRANSLATION] Delete",
-                              "add_mod": "[NEEDS TRANSLATION] Add Mod",
-                              "open_workshop": "[NEEDS TRANSLATION] Workshop Page",
-                              "subscribe": "[NEEDS TRANSLATION] Subscribe",
-                              "check_download": "[NEEDS TRANSLATION] Check Local",
-                              "remove_mod": "[NEEDS TRANSLATION] Remove",
-                              "save_sandbox": "[NEEDS TRANSLATION] Save Sandbox",
-                              "apply_sandbox": "[NEEDS TRANSLATION] Apply to Active Save"
+                              "reload_presets": "Presets neu laden",
+                              "open_steam_console": "Steam-Konsole öffnen",
+                              "open_workshop": "Workshop öffnen",
+                              "open_in_steam": "In Steam öffnen",
+                              "check_mods": "Mods prüfen",
+                              "activate_preset": "Preset aktivieren"
                         },
                         "sections": {
-                              "sandboxes": "[NEEDS TRANSLATION] Sandboxes",
-                              "add_mod": "[NEEDS TRANSLATION] Add Workshop Mod",
-                              "mods": "[NEEDS TRANSLATION] Mods"
+                              "presets": "Sandbox Presets",
+                              "progress": "Preset-Workflow"
                         },
                         "fields": {
-                              "active_profile": "[NEEDS TRANSLATION] Active Profile",
-                              "active_save": "[NEEDS TRANSLATION] Active Save",
-                              "title": "[NEEDS TRANSLATION] Title",
-                              "description": "[NEEDS TRANSLATION] Description",
-                              "app_id": "[NEEDS TRANSLATION] AppID"
-                        },
-                        "placeholders": {
-                              "title": "[NEEDS TRANSLATION] Sandbox title",
-                              "description": "[NEEDS TRANSLATION] Describe this mod setup",
-                              "workshop_input": "[NEEDS TRANSLATION] 3710074411 or Steam Workshop URL"
-                        },
-                        "help": {
-                              "workshop_input": "[NEEDS TRANSLATION] Paste a Steam Workshop URL or raw Workshop ID."
+                              "active_profile": "Aktives Profil",
+                              "active_save": "Aktiver Save",
+                              "steam_id": "Steam-ID",
+                              "mod_name": "Mod-Name",
+                              "load_order": "Ladereihenfolge",
+                              "local_path": "Lokaler Pfad",
+                              "status": "Status",
+                              "verified_mods": "Verifizierte Mods"
                         },
                         "empty": {
-                              "title": "[NEEDS TRANSLATION] No sandboxes saved",
-                              "body": "[NEEDS TRANSLATION] Create a sandbox to start collecting Workshop mods.",
-                              "select_title": "[NEEDS TRANSLATION] Select or create a sandbox",
-                              "select_body": "[NEEDS TRANSLATION] The selected sandbox can be edited and applied to the active save.",
-                              "mods_title": "[NEEDS TRANSLATION] No Workshop mods in this sandbox",
-                              "mods_body": "[NEEDS TRANSLATION] Add a Steam Workshop URL or ID to build this setup."
+                              "title": "Keine Presets verfügbar",
+                              "body": "Es sind aktuell keine Sandbox-Presets im Tool enthalten."
                         },
                         "status": {
-                              "active_save_ready": "[NEEDS TRANSLATION] Active save ready",
-                              "no_active_save": "[NEEDS TRANSLATION] No active save",
-                              "load_failed": "[NEEDS TRANSLATION] Load failed",
-                              "mod_add_failed": "[NEEDS TRANSLATION] Add failed",
-                              "applied": "[NEEDS TRANSLATION] Applied",
-                              "applied_with_skips": "[NEEDS TRANSLATION] Applied with warnings",
-                              "apply_failed": "[NEEDS TRANSLATION] Apply failed",
-                              "download_found": "[NEEDS TRANSLATION] Local found",
-                              "download_missing": "[NEEDS TRANSLATION] Not downloaded",
-                              "download_unknown": "[NEEDS TRANSLATION] Not checked"
+                              "active_save_ready": "Aktiver Save bereit",
+                              "no_active_save": "Kein aktiver Save",
+                              "load_failed": "Laden fehlgeschlagen",
+                              "checking": "Prüfe Mods",
+                              "check_failed": "Prüfung fehlgeschlagen",
+                              "ready": "Bereit",
+                              "mod_missing": "Mod fehlt",
+                              "activated": "Aktiv",
+                              "error": "Fehler"
+                        },
+                        "preset_status": {
+                              "not_checked": "Nicht geprüft",
+                              "ready": "Bereit",
+                              "mod_missing": "Mod fehlt",
+                              "activating": "Wird aktiviert",
+                              "activated": "Aktiv",
+                              "error": "Fehler"
+                        },
+                        "hints": {
+                              "progress": "Der letzte Sandbox-Preset-Vorgang wird hier protokolliert.",
+                              "not_checked": "Prüfe das Preset zuerst, bevor du es aktivierst.",
+                              "ready": "Das Preset kann in den aktiven Save geschrieben werden.",
+                              "activating": "Das Preset wird gerade geschrieben und verifiziert.",
+                              "missing_install": "Diese Mod ist lokal nicht installiert. Öffne die Steam-Workshop-Seite, abonniere die Mod, warte bis Steam den Download abgeschlossen hat und klicke dann erneut auf Mods prüfen."
+                        },
+                        "progress": {
+                              "preset_loaded": "Preset geladen",
+                              "mods_checked": "Mods geprüft",
+                              "profile_opened": "Profil geöffnet",
+                              "active_mods_read": "actived_mods gelesen",
+                              "backup_created": "Backup erstellt",
+                              "active_mods_written": "actived_mods geschrieben",
+                              "follow_up_successful": "Follow-up Check erfolgreich"
                         },
                         "apply_result": {
-                              "success_title": "[NEEDS TRANSLATION] Sandbox was applied",
-                              "warning_title": "[NEEDS TRANSLATION] Sandbox was applied with warnings",
-                              "applied_mods": "[NEEDS TRANSLATION] {count} mods applied",
-                              "removed_mods": "[NEEDS TRANSLATION] {count} old active mods removed",
-                              "backup_created": "[NEEDS TRANSLATION] Backup created",
-                              "skipped_title": "[NEEDS TRANSLATION] Skipped mods"
+                              "applied_mods": "{count} Mods angewendet",
+                              "backup_created": "Backup erstellt"
                         },
-                        "skipped_reasons": {
-                              "disabled_in_sandbox": "[NEEDS TRANSLATION] disabled in sandbox",
-                              "not_installed": "[NEEDS TRANSLATION] not installed locally",
-                              "invalid_mod_id": "[NEEDS TRANSLATION] invalid Workshop ID",
-                              "not_ets2_workshop_mod": "[NEEDS TRANSLATION] not an ETS2 Workshop mod",
-                              "unknown": "[NEEDS TRANSLATION] unknown reason"
+                        "popup": {
+                              "success_title": "Preset aktiviert",
+                              "success_message": "Sandbox Preset \"{title}\" wurde erfolgreich aktiviert.",
+                              "check_success_title": "Mods geprüft",
+                              "check_success_message": "Alle erforderlichen Mods für Preset \"{title}\" wurden lokal gefunden.",
+                              "check_failed_message": "Die Preset-Prüfung konnte nicht abgeschlossen werden.",
+                              "mod_missing_title": "Mod nicht gefunden",
+                              "mod_missing_message": "Mindestens eine erforderliche Steam Workshop Mod wurde lokal nicht gefunden.",
+                              "save_failed_title": "Speichern fehlgeschlagen",
+                              "save_failed_message": "Die Save-Datei konnte nicht erfolgreich geschrieben werden.",
+                              "verification_failed_title": "Verifizierung fehlgeschlagen",
+                              "verification_failed_message": "Die Datei wurde geschrieben, aber die Mod-ID konnte nach dem erneuten Auslesen nicht korrekt bestätigt werden.",
+                              "no_active_save_message": "Lade zuerst ein aktives Profil und einen aktiven Save, bevor du ein Sandbox-Preset aktivierst.",
+                              "active_mods_missing_message": "Der aktive Save enthält keinen actived_mods/active_mods-Block.",
+                              "error_title": "Sandbox-Preset-Fehler"
                         }
                   },
                   "compare": {

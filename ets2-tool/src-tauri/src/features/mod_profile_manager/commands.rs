@@ -2,12 +2,13 @@ use super::compare;
 use super::discovery::{ScanMode, load_manager_state, scan_inventory, scan_inventory_with_mode};
 use super::models::{
     ApplySandboxResult, DiscoveredMod, GameType, ModPreset, ModSandbox, PresetCompareResult,
-    PresetModEntry, SandboxCollection, WorkshopMod,
+    PresetModEntry, SandboxCollection, SandboxModPreset, SandboxPresetActivationResult,
+    SandboxPresetCheckResult, WorkshopInstallStatus, WorkshopMod,
 };
 use super::presets;
 use super::{launcher, sandbox, workshop_api};
 use crate::shared::user_log;
-use crate::state::AppProfileState;
+use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 use std::any::Any;
 use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -671,8 +672,84 @@ pub fn open_workshop_subscribe_page(mod_id: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub fn open_sandbox_mod_workshop_page(steam_id: String) -> Result<(), String> {
+    catch_command("open_sandbox_mod_workshop_page", || {
+        launcher::open_sandbox_mod_workshop_page(&steam_id)
+    })
+}
+
+#[tauri::command]
+pub fn open_sandbox_mod_in_steam(steam_id: String) -> Result<(), String> {
+    catch_command("open_sandbox_mod_in_steam", || {
+        launcher::open_sandbox_mod_in_steam(&steam_id)
+    })
+}
+
+#[tauri::command]
 pub fn check_workshop_mod_downloaded(app_id: u32, mod_id: u64) -> Result<bool, String> {
     catch_command("check_workshop_mod_downloaded", || {
         Ok(workshop_api::is_workshop_mod_downloaded(app_id, mod_id))
+    })
+}
+
+#[tauri::command]
+pub fn check_workshop_mod_download_status(mod_id: String) -> Result<WorkshopInstallStatus, String> {
+    catch_command("check_workshop_mod_download_status", || {
+        workshop_api::check_ets2_workshop_mod_installed(&mod_id)
+    })
+}
+
+#[tauri::command]
+pub fn check_workshop_mods_download_status(
+    mod_ids: Vec<String>,
+) -> Result<Vec<WorkshopInstallStatus>, String> {
+    catch_command("check_workshop_mods_download_status", || {
+        mod_ids
+            .iter()
+            .map(|mod_id| workshop_api::check_ets2_workshop_mod_installed(mod_id))
+            .collect()
+    })
+}
+
+#[tauri::command]
+pub fn load_sandbox_mod_presets() -> Result<Vec<SandboxModPreset>, String> {
+    crate::dev_log!("[SandboxPreset] command load_sandbox_mod_presets");
+    catch_command("load_sandbox_mod_presets", sandbox::load_sandbox_mod_presets)
+}
+
+#[tauri::command]
+pub fn check_sandbox_preset_mods(
+    app: AppHandle,
+    preset_id: String,
+) -> Result<SandboxPresetCheckResult, String> {
+    crate::dev_log!(
+        "[SandboxPreset] command check_sandbox_preset_mods preset_id={}",
+        preset_id
+    );
+    catch_command("check_sandbox_preset_mods", || {
+        sandbox::check_sandbox_mod_preset(&app, &preset_id)
+    })
+}
+
+#[tauri::command]
+pub fn activate_sandbox_mod_preset(
+    app: AppHandle,
+    profile_state: State<'_, AppProfileState>,
+    profile_cache: State<'_, ProfileCache>,
+    decrypt_cache: State<'_, DecryptCache>,
+    preset_id: String,
+) -> Result<SandboxPresetActivationResult, String> {
+    crate::dev_log!(
+        "[SandboxPreset] command activate_sandbox_mod_preset preset_id={}",
+        preset_id
+    );
+    catch_command("activate_sandbox_mod_preset", || {
+        sandbox::activate_sandbox_mod_preset(
+            &app,
+            profile_state.inner(),
+            profile_cache.inner(),
+            decrypt_cache.inner(),
+            &preset_id,
+        )
     })
 }
