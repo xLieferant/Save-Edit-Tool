@@ -84,10 +84,8 @@ pub fn read_save_config(
     profile_path: &str,
     cache: State<'_, ProfileCache>,
 ) -> Result<SaveGameConfig, String> {
-    let mut trace = TraceScope::with_fields(
-        "read_save_config",
-        &[("path", profile_path.to_string())],
-    );
+    let mut trace =
+        TraceScope::with_fields("read_save_config", &[("path", profile_path.to_string())]);
     // Wir nehmen den übergebenen profile_path direkt.
 
     dev_log!("Lese Config aus Profilpfad: {}", profile_path);

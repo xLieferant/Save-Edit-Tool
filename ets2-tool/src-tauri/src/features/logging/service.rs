@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use chrono::{Local, Utc};
-use rusqlite::{params, Connection};
+use rusqlite::{Connection, params};
 use tauri::AppHandle;
 use tauri_plugin_dialog::DialogExt;
 use uuid::Uuid;
@@ -37,7 +37,10 @@ pub fn resolve_active_context(profile_state: &AppProfileState) -> LogContext {
             "profileInferred".to_string(),
             resolved.profile_inferred.to_string(),
         );
-        extra.insert("saveInferred".to_string(), resolved.save_inferred.to_string());
+        extra.insert(
+            "saveInferred".to_string(),
+            resolved.save_inferred.to_string(),
+        );
     }
 
     let profile_reference = resolved
@@ -52,7 +55,9 @@ pub fn resolve_active_context(profile_state: &AppProfileState) -> LogContext {
         profile_name: profile_reference
             .as_deref()
             .and_then(resolve_profile_name_from_path),
-        save_name: save_reference.as_deref().and_then(resolve_save_name_from_path),
+        save_name: save_reference
+            .as_deref()
+            .and_then(resolve_save_name_from_path),
         profile_reference: profile_reference.as_deref().map(redact_path),
         save_reference: save_reference.as_deref().map(redact_path),
         extra,
@@ -173,7 +178,10 @@ pub fn build_support_report(profile_state: &AppProfileState) -> Result<String, S
         "Profile: {}",
         context.profile_name.as_deref().unwrap_or("-")
     ));
-    lines.push(format!("Save: {}", context.save_name.as_deref().unwrap_or("-")));
+    lines.push(format!(
+        "Save: {}",
+        context.save_name.as_deref().unwrap_or("-")
+    ));
     lines.push(format!(
         "Profile reference: {}",
         context.profile_reference.as_deref().unwrap_or("-")
@@ -255,7 +263,10 @@ fn active_path_snapshot(profile_state: &AppProfileState) -> (Option<String>, Opt
     (profile_path, save_path)
 }
 
-fn build_user_log_export_body(app: &AppHandle, profile_state: &AppProfileState) -> Result<String, String> {
+fn build_user_log_export_body(
+    app: &AppHandle,
+    profile_state: &AppProfileState,
+) -> Result<String, String> {
     let context = resolve_active_context(profile_state);
     let (profile_path, save_path) = active_path_snapshot(profile_state);
     let status = get_log_status()?;
@@ -265,10 +276,7 @@ fn build_user_log_export_body(app: &AppHandle, profile_state: &AppProfileState) 
     lines.push("SimNexusHub User Logs Export".to_string());
     lines.push("===========================".to_string());
     lines.push(format!("Exported at: {}", Utc::now().to_rfc3339()));
-    lines.push(format!(
-        "App version: {}",
-        app.package_info().version
-    ));
+    lines.push(format!("App version: {}", app.package_info().version));
     lines.push(format!(
         "OS: {} ({})",
         std::env::consts::OS,
@@ -341,7 +349,10 @@ fn build_user_log_export_body(app: &AppHandle, profile_state: &AppProfileState) 
     Ok(lines.join("\r\n"))
 }
 
-pub fn export_user_logs(app: &AppHandle, profile_state: &AppProfileState) -> Result<String, String> {
+pub fn export_user_logs(
+    app: &AppHandle,
+    profile_state: &AppProfileState,
+) -> Result<String, String> {
     let downloads_dir = dirs::download_dir()
         .ok_or_else(|| "The Downloads folder could not be resolved.".to_string())?;
     fs::create_dir_all(&downloads_dir).map_err(|error| {

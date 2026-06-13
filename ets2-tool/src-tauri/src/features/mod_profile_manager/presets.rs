@@ -24,8 +24,13 @@ pub fn load_presets(app: &AppHandle) -> Result<Vec<ModPreset>, String> {
         return Ok(Vec::new());
     }
 
-    let content = fs::read_to_string(&path)
-        .map_err(|error| format!("Failed to read preset storage {}: {}", path.display(), error))?;
+    let content = fs::read_to_string(&path).map_err(|error| {
+        format!(
+            "Failed to read preset storage {}: {}",
+            path.display(),
+            error
+        )
+    })?;
     serde_json::from_str(&content).map_err(|error| {
         format!(
             "Failed to parse preset storage {}: {}",
@@ -100,8 +105,8 @@ pub fn import_preset(app: &AppHandle) -> Result<Option<ModPreset>, String> {
     let path = file_path_to_path_buf(file_path)?;
     let content = fs::read_to_string(&path)
         .map_err(|error| format!("Failed to read {}: {}", path.display(), error))?;
-    let mut preset: ModPreset =
-        serde_json::from_str(&content).map_err(|error| format!("Failed to parse preset JSON: {}", error))?;
+    let mut preset: ModPreset = serde_json::from_str(&content)
+        .map_err(|error| format!("Failed to parse preset JSON: {}", error))?;
 
     let mut presets = load_presets(app)?;
     if presets.iter().any(|item| item.id == preset.id) {
@@ -121,13 +126,8 @@ pub fn load_settings(app: &AppHandle) -> Result<ModProfileManagerSettings, Strin
 
     let content = fs::read_to_string(&path)
         .map_err(|error| format!("Failed to read settings {}: {}", path.display(), error))?;
-    serde_json::from_str(&content).map_err(|error| {
-        format!(
-            "Failed to parse settings {}: {}",
-            path.display(),
-            error
-        )
-    })
+    serde_json::from_str(&content)
+        .map_err(|error| format!("Failed to parse settings {}: {}", path.display(), error))
 }
 
 pub fn get_manual_workshop_path(app: &AppHandle, game: GameType) -> Result<Option<String>, String> {
@@ -139,7 +139,11 @@ pub fn get_manual_workshop_path(app: &AppHandle, game: GameType) -> Result<Optio
         .map(|entry| entry.path))
 }
 
-pub fn set_manual_workshop_path(app: &AppHandle, game: GameType, path: String) -> Result<String, String> {
+pub fn set_manual_workshop_path(
+    app: &AppHandle,
+    game: GameType,
+    path: String,
+) -> Result<String, String> {
     let mut settings = load_settings(app)?;
     settings
         .manual_workshop_paths
@@ -179,16 +183,14 @@ fn write_presets(app: &AppHandle, presets: &[ModPreset]) -> Result<(), String> {
     let path = presets_file_path(app)?;
     let body = serde_json::to_string_pretty(presets)
         .map_err(|error| format!("Failed to serialize mod presets: {}", error))?;
-    fs::write(&path, body)
-        .map_err(|error| format!("Failed to write {}: {}", path.display(), error))
+    fs::write(&path, body).map_err(|error| format!("Failed to write {}: {}", path.display(), error))
 }
 
 fn write_settings(app: &AppHandle, settings: &ModProfileManagerSettings) -> Result<(), String> {
     let path = settings_file_path(app)?;
     let body = serde_json::to_string_pretty(settings)
         .map_err(|error| format!("Failed to serialize settings: {}", error))?;
-    fs::write(&path, body)
-        .map_err(|error| format!("Failed to write {}: {}", path.display(), error))
+    fs::write(&path, body).map_err(|error| format!("Failed to write {}: {}", path.display(), error))
 }
 
 fn presets_file_path(app: &AppHandle) -> Result<PathBuf, String> {

@@ -3431,6 +3431,11 @@ body.mode-editor.profile-share-page-body .app-shell {
   gap: 12px;
 }
 
+.sandbox-preset-list {
+  grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr));
+  gap: 16px;
+}
+
 .sandbox-preset-card {
   display: grid;
   gap: 14px;
@@ -3442,10 +3447,26 @@ body.mode-editor.profile-share-page-body .app-shell {
     var(--bg-card);
 }
 
+.sandbox-preset-card.is-selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.28);
+}
+
 .sandbox-preset-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+}
+
+.sandbox-preset-actions .sandbox-activate-action {
+  border-color: rgba(var(--accent-rgb), 0.42);
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.92), rgba(var(--accent-secondary-rgb), 0.78));
+  color: var(--accent-contrast);
+}
+
+.sandbox-preset-actions .sandbox-activate-action:disabled {
+  opacity: 0.48;
+  filter: grayscale(0.18);
 }
 
 .sandbox-preset-mod-row {
@@ -3522,6 +3543,11 @@ body.mode-editor.profile-share-page-body .app-shell {
   color: var(--warning);
 }
 
+.mod-status-badge[data-state="path-missing"] {
+  border-color: rgba(255, 165, 0, 0.36);
+  color: var(--warning);
+}
+
 .mod-status-badge[data-state="success"] {
   border-color: rgba(99, 199, 104, 0.36);
   color: var(--success);
@@ -3538,6 +3564,11 @@ body.mode-editor.profile-share-page-body .app-shell {
 }
 
 .mod-status-badge[data-state="neutral"] {
+  border-color: var(--card-border);
+  color: var(--text-muted);
+}
+
+.mod-status-badge[data-state="empty"] {
   border-color: var(--card-border);
   color: var(--text-muted);
 }

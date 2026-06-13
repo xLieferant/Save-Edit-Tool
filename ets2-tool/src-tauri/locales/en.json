@@ -1295,6 +1295,10 @@
             "mod_sandbox_open_steam_console_failed": "Steam Console could not be opened. Check if Steam is installed.",
             "mod_sandbox_download_check_failed": "Download status could not be checked.",
             "mod_sandbox_download_status_refreshed": "Download status refreshed.",
+            "mod_sandbox_steam_mods_refreshed": "Steam Workshop Mods refreshed.",
+            "mod_sandbox_steam_mods_refresh_failed": "Steam Workshop Mods could not be refreshed.",
+            "mod_sandbox_steamcmd_copied": "SteamCMD command copied.",
+            "mod_sandbox_steamcmd_copy_failed": "SteamCMD command could not be copied.",
             "mod_sandbox_test_preset_imported": "Test preset imported.",
             "mod_sandbox_test_preset_failed": "Test preset could not be imported.",
             "mod_sandbox_apply_success_validated": "{applied_mod_count} mod(s) were set. {removed_existing_mod_count} old mod(s) were removed. The game.sii was re-read and validated successfully. Backup: {backup_path}",
@@ -1941,10 +1945,11 @@
                         "title": "Mod Profile Manager",
                         "description": "Load bundled sandbox presets, validate local Workshop installs and write the preset to the active save.",
                         "actions": {
-                              "reload_presets": "Reload Presets",
+                              "reload_presets": "Refresh Steam Mods",
                               "open_steam_console": "Open Steam Console",
                               "open_workshop": "Open Workshop",
                               "open_in_steam": "Open in Steam",
+                              "copy_steamcmd": "Copy SteamCMD Command",
                               "check_mods": "Check Mods",
                               "activate_preset": "Activate Preset"
                         },
@@ -1956,10 +1961,15 @@
                               "active_profile": "Active Profile",
                               "active_save": "Active Save",
                               "steam_id": "Steam ID",
+                              "workshop_id": "Workshop ID",
+                              "app_id": "App ID",
                               "mod_name": "Mod Name",
                               "load_order": "Load Order",
                               "local_path": "Local Path",
+                              "available": "available",
+                              "reachable": "reachable",
                               "status": "Status",
+                              "mods_count": "Mods",
                               "verified_mods": "Verified Mods"
                         },
                         "empty": {
@@ -1981,6 +1991,7 @@
                               "not_checked": "Not checked",
                               "ready": "Ready",
                               "mod_missing": "Mod missing",
+                              "empty": "Empty preset",
                               "activating": "Activating",
                               "activated": "Active",
                               "error": "Error"
@@ -1990,7 +2001,18 @@
                               "not_checked": "Check the preset mods before activation.",
                               "ready": "The preset is ready to be written to the active save.",
                               "activating": "The preset is currently being written and verified.",
+                              "no_mods_configured": "No mods configured yet.",
                               "missing_install": "This mod is not installed locally. Open the Steam Workshop page, subscribe to the mod, wait for Steam to finish downloading it, then click Check Mods again."
+                        },
+                        "mod_status": {
+                              "available": "Available",
+                              "not_downloaded": "Not Downloaded",
+                              "path_missing": "Path Missing",
+                              "unknown": "Unknown",
+                              "available_note": "Mod found locally.",
+                              "not_downloaded_note": "Mod not found locally.",
+                              "path_missing_note": "The cached local path is not reachable.",
+                              "unknown_note": "Status could not be checked."
                         },
                         "progress": {
                               "preset_loaded": "Preset loaded",

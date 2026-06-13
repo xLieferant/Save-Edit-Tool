@@ -5,7 +5,7 @@ use crate::shared::current_profile::snapshot_resolved_save_context;
 use crate::shared::user_log;
 use crate::state::{AppProfileState, DecryptCache};
 use std::any::Any;
-use std::panic::{catch_unwind, AssertUnwindSafe};
+use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{AppHandle, State};
 
@@ -63,35 +63,35 @@ pub async fn analyze_mod_conflict_diagnostics(
     .await
     {
         Ok(inner) => match inner {
-        Ok(Ok(report)) => {
-            crate::dev_log!(
-                "[diagnostics] command completed successfully: status={} suspects={} missing_refs={} limitations={}",
-                report.overview.status_badge,
-                report.suspected_mods.len(),
-                report.missing_references.len(),
-                report.limitations.len()
-            );
-            Ok(report)
-        }
-        Ok(Err(error)) => {
-            crate::dev_log!("[diagnostics] command returned error: {}", error);
-            let _ = user_log::write_user_log(
-                &format!("mod_conflict_analyzer failed | {}", error),
-                "error",
-            );
-            Err(error)
-        }
-        Err(payload) => {
-            let message = panic_message(payload);
-            let safe_message =
-                "Analyzer failed unexpectedly while processing the current data.".to_string();
-            crate::dev_log!("[diagnostics] panic caught in analyzer: {}", message);
-            let _ = user_log::write_user_log(
-                &format!("mod_conflict_analyzer panic | {}", message),
-                "error",
-            );
-            Err(safe_message)
-        }
+            Ok(Ok(report)) => {
+                crate::dev_log!(
+                    "[diagnostics] command completed successfully: status={} suspects={} missing_refs={} limitations={}",
+                    report.overview.status_badge,
+                    report.suspected_mods.len(),
+                    report.missing_references.len(),
+                    report.limitations.len()
+                );
+                Ok(report)
+            }
+            Ok(Err(error)) => {
+                crate::dev_log!("[diagnostics] command returned error: {}", error);
+                let _ = user_log::write_user_log(
+                    &format!("mod_conflict_analyzer failed | {}", error),
+                    "error",
+                );
+                Err(error)
+            }
+            Err(payload) => {
+                let message = panic_message(payload);
+                let safe_message =
+                    "Analyzer failed unexpectedly while processing the current data.".to_string();
+                crate::dev_log!("[diagnostics] panic caught in analyzer: {}", message);
+                let _ = user_log::write_user_log(
+                    &format!("mod_conflict_analyzer panic | {}", message),
+                    "error",
+                );
+                Err(safe_message)
+            }
         },
         Err(error) => Err(format!("Analyzer task failed to join: {}", error)),
     };
@@ -151,24 +151,24 @@ pub async fn analyze_mod_conflict_diagnostics_deep(
     .await
     {
         Ok(inner) => match inner {
-        Ok(Ok(report)) => Ok(report),
-        Ok(Err(error)) => {
-            crate::dev_log!("[diagnostics] deep command returned error: {}", error);
-            let _ = user_log::write_user_log(
-                &format!("mod_conflict_analyzer deep failed | {}", error),
-                "error",
-            );
-            Err(error)
-        }
-        Err(payload) => {
-            let message = panic_message(payload);
-            crate::dev_log!("[diagnostics] panic caught in analyzer: {}", message);
-            let _ = user_log::write_user_log(
-                &format!("mod_conflict_analyzer deep panic | {}", message),
-                "error",
-            );
-            Err("Analyzer deep scan failed unexpectedly.".to_string())
-        }
+            Ok(Ok(report)) => Ok(report),
+            Ok(Err(error)) => {
+                crate::dev_log!("[diagnostics] deep command returned error: {}", error);
+                let _ = user_log::write_user_log(
+                    &format!("mod_conflict_analyzer deep failed | {}", error),
+                    "error",
+                );
+                Err(error)
+            }
+            Err(payload) => {
+                let message = panic_message(payload);
+                crate::dev_log!("[diagnostics] panic caught in analyzer: {}", message);
+                let _ = user_log::write_user_log(
+                    &format!("mod_conflict_analyzer deep panic | {}", message),
+                    "error",
+                );
+                Err("Analyzer deep scan failed unexpectedly.".to_string())
+            }
         },
         Err(error) => Err(format!("Analyzer deep task failed to join: {}", error)),
     };
@@ -194,7 +194,9 @@ pub fn export_mod_conflict_diagnostics_report(
     formatted: Option<bool>,
 ) -> Result<Option<String>, String> {
     let formatted = formatted.unwrap_or(false);
-    match catch_unwind(AssertUnwindSafe(|| export::export_report(&app, &report, formatted))) {
+    match catch_unwind(AssertUnwindSafe(|| {
+        export::export_report(&app, &report, formatted)
+    })) {
         Ok(Ok(path)) => {
             if let Some(path) = path.as_deref() {
                 crate::dev_log!(
@@ -212,7 +214,11 @@ pub fn export_mod_conflict_diagnostics_report(
             Ok(path)
         }
         Ok(Err(error)) => {
-            crate::dev_log!("[diagnostics] export failed formatted={} error={}", formatted, error);
+            crate::dev_log!(
+                "[diagnostics] export failed formatted={} error={}",
+                formatted,
+                error
+            );
             let _ = user_log::write_user_log(
                 &format!("mod_conflict_analyzer export failed | {}", error),
                 "error",

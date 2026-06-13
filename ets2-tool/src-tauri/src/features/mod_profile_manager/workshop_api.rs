@@ -1,12 +1,14 @@
-use super::models::{WorkshopInstallStatus, WorkshopMod};
+use super::models::{SteamWorkshopMod, WorkshopInstallStatus, WorkshopMod};
 use super::steam_paths;
 use regex::Regex;
 use serde::Deserialize;
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 
 const ETS2_APP_ID: u32 = 227300;
 const ETS2_APP_ID_STR: &str = "227300";
+const ATS_APP_ID: u32 = 270880;
 const PUBLISHED_FILE_DETAILS_URL: &str =
     "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/";
 
@@ -98,10 +100,10 @@ pub fn fetch_workshop_mod(input: &str) -> Result<WorkshopMod, String> {
         .or(details.creator_app_id)
         .ok_or_else(|| "Steam Workshop metadata did not include an AppID.".to_string())?;
 
-    if app_id != ETS2_APP_ID {
+    if !is_supported_workshop_app_id(app_id) {
         return Err(format!(
-            "Only Euro Truck Simulator 2 Workshop mods are supported. Expected AppID {}, got {}.",
-            ETS2_APP_ID, app_id
+            "Only ETS2/ATS Workshop mods are supported. Expected AppID {} or {}, got {}.",
+            ETS2_APP_ID, ATS_APP_ID, app_id
         ));
     }
 
@@ -117,17 +119,207 @@ pub fn fetch_workshop_mod(input: &str) -> Result<WorkshopMod, String> {
     })
 }
 
+pub fn is_supported_workshop_app_id(app_id: u32) -> bool {
+    matches!(app_id, ETS2_APP_ID | ATS_APP_ID)
+}
+
+pub fn game_name_for_app_id(app_id: u32) -> &'static str {
+    match app_id {
+        ETS2_APP_ID => "ETS2",
+        ATS_APP_ID => "ATS",
+        _ => "Unknown",
+    }
+}
+
+pub fn workshop_page_url(mod_id: &str) -> String {
+    format!(
+        "https://steamcommunity.com/sharedfiles/filedetails/?id={}",
+        mod_id.trim()
+    )
+}
+
+pub fn steam_protocol_url(mod_id: &str) -> String {
+    format!("steam://url/CommunityFilePage/{}", mod_id.trim())
+}
+
+pub fn steamcmd_download_command(app_id: u32, mod_id: &str) -> String {
+    format!(
+        "steamcmd +login anonymous +workshop_download_item {} {} +quit",
+        app_id,
+        mod_id.trim()
+    )
+}
+
+pub fn scan_installed_workshop_mods() -> Result<Vec<SteamWorkshopMod>, String> {
+    let libraries = steam_paths::get_steam_library_dirs()?;
+    let mut mods_by_key: BTreeMap<String, SteamWorkshopMod> = BTreeMap::new();
+    let mut ets2_count = 0usize;
+    let mut ats_count = 0usize;
+
+    crate::dev_log!(
+        "[mod-profile-manager] steam workshop scan libraries_found={}",
+        libraries.len()
+    );
+
+    for library_dir in libraries {
+        crate::dev_log!(
+            "[mod-profile-manager] steam workshop scan library={}",
+            library_dir.display()
+        );
+        for app_id in [ETS2_APP_ID, ATS_APP_ID] {
+            let workshop_root = library_dir
+                .join("steamapps")
+                .join("workshop")
+                .join("content")
+                .join(app_id.to_string());
+            crate::dev_log!(
+                "[mod-profile-manager] steam workshop scan path game={} app_id={} path={} exists={}",
+                game_name_for_app_id(app_id),
+                app_id,
+                workshop_root.display(),
+                workshop_root.is_dir()
+            );
+
+            if !workshop_root.is_dir() {
+                continue;
+            }
+
+            let entries = match fs::read_dir(&workshop_root) {
+                Ok(entries) => entries,
+                Err(error) => {
+                    crate::dev_log!(
+                        "[mod-profile-manager] steam workshop scan read_dir_failed app_id={} path={} error={}",
+                        app_id,
+                        workshop_root.display(),
+                        error
+                    );
+                    continue;
+                }
+            };
+
+            for entry in entries {
+                let entry = match entry {
+                    Ok(entry) => entry,
+                    Err(error) => {
+                        crate::dev_log!(
+                            "[mod-profile-manager] steam workshop scan entry_failed app_id={} path={} error={}",
+                            app_id,
+                            workshop_root.display(),
+                            error
+                        );
+                        continue;
+                    }
+                };
+
+                let path = entry.path();
+                if !path.is_dir() {
+                    continue;
+                }
+
+                let Some(workshop_id) = path
+                    .file_name()
+                    .and_then(|value| value.to_str())
+                    .map(str::trim)
+                    .filter(|value| {
+                        !value.is_empty()
+                            && value.chars().all(|character| character.is_ascii_digit())
+                    })
+                    .map(str::to_string)
+                else {
+                    crate::dev_log!(
+                        "[mod-profile-manager] steam workshop scan skipping_non_numeric_dir app_id={} path={}",
+                        app_id,
+                        path.display()
+                    );
+                    continue;
+                };
+
+                let reachable = path.exists();
+                let installed = path.is_dir();
+                let available =
+                    installed && reachable && !is_directory_empty(&path).unwrap_or(true);
+                let key = format!("{}:{}", app_id, workshop_id);
+                let mod_entry = SteamWorkshopMod {
+                    game: game_name_for_app_id(app_id).to_string(),
+                    app_id,
+                    workshop_id: workshop_id.clone(),
+                    installed,
+                    available,
+                    reachable,
+                    local_path: path.display().to_string(),
+                    workshop_url: workshop_page_url(&workshop_id),
+                };
+
+                crate::dev_log!(
+                    "[mod-profile-manager] steam workshop mod detected game={} app_id={} workshop_id={} installed={} available={} reachable={} path={}",
+                    mod_entry.game,
+                    mod_entry.app_id,
+                    mod_entry.workshop_id,
+                    mod_entry.installed,
+                    mod_entry.available,
+                    mod_entry.reachable,
+                    mod_entry.local_path
+                );
+
+                match app_id {
+                    ETS2_APP_ID => ets2_count += 1,
+                    ATS_APP_ID => ats_count += 1,
+                    _ => {}
+                }
+
+                match mods_by_key.get(&key) {
+                    Some(existing) if existing.available && !mod_entry.available => {}
+                    Some(existing)
+                        if existing.available == mod_entry.available
+                            && existing.reachable
+                            && !mod_entry.reachable => {}
+                    Some(existing)
+                        if existing.available == mod_entry.available
+                            && existing.reachable == mod_entry.reachable
+                            && existing.local_path <= mod_entry.local_path => {}
+                    _ => {
+                        mods_by_key.insert(key, mod_entry);
+                    }
+                }
+            }
+        }
+    }
+
+    crate::dev_log!(
+        "[mod-profile-manager] steam workshop scan completed ets2_mods={} ats_mods={} total_mods={}",
+        ets2_count,
+        ats_count,
+        mods_by_key.len()
+    );
+
+    Ok(mods_by_key.into_values().collect())
+}
+
 pub fn check_workshop_mod_installed(
     mod_id: &str,
     app_id: &str,
 ) -> Result<WorkshopInstallStatus, String> {
     let trimmed_mod_id = mod_id.trim();
     let trimmed_app_id = app_id.trim();
-    if !trimmed_mod_id.chars().all(|character| character.is_ascii_digit()) {
-        return Ok(failed_status(trimmed_mod_id, trimmed_app_id, "invalid_mod_id"));
+    if !trimmed_mod_id
+        .chars()
+        .all(|character| character.is_ascii_digit())
+    {
+        return Ok(failed_status(
+            trimmed_mod_id,
+            trimmed_app_id,
+            "invalid_mod_id",
+        ));
     }
-    if !trimmed_app_id.chars().all(|character| character.is_ascii_digit()) {
-        return Ok(failed_status(trimmed_mod_id, trimmed_app_id, "invalid_app_id"));
+    if !trimmed_app_id
+        .chars()
+        .all(|character| character.is_ascii_digit())
+    {
+        return Ok(failed_status(
+            trimmed_mod_id,
+            trimmed_app_id,
+            "invalid_app_id",
+        ));
     }
 
     crate::dev_log!(
@@ -139,7 +331,11 @@ pub fn check_workshop_mod_installed(
     let libraries = match steam_paths::resolve_steam_libraries_for_app(Some(trimmed_app_id)) {
         Ok(libraries) => libraries,
         Err(error) if error == "steam_not_found" => {
-            return Ok(failed_status(trimmed_mod_id, trimmed_app_id, "steam_not_found"));
+            return Ok(failed_status(
+                trimmed_mod_id,
+                trimmed_app_id,
+                "steam_not_found",
+            ));
         }
         Err(error) if error == "no_steam_libraries_found" => {
             return Ok(failed_status(

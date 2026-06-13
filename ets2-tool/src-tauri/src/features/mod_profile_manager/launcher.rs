@@ -49,10 +49,14 @@ pub fn open_external_url(url: &str) -> Result<(), String> {
                     return Ok(());
                 }
                 Ok(false) => {
-                    println!("[mod-profile-manager] open_external_url fallback={name} failed status");
+                    println!(
+                        "[mod-profile-manager] open_external_url fallback={name} failed status"
+                    );
                 }
                 Err(error) => {
-                    println!("[mod-profile-manager] open_external_url fallback={name} error={error}");
+                    println!(
+                        "[mod-profile-manager] open_external_url fallback={name} error={error}"
+                    );
                 }
             }
         }

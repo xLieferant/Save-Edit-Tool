@@ -1,16 +1,17 @@
 use super::compare;
-use super::discovery::{ScanMode, load_manager_state, scan_inventory, scan_inventory_with_mode};
+use super::discovery::{load_manager_state, scan_inventory, scan_inventory_with_mode, ScanMode};
 use super::models::{
     ApplySandboxResult, DiscoveredMod, GameType, ModPreset, ModSandbox, PresetCompareResult,
     PresetModEntry, SandboxCollection, SandboxModPreset, SandboxPresetActivationResult,
-    SandboxPresetCheckResult, WorkshopInstallStatus, WorkshopMod,
+    SandboxPresetCheckResult, SteamWorkshopCache, SteamWorkshopMod, WorkshopInstallStatus,
+    WorkshopMod,
 };
 use super::presets;
 use super::{launcher, sandbox, workshop_api};
 use crate::shared::user_log;
 use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 use std::any::Any;
-use std::panic::{AssertUnwindSafe, catch_unwind};
+use std::panic::{catch_unwind, AssertUnwindSafe};
 use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{AppHandle, State};
 use uuid::Uuid;
@@ -712,9 +713,52 @@ pub fn check_workshop_mods_download_status(
 }
 
 #[tauri::command]
+pub fn scan_steam_workshop_mods(app: AppHandle) -> Result<SteamWorkshopCache, String> {
+    crate::dev_log!("[SteamWorkshopCache] scan command called");
+    catch_command("scan_steam_workshop_mods", || {
+        sandbox::scan_steam_workshop_mods(&app)
+    })
+}
+
+#[tauri::command]
+pub fn load_steam_workshop_mod_cache(app: AppHandle) -> Result<SteamWorkshopCache, String> {
+    crate::dev_log!("[SteamWorkshopCache] load command called");
+    catch_command("load_steam_workshop_mod_cache", || {
+        sandbox::load_steam_workshop_mod_cache(&app)
+    })
+}
+
+#[tauri::command]
+pub fn refresh_workshop_mod_cache(app: AppHandle) -> Result<SteamWorkshopCache, String> {
+    crate::dev_log!("[SteamWorkshopCache] refresh command called");
+    catch_command("refresh_workshop_mod_cache", || {
+        sandbox::refresh_workshop_mod_cache(&app)
+    })
+}
+
+#[tauri::command]
+pub fn check_workshop_mod_available(
+    app: AppHandle,
+    app_id: u32,
+    workshop_id: String,
+) -> Result<SteamWorkshopMod, String> {
+    crate::dev_log!(
+        "[SteamWorkshopCache] check command called app_id={} workshop_id={}",
+        app_id,
+        workshop_id
+    );
+    catch_command("check_workshop_mod_available", || {
+        sandbox::check_workshop_mod_available(&app, app_id, &workshop_id)
+    })
+}
+
+#[tauri::command]
 pub fn load_sandbox_mod_presets() -> Result<Vec<SandboxModPreset>, String> {
     crate::dev_log!("[SandboxPreset] command load_sandbox_mod_presets");
-    catch_command("load_sandbox_mod_presets", sandbox::load_sandbox_mod_presets)
+    catch_command(
+        "load_sandbox_mod_presets",
+        sandbox::load_sandbox_mod_presets,
+    )
 }
 
 #[tauri::command]
@@ -723,7 +767,7 @@ pub fn check_sandbox_preset_mods(
     preset_id: String,
 ) -> Result<SandboxPresetCheckResult, String> {
     crate::dev_log!(
-        "[SandboxPreset] command check_sandbox_preset_mods preset_id={}",
+        "[SandboxPreset] check command called preset_id={}",
         preset_id
     );
     catch_command("check_sandbox_preset_mods", || {
@@ -731,25 +775,37 @@ pub fn check_sandbox_preset_mods(
     })
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub fn activate_sandbox_mod_preset(
     app: AppHandle,
     profile_state: State<'_, AppProfileState>,
     profile_cache: State<'_, ProfileCache>,
     decrypt_cache: State<'_, DecryptCache>,
     preset_id: String,
+    profile_id: Option<String>,
+    save_name: Option<String>,
+    game: Option<String>,
+    app_id: Option<u32>,
 ) -> Result<SandboxPresetActivationResult, String> {
     crate::dev_log!(
-        "[SandboxPreset] command activate_sandbox_mod_preset preset_id={}",
-        preset_id
+        "[mod_profile_manager] activate_sandbox_mod_preset entered preset_id={} profile_id={:?} save_name={:?} game={:?} app_id={:?}",
+        preset_id,
+        profile_id,
+        save_name,
+        game,
+        app_id
     );
     catch_command("activate_sandbox_mod_preset", || {
-        sandbox::activate_sandbox_mod_preset(
+        sandbox::activate_sandbox_mod_preset_profile_sii(
             &app,
             profile_state.inner(),
             profile_cache.inner(),
             decrypt_cache.inner(),
             &preset_id,
+            profile_id,
+            save_name,
+            game,
+            app_id,
         )
     })
 }

@@ -259,7 +259,13 @@ pub fn career_scan_profile_job_history(
     crate::dev_log!("[career] command: career_scan_profile_job_history");
     let selected_profile = profile_path
         .filter(|value| !value.trim().is_empty())
-        .or_else(|| profile.current_profile.lock().ok().and_then(|value| value.clone()))
+        .or_else(|| {
+            profile
+                .current_profile
+                .lock()
+                .ok()
+                .and_then(|value| value.clone())
+        })
         .ok_or_else(|| "No profile path available for analytics scan.".to_string())?;
     let selected_game = profile
         .selected_game

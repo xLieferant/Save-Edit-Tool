@@ -20,7 +20,8 @@ mod xp;
 fn main() {
     std::panic::set_hook(Box::new(|info| {
         crate::shared::logs::write_log(format!("[panic] {}", info));
-        let _ = crate::shared::user_log::user_log_error("App", format!("Application panic: {}", info));
+        let _ =
+            crate::shared::user_log::user_log_error("App", format!("Application panic: {}", info));
     }));
     crate::dev_log!("[app] starting");
     let _ = crate::shared::user_log::user_log_info("App", "Application start");
@@ -265,6 +266,10 @@ fn main() {
             features::mod_profile_manager::commands::check_workshop_mod_downloaded,
             features::mod_profile_manager::commands::check_workshop_mod_download_status,
             features::mod_profile_manager::commands::check_workshop_mods_download_status,
+            features::mod_profile_manager::commands::scan_steam_workshop_mods,
+            features::mod_profile_manager::commands::load_steam_workshop_mod_cache,
+            features::mod_profile_manager::commands::refresh_workshop_mod_cache,
+            features::mod_profile_manager::commands::check_workshop_mod_available,
             features::mod_profile_manager::commands::load_sandbox_mod_presets,
             features::mod_profile_manager::commands::check_sandbox_preset_mods,
             features::mod_profile_manager::commands::activate_sandbox_mod_preset,

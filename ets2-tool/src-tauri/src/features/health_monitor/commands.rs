@@ -29,7 +29,12 @@ pub async fn get_active_save_health(
     let decrypt_cache = decrypt_cache.inner().clone();
     let worker_context = context.clone();
     let result = tauri::async_runtime::spawn_blocking(move || {
-        service::analyze_resolved_save_health(worker_context, resolved, selected_game, &decrypt_cache)
+        service::analyze_resolved_save_health(
+            worker_context,
+            resolved,
+            selected_game,
+            &decrypt_cache,
+        )
     })
     .await
     .map_err(|error| format!("get_active_save_health join failed: {}", error))?;
@@ -52,10 +57,9 @@ pub async fn get_active_save_health(
         log_context
             .extra
             .insert("status".to_string(), report.status.clone());
-        log_context.extra.insert(
-            "problemCount".to_string(),
-            report.problem_count.to_string(),
-        );
+        log_context
+            .extra
+            .insert("problemCount".to_string(), report.problem_count.to_string());
         let _ = logging_service::record_info(
             "health_scan_completed",
             "Health scan completed for the active save.",

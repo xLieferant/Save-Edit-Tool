@@ -13,7 +13,13 @@ pub fn match_log_line(line: &str) -> Option<HeuristicMatch> {
     let normalized = line.to_ascii_lowercase();
     let has_error = normalized.contains("error");
     let has_warning = normalized.contains("warning");
-    let severity = if has_error { "ERROR" } else if has_warning { "WARNING" } else { "INFO" };
+    let severity = if has_error {
+        "ERROR"
+    } else if has_warning {
+        "WARNING"
+    } else {
+        "INFO"
+    };
 
     let rules: [(&str, HeuristicMatch); 15] = [
         (
@@ -216,7 +222,11 @@ pub fn match_log_line(line: &str) -> Option<HeuristicMatch> {
         });
     }
 
-    if has_warning && (normalized.contains("accessory") || normalized.contains("cargo") || normalized.contains("trailer")) {
+    if has_warning
+        && (normalized.contains("accessory")
+            || normalized.contains("cargo")
+            || normalized.contains("trailer"))
+    {
         return Some(HeuristicMatch {
             category: "Save / Asset Warning",
             title: "Asset warning",
@@ -234,7 +244,10 @@ pub fn match_log_line(line: &str) -> Option<HeuristicMatch> {
 pub fn classify_mod_category(text: &str) -> String {
     let normalized = text.to_ascii_lowercase();
 
-    if contains_any(&normalized, &["route advisor", "ui", "hud", "dashboard", "gps"]) {
+    if contains_any(
+        &normalized,
+        &["route advisor", "ui", "hud", "dashboard", "gps"],
+    ) {
         return "UI / Route Advisor Mod".to_string();
     }
     if contains_any(&normalized, &["traffic", "ai traffic", "jazzycat"]) {
@@ -243,13 +256,19 @@ pub fn classify_mod_category(text: &str) -> String {
     if contains_any(&normalized, &["cargo", "economy", "freight", "market"]) {
         return "Cargo Mod".to_string();
     }
-    if contains_any(&normalized, &["prefab", "map", "promods", "road", "city", "depot"]) {
+    if contains_any(
+        &normalized,
+        &["prefab", "map", "promods", "road", "city", "depot"],
+    ) {
         return "Map Mod".to_string();
     }
     if contains_any(&normalized, &["trailer", "krone", "schmitz"]) {
         return "Trailer Mod".to_string();
     }
-    if contains_any(&normalized, &["accessory", "interior", "wheel", "paint", "tuning"]) {
+    if contains_any(
+        &normalized,
+        &["accessory", "interior", "wheel", "paint", "tuning"],
+    ) {
         return "Accessory Mod".to_string();
     }
     if contains_any(

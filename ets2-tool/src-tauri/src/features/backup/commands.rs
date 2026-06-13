@@ -30,9 +30,14 @@ pub async fn list_active_save_backups(
 
     trace.finish_ok();
     let mut log_context = context;
-    log_context
-        .extra
-        .insert("backupCount".to_string(), result.as_ref().map(|items| items.len()).unwrap_or(0).to_string());
+    log_context.extra.insert(
+        "backupCount".to_string(),
+        result
+            .as_ref()
+            .map(|items| items.len())
+            .unwrap_or(0)
+            .to_string(),
+    );
     let _ = logging_service::record_info(
         "backup_list_loaded",
         "Backup list loaded for the active save.",

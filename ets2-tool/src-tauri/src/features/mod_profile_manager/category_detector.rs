@@ -1,7 +1,11 @@
 use super::models::ModCategory;
 use std::collections::BTreeSet;
 
-pub fn detect_categories(paths: &[String], manifest_categories: &[String], label_hints: &[String]) -> Vec<ModCategory> {
+pub fn detect_categories(
+    paths: &[String],
+    manifest_categories: &[String],
+    label_hints: &[String],
+) -> Vec<ModCategory> {
     let mut categories = BTreeSet::new();
 
     for value in manifest_categories {
@@ -39,7 +43,16 @@ pub fn categories_from_text(value: &str) -> Vec<ModCategory> {
     if contains_any(&normalized, &["trailer"]) {
         categories.insert(ModCategory::Trailer);
     }
-    if contains_any(&normalized, &["map", "road connection", "road_connection", "city addon", "ferry"]) {
+    if contains_any(
+        &normalized,
+        &[
+            "map",
+            "road connection",
+            "road_connection",
+            "city addon",
+            "ferry",
+        ],
+    ) {
         categories.insert(ModCategory::Map);
     }
     if contains_any(&normalized, &["cargo", "freight"]) {
@@ -48,16 +61,25 @@ pub fn categories_from_text(value: &str) -> Vec<ModCategory> {
     if contains_any(&normalized, &["traffic", "ai traffic"]) {
         categories.insert(ModCategory::Traffic);
     }
-    if contains_any(&normalized, &["economy", "damage", "fuel", "payout", "police", "fine"]) {
+    if contains_any(
+        &normalized,
+        &["economy", "damage", "fuel", "payout", "police", "fine"],
+    ) {
         categories.insert(ModCategory::Economy);
     }
     if contains_any(&normalized, &["sound", "audio", "engine sound"]) {
         categories.insert(ModCategory::Sound);
     }
-    if contains_any(&normalized, &["ui", "hud", "advisor", "route advisor", "interface"]) {
+    if contains_any(
+        &normalized,
+        &["ui", "hud", "advisor", "route advisor", "interface"],
+    ) {
         categories.insert(ModCategory::Ui);
     }
-    if contains_any(&normalized, &["graphic", "graphics", "weather", "texture", "visual"]) {
+    if contains_any(
+        &normalized,
+        &["graphic", "graphics", "weather", "texture", "visual"],
+    ) {
         categories.insert(ModCategory::Graphics);
     }
     if contains_any(&normalized, &["tuning", "accessory", "parts"]) {
@@ -96,7 +118,10 @@ pub fn categories_from_path(path: &str) -> Vec<ModCategory> {
     if normalized.contains("/def/economy") {
         categories.insert(ModCategory::Economy);
     }
-    if normalized.contains("/sound") || normalized.ends_with(".ogg") || normalized.ends_with(".bank") {
+    if normalized.contains("/sound")
+        || normalized.ends_with(".ogg")
+        || normalized.ends_with(".bank")
+    {
         categories.insert(ModCategory::Sound);
     }
     if normalized.contains("/ui") || normalized.ends_with(".sui") {
@@ -134,8 +159,5 @@ fn contains_any(value: &str, needles: &[&str]) -> bool {
 }
 
 fn normalize(value: &str) -> String {
-    value
-        .trim()
-        .replace('\\', "/")
-        .to_ascii_lowercase()
+    value.trim().replace('\\', "/").to_ascii_lowercase()
 }

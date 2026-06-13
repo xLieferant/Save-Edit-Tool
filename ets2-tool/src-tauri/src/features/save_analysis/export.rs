@@ -62,7 +62,10 @@ pub fn build_errors_report(report: &ModConflictAnalysisReport) -> String {
     out.push("== OVERVIEW ==".to_string());
     out.push(format!("status: {}", report.overview.status_badge));
     out.push(format!("summary: {}", report.overview.summary));
-    out.push(format!("confidence_note: {}", report.overview.confidence_note));
+    out.push(format!(
+        "confidence_note: {}",
+        report.overview.confidence_note
+    ));
     out.push(format!("disclaimer: {}", report.overview.disclaimer));
     out.push(String::new());
 
@@ -120,7 +123,10 @@ pub fn build_errors_report(report: &ModConflictAnalysisReport) -> String {
     out.push(String::new());
 
     out.push("== CRASH SUMMARY ==".to_string());
-    out.push(format!("crash_detected: {}", report.crash_summary.crash_detected));
+    out.push(format!(
+        "crash_detected: {}",
+        report.crash_summary.crash_detected
+    ));
     out.push(format!(
         "primary_category: {}",
         report
@@ -175,10 +181,7 @@ pub fn build_errors_report(report: &ModConflictAnalysisReport) -> String {
                 out.push(format!("   package: {}", package_name));
             }
             if !item.category_hints.is_empty() {
-                out.push(format!(
-                    "   categories: {}",
-                    item.category_hints.join(", ")
-                ));
+                out.push(format!("   categories: {}", item.category_hints.join(", ")));
             }
             for reason in &item.reasons {
                 out.push(format!("   - {}", reason));
@@ -284,7 +287,10 @@ pub fn build_pretty_report(report: &ModConflictAnalysisReport) -> String {
     out.push("Mod Conflict Analyzer Report".to_string());
     out.push("============================".to_string());
     out.push(format!("Generated at: {}", report.generated_at));
-    out.push(format!("Game: {}", report.context.selected_game.to_uppercase()));
+    out.push(format!(
+        "Game: {}",
+        report.context.selected_game.to_uppercase()
+    ));
     out.push(String::new());
 
     out.push(format!("Status: {}", report.overview.status_badge));
@@ -412,9 +418,5 @@ fn file_path_to_path_buf(path: tauri_plugin_dialog::FilePath) -> Result<PathBuf,
 }
 
 fn found_label(found: bool) -> &'static str {
-    if found {
-        "found"
-    } else {
-        "missing"
-    }
+    if found { "found" } else { "missing" }
 }

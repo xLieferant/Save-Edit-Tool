@@ -1278,6 +1278,10 @@
             "mod_sandbox_open_steam_console_failed": "Steam Console konnte nicht ge\u00f6ffnet werden. Pr\u00fcfe, ob Steam installiert ist.",
             "mod_sandbox_download_check_failed": "[NEEDS TRANSLATION] Download status could not be checked.",
             "mod_sandbox_download_status_refreshed": "[NEEDS TRANSLATION] Download status refreshed.",
+            "mod_sandbox_steam_mods_refreshed": "[NEEDS TRANSLATION] Steam Workshop Mods refreshed.",
+            "mod_sandbox_steam_mods_refresh_failed": "[NEEDS TRANSLATION] Steam Workshop Mods could not be refreshed.",
+            "mod_sandbox_steamcmd_copied": "[NEEDS TRANSLATION] SteamCMD command copied.",
+            "mod_sandbox_steamcmd_copy_failed": "[NEEDS TRANSLATION] SteamCMD command could not be copied.",
             "mod_sandbox_test_preset_imported": "[NEEDS TRANSLATION] Test preset imported.",
             "mod_sandbox_test_preset_failed": "[NEEDS TRANSLATION] Test preset could not be imported.",
             "mod_sandbox_apply_success_validated": "[NEEDS TRANSLATION] {applied_mod_count} mod(s) were set. {removed_existing_mod_count} old mod(s) were removed. The game.sii was re-read and validated successfully. Backup: {backup_path}",
@@ -1924,11 +1928,12 @@
                         "title": "Mod-Profil-Manager",
                         "description": "Gebündelte Sandbox-Presets laden, lokale Workshop-Installationen prüfen und das Preset in den aktiven Spielstand schreiben.",
                         "actions": {
-                              "reload_presets": "Presets neu laden",
+                              "reload_presets": "[NEEDS TRANSLATION] Refresh Steam Mods",
                               "open_steam_console": "Steam-Konsole öffnen",
                               "open_workshop": "Workshop öffnen",
                               "open_in_steam": "In Steam öffnen",
                               "check_mods": "Mods prüfen",
+                              "copy_steamcmd": "[NEEDS TRANSLATION] Copy SteamCMD Command",
                               "activate_preset": "Preset aktivieren"
                         },
                         "sections": {
@@ -1939,10 +1944,15 @@
                               "active_profile": "Aktives Profil",
                               "active_save": "Aktiver Save",
                               "steam_id": "Steam-ID",
+                              "workshop_id": "[NEEDS TRANSLATION] Workshop ID",
+                              "app_id": "[NEEDS TRANSLATION] App ID",
                               "mod_name": "Mod-Name",
                               "load_order": "Ladereihenfolge",
                               "local_path": "Lokaler Pfad",
+                              "available": "[NEEDS TRANSLATION] available",
+                              "reachable": "[NEEDS TRANSLATION] reachable",
                               "status": "Status",
+                              "mods_count": "[NEEDS TRANSLATION] Mods",
                               "verified_mods": "Verifizierte Mods"
                         },
                         "empty": {
@@ -1964,16 +1974,28 @@
                               "not_checked": "Nicht geprüft",
                               "ready": "Bereit",
                               "mod_missing": "Mod fehlt",
+                              "empty": "[NEEDS TRANSLATION] Empty preset",
                               "activating": "Wird aktiviert",
                               "activated": "Aktiv",
                               "error": "Fehler"
                         },
                         "hints": {
+                              "no_mods_configured": "[NEEDS TRANSLATION] No mods configured yet.",
                               "progress": "Der letzte Sandbox-Preset-Vorgang wird hier protokolliert.",
                               "not_checked": "Prüfe das Preset zuerst, bevor du es aktivierst.",
                               "ready": "Das Preset kann in den aktiven Save geschrieben werden.",
                               "activating": "Das Preset wird gerade geschrieben und verifiziert.",
                               "missing_install": "Diese Mod ist lokal nicht installiert. Öffne die Steam-Workshop-Seite, abonniere die Mod, warte bis Steam den Download abgeschlossen hat und klicke dann erneut auf Mods prüfen."
+                        },
+                        "mod_status": {
+                              "available": "[NEEDS TRANSLATION] Available",
+                              "not_downloaded": "[NEEDS TRANSLATION] Not Downloaded",
+                              "path_missing": "[NEEDS TRANSLATION] Path Missing",
+                              "unknown": "[NEEDS TRANSLATION] Unknown",
+                              "available_note": "[NEEDS TRANSLATION] Mod found locally.",
+                              "not_downloaded_note": "[NEEDS TRANSLATION] Mod not found locally.",
+                              "path_missing_note": "[NEEDS TRANSLATION] The cached local path is not reachable.",
+                              "unknown_note": "[NEEDS TRANSLATION] Status could not be checked."
                         },
                         "progress": {
                               "preset_loaded": "Preset geladen",

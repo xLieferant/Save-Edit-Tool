@@ -3,7 +3,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use chrono::{DateTime, NaiveDate, Utc};
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sha2::{Digest, Sha256};
@@ -420,7 +420,10 @@ pub fn scan_profile_job_history(
 
     let save_root = profile_dir.join("save");
     if !save_root.is_dir() {
-        return Err(format!("Save directory not found for profile: {}", normalized_profile));
+        return Err(format!(
+            "Save directory not found for profile: {}",
+            normalized_profile
+        ));
     }
 
     let mut scanned_saves = 0_i64;
@@ -826,7 +829,8 @@ fn build_summary(items: &[AnalyticsJobHistoryItem]) -> AnalyticsSummary {
         || summary.late_deliveries.is_none();
 
     if summary.known_profit_rows > 0 {
-        summary.average_profit_per_job = Some(total_profit as f64 / summary.known_profit_rows as f64);
+        summary.average_profit_per_job =
+            Some(total_profit as f64 / summary.known_profit_rows as f64);
     }
     if summary.known_profit_rows > 0 && total_distance_known && total_distance > 0.0 {
         summary.average_profit_per_km = Some(total_profit as f64 / total_distance);
@@ -843,7 +847,13 @@ fn build_charts(items: &[AnalyticsJobHistoryItem]) -> AnalyticsCharts {
         top_cargo: build_top_dimension(items, |item| item.cargo_name.clone(), 8),
         top_routes: build_top_dimension(
             items,
-            |item| Some(format!("{} -> {}", safe_label(item.source_city.as_deref()), safe_label(item.destination_city.as_deref()))),
+            |item| {
+                Some(format!(
+                    "{} -> {}",
+                    safe_label(item.source_city.as_deref()),
+                    safe_label(item.destination_city.as_deref())
+                ))
+            },
             8,
         ),
         damage_cost_analysis: build_damage_cost_chart(items),
@@ -857,13 +867,25 @@ fn build_filter_options(items: &[AnalyticsJobHistoryItem]) -> AnalyticsFilterOpt
     let mut destination_cities = BTreeSet::new();
 
     for item in items {
-        if let Some(value) = item.profile_name.as_deref().filter(|value| !value.trim().is_empty()) {
+        if let Some(value) = item
+            .profile_name
+            .as_deref()
+            .filter(|value| !value.trim().is_empty())
+        {
             profiles.insert(value.trim().to_string());
         }
-        if let Some(value) = item.cargo_name.as_deref().filter(|value| !value.trim().is_empty()) {
+        if let Some(value) = item
+            .cargo_name
+            .as_deref()
+            .filter(|value| !value.trim().is_empty())
+        {
             cargos.insert(value.trim().to_string());
         }
-        if let Some(value) = item.source_city.as_deref().filter(|value| !value.trim().is_empty()) {
+        if let Some(value) = item
+            .source_city
+            .as_deref()
+            .filter(|value| !value.trim().is_empty())
+        {
             source_cities.insert(value.trim().to_string());
         }
         if let Some(value) = item
@@ -1466,7 +1488,12 @@ fn build_csv(items: &[AnalyticsJobHistoryItem]) -> String {
     for item in items {
         let row = [
             csv_cell(item.started_at.as_deref().unwrap_or(&item.detected_at)),
-            csv_cell(item.profile_name.as_deref().or(item.profile_id.as_deref()).unwrap_or("")),
+            csv_cell(
+                item.profile_name
+                    .as_deref()
+                    .or(item.profile_id.as_deref())
+                    .unwrap_or(""),
+            ),
             csv_cell(item.game.as_deref().unwrap_or("")),
             csv_cell(&item.job_uid),
             csv_cell(&item.status),

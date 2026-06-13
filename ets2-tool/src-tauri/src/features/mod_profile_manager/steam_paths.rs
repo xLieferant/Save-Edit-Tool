@@ -86,10 +86,7 @@ pub fn discover_workshop_sources(game: GameType, manual_path: Option<&str>) -> S
         libraries.insert(normalize_key(root));
     }
 
-    let library_paths = libraries
-        .into_iter()
-        .map(PathBuf::from)
-        .collect::<Vec<_>>();
+    let library_paths = libraries.into_iter().map(PathBuf::from).collect::<Vec<_>>();
     let mut workshop_sources = library_paths
         .iter()
         .map(|library| WorkshopFolderSource {
@@ -161,7 +158,9 @@ fn resolve_steam_libraries(app_id: Option<&str>) -> Result<ResolvedSteamLibrarie
     let mut warnings = Vec::new();
     let steam_install_dir = find_steam_install_dir_with_warnings(&mut warnings)
         .ok_or_else(|| "steam_not_found".to_string())?;
-    let libraryfolders_vdf_path = steam_install_dir.join("steamapps").join("libraryfolders.vdf");
+    let libraryfolders_vdf_path = steam_install_dir
+        .join("steamapps")
+        .join("libraryfolders.vdf");
     crate::dev_log!(
         "[mod-profile-manager] steam install dir={}",
         steam_install_dir.display()
@@ -341,7 +340,9 @@ fn parse_library_folders_vdf(content: &str) -> Vec<LibraryFolderEntry> {
                 let inside_apps = block_stack.last().copied() == Some("apps");
                 if inside_apps {
                     if let Some(library) = current_library.as_mut() {
-                        if let Some(app_id) = captures.get(1).map(|value| value.as_str().to_string()) {
+                        if let Some(app_id) =
+                            captures.get(1).map(|value| value.as_str().to_string())
+                        {
                             library.app_ids.insert(app_id);
                         }
                     }
@@ -370,7 +371,9 @@ fn parse_library_folders_vdf(content: &str) -> Vec<LibraryFolderEntry> {
             if let Some(block) = block_stack.pop() {
                 if block == "library" {
                     if let Some(library) = current_library.take() {
-                        if let Some(path) = library.path.filter(|value| !value.as_os_str().is_empty()) {
+                        if let Some(path) =
+                            library.path.filter(|value| !value.as_os_str().is_empty())
+                        {
                             libraries.push(LibraryFolderEntry {
                                 path,
                                 app_ids: library.app_ids,
@@ -452,18 +455,8 @@ fn registry_steam_candidates() -> Vec<PathBuf> {
     let hkcu = RegKey::predef(HKEY_CURRENT_USER);
     let hklm = RegKey::predef(HKEY_LOCAL_MACHINE);
 
-    push_registry_value(
-        &mut candidates,
-        &hkcu,
-        r"Software\Valve\Steam",
-        "SteamPath",
-    );
-    push_registry_value(
-        &mut candidates,
-        &hkcu,
-        r"Software\Valve\Steam",
-        "SteamExe",
-    );
+    push_registry_value(&mut candidates, &hkcu, r"Software\Valve\Steam", "SteamPath");
+    push_registry_value(&mut candidates, &hkcu, r"Software\Valve\Steam", "SteamExe");
     push_registry_value(
         &mut candidates,
         &hkcu,
@@ -563,7 +556,10 @@ fn normalize_path(path: PathBuf) -> PathBuf {
 }
 
 fn normalize_key(path: &Path) -> String {
-    path.display().to_string().replace('\\', "/").to_ascii_lowercase()
+    path.display()
+        .to_string()
+        .replace('\\', "/")
+        .to_ascii_lowercase()
 }
 
 #[cfg(test)]
@@ -613,7 +609,10 @@ mod tests {
 
         let entries = parse_library_folders_vdf(content);
         assert_eq!(entries.len(), 2);
-        assert_eq!(entries[0].path, PathBuf::from(r"C:\Program Files (x86)\Steam"));
+        assert_eq!(
+            entries[0].path,
+            PathBuf::from(r"C:\Program Files (x86)\Steam")
+        );
         assert!(entries[0].app_ids.contains("227300"));
         assert_eq!(entries[1].path, PathBuf::from(r"D:\SteamLibrary"));
         assert!(entries[1].app_ids.contains("730"));

@@ -99,13 +99,8 @@ pub fn create_backup_for_targets_with_type(
 
     let mut files = Vec::new();
     for live_path in normalized_targets {
-        let bytes = fs::read(&live_path).map_err(|error| {
-            format!(
-                "Backup could not read {}: {}",
-                live_path.display(),
-                error
-            )
-        })?;
+        let bytes = fs::read(&live_path)
+            .map_err(|error| format!("Backup could not read {}: {}", live_path.display(), error))?;
         let relative_path = relative_label_for_target(
             &live_path,
             resolved
@@ -154,7 +149,8 @@ pub fn create_backup_for_targets_with_type(
         files: files.clone(),
     };
 
-    let metadata_json = serde_json::to_string_pretty(&metadata).map_err(|error| error.to_string())?;
+    let metadata_json =
+        serde_json::to_string_pretty(&metadata).map_err(|error| error.to_string())?;
     fs::write(storage_dir.join(BACKUP_METADATA_FILE), metadata_json).map_err(|error| {
         format!(
             "Backup metadata could not be written to {}: {}",
@@ -190,7 +186,9 @@ pub fn create_backup_for_targets_with_type(
     .map_err(|error| error.to_string())?;
 
     let mut log_context = context;
-    log_context.extra.insert("backupId".to_string(), backup_id.clone());
+    log_context
+        .extra
+        .insert("backupId".to_string(), backup_id.clone());
     log_context
         .extra
         .insert("backupType".to_string(), backup_type.to_string());
@@ -216,7 +214,9 @@ pub fn create_backup_for_targets_with_type(
     })
 }
 
-pub fn list_backups_for_active_save(profile_state: &AppProfileState) -> Result<Vec<BackupVersionDto>, String> {
+pub fn list_backups_for_active_save(
+    profile_state: &AppProfileState,
+) -> Result<Vec<BackupVersionDto>, String> {
     let resolved = snapshot_resolved_save_context(profile_state).ok();
     let save_session_id = resolved
         .as_ref()
@@ -273,9 +273,13 @@ pub fn build_restore_preview(backup_id: &str) -> Result<BackupRestorePreviewDto,
     let mut notes = Vec::new();
 
     for file in &metadata.files {
-        let backup_bytes = fs::read(loaded.storage_dir.join(&file.stored_path)).map_err(|error| {
-            format!("The stored backup file {} could not be read: {}", file.relative_path, error)
-        })?;
+        let backup_bytes =
+            fs::read(loaded.storage_dir.join(&file.stored_path)).map_err(|error| {
+                format!(
+                    "The stored backup file {} could not be read: {}",
+                    file.relative_path, error
+                )
+            })?;
         let current_bytes = fs::read(&file.live_path).ok();
         let checksum_before = current_bytes
             .as_deref()
@@ -300,8 +304,7 @@ pub fn build_restore_preview(backup_id: &str) -> Result<BackupRestorePreviewDto,
         let current_text = current_bytes
             .as_deref()
             .and_then(|bytes| decode_text_bytes(bytes, &file.live_path, &[]).ok());
-        let backup_text =
-            decode_text_bytes(&backup_bytes, &file.relative_path, &[]).ok();
+        let backup_text = decode_text_bytes(&backup_bytes, &file.relative_path, &[]).ok();
 
         let changes = match (current_text.as_deref(), backup_text.as_deref()) {
             (Some(before), Some(after)) => build_value_diffs(before, after),
@@ -628,7 +631,10 @@ fn extract_key_values(text: &str) -> BTreeMap<String, String> {
 
         if let Some(rest) = trimmed.strip_prefix("uset ") {
             if let Some((key, value)) = rest.split_once(' ') {
-                values.insert(key.trim().to_string(), value.trim().trim_matches('"').to_string());
+                values.insert(
+                    key.trim().to_string(),
+                    value.trim().trim_matches('"').to_string(),
+                );
                 continue;
             }
         }

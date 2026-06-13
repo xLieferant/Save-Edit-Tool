@@ -1,4 +1,4 @@
-use tauri::{command, AppHandle, State};
+use tauri::{AppHandle, State, command};
 
 use crate::shared::user_log::{self, UserLogEntry, UserLogStatus};
 use crate::state::AppProfileState;
@@ -78,7 +78,10 @@ pub fn log_diagnostics_event(
     let message = if normalized_detail.is_empty() {
         format!("Diagnostics event: {}", normalized_event)
     } else {
-        format!("Diagnostics event: {} | {}", normalized_event, normalized_detail)
+        format!(
+            "Diagnostics event: {} | {}",
+            normalized_event, normalized_detail
+        )
     };
 
     if user_visible.unwrap_or(false) {

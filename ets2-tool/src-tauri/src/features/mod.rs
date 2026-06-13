@@ -1,5 +1,5 @@
-pub mod backup;
 pub mod auth;
+pub mod backup;
 pub mod bank;
 pub mod career;
 pub mod career_onboarding;

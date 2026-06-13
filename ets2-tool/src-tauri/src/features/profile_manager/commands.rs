@@ -11,7 +11,7 @@ use crate::shared::hex_float::decode_hex_folder_name;
 use crate::shared::paths::ats_base_path;
 use crate::shared::paths::ets2_base_path;
 use crate::shared::paths::get_base_path;
-use crate::shared::trace::{lock_mutex, TraceScope};
+use crate::shared::trace::{TraceScope, lock_mutex};
 use crate::shared::user_log;
 use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 use serde::{Deserialize, Serialize};
@@ -114,12 +114,12 @@ pub fn set_active_profile(
     cache: State<'_, DecryptCache>,
     profile_cache: State<'_, ProfileCache>,
 ) -> Result<(), String> {
-    let mut trace = TraceScope::with_fields(
-        "set_active_profile",
-        &[("path", profile_path.clone())],
-    );
-    *lock_mutex("profile_state.current_profile", &profile_state.current_profile)? =
-        Some(profile_path.clone());
+    let mut trace =
+        TraceScope::with_fields("set_active_profile", &[("path", profile_path.clone())]);
+    *lock_mutex(
+        "profile_state.current_profile",
+        &profile_state.current_profile,
+    )? = Some(profile_path.clone());
 
     // 🔥 Cache vollständig leeren
     clear_decrypt_cache(cache.inner())?;
@@ -162,10 +162,8 @@ pub fn switch_profile(
 ) -> Result<(), String> {
     // 🔥 Cache vollständig leeren
     clear_decrypt_cache(cache.inner())?;
-    let mut trace = TraceScope::with_fields(
-        "switch_profile",
-        &[("path", new_profile_path.clone())],
-    );
+    let mut trace =
+        TraceScope::with_fields("switch_profile", &[("path", new_profile_path.clone())]);
     profile_cache.reset_profile(Some(new_profile_path.clone()));
 
     dev_log!("Profil gewechselt: {} → Cache geleert", new_profile_path);
@@ -176,10 +174,8 @@ pub fn switch_profile(
 
 #[command]
 pub async fn find_profile_saves(profile_path: String) -> Result<Vec<SaveInfo>, String> {
-    let mut trace = TraceScope::with_fields(
-        "find_profile_saves",
-        &[("path", profile_path.clone())],
-    );
+    let mut trace =
+        TraceScope::with_fields("find_profile_saves", &[("path", profile_path.clone())]);
     let result = tauri::async_runtime::spawn_blocking(move || scan_profile_saves(&profile_path))
         .await
         .map_err(|error| format!("find_profile_saves join failed: {}", error))?;
@@ -376,7 +372,10 @@ pub fn find_ets2_profiles(state: State<'_, AppProfileState>) -> Vec<ProfileInfo>
     );
     let _ = user_log::user_log_info(
         "ProfileManager",
-        format!("Profile search completed. Found {} profiles.", found_profiles.len()),
+        format!(
+            "Profile search completed. Found {} profiles.",
+            found_profiles.len()
+        ),
     );
     found_profiles
 }
@@ -389,10 +388,7 @@ pub fn load_profile(
     cache: State<'_, DecryptCache>,
     profile_cache: State<'_, ProfileCache>,
 ) -> Result<String, String> {
-    let mut trace = TraceScope::with_fields(
-        "load_profile",
-        &[("path", profile_path.clone())],
-    );
+    let mut trace = TraceScope::with_fields("load_profile", &[("path", profile_path.clone())]);
     let save_path_str = save_path.ok_or_else(|| "Kein Save angegeben".to_string())?;
     let save_to_load = PathBuf::from(save_path_str);
 

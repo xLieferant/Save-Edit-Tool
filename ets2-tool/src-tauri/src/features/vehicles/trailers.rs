@@ -1,12 +1,14 @@
-use super::{load_save_content, load_save_content_from_save_path, resolve_active_save_from_snapshot};
+use super::{
+    load_save_content, load_save_content_from_save_path, resolve_active_save_from_snapshot,
+};
 use crate::dev_log;
 use crate::models::trailers::{ParsedTrailer, TrailerData, TrailerDefData};
 use crate::shared::paths::game_sii_from_save;
-use crate::shared::trace::TraceScope;
 use crate::shared::sii_parser::{
     get_player_id, get_vehicle_ids, parse_trailer_defs_from_sii, parse_trailers_from_sii,
     parse_trucks_from_sii,
 };
+use crate::shared::trace::TraceScope;
 use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 use tauri::command;
 
@@ -44,8 +46,8 @@ pub async fn get_player_trailer(
             .map(|trailer_data| parsed_trailer_from_data(trailer_data, &defs_data))
             .collect();
         let trucks_data = parse_trucks_from_sii(&content);
-        let player_id =
-            get_player_id(&content).ok_or("Player ID nicht im economy block gefunden".to_string())?;
+        let player_id = get_player_id(&content)
+            .ok_or("Player ID nicht im economy block gefunden".to_string())?;
         let (player_truck_id_opt, player_trailer_id_opt) = get_vehicle_ids(&content, &player_id);
 
         let player_trailer = match player_trailer_id_opt {
@@ -62,7 +64,15 @@ pub async fn get_player_trailer(
             None => None,
         };
 
-        Ok::<(Vec<ParsedTrailer>, Option<ParsedTrailer>, Vec<crate::models::trucks::ParsedTruck>, Option<String>), String>((
+        Ok::<
+            (
+                Vec<ParsedTrailer>,
+                Option<ParsedTrailer>,
+                Vec<crate::models::trucks::ParsedTruck>,
+                Option<String>,
+            ),
+            String,
+        >((
             parsed_trailers,
             player_trailer,
             trucks_data,
