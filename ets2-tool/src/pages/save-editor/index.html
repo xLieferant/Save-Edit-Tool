@@ -1617,8 +1617,42 @@
               <div class="mod-profile-panel-head">
                 <div>
                   <span class="detail-card-label" data-translate="modals.mod_profile_manager.sandbox.sections.presets">Sandbox Presets</span>
+                  <p data-translate="modals.mod_profile_manager.sandbox.sections.presets_description">Validate and activate bundled mod sandbox presets.</p>
+                </div>
+                <div class="sandbox-presets-head-actions">
                   <strong id="modSandboxCount">0</strong>
                 </div>
+              </div>
+              <div class="sandbox-presets-toolbar">
+                <label class="sandbox-preset-filter sandbox-preset-filter--search">
+                  <span data-translate="modals.mod_profile_manager.sandbox.filters.search">Search</span>
+                  <input
+                    id="modSandboxSearchInput"
+                    type="search"
+                    data-translate-placeholder="modals.mod_profile_manager.sandbox.filters.search_placeholder"
+                    placeholder="Search presets"
+                  />
+                </label>
+                <label class="sandbox-preset-filter">
+                  <span data-translate="modals.mod_profile_manager.sandbox.filters.game">Game</span>
+                  <select id="modSandboxGameFilter">
+                    <option value="all" data-translate="modals.mod_profile_manager.sandbox.filters.all">All</option>
+                    <option value="ets2">ETS2</option>
+                    <option value="ats">ATS</option>
+                  </select>
+                </label>
+                <label class="sandbox-preset-filter">
+                  <span data-translate="modals.mod_profile_manager.sandbox.filters.status">Status</span>
+                  <select id="modSandboxStatusFilter">
+                    <option value="all" data-translate="modals.mod_profile_manager.sandbox.filters.all">All</option>
+                    <option value="ready" data-translate="modals.mod_profile_manager.sandbox.preset_status.ready">Ready</option>
+                    <option value="needs-check" data-translate="modals.mod_profile_manager.sandbox.preset_status.needs_check">Needs Check</option>
+                    <option value="missing" data-translate="modals.mod_profile_manager.sandbox.preset_status.missing_mods">Missing Mods</option>
+                    <option value="active" data-translate="modals.mod_profile_manager.sandbox.preset_status.activated">Active</option>
+                    <option value="disabled" data-translate="modals.mod_profile_manager.sandbox.preset_status.disabled">Disabled</option>
+                    <option value="error" data-translate="modals.mod_profile_manager.sandbox.preset_status.error">Error</option>
+                  </select>
+                </label>
               </div>
               <div id="modSandboxPresetList" class="sandbox-preset-list"></div>
               <div id="modSandboxEmpty" class="modal-empty-state" hidden>

@@ -62,6 +62,12 @@ fn main() {
             crate::dev_log!("[app] setup begin");
             let _ = crate::shared::user_log::user_log_info("App", "App setup started");
 
+            crate::dev_log!("[app] setup initialize translator");
+            match features::language::translator::initialize_translator(&handle) {
+                Ok(()) => crate::dev_log!("[language] translator initialized"),
+                Err(error) => crate::dev_log!("[language] translator init failed: {}", error),
+            }
+
             let db_path = db::sqlite::app_db_path();
             crate::dev_log!("[app] setup init db: {}", db_path.display());
             match features::career::db::init_logbook(&db_path) {

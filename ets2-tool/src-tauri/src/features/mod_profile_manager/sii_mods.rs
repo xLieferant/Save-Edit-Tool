@@ -718,7 +718,7 @@ fn write_text_atomic(path: &Path, content: &str) -> Result<(), String> {
 #[cfg(target_os = "windows")]
 fn replace_file(tmp_path: &Path, target_path: &Path) -> Result<(), String> {
     use windows_sys::Win32::Storage::FileSystem::{
-        MoveFileExW, MOVEFILE_REPLACE_EXISTING, MOVEFILE_WRITE_THROUGH,
+        MOVEFILE_REPLACE_EXISTING, MOVEFILE_WRITE_THROUGH, MoveFileExW,
     };
 
     fn wide_null(value: &Path) -> Vec<u16> {
@@ -801,9 +801,11 @@ mod tests {
             vec!["mod_workshop_package.dd233e2b".to_string()]
         );
         assert!(result.content.contains(r#"active_mods: 1"#));
-        assert!(result
-            .content
-            .contains(r#"active_mods[0]: "mod_workshop_package.dd233e2b""#));
+        assert!(
+            result
+                .content
+                .contains(r#"active_mods[0]: "mod_workshop_package.dd233e2b""#)
+        );
         assert!(!result.content.contains(r#"active_mods[1]"#));
     }
 
@@ -816,9 +818,11 @@ mod tests {
         .unwrap();
 
         assert!(result.content.contains(r#"actived_mods: 1"#));
-        assert!(result
-            .content
-            .contains(r#"actived_mods[0]: "mod_workshop_package.000001c8""#));
+        assert!(
+            result
+                .content
+                .contains(r#"actived_mods[0]: "mod_workshop_package.000001c8""#)
+        );
         assert!(!result.content.contains("active_mods[0]"));
     }
 

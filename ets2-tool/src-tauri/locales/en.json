@@ -1950,14 +1950,25 @@
                               "open_workshop": "Open Workshop",
                               "open_in_steam": "Open in Steam",
                               "copy_steamcmd": "Copy SteamCMD Command",
+                              "details": "Details",
                               "check_mods": "Check Mods",
                               "activate_preset": "Activate Preset"
                         },
                         "sections": {
                               "presets": "Sandbox Presets",
+                              "presets_description": "Validate and activate bundled mod sandbox presets.",
                               "progress": "Preset Workflow"
                         },
+                        "filters": {
+                              "search": "Search",
+                              "search_placeholder": "Search presets",
+                              "game": "Game",
+                              "status": "Status",
+                              "all": "All"
+                        },
                         "fields": {
+                              "id": "ID",
+                              "game": "Game",
                               "active_profile": "Active Profile",
                               "active_save": "Active Save",
                               "steam_id": "Steam ID",
@@ -1970,11 +1981,21 @@
                               "reachable": "reachable",
                               "status": "Status",
                               "mods_count": "Mods",
-                              "verified_mods": "Verified Mods"
+                              "verified_mods": "Verified Mods",
+                              "last_check": "Last Check",
+                              "required": "Required",
+                              "installed": "Installed",
+                              "actions": "Actions",
+                              "enabled": "Enabled",
+                              "load_order_locked": "Load Order locked",
+                              "load_order_unlocked": "Load Order unlocked",
+                              "yes": "Yes",
+                              "no": "No"
                         },
                         "empty": {
                               "title": "No presets available",
-                              "body": "No sandbox presets are bundled yet."
+                              "body": "No sandbox presets are bundled yet.",
+                              "filtered": "No presets match the current filters."
                         },
                         "status": {
                               "active_save_ready": "Active save ready",
@@ -1989,12 +2010,19 @@
                         },
                         "preset_status": {
                               "not_checked": "Not checked",
+                              "needs_check": "Needs Check",
                               "ready": "Ready",
                               "mod_missing": "Mod missing",
+                              "missing_mods": "Missing Mods",
+                              "disabled": "Disabled",
                               "empty": "Empty preset",
                               "activating": "Activating",
                               "activated": "Active",
                               "error": "Error"
+                        },
+                        "details": {
+                              "kicker": "Preset details",
+                              "title": "Preset: {title}"
                         },
                         "hints": {
                               "progress": "The latest sandbox preset operation is logged here.",

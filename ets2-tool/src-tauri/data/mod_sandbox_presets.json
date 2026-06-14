@@ -2,21 +2,21 @@
   "sandbox_presets": [
     {
       "id": "test",
-      "title": "Test",
-      "description": "Test preset for Mod Profile Manager sandbox validation.",
+      "title": "WiP",
+      "description": "Work in progress.",
       "game": "ets2",
       "app_id": 227300,
-      "enabled": true,
+      "enabled": false,
       "load_order_locked": true,
       "mods": [
         {
-          "steam_id": "3710074411",
+          "steam_id": "",
           "app_id": 227300,
           "required": true,
-          "display_name": "Test",
+          "display_name": "",
           "load_order": 0,
-          "workshop_url": "https://steamcommunity.com/sharedfiles/filedetails/?id=3710074411",
-          "steam_protocol_url": "steam://url/CommunityFilePage/3710074411"
+          "workshop_url": "",
+          "steam_protocol_url": "steam://url/CommunityFilePage/"
         }
       ]
     },
@@ -27,14 +27,14 @@
       "game": "ets2",
       "app_id": 227300,
       "enabled": true,
-      "load_order_locked": true,
+      "load_order_locked": false,
       "mods": [
         {
           "source": "local",
           "package_id": "promods-eu-def-v282",
           "active_mods_value": "promods-eu-def-v282|ProMods Definition Package",
           "app_id": 227300,
-          "required": true,
+          "required": false,
           "display_name": "ProMods Definition Package",
           "load_order": 0
         },
@@ -43,7 +43,7 @@
           "package_id": "promods-eu-map-v282",
           "active_mods_value": "promods-eu-map-v282|ProMods Map Package",
           "app_id": 227300,
-          "required": true,
+          "required": false,
           "display_name": "ProMods Map Package",
           "load_order": 1
         },
@@ -52,7 +52,7 @@
           "package_id": "promods-eu-assets-v282",
           "active_mods_value": "promods-eu-assets-v282|ProMods Assets Package",
           "app_id": 227300,
-          "required": true,
+          "required": false,
           "display_name": "ProMods Assets Package",
           "load_order": 2
         },
@@ -61,7 +61,7 @@
           "package_id": "promods-eu-model1-v282",
           "active_mods_value": "promods-eu-model1-v282|ProMods Models Package 1",
           "app_id": 227300,
-          "required": true,
+          "required": false,
           "display_name": "ProMods Models Package 1",
           "load_order": 3
         },
@@ -70,7 +70,7 @@
           "package_id": "promods-eu-model2-v282",
           "active_mods_value": "promods-eu-model2-v282|ProMods Models Package 2",
           "app_id": 227300,
-          "required": true,
+          "required": false,
           "display_name": "ProMods Models Package 2",
           "load_order": 4
         },
@@ -79,7 +79,7 @@
           "package_id": "promods-eu-model3-v282",
           "active_mods_value": "promods-eu-model3-v282|ProMods Models Package 3",
           "app_id": 227300,
-          "required": true,
+          "required": false,
           "display_name": "ProMods Models Package 3",
           "load_order": 5
         },
@@ -88,7 +88,7 @@
           "package_id": "promods-eu-media-v282",
           "active_mods_value": "promods-eu-media-v282|ProMods Media Package",
           "app_id": 227300,
-          "required": true,
+          "required": false,
           "display_name": "ProMods Media Package",
           "load_order": 6
         },
@@ -97,7 +97,7 @@
           "package_id": "promods-eu-dlcsupport-v282",
           "active_mods_value": "promods-eu-dlcsupport-v282|ProMods DLC Support Package",
           "app_id": 227300,
-          "required": true,
+          "required": false,
           "display_name": "ProMods DLC Support Package",
           "load_order": 7
         },
@@ -274,7 +274,7 @@
           "package_id": "BKC_Bussbygg_3_ax_drawbar",
           "active_mods_value": "BKC_Bussbygg_3_ax_drawbar|BKC Bussbygg 3 axle drawbar trailer",
           "app_id": 227300,
-          "required": true,
+          "required": false,
           "display_name": "BKC Bussbygg 3 axle drawbar trailer",
           "load_order": 22
         },
@@ -594,21 +594,21 @@
     },
     {
       "id": "performance_safe",
-      "title": "Performance Safe",
+      "title": "Work in progress",
       "description": "Safe preset for stable FPS and minimal compatibility risk.",
       "game": "ets2",
       "app_id": 227300,
-      "enabled": true,
+      "enabled": false,
       "load_order_locked": true,
       "mods": []
     },
     {
       "id": "full_realism",
-      "title": "Full Realism",
+      "title": "Work in progress",
       "description": "Full realism preset for economy, traffic, sounds, visuals and immersion.",
       "game": "ets2",
       "app_id": 227300,
-      "enabled": true,
+      "enabled": false,
       "load_order_locked": true,
       "mods": []
     }

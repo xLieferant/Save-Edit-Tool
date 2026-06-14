@@ -316,6 +316,9 @@ const modSteamConsoleBtn = document.getElementById("modSteamConsoleBtn");
 const modSandboxCount = document.getElementById("modSandboxCount");
 const modSandboxPresetList = document.getElementById("modSandboxPresetList");
 const modSandboxEmpty = document.getElementById("modSandboxEmpty");
+const modSandboxSearchInput = document.getElementById("modSandboxSearchInput");
+const modSandboxGameFilter = document.getElementById("modSandboxGameFilter");
+const modSandboxStatusFilter = document.getElementById("modSandboxStatusFilter");
 const modActiveProfileName = document.getElementById("modActiveProfileName");
 const modActiveSaveName = document.getElementById("modActiveSaveName");
 const modSandboxProgressList = document.getElementById("modSandboxProgressList");
@@ -2789,6 +2792,12 @@ const modProfileManagerState = {
   loading: false,
   checkingPresetId: null,
   activatingPresetId: null,
+  detailsPresetId: null,
+  filters: {
+    search: "",
+    game: "all",
+    status: "all",
+  },
   progressLog: [],
 };
 
@@ -2826,6 +2835,13 @@ function sandboxPresetModAppId(mod) {
 
 function sandboxPresetMods(preset) {
   return Array.isArray(preset?.mods) ? preset.mods : [];
+}
+
+function sandboxPresetDetailMods(preset) {
+  const presetMods = sandboxPresetMods(preset);
+  if (presetMods.length) return presetMods;
+  const check = getSandboxPresetCheck(preset?.id || "");
+  return check?.all_mods || check?.mods || check?.found_mods || [];
 }
 
 function sandboxStatusCacheKey(appId, workshopId) {
@@ -3132,15 +3148,15 @@ async function renderSandboxResult(result) {
 async function sandboxPresetStatusPresentation(preset) {
   if (sandboxPresetMods(preset).length === 0) {
     return {
-      label: await window.t("modals.mod_profile_manager.sandbox.preset_status.empty"),
-      state: "empty",
+      label: await window.t("modals.mod_profile_manager.sandbox.preset_status.disabled"),
+      state: "disabled",
     };
   }
 
   if (modProfileManagerState.activatingPresetId === preset.id) {
     return {
       label: await window.t("modals.mod_profile_manager.sandbox.preset_status.activating"),
-      state: "warning",
+      state: "needs-check",
     };
   }
 
@@ -3148,7 +3164,7 @@ async function sandboxPresetStatusPresentation(preset) {
   if (activation?.success) {
     return {
       label: await window.t("modals.mod_profile_manager.sandbox.preset_status.activated"),
-      state: "success",
+      state: "active",
     };
   }
   if (activation && activation.success === false) {
@@ -3169,159 +3185,141 @@ async function sandboxPresetStatusPresentation(preset) {
   const check = getSandboxPresetCheck(preset.id);
   if (!check) {
     return {
-      label: await window.t("modals.mod_profile_manager.sandbox.preset_status.not_checked"),
-      state: "neutral",
+      label: await window.t("modals.mod_profile_manager.sandbox.preset_status.needs_check"),
+      state: "needs-check",
     };
   }
   if (check.ready) {
     return {
       label: await window.t("modals.mod_profile_manager.sandbox.preset_status.ready"),
-      state: "success",
+      state: "ready",
     };
   }
   return {
-    label: await window.t("modals.mod_profile_manager.sandbox.preset_status.mod_missing"),
-    state: "warning",
+    label: await window.t("modals.mod_profile_manager.sandbox.preset_status.missing_mods"),
+    state: "missing",
   };
+}
+
+function sandboxPresetGameMeta(preset) {
+  const presetMods = sandboxPresetMods(preset);
+  const appId = Number(preset?.app_id || presetMods[0]?.app_id || 227300);
+  const normalizedAppId = Number.isFinite(appId) && appId > 0 ? appId : 227300;
+  const rawGame = String(preset?.game || presetMods[0]?.game || "").toLowerCase();
+  const game = rawGame.includes("ats") || normalizedAppId === 270880 ? "ATS" : "ETS2";
+  return { game, appId: normalizedAppId };
+}
+
+function sandboxPresetStatusFilterValue(preset) {
+  if (sandboxPresetMods(preset).length === 0) return "disabled";
+  if (modProfileManagerState.activatingPresetId === preset.id) return "needs-check";
+  const activation = getSandboxPresetActivation(preset.id);
+  if (activation?.success) return "active";
+  if (activation && activation.success === false) return "error";
+  if (getSandboxPresetCheckError(preset.id)) return "error";
+  const check = getSandboxPresetCheck(preset.id);
+  if (!check) return "needs-check";
+  return check.ready ? "ready" : "missing";
+}
+
+function sandboxPresetStatusEntries(preset) {
+  const check = getSandboxPresetCheck(preset.id);
+  const entries = [
+    ...(check?.mods || []),
+    ...(check?.all_mods || []),
+    ...(check?.found_mods || []),
+    ...(check?.missing_mods || []),
+  ];
+  return {
+    check,
+    entries,
+    byKey: new Map(entries.map((entry) => [sandboxPresetModStatusKey(entry), entry])),
+  };
+}
+
+function sandboxPresetCanActivate(preset) {
+  const presetMods = sandboxPresetMods(preset);
+  if (!presetMods.length) return false;
+  const { check } = sandboxPresetStatusEntries(preset);
+  const statuses = check?.mods || check?.all_mods || [];
+  const missingRequiredStatuses = statuses
+    .filter((status) => status.required)
+    .filter((status) => !(status.available === true && status.reachable === true));
+  return Boolean(check?.ready || check?.can_activate)
+    && missingRequiredStatuses.length === 0
+    && hasActiveSaveSelected()
+    && !modProfileManagerState.loading
+    && modProfileManagerState.checkingPresetId !== preset.id
+    && modProfileManagerState.activatingPresetId !== preset.id;
+}
+
+function sandboxPresetLastCheckLabel(check) {
+  if (!check?.checked_at) return "-";
+  const parsed = new Date(check.checked_at);
+  if (Number.isNaN(parsed.getTime())) return String(check.checked_at);
+  return parsed.toLocaleString();
+}
+
+function sandboxPresetSearchText(preset) {
+  return [
+    preset?.id,
+    preset?.title,
+    preset?.name,
+    preset?.description,
+  ].filter(Boolean).join(" ").toLowerCase();
 }
 
 async function renderSandboxPresetCards() {
   if (!modSandboxPresetList || !modSandboxEmpty) return;
 
   const presets = modProfileManagerState.presets;
-  if (modSandboxCount) modSandboxCount.textContent = String(presets.length);
+  const search = modProfileManagerState.filters.search.trim().toLowerCase();
+  const gameFilter = modProfileManagerState.filters.game;
+  const statusFilter = modProfileManagerState.filters.status;
   modSandboxEmpty.hidden = presets.length > 0;
 
   if (!presets.length) {
+    if (modSandboxCount) modSandboxCount.textContent = "0";
     modSandboxPresetList.innerHTML = "";
+    await renderOpenSandboxPresetDetailsModal();
     return;
   }
 
+  const detailsLabel = await window.t("modals.mod_profile_manager.sandbox.actions.details");
   const checkLabel = await window.t("modals.mod_profile_manager.sandbox.actions.check_mods");
   const activateLabel = await window.t("modals.mod_profile_manager.sandbox.actions.activate_preset");
-  const copySteamCmdLabel = await window.t("modals.mod_profile_manager.sandbox.actions.copy_steamcmd");
-  const workshopIdLabel = await window.t("modals.mod_profile_manager.sandbox.fields.workshop_id");
   const appIdLabel = await window.t("modals.mod_profile_manager.sandbox.fields.app_id");
-  const availableLabel = await window.t("modals.mod_profile_manager.sandbox.fields.available");
-  const reachableLabel = await window.t("modals.mod_profile_manager.sandbox.fields.reachable");
-  const modNameLabel = await window.t("modals.mod_profile_manager.sandbox.fields.mod_name");
-  const loadOrderLabel = await window.t("modals.mod_profile_manager.sandbox.fields.load_order");
-  const pathLabel = await window.t("modals.mod_profile_manager.sandbox.fields.local_path");
-  const statusLabel = await window.t("modals.mod_profile_manager.sandbox.fields.status");
-  const notCheckedLabel = await window.t("modals.mod_profile_manager.sandbox.preset_status.not_checked");
   const emptyPresetLabel = await window.t("modals.mod_profile_manager.sandbox.preset_status.empty");
-  const noModsConfiguredLabel = await window.t("modals.mod_profile_manager.sandbox.hints.no_mods_configured");
   const modsCountLabel = await window.t("modals.mod_profile_manager.sandbox.fields.mods_count");
-  const openWorkshopLabel = await window.t("modals.mod_profile_manager.sandbox.actions.open_workshop");
-  const openInSteamLabel = await window.t("modals.mod_profile_manager.sandbox.actions.open_in_steam");
-  const missingHintLabel = await window.t("modals.mod_profile_manager.sandbox.hints.missing_install");
-  const unavailableHintLabel = notCheckedLabel;
-  const statusCopy = {
-    statusAvailable: await window.t("modals.mod_profile_manager.sandbox.mod_status.available"),
-    statusNotDownloaded: await window.t("modals.mod_profile_manager.sandbox.mod_status.not_downloaded"),
-    statusPathMissing: await window.t("modals.mod_profile_manager.sandbox.mod_status.path_missing"),
-    statusUnknown: await window.t("modals.mod_profile_manager.sandbox.mod_status.unknown"),
-    statusAvailableNote: await window.t("modals.mod_profile_manager.sandbox.mod_status.available_note"),
-    statusNotDownloadedNote: await window.t("modals.mod_profile_manager.sandbox.mod_status.not_downloaded_note"),
-    statusPathMissingNote: await window.t("modals.mod_profile_manager.sandbox.mod_status.path_missing_note"),
-    statusUnknownNote: await window.t("modals.mod_profile_manager.sandbox.mod_status.unknown_note"),
-  };
+  const gameLabel = await window.t("modals.mod_profile_manager.sandbox.fields.game");
+  const statusLabel = await window.t("modals.mod_profile_manager.sandbox.fields.status");
+  const lastCheckLabel = await window.t("modals.mod_profile_manager.sandbox.fields.last_check");
+  const noFilteredLabel = await window.t("modals.mod_profile_manager.sandbox.empty.filtered");
 
-  const cards = await Promise.all(presets.map(async (preset) => {
+  const rows = await Promise.all(presets.map(async (preset) => {
     const presetMods = sandboxPresetMods(preset);
     const isSelected = modProfileManagerState.selectedPresetId === preset.id;
     const isEmptyPreset = presetMods.length === 0;
     const statusPresentation = await sandboxPresetStatusPresentation(preset);
-    const check = getSandboxPresetCheck(preset.id);
+    const statusFilterValue = sandboxPresetStatusFilterValue(preset);
+    const { check, entries } = sandboxPresetStatusEntries(preset);
     const checkError = getSandboxPresetCheckError(preset.id);
     const activation = getSandboxPresetActivation(preset.id);
-    const checkStatusMap = new Map([
-      ...(check?.mods || []),
-      ...(check?.all_mods || []),
-      ...(check?.found_mods || []),
-      ...(check?.missing_mods || []),
-    ].map((entry) => [sandboxPresetModStatusKey(entry), entry]));
-    const renderedStatuses = check?.mods || check?.all_mods || [];
+    const renderedStatuses = check?.mods || check?.all_mods || entries || [];
     const requiredStatuses = renderedStatuses.filter((status) => status.required);
     const missingRequiredStatuses = requiredStatuses.filter((status) => !(status.available === true && status.reachable === true));
-    const canActivate = isSelected && !isEmptyPreset && Boolean(check?.ready || check?.can_activate) && missingRequiredStatuses.length === 0 && hasActiveSaveSelected() && !modProfileManagerState.loading
-      && modProfileManagerState.checkingPresetId !== preset.id
-      && modProfileManagerState.activatingPresetId !== preset.id;
+    const canActivate = sandboxPresetCanActivate(preset);
     const isChecking = modProfileManagerState.checkingPresetId === preset.id;
     const isActivating = modProfileManagerState.activatingPresetId === preset.id;
+    const gameMeta = sandboxPresetGameMeta(preset);
     const activateButtonLabel = isActivating
       ? await window.t("modals.mod_profile_manager.sandbox.hints.activating")
       : activateLabel;
     console.log("[ModProfileUI] render preset=%s can_activate=%s", preset.id, canActivate);
 
-    const modsMarkup = isEmptyPreset ? `
-      <p class="sandbox-preset-mod-note">${escapeHtml(noModsConfiguredLabel)}</p>
-    ` : presetMods.map((presetMod) => {
-      const workshopId = sandboxPresetModWorkshopId(presetMod);
-      const appId = sandboxPresetModAppId(presetMod);
-      const status = checkStatusMap.get(sandboxPresetModStatusKey(presetMod));
-      const uiStatus = status ? sandboxModUiStatus(status, statusCopy) : {
-        state: "neutral",
-        label: notCheckedLabel,
-        note: unavailableHintLabel,
-      };
-      const isLocalMod = String(presetMod.source || status?.source || "").toLowerCase() === "local";
-      const showMissingActions = !isLocalMod && (!status || !(status.available === true && status.reachable === true));
-      const resolvedWorkshopUrl = status?.workshop_url || presetMod.workshop_url || "";
-      const resolvedSteamProtocolUrl = status?.steam_protocol_url || presetMod.steam_protocol_url || "";
-      const resolvedSteamCmd = status?.steamcmd_command || (workshopId ? `steamcmd +login anonymous +workshop_download_item ${appId} ${workshopId} +quit` : "");
-      return `
-        <article class="sandbox-preset-mod-row">
-          <div class="sandbox-preset-mod-grid">
-            <span><strong>${escapeHtml(modNameLabel)}:</strong> ${escapeHtml(status?.display_name || presetMod.display_name || presetMod.name || "-")}</span>
-            <span><strong>${escapeHtml(appIdLabel)}:</strong> ${escapeHtml(String(status?.app_id || appId || "-"))}</span>
-            <span><strong>${escapeHtml(workshopIdLabel)}:</strong> ${escapeHtml(String(status?.steam_id || workshopId || "-"))}</span>
-            <span><strong>${escapeHtml(loadOrderLabel)}:</strong> ${escapeHtml(String(status?.load_order ?? presetMod.load_order ?? 0))}</span>
-            <span><strong>${escapeHtml(statusLabel)}:</strong> <span class="mod-status-badge" data-state="${escapeHtml(uiStatus.state)}">${escapeHtml(uiStatus.label)}</span></span>
-            <span><strong>${escapeHtml(pathLabel)}:</strong> ${escapeHtml(status?.local_path || "-")}</span>
-            <span><strong>${escapeHtml(availableLabel)}:</strong> ${escapeHtml(String(Boolean(status?.available)))}</span>
-            <span><strong>${escapeHtml(reachableLabel)}:</strong> ${escapeHtml(String(Boolean(status?.reachable)))}</span>
-            ${showMissingActions ? `
-              <div class="sandbox-preset-mod-actions">
-                <button
-                  class="secondary-action"
-                  type="button"
-                  data-sandbox-action="open-workshop"
-                  data-sandbox-steam-id="${escapeHtml(workshopId)}"
-                  ${resolvedWorkshopUrl || workshopId ? "" : "disabled"}>
-                  ${escapeHtml(openWorkshopLabel)}
-                </button>
-                <button
-                  class="secondary-action"
-                  type="button"
-                  data-sandbox-action="open-steam"
-                  data-sandbox-steam-id="${escapeHtml(workshopId)}"
-                  ${resolvedSteamProtocolUrl ? "" : "disabled"}>
-                  ${escapeHtml(openInSteamLabel)}
-                </button>
-                <button
-                  class="secondary-action"
-                  type="button"
-                  data-sandbox-action="copy-steamcmd"
-                  data-sandbox-steamcmd="${escapeHtml(resolvedSteamCmd)}"
-                  ${resolvedSteamCmd ? "" : "disabled"}>
-                  ${escapeHtml(copySteamCmdLabel)}
-                </button>
-              </div>
-              <p class="sandbox-preset-mod-note">${escapeHtml(`${uiStatus.note} ${missingHintLabel}`.trim())}</p>
-              <p class="sandbox-preset-mod-note">${escapeHtml(resolvedWorkshopUrl || `https://steamcommunity.com/sharedfiles/filedetails/?id=${workshopId}`)}</p>
-              <p class="sandbox-preset-mod-note"><code>${escapeHtml(resolvedSteamCmd)}</code></p>
-            ` : `
-              <p class="sandbox-preset-mod-note">${escapeHtml(uiStatus.note)}</p>
-            `}
-          </div>
-        </article>
-      `;
-    }).join("");
-
     let footerMessage = await window.t("modals.mod_profile_manager.sandbox.hints.not_checked");
     if (isEmptyPreset) {
-      footerMessage = noModsConfiguredLabel;
+      footerMessage = await window.t("modals.mod_profile_manager.sandbox.hints.no_mods_configured");
     } else if (activation?.success === false) {
       footerMessage = await sandboxErrorMessage(activation);
     } else if (checkError) {
@@ -3336,24 +3334,40 @@ async function renderSandboxPresetCards() {
       footerMessage = `${await window.t("modals.mod_profile_manager.sandbox.popup.mod_missing_message")}: ${missingIds}`;
     }
 
-    return `
+    return {
+      preset,
+      gameMeta,
+      statusFilterValue,
+      markup: `
       <article
-        class="sandbox-preset-card${isSelected ? " is-selected" : ""}"
+        class="sandbox-preset-row sandbox-status-${escapeHtml(statusPresentation.state)}${isSelected ? " is-selected" : ""}"
         data-preset-id="${escapeHtml(preset.id)}"
-        data-sandbox-action="select-preset"
+        data-sandbox-action="details"
         data-sandbox-preset-id="${escapeHtml(preset.id)}">
-        <div class="mod-profile-panel-head">
-          <div>
-            <h3>${escapeHtml(preset.title || preset.id)}</h3>
-            <p>${escapeHtml(preset.description || "-")}</p>
-            <div class="mod-sandbox-card-meta">
-              <span>${escapeHtml(modsCountLabel)}: ${escapeHtml(String(presetMods.length))}</span>
-              <span>${escapeHtml(appIdLabel)}: ${escapeHtml(String(preset.app_id || presetMods[0]?.app_id || 227300))}</span>
-            </div>
+        <span class="sandbox-preset-icon" data-state="${escapeHtml(statusPresentation.state)}" aria-hidden="true"></span>
+        <div class="sandbox-preset-main">
+          <div class="sandbox-preset-title-line">
+            <h3 class="sandbox-preset-title">${escapeHtml(preset.title || preset.name || preset.id)}</h3>
+            <span class="sandbox-status-badge sandbox-status-${escapeHtml(statusPresentation.state)}">${escapeHtml(statusPresentation.label)}</span>
           </div>
-          <span class="mod-status-badge" data-state="${escapeHtml(statusPresentation.state)}">${escapeHtml(statusPresentation.label)}</span>
+          <p class="sandbox-preset-description">${escapeHtml(preset.description || footerMessage || "-")}</p>
+          <div class="sandbox-preset-meta">
+            <span><strong>${escapeHtml(gameLabel)}:</strong> ${escapeHtml(gameMeta.game)}</span>
+            <span><strong>${escapeHtml(modsCountLabel)}:</strong> ${escapeHtml(String(presetMods.length))}</span>
+            <span><strong>${escapeHtml(appIdLabel)}:</strong> ${escapeHtml(String(gameMeta.appId))}</span>
+            <span><strong>${escapeHtml(statusLabel)}:</strong> ${escapeHtml(statusPresentation.label)}</span>
+            <span><strong>${escapeHtml(lastCheckLabel)}:</strong> ${escapeHtml(sandboxPresetLastCheckLabel(check))}</span>
+          </div>
+          <p class="sandbox-preset-hint">${escapeHtml(isActivating ? await window.t("modals.mod_profile_manager.sandbox.hints.activating") : footerMessage)}</p>
         </div>
         <div class="sandbox-preset-actions">
+          <button
+            class="secondary-action"
+            type="button"
+            data-sandbox-action="details"
+            data-sandbox-preset-id="${escapeHtml(preset.id)}">
+            ${escapeHtml(detailsLabel)}
+          </button>
           <button
             class="secondary-action"
             type="button"
@@ -3371,13 +3385,260 @@ async function renderSandboxPresetCards() {
             ${escapeHtml(activateButtonLabel)}
           </button>
         </div>
-        <div class="sandbox-preset-mod-list">${modsMarkup}</div>
-        <p class="sandbox-preset-hint">${escapeHtml(isActivating ? await window.t("modals.mod_profile_manager.sandbox.hints.activating") : footerMessage)}</p>
       </article>
-    `;
+    `};
   }));
-  modSandboxPresetList.innerHTML = cards.join("");
+
+  const filteredRows = rows.filter(({ preset, gameMeta, statusFilterValue }) => {
+    if (search && !sandboxPresetSearchText(preset).includes(search)) return false;
+    if (gameFilter !== "all" && gameMeta.game.toLowerCase() !== gameFilter) return false;
+    if (statusFilter !== "all" && statusFilterValue !== statusFilter) return false;
+    return true;
+  });
+
+  if (modSandboxCount) {
+    modSandboxCount.textContent = filteredRows.length === presets.length
+      ? String(presets.length)
+      : `${filteredRows.length}/${presets.length}`;
+  }
+
+  modSandboxPresetList.innerHTML = filteredRows.length
+    ? filteredRows.map((row) => row.markup).join("")
+    : `<div class="modal-empty-state sandbox-filter-empty">${escapeHtml(noFilteredLabel)}</div>`;
   bindSandboxPresetButtonHandlers();
+  await renderOpenSandboxPresetDetailsModal();
+}
+
+async function renderSandboxPresetModsTable(preset) {
+  const presetMods = sandboxPresetDetailMods(preset);
+  const { byKey } = sandboxPresetStatusEntries(preset);
+  const copySteamCmdLabel = await window.t("modals.mod_profile_manager.sandbox.actions.copy_steamcmd");
+  const openWorkshopLabel = await window.t("modals.mod_profile_manager.sandbox.actions.open_workshop");
+  const openInSteamLabel = await window.t("modals.mod_profile_manager.sandbox.actions.open_in_steam");
+  const notCheckedLabel = await window.t("modals.mod_profile_manager.sandbox.preset_status.not_checked");
+  const noModsConfiguredLabel = await window.t("modals.mod_profile_manager.sandbox.hints.no_mods_configured");
+  const statusCopy = {
+    statusAvailable: await window.t("modals.mod_profile_manager.sandbox.mod_status.available"),
+    statusNotDownloaded: await window.t("modals.mod_profile_manager.sandbox.mod_status.not_downloaded"),
+    statusPathMissing: await window.t("modals.mod_profile_manager.sandbox.mod_status.path_missing"),
+    statusUnknown: await window.t("modals.mod_profile_manager.sandbox.mod_status.unknown"),
+    statusAvailableNote: await window.t("modals.mod_profile_manager.sandbox.mod_status.available_note"),
+    statusNotDownloadedNote: await window.t("modals.mod_profile_manager.sandbox.mod_status.not_downloaded_note"),
+    statusPathMissingNote: await window.t("modals.mod_profile_manager.sandbox.mod_status.path_missing_note"),
+    statusUnknownNote: await window.t("modals.mod_profile_manager.sandbox.mod_status.unknown_note"),
+  };
+
+  if (!presetMods.length) {
+    return `<div class="modal-empty-state sandbox-details-empty">${escapeHtml(noModsConfiguredLabel)}</div>`;
+  }
+
+  const headers = [
+    "#",
+    await window.t("modals.mod_profile_manager.sandbox.fields.mod_name"),
+    await window.t("modals.mod_profile_manager.sandbox.fields.workshop_id"),
+    await window.t("modals.mod_profile_manager.sandbox.fields.required"),
+    await window.t("modals.mod_profile_manager.sandbox.fields.installed"),
+    await window.t("modals.mod_profile_manager.sandbox.fields.load_order"),
+    await window.t("modals.mod_profile_manager.sandbox.fields.actions"),
+  ];
+  const yesLabel = await window.t("modals.mod_profile_manager.sandbox.fields.yes");
+  const noLabel = await window.t("modals.mod_profile_manager.sandbox.fields.no");
+
+  const rows = presetMods.map((presetMod, index) => {
+    const workshopId = sandboxPresetModWorkshopId(presetMod);
+    const appId = sandboxPresetModAppId(presetMod);
+    const status = byKey.get(sandboxPresetModStatusKey(presetMod));
+    const uiStatus = status ? sandboxModUiStatus(status, statusCopy) : {
+      state: "unknown",
+      label: notCheckedLabel,
+      note: notCheckedLabel,
+    };
+    const displayName = status?.display_name || presetMod.display_name || presetMod.name || presetMod.package_id || "-";
+    const localPath = status?.local_path || presetMod.local_path || "";
+    const resolvedSteamProtocolUrl = status?.steam_protocol_url || presetMod.steam_protocol_url || "";
+    const resolvedSteamCmd = status?.steamcmd_command || (workshopId ? `steamcmd +login anonymous +workshop_download_item ${appId} ${workshopId} +quit` : "");
+
+    return `
+      <tr class="sandbox-mod-row" data-state="${escapeHtml(uiStatus.state)}">
+        <td>${escapeHtml(String(index + 1))}</td>
+        <td>
+          <strong>${escapeHtml(displayName)}</strong>
+          ${localPath ? `<small>${escapeHtml(localPath)}</small>` : ""}
+        </td>
+        <td><code>${escapeHtml(workshopId || "-")}</code></td>
+        <td>${escapeHtml(presetMod.required ? yesLabel : noLabel)}</td>
+        <td><span class="mod-status-badge" data-state="${escapeHtml(uiStatus.state)}">${escapeHtml(uiStatus.label)}</span></td>
+        <td>${escapeHtml(String(status?.load_order ?? presetMod.load_order ?? index))}</td>
+        <td>
+          <div class="sandbox-mod-actions">
+            <button
+              class="secondary-action"
+              type="button"
+              data-sandbox-action="open-workshop"
+              data-sandbox-steam-id="${escapeHtml(workshopId)}"
+              ${workshopId ? "" : "disabled"}>
+              ${escapeHtml(openWorkshopLabel)}
+            </button>
+            <button
+              class="secondary-action"
+              type="button"
+              data-sandbox-action="open-steam"
+              data-sandbox-steam-id="${escapeHtml(workshopId)}"
+              ${resolvedSteamProtocolUrl || workshopId ? "" : "disabled"}>
+              ${escapeHtml(openInSteamLabel)}
+            </button>
+            <button
+              class="secondary-action"
+              type="button"
+              data-sandbox-action="copy-steamcmd"
+              data-sandbox-steamcmd="${escapeHtml(resolvedSteamCmd)}"
+              ${resolvedSteamCmd ? "" : "disabled"}>
+              ${escapeHtml(copySteamCmdLabel)}
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+
+  return `
+    <div class="sandbox-mods-table-wrap">
+      <table class="sandbox-mods-table">
+        <thead>
+          <tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join("")}</tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+async function renderSandboxPresetDetailsContent(preset) {
+  const presetMods = sandboxPresetDetailMods(preset);
+  const gameMeta = sandboxPresetGameMeta(preset);
+  const statusPresentation = await sandboxPresetStatusPresentation(preset);
+  const { check } = sandboxPresetStatusEntries(preset);
+  const isChecking = modProfileManagerState.checkingPresetId === preset.id;
+  const isActivating = modProfileManagerState.activatingPresetId === preset.id;
+  const canActivate = sandboxPresetCanActivate(preset);
+  const activateButtonLabel = isActivating
+    ? await window.t("modals.mod_profile_manager.sandbox.hints.activating")
+    : await window.t("modals.mod_profile_manager.sandbox.actions.activate_preset");
+  const loadOrderLocked = Boolean(preset.load_order_locked ?? preset.loadOrderLocked);
+  const enabled = preset.enabled !== false;
+  const fields = [
+    [await window.t("modals.mod_profile_manager.sandbox.fields.id"), preset.id || "-"],
+    [await window.t("modals.mod_profile_manager.sandbox.fields.game"), gameMeta.game],
+    [await window.t("modals.mod_profile_manager.sandbox.fields.app_id"), gameMeta.appId],
+    [await window.t("modals.mod_profile_manager.sandbox.fields.enabled"), enabled ? await window.t("modals.mod_profile_manager.sandbox.fields.yes") : await window.t("modals.mod_profile_manager.sandbox.fields.no")],
+    [await window.t("modals.mod_profile_manager.sandbox.fields.load_order_locked"), loadOrderLocked ? await window.t("modals.mod_profile_manager.sandbox.fields.yes") : await window.t("modals.mod_profile_manager.sandbox.fields.no")],
+    [await window.t("modals.mod_profile_manager.sandbox.fields.mods_count"), presetMods.length],
+    [await window.t("modals.mod_profile_manager.sandbox.fields.last_check"), sandboxPresetLastCheckLabel(check)],
+  ];
+
+  return `
+    <div class="modal-box modal-box--xl modal-box--sheet sandbox-preset-details-modal" role="dialog" aria-modal="true">
+      <div class="detail-modal-head sandbox-details-head">
+        <div>
+          <span class="modal-kicker">${escapeHtml(await window.t("modals.mod_profile_manager.sandbox.details.kicker"))}</span>
+          <h2>${escapeHtml(await window.t("modals.mod_profile_manager.sandbox.details.title", { title: preset.title || preset.name || preset.id || "" }))}</h2>
+          <p class="modal-description">${escapeHtml(preset.description || "-")}</p>
+          <div class="sandbox-details-meta-line">
+            <span>${escapeHtml(gameMeta.game)}</span>
+            <span>${escapeHtml(await window.t("modals.mod_profile_manager.sandbox.fields.app_id"))} ${escapeHtml(String(gameMeta.appId))}</span>
+            <span>${escapeHtml(await window.t("modals.mod_profile_manager.sandbox.fields.mods_count"))}: ${escapeHtml(String(presetMods.length))}</span>
+            <span>${escapeHtml(loadOrderLocked ? await window.t("modals.mod_profile_manager.sandbox.fields.load_order_locked") : await window.t("modals.mod_profile_manager.sandbox.fields.load_order_unlocked"))}</span>
+          </div>
+        </div>
+        <span class="sandbox-status-badge sandbox-status-${escapeHtml(statusPresentation.state)}">${escapeHtml(statusPresentation.label)}</span>
+      </div>
+      <div class="sandbox-details-scroll">
+        <div class="sandbox-details-grid">
+          ${fields.map(([label, value]) => `
+            <div>
+              <span>${escapeHtml(label)}</span>
+              <strong>${escapeHtml(String(value))}</strong>
+            </div>
+          `).join("")}
+        </div>
+        ${await renderSandboxPresetModsTable(preset)}
+      </div>
+      <div class="modal-actions modal-actions--end sandbox-details-footer">
+        <button type="button" data-sandbox-action="close-details">${escapeHtml(await window.t("modals.close"))}</button>
+        <button
+          class="secondary-action"
+          type="button"
+          data-sandbox-action="check-mods"
+          data-sandbox-preset-id="${escapeHtml(preset.id)}"
+          ${presetMods.length === 0 || isChecking || modProfileManagerState.loading ? "disabled" : ""}>
+          ${escapeHtml(presetMods.length === 0 ? await window.t("modals.mod_profile_manager.sandbox.preset_status.empty") : await window.t("modals.mod_profile_manager.sandbox.actions.check_mods"))}
+        </button>
+        <button
+          class="secondary-action apply sandbox-activate-action"
+          type="button"
+          data-sandbox-action="activate-preset"
+          data-sandbox-preset-id="${escapeHtml(preset.id)}"
+          ${canActivate ? "" : "disabled"}>
+          ${escapeHtml(activateButtonLabel)}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function closeSandboxPresetDetailsModal() {
+  const modal = document.getElementById("sandboxPresetDetailsModal");
+  if (modal) modal.remove();
+  modProfileManagerState.detailsPresetId = null;
+}
+
+async function openSandboxPresetDetailsModal(presetId) {
+  const preset = modProfileManagerState.presets.find((item) => item.id === presetId);
+  if (!preset) return;
+
+  modProfileManagerState.selectedPresetId = presetId;
+  modProfileManagerState.detailsPresetId = presetId;
+  let modal = document.getElementById("sandboxPresetDetailsModal");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "sandboxPresetDetailsModal";
+    modal.className = "modal-backdrop sandbox-preset-details-backdrop";
+    document.body.appendChild(modal);
+  }
+  modal.style.display = "flex";
+  modal.innerHTML = await renderSandboxPresetDetailsContent(preset);
+  modal.onclick = async (event) => {
+    if (event.target === modal) {
+      closeSandboxPresetDetailsModal();
+      return;
+    }
+    const trigger = event.target.closest("[data-sandbox-action]");
+    if (!trigger) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const action = trigger.dataset.sandboxAction || "";
+    if (action === "close-details") {
+      closeSandboxPresetDetailsModal();
+      return;
+    }
+    await handleSandboxPresetAction(
+      action,
+      trigger.dataset.sandboxPresetId || modProfileManagerState.detailsPresetId || "",
+      trigger.dataset.sandboxSteamId || "",
+      trigger
+    );
+  };
+}
+
+async function renderOpenSandboxPresetDetailsModal() {
+  const modal = document.getElementById("sandboxPresetDetailsModal");
+  if (!modal || !modProfileManagerState.detailsPresetId) return;
+  const preset = modProfileManagerState.presets.find((item) => item.id === modProfileManagerState.detailsPresetId);
+  if (!preset) {
+    closeSandboxPresetDetailsModal();
+    return;
+  }
+  modal.innerHTML = await renderSandboxPresetDetailsContent(preset);
 }
 
 export async function openModProfileManagerModal() {
@@ -3395,6 +3656,83 @@ export async function openModProfileManagerModal() {
 function closeModProfileManagerModal() {
   if (!modalModProfileManager) return;
   modalModProfileManager.style.display = "none";
+  closeSandboxPresetDetailsModal();
+}
+
+async function handleSandboxPresetAction(action, presetId, steamId = "", trigger = null) {
+  console.log("[SandboxPreset] action", {
+    action,
+    presetId,
+    steamId,
+  });
+
+  if (action === "select-preset") {
+    await selectSandboxPreset(presetId);
+    return;
+  }
+
+  if (action === "details") {
+    await openSandboxPresetDetailsModal(presetId);
+    await renderSandboxPresetCards();
+    return;
+  }
+
+  if (action === "check-mods") {
+    modProfileManagerState.selectedPresetId = presetId;
+    console.log("[ModProfileManager] selected preset", presetId);
+    console.log("[ModProfileManager] check preset clicked", presetId);
+    await checkSandboxPresetMods(presetId);
+    return;
+  }
+
+  if (action === "activate-preset") {
+    modProfileManagerState.selectedPresetId = presetId;
+    console.log("[ModProfileManager] selected preset", presetId);
+    console.log("[ModProfileManager] activate preset clicked", presetId);
+    await activateSandboxPreset(presetId);
+    return;
+  }
+
+  if (action === "open-workshop") {
+    try {
+      console.debug("[SandboxPreset] open workshop clicked", { steamId });
+      await openSandboxModWorkshopPage(steamId);
+    } catch (error) {
+      console.error("Open sandbox workshop page failed:", error);
+      await showSandboxPresetPopup(
+        "error",
+        await window.t("modals.mod_profile_manager.sandbox.popup.error_title"),
+        normalizeSandboxCommandError(error)
+      );
+    }
+    return;
+  }
+
+  if (action === "open-steam") {
+    try {
+      console.debug("[SandboxPreset] open in Steam clicked", { steamId });
+      await openSandboxModInSteam(steamId);
+    } catch (error) {
+      console.error("Open sandbox mod in Steam failed:", error);
+      await showSandboxPresetPopup(
+        "error",
+        await window.t("modals.mod_profile_manager.sandbox.popup.error_title"),
+        normalizeSandboxCommandError(error)
+      );
+    }
+    return;
+  }
+
+  if (action === "copy-steamcmd") {
+    try {
+      const steamCmd = trigger?.dataset?.sandboxSteamcmd || "";
+      await copyTextToClipboard(steamCmd);
+      window.showToast?.("toasts.mod_sandbox_steamcmd_copied", "success");
+    } catch (error) {
+      console.error("Copy SteamCMD command failed:", error);
+      window.showToast?.("toasts.mod_sandbox_steamcmd_copy_failed", "error");
+    }
+  }
 }
 
 function bindSandboxPresetButtonHandlers() {
@@ -3402,91 +3740,22 @@ function bindSandboxPresetButtonHandlers() {
     console.warn("[SandboxPreset] modSandboxPresetList not found. Sandbox button handlers were not bound.");
     return;
   }
-
-  const actionButtons = modSandboxPresetList.querySelectorAll("[data-sandbox-action]");
-  actionButtons.forEach((button) => {
-    if (button.dataset.sandboxBound === "1") return;
-    button.dataset.sandboxBound = "1";
-
-    button.addEventListener("click", async (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      if (typeof event.stopImmediatePropagation === "function") {
-        event.stopImmediatePropagation();
-      }
-
-      const action = button.dataset.sandboxAction || "";
-      const presetId = button.dataset.sandboxPresetId || "";
-      const steamId = button.dataset.sandboxSteamId || "";
-
-      console.log("[SandboxPreset] button clicked", {
-        action,
-        presetId,
-        steamId,
-      });
-
-      if (action === "select-preset") {
-        await selectSandboxPreset(presetId);
-        return;
-      }
-
-      if (action === "check-mods") {
-        modProfileManagerState.selectedPresetId = presetId;
-        console.log("[ModProfileManager] selected preset", presetId);
-        console.log("[ModProfileManager] check preset clicked", presetId);
-        await checkSandboxPresetMods(presetId);
-        return;
-      }
-
-      if (action === "activate-preset") {
-        modProfileManagerState.selectedPresetId = presetId;
-        console.log("[ModProfileManager] selected preset", presetId);
-        console.log("[ModProfileManager] activate preset clicked", presetId);
-        await activateSandboxPreset(presetId);
-        return;
-      }
-
-      if (action === "open-workshop") {
-        try {
-          console.debug("[SandboxPreset] open workshop clicked", { steamId });
-          await openSandboxModWorkshopPage(steamId);
-        } catch (error) {
-          console.error("Open sandbox workshop page failed:", error);
-          await showSandboxPresetPopup(
-            "error",
-            await window.t("modals.mod_profile_manager.sandbox.popup.error_title"),
-            normalizeSandboxCommandError(error)
-          );
-        }
-        return;
-      }
-
-      if (action === "open-steam") {
-        try {
-          console.debug("[SandboxPreset] open in Steam clicked", { steamId });
-          await openSandboxModInSteam(steamId);
-        } catch (error) {
-          console.error("Open sandbox mod in Steam failed:", error);
-          await showSandboxPresetPopup(
-            "error",
-            await window.t("modals.mod_profile_manager.sandbox.popup.error_title"),
-            normalizeSandboxCommandError(error)
-          );
-        }
-        return;
-      }
-
-      if (action === "copy-steamcmd") {
-        try {
-          const steamCmd = button.dataset.sandboxSteamcmd || "";
-          await copyTextToClipboard(steamCmd);
-          window.showToast?.("toasts.mod_sandbox_steamcmd_copied", "success");
-        } catch (error) {
-          console.error("Copy SteamCMD command failed:", error);
-          window.showToast?.("toasts.mod_sandbox_steamcmd_copy_failed", "error");
-        }
-      }
-    });
+  if (modSandboxPresetList.dataset.sandboxBound === "1") return;
+  modSandboxPresetList.dataset.sandboxBound = "1";
+  modSandboxPresetList.addEventListener("click", async (event) => {
+    const trigger = event.target.closest("[data-sandbox-action]");
+    if (!trigger || !modSandboxPresetList.contains(trigger)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (typeof event.stopImmediatePropagation === "function") {
+      event.stopImmediatePropagation();
+    }
+    await handleSandboxPresetAction(
+      trigger.dataset.sandboxAction || "",
+      trigger.dataset.sandboxPresetId || "",
+      trigger.dataset.sandboxSteamId || "",
+      trigger
+    );
   });
 }
 
@@ -3767,6 +4036,8 @@ async function activateSandboxPreset(presetId) {
         result.message || await window.t("modals.mod_profile_manager.sandbox.popup.success_message", { title: result.title || "" })
       );
       await loadSandboxPresetsIntoModal({ refreshSteamMods: false });
+      modProfileManagerState.activations.set(presetId, result);
+      await renderSandboxPresetCards();
       const refreshedCheck = getSandboxPresetCheck(presetId);
       if (refreshedCheck?.ready) {
         await checkSandboxPresetMods(presetId);
@@ -3799,6 +4070,18 @@ async function activateSandboxPreset(presetId) {
 
 modSandboxReloadBtn?.addEventListener("click", () => {
   void loadSandboxPresetsIntoModal({ refreshSteamMods: true, showRefreshToast: true });
+});
+modSandboxSearchInput?.addEventListener("input", () => {
+  modProfileManagerState.filters.search = modSandboxSearchInput.value || "";
+  void renderSandboxPresetCards();
+});
+modSandboxGameFilter?.addEventListener("change", () => {
+  modProfileManagerState.filters.game = modSandboxGameFilter.value || "all";
+  void renderSandboxPresetCards();
+});
+modSandboxStatusFilter?.addEventListener("change", () => {
+  modProfileManagerState.filters.status = modSandboxStatusFilter.value || "all";
+  void renderSandboxPresetCards();
 });
 modSteamConsoleBtn?.addEventListener("click", async () => {
   try {
