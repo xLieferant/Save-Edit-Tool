@@ -212,18 +212,6 @@
 
             <section class="editor-sidebar-block">
               <div class="editor-sidebar-block-head">
-                <span class="editor-section-label" data-translate="editor.actions_label">Tool Categories</span>
-              </div>
-              <div class="nav-main editor-tabs">
-                <button class="nav-btn" data-tab="truck" type="button" data-translate="editor.tab.truck">Truck</button>
-                <button class="nav-btn" data-tab="trailer" type="button" data-translate="editor.tab.trailer">Trailer</button>
-                <button class="nav-btn active" data-tab="profile" type="button" data-translate="editor.tab.profile">Profile</button>
-                <button class="nav-btn" data-tab="settings" type="button" data-translate="editor.tab.settings">Settings</button>
-              </div>
-            </section>
-
-            <section class="editor-sidebar-block">
-              <div class="editor-sidebar-block-head">
                 <span class="editor-section-label" data-translate="editor.quick_actions">Workspace Actions</span>
               </div>
               <div class="editor-quick-actions">
@@ -347,7 +335,17 @@
                   </div>
                 </section>
               </div>
+
             </div>
+
+            <nav class="editor-bottom-tabs" aria-label="Editor tool categories">
+              <div class="editor-bottom-tabs-inner nav-main editor-tabs panel-surface">
+                <button class="nav-btn" data-tab="truck" type="button" data-translate="editor.tab.truck">Truck</button>
+                <button class="nav-btn" data-tab="trailer" type="button" data-translate="editor.tab.trailer">Trailer</button>
+                <button class="nav-btn active" data-tab="profile" type="button" data-translate="editor.tab.profile">Profile</button>
+                <button class="nav-btn" data-tab="settings" type="button" data-translate="editor.tab.settings">Settings</button>
+              </div>
+            </nav>
           </section>
 
           <section id="careerView" class="workspace-view career-view">
@@ -814,10 +812,24 @@
               <div id="careerDetailHost" class="career-detail-host panel-surface"></div>
             </div>
           </section>
+
         </section>
       </div>
 
     </div>
+
+    <button
+      id="wikiHelpBtn"
+      class="wiki-help-btn"
+      type="button"
+      aria-haspopup="dialog"
+      aria-controls="modalWiki"
+      aria-label="Open in-app help and wiki"
+      data-translate-aria-label="modals.wiki.button_aria_label"
+    >
+      <span class="wiki-help-btn__icon" aria-hidden="true">?</span>
+      <span class="wiki-help-btn__label" data-translate="modals.wiki.button_label">Help</span>
+    </button>
 
     <div class="modal-backdrop" id="modalAppUpdate" aria-hidden="true">
       <div class="modal-box modal-box--sheet modal-box--update">
@@ -890,6 +902,169 @@
         <div class="modal-actions">
           <button id="modalTextCancel" data-translate="modals.cancel">Close</button>
           <button id="modalTextApply" class="apply" data-translate="modals.apply">Apply</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalWiki">
+      <div
+        class="modal-box modal-box--xl modal-box--wiki"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modalWikiTitle"
+        aria-describedby="modalWikiDescription"
+      >
+        <div class="wiki-modal-head">
+          <div>
+            <span class="modal-kicker" data-translate="modals.wiki.kicker">In-App Help</span>
+            <h2 id="modalWikiTitle" tabindex="-1" data-translate="modals.wiki.title">Wiki &amp; Help</h2>
+            <p id="modalWikiDescription" class="modal-description" data-translate="modals.wiki.description">
+              Quick guidance for editor workflows, shortcuts, safety features and accessibility inside the app.
+            </p>
+          </div>
+          <button
+            id="modalWikiCloseTop"
+            class="wiki-close-btn"
+            type="button"
+            aria-label="Close help dialog"
+            data-translate="modals.close"
+            data-translate-aria-label="modals.wiki.close_aria_label"
+          >
+            Close
+          </button>
+        </div>
+
+        <div class="wiki-layout">
+          <nav
+            id="wikiIndexNav"
+            class="wiki-index"
+            aria-label="Wiki sections"
+            data-translate-aria-label="modals.wiki.nav_aria_label"
+          >
+            <a href="#wikiSectionWelcome" class="wiki-index__link" data-translate="modals.wiki.sections.welcome.title">Welcome</a>
+            <a href="#wikiSectionShortcuts" class="wiki-index__link" data-translate="modals.wiki.sections.shortcuts.title">Shortcuts</a>
+            <a href="#wikiSectionSaveEditor" class="wiki-index__link" data-translate="modals.wiki.sections.save_editor.title">Save Edit Tool</a>
+            <a href="#wikiSectionCareer" class="wiki-index__link" data-translate="modals.wiki.sections.career.title">Career Mode / VTC</a>
+            <a href="#wikiSectionHealth" class="wiki-index__link" data-translate="modals.wiki.sections.health.title">Save Health Monitor</a>
+            <a href="#wikiSectionBackup" class="wiki-index__link" data-translate="modals.wiki.sections.backup.title">Auto Backup &amp; Restore</a>
+            <a href="#wikiSectionLogging" class="wiki-index__link" data-translate="modals.wiki.sections.logging.title">Logging &amp; Error Reports</a>
+            <a href="#wikiSectionUpdates" class="wiki-index__link" data-translate="modals.wiki.sections.updates.title">Updates</a>
+            <a href="#wikiSectionAccessibility" class="wiki-index__link" data-translate="modals.wiki.sections.accessibility.title">Accessibility / Bedienung</a>
+          </nav>
+
+          <div class="wiki-content">
+            <section id="wikiSectionWelcome" class="wiki-section">
+              <h3 data-translate="modals.wiki.sections.welcome.title">Welcome</h3>
+              <p data-translate="modals.wiki.sections.welcome.body">
+                Welcome to the SimNexus / ETS2 Save Edit Tool. This wiki explains the main areas, shortcuts and features directly inside the app.
+              </p>
+            </section>
+
+            <section id="wikiSectionShortcuts" class="wiki-section">
+              <h3 data-translate="modals.wiki.sections.shortcuts.title">Shortcuts</h3>
+              <div class="wiki-shortcut-list" role="list">
+                <div class="wiki-shortcut-item" role="listitem">
+                  <kbd>F1</kbd>
+                  <span data-translate="modals.wiki.sections.shortcuts.f1">Open the Truck section.</span>
+                </div>
+                <div class="wiki-shortcut-item" role="listitem">
+                  <kbd>F2</kbd>
+                  <span data-translate="modals.wiki.sections.shortcuts.f2">Open the Trailer section.</span>
+                </div>
+                <div class="wiki-shortcut-item" role="listitem">
+                  <kbd>F3</kbd>
+                  <span data-translate="modals.wiki.sections.shortcuts.f3">Open the Profile section.</span>
+                </div>
+                <div class="wiki-shortcut-item" role="listitem">
+                  <kbd>F4</kbd>
+                  <span data-translate="modals.wiki.sections.shortcuts.f4">Open the Settings section.</span>
+                </div>
+                <div class="wiki-shortcut-item" role="listitem">
+                  <kbd>ESC</kbd>
+                  <span data-translate="modals.wiki.sections.shortcuts.esc">Close open modals or windows when possible.</span>
+                </div>
+              </div>
+            </section>
+
+            <section id="wikiSectionSaveEditor" class="wiki-section">
+              <h3 data-translate="modals.wiki.sections.save_editor.title">Save Edit Tool</h3>
+              <ul class="wiki-bullet-list">
+                <li data-translate="modals.wiki.sections.save_editor.item_truck">Edit truck values such as wear, fuel, mileage and identity fields.</li>
+                <li data-translate="modals.wiki.sections.save_editor.item_trailer">Edit trailer values such as condition, cargo mass and trailer identity data.</li>
+                <li data-translate="modals.wiki.sections.save_editor.item_profile">Edit profile values such as money, XP, level and related progress data.</li>
+                <li data-translate="modals.wiki.sections.save_editor.item_validate">Review values before writing changes to the active save.</li>
+                <li data-translate="modals.wiki.sections.save_editor.item_backup">When backup and restore workflows are available, use them before applying risky changes.</li>
+              </ul>
+            </section>
+
+            <section id="wikiSectionCareer" class="wiki-section">
+              <h3 data-translate="modals.wiki.sections.career.title">Career Mode / VTC</h3>
+              <ul class="wiki-bullet-list">
+                <li data-translate="modals.wiki.sections.career.item_dispatcher">Dispatcher workflows help coordinate job generation, assignment and routing decisions.</li>
+                <li data-translate="modals.wiki.sections.career.item_jobs">Jobs, offers, active contracts and history provide operational visibility for current and past work.</li>
+                <li data-translate="modals.wiki.sections.career.item_company">The company profile area covers company identity, visibility and organization settings.</li>
+                <li data-translate="modals.wiki.sections.career.item_members">Members and roles define access, responsibilities and company participation.</li>
+                <li data-translate="modals.wiki.sections.career.item_fleet">Fleet panels summarize trucks, assignments, readiness and maintenance state.</li>
+                <li data-translate="modals.wiki.sections.career.item_stats">Balance, statistics and achievements help track long-term company progress.</li>
+              </ul>
+            </section>
+
+            <section id="wikiSectionHealth" class="wiki-section">
+              <h3 data-translate="modals.wiki.sections.health.title">Save Health Monitor</h3>
+              <ul class="wiki-bullet-list">
+                <li data-translate="modals.wiki.sections.health.item_status">Save health can report states such as Clean, Risky or Broken.</li>
+                <li data-translate="modals.wiki.sections.health.item_mods">Missing mods can lead to incomplete loads or unstable save behavior.</li>
+                <li data-translate="modals.wiki.sections.health.item_refs">Broken references indicate objects or links that can no longer be resolved safely.</li>
+                <li data-translate="modals.wiki.sections.health.item_xp">Inconsistent XP or level values can produce progression errors after editing.</li>
+                <li data-translate="modals.wiki.sections.health.item_fixes">Review hints and proposed fixes before applying any automated repair step.</li>
+              </ul>
+            </section>
+
+            <section id="wikiSectionBackup" class="wiki-section">
+              <h3 data-translate="modals.wiki.sections.backup.title">Auto Backup &amp; Restore</h3>
+              <ul class="wiki-bullet-list">
+                <li data-translate="modals.wiki.sections.backup.item_snapshots">Automatic snapshots can be created before write operations.</li>
+                <li data-translate="modals.wiki.sections.backup.item_restore">Restore workflows allow returning to a previous save state when needed.</li>
+                <li data-translate="modals.wiki.sections.backup.item_diff">If a diff preview is available, inspect it before restoring or overwriting data.</li>
+                <li data-translate="modals.wiki.sections.backup.item_why">Backups matter because save edits can affect progression, references and game stability.</li>
+              </ul>
+            </section>
+
+            <section id="wikiSectionLogging" class="wiki-section">
+              <h3 data-translate="modals.wiki.sections.logging.title">Logging &amp; Error Reports</h3>
+              <ul class="wiki-bullet-list">
+                <li data-translate="modals.wiki.sections.logging.item_reports">User-facing error reports should explain what failed in a readable way.</li>
+                <li data-translate="modals.wiki.sections.logging.item_copy">Use Copy Report when you need to share diagnostic output quickly.</li>
+                <li data-translate="modals.wiki.sections.logging.item_export">Use Export Logs when a longer support or debugging trail is required.</li>
+                <li data-translate="modals.wiki.sections.logging.item_levels">When both are available, user logs focus on workflows while developer logs include deeper technical traces.</li>
+              </ul>
+            </section>
+
+            <section id="wikiSectionUpdates" class="wiki-section">
+              <h3 data-translate="modals.wiki.sections.updates.title">Updates</h3>
+              <ul class="wiki-bullet-list">
+                <li data-translate="modals.wiki.sections.updates.item_check">Check for updates from inside the app when update functionality is available.</li>
+                <li data-translate="modals.wiki.sections.updates.item_download">Download the update package before installation starts.</li>
+                <li data-translate="modals.wiki.sections.updates.item_install">Install updates with the built-in flow instead of replacing files manually.</li>
+                <li data-translate="modals.wiki.sections.updates.item_relaunch">Relaunch the app after installation if prompted.</li>
+                <li data-translate="modals.wiki.sections.updates.item_progress">Use the progress display to monitor download and install status.</li>
+              </ul>
+            </section>
+
+            <section id="wikiSectionAccessibility" class="wiki-section">
+              <h3 data-translate="modals.wiki.sections.accessibility.title">Accessibility / Bedienung</h3>
+              <ul class="wiki-bullet-list">
+                <li data-translate="modals.wiki.sections.accessibility.item_keyboard">Most core actions should remain reachable with keyboard navigation.</li>
+                <li data-translate="modals.wiki.sections.accessibility.item_focus">Visible focus states make navigation and active controls easier to track.</li>
+                <li data-translate="modals.wiki.sections.accessibility.item_contrast">Readable contrast helps when working for long sessions in dark UI themes.</li>
+                <li data-translate="modals.wiki.sections.accessibility.item_help">The help button keeps this wiki reachable at any time inside the app.</li>
+              </ul>
+            </section>
+          </div>
+        </div>
+
+        <div class="modal-actions modal-actions--end">
+          <button id="modalWikiClose" type="button" data-translate="modals.close">Close</button>
         </div>
       </div>
     </div>
@@ -1404,161 +1579,193 @@
       </div>
     </div>
 
+    <div class="modal-backdrop" id="modalModProfileManager">
+      <div class="modal-box modal-box--xl modal-box--sheet mod-profile-manager-modal" role="dialog" aria-modal="true">
+        <div class="detail-modal-head">
+          <div>
+            <span class="modal-kicker" data-translate="modals.mod_profile_manager.sandbox.kicker">Sandbox mod profiles</span>
+            <h2 data-translate="modals.mod_profile_manager.sandbox.title">Mod Profile Manager</h2>
+            <p class="modal-description" data-translate="modals.mod_profile_manager.sandbox.description">
+              Manage ETS2 Steam Workshop mod lists and write enabled mods to the active save.
+            </p>
+          </div>
+          <div class="mod-profile-manager-head-aside">
+            <div id="modProfileManagerStatusPill" class="modal-status-pill" data-state="neutral" data-translate="modals.mod_profile_manager.status.ready">Ready</div>
+            <div id="modProfileManagerProfilePill" class="modal-status-pill" data-state="neutral">-</div>
+          </div>
+        </div>
+
+        <div class="mod-profile-manager-toolbar">
+          <button id="modSandboxReloadBtn" class="secondary-action" type="button" data-translate="modals.mod_profile_manager.sandbox.actions.reload_presets">Reload Presets</button>
+          <button id="modSteamConsoleBtn" class="secondary-action" type="button" data-translate="modals.mod_profile_manager.sandbox.actions.open_steam_console">Open Steam Console</button>
+        </div>
+
+        <div class="mod-profile-manager-body mod-profile-manager-body--sandbox">
+          <section class="mod-sandbox-editor mod-sandbox-editor--full">
+            <div class="mod-active-save-grid">
+              <article class="detail-card mod-active-save-card">
+                <span class="detail-card-label" data-translate="modals.mod_profile_manager.sandbox.fields.active_profile">Active Profile</span>
+                <strong id="modActiveProfileName">-</strong>
+              </article>
+              <article class="detail-card mod-active-save-card">
+                <span class="detail-card-label" data-translate="modals.mod_profile_manager.sandbox.fields.active_save">Active Save</span>
+                <strong id="modActiveSaveName">-</strong>
+              </article>
+            </div>
+
+            <section class="detail-card mod-workshop-add-card">
+              <div class="mod-profile-panel-head">
+                <div>
+                  <span class="detail-card-label" data-translate="modals.mod_profile_manager.sandbox.sections.presets">Sandbox Presets</span>
+                  <p data-translate="modals.mod_profile_manager.sandbox.sections.presets_description">Validate and activate bundled mod sandbox presets.</p>
+                </div>
+                <div class="sandbox-presets-head-actions">
+                  <strong id="modSandboxCount">0</strong>
+                </div>
+              </div>
+              <div class="sandbox-presets-toolbar">
+                <label class="sandbox-preset-filter sandbox-preset-filter--search">
+                  <span data-translate="modals.mod_profile_manager.sandbox.filters.search">Search</span>
+                  <input
+                    id="modSandboxSearchInput"
+                    type="search"
+                    data-translate-placeholder="modals.mod_profile_manager.sandbox.filters.search_placeholder"
+                    placeholder="Search presets"
+                  />
+                </label>
+                <label class="sandbox-preset-filter">
+                  <span data-translate="modals.mod_profile_manager.sandbox.filters.game">Game</span>
+                  <select id="modSandboxGameFilter">
+                    <option value="all" data-translate="modals.mod_profile_manager.sandbox.filters.all">All</option>
+                    <option value="ets2">ETS2</option>
+                    <option value="ats">ATS</option>
+                  </select>
+                </label>
+                <label class="sandbox-preset-filter">
+                  <span data-translate="modals.mod_profile_manager.sandbox.filters.status">Status</span>
+                  <select id="modSandboxStatusFilter">
+                    <option value="all" data-translate="modals.mod_profile_manager.sandbox.filters.all">All</option>
+                    <option value="ready" data-translate="modals.mod_profile_manager.sandbox.preset_status.ready">Ready</option>
+                    <option value="needs-check" data-translate="modals.mod_profile_manager.sandbox.preset_status.needs_check">Needs Check</option>
+                    <option value="missing" data-translate="modals.mod_profile_manager.sandbox.preset_status.missing_mods">Missing Mods</option>
+                    <option value="active" data-translate="modals.mod_profile_manager.sandbox.preset_status.activated">Active</option>
+                    <option value="disabled" data-translate="modals.mod_profile_manager.sandbox.preset_status.disabled">Disabled</option>
+                    <option value="error" data-translate="modals.mod_profile_manager.sandbox.preset_status.error">Error</option>
+                  </select>
+                </label>
+              </div>
+              <div id="modSandboxPresetList" class="sandbox-preset-list"></div>
+              <div id="modSandboxEmpty" class="modal-empty-state" hidden>
+                <strong data-translate="modals.mod_profile_manager.sandbox.empty.title">No presets available</strong>
+                <p data-translate="modals.mod_profile_manager.sandbox.empty.body">No sandbox presets are bundled yet.</p>
+              </div>
+            </section>
+
+            <section class="detail-card mod-workshop-add-card">
+              <div class="mod-profile-panel-head">
+                <div>
+                  <span class="detail-card-label" data-translate="modals.mod_profile_manager.sandbox.sections.progress">Preset Workflow</span>
+                  <p data-translate="modals.mod_profile_manager.sandbox.hints.progress">The latest sandbox preset operation is logged here.</p>
+                </div>
+              </div>
+              <div id="modSandboxProgressList" class="sandbox-progress-list"></div>
+            </section>
+
+            <section id="modApplySandboxResult" class="mod-apply-result" hidden></section>
+          </section>
+        </div>
+
+        <div class="modal-actions modal-actions--end">
+          <button id="modalModProfileManagerClose" type="button" data-translate="modals.close">Close</button>
+        </div>
+      </div>
+    </div>
+
     <div class="modal-backdrop" id="modalLevelSystem">
       <div class="modal-box modal-box--xl modal-box--sheet modal-box--level">
         <div class="detail-modal-head">
           <div>
             <span class="modal-kicker" data-translate="modals.level_system.kicker">Profile progression</span>
-            <h2 data-translate="modals.level_system.title">Level &amp; XP System</h2>
+            <h2 data-translate="modals.level_system.title">Level &amp; XP</h2>
             <p class="modal-description" data-translate="modals.level_system.description">
-              Choose a target level visually, preview the matching XP values and keep the save state consistent.
+              Set your profile progression by level or exact XP.
             </p>
           </div>
           <div id="modalLevelSystemModePill" class="modal-status-pill" data-state="neutral">-</div>
         </div>
 
-        <div class="level-system-scroll">
-          <section class="detail-card level-system-panel">
-            <div class="diagnostics-panel-head">
-              <span class="detail-card-label" data-translate="modals.level_system.current_stats.title">Current Stats</span>
-              <strong id="levelSystemCurrentStatus" class="diagnostics-inline-status">-</strong>
-            </div>
-
-            <div class="level-system-stat-grid">
-              <article class="detail-card level-system-badge-card">
-                <span class="detail-card-label" data-translate="modals.level_system.current_stats.level">Current Level</span>
-                <strong id="levelSystemCurrentBadge" class="level-system-badge">L0</strong>
-              </article>
-              <article class="detail-card">
-                <span class="detail-card-label" data-translate="modals.level_system.current_stats.total_xp">Current XP</span>
-                <strong id="levelSystemCurrentXp" class="detail-card-value">0</strong>
-              </article>
-              <article class="detail-card">
-                <span class="detail-card-label" data-translate="modals.level_system.current_stats.next_step">Current Step</span>
-                <strong id="levelSystemCurrentIncrease" class="detail-card-value">0</strong>
-              </article>
-            </div>
-
-            <div class="level-system-progress">
-              <div class="level-system-progress-head">
-                <span class="detail-card-label" data-translate="modals.level_system.current_stats.progress">Progress</span>
-                <strong id="levelSystemCurrentProgressText">-</strong>
-              </div>
-              <div class="level-system-progress-bar">
-                <div id="levelSystemCurrentProgressFill" class="level-system-progress-fill"></div>
-              </div>
-            </div>
+        <div class="modal-body level-system-scroll">
+          <section class="level-system-mode-grid" role="group" aria-label="Level edit mode">
+            <button id="levelSystemModeLevel" class="level-system-mode-btn level-system-mode-card" type="button" aria-pressed="true">
+              <span data-translate="modals.level_system.mode_level">Set by Level</span>
+              <small data-translate="modals.level_system.mode_level_desc">Enter a level and preview the calculated XP.</small>
+            </button>
+            <button id="levelSystemModeXp" class="level-system-mode-btn level-system-mode-card" type="button" aria-pressed="false">
+              <span data-translate="modals.level_system.mode_xp">Set by XP</span>
+              <small data-translate="modals.level_system.mode_xp_desc">Enter exact XP and preview the resulting level.</small>
+            </button>
           </section>
 
-          <section class="detail-card detail-hero-card level-system-panel level-system-panel--hero">
-            <div class="diagnostics-panel-head">
-              <span class="detail-card-label" data-translate="modals.level_system.target.title">New Target</span>
-              <strong id="levelSystemTargetStatus" class="diagnostics-inline-status">-</strong>
-            </div>
-
-            <div class="level-system-stat-grid">
-              <article class="detail-card level-system-badge-card level-system-badge-card--accent">
-                <span class="detail-card-label" data-translate="modals.level_system.target.selected_level">Selected Level</span>
-                <strong id="levelSystemTargetBadge" class="level-system-badge level-system-badge--accent">L0</strong>
-              </article>
-              <article class="detail-card">
-                <span class="detail-card-label" data-translate="modals.level_system.target.total_xp">Target XP</span>
-                <strong id="levelSystemTargetXp" class="detail-card-value">0</strong>
-              </article>
-              <article class="detail-card">
-                <span class="detail-card-label" data-translate="modals.level_system.target.increase">XP Increase</span>
-                <strong id="levelSystemTargetIncrease" class="detail-card-value">0</strong>
-              </article>
-              <article class="detail-card detail-card--wide">
-                <span class="detail-card-label" data-translate="modals.level_system.target.next_level">Next Level</span>
-                <strong id="levelSystemTargetNext" class="detail-card-value">-</strong>
-              </article>
-            </div>
-
-            <div class="level-system-progress">
-              <div class="level-system-progress-head">
-                <span class="detail-card-label" data-translate="modals.level_system.target.progress">Target Progress</span>
-                <strong id="levelSystemTargetProgressText">-</strong>
+          <section class="level-system-dashboard-grid">
+            <article class="detail-card level-system-panel level-system-compact-card">
+              <div class="diagnostics-panel-head">
+                <span class="detail-card-label" data-translate="modals.level_system.current_stats.title">Current Values</span>
+                <strong id="levelSystemCurrentStatus" class="diagnostics-inline-status">-</strong>
               </div>
-              <div class="level-system-progress-bar">
-                <div id="levelSystemTargetProgressFill" class="level-system-progress-fill"></div>
+
+              <div class="level-system-value-grid">
+                <div class="level-system-value-tile">
+                  <span class="detail-card-label" data-translate="modals.level_system.current_stats.level">Current Level</span>
+                  <strong id="levelSystemCurrentBadge" class="level-system-badge">L0</strong>
+                </div>
+                <div class="level-system-value-tile">
+                  <span class="detail-card-label" data-translate="modals.level_system.current_stats.total_xp">Current XP</span>
+                  <strong id="levelSystemCurrentXp" class="detail-card-value">0</strong>
+                </div>
               </div>
-            </div>
+            </article>
+
+            <article class="detail-card detail-hero-card level-system-panel level-system-compact-card">
+              <div class="diagnostics-panel-head">
+                <span class="detail-card-label" data-translate="modals.level_system.preview.title">Target Preview</span>
+                <strong id="levelSystemTargetStatus" class="diagnostics-inline-status">-</strong>
+              </div>
+
+              <div class="level-system-value-grid">
+                <div class="level-system-value-tile">
+                  <span class="detail-card-label" data-translate="modals.level_system.preview.target_level">Target Level</span>
+                  <strong id="levelSystemTargetBadge" class="level-system-badge level-system-badge--accent">L0</strong>
+                  <em id="levelSystemTargetLevelMeta" class="level-system-value-tag">-</em>
+                </div>
+                <div class="level-system-value-tile">
+                  <span class="detail-card-label" data-translate="modals.level_system.preview.target_xp">Target XP</span>
+                  <strong id="levelSystemTargetXp" class="detail-card-value">0</strong>
+                  <em id="levelSystemTargetXpMeta" class="level-system-value-tag">-</em>
+                </div>
+              </div>
+            </article>
           </section>
 
-          <section class="detail-card level-system-panel">
+          <section class="detail-card level-system-panel level-system-input-panel">
             <div class="level-system-controls-head">
               <div>
-                <span class="detail-card-label" data-translate="modals.level_system.controls.title">New Target</span>
-              </div>
-
-              <div class="level-system-mode-switch" role="group">
-                <button id="levelSystemModeLevel" class="level-system-mode-btn" type="button" data-translate="modals.level_system.mode_level">Set by Level</button>
-                <button id="levelSystemModeXp" class="level-system-mode-btn" type="button" data-translate="modals.level_system.mode_xp">Set by XP</button>
+                <span class="detail-card-label" data-translate="modals.level_system.controls.title">Input</span>
               </div>
             </div>
 
-            <div class="level-system-slider-head">
-              <span class="detail-card-label" data-translate="modals.level_system.controls.level_slider">Level Slider</span>
-              <strong id="levelSystemSliderValue" class="detail-card-value">L0</strong>
-            </div>
+            <label id="levelSystemLevelField" class="level-system-input-card">
+              <span class="modal-label" data-translate="modals.level_system.controls.level_input">Level</span>
+              <input id="levelSystemLevelInput" type="number" min="0" max="256" step="1" placeholder="Enter level" data-translate-placeholder="modals.level_system.controls.level_placeholder" />
+              <small data-translate="modals.level_system.controls.level_help">XP will be calculated from the level table.</small>
+            </label>
 
-            <div class="level-system-slider-row">
-              <button id="levelSystemMinusBtn" class="level-system-step-btn" type="button">-</button>
-              <input id="levelSystemSlider" class="level-system-slider" type="range" min="0" max="256" step="1" value="0" />
-              <button id="levelSystemPlusBtn" class="level-system-step-btn" type="button">+</button>
-            </div>
-
-            <div class="level-system-input-grid">
-              <label class="modal-row">
-                <span class="modal-label" data-translate="modals.level_system.controls.level_input">Level</span>
-                <input id="levelSystemLevelInput" type="number" min="0" max="256" step="1" />
-              </label>
-              <label class="modal-row">
-                <span class="modal-label" data-translate="modals.level_system.controls.xp_input">XP</span>
-                <input id="levelSystemXpInput" type="number" min="0" step="1" />
-              </label>
-            </div>
-
-            <div class="level-system-presets">
-              <button class="preset-btn level-system-preset-btn" type="button" data-level-preset="10"></button>
-              <button class="preset-btn level-system-preset-btn" type="button" data-level-preset="25"></button>
-              <button class="preset-btn level-system-preset-btn" type="button" data-level-preset="50"></button>
-              <button class="preset-btn level-system-preset-btn" type="button" data-level-preset="100"></button>
-              <button class="preset-btn level-system-preset-btn" type="button" data-level-preset="250"></button>
-            </div>
-
-            <div class="level-system-quick-actions">
-              <button id="levelSystemResetBtn" type="button" data-translate="modals.level_system.controls.reset_current">Reset to Current</button>
-              <button id="levelSystemMaxBtn" type="button" data-translate="modals.level_system.controls.max_level">Max Level</button>
-            </div>
+            <label id="levelSystemXpField" class="level-system-input-card">
+              <span class="modal-label" data-translate="modals.level_system.controls.xp_input">XP</span>
+              <input id="levelSystemXpInput" type="number" min="0" step="1" placeholder="Enter XP" data-translate-placeholder="modals.level_system.controls.xp_placeholder" />
+              <small data-translate="modals.level_system.controls.xp_help">Level will be calculated from the level table.</small>
+            </label>
 
             <p id="levelSystemHint" class="level-system-hint" hidden></p>
-          </section>
-
-          <section class="detail-card level-system-panel">
-            <div class="diagnostics-panel-head">
-              <span class="detail-card-label" data-translate="modals.level_system.summary.title">Change Summary</span>
-            </div>
-
-            <div class="level-system-summary-grid">
-              <article class="detail-card">
-                <span class="detail-card-label" data-translate="modals.level_system.summary.level_change">Level Change</span>
-                <strong id="levelSystemSummaryLevel" class="detail-card-value">-</strong>
-              </article>
-              <article class="detail-card">
-                <span class="detail-card-label" data-translate="modals.level_system.summary.xp_change">XP Change</span>
-                <strong id="levelSystemSummaryXp" class="detail-card-value">-</strong>
-              </article>
-              <article class="detail-card">
-                <span class="detail-card-label" data-translate="modals.level_system.summary.delta">XP Delta</span>
-                <strong id="levelSystemSummaryDelta" class="detail-card-value">-</strong>
-              </article>
-              <article class="detail-card">
-                <span class="detail-card-label" data-translate="modals.level_system.summary.mode">Mode</span>
-                <strong id="levelSystemSummaryMode" class="detail-card-value">-</strong>
-              </article>
-            </div>
           </section>
         </div>
 
@@ -1566,6 +1773,25 @@
           <button id="modalLevelSystemClose" type="button" data-translate="modals.close">Close</button>
           <button id="modalLevelSystemApply" class="apply" type="button" data-translate="modals.level_system.actions.apply">Set Level &amp; XP</button>
         </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="modalSkilltree">
+      <div class="modal-box modal-box--xl modal-box--sheet modal-box--skilltree" role="dialog" aria-modal="true">
+        <div class="detail-modal-head">
+          <div>
+            <span class="modal-kicker" data-translate="editor.skilltree.launch_kicker">Driver specialization</span>
+            <h2 data-translate="editor.skilltree.title">Skilltree Editor</h2>
+            <p class="modal-description" data-translate="editor.skilltree.modal_desc">
+              Edit driver skills in a focused workspace without changing the backend save logic.
+            </p>
+          </div>
+          <button id="modalSkilltreeClose" class="modal-icon-close" type="button" data-translate-aria-label="modals.close" aria-label="Close">
+            <span aria-hidden="true">X</span>
+          </button>
+        </div>
+
+        <div id="skilltreeModalRoot" class="skilltree-modal-root"></div>
       </div>
     </div>
 

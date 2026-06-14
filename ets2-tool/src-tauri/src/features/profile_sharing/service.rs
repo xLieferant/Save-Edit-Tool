@@ -143,8 +143,8 @@ pub fn export_shared_profile(
         archive_path.display()
     );
 
-    let export_result = write_profile_archive(&profile_dir, &temp_archive_path, &manifest).and_then(
-        |exported_files| {
+    let export_result = write_profile_archive(&profile_dir, &temp_archive_path, &manifest)
+        .and_then(|exported_files| {
             fs::rename(&temp_archive_path, &archive_path).map_err(|error| {
                 format!(
                     "Das ZIP-Archiv konnte nicht in den Zielordner verschoben werden: {}",
@@ -152,8 +152,7 @@ pub fn export_shared_profile(
                 )
             })?;
             Ok(exported_files)
-        },
-    );
+        });
     if export_result.is_err() && temp_archive_path.exists() {
         let _ = fs::remove_file(&temp_archive_path);
     }
@@ -212,8 +211,12 @@ pub fn import_shared_profile(
     let archive_path = require_archive_path(archive_path)?;
     let selected_game = selected_game(profile_state)?;
     let import_root = resolve_import_root(&selected_game)?;
-    fs::create_dir_all(&import_root)
-        .map_err(|error| format!("Der Zielordner fuer den Import konnte nicht vorbereitet werden: {}", error))?;
+    fs::create_dir_all(&import_root).map_err(|error| {
+        format!(
+            "Der Zielordner fuer den Import konnte nicht vorbereitet werden: {}",
+            error
+        )
+    })?;
 
     let mut archive = open_archive(&archive_path)?;
     let inspection = inspect_archive(&mut archive)?;
@@ -227,11 +230,19 @@ pub fn import_shared_profile(
     let staging_dir = import_root.join(format!(".profile_import_{}", Uuid::new_v4().simple()));
 
     if staging_dir.exists() {
-        fs::remove_dir_all(&staging_dir)
-            .map_err(|error| format!("Ein alter Import-Zwischenspeicher konnte nicht entfernt werden: {}", error))?;
+        fs::remove_dir_all(&staging_dir).map_err(|error| {
+            format!(
+                "Ein alter Import-Zwischenspeicher konnte nicht entfernt werden: {}",
+                error
+            )
+        })?;
     }
-    fs::create_dir_all(&staging_dir)
-        .map_err(|error| format!("Der temporaere Importordner konnte nicht erstellt werden: {}", error))?;
+    fs::create_dir_all(&staging_dir).map_err(|error| {
+        format!(
+            "Der temporaere Importordner konnte nicht erstellt werden: {}",
+            error
+        )
+    })?;
 
     dev_log!(
         "[profile_sharing] import start archive={} target={}",
@@ -434,13 +445,10 @@ fn file_path_to_string(path: tauri_plugin_dialog::FilePath) -> Result<String, St
 }
 
 fn open_archive(archive_path: &Path) -> Result<ZipArchive<File>, String> {
-    let file = File::open(archive_path).map_err(|error| {
-        format!(
-            "Die ZIP-Datei konnte nicht geoeffnet werden: {}",
-            error
-        )
-    })?;
-    ZipArchive::new(file).map_err(|error| format!("Die ZIP-Datei ist ungueltig oder beschaedigt: {}", error))
+    let file = File::open(archive_path)
+        .map_err(|error| format!("Die ZIP-Datei konnte nicht geoeffnet werden: {}", error))?;
+    ZipArchive::new(file)
+        .map_err(|error| format!("Die ZIP-Datei ist ungueltig oder beschaedigt: {}", error))
 }
 
 fn sanitize_filename_component(value: &str) -> String {
@@ -479,22 +487,30 @@ fn write_profile_archive(
     archive_path: &Path,
     manifest: &SharedProfileManifest,
 ) -> Result<usize, String> {
-    let file = File::create(archive_path).map_err(|error| {
-        format!(
-            "Die ZIP-Datei konnte nicht erstellt werden: {}",
-            error
-        )
-    })?;
+    let file = File::create(archive_path)
+        .map_err(|error| format!("Die ZIP-Datei konnte nicht erstellt werden: {}", error))?;
     let mut zip = ZipWriter::new(file);
     let options: FileOptions<()> =
         FileOptions::default().compression_method(CompressionMethod::Deflated);
 
-    let manifest_json =
-        serde_json::to_vec_pretty(manifest).map_err(|error| format!("Das Export-Manifest konnte nicht erstellt werden: {}", error))?;
-    zip.start_file(MANIFEST_NAME, options)
-        .map_err(|error| format!("Das Export-Manifest konnte nicht in das Archiv geschrieben werden: {}", error))?;
-    zip.write_all(&manifest_json)
-        .map_err(|error| format!("Das Export-Manifest konnte nicht geschrieben werden: {}", error))?;
+    let manifest_json = serde_json::to_vec_pretty(manifest).map_err(|error| {
+        format!(
+            "Das Export-Manifest konnte nicht erstellt werden: {}",
+            error
+        )
+    })?;
+    zip.start_file(MANIFEST_NAME, options).map_err(|error| {
+        format!(
+            "Das Export-Manifest konnte nicht in das Archiv geschrieben werden: {}",
+            error
+        )
+    })?;
+    zip.write_all(&manifest_json).map_err(|error| {
+        format!(
+            "Das Export-Manifest konnte nicht geschrieben werden: {}",
+            error
+        )
+    })?;
 
     let mut exported_files = 0usize;
     for entry in WalkDir::new(profile_dir) {
@@ -503,18 +519,24 @@ fn write_profile_archive(
             continue;
         }
 
-        let relative = entry
-            .path()
-            .strip_prefix(profile_dir)
-            .map_err(|error| format!("Ein Profildateipfad konnte nicht vorbereitet werden: {}", error))?;
+        let relative = entry.path().strip_prefix(profile_dir).map_err(|error| {
+            format!(
+                "Ein Profildateipfad konnte nicht vorbereitet werden: {}",
+                error
+            )
+        })?;
         let archive_name = format!(
             "{}/{}",
             ARCHIVE_ROOT,
             relative.to_string_lossy().replace('\\', "/")
         );
 
-        zip.start_file(archive_name, options)
-            .map_err(|error| format!("Eine Profildatei konnte nicht in das ZIP-Archiv aufgenommen werden: {}", error))?;
+        zip.start_file(archive_name, options).map_err(|error| {
+            format!(
+                "Eine Profildatei konnte nicht in das ZIP-Archiv aufgenommen werden: {}",
+                error
+            )
+        })?;
         let data = fs::read(entry.path()).map_err(|error| {
             format!(
                 "Eine Profildatei konnte nicht gelesen werden ({}): {}",
@@ -522,17 +544,27 @@ fn write_profile_archive(
                 error
             )
         })?;
-        zip.write_all(&data)
-            .map_err(|error| format!("Eine Profildatei konnte nicht in das Archiv geschrieben werden: {}", error))?;
+        zip.write_all(&data).map_err(|error| {
+            format!(
+                "Eine Profildatei konnte nicht in das Archiv geschrieben werden: {}",
+                error
+            )
+        })?;
         exported_files += 1;
     }
 
     if exported_files == 0 {
-        return Err("Im ausgewaehlten Profil wurden keine exportierbaren Dateien gefunden.".to_string());
+        return Err(
+            "Im ausgewaehlten Profil wurden keine exportierbaren Dateien gefunden.".to_string(),
+        );
     }
 
-    zip.finish()
-        .map_err(|error| format!("Das ZIP-Archiv konnte nicht abgeschlossen werden: {}", error))?;
+    zip.finish().map_err(|error| {
+        format!(
+            "Das ZIP-Archiv konnte nicht abgeschlossen werden: {}",
+            error
+        )
+    })?;
     Ok(exported_files)
 }
 

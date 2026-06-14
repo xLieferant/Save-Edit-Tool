@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, de};
 
 fn default_load_order_unknown() -> String {
     "unknown".to_string()
@@ -242,4 +242,339 @@ pub(crate) struct ManualWorkshopPath {
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub(crate) struct ModProfileManagerSettings {
     pub manual_workshop_paths: Vec<ManualWorkshopPath>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct WorkshopMod {
+    #[serde(deserialize_with = "deserialize_u64_from_string_or_number")]
+    pub id: u64,
+    #[serde(alias = "title")]
+    pub name: String,
+    #[serde(default = "default_ets2_app_id")]
+    pub app_id: u32,
+    pub enabled: bool,
+    #[serde(default)]
+    pub url: Option<String>,
+    #[serde(default)]
+    pub status: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct WorkshopInstallStatus {
+    pub mod_id: String,
+    pub app_id: String,
+    pub installed: bool,
+    pub workshop_path: Option<String>,
+    pub checked_libraries: Vec<String>,
+    pub checked_paths: Vec<String>,
+    pub reason: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ModSandbox {
+    pub id: String,
+    pub title: String,
+    pub description: String,
+    pub mods: Vec<WorkshopMod>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SandboxCollection {
+    pub sandboxes: Vec<ModSandbox>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ApplySandboxResult {
+    pub sandbox_id: String,
+    pub sandbox_title: String,
+    pub game_sii_path: String,
+    pub backup_path: String,
+    pub applied_mods: Vec<AppliedWorkshopMod>,
+    pub skipped_mods: Vec<SkippedWorkshopMod>,
+    pub removed_existing_mod_count: usize,
+    pub applied_mod_count: usize,
+    pub validation: ValidateActivePresetModsResult,
+    pub success: bool,
+    pub message: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct AppliedWorkshopMod {
+    pub mod_id: String,
+    pub title: Option<String>,
+    pub workshop_path: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SkippedWorkshopMod {
+    pub mod_id: String,
+    pub title: Option<String>,
+    pub reason: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ReplaceActivePresetModsResult {
+    pub content: String,
+    pub removed_mod_count: usize,
+    pub written_mod_count: usize,
+    pub expected_mod_refs: Vec<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ValidateActivePresetModsResult {
+    pub success: bool,
+    pub expected_count: usize,
+    pub actual_count: usize,
+    pub expected_mod_refs: Vec<String>,
+    pub actual_mod_refs: Vec<String>,
+    pub missing_mod_refs: Vec<String>,
+    pub unexpected_mod_refs: Vec<String>,
+    pub order_matches: bool,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ActiveModBlockSnapshot {
+    pub field_name: String,
+    pub count: usize,
+    pub mod_refs: Vec<String>,
+    pub indices: Vec<usize>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SandboxPresetCollection {
+    pub sandbox_presets: Vec<SandboxModPreset>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SandboxModPreset {
+    pub id: String,
+    #[serde(alias = "name")]
+    pub title: String,
+    pub description: Option<String>,
+    #[serde(default)]
+    pub game: Option<String>,
+    #[serde(default)]
+    pub app_id: Option<u32>,
+    #[serde(default)]
+    pub enabled: Option<bool>,
+    #[serde(default)]
+    pub load_order_locked: Option<bool>,
+    #[serde(default)]
+    pub mods: Vec<SandboxPresetMod>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SandboxPresetMod {
+    #[serde(default, alias = "workshop_id", alias = "id")]
+    pub steam_id: String,
+    #[serde(default)]
+    pub source: Option<String>,
+    #[serde(default)]
+    pub package_id: Option<String>,
+    #[serde(default)]
+    pub active_mods_value: Option<String>,
+    #[serde(default = "default_ets2_app_id")]
+    pub app_id: u32,
+    #[serde(default)]
+    pub required: bool,
+    #[serde(default, alias = "name")]
+    pub display_name: Option<String>,
+    #[serde(default)]
+    pub load_order: usize,
+    #[serde(default)]
+    pub workshop_url: Option<String>,
+    #[serde(default)]
+    pub steam_protocol_url: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SandboxPresetModStatus {
+    pub steam_id: String,
+    pub source: Option<String>,
+    pub package_id: Option<String>,
+    pub active_mods_value: Option<String>,
+    pub app_id: u32,
+    pub game: String,
+    pub display_name: Option<String>,
+    pub required: bool,
+    pub load_order: usize,
+    pub found: bool,
+    pub available: bool,
+    pub reachable: bool,
+    pub status: String,
+    pub local_path: Option<String>,
+    pub workshop_url: String,
+    pub steam_protocol_url: String,
+    pub steamcmd_command: String,
+    pub checked_paths: Vec<String>,
+    pub reason: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SandboxPresetCheckResult {
+    pub preset_id: String,
+    pub title: String,
+    pub ready: bool,
+    pub can_activate: bool,
+    pub mods: Vec<SandboxPresetModStatus>,
+    pub missing_required_mods: Vec<SandboxPresetModStatus>,
+    pub missing_mods: Vec<SandboxPresetModStatus>,
+    pub found_mods: Vec<SandboxPresetModStatus>,
+    pub all_mods: Vec<SandboxPresetModStatus>,
+    pub checked_libraries: Vec<String>,
+    pub checked_at: String,
+    pub message: String,
+    pub progress_log: Vec<String>,
+    pub cache_path: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SandboxPresetActivationResult {
+    pub preset_id: String,
+    pub preset_name: String,
+    pub title: String,
+    pub success: bool,
+    pub error_code: Option<String>,
+    pub written_mods: Vec<String>,
+    pub verified_mods: Vec<String>,
+    pub written_mod_refs: Vec<String>,
+    pub backup_path: Option<String>,
+    pub cache_path: Option<String>,
+    pub mod_cache_path: Option<String>,
+    pub save_path: Option<String>,
+    pub profile_id: String,
+    pub save_name: Option<String>,
+    pub app_id: u32,
+    pub target_profile_sii_path: String,
+    pub mods_written: Vec<ActivatedModEntry>,
+    pub missing_mods: Vec<ActivationMissingModEntry>,
+    pub verification: ActivationVerification,
+    pub message: String,
+    pub progress_log: Vec<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ActivatedModEntry {
+    pub index: usize,
+    pub workshop_id: Option<String>,
+    pub app_id: Option<u32>,
+    pub display_name: String,
+    pub active_mods_value: String,
+    pub local_path: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ActivationMissingModEntry {
+    pub workshop_id: String,
+    pub app_id: u32,
+    pub display_name: Option<String>,
+    pub workshop_url: String,
+    pub reason: Option<String>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ActivationVerification {
+    pub expected_count: usize,
+    pub actual_count: usize,
+    pub order_matches: bool,
+    pub values_match: bool,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SandboxModCacheEntry {
+    pub preset_id: String,
+    pub title: String,
+    pub checked_at: String,
+    pub checked_libraries: Vec<String>,
+    pub mods: Vec<SandboxPresetModStatus>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SandboxModCacheFile {
+    pub entries: Vec<SandboxModCacheEntry>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SteamWorkshopMod {
+    pub game: String,
+    pub app_id: u32,
+    pub workshop_id: String,
+    pub installed: bool,
+    pub available: bool,
+    pub reachable: bool,
+    pub local_path: String,
+    pub workshop_url: String,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SteamWorkshopCache {
+    pub generated_at: String,
+    pub mods: Vec<SteamWorkshopMod>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SandboxActiveModsBackupCacheEntry {
+    pub preset_id: String,
+    pub title: String,
+    pub save_path: String,
+    pub file_path: String,
+    pub field_name: String,
+    pub original_count: usize,
+    pub original_mod_refs: Vec<String>,
+    pub original_indices: Vec<usize>,
+    pub timestamp: String,
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SandboxActiveModsBackupCacheFile {
+    pub entries: Vec<SandboxActiveModsBackupCacheEntry>,
+}
+
+fn default_ets2_app_id() -> u32 {
+    227300
+}
+
+fn deserialize_u64_from_string_or_number<'de, D>(deserializer: D) -> Result<u64, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    struct U64StringOrNumberVisitor;
+
+    impl<'de> de::Visitor<'de> for U64StringOrNumberVisitor {
+        type Value = u64;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            formatter.write_str("a numeric Workshop ID as number or string")
+        }
+
+        fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E> {
+            Ok(value)
+        }
+
+        fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            u64::try_from(value).map_err(|_| E::custom("Workshop ID must not be negative"))
+        }
+
+        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            value
+                .trim()
+                .parse::<u64>()
+                .map_err(|error| E::custom(format!("Invalid Workshop ID: {error}")))
+        }
+
+        fn visit_string<E>(self, value: String) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            self.visit_str(&value)
+        }
+    }
+
+    deserializer.deserialize_any(U64StringOrNumberVisitor)
 }

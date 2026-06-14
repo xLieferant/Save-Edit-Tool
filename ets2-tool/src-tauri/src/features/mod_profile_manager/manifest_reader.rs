@@ -14,8 +14,8 @@ pub struct ManifestMetadata {
 }
 
 pub fn read_plain_text_lossy(path: &Path) -> Result<String, String> {
-    let bytes = fs::read(path)
-        .map_err(|error| format!("Failed to read {}: {}", path.display(), error))?;
+    let bytes =
+        fs::read(path).map_err(|error| format!("Failed to read {}: {}", path.display(), error))?;
 
     match String::from_utf8(bytes) {
         Ok(content) => Ok(content),
@@ -77,7 +77,11 @@ fn capture_manifest_list(text: &str, key: &str) -> Vec<String> {
 
     regex
         .captures_iter(text)
-        .filter_map(|capture| capture.get(1).map(|value| value.as_str().trim().to_string()))
+        .filter_map(|capture| {
+            capture
+                .get(1)
+                .map(|value| value.as_str().trim().to_string())
+        })
         .filter(|value| !value.is_empty())
         .collect()
 }

@@ -10,6 +10,9 @@
   --text-soft: rgba(255, 255, 255, 0.64);
   --accent: #00ffff;
   --accent-rgb: 0, 255, 255;
+  --accent-secondary: #0b5c66;
+  --accent-secondary-rgb: 11, 92, 102;
+  --accent-contrast: #031014;
   --accent-soft: rgba(0, 255, 255, 0.14);
   --accent-surface: rgba(0, 255, 255, 0.11);
   --panel-border: rgba(255, 255, 255, 0.12);
@@ -65,6 +68,9 @@ body.theme-dark {
   --text-soft: rgba(255, 255, 255, 0.64);
   --accent: #00ffff;
   --accent-rgb: 0, 255, 255;
+  --accent-secondary: #0b5c66;
+  --accent-secondary-rgb: 11, 92, 102;
+  --accent-contrast: #031014;
   --accent-soft: rgba(0, 255, 255, 0.14);
   --accent-surface: rgba(0, 255, 255, 0.11);
   --panel-border: rgba(255, 255, 255, 0.12);
@@ -83,6 +89,9 @@ body.theme-light {
   --text-soft: rgba(15, 23, 42, 0.64);
   --accent: #0066ff;
   --accent-rgb: 0, 102, 255;
+  --accent-secondary: #204a9b;
+  --accent-secondary-rgb: 32, 74, 155;
+  --accent-contrast: #f8fbff;
   --accent-soft: rgba(0, 102, 255, 0.12);
   --accent-surface: rgba(0, 102, 255, 0.09);
   --panel-border: rgba(15, 23, 42, 0.12);
@@ -106,6 +115,9 @@ body.theme-neon {
   --text-soft: rgba(138, 245, 214, 0.72);
   --accent: #00ff9c;
   --accent-rgb: 0, 255, 156;
+  --accent-secondary: #0a5a3d;
+  --accent-secondary-rgb: 10, 90, 61;
+  --accent-contrast: #031014;
   --accent-soft: rgba(0, 255, 156, 0.16);
   --accent-surface: rgba(0, 255, 156, 0.11);
   --panel-border: rgba(0, 255, 156, 0.24);
@@ -113,6 +125,43 @@ body.theme-neon {
   --surface-shadow: 0 30px 90px rgba(0, 0, 0, 0.5);
   --surface-glow: 0 0 30px rgba(0, 255, 156, 0.28);
   --scroll-mask-size: 20px;
+}
+
+body.theme-neon-red {
+  --bg-main: #07080d;
+  --bg-elevated: #0d0a10;
+  --bg-panel: rgba(20, 13, 18, 0.84);
+  --bg-panel-strong: rgba(13, 9, 14, 0.95);
+  --bg-card: rgba(var(--accent-rgb), 0.075);
+  --bg-card-soft: rgba(255, 255, 255, 0.035);
+  --text-main: #fff7f9;
+  --text-muted: #caa4ad;
+  --text-soft: rgba(255, 226, 232, 0.72);
+  --accent: #ff365a;
+  --accent-rgb: 255, 54, 90;
+  --accent-secondary: #b01838;
+  --accent-secondary-rgb: 176, 24, 56;
+  --accent-contrast: #17070c;
+  --accent-soft: rgba(255, 54, 90, 0.17);
+  --accent-surface: rgba(255, 54, 90, 0.105);
+  --panel-border: rgba(255, 108, 134, 0.22);
+  --card-border: rgba(255, 108, 134, 0.16);
+  --surface-shadow: 0 30px 90px rgba(0, 0, 0, 0.58);
+  --surface-glow: 0 0 34px rgba(255, 54, 90, 0.2);
+  --scroll-mask-size: 20px;
+  --dropdown-surface: #190d11;
+  --dropdown-surface-strong: #12080c;
+  --dropdown-border: rgba(255, 104, 132, 0.32);
+  --dropdown-text: #fff5f7;
+  --dropdown-text-muted: #f0cad2;
+  --dropdown-hover: rgba(255, 53, 95, 0.18);
+  --dropdown-active: rgba(255, 53, 95, 0.24);
+  --status-glow: 0 0 22px rgba(255, 53, 95, 0.48);
+  --status-glow-soft: 0 0 36px rgba(255, 53, 95, 0.22);
+  --focus-ring: 0 0 0 3px rgba(255, 53, 95, 0.22);
+  --scrollbar-track: rgba(255, 54, 90, 0.055);
+  --scrollbar-thumb: rgba(255, 88, 118, 0.34);
+  --scrollbar-thumb-hover: rgba(255, 112, 140, 0.56);
 }
 
 * {
@@ -132,6 +181,7 @@ html {
 .table-scroll,
 .career-auth-card,
 .modal-box,
+.skilltree-modal-root,
 .share-modal-scroll,
 .profile-bar .custom-dropdown-list,
 .profile-bar .dropdown-list,
@@ -151,6 +201,7 @@ body.mode-editor .status-cluster {
 .table-scroll::-webkit-scrollbar,
 .career-auth-card::-webkit-scrollbar,
 .modal-box::-webkit-scrollbar,
+.skilltree-modal-root::-webkit-scrollbar,
 .share-modal-scroll::-webkit-scrollbar,
 .profile-bar .custom-dropdown-list::-webkit-scrollbar,
 .profile-bar .dropdown-list::-webkit-scrollbar,
@@ -169,6 +220,7 @@ body.mode-editor .status-cluster::-webkit-scrollbar {
 .table-scroll::-webkit-scrollbar-track,
 .career-auth-card::-webkit-scrollbar-track,
 .modal-box::-webkit-scrollbar-track,
+.skilltree-modal-root::-webkit-scrollbar-track,
 .share-modal-scroll::-webkit-scrollbar-track,
 .profile-bar .custom-dropdown-list::-webkit-scrollbar-track,
 .profile-bar .dropdown-list::-webkit-scrollbar-track,
@@ -187,6 +239,7 @@ body.mode-editor .status-cluster::-webkit-scrollbar-track {
 .table-scroll::-webkit-scrollbar-thumb,
 .career-auth-card::-webkit-scrollbar-thumb,
 .modal-box::-webkit-scrollbar-thumb,
+.skilltree-modal-root::-webkit-scrollbar-thumb,
 .share-modal-scroll::-webkit-scrollbar-thumb,
 .profile-bar .custom-dropdown-list::-webkit-scrollbar-thumb,
 .profile-bar .dropdown-list::-webkit-scrollbar-thumb,
@@ -207,6 +260,7 @@ body.mode-editor .status-cluster::-webkit-scrollbar-thumb {
 .table-scroll:hover::-webkit-scrollbar-thumb,
 .career-auth-card:hover::-webkit-scrollbar-thumb,
 .modal-box:hover::-webkit-scrollbar-thumb,
+.skilltree-modal-root:hover::-webkit-scrollbar-thumb,
 .share-modal-scroll:hover::-webkit-scrollbar-thumb,
 .profile-bar .custom-dropdown-list:hover::-webkit-scrollbar-thumb,
 .profile-bar .dropdown-list:hover::-webkit-scrollbar-thumb,
@@ -528,7 +582,7 @@ select option:disabled {
 }
 
 .mode-btn.active {
-  color: #031014;
+  color: var(--accent-contrast);
   background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.95), rgba(var(--accent-rgb), 0.7));
   box-shadow: 0 12px 30px rgba(var(--accent-rgb), 0.22);
 }
@@ -731,6 +785,19 @@ select option:disabled {
   box-shadow: 0 0 18px rgba(56, 189, 248, 0.4);
 }
 
+body.theme-neon-red #statusPluginInstalled.is-active,
+body.theme-neon-red #statusSdkConnected.is-active {
+  background: linear-gradient(135deg, rgba(255, 53, 95, 0.18), rgba(255, 255, 255, 0.02));
+  border-color: rgba(255, 104, 132, 0.5);
+  color: #ffe5ea;
+}
+
+body.theme-neon-red #statusPluginInstalled.is-active .status-lamp,
+body.theme-neon-red #statusSdkConnected.is-active .status-lamp {
+  background: #ff355f;
+  box-shadow: 0 0 18px rgba(255, 53, 95, 0.36);
+}
+
 #statusSdkConnected.is-active {
   background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(255, 255, 255, 0.02));
   border-color: rgba(168, 85, 247, 0.6);
@@ -863,6 +930,9 @@ body.mode-career .nav-wrapper {
 .nav-action:focus-visible,
 .version-btn:focus-visible,
 .refresh-btn:focus-visible,
+.wiki-help-btn:focus-visible,
+.wiki-close-btn:focus-visible,
+.wiki-index__link:focus-visible,
 .profile-bar .profile-picker:focus-visible,
 .profile-bar .save-picker:focus-visible,
 .profile-bar .profile-picker button:focus-visible,
@@ -1307,7 +1377,7 @@ body.mode-editor #careerView {
   min-height: 44px;
   padding: 10px 16px;
   background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.94), rgba(var(--accent-rgb), 0.66));
-  color: #041014;
+  color: var(--accent-contrast);
   font-weight: 700;
   cursor: pointer;
   box-shadow: 0 10px 24px rgba(var(--accent-rgb), 0.16);
@@ -1377,7 +1447,7 @@ body.mode-editor #careerView {
 
 .game-switch button.active {
   background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.94), rgba(var(--accent-rgb), 0.66));
-  color: #041014;
+  color: var(--accent-contrast);
   box-shadow: var(--surface-glow);
 }
 
@@ -1604,6 +1674,239 @@ body.mode-editor #careerView {
 
 .modal-actions--end {
   justify-content: flex-end;
+}
+
+.wiki-help-btn {
+  position: fixed;
+  right: clamp(16px, 2vw, 28px);
+  bottom: clamp(16px, 2vw, 28px);
+  z-index: 9500;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 54px;
+  padding: 0 18px 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--accent-rgb), 0.28);
+  background:
+    linear-gradient(135deg, rgba(var(--accent-rgb), 0.16), rgba(var(--accent-secondary-rgb), 0.26)),
+    rgba(8, 12, 20, 0.92);
+  color: var(--text-main);
+  font: inherit;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.34),
+    0 0 0 1px rgba(var(--accent-rgb), 0.08),
+    0 0 26px rgba(var(--accent-rgb), 0.16);
+  transition:
+    transform var(--interactive-fast) ease,
+    border-color var(--interactive-fast) ease,
+    box-shadow var(--interactive-fast) ease,
+    background var(--interactive-fast) ease;
+}
+
+.wiki-help-btn:hover {
+  transform: translateY(-2px);
+  border-color: rgba(var(--accent-rgb), 0.42);
+  box-shadow:
+    0 22px 46px rgba(0, 0, 0, 0.38),
+    0 0 0 1px rgba(var(--accent-rgb), 0.14),
+    0 0 32px rgba(var(--accent-rgb), 0.22);
+}
+
+.wiki-help-btn__icon {
+  width: 28px;
+  height: 28px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.92), rgba(var(--accent-secondary-rgb), 0.94));
+  color: var(--accent-contrast);
+  box-shadow: 0 0 18px rgba(var(--accent-rgb), 0.28);
+}
+
+.wiki-help-btn__label {
+  white-space: nowrap;
+}
+
+.modal-box--wiki {
+  width: min(1040px, calc(100vw - 30px));
+  max-height: min(88vh, 940px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 20px;
+  overflow: hidden;
+}
+
+.wiki-modal-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.wiki-close-btn {
+  flex: 0 0 auto;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--accent-rgb), 0.24);
+  background: rgba(var(--accent-rgb), 0.08);
+  color: var(--text-main);
+  font: inherit;
+  cursor: pointer;
+}
+
+.wiki-layout {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
+  gap: 18px;
+}
+
+.wiki-index,
+.wiki-content {
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.wiki-index {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 4px 6px 4px 0;
+}
+
+.wiki-index__link {
+  display: block;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(var(--accent-rgb), 0.14);
+  background:
+    linear-gradient(145deg, rgba(var(--accent-rgb), 0.08), rgba(255, 255, 255, 0.02));
+  color: var(--text-main);
+  text-decoration: none;
+  transition:
+    transform var(--interactive-fast) ease,
+    border-color var(--interactive-fast) ease,
+    background var(--interactive-fast) ease,
+    box-shadow var(--interactive-fast) ease;
+}
+
+.wiki-index__link:hover {
+  transform: translateY(-1px);
+  border-color: rgba(var(--accent-rgb), 0.3);
+  background:
+    linear-gradient(145deg, rgba(var(--accent-rgb), 0.14), rgba(255, 255, 255, 0.03));
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.18);
+}
+
+.wiki-content {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+}
+
+.wiki-section {
+  padding: 18px 20px;
+  border-radius: 18px;
+  border: 1px solid rgba(var(--accent-rgb), 0.16);
+  background:
+    radial-gradient(circle at top left, rgba(var(--accent-rgb), 0.12), transparent 36%),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02)),
+    linear-gradient(180deg, rgba(7, 12, 20, 0.92), rgba(10, 16, 24, 0.84));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 16px 36px rgba(0, 0, 0, 0.18);
+}
+
+.wiki-section h3 {
+  margin: 0 0 10px;
+  color: var(--accent);
+  font-size: clamp(18px, 1.6vw, 22px);
+}
+
+.wiki-section p,
+.wiki-bullet-list {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.wiki-bullet-list {
+  padding-left: 20px;
+  display: grid;
+  gap: 10px;
+}
+
+.wiki-shortcut-list {
+  display: grid;
+  gap: 10px;
+}
+
+.wiki-shortcut-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(var(--accent-rgb), 0.14);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.wiki-shortcut-item kbd {
+  min-width: 52px;
+  display: inline-flex;
+  justify-content: center;
+  padding: 7px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(var(--accent-rgb), 0.24);
+  background: rgba(var(--accent-rgb), 0.14);
+  color: var(--text-main);
+  font: 700 12px/1 "Cascadia Code", "Consolas", monospace;
+  letter-spacing: 0.08em;
+}
+
+@media (max-width: 920px) {
+  .modal-box--wiki {
+    width: min(100vw - 20px, 1040px);
+    max-height: calc(100vh - 20px);
+  }
+
+  .wiki-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .wiki-index {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    padding-right: 0;
+  }
+
+  .wiki-help-btn {
+    padding-right: 14px;
+  }
+}
+
+@media (max-width: 640px) {
+  .wiki-modal-head {
+    flex-direction: column;
+  }
+
+  .wiki-close-btn {
+    width: 100%;
+  }
+
+  .wiki-shortcut-item {
+    grid-template-columns: 1fr;
+  }
+
+  .wiki-shortcut-item kbd {
+    min-width: 0;
+    width: fit-content;
+  }
 }
 
 .modal-actions--end button {
@@ -1905,7 +2208,7 @@ input[type="checkbox"]:checked + .checkboxSlider::before {
   height: 100%;
   border-radius: inherit;
   background:
-    linear-gradient(135deg, rgba(var(--accent-rgb), 0.98), rgba(58, 236, 255, 0.8));
+    linear-gradient(135deg, rgba(var(--accent-rgb), 0.98), rgba(var(--accent-secondary-rgb), 0.8));
   box-shadow:
     0 0 18px rgba(var(--accent-rgb), 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.24);
@@ -2364,7 +2667,7 @@ input[type="checkbox"]:checked + .checkboxSlider::before {
 .level-system-badge--accent {
   background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.95), rgba(var(--accent-rgb), 0.68));
   border-color: rgba(var(--accent-rgb), 0.4);
-  color: #031014;
+  color: var(--accent-contrast);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.16),
     0 18px 38px rgba(var(--accent-rgb), 0.18);
@@ -2441,7 +2744,7 @@ input[type="checkbox"]:checked + .checkboxSlider::before {
 
 .level-system-mode-btn.is-active,
 .level-system-preset-btn.is-active {
-  color: #031014;
+  color: var(--accent-contrast);
   border-color: rgba(var(--accent-rgb), 0.4);
   background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.95), rgba(var(--accent-rgb), 0.72));
   box-shadow: 0 14px 28px rgba(var(--accent-rgb), 0.18);
@@ -2992,6 +3295,684 @@ body.mode-editor.profile-share-page-body .app-shell {
   text-decoration: underline;
 }
 
+.mod-profile-manager-modal {
+  width: min(1180px, calc(100vw - 36px));
+  max-height: min(86vh, 920px);
+  overflow: hidden;
+}
+
+.mod-profile-manager-modal .detail-modal-head {
+  margin-bottom: 14px;
+}
+
+.mod-profile-manager-head-aside {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.mod-profile-manager-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.mod-profile-manager-body {
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  grid-template-columns: minmax(260px, 0.82fr) minmax(0, 1.8fr);
+  gap: 16px;
+  padding-right: 4px;
+}
+
+.mod-profile-manager-body--sandbox {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.mod-sandbox-sidebar,
+.mod-sandbox-editor,
+.mod-sandbox-editor-content,
+.mod-sandbox-list,
+.mod-workshop-list {
+  min-width: 0;
+}
+
+.mod-sandbox-sidebar,
+.mod-sandbox-editor {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  background: var(--bg-card-soft);
+}
+
+.mod-sandbox-editor--full {
+  width: 100%;
+}
+
+.mod-profile-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mod-profile-panel-head p {
+  margin: 4px 0 0;
+  color: var(--text-soft);
+  line-height: 1.45;
+}
+
+.mod-sandbox-list,
+.mod-workshop-list,
+.mod-sandbox-editor-content {
+  display: grid;
+  gap: 12px;
+}
+
+.mod-sandbox-card,
+.mod-workshop-card {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+}
+
+.mod-sandbox-card.is-selected,
+.mod-workshop-card[data-enabled="true"] {
+  border-color: rgba(var(--accent-rgb), 0.34);
+  background: var(--accent-surface);
+}
+
+.mod-sandbox-card h3,
+.mod-workshop-card h3 {
+  margin: 0;
+  color: var(--text-main);
+  font-size: 15px;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.mod-sandbox-card p,
+.mod-workshop-card p {
+  margin: 0;
+  color: var(--text-soft);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.mod-sandbox-card-meta,
+.mod-workshop-card-meta,
+.mod-workshop-card-actions,
+.mod-sandbox-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.mod-sandbox-card-actions,
+.mod-workshop-card-actions {
+  justify-content: flex-end;
+}
+
+.sandbox-presets-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sandbox-presets-toolbar {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(120px, 180px) minmax(140px, 220px);
+  gap: 10px;
+  align-items: end;
+}
+
+.sandbox-preset-filter {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.sandbox-preset-filter span {
+  color: var(--text-soft);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sandbox-preset-filter input,
+.sandbox-preset-filter select {
+  width: 100%;
+  min-width: 0;
+}
+
+.sandbox-preset-list,
+.sandbox-progress-list {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.sandbox-preset-row {
+  display: grid;
+  grid-template-columns: 12px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.035);
+  cursor: pointer;
+  transition: border-color var(--interactive-fast), background var(--interactive-fast), transform var(--interactive-fast);
+}
+
+.sandbox-preset-row:hover {
+  border-color: rgba(var(--accent-rgb), 0.28);
+  background: var(--bg-card);
+}
+
+.sandbox-preset-row.is-selected {
+  border-color: rgba(var(--accent-rgb), 0.46);
+  background: var(--accent-surface);
+}
+
+.sandbox-preset-icon {
+  width: 10px;
+  height: 34px;
+  border-radius: 999px;
+  background: var(--text-muted);
+}
+
+.sandbox-preset-main,
+.sandbox-preset-title-line,
+.sandbox-preset-meta {
+  min-width: 0;
+}
+
+.sandbox-preset-title-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sandbox-preset-title {
+  margin: 0;
+  color: var(--text-main);
+  font-size: 15px;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sandbox-preset-description,
+.sandbox-preset-hint {
+  margin: 4px 0 0;
+  color: var(--text-soft);
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sandbox-preset-hint {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.sandbox-preset-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-top: 8px;
+  color: var(--text-soft);
+  font-size: 12px;
+}
+
+.sandbox-preset-meta span {
+  min-width: 0;
+}
+
+.sandbox-preset-meta strong {
+  color: var(--text-main);
+}
+
+.sandbox-preset-actions,
+.sandbox-mod-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.sandbox-preset-actions .secondary-action,
+.sandbox-mod-actions .secondary-action {
+  min-height: 32px;
+  padding: 7px 10px;
+  font-size: 12px;
+}
+
+.sandbox-preset-actions .sandbox-activate-action,
+.sandbox-details-footer .sandbox-activate-action {
+  border-color: rgba(var(--accent-rgb), 0.42);
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.92), rgba(var(--accent-secondary-rgb), 0.78));
+  color: var(--accent-contrast);
+}
+
+.sandbox-preset-actions .sandbox-activate-action:disabled,
+.sandbox-details-footer .sandbox-activate-action:disabled {
+  opacity: 0.48;
+  filter: grayscale(0.18);
+}
+
+.sandbox-status-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 8px;
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  background: var(--bg-card-soft);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.sandbox-status-ready,
+.sandbox-status-active,
+.sandbox-preset-icon[data-state="ready"],
+.sandbox-preset-icon[data-state="active"] {
+  border-color: rgba(99, 199, 104, 0.36);
+  color: var(--success);
+}
+
+.sandbox-preset-icon[data-state="ready"],
+.sandbox-preset-icon[data-state="active"] {
+  background: var(--success);
+}
+
+.sandbox-status-needs-check,
+.sandbox-preset-icon[data-state="needs-check"] {
+  border-color: rgba(255, 165, 0, 0.36);
+  color: var(--warning);
+}
+
+.sandbox-preset-icon[data-state="needs-check"] {
+  background: var(--warning);
+}
+
+.sandbox-status-missing,
+.sandbox-status-error,
+.sandbox-preset-icon[data-state="missing"],
+.sandbox-preset-icon[data-state="error"] {
+  border-color: rgba(255, 77, 79, 0.4);
+  color: var(--danger);
+}
+
+.sandbox-preset-icon[data-state="missing"],
+.sandbox-preset-icon[data-state="error"] {
+  background: var(--danger);
+}
+
+.sandbox-status-disabled,
+.sandbox-preset-icon[data-state="disabled"] {
+  border-color: var(--card-border);
+  color: var(--text-muted);
+}
+
+.sandbox-preset-icon[data-state="disabled"] {
+  background: var(--text-muted);
+}
+
+.sandbox-filter-empty,
+.sandbox-details-empty {
+  margin: 0;
+}
+
+.sandbox-preset-details-backdrop {
+  z-index: 1200;
+}
+
+.sandbox-preset-details-modal {
+  width: min(1040px, calc(100vw - 36px));
+  max-height: min(88vh, 860px);
+  overflow: hidden;
+}
+
+.sandbox-details-head {
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.sandbox-details-meta-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 10px;
+  color: var(--text-soft);
+  font-size: 12px;
+}
+
+.sandbox-details-scroll {
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: min(58vh, 560px);
+  display: grid;
+  gap: 14px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+}
+
+.sandbox-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.sandbox-details-grid div {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  background: var(--bg-card-soft);
+}
+
+.sandbox-details-grid span,
+.sandbox-details-grid strong {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sandbox-details-grid span {
+  color: var(--text-soft);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.sandbox-details-grid strong {
+  margin-top: 4px;
+  color: var(--text-main);
+}
+
+.sandbox-mods-table-wrap {
+  min-width: 0;
+  overflow: auto;
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+}
+
+.sandbox-mods-table {
+  width: 100%;
+  min-width: 860px;
+  border-collapse: collapse;
+}
+
+.sandbox-mods-table th,
+.sandbox-mods-table td {
+  padding: 10px;
+  border-bottom: 1px solid var(--card-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.sandbox-mods-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--bg-panel-strong);
+  color: var(--text-soft);
+  font-size: 12px;
+}
+
+.sandbox-mods-table td {
+  color: var(--text-main);
+  font-size: 13px;
+}
+
+.sandbox-mods-table td small {
+  display: block;
+  max-width: 320px;
+  margin-top: 4px;
+  color: var(--text-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sandbox-mods-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.sandbox-progress-item {
+  padding: 11px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(var(--accent-rgb), 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-main);
+}
+
+.sandbox-progress-item.is-muted {
+  color: var(--text-soft);
+}
+
+.mod-status-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 4px 9px;
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  color: var(--text-soft);
+  background: var(--bg-card-soft);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.mod-status-badge[data-state="found"] {
+  border-color: rgba(99, 199, 104, 0.36);
+  color: var(--success);
+}
+
+.mod-status-badge[data-state="missing"] {
+  border-color: rgba(255, 165, 0, 0.36);
+  color: var(--warning);
+}
+
+.mod-status-badge[data-state="path-missing"] {
+  border-color: rgba(255, 165, 0, 0.36);
+  color: var(--warning);
+}
+
+.mod-status-badge[data-state="success"] {
+  border-color: rgba(99, 199, 104, 0.36);
+  color: var(--success);
+}
+
+.mod-status-badge[data-state="warning"] {
+  border-color: rgba(255, 165, 0, 0.36);
+  color: var(--warning);
+}
+
+.mod-status-badge[data-state="error"] {
+  border-color: rgba(255, 107, 107, 0.36);
+  color: var(--danger, #ff6b6b);
+}
+
+.mod-status-badge[data-state="neutral"] {
+  border-color: var(--card-border);
+  color: var(--text-muted);
+}
+
+.mod-status-badge[data-state="empty"] {
+  border-color: var(--card-border);
+  color: var(--text-muted);
+}
+
+.mod-status-badge[data-state="unknown"] {
+  border-color: var(--card-border);
+  color: var(--text-muted);
+}
+
+.mod-active-save-grid,
+.mod-sandbox-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.mod-active-save-card {
+  gap: 8px;
+  min-width: 0;
+}
+
+.mod-active-save-card strong {
+  overflow-wrap: anywhere;
+}
+
+.mod-workshop-add-card {
+  display: grid;
+  gap: 12px;
+}
+
+.mod-workshop-add-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.mod-workshop-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-soft);
+  font-weight: 700;
+}
+
+.mod-workshop-toggle input {
+  width: 18px;
+  height: 18px;
+}
+
+.mod-apply-result {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card-soft);
+}
+
+.mod-apply-result-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text-main);
+}
+
+.mod-apply-result-grid {
+  display: grid;
+  gap: 8px;
+  color: var(--text-soft);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.mod-apply-skipped,
+.mod-apply-skipped-list {
+  display: grid;
+  gap: 10px;
+}
+
+.mod-apply-skipped {
+  padding-top: 4px;
+}
+
+.mod-apply-skipped-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+}
+
+.mod-apply-skipped-item span,
+.mod-apply-skipped-item small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.mod-apply-skipped-item span {
+  color: var(--text-main);
+  font-weight: 700;
+}
+
+.mod-apply-skipped-item small {
+  margin-top: 3px;
+  color: var(--text-soft);
+}
+
+@media (max-width: 920px) {
+  .mod-profile-manager-body,
+  .mod-active-save-grid,
+  .mod-sandbox-form-grid,
+  .mod-workshop-add-row {
+    grid-template-columns: 1fr;
+  }
+
+  .sandbox-presets-toolbar,
+  .sandbox-preset-row {
+    grid-template-columns: 1fr;
+  }
+
+  .sandbox-preset-icon {
+    width: 100%;
+    height: 4px;
+  }
+
+  .sandbox-preset-actions,
+  .sandbox-mod-actions {
+    justify-content: flex-start;
+  }
+
+  .sandbox-preset-title-line {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .sandbox-preset-details-modal {
+    width: min(100%, calc(100vw - 24px));
+    max-height: calc(100dvh - 24px);
+  }
+
+  .mod-profile-manager-modal {
+    max-height: 90vh;
+  }
+
+  .mod-apply-skipped-item {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
 .diagnostics-page-frame .diagnostics-modal-scroll {
   min-height: 0;
   padding-right: 4px;
@@ -3501,6 +4482,14 @@ body.mode-career {
   --panel-border: rgba(56, 189, 248, 0.18);
 }
 
+body.mode-career.theme-neon-red {
+  --accent: #ff355f;
+  --accent-rgb: 255, 53, 95;
+  --accent-soft: rgba(255, 53, 95, 0.18);
+  --accent-surface: rgba(255, 53, 95, 0.12);
+  --panel-border: rgba(255, 104, 132, 0.2);
+}
+
 body.mode-editor.editor-advanced {
   --accent: #f97316;
   --accent-rgb: 249, 115, 22;
@@ -3668,6 +4657,13 @@ body {
   background:
     linear-gradient(160deg, rgba(56, 189, 248, 0.18), rgba(255, 255, 255, 0.03)),
     rgba(6, 11, 22, 0.94);
+}
+
+body.theme-neon-red .hub-mode-career,
+body.theme-neon-red .plan-card.featured {
+  background:
+    linear-gradient(160deg, rgba(255, 53, 95, 0.16), rgba(255, 255, 255, 0.03)),
+    rgba(15, 7, 12, 0.92);
 }
 
 .hub-mode-editor {
@@ -4221,6 +5217,11 @@ body {
 .priority.high {
   background: rgba(56, 189, 248, 0.14);
   color: #67e8f9;
+}
+
+body.theme-neon-red .priority.high {
+  background: rgba(255, 53, 95, 0.14);
+  color: #ffc8d3;
 }
 
 .priority.medium {
@@ -5705,7 +6706,7 @@ body.mode-editor .mode-btn {
 }
 
 body.mode-editor .mode-btn.active {
-  color: #031014;
+  color: var(--accent-contrast);
   background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.95), rgba(var(--accent-rgb), 0.72));
   box-shadow: 0 12px 28px rgba(var(--accent-rgb), 0.2);
 }
@@ -5750,6 +6751,8 @@ body.mode-editor .workspace-shell {
   display: grid;
   grid-template-columns: clamp(320px, 26vw, 420px) minmax(0, 1fr);
   gap: var(--space-sm);
+  flex: 1 1 auto;
+  height: 100%;
   min-height: 0;
   align-items: stretch;
 }
@@ -5760,6 +6763,7 @@ body.mode-editor #careerSidebar {
 
 body.mode-editor .editor-sidebar {
   min-height: 0;
+  max-height: 100%;
   padding: 0;
   border-radius: calc(var(--radius-lg) + 2px);
   overflow: hidden;
@@ -5768,9 +6772,12 @@ body.mode-editor .editor-sidebar {
 body.mode-editor .editor-sidebar-scroll {
   display: grid;
   gap: var(--space-md);
+  align-content: start;
   min-height: 0;
+  max-height: 100%;
   width: 100%;
   padding: var(--space-md);
+  overflow-x: hidden;
   overflow-y: auto;
 }
 
@@ -5897,7 +6904,7 @@ body.mode-editor .game-switch button.active,
 body.mode-editor .preset-btn.active,
 body.mode-editor .nav-btn.active,
 body.mode-editor .nav-action.active {
-  color: #031014;
+  color: var(--accent-contrast);
   border-color: rgba(var(--accent-rgb), 0.45);
   background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.95), rgba(var(--accent-rgb), 0.72));
   box-shadow: 0 16px 32px rgba(var(--accent-rgb), 0.2);
@@ -6241,7 +7248,7 @@ body.mode-editor .dropdown-item-status {
 }
 
 body.mode-editor .dropdown-item.is-selected .dropdown-item-status {
-  color: #031014;
+  color: var(--accent-contrast);
   background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.96), rgba(var(--accent-rgb), 0.7));
   box-shadow: 0 0 18px rgba(var(--accent-rgb), 0.22);
   transform: scale(1);
@@ -6306,7 +7313,8 @@ body.mode-editor .workspace-main {
   min-height: 0;
   padding: var(--space-md);
   border-radius: calc(var(--radius-lg) + 2px);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 body.mode-editor .save-editor-view.workspace-view.is-active {
@@ -6317,20 +7325,20 @@ body.mode-editor .save-editor-view.workspace-view.is-active {
 
 body.mode-editor .save-editor-shell {
   display: block;
-  height: 100%;
-  min-height: 0;
+  height: auto;
+  min-height: 100%;
 }
 
 body.mode-editor .save-content-scroll {
   display: grid;
   align-content: start;
   gap: var(--space-md);
-  height: 100%;
-  min-height: 0;
-  overflow-y: auto;
+  height: auto;
+  min-height: 100%;
+  overflow: visible;
   overflow-x: hidden;
   padding-right: 6px;
-  padding-bottom: 2px;
+  padding-bottom: var(--space-lg);
   container-type: inline-size;
 }
 
@@ -6530,7 +7538,7 @@ body.mode-editor .save-reset-actions .utility-primary-action {
   min-width: 148px;
   border-color: rgba(var(--accent-rgb), 0.45);
   background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.94), rgba(var(--accent-rgb), 0.72));
-  color: #031014;
+  color: var(--accent-contrast);
   box-shadow: 0 14px 30px rgba(0, 0, 0, 0.24);
 }
 
@@ -7143,6 +8151,14 @@ body.mode-editor .modal-box--user-logs {
   overflow: hidden;
 }
 
+body.mode-editor .modal-box--wiki {
+  width: min(1040px, 100%);
+  max-height: min(88vh, 940px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+}
+
 body.mode-editor .modal-box--level {
   width: min(1100px, 100%);
   max-height: min(88vh, 920px);
@@ -7301,7 +8317,7 @@ body.mode-editor .modal-actions .apply,
 body.mode-editor .tool-card button,
 body.mode-editor .preset-btn.active {
   background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.95), rgba(var(--accent-rgb), 0.72));
-  color: #031014;
+  color: var(--accent-contrast);
 }
 
 body.mode-editor .modal-row {
@@ -7436,7 +8452,10 @@ body.mode-editor .github-public-lock #editorFleetCard strong {
     top: var(--space-xs);
     left: var(--space-xs);
     bottom: var(--space-xs);
+    height: auto;
+    max-height: calc(100dvh - (var(--space-xs) * 2));
     width: min(400px, calc(100vw - (var(--space-xs) * 2)));
+    flex-basis: auto;
     transform: translateX(calc(-100% - 16px));
     opacity: 0;
     pointer-events: none;
@@ -7453,6 +8472,10 @@ body.mode-editor .github-public-lock #editorFleetCard strong {
     transform: translateX(0);
     opacity: 1;
     pointer-events: auto;
+  }
+
+  body.mode-editor .editor-sidebar-scroll {
+    padding: 10px;
   }
 
   body.mode-editor .save-hero {
@@ -7589,7 +8612,7 @@ body.mode-editor .github-public-lock #editorFleetCard strong {
   body.mode-editor .save-tool-stage,
   body.mode-editor .overview-card,
   body.mode-editor .editor-sidebar-block {
-    padding: var(--space-sm);
+    padding: 10px;
   }
 
   body.mode-editor .picker-menu {
@@ -7599,4 +8622,3681 @@ body.mode-editor .github-public-lock #editorFleetCard strong {
   body.mode-editor .status-pill {
     padding: 8px 12px;
   }
+}
+
+body.mode-editor.theme-neon-red {
+  --border-subtle: rgba(255, 118, 143, 0.16);
+}
+
+body.mode-editor.theme-neon-red .command-header,
+body.mode-editor.theme-neon-red .editor-sidebar,
+body.mode-editor.theme-neon-red .workspace-main,
+body.mode-editor.theme-neon-red .overview-card,
+body.mode-editor.theme-neon-red .save-tool-stage,
+body.mode-editor.theme-neon-red .save-hero,
+body.mode-editor.theme-neon-red .user-menu-dropdown,
+body.mode-editor.theme-neon-red .modal-box {
+  background:
+    radial-gradient(circle at top left, rgba(255, 54, 90, 0.1), transparent 30%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.018)),
+    linear-gradient(160deg, rgba(14, 12, 18, 0.97), rgba(8, 9, 14, 0.94));
+  border-color: rgba(255, 112, 141, 0.15);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 24px 62px rgba(0, 0, 0, 0.36),
+    0 0 0 1px rgba(255, 54, 90, 0.045);
+}
+
+body.mode-editor .command-header {
+  overflow: hidden;
+}
+
+body.mode-editor .command-header::after {
+  content: "";
+  position: absolute;
+  inset: auto -8% -72% 38%;
+  height: 150px;
+  background: radial-gradient(circle, rgba(var(--accent-rgb), 0.18), transparent 68%);
+  pointer-events: none;
+}
+
+body.mode-editor .editor-sidebar-block {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(255, 255, 255, 0.04);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015)),
+    linear-gradient(155deg, rgba(14, 8, 12, 0.88), rgba(9, 6, 9, 0.72));
+}
+
+body.mode-editor .editor-sidebar-block::before,
+body.mode-editor .overview-card::before,
+body.mode-editor .save-tool-stage::before,
+body.mode-editor .tool-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.52), rgba(var(--accent-rgb), 0.04), transparent 82%);
+  pointer-events: none;
+}
+
+body.mode-editor .editor-sidebar .nav-btn,
+body.mode-editor .game-switch button,
+body.mode-editor .nav-action,
+body.mode-editor .version-btn,
+body.mode-editor .preset-btn,
+body.mode-editor .secondary-action,
+body.mode-editor .table-action,
+body.mode-editor .tool-card button,
+body.mode-editor .modal-actions button {
+  position: relative;
+  overflow: hidden;
+  min-height: 48px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.025)),
+    linear-gradient(145deg, rgba(22, 11, 15, 0.78), rgba(13, 8, 11, 0.76));
+}
+
+body.mode-editor .editor-sidebar .nav-btn::after,
+body.mode-editor .game-switch button::after,
+body.mode-editor .nav-action::after,
+body.mode-editor .version-btn::after,
+body.mode-editor .preset-btn::after,
+body.mode-editor .secondary-action::after,
+body.mode-editor .table-action::after,
+body.mode-editor .tool-card button::after,
+body.mode-editor .modal-actions button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 16%, rgba(255, 255, 255, 0.12), transparent 58%);
+  opacity: 0;
+  transform: translateX(-24%);
+  transition: opacity var(--interactive-fast) ease, transform 260ms ease;
+  pointer-events: none;
+}
+
+body.mode-editor .editor-sidebar .nav-btn:hover::after,
+body.mode-editor .game-switch button:hover::after,
+body.mode-editor .nav-action:hover::after,
+body.mode-editor .version-btn:hover::after,
+body.mode-editor .preset-btn:hover::after,
+body.mode-editor .secondary-action:hover::after,
+body.mode-editor .table-action:hover::after,
+body.mode-editor .tool-card button:hover::after,
+body.mode-editor .modal-actions button:hover::after {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+body.mode-editor .editor-sidebar .nav-btn.active,
+body.mode-editor .game-switch button.active,
+body.mode-editor .preset-btn.active,
+body.mode-editor .nav-action.active,
+body.mode-editor .table-action,
+body.mode-editor .tool-card button,
+body.mode-editor .modal-actions .apply {
+  border-color: rgba(var(--accent-rgb), 0.42);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.025)),
+    linear-gradient(135deg, rgba(var(--accent-rgb), 0.94), rgba(var(--accent-secondary-rgb), 0.82));
+  box-shadow:
+    0 16px 34px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(var(--accent-rgb), 0.14),
+    0 0 24px rgba(var(--accent-rgb), 0.16);
+}
+
+body.mode-editor .secondary-action,
+body.mode-editor .preset-btn,
+body.mode-editor .nav-action,
+body.mode-editor .version-btn {
+  color: var(--text-soft);
+}
+
+body.mode-editor .secondary-action:hover:not(:disabled),
+body.mode-editor .preset-btn:hover:not(:disabled),
+body.mode-editor .nav-action:hover:not(:disabled),
+body.mode-editor .version-btn:hover:not(:disabled) {
+  color: var(--text-main);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03)),
+    linear-gradient(145deg, rgba(31, 14, 20, 0.86), rgba(17, 8, 12, 0.8));
+}
+
+/* Visual sidebar/card tuning. Scroll layout is centralized in the final block. */
+body.mode-editor .editor-sidebar-block {
+  gap: 8px;
+  padding: 12px;
+  border-radius: 16px;
+}
+
+body.mode-editor .editor-sidebar-block:not(:last-child) {
+  padding-bottom: 12px;
+}
+
+body.mode-editor .editor-sidebar-block-head {
+  gap: 8px;
+  min-height: 18px;
+}
+
+body.mode-editor .editor-section-label {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+}
+
+body.mode-editor .profile-status {
+  min-height: 0;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+body.mode-editor .editor-session-panel {
+  --picker-control-min-height: 62px;
+  --picker-control-padding: 10px 12px;
+  --picker-control-radius: 15px;
+  --picker-control-gap: 10px;
+  --picker-item-min-height: 46px;
+  --picker-item-padding: 10px 12px;
+}
+
+body.mode-editor .editor-session-grid,
+body.mode-editor .editor-picker-stack,
+body.mode-editor .editor-picker-actions,
+body.mode-editor .editor-tabs,
+body.mode-editor .editor-quick-actions {
+  gap: 8px;
+}
+
+body.mode-editor .game-switch {
+  gap: 8px;
+}
+
+body.mode-editor .game-switch button,
+body.mode-editor .editor-sidebar .nav-btn,
+body.mode-editor .editor-sidebar .nav-action,
+body.mode-editor .editor-sidebar .version-btn {
+  min-height: 38px;
+  padding: 8px 11px;
+  border-radius: 13px;
+  font-size: 13px;
+  line-height: 1.25;
+  font-weight: 650;
+}
+
+body.mode-editor .editor-picker-action {
+  min-height: 38px;
+}
+
+body.mode-editor .editor-picker {
+  min-height: var(--picker-control-min-height);
+  padding: var(--picker-control-padding);
+  border-radius: var(--picker-control-radius);
+  gap: var(--picker-control-gap);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.035),
+    0 8px 18px rgba(0, 0, 0, 0.12);
+}
+
+body.mode-editor .picker-leading {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+}
+
+body.mode-editor .picker-copy {
+  gap: 3px;
+}
+
+body.mode-editor .picker-label {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+}
+
+body.mode-editor .picker-value {
+  -webkit-line-clamp: 2;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+body.mode-editor .picker-toggle {
+  width: 32px;
+  height: 32px;
+  border-radius: 11px;
+}
+
+body.mode-editor .game-switch button img {
+  width: 20px;
+  height: 20px;
+}
+
+body.mode-editor .editor-sidebar .nav-btn.active,
+body.mode-editor .game-switch button.active,
+body.mode-editor .editor-sidebar .nav-action.active {
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.24),
+    0 0 0 1px rgba(var(--accent-rgb), 0.12),
+    0 0 18px rgba(var(--accent-rgb), 0.13);
+}
+
+body.mode-editor.theme-neon-red .editor-sidebar-block {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.016)),
+    linear-gradient(155deg, rgba(15, 13, 18, 0.9), rgba(9, 9, 14, 0.82));
+  border-color: rgba(255, 116, 142, 0.11);
+}
+
+body.mode-editor.theme-neon-red .editor-picker,
+body.mode-editor.theme-neon-red .editor-sidebar .nav-btn,
+body.mode-editor.theme-neon-red .editor-sidebar .nav-action,
+body.mode-editor.theme-neon-red .editor-sidebar .version-btn,
+body.mode-editor.theme-neon-red .game-switch button {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.048), rgba(255, 255, 255, 0.018)),
+    rgba(12, 12, 17, 0.82);
+  border-color: rgba(255, 116, 142, 0.12);
+}
+
+body.mode-editor.theme-neon-red .editor-sidebar .nav-btn:hover,
+body.mode-editor.theme-neon-red .editor-sidebar .nav-action:hover,
+body.mode-editor.theme-neon-red .editor-sidebar .version-btn:hover,
+body.mode-editor.theme-neon-red .game-switch button:hover,
+body.mode-editor.theme-neon-red .editor-picker:hover {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.024)),
+    rgba(18, 14, 20, 0.9);
+  border-color: rgba(var(--accent-rgb), 0.28);
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(var(--accent-rgb), 0.07);
+}
+
+body.mode-editor.theme-neon-red .editor-sidebar .nav-btn.active,
+body.mode-editor.theme-neon-red .game-switch button.active,
+body.mode-editor.theme-neon-red .editor-sidebar .nav-action.active {
+  color: #fff8fa;
+  border-color: rgba(var(--accent-rgb), 0.44);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.035)),
+    linear-gradient(135deg, rgba(255, 54, 90, 0.88), rgba(155, 20, 47, 0.84));
+}
+
+body.mode-editor .overview-card,
+body.mode-editor .save-tool-stage,
+body.mode-editor .tool-card,
+body.mode-editor .modal-empty-state,
+body.mode-editor .detail-card,
+body.mode-editor .user-logs-meta-card {
+  position: relative;
+  overflow: hidden;
+}
+
+body.mode-editor .overview-card {
+  background:
+    radial-gradient(circle at 90% 16%, rgba(var(--accent-rgb), 0.1), transparent 26%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+    linear-gradient(160deg, rgba(14, 8, 12, 0.92), rgba(11, 6, 9, 0.78));
+  border-color: rgba(255, 118, 143, 0.14);
+}
+
+body.mode-editor .overview-card strong {
+  letter-spacing: -0.03em;
+}
+
+body.mode-editor .save-stage-head {
+  align-items: start;
+}
+
+body.mode-editor .save-stage-head h2,
+body.mode-editor .tool-content h3,
+body.mode-editor .skilltree-heading h3,
+body.mode-editor .skilltree-detail h3 {
+  letter-spacing: -0.03em;
+}
+
+body.mode-editor .tool-stage-shell {
+  min-height: 0;
+}
+
+body.mode-editor #tool-container {
+  align-items: start;
+}
+
+body.mode-editor .skilltree-shell {
+  grid-column: 1 / -1;
+}
+
+body.mode-editor .skilltree-launch-card {
+  min-height: 336px;
+  grid-template-rows: minmax(136px, 0.62fr) auto;
+}
+
+body.mode-editor .skilltree-launch-visual {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: center;
+  gap: 14px;
+  min-height: 142px;
+  padding: 24px;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgba(var(--accent-rgb), 0.18);
+  background:
+    radial-gradient(circle at 50% 50%, rgba(var(--accent-rgb), 0.18), transparent 52%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.018));
+}
+
+body.mode-editor .skilltree-launch-visual::before {
+  content: "";
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  top: 50%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(var(--accent-rgb), 0.7), transparent);
+  box-shadow: 0 0 18px rgba(var(--accent-rgb), 0.28);
+}
+
+body.mode-editor .skilltree-launch-visual span {
+  position: relative;
+  z-index: 1;
+  display: block;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--accent-rgb), 0.42);
+  background:
+    radial-gradient(circle, rgba(var(--accent-rgb), 0.9), rgba(var(--accent-rgb), 0.2) 48%, rgba(255, 255, 255, 0.04) 50%);
+  box-shadow:
+    0 0 0 8px rgba(var(--accent-rgb), 0.08),
+    0 0 28px rgba(var(--accent-rgb), 0.24);
+}
+
+body.mode-editor .modal-box--skilltree {
+  width: min(1240px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  overflow: hidden;
+}
+
+body.mode-editor .modal-icon-close {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+}
+
+body.mode-editor .skilltree-modal-root {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+body.mode-editor .modal-box--skilltree .skilltree-surface {
+  min-height: 0;
+}
+
+body.mode-editor .skilltree-surface {
+  display: grid;
+  gap: clamp(18px, 2vw, 24px);
+  padding: clamp(18px, 2vw, 28px);
+  border-radius: calc(var(--radius-lg) + 4px);
+  border: 1px solid rgba(var(--accent-rgb), 0.18);
+  background:
+    radial-gradient(circle at top left, rgba(var(--accent-rgb), 0.16), transparent 34%),
+    radial-gradient(circle at 86% 8%, rgba(255, 130, 92, 0.08), transparent 24%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02)),
+    linear-gradient(160deg, rgba(19, 7, 11, 0.96), rgba(12, 5, 8, 0.9));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 24px 62px rgba(0, 0, 0, 0.28);
+}
+
+body.mode-editor .skilltree-surface--empty {
+  min-height: 320px;
+  align-content: start;
+}
+
+body.mode-editor .skilltree-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+
+body.mode-editor .skilltree-heading {
+  display: grid;
+  gap: 8px;
+  max-width: 64ch;
+}
+
+body.mode-editor .skilltree-heading h3,
+body.mode-editor .skilltree-heading p {
+  margin: 0;
+}
+
+body.mode-editor .skilltree-heading p,
+body.mode-editor .skilltree-note,
+body.mode-editor .skilltree-detail-hint,
+body.mode-editor .skilltree-empty-state p,
+body.mode-editor .skilltree-card-copy p,
+body.mode-editor .skilltree-summary-card small,
+body.mode-editor .skilltree-detail-card p {
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+body.mode-editor .skilltree-status-pill {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--accent-rgb), 0.24);
+  background: rgba(var(--accent-rgb), 0.08);
+  color: var(--text-main);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+body.mode-editor .skilltree-status-pill[data-state="dirty"],
+body.mode-editor .skilltree-status-pill[data-state="saving"],
+body.mode-editor .skilltree-status-pill[data-state="maxed"] {
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.92), rgba(var(--accent-secondary-rgb), 0.82));
+  color: var(--accent-contrast);
+  box-shadow: 0 0 22px rgba(var(--accent-rgb), 0.18);
+}
+
+body.mode-editor .skilltree-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+body.mode-editor .skilltree-summary-card {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)),
+    rgba(255, 255, 255, 0.02);
+}
+
+body.mode-editor .skilltree-summary-card span,
+body.mode-editor .skilltree-detail-card span,
+body.mode-editor .skilltree-card-group,
+body.mode-editor .skilltree-group-label,
+body.mode-editor .skilltree-detail-kicker {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+body.mode-editor .skilltree-summary-card strong {
+  font-size: clamp(18px, 1.8vw, 24px);
+  line-height: 1.15;
+  color: var(--text-main);
+}
+
+body.mode-editor .skilltree-summary-progress {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+}
+
+body.mode-editor .skilltree-summary-progress span,
+body.mode-editor .skilltree-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(var(--accent-rgb), 0.98), rgba(var(--accent-secondary-rgb), 0.78));
+  box-shadow: 0 0 20px rgba(var(--accent-rgb), 0.22);
+}
+
+body.mode-editor .skilltree-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(320px, 0.9fr);
+  gap: 18px;
+  min-height: 0;
+}
+
+body.mode-editor .skilltree-canvas,
+body.mode-editor .skilltree-group,
+body.mode-editor .skilltree-detail {
+  min-height: 0;
+}
+
+body.mode-editor .skilltree-canvas {
+  display: grid;
+  gap: 16px;
+}
+
+body.mode-editor .skilltree-group {
+  display: grid;
+  gap: 12px;
+}
+
+body.mode-editor .skilltree-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+body.mode-editor .skilltree-group-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 14px;
+}
+
+body.mode-editor .skilltree-card {
+  display: grid;
+  gap: 14px;
+  min-height: 220px;
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015)),
+    linear-gradient(155deg, rgba(18, 8, 12, 0.92), rgba(11, 6, 9, 0.78));
+  cursor: pointer;
+  transition:
+    transform var(--interactive-fast) ease,
+    border-color var(--interactive-fast) ease,
+    box-shadow var(--interactive-fast) ease,
+    background var(--interactive-fast) ease;
+}
+
+body.mode-editor .skilltree-card:hover,
+body.mode-editor .skilltree-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(var(--accent-rgb), 0.28);
+  box-shadow:
+    0 18px 36px rgba(0, 0, 0, 0.24),
+    0 0 0 1px rgba(var(--accent-rgb), 0.08);
+  outline: none;
+}
+
+body.mode-editor .skilltree-card.is-selected {
+  border-color: rgba(var(--accent-rgb), 0.36);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.018)),
+    linear-gradient(145deg, rgba(37, 12, 18, 0.94), rgba(15, 7, 10, 0.82));
+  box-shadow:
+    0 20px 42px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(var(--accent-rgb), 0.12),
+    0 0 28px rgba(var(--accent-rgb), 0.14);
+}
+
+body.mode-editor .skilltree-card.is-maxed {
+  border-color: rgba(255, 136, 74, 0.34);
+}
+
+body.mode-editor .skilltree-card-head,
+body.mode-editor .skilltree-progress-shell,
+body.mode-editor .skilltree-stepper,
+body.mode-editor .skilltree-actions,
+body.mode-editor .skilltree-detail-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+body.mode-editor .skilltree-card-badge,
+body.mode-editor .skilltree-detail-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
+  background: rgba(var(--accent-rgb), 0.08);
+  color: var(--text-main);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+body.mode-editor .skilltree-card-copy,
+body.mode-editor .skilltree-detail-top,
+body.mode-editor .skilltree-detail-grid,
+body.mode-editor .skilltree-level-grid,
+body.mode-editor .skilltree-empty-state {
+  display: grid;
+  gap: 12px;
+}
+
+body.mode-editor .skilltree-card-copy h3,
+body.mode-editor .skilltree-card-copy p,
+body.mode-editor .skilltree-empty-state strong,
+body.mode-editor .skilltree-empty-state p,
+body.mode-editor .skilltree-detail-top h3,
+body.mode-editor .skilltree-detail-card p {
+  margin: 0;
+}
+
+body.mode-editor .skilltree-progress-bar {
+  flex: 1 1 auto;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+body.mode-editor .skilltree-progress-value {
+  flex: 0 0 auto;
+  color: var(--text-main);
+  font-size: 13px;
+}
+
+body.mode-editor .skilltree-node-track,
+body.mode-editor .skilltree-level-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+}
+
+body.mode-editor .skilltree-node,
+body.mode-editor .skilltree-level-btn {
+  min-height: 40px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-soft);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform var(--interactive-fast) ease,
+    border-color var(--interactive-fast) ease,
+    background var(--interactive-fast) ease,
+    box-shadow var(--interactive-fast) ease,
+    color var(--interactive-fast) ease;
+}
+
+body.mode-editor .skilltree-node span {
+  pointer-events: none;
+}
+
+body.mode-editor .skilltree-node.is-zero {
+  border-style: dashed;
+}
+
+body.mode-editor .skilltree-node.is-active,
+body.mode-editor .skilltree-level-btn.is-active {
+  color: var(--accent-contrast);
+  border-color: rgba(var(--accent-rgb), 0.34);
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.94), rgba(var(--accent-secondary-rgb), 0.78));
+  box-shadow: 0 10px 24px rgba(var(--accent-rgb), 0.16);
+}
+
+body.mode-editor .skilltree-node.is-current,
+body.mode-editor .skilltree-level-btn.is-active {
+  box-shadow:
+    0 12px 28px rgba(var(--accent-rgb), 0.18),
+    0 0 0 3px rgba(var(--accent-rgb), 0.14);
+}
+
+body.mode-editor .skilltree-node:hover,
+body.mode-editor .skilltree-node:focus-visible,
+body.mode-editor .skilltree-level-btn:hover,
+body.mode-editor .skilltree-level-btn:focus-visible,
+body.mode-editor .skilltree-stepper-btn:hover,
+body.mode-editor .skilltree-stepper-btn:focus-visible,
+body.mode-editor .skilltree-detail-reset:hover,
+body.mode-editor .skilltree-detail-reset:focus-visible {
+  border-color: rgba(var(--accent-rgb), 0.3);
+  color: var(--text-main);
+  outline: none;
+}
+
+body.mode-editor .skilltree-detail {
+  align-content: start;
+  gap: 16px;
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.018)),
+    linear-gradient(155deg, rgba(18, 8, 12, 0.94), rgba(11, 6, 9, 0.82));
+}
+
+body.mode-editor .skilltree-detail-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+body.mode-editor .skilltree-detail-card {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+body.mode-editor .skilltree-detail-card strong {
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+body.mode-editor .skilltree-stepper {
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(var(--accent-rgb), 0.16);
+  background: rgba(var(--accent-rgb), 0.05);
+}
+
+body.mode-editor .skilltree-stepper-btn {
+  width: 42px;
+  min-width: 42px;
+  min-height: 42px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-main);
+  font: inherit;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+body.mode-editor .skilltree-stepper-value {
+  display: grid;
+  gap: 4px;
+  text-align: center;
+}
+
+body.mode-editor .skilltree-stepper-value span {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+body.mode-editor .skilltree-stepper-value strong {
+  font-size: 16px;
+  color: var(--text-main);
+}
+
+body.mode-editor .skilltree-actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+body.mode-editor .skilltree-actions .table-action,
+body.mode-editor .skilltree-actions .secondary-action,
+body.mode-editor .skilltree-detail-reset {
+  width: auto;
+  min-width: 156px;
+}
+
+body.mode-editor .skilltree-empty-state {
+  align-content: center;
+  min-height: 220px;
+  padding: 24px;
+  border-radius: 20px;
+  border: 1px dashed rgba(var(--accent-rgb), 0.24);
+  background:
+    linear-gradient(180deg, rgba(var(--accent-rgb), 0.06), rgba(255, 255, 255, 0.02)),
+    rgba(255, 255, 255, 0.02);
+}
+
+body.mode-editor .tool-card {
+  min-height: 336px;
+  border-radius: 22px;
+  border-color: rgba(255, 255, 255, 0.06);
+  background:
+    radial-gradient(circle at 88% 14%, rgba(var(--accent-rgb), 0.12), transparent 24%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 24%),
+    linear-gradient(180deg, rgba(18, 8, 12, 0.98), rgba(11, 6, 9, 0.95));
+}
+
+body.mode-editor .tool-card:hover {
+  transform: translateY(-5px);
+  box-shadow:
+    0 22px 40px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(var(--accent-rgb), 0.1);
+}
+
+body.mode-editor .tool-card img {
+  aspect-ratio: 16 / 8.5;
+  filter: saturate(0.9) contrast(1.04);
+}
+
+body.mode-editor .modal-box input,
+body.mode-editor .modal-box textarea,
+body.mode-editor .modal-box select,
+body.mode-editor .save-reset-field input {
+  border-radius: 16px;
+  border-color: rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02)),
+    rgba(255, 255, 255, 0.02);
+  color: var(--text-main);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+body.mode-editor .modal-box input:focus-visible,
+body.mode-editor .modal-box textarea:focus-visible,
+body.mode-editor .modal-box select:focus-visible,
+body.mode-editor .save-reset-field input:focus-visible,
+body.mode-editor .skilltree-card:focus-visible,
+body.mode-editor .skilltree-node:focus-visible,
+body.mode-editor .skilltree-level-btn:focus-visible,
+body.mode-editor .skilltree-stepper-btn:focus-visible {
+  box-shadow:
+    0 0 0 1px rgba(var(--accent-rgb), 0.14),
+    0 0 0 4px rgba(var(--accent-rgb), 0.16);
+}
+
+body.mode-editor .modal-actions {
+  padding-top: 4px;
+}
+
+body.mode-editor .modal-empty-state,
+body.mode-editor .detail-card,
+body.mode-editor .user-logs-meta-card {
+  border-color: rgba(255, 255, 255, 0.06);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)),
+    rgba(255, 255, 255, 0.02);
+}
+
+body.mode-editor .modal-empty-state strong,
+body.mode-editor .detail-card-value,
+body.mode-editor .user-logs-meta-card strong {
+  color: var(--text-main);
+}
+
+@media (max-width: 1220px) {
+  body.mode-editor .skilltree-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  body.mode-editor .skilltree-workspace {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 860px) {
+  body.mode-editor .skilltree-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  body.mode-editor .skilltree-status-pill {
+    align-self: flex-start;
+  }
+
+  body.mode-editor .skilltree-group-grid {
+    grid-template-columns: 1fr;
+  }
+
+  body.mode-editor .skilltree-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  body.mode-editor .skilltree-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  body.mode-editor .skilltree-node-track,
+  body.mode-editor .skilltree-level-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  body.mode-editor .skilltree-actions .table-action,
+  body.mode-editor .skilltree-actions .secondary-action,
+  body.mode-editor .skilltree-detail-reset {
+    width: 100%;
+    min-width: 0;
+  }
+
+  body.mode-editor .skilltree-stepper {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+
+/* Save Editor Red Neon system pass */
+body.mode-editor.theme-neon-red {
+  --bg-main: #07090f;
+  --bg-elevated: #0b0e15;
+  --bg-panel: rgba(13, 16, 24, 0.88);
+  --bg-panel-strong: rgba(10, 12, 19, 0.96);
+  --bg-card: rgba(255, 255, 255, 0.045);
+  --bg-card-soft: rgba(255, 255, 255, 0.028);
+  --text-main: #f8fafc;
+  --text-muted: #9da7b7;
+  --text-soft: rgba(226, 232, 240, 0.72);
+  --accent: #ff3158;
+  --accent-rgb: 255, 49, 88;
+  --accent-secondary: #b91c3f;
+  --accent-secondary-rgb: 185, 28, 63;
+  --accent-contrast: #fff7fa;
+  --accent-soft: rgba(255, 49, 88, 0.14);
+  --accent-surface: rgba(255, 49, 88, 0.09);
+  --panel-border: rgba(148, 163, 184, 0.14);
+  --card-border: rgba(148, 163, 184, 0.12);
+  --border-subtle: rgba(148, 163, 184, 0.14);
+  --border-strong: rgba(255, 82, 117, 0.34);
+  --surface-shadow: 0 22px 56px rgba(0, 0, 0, 0.42);
+  --surface-shadow-soft: 0 14px 34px rgba(0, 0, 0, 0.26);
+  --surface-glow: 0 0 28px rgba(255, 49, 88, 0.16);
+  --focus-ring: 0 0 0 3px rgba(255, 49, 88, 0.18);
+  --scrollbar-track: rgba(148, 163, 184, 0.055);
+  --scrollbar-thumb: rgba(255, 74, 110, 0.34);
+  --scrollbar-thumb-hover: rgba(255, 96, 128, 0.55);
+}
+
+body.mode-editor {
+  --editor-topbar-min: 76px;
+  --editor-sidebar-width: clamp(300px, 23vw, 356px);
+  --editor-gap: 16px;
+  --editor-pad: 16px;
+  --editor-radius-sm: 10px;
+  --editor-radius-md: 14px;
+  --editor-radius-lg: 18px;
+  --editor-radius-xl: 22px;
+  --editor-control-height: 40px;
+  --editor-card-min: 298px;
+  --editor-card-max: 360px;
+}
+
+body.mode-editor .app-shell {
+  grid-template-rows: minmax(var(--editor-topbar-min), auto) minmax(0, 1fr);
+  gap: var(--editor-gap);
+  padding: var(--editor-pad);
+}
+
+body.mode-editor .command-header {
+  min-height: var(--editor-topbar-min);
+  padding: 12px 16px;
+  border-radius: var(--editor-radius-xl);
+  overflow: visible;
+}
+
+body.mode-editor.theme-neon-red .command-header,
+body.mode-editor.theme-neon-red .editor-sidebar,
+body.mode-editor.theme-neon-red .workspace-main,
+body.mode-editor.theme-neon-red .save-hero,
+body.mode-editor.theme-neon-red .save-tool-stage,
+body.mode-editor.theme-neon-red .overview-card,
+body.mode-editor.theme-neon-red .modal-box,
+body.mode-editor.theme-neon-red .user-menu-dropdown {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.052), rgba(255, 255, 255, 0.018)),
+    linear-gradient(160deg, rgba(13, 16, 24, 0.96), rgba(8, 10, 16, 0.94));
+  border-color: var(--panel-border);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.045),
+    var(--surface-shadow-soft);
+}
+
+body.mode-editor .command-header::after,
+body.mode-editor .editor-sidebar-block::before,
+body.mode-editor .overview-card::before,
+body.mode-editor .save-tool-stage::before,
+body.mode-editor .tool-card::before {
+  opacity: 0.72;
+}
+
+body.mode-editor .header-row-top {
+  grid-template-columns: minmax(240px, auto) minmax(360px, 1fr) minmax(320px, auto);
+  gap: 16px;
+}
+
+body.mode-editor .logo {
+  gap: 12px;
+}
+
+body.mode-editor .logo img {
+  width: 48px;
+  height: 48px;
+  border-radius: 13px;
+  box-shadow:
+    0 0 0 1px rgba(var(--accent-rgb), 0.24),
+    0 0 22px rgba(var(--accent-rgb), 0.16);
+}
+
+body.mode-editor .logo-title {
+  font-size: 20px;
+  letter-spacing: 0.08em;
+}
+
+body.mode-editor .logo-subtitle,
+body.mode-editor .hub-home-copy,
+body.mode-editor .status-text {
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}
+
+body.mode-editor .header-center {
+  justify-content: center;
+  gap: 10px;
+}
+
+body.mode-editor .hub-home-btn,
+body.mode-editor .mode-switch,
+body.mode-editor .user-menu-btn,
+body.mode-editor .status-pill {
+  border-radius: var(--editor-radius-md);
+  border-color: var(--card-border);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018)),
+    rgba(255, 255, 255, 0.018);
+}
+
+body.mode-editor .hub-home-btn {
+  min-height: 46px;
+  padding: 8px 12px;
+}
+
+body.mode-editor .mode-switch {
+  min-height: 46px;
+  padding: 4px;
+}
+
+body.mode-editor .mode-btn {
+  min-height: 36px;
+  padding: 8px 13px;
+  border-radius: 11px;
+  letter-spacing: 0.06em;
+}
+
+body.mode-editor .mode-btn.active {
+  color: #fff8fa;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.13), rgba(255, 255, 255, 0.03)),
+    linear-gradient(135deg, rgba(var(--accent-rgb), 0.9), rgba(var(--accent-secondary-rgb), 0.84));
+  box-shadow: 0 10px 24px rgba(var(--accent-rgb), 0.16);
+}
+
+body.mode-editor .status-cluster {
+  gap: 8px;
+}
+
+body.mode-editor .status-pill {
+  min-width: 124px;
+  min-height: 38px;
+  padding: 7px 10px;
+}
+
+body.mode-editor .user-menu-btn {
+  min-height: 42px;
+  padding: 6px 9px;
+}
+
+body.mode-editor .user-menu-icon {
+  width: 30px;
+  height: 30px;
+}
+
+body.mode-editor .workspace-shell {
+  display: flex;
+  gap: var(--editor-gap);
+  min-height: 0;
+  overflow: hidden;
+}
+
+body.mode-editor .editor-sidebar {
+  flex: 0 0 var(--editor-sidebar-width);
+  width: var(--editor-sidebar-width);
+  min-width: 300px;
+  height: 100%;
+  min-height: 0;
+  border-radius: var(--editor-radius-xl);
+}
+
+body.mode-editor .editor-sidebar-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 14px;
+  gap: 12px;
+  scrollbar-gutter: auto;
+}
+
+body.mode-editor .editor-sidebar-block {
+  padding: 12px;
+  gap: 9px;
+  border-radius: var(--editor-radius-lg);
+  border-color: rgba(148, 163, 184, 0.1);
+}
+
+body.mode-editor.theme-neon-red .editor-sidebar-block {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.038), rgba(255, 255, 255, 0.014)),
+    rgba(255, 255, 255, 0.012);
+}
+
+body.mode-editor .editor-sidebar-block:not(:last-child) {
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+}
+
+body.mode-editor .editor-section-label,
+body.mode-editor .overview-label,
+body.mode-editor .picker-label,
+body.mode-editor .modal-label,
+body.mode-editor .modal-kicker,
+body.mode-editor .warning-label {
+  letter-spacing: 0.08em;
+  font-size: 10px;
+}
+
+body.mode-editor .profile-status {
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+body.mode-editor .editor-session-panel {
+  --picker-control-min-height: 64px;
+  --picker-control-padding: 10px 12px;
+  --picker-control-radius: 14px;
+  --picker-control-gap: 10px;
+  --picker-item-min-height: 44px;
+  --picker-item-padding: 10px 12px;
+}
+
+body.mode-editor .editor-session-grid,
+body.mode-editor .editor-picker-stack,
+body.mode-editor .editor-picker-actions,
+body.mode-editor .editor-tabs,
+body.mode-editor .editor-quick-actions,
+body.mode-editor .game-switch {
+  gap: 8px;
+}
+
+body.mode-editor .editor-picker {
+  border-color: rgba(148, 163, 184, 0.12);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.014)),
+    rgba(255, 255, 255, 0.014);
+}
+
+body.mode-editor .picker-leading {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+}
+
+body.mode-editor .picker-copy {
+  gap: 4px;
+}
+
+body.mode-editor .picker-value {
+  -webkit-line-clamp: 2;
+  font-size: 13px;
+  line-height: 1.32;
+}
+
+body.mode-editor .picker-toggle {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+}
+
+body.mode-editor .game-switch button,
+body.mode-editor .editor-sidebar .nav-btn,
+body.mode-editor .editor-sidebar .nav-action,
+body.mode-editor .editor-sidebar .version-btn,
+body.mode-editor .preset-btn,
+body.mode-editor .secondary-action,
+body.mode-editor .table-action,
+body.mode-editor .modal-actions button {
+  min-height: var(--editor-control-height);
+  padding: 8px 12px;
+  border-radius: var(--editor-radius-md);
+  font-size: 13px;
+  letter-spacing: 0.01em;
+}
+
+body.mode-editor .editor-sidebar .version-btn {
+  min-height: 34px;
+  font-size: 12px;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.014);
+}
+
+body.mode-editor .game-switch button.active,
+body.mode-editor .editor-sidebar .nav-btn.active,
+body.mode-editor .editor-sidebar .nav-action.active,
+body.mode-editor .preset-btn.active {
+  color: #fff8fa;
+  border-color: var(--border-strong);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03)),
+    linear-gradient(135deg, rgba(var(--accent-rgb), 0.88), rgba(var(--accent-secondary-rgb), 0.82));
+  box-shadow:
+    0 12px 24px rgba(0, 0, 0, 0.24),
+    0 0 18px rgba(var(--accent-rgb), 0.14);
+}
+
+body.mode-editor .workspace-main {
+  padding: 16px;
+  border-radius: var(--editor-radius-xl);
+}
+
+body.mode-editor .save-content-scroll {
+  gap: 16px;
+  max-width: 1680px;
+  width: 100%;
+  margin: 0 auto;
+  padding-right: 4px;
+  padding-bottom: 20px;
+}
+
+body.mode-editor .save-hero {
+  grid-template-columns: minmax(0, 1.55fr) minmax(260px, 0.72fr);
+  gap: 18px;
+  padding: 22px 24px;
+  border-radius: var(--editor-radius-xl);
+}
+
+body.mode-editor.theme-neon-red .save-hero {
+  background:
+    radial-gradient(circle at 14% 0%, rgba(var(--accent-rgb), 0.12), transparent 30%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.052), rgba(255, 255, 255, 0.018)),
+    linear-gradient(160deg, rgba(13, 16, 24, 0.96), rgba(8, 10, 16, 0.94));
+}
+
+body.mode-editor .save-hero-copy {
+  gap: 12px;
+}
+
+body.mode-editor .save-hero-copy h1 {
+  max-width: 780px;
+  font-size: clamp(30px, 2.8vw, 42px);
+  letter-spacing: 0;
+}
+
+body.mode-editor .save-hero-copy p {
+  max-width: 760px;
+  font-size: 14px;
+}
+
+body.mode-editor .save-hero-actions {
+  gap: 10px;
+  margin-top: 2px;
+}
+
+body.mode-editor .save-warning-card {
+  padding: 16px;
+  border-radius: var(--editor-radius-lg);
+  border-color: rgba(245, 158, 11, 0.2);
+  background:
+    linear-gradient(180deg, rgba(245, 158, 11, 0.085), rgba(255, 255, 255, 0.018)),
+    rgba(255, 255, 255, 0.014);
+}
+
+body.mode-editor .save-warning-card h2,
+body.mode-editor .save-stage-head h2 {
+  font-size: clamp(19px, 1.55vw, 24px);
+  letter-spacing: 0;
+}
+
+body.mode-editor .save-warning-card p,
+body.mode-editor .save-stage-head p,
+body.mode-editor .tool-content p {
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+body.mode-editor .save-overview-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+body.mode-editor .overview-card {
+  min-height: 108px;
+  padding: 16px;
+  border-radius: var(--editor-radius-lg);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.043), rgba(255, 255, 255, 0.016)),
+    rgba(255, 255, 255, 0.012);
+}
+
+body.mode-editor .overview-card strong {
+  font-size: clamp(20px, 1.6vw, 27px);
+  letter-spacing: 0;
+}
+
+body.mode-editor .save-tool-stage {
+  padding: 18px;
+  gap: 16px;
+  border-radius: var(--editor-radius-xl);
+}
+
+body.mode-editor .save-stage-head {
+  grid-template-columns: minmax(280px, 0.8fr) minmax(320px, 1.2fr);
+  gap: 16px;
+  align-items: start;
+}
+
+body.mode-editor #tool-container {
+  grid-template-columns: repeat(auto-fit, minmax(236px, 1fr));
+  gap: 14px;
+  align-items: stretch;
+}
+
+@media (min-width: 1500px) {
+  body.mode-editor #tool-container {
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  }
+}
+
+body.mode-editor .tool-card {
+  min-height: var(--editor-card-min);
+  max-height: var(--editor-card-max);
+  border-radius: var(--editor-radius-lg);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.044), rgba(255, 255, 255, 0.014)),
+    rgba(255, 255, 255, 0.012);
+}
+
+body.mode-editor .tool-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(var(--accent-rgb), 0.26);
+  box-shadow:
+    0 18px 34px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(var(--accent-rgb), 0.06);
+}
+
+body.mode-editor .tool-card img {
+  aspect-ratio: 16 / 7.8;
+  max-height: 132px;
+  object-fit: cover;
+}
+
+body.mode-editor .tool-content {
+  gap: 10px;
+  padding: 14px;
+}
+
+body.mode-editor .tool-content h3 {
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+body.mode-editor .tool-card button {
+  min-height: 38px;
+  padding: 8px 14px;
+  border-radius: var(--editor-radius-md);
+  color: #fff8fa;
+}
+
+body.mode-editor .modal-backdrop {
+  padding: 18px;
+  background: rgba(3, 6, 12, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+body.mode-editor .modal-box {
+  width: min(520px, 100%);
+  max-height: calc(100dvh - 36px);
+  padding: 0;
+  border-radius: var(--editor-radius-xl);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+body.mode-editor .modal-box > h2,
+body.mode-editor .modal-box > input,
+body.mode-editor .modal-box > select,
+body.mode-editor .modal-box > textarea,
+body.mode-editor .modal-box > #modalMultiContent,
+body.mode-editor .modal-box > p,
+body.mode-editor .modal-box > .toggle-switch,
+body.mode-editor .modal-box > .clone-options {
+  margin-left: 20px;
+  margin-right: 20px;
+}
+
+body.mode-editor .modal-box > input,
+body.mode-editor .modal-box > select,
+body.mode-editor .modal-box > textarea,
+body.mode-editor .modal-box > #modalMultiContent {
+  width: auto;
+}
+
+body.mode-editor .modal-box > h2,
+body.mode-editor .detail-modal-head {
+  padding: 18px 20px 14px;
+  margin: 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+body.mode-editor .modal-box > h2 {
+  font-size: 21px;
+}
+
+body.mode-editor .detail-modal-head {
+  gap: 16px;
+}
+
+body.mode-editor .modal-description {
+  max-width: 72ch;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+body.mode-editor .modal-actions {
+  margin-top: auto;
+  padding: 14px 20px 18px;
+  border-top-color: rgba(148, 163, 184, 0.1);
+  background: rgba(255, 255, 255, 0.012);
+}
+
+body.mode-editor .modal-box--safe-reset,
+body.mode-editor .modal-box--share {
+  width: min(760px, 100%);
+}
+
+body.mode-editor .modal-box--wiki,
+body.mode-editor .modal-box--level,
+body.mode-editor .modal-box--recovery,
+body.mode-editor .modal-box--user-logs {
+  width: min(1080px, 100%);
+}
+
+body.mode-editor .modal-box--skilltree {
+  width: min(1240px, 100%);
+  max-height: calc(100dvh - 36px);
+}
+
+body.mode-editor .level-system-scroll,
+body.mode-editor .recovery-modal-scroll,
+body.mode-editor .diagnostics-modal-scroll,
+body.mode-editor .share-modal-scroll,
+body.mode-editor .skilltree-modal-root {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+body.mode-editor .modal-icon-close {
+  width: 38px;
+  height: 38px;
+  min-height: 38px;
+  border-radius: 12px;
+}
+
+body.mode-editor .modal-box input,
+body.mode-editor .modal-box textarea,
+body.mode-editor .modal-box select,
+body.mode-editor .save-reset-field input {
+  min-height: 42px;
+  border-radius: var(--editor-radius-md);
+  border-color: rgba(148, 163, 184, 0.14);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.016)),
+    rgba(255, 255, 255, 0.014);
+}
+
+@media (max-width: 1360px) {
+  body.mode-editor {
+    --editor-sidebar-width: clamp(292px, 25vw, 332px);
+  }
+
+  body.mode-editor .header-row-top {
+    grid-template-columns: minmax(220px, auto) minmax(0, 1fr);
+  }
+
+  body.mode-editor .header-right {
+    grid-column: 1 / -1;
+  }
+
+  body.mode-editor .save-overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1100px) {
+  body.mode-editor .save-hero,
+  body.mode-editor .save-stage-head {
+    grid-template-columns: 1fr;
+  }
+
+  body.mode-editor #tool-container {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  body.mode-editor {
+    --editor-sidebar-width: min(390px, calc(100vw - 20px));
+    --editor-pad: 10px;
+    --editor-gap: 10px;
+  }
+
+  body.mode-editor .workspace-shell {
+    display: block;
+  }
+
+  body.mode-editor .editor-sidebar {
+    width: var(--editor-sidebar-width);
+    min-width: 0;
+    max-height: calc(100dvh - 20px);
+  }
+
+  body.mode-editor .header-row-top {
+    grid-template-columns: 1fr;
+  }
+
+  body.mode-editor .command-header {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 720px) {
+  body.mode-editor .save-overview-grid,
+  body.mode-editor #tool-container {
+    grid-template-columns: 1fr;
+  }
+
+  body.mode-editor .save-hero,
+  body.mode-editor .save-tool-stage,
+  body.mode-editor .workspace-main {
+    padding: 12px;
+  }
+
+  body.mode-editor .modal-backdrop {
+    padding: 10px;
+  }
+
+  body.mode-editor .modal-box,
+  body.mode-editor .modal-box--skilltree {
+    max-height: calc(100dvh - 20px);
+  }
+}
+
+@media (max-height: 720px) {
+  body.mode-editor {
+    --editor-topbar-min: 64px;
+    --editor-pad: 10px;
+    --editor-gap: 10px;
+    --editor-control-height: 36px;
+  }
+
+  body.mode-editor .command-header {
+    padding: 9px 12px;
+  }
+
+  body.mode-editor .logo img {
+    width: 40px;
+    height: 40px;
+  }
+
+  body.mode-editor .editor-sidebar-scroll {
+    padding: 10px;
+    gap: 9px;
+  }
+
+  body.mode-editor .editor-sidebar-block {
+    padding: 10px;
+  }
+}
+
+/* Editor content sizing and bottom tabs. Scroll layout is centralized in the final block. */
+body.mode-editor .save-hero,
+body.mode-editor .save-overview-grid,
+body.mode-editor .save-tool-stage,
+body.mode-editor .tool-stage-shell,
+body.mode-editor #tool-container {
+  width: 100%;
+}
+
+.editor-bottom-tabs {
+  display: none;
+}
+
+body.mode-editor .editor-bottom-tabs {
+  display: block;
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  z-index: 120;
+  width: fit-content;
+  min-width: 320px;
+  max-width: min(720px, calc(100% - 24px));
+  pointer-events: none;
+}
+
+body.mode-editor .editor-bottom-tabs-inner {
+  pointer-events: auto;
+  width: 100%;
+  max-width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  border-radius: 20px 20px 0 0;
+  border: 1px solid rgba(var(--accent-rgb), 0.2);
+  border-bottom: 0;
+  background:
+    linear-gradient(180deg, rgba(18, 22, 31, 0.92), rgba(8, 10, 15, 0.96));
+  box-shadow:
+    0 -8px 24px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-sizing: border-box;
+}
+
+body.mode-editor .editor-bottom-tabs .nav-btn {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+  border-radius: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+body.mode-editor .editor-bottom-tabs .nav-btn.active {
+  box-shadow:
+    0 12px 24px rgba(0, 0, 0, 0.24),
+    0 0 18px rgba(var(--accent-rgb), 0.14);
+}
+
+body.mode-editor .save-overview-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+}
+
+body.mode-editor .overview-card,
+body.mode-editor .save-tool-stage {
+  width: 100%;
+}
+
+body.mode-editor #tool-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 18px;
+  width: 100%;
+  align-items: stretch;
+}
+
+body.mode-editor .tool-card {
+  min-width: 0;
+  height: 100%;
+}
+
+@media (max-width: 900px) {
+  body.mode-editor .editor-bottom-tabs {
+    left: 50%;
+    bottom: 0;
+    min-width: 280px;
+    width: fit-content;
+    max-width: calc(100% - 16px);
+    transform: translateX(-50%);
+  }
+
+  body.mode-editor .editor-bottom-tabs-inner {
+    padding: 8px 10px 10px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    max-width: none;
+  }
+}
+
+@media (max-width: 720px) {
+  body.mode-editor .editor-bottom-tabs-inner {
+    grid-template-columns: repeat(4, minmax(88px, 1fr));
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+}
+
+@media (max-height: 720px) {
+  body.mode-editor .editor-bottom-tabs {
+    min-width: 260px;
+  }
+}
+
+@media (min-width: 1800px) {
+  body.mode-editor #tool-container {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  }
+}
+
+/* Sidebar-Blöcke etwas luftiger */
+body.mode-editor .editor-sidebar-block {
+  padding: 15px;
+  gap: 12px;
+
+  display: flex;
+  flex-direction: column;
+
+  box-sizing: border-box;
+}
+
+/* Status-Text: nicht mehr so gequetscht */
+body.mode-editor .profile-status {
+  display: block;
+  min-height: auto;
+
+  padding: 10px 12px;
+  border-radius: 12px;
+
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(255, 255, 255, 0.022);
+
+  font-size: 12.75px;
+  line-height: 1.45;
+
+  overflow-wrap: anywhere;
+}
+
+/* Picker nicht zu groß, aber lesbar */
+body.mode-editor .editor-session-panel {
+  --picker-control-min-height: 64px;
+  --picker-control-padding: 11px 12px;
+  --picker-control-gap: 11px;
+}
+
+body.mode-editor .editor-picker {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-width: 0;
+}
+
+body.mode-editor .editor-picker--save {
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-width: 0;
+}
+
+body.mode-editor .picker-value {
+  -webkit-line-clamp: 2;
+  font-size: 13.5px;
+  line-height: 1.35;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Buttons einheitlich */
+body.mode-editor .editor-sidebar .nav-btn,
+body.mode-editor .editor-sidebar .nav-action,
+body.mode-editor .game-switch button {
+  min-height: 42px;
+  padding-inline: 14px;
+  box-sizing: border-box;
+}
+
+/* Version kompakter */
+body.mode-editor .editor-sidebar .version-btn {
+  min-height: 34px;
+  justify-content: center;
+  padding-inline: 12px;
+  box-sizing: border-box;
+}
+
+/* Game-Switch sauber verteilen */
+body.mode-editor .game-switch {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+body.mode-editor .game-switch button {
+  min-width: 0;
+}
+
+/* =========================================================
+   Global scroll architecture rebuild
+   Fixes app, workspace, sidebar and modal scrolling
+   for small desktop windows / Tauri viewport layouts
+   ========================================================= */
+html,
+body {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+body {
+  overflow: hidden;
+}
+
+body.mode-editor {
+  --modal-viewport-gap: clamp(12px, 2vw, 24px);
+  --editor-sidebar-width: clamp(340px, 24vw, 376px);
+  --editor-bottom-tabs-height: 72px;
+}
+
+#app,
+.app-shell,
+body.mode-editor .app-shell,
+body.mode-editor.diagnostics-page-body .app-shell,
+body.mode-editor.mod-profile-page-body .app-shell,
+body.mode-editor.profile-share-page-body .app-shell {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+body.mode-editor .command-header {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+body.mode-editor .workspace-shell {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  height: auto;
+  overflow: hidden;
+  align-items: stretch;
+}
+
+body.mode-editor .editor-sidebar {
+  display: flex;
+  flex: 0 0 var(--editor-sidebar-width);
+  flex-direction: column;
+  width: var(--editor-sidebar-width);
+  min-width: 328px;
+  max-width: 376px;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  align-self: stretch;
+  box-sizing: border-box;
+}
+
+body.mode-editor .editor-sidebar-scroll {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  height: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 14px 12px 18px 14px;
+  gap: 12px;
+  box-sizing: border-box;
+  scrollbar-gutter: stable;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+body.mode-editor .workspace-main {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  height: auto;
+  overflow: hidden;
+  overflow-x: hidden;
+  position: relative;
+  padding: 24px 28px;
+  box-sizing: border-box;
+}
+
+body.mode-editor .workspace-view,
+body.mode-editor .workspace-view.is-active,
+body.mode-editor .save-editor-view.workspace-view.is-active,
+body.mode-editor .save-editor-shell,
+body.mode-editor .save-content,
+body.mode-editor .tool-stage-shell,
+body.mode-editor #tool-container {
+  min-width: 0;
+  min-height: 0;
+}
+
+body.mode-editor .workspace-view.is-active,
+body.mode-editor .save-editor-view.workspace-view.is-active,
+body.mode-editor .save-editor-shell {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
+body.mode-editor .save-editor-view.workspace-view.is-active {
+  height: auto;
+  overflow: hidden;
+  position: relative;
+}
+
+body.mode-editor .save-content-scroll {
+  display: grid;
+  align-content: start;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  max-width: 1680px;
+  margin: 0 auto;
+  gap: 18px;
+  padding-right: 4px;
+  padding-bottom: max(104px, calc(var(--editor-bottom-tabs-height, 72px) + 32px));
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  scrollbar-gutter: stable;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+body.mode-editor .editor-bottom-tabs {
+  flex: 0 0 auto;
+}
+
+body.mode-editor .modal-backdrop {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100dvh;
+  z-index: 9999;
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--modal-viewport-gap);
+  box-sizing: border-box;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+body.mode-editor .modal,
+body.mode-editor .modal-content,
+body.mode-editor .modal-card,
+body.mode-editor .modal-panel,
+body.mode-editor .dialog,
+body.mode-editor .dialog-content,
+body.mode-editor .modal-box {
+  width: min(520px, calc(100vw - (var(--modal-viewport-gap) * 2)));
+  max-width: 100%;
+  max-height: calc(100dvh - (var(--modal-viewport-gap) * 2));
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+body.mode-editor .modal-box--sheet {
+  width: min(760px, calc(100vw - (var(--modal-viewport-gap) * 2)));
+}
+
+body.mode-editor .modal-box--xl,
+body.mode-editor .modal-box--wiki,
+body.mode-editor .modal-box--level,
+body.mode-editor .modal-box--recovery,
+body.mode-editor .modal-box--user-logs {
+  width: min(1080px, calc(100vw - (var(--modal-viewport-gap) * 2)));
+}
+
+body.mode-editor .modal-box--skilltree {
+  width: min(1240px, calc(100vw - (var(--modal-viewport-gap) * 2)));
+}
+
+body.mode-editor .modal-box--share {
+  width: min(1380px, calc(100vw - (var(--modal-viewport-gap) * 2)));
+}
+
+body.mode-editor .modal-box--wiki,
+body.mode-editor .modal-box--level,
+body.mode-editor .modal-box--recovery,
+body.mode-editor .modal-box--safe-reset,
+body.mode-editor .modal-box--skilltree {
+  overflow: hidden;
+}
+
+body.mode-editor .modal-box > h2,
+body.mode-editor .detail-modal-head,
+body.mode-editor .wiki-modal-head,
+body.mode-editor .modal-footer,
+body.mode-editor .dialog-footer,
+body.mode-editor .modal-actions {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+body.mode-editor .modal-actions {
+  margin-top: auto;
+}
+
+body.mode-editor .modal-box > #modalMultiContent,
+body.mode-editor .modal-box > .clone-options,
+body.mode-editor .modal-body,
+body.mode-editor .dialog-body,
+body.mode-editor .save-reset-modal-shell,
+body.mode-editor .recovery-modal-scroll,
+body.mode-editor .diagnostics-modal-scroll,
+body.mode-editor .level-system-scroll,
+body.mode-editor .share-modal-scroll,
+body.mode-editor .skilltree-modal-root,
+body.mode-editor .wiki-layout,
+body.mode-editor .wiki-content {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+body.mode-editor .modal-box > #modalMultiContent,
+body.mode-editor .modal-box > .clone-options,
+body.mode-editor .save-reset-modal-shell,
+body.mode-editor .wiki-layout,
+body.mode-editor .wiki-content {
+  display: grid;
+  align-content: start;
+}
+
+body.mode-editor .recovery-modal-scroll,
+body.mode-editor .diagnostics-modal-scroll,
+body.mode-editor .level-system-scroll,
+body.mode-editor .share-modal-scroll,
+body.mode-editor .skilltree-modal-root {
+  padding-right: 4px;
+}
+
+body.mode-editor .user-logs-viewer-shell {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+body.mode-editor .user-logs-viewer {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  height: 100%;
+}
+
+body.mode-editor .update-release-notes {
+  min-height: 0;
+}
+
+body.mode-editor .update-release-notes-text {
+  max-height: min(40vh, 360px);
+  overflow: auto;
+}
+
+body.mode-editor .profile-share-page-frame,
+body.mode-editor .mod-profile-page-frame,
+body.mode-editor .diagnostics-page-frame {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+body.mode-editor .profile-share-page-frame .share-modal-scroll,
+body.mode-editor .diagnostics-page-frame .diagnostics-modal-scroll {
+  min-width: 0;
+  min-height: 0;
+}
+
+@media (min-height: 720px) {
+  body.mode-editor .modal-backdrop {
+    align-items: flex-start;
+  }
+
+  body.mode-editor .modal,
+  body.mode-editor .modal-content,
+  body.mode-editor .modal-card,
+  body.mode-editor .modal-panel,
+  body.mode-editor .dialog,
+  body.mode-editor .dialog-content,
+  body.mode-editor .modal-box {
+    margin: 0;
+  }
+}
+
+@media (max-width: 900px) {
+  body.mode-editor {
+    --editor-sidebar-width: min(390px, calc(100vw - 20px));
+  }
+
+  body.mode-editor .workspace-shell {
+    display: block;
+    height: 100%;
+  }
+
+  body.mode-editor .editor-sidebar {
+    width: var(--editor-sidebar-width);
+    min-width: 0;
+    max-width: none;
+    height: auto;
+    max-height: calc(100dvh - 20px);
+    flex-basis: auto;
+  }
+
+  body.mode-editor .workspace-main {
+    height: 100%;
+    padding: 18px;
+  }
+
+  body.mode-editor .save-content-scroll {
+    padding-bottom: 96px;
+  }
+}
+
+@media (max-width: 720px) {
+  body.mode-editor .workspace-main {
+    padding: 14px;
+  }
+
+  body.mode-editor .save-content-scroll {
+    padding-bottom: 136px;
+  }
+}
+
+@media (max-height: 720px) {
+  body.mode-editor {
+    --modal-viewport-gap: 10px;
+  }
+
+  body.mode-editor .modal-backdrop {
+    align-items: flex-start;
+    padding-block: 12px;
+  }
+
+  body.mode-editor .modal,
+  body.mode-editor .modal-content,
+  body.mode-editor .modal-card,
+  body.mode-editor .modal-panel,
+  body.mode-editor .dialog,
+  body.mode-editor .dialog-content,
+  body.mode-editor .modal-box {
+    max-height: calc(100dvh - 24px);
+    margin: 0;
+  }
+
+  body.mode-editor .editor-sidebar-scroll {
+    padding: 10px 10px 14px;
+    gap: 9px;
+  }
+
+  body.mode-editor .save-content-scroll,
+  body.mode-editor .editor-sidebar-scroll {
+    overscroll-behavior: contain;
+  }
+}
+
+@media (max-height: 560px) {
+  body.mode-editor {
+    --modal-viewport-gap: 8px;
+  }
+
+  body.mode-editor .workspace-main {
+    padding: 12px;
+  }
+
+  body.mode-editor .save-content-scroll {
+    padding-bottom: 148px;
+  }
+}
+
+/* =========================================================
+   Modal internal scrolling fix
+   Enables scrolling for Rust and JS generated modals
+   ========================================================= */
+.modal-backdrop,
+.modal-overlay,
+.dialog-backdrop,
+.dialog-overlay,
+[class*="modal-backdrop"],
+[class*="modal-overlay"],
+[class*="dialog-backdrop"],
+[class*="dialog-overlay"] {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: clamp(12px, 3vh, 32px);
+  box-sizing: border-box;
+  align-items: flex-start;
+  justify-content: center;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.modal-box,
+.modal-content,
+.modal-card,
+.modal-panel,
+.dialog,
+.dialog-content,
+[class*="modal-box"],
+[class*="modal-content"],
+[class*="modal-panel"],
+[class*="dialog-content"] {
+  max-height: calc(100dvh - clamp(24px, 6vh, 64px));
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.modal-box:not(.modal-box--wiki):not(.modal-box--level):not(.modal-box--recovery):not(.modal-box--safe-reset):not(.modal-box--skilltree),
+.modal-content:not([class*="modal-content-scroll"]),
+.modal-card,
+.modal-panel,
+.dialog,
+.dialog-content {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.modal-box--wiki,
+.modal-box--level,
+.modal-box--recovery,
+.modal-box--safe-reset,
+.modal-box--skilltree {
+  height: min(920px, calc(100dvh - clamp(24px, 6vh, 64px)));
+  overflow: hidden;
+}
+
+.modal-box--skilltree {
+  height: min(960px, calc(100dvh - clamp(24px, 6vh, 64px)));
+}
+
+.modal-box--user-logs {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.modal-header,
+.dialog-header,
+.detail-modal-head,
+.wiki-modal-head,
+[class*="modal-header"],
+[class*="dialog-header"] {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.modal-footer,
+.dialog-footer,
+.modal-actions,
+.dialog-actions,
+[class*="modal-footer"],
+[class*="dialog-footer"],
+[class*="modal-actions"],
+[class*="dialog-actions"] {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.modal-body,
+.dialog-body,
+.modal-scroll,
+.dialog-scroll,
+.modal-content-scroll,
+.recovery-modal-scroll,
+.diagnostics-modal-scroll,
+.level-system-scroll,
+.share-modal-scroll,
+.skilltree-modal-root,
+.user-logs-modal-scroll,
+[class*="modal-scroll"],
+[class*="dialog-scroll"] {
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+  max-height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.level-system-scroll,
+.recovery-modal-scroll,
+.diagnostics-modal-scroll,
+.share-modal-scroll,
+.skilltree-modal-root {
+  scrollbar-gutter: stable;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+.wiki-layout {
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+}
+
+.wiki-index,
+.wiki-content {
+  min-height: 0;
+  max-height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.save-reset-modal-shell {
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.modal-box--user-logs .user-logs-viewer-shell {
+  flex: 1 1 0;
+  min-height: 180px;
+  overflow: hidden;
+}
+
+.modal-box--user-logs .user-logs-viewer {
+  min-height: 0;
+  max-height: none;
+  height: 100%;
+  overflow: auto;
+}
+
+@media (min-height: 720px) {
+  .modal-backdrop,
+  .modal-overlay,
+  .dialog-backdrop,
+  .dialog-overlay,
+  [class*="modal-backdrop"],
+  [class*="modal-overlay"],
+  [class*="dialog-backdrop"],
+  [class*="dialog-overlay"] {
+    align-items: center;
+  }
+}
+
+@media (max-height: 650px) {
+  .modal-backdrop,
+  .modal-overlay,
+  .dialog-backdrop,
+  .dialog-overlay,
+  [class*="modal-backdrop"],
+  [class*="modal-overlay"],
+  [class*="dialog-backdrop"],
+  [class*="dialog-overlay"] {
+    align-items: flex-start;
+    padding-block: 12px;
+  }
+
+  .modal-box,
+  .modal-content,
+  .modal-card,
+  .modal-panel,
+  .dialog,
+  .dialog-content,
+  [class*="modal-box"],
+  [class*="modal-content"],
+  [class*="modal-panel"],
+  [class*="dialog-content"] {
+    max-height: calc(100dvh - 24px);
+  }
+
+  .modal-box--wiki,
+  .modal-box--level,
+  .modal-box--recovery,
+  .modal-box--safe-reset,
+  .modal-box--skilltree {
+    height: calc(100dvh - 24px);
+  }
+}
+
+/* Level & XP modal requires a stronger override than the generic modal rules. */
+body.mode-editor #modalLevelSystem {
+  align-items: flex-start;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+body.mode-editor #modalLevelSystem .modal-box--level {
+  display: flex;
+  flex-direction: column;
+  width: min(1100px, calc(100vw - 24px));
+  height: min(920px, calc(100dvh - 24px));
+  max-height: calc(100dvh - 24px);
+  min-height: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+body.mode-editor #modalLevelSystem .detail-modal-head,
+body.mode-editor #modalLevelSystem .modal-actions {
+  flex: 0 0 auto;
+  min-height: 0;
+}
+
+body.mode-editor #modalLevelSystem .level-system-scroll {
+  display: grid;
+  align-content: start;
+  flex: 1 1 0;
+  min-height: 0;
+  height: 0;
+  max-height: none;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 12px;
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+@media (min-height: 720px) {
+  body.mode-editor #modalLevelSystem {
+    align-items: center;
+  }
+}
+
+@media (max-height: 650px) {
+  body.mode-editor #modalLevelSystem .modal-box--level {
+    height: calc(100dvh - 24px);
+    max-height: calc(100dvh - 24px);
+  }
+}
+
+/* =========================================================
+   Level & XP modal scroll hardening
+   Keeps the modal bounded while the content body scrolls
+   ========================================================= */
+.dialog-footer,
+.dialog-actions {
+  flex: 0 0 auto !important;
+}
+
+.level-system-scroll,
+.skilltree-modal-root,
+.recovery-modal-scroll,
+.diagnostics-modal-scroll,
+.share-modal-scroll,
+.user-logs-modal-scroll,
+.modal-body,
+.dialog-body,
+.modal-scroll,
+.dialog-scroll,
+.modal-content-scroll {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.modal-box--level {
+  width: min(100%, 1180px);
+  max-height: calc(100dvh - clamp(24px, 6vh, 64px)) !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.modal-box--level .level-system-scroll,
+body.mode-editor #modalLevelSystem .level-system-scroll {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding-right: 4px;
+}
+
+.modal-box--level .modal-actions,
+body.mode-editor #modalLevelSystem .modal-actions {
+  flex: 0 0 auto !important;
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  background: inherit;
+  padding-top: 14px;
+}
+
+@media (max-height: 650px) {
+  .modal-backdrop,
+  .modal-overlay,
+  .dialog-backdrop,
+  .dialog-overlay {
+    align-items: flex-start !important;
+    padding-block: 12px !important;
+  }
+
+  .modal-box,
+  .modal-content,
+  .modal-card,
+  .modal-panel,
+  .dialog,
+  .dialog-content,
+  .modal-box--level {
+    max-height: calc(100dvh - 24px) !important;
+  }
+}
+
+/* =========================================================
+   Accent theme system rebuild
+   Restores four distinct color schemes for existing theme classes
+   ========================================================= */
+
+:root {
+  --bg: var(--bg-main);
+  --bg-soft: var(--bg-card-soft);
+  --bg-input: rgba(2, 6, 14, 0.48);
+  --text: var(--text-main);
+  --text-info: var(--accent);
+  --border: var(--panel-border);
+  --border-soft: var(--card-border);
+  --accent-strong: #67e8f9;
+  --accent-hover: rgba(var(--accent-rgb), 0.22);
+  --accent-border: rgba(var(--accent-rgb), 0.34);
+  --accent-glow: 0 0 30px rgba(var(--accent-rgb), 0.28);
+  --bg-text-info: var(--text-info);
+  --bg-textinfo: var(--text-info);
+  --textinfo: var(--text-info);
+}
+
+body.theme-dark,
+body.accent-blue,
+body[data-theme="dark"],
+body[data-accent="blue"],
+html[data-theme="dark"] body,
+html[data-accent="blue"] body,
+body.mode-editor.theme-dark,
+body.mode-editor.theme-dark.editor-advanced,
+body.mode-career.theme-dark {
+  --bg-main: #06111d;
+  --bg-elevated: #0a1726;
+  --bg-panel: rgba(8, 23, 38, 0.86);
+  --bg-panel-strong: rgba(5, 16, 28, 0.94);
+  --bg-card: rgba(56, 189, 248, 0.075);
+  --bg-card-soft: rgba(56, 189, 248, 0.04);
+  --bg-soft: rgba(56, 189, 248, 0.04);
+  --bg-input: rgba(3, 12, 24, 0.74);
+  --text-main: #f5fbff;
+  --text: #f5fbff;
+  --text-muted: #9cc9dc;
+  --text-soft: rgba(214, 244, 255, 0.72);
+  --text-info: #67e8f9;
+  --accent: #38bdf8;
+  --accent-rgb: 56, 189, 248;
+  --accent-secondary: #0e7490;
+  --accent-secondary-rgb: 14, 116, 144;
+  --accent-strong: #67e8f9;
+  --accent-contrast: #03131f;
+  --accent-soft: rgba(56, 189, 248, 0.18);
+  --accent-surface: rgba(56, 189, 248, 0.12);
+  --accent-hover: rgba(56, 189, 248, 0.24);
+  --accent-border: rgba(56, 189, 248, 0.42);
+  --accent-glow: 0 0 30px rgba(56, 189, 248, 0.3);
+  --panel-border: rgba(56, 189, 248, 0.22);
+  --card-border: rgba(56, 189, 248, 0.16);
+  --border: rgba(56, 189, 248, 0.22);
+  --border-soft: rgba(56, 189, 248, 0.16);
+  --border-subtle: rgba(56, 189, 248, 0.16);
+  --border-strong: rgba(56, 189, 248, 0.38);
+  --surface-glow: 0 0 30px rgba(56, 189, 248, 0.26);
+  --status-glow: 0 0 22px rgba(56, 189, 248, 0.52);
+  --status-glow-soft: 0 0 36px rgba(56, 189, 248, 0.22);
+  --focus-ring: 0 0 0 3px rgba(56, 189, 248, 0.22);
+  --dropdown-hover: rgba(56, 189, 248, 0.18);
+  --dropdown-active: rgba(56, 189, 248, 0.24);
+  --scrollbar-track: rgba(56, 189, 248, 0.05);
+  --scrollbar-thumb: rgba(56, 189, 248, 0.28);
+  --scrollbar-thumb-hover: rgba(56, 189, 248, 0.46);
+  --bg-text-info: var(--text-info);
+  --bg-textinfo: var(--text-info);
+  --textinfo: var(--text-info);
+  color-scheme: dark;
+}
+
+body.theme-light,
+body.accent-purple,
+body[data-theme="light"],
+body[data-accent="purple"],
+html[data-theme="light"] body,
+html[data-accent="purple"] body,
+body.mode-editor.theme-light,
+body.mode-editor.theme-light.editor-advanced,
+body.mode-career.theme-light {
+  --bg-main: #f7f2ff;
+  --bg-elevated: #ffffff;
+  --bg-panel: rgba(255, 255, 255, 0.9);
+  --bg-panel-strong: rgba(255, 255, 255, 0.96);
+  --bg-card: rgba(124, 58, 237, 0.075);
+  --bg-card-soft: rgba(124, 58, 237, 0.04);
+  --bg-soft: rgba(124, 58, 237, 0.04);
+  --bg-input: rgba(255, 255, 255, 0.82);
+  --text-main: #160827;
+  --text: #160827;
+  --text-muted: #5b4b6f;
+  --text-soft: rgba(22, 8, 39, 0.66);
+  --text-info: #7c3aed;
+  --accent: #7c3aed;
+  --accent-rgb: 124, 58, 237;
+  --accent-secondary: #a855f7;
+  --accent-secondary-rgb: 168, 85, 247;
+  --accent-strong: #6d28d9;
+  --accent-contrast: #ffffff;
+  --accent-soft: rgba(124, 58, 237, 0.16);
+  --accent-surface: rgba(124, 58, 237, 0.1);
+  --accent-hover: rgba(124, 58, 237, 0.2);
+  --accent-border: rgba(124, 58, 237, 0.36);
+  --accent-glow: 0 0 30px rgba(124, 58, 237, 0.24);
+  --panel-border: rgba(124, 58, 237, 0.18);
+  --card-border: rgba(124, 58, 237, 0.14);
+  --border: rgba(124, 58, 237, 0.18);
+  --border-soft: rgba(124, 58, 237, 0.14);
+  --border-subtle: rgba(124, 58, 237, 0.14);
+  --border-strong: rgba(124, 58, 237, 0.32);
+  --surface-glow: 0 0 30px rgba(124, 58, 237, 0.2);
+  --status-glow: 0 0 22px rgba(124, 58, 237, 0.42);
+  --status-glow-soft: 0 0 36px rgba(124, 58, 237, 0.18);
+  --focus-ring: 0 0 0 3px rgba(124, 58, 237, 0.2);
+  --dropdown-surface: #ffffff;
+  --dropdown-surface-strong: #f7f2ff;
+  --dropdown-border: rgba(124, 58, 237, 0.24);
+  --dropdown-text: #160827;
+  --dropdown-text-muted: #5b4b6f;
+  --dropdown-hover: rgba(124, 58, 237, 0.14);
+  --dropdown-active: rgba(124, 58, 237, 0.2);
+  --scrollbar-track: rgba(124, 58, 237, 0.06);
+  --scrollbar-thumb: rgba(124, 58, 237, 0.28);
+  --scrollbar-thumb-hover: rgba(124, 58, 237, 0.44);
+  --bg-text-info: var(--text-info);
+  --bg-textinfo: var(--text-info);
+  --textinfo: var(--text-info);
+  color-scheme: light;
+}
+
+body.theme-neon,
+body.accent-green,
+body[data-theme="neon"],
+body[data-accent="green"],
+html[data-theme="neon"] body,
+html[data-accent="green"] body,
+body.mode-editor.theme-neon,
+body.mode-editor.theme-neon.editor-advanced,
+body.mode-career.theme-neon {
+  --bg-main: #04140d;
+  --bg-elevated: #071c13;
+  --bg-panel: rgba(5, 28, 19, 0.86);
+  --bg-panel-strong: rgba(3, 20, 12, 0.94);
+  --bg-card: rgba(16, 243, 154, 0.08);
+  --bg-card-soft: rgba(16, 243, 154, 0.04);
+  --bg-soft: rgba(16, 243, 154, 0.04);
+  --bg-input: rgba(2, 17, 10, 0.74);
+  --text-main: #f3fff9;
+  --text: #f3fff9;
+  --text-muted: #9af5cf;
+  --text-soft: rgba(219, 255, 238, 0.72);
+  --text-info: #6ee7b7;
+  --accent: #10f39a;
+  --accent-rgb: 16, 243, 154;
+  --accent-secondary: #047857;
+  --accent-secondary-rgb: 4, 120, 87;
+  --accent-strong: #6ee7b7;
+  --accent-contrast: #03140c;
+  --accent-soft: rgba(16, 243, 154, 0.18);
+  --accent-surface: rgba(16, 243, 154, 0.12);
+  --accent-hover: rgba(16, 243, 154, 0.24);
+  --accent-border: rgba(16, 243, 154, 0.42);
+  --accent-glow: 0 0 30px rgba(16, 243, 154, 0.3);
+  --panel-border: rgba(16, 243, 154, 0.22);
+  --card-border: rgba(16, 243, 154, 0.16);
+  --border: rgba(16, 243, 154, 0.22);
+  --border-soft: rgba(16, 243, 154, 0.16);
+  --border-subtle: rgba(16, 243, 154, 0.16);
+  --border-strong: rgba(16, 243, 154, 0.38);
+  --surface-glow: 0 0 30px rgba(16, 243, 154, 0.28);
+  --status-glow: 0 0 22px rgba(16, 243, 154, 0.52);
+  --status-glow-soft: 0 0 36px rgba(16, 243, 154, 0.22);
+  --focus-ring: 0 0 0 3px rgba(16, 243, 154, 0.22);
+  --dropdown-hover: rgba(16, 243, 154, 0.18);
+  --dropdown-active: rgba(16, 243, 154, 0.24);
+  --scrollbar-track: rgba(16, 243, 154, 0.05);
+  --scrollbar-thumb: rgba(16, 243, 154, 0.28);
+  --scrollbar-thumb-hover: rgba(16, 243, 154, 0.46);
+  --bg-text-info: var(--text-info);
+  --bg-textinfo: var(--text-info);
+  --textinfo: var(--text-info);
+  color-scheme: dark;
+}
+
+body.theme-neon-red,
+body.accent-red,
+body[data-theme="neon-red"],
+body[data-accent="red"],
+html[data-theme="neon-red"] body,
+html[data-accent="red"] body,
+body.mode-editor.theme-neon-red,
+body.mode-editor.theme-neon-red.editor-advanced,
+body.mode-career.theme-neon-red {
+  --bg-main: #14070c;
+  --bg-elevated: #1b0b12;
+  --bg-panel: rgba(30, 10, 18, 0.88);
+  --bg-panel-strong: rgba(20, 7, 12, 0.96);
+  --bg-card: rgba(255, 49, 88, 0.08);
+  --bg-card-soft: rgba(255, 49, 88, 0.04);
+  --bg-soft: rgba(255, 49, 88, 0.04);
+  --bg-input: rgba(20, 7, 12, 0.76);
+  --text-main: #fff7fa;
+  --text: #fff7fa;
+  --text-muted: #f0b0c0;
+  --text-soft: rgba(255, 226, 232, 0.72);
+  --text-info: #ff6b86;
+  --accent: #ff3158;
+  --accent-rgb: 255, 49, 88;
+  --accent-secondary: #b91c3f;
+  --accent-secondary-rgb: 185, 28, 63;
+  --accent-strong: #ff6b86;
+  --accent-contrast: #fff7fa;
+  --accent-soft: rgba(255, 49, 88, 0.18);
+  --accent-surface: rgba(255, 49, 88, 0.12);
+  --accent-hover: rgba(255, 49, 88, 0.24);
+  --accent-border: rgba(255, 49, 88, 0.42);
+  --accent-glow: 0 0 30px rgba(255, 49, 88, 0.3);
+  --panel-border: rgba(255, 49, 88, 0.22);
+  --card-border: rgba(255, 49, 88, 0.16);
+  --border: rgba(255, 49, 88, 0.22);
+  --border-soft: rgba(255, 49, 88, 0.16);
+  --border-subtle: rgba(255, 49, 88, 0.16);
+  --border-strong: rgba(255, 49, 88, 0.38);
+  --surface-glow: 0 0 30px rgba(255, 49, 88, 0.24);
+  --status-glow: 0 0 22px rgba(255, 49, 88, 0.48);
+  --status-glow-soft: 0 0 36px rgba(255, 49, 88, 0.22);
+  --focus-ring: 0 0 0 3px rgba(255, 49, 88, 0.22);
+  --dropdown-surface: #190d11;
+  --dropdown-surface-strong: #12080c;
+  --dropdown-border: rgba(255, 49, 88, 0.32);
+  --dropdown-text: #fff5f7;
+  --dropdown-text-muted: #f0cad2;
+  --dropdown-hover: rgba(255, 49, 88, 0.18);
+  --dropdown-active: rgba(255, 49, 88, 0.24);
+  --scrollbar-track: rgba(255, 49, 88, 0.055);
+  --scrollbar-thumb: rgba(255, 49, 88, 0.34);
+  --scrollbar-thumb-hover: rgba(255, 49, 88, 0.56);
+  --bg-text-info: var(--text-info);
+  --bg-textinfo: var(--text-info);
+  --textinfo: var(--text-info);
+  color-scheme: dark;
+}
+
+body.mode-editor.editor-advanced:not(.theme-dark):not(.theme-light):not(.theme-neon):not(.theme-neon-red) {
+  --accent: #38bdf8;
+  --accent-rgb: 56, 189, 248;
+  --accent-secondary: #0e7490;
+  --accent-secondary-rgb: 14, 116, 144;
+  --accent-strong: #67e8f9;
+  --accent-contrast: #03131f;
+  --accent-soft: rgba(56, 189, 248, 0.18);
+  --accent-surface: rgba(56, 189, 248, 0.12);
+  --accent-hover: rgba(56, 189, 248, 0.24);
+  --accent-border: rgba(56, 189, 248, 0.42);
+  --accent-glow: 0 0 30px rgba(56, 189, 248, 0.3);
+  --panel-border: rgba(56, 189, 248, 0.22);
+  --card-border: rgba(56, 189, 248, 0.16);
+}
+
+body.theme-dark,
+body.theme-light,
+body.theme-neon,
+body.theme-neon-red,
+body.accent-blue,
+body.accent-purple,
+body.accent-green,
+body.accent-red {
+  accent-color: var(--accent);
+  color: var(--text-main);
+  background:
+    radial-gradient(circle at 12% 18%, rgba(var(--accent-rgb), 0.18), transparent 24%),
+    radial-gradient(circle at 82% 12%, rgba(var(--accent-secondary-rgb), 0.14), transparent 24%),
+    linear-gradient(165deg, var(--bg-main) 0%, var(--bg-elevated) 54%, var(--bg-main) 100%);
+}
+
+body.mode-editor .mode-btn.active,
+body.mode-career .mode-btn.active,
+body.mode-editor .game-switch button.active,
+body.mode-editor .preset-btn.active,
+body.mode-editor .editor-sidebar .nav-btn.active,
+body.mode-editor .editor-sidebar .nav-action.active,
+body.mode-editor .editor-bottom-tabs .nav-btn.active,
+body.mode-editor #modalLevelSystem .level-system-mode-card.is-active,
+body.mode-editor #modalLevelSystem .level-system-input-card.is-active,
+body.mode-editor .level-system-badge--accent {
+  color: var(--accent-contrast) !important;
+  border-color: var(--accent-border) !important;
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.94), rgba(var(--accent-secondary-rgb), 0.84)) !important;
+  box-shadow:
+    0 14px 30px rgba(var(--accent-rgb), 0.18),
+    var(--accent-glow) !important;
+}
+
+body.mode-editor .editor-bottom-tabs-inner,
+body.mode-editor .editor-sidebar-block,
+body.mode-editor .editor-session-panel,
+body.mode-editor .overview-card,
+body.mode-editor .save-tool-stage,
+body.mode-editor .tool-card,
+body.mode-editor .modal-box {
+  border-color: var(--panel-border) !important;
+}
+
+body.mode-editor .game-switch button:hover,
+body.mode-editor .preset-btn:hover,
+body.mode-editor .editor-sidebar .nav-btn:hover,
+body.mode-editor .editor-sidebar .nav-action:hover,
+body.mode-editor .editor-bottom-tabs .nav-btn:hover,
+body.mode-editor .tool-card:hover,
+body.mode-editor #modalLevelSystem .level-system-mode-card:hover,
+body.mode-editor #modalLevelSystem .level-system-input-card:hover {
+  border-color: var(--accent-border) !important;
+  box-shadow:
+    0 0 0 1px rgba(var(--accent-rgb), 0.08),
+    0 16px 32px rgba(var(--accent-rgb), 0.12) !important;
+}
+
+body.mode-editor .table-action,
+body.mode-editor .tool-card button,
+body.mode-editor .modal-actions button:not(.modal-cancel-btn),
+body.mode-editor #modalLevelSystem .level-system-apply {
+  border-color: var(--accent-border) !important;
+  background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.92), rgba(var(--accent-secondary-rgb), 0.78)) !important;
+  color: var(--accent-contrast) !important;
+  box-shadow: 0 12px 26px rgba(var(--accent-rgb), 0.16) !important;
+}
+
+body.mode-editor input:focus-visible,
+body.mode-editor textarea:focus-visible,
+body.mode-editor select:focus-visible,
+body.mode-editor button:focus-visible {
+  border-color: var(--accent-border) !important;
+  box-shadow: var(--focus-ring) !important;
+}
+
+@media (max-height: 500px) {
+  .modal-backdrop,
+  .modal-overlay,
+  .dialog-backdrop,
+  .dialog-overlay {
+    padding-block: 8px !important;
+  }
+
+  .modal-box,
+  .modal-content,
+  .modal-card,
+  .modal-panel,
+  .dialog,
+  .dialog-content,
+  .modal-box--level {
+    max-height: calc(100dvh - 16px) !important;
+  }
+}
+
+/* =========================================================
+   Level & XP modal simplification
+   Two-mode frontend UI using the existing shared level table
+   ========================================================= */
+#modalLevelSystem .modal-box--level,
+body.mode-editor #modalLevelSystem .modal-box--level {
+  width: min(100%, 960px) !important;
+  max-height: calc(100dvh - clamp(24px, 6vh, 64px)) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  border-color: rgba(var(--accent-rgb), 0.2);
+  background:
+    radial-gradient(circle at 18% 0%, rgba(var(--accent-rgb), 0.18), transparent 34%),
+    linear-gradient(145deg, rgba(18, 18, 22, 0.98), rgba(8, 8, 12, 0.98));
+}
+
+#modalLevelSystem .detail-modal-head {
+  flex: 0 0 auto;
+}
+
+#modalLevelSystem .level-system-scroll {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  display: grid !important;
+  align-content: start;
+  gap: 18px;
+  padding: 4px 8px 8px 0;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain;
+}
+
+#modalLevelSystem [hidden] {
+  display: none !important;
+}
+
+.level-system-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.level-system-mode-card {
+  min-height: 112px;
+  padding: 18px;
+  border-radius: 22px;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  text-align: left;
+  letter-spacing: normal;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.025)),
+    rgba(255, 255, 255, 0.03);
+}
+
+.level-system-mode-card span {
+  color: var(--text-main);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.level-system-mode-card small {
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.level-system-mode-card.is-active {
+  border-color: rgba(var(--accent-rgb), 0.48);
+  background:
+    linear-gradient(145deg, rgba(var(--accent-rgb), 0.26), rgba(var(--accent-rgb), 0.08)),
+    rgba(255, 255, 255, 0.04);
+  box-shadow:
+    0 18px 40px rgba(var(--accent-rgb), 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.level-system-mode-card.is-active span {
+  color: var(--text-main);
+}
+
+.level-system-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.level-system-compact-card {
+  gap: 16px;
+  min-width: 0;
+}
+
+.level-system-value-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.level-system-value-tile {
+  min-width: 0;
+  display: grid;
+  gap: 9px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+#modalLevelSystem .level-system-badge {
+  min-height: 62px;
+  padding: 12px 16px;
+  font-size: clamp(26px, 4vw, 40px);
+}
+
+#modalLevelSystem .detail-card-value {
+  word-break: break-word;
+}
+
+.level-system-value-tag {
+  justify-self: start;
+  padding: 5px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.level-system-value-tag.is-calculated {
+  border-color: rgba(var(--accent-rgb), 0.28);
+  background: rgba(var(--accent-rgb), 0.13);
+  color: var(--text-main);
+}
+
+.level-system-input-panel {
+  gap: 16px;
+}
+
+.level-system-input-card {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(var(--accent-rgb), 0.18);
+  background:
+    linear-gradient(145deg, rgba(var(--accent-rgb), 0.1), rgba(255, 255, 255, 0.03)),
+    rgba(255, 255, 255, 0.035);
+}
+
+.level-system-input-card input {
+  width: 100%;
+  min-width: 0;
+  min-height: 54px;
+  box-sizing: border-box;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.22);
+  color: var(--text-main);
+  padding: 0 16px;
+  font: inherit;
+  font-size: 19px;
+  font-weight: 800;
+  outline: none;
+}
+
+.level-system-input-card input:focus {
+  border-color: rgba(var(--accent-rgb), 0.54);
+  box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.12);
+}
+
+.level-system-input-card small {
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+#modalLevelSystem .level-system-hint {
+  border-color: rgba(var(--accent-rgb), 0.2);
+  background: rgba(var(--accent-rgb), 0.09);
+}
+
+@media (max-width: 820px) {
+  .level-system-mode-grid,
+  .level-system-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .level-system-value-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-height: 650px) {
+  #modalLevelSystem .modal-box--level,
+  body.mode-editor #modalLevelSystem .modal-box--level {
+    max-height: calc(100dvh - 24px) !important;
+  }
+
+  #modalLevelSystem .level-system-scroll {
+    gap: 12px;
+  }
+
+  .level-system-mode-card {
+    min-height: 88px;
+    padding: 14px;
+  }
+}
+
+/* =========================================================
+   Level & XP modal visibility and scroll polish
+   Keeps both inputs visible and makes the body reliably scroll
+   ========================================================= */
+#modalLevelSystem {
+  align-items: flex-start !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding-block: clamp(12px, 3vh, 28px) !important;
+}
+
+#modalLevelSystem .modal-box--level,
+body.mode-editor #modalLevelSystem .modal-box--level {
+  width: min(100%, 940px) !important;
+  height: min(860px, calc(100dvh - clamp(24px, 6vh, 56px))) !important;
+  max-height: calc(100dvh - clamp(24px, 6vh, 56px)) !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  box-shadow:
+    0 26px 80px rgba(0, 0, 0, 0.48),
+    0 0 42px rgba(var(--accent-rgb), 0.12);
+}
+
+#modalLevelSystem .level-system-scroll,
+body.mode-editor #modalLevelSystem .level-system-scroll {
+  flex: 1 1 0 !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 6px 10px 12px 0 !important;
+  scrollbar-gutter: stable;
+}
+
+#modalLevelSystem .level-system-input-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+#modalLevelSystem .level-system-input-panel .level-system-controls-head,
+#modalLevelSystem .level-system-input-panel .level-system-hint {
+  grid-column: 1 / -1;
+}
+
+#modalLevelSystem .level-system-input-card {
+  position: relative;
+  min-width: 0;
+  opacity: 0.72;
+  border-color: rgba(255, 255, 255, 0.09);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.018)),
+    rgba(255, 255, 255, 0.028);
+  transition:
+    transform var(--interactive-fast) ease,
+    opacity var(--interactive-fast) ease,
+    border-color var(--interactive-fast) ease,
+    background var(--interactive-fast) ease,
+    box-shadow var(--interactive-fast) ease;
+}
+
+#modalLevelSystem .level-system-input-card::before {
+  content: "";
+  position: absolute;
+  inset: 12px auto 12px 12px;
+  width: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+#modalLevelSystem .level-system-input-card.is-active {
+  opacity: 1;
+  transform: translateY(-1px);
+  border-color: rgba(var(--accent-rgb), 0.48);
+  background:
+    linear-gradient(145deg, rgba(var(--accent-rgb), 0.18), rgba(var(--accent-rgb), 0.045)),
+    rgba(255, 255, 255, 0.04);
+  box-shadow:
+    0 18px 36px rgba(var(--accent-rgb), 0.13),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+#modalLevelSystem .level-system-input-card.is-active::before {
+  background: linear-gradient(180deg, rgba(var(--accent-rgb), 0.95), rgba(var(--accent-rgb), 0.36));
+  box-shadow: 0 0 18px rgba(var(--accent-rgb), 0.32);
+}
+
+#modalLevelSystem .level-system-input-card input {
+  margin-left: 6px;
+}
+
+#modalLevelSystem .level-system-mode-card {
+  min-height: 98px;
+}
+
+@media (min-height: 760px) {
+  #modalLevelSystem {
+    align-items: flex-start !important;
+  }
+}
+
+@media (max-width: 720px), (max-height: 560px) {
+  #modalLevelSystem .level-system-input-panel {
+    grid-template-columns: 1fr;
+  }
+
+  #modalLevelSystem .modal-box--level,
+  body.mode-editor #modalLevelSystem .modal-box--level {
+    height: calc(100dvh - 24px) !important;
+    max-height: calc(100dvh - 24px) !important;
+  }
+}
+
+/* =========================================================
+   Final modal scroll architecture
+   Header and footer stay fixed, only modal bodies scroll
+   ========================================================= */
+.modal-backdrop,
+.modal-overlay,
+.dialog-backdrop,
+.dialog-overlay,
+[class*="modal-backdrop"],
+[class*="modal-overlay"],
+[class*="dialog-backdrop"],
+[class*="dialog-overlay"] {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100dvh !important;
+  max-height: 100dvh !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 24px !important;
+  box-sizing: border-box !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.modal-box,
+.modal-content,
+.modal-card,
+.modal-panel,
+.dialog,
+.dialog-content,
+[class*="modal-box"],
+[class*="modal-content"],
+[class*="modal-panel"],
+[class*="dialog-content"] {
+  display: flex !important;
+  flex-direction: column !important;
+  width: min(100%, var(--modal-width, 920px));
+  max-height: calc(100dvh - 48px) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.modal-box--xl,
+.modal-box--sheet,
+.modal-box--wiki,
+.modal-box--level,
+.modal-box--recovery,
+.modal-box--safe-reset,
+.modal-box--skilltree,
+.modal-box--user-logs,
+.modal-box--share {
+  max-height: calc(100dvh - 48px) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.modal-header,
+.dialog-header,
+.detail-modal-head,
+.wiki-modal-head,
+.modal-box > h2,
+[class*="modal-header"],
+[class*="dialog-header"] {
+  flex: 0 0 auto !important;
+  min-height: 0 !important;
+  min-width: 0 !important;
+}
+
+.modal-footer,
+.dialog-footer,
+.modal-actions,
+.dialog-actions,
+[class*="modal-footer"],
+[class*="dialog-footer"],
+[class*="modal-actions"],
+[class*="dialog-actions"] {
+  flex: 0 0 auto !important;
+  position: static !important;
+  inset: auto !important;
+  min-height: 0 !important;
+  min-width: 0 !important;
+  z-index: auto !important;
+}
+
+.modal-body,
+.dialog-body,
+.modal-scroll,
+.dialog-scroll,
+.modal-content-scroll,
+.level-system-scroll,
+.recovery-modal-scroll,
+.diagnostics-modal-scroll,
+.share-modal-scroll,
+.skilltree-modal-root,
+.save-reset-modal-shell,
+.user-logs-viewer-shell,
+.modal-box > #modalMultiContent,
+.modal-box > .clone-options,
+.modal-box > .toggle-switch--modal,
+[class*="modal-scroll"],
+[class*="dialog-scroll"] {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  min-width: 0 !important;
+  max-height: none !important;
+  height: auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: clamp(20px, 3vh, 36px);
+  box-sizing: border-box;
+}
+
+#modalLevelSystem .modal-box--level,
+body.mode-editor #modalLevelSystem .modal-box--level {
+  width: min(100%, 940px) !important;
+  max-height: calc(100dvh - 48px) !important;
+  height: auto !important;
+  overflow: hidden !important;
+}
+
+#modalLevelSystem .level-system-scroll,
+body.mode-editor #modalLevelSystem .level-system-scroll {
+  display: grid !important;
+  align-content: start !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 6px 10px clamp(36px, 5vh, 56px) 0 !important;
+  scrollbar-gutter: stable;
+}
+
+#modalLevelSystem .modal-actions,
+body.mode-editor #modalLevelSystem .modal-actions {
+  flex: 0 0 auto !important;
+  position: static !important;
+  bottom: auto !important;
+  background: inherit;
+  padding-top: 14px;
+}
+
+.modal-box--user-logs .user-logs-viewer-shell {
+  min-height: 180px !important;
+}
+
+.modal-box--user-logs .user-logs-viewer {
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: auto !important;
+}
+
+@media (min-height: 760px) {
+  .modal-backdrop,
+  .modal-overlay,
+  .dialog-backdrop,
+  .dialog-overlay,
+  [class*="modal-backdrop"],
+  [class*="modal-overlay"],
+  [class*="dialog-backdrop"],
+  [class*="dialog-overlay"] {
+    align-items: flex-start !important;
+  }
+}
+
+@media (max-height: 650px) {
+  .modal-backdrop,
+  .modal-overlay,
+  .dialog-backdrop,
+  .dialog-overlay,
+  [class*="modal-backdrop"],
+  [class*="modal-overlay"],
+  [class*="dialog-backdrop"],
+  [class*="dialog-overlay"] {
+    align-items: flex-start !important;
+    padding-block: 12px !important;
+  }
+
+  .modal-box,
+  .modal-content,
+  .modal-card,
+  .modal-panel,
+  .dialog,
+  .dialog-content,
+  [class*="modal-box"],
+  [class*="modal-content"],
+  [class*="modal-panel"],
+  [class*="dialog-content"],
+  #modalLevelSystem .modal-box--level,
+  body.mode-editor #modalLevelSystem .modal-box--level {
+    max-height: calc(100dvh - 24px) !important;
+  }
+}
+/* =========================================================
+   Accent theme EOF guard
+   Reasserts selected accent values after late modal overrides
+   ========================================================= */
+
+body.theme-dark,
+body.mode-editor.theme-dark,
+body.mode-editor.theme-dark.editor-advanced,
+body.mode-career.theme-dark {
+  --accent: #38bdf8;
+  --accent-rgb: 56, 189, 248;
+  --accent-secondary: #0e7490;
+  --accent-secondary-rgb: 14, 116, 144;
+  --accent-soft: rgba(56, 189, 248, 0.18);
+  --accent-glow: 0 0 30px rgba(56, 189, 248, 0.3);
+  --accent-border: rgba(56, 189, 248, 0.42);
+  --text-info: #67e8f9;
+}
+
+body.theme-light,
+body.mode-editor.theme-light,
+body.mode-editor.theme-light.editor-advanced,
+body.mode-career.theme-light {
+  --accent: #7c3aed;
+  --accent-rgb: 124, 58, 237;
+  --accent-secondary: #a855f7;
+  --accent-secondary-rgb: 168, 85, 247;
+  --accent-soft: rgba(124, 58, 237, 0.16);
+  --accent-glow: 0 0 30px rgba(124, 58, 237, 0.24);
+  --accent-border: rgba(124, 58, 237, 0.36);
+  --text-info: #7c3aed;
+}
+
+body.theme-neon,
+body.mode-editor.theme-neon,
+body.mode-editor.theme-neon.editor-advanced,
+body.mode-career.theme-neon {
+  --accent: #10f39a;
+  --accent-rgb: 16, 243, 154;
+  --accent-secondary: #047857;
+  --accent-secondary-rgb: 4, 120, 87;
+  --accent-soft: rgba(16, 243, 154, 0.18);
+  --accent-glow: 0 0 30px rgba(16, 243, 154, 0.3);
+  --accent-border: rgba(16, 243, 154, 0.42);
+  --text-info: #6ee7b7;
+}
+
+body.theme-neon-red,
+body.mode-editor.theme-neon-red,
+body.mode-editor.theme-neon-red.editor-advanced,
+body.mode-career.theme-neon-red {
+  --accent: #ff3158;
+  --accent-rgb: 255, 49, 88;
+  --accent-secondary: #b91c3f;
+  --accent-secondary-rgb: 185, 28, 63;
+  --accent-soft: rgba(255, 49, 88, 0.18);
+  --accent-glow: 0 0 30px rgba(255, 49, 88, 0.3);
+  --accent-border: rgba(255, 49, 88, 0.42);
+  --text-info: #ff6b86;
+}
+
+/* =========================================================
+   Tool stage scroll fix
+   ========================================================= */
+
+.save-tool-stage {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.save-stage-head {
+  flex: 0 0 auto;
+}
+
+.tool-stage-shell {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  padding-right: 8px;
+  padding-bottom: 96px;
+}
+
+#tool-container {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  align-content: start;
+}
+
+.tool-card {
+  min-width: 0;
+}
+
+/* =========================================================
+   Parent scroll chain fix
+   ========================================================= */
+
+.workspace-shell,
+.workspace-main,
+.save-editor-view,
+.save-editor-shell,
+.save-content-scroll,
+.editor-main,
+.editor-content {
+  min-height: 0;
+}
+
+.workspace-main,
+.save-editor-view,
+.save-editor-shell {
+  overflow: hidden;
+}
+
+.save-content-scroll,
+.editor-main,
+.editor-content {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* =========================================================
+   Global modal scroll fix
+   ========================================================= */
+
+.modal-backdrop,
+.dialog-backdrop,
+.settings-backdrop,
+.overlay,
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 24px;
+  box-sizing: border-box;
+  overscroll-behavior: contain;
+}
+
+.modal-box,
+.modal-panel,
+.dialog,
+.settings-modal,
+.language-modal {
+  width: min(960px, calc(100vw - 48px));
+  max-width: calc(100vw - 48px);
+  max-height: calc(100dvh - 48px);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.modal-header,
+.dialog-header,
+.settings-modal-header {
+  flex: 0 0 auto;
+}
+
+.modal-body,
+.modal-content,
+.dialog-content,
+.settings-modal-body,
+.language-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+
+.modal-footer,
+.dialog-footer,
+.settings-modal-footer {
+  flex: 0 0 auto;
 }

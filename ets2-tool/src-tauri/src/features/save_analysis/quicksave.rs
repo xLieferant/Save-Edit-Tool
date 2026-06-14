@@ -6,8 +6,8 @@ use crate::shared::regex_helper::cragex;
 use crate::shared::trace::TraceScope;
 use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 use std::path::{Path, PathBuf};
-use tauri::command;
 use tauri::State;
+use tauri::command;
 
 #[command]
 pub async fn quicksave_game_info(
@@ -165,7 +165,8 @@ fn parse_current_truck_summary_from_content(
         .and_then(|plate| sanitize_license_plate(&plate));
 
     let accessory_ids = extract_array_references(&vehicle_block, "accessories")?;
-    let (brand_token, model_token) = resolve_truck_tokens_from_accessories(content, &accessory_ids)?;
+    let (brand_token, model_token) =
+        resolve_truck_tokens_from_accessories(content, &accessory_ids)?;
     let brand_label = brand_token
         .as_deref()
         .map(humanize_vehicle_token)
@@ -194,7 +195,10 @@ fn parse_current_truck_summary_from_content(
     }))
 }
 
-fn extract_first_block(content: &str, block_type: &str) -> Result<Option<(String, String)>, String> {
+fn extract_first_block(
+    content: &str,
+    block_type: &str,
+) -> Result<Option<(String, String)>, String> {
     let pattern = format!(
         r"\b{}\b\s*:\s*([A-Za-z0-9._]+)\s*\{{",
         regex::escape(block_type)
@@ -209,8 +213,11 @@ fn extract_first_block(content: &str, block_type: &str) -> Result<Option<(String
         .get(1)
         .map(|value| value.as_str().trim().to_string())
         .unwrap_or_default();
-    let body = extract_body_from_match(content, captures.get(0).map(|value| value.start()).unwrap_or(0))
-        .ok_or_else(|| format!("Failed to read {} block", block_type))?;
+    let body = extract_body_from_match(
+        content,
+        captures.get(0).map(|value| value.start()).unwrap_or(0),
+    )
+    .ok_or_else(|| format!("Failed to read {} block", block_type))?;
 
     Ok(Some((id, body)))
 }
@@ -289,7 +296,11 @@ fn extract_array_references(block: &str, key: &str) -> Result<Vec<String>, Strin
     let regex = cragex(&format!(r"\b{}\b\[\d+\]:\s*([^\s]+)", regex::escape(key)))?;
     Ok(regex
         .captures_iter(block)
-        .filter_map(|captures| captures.get(1).map(|value| value.as_str().trim().to_string()))
+        .filter_map(|captures| {
+            captures
+                .get(1)
+                .map(|value| value.as_str().trim().to_string())
+        })
         .filter(|value| !value.is_empty())
         .collect())
 }
@@ -299,7 +310,9 @@ fn resolve_truck_tokens_from_accessories(
     accessory_ids: &[String],
 ) -> Result<(Option<String>, Option<String>), String> {
     for accessory_id in accessory_ids {
-        let Some(accessory_block) = extract_named_block(content, "vehicle_accessory", accessory_id)? else {
+        let Some(accessory_block) =
+            extract_named_block(content, "vehicle_accessory", accessory_id)?
+        else {
             continue;
         };
 
@@ -341,10 +354,7 @@ fn sanitize_license_plate(raw: &str) -> Option<String> {
         return None;
     }
 
-    let without_tags = cragex(r"<[^>]*>")
-        .ok()?
-        .replace_all(raw, " ")
-        .to_string();
+    let without_tags = cragex(r"<[^>]*>").ok()?.replace_all(raw, " ").to_string();
     let without_country = cragex(r"\s*\|[A-Za-z0-9._-]+$")
         .ok()?
         .replace(&without_tags, "")

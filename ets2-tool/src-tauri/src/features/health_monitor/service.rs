@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fs;
-use std::sync::mpsc;
 use std::path::{Path, PathBuf};
+use std::sync::mpsc;
 use std::sync::{Mutex, OnceLock};
 use std::thread;
 use std::time::{Duration, UNIX_EPOCH};
@@ -14,14 +14,14 @@ use walkdir::WalkDir;
 use crate::features::backup::service as backup_service;
 use crate::features::logging::models::LogContext;
 use crate::features::logging::service as logging_service;
-use crate::shared::current_profile::{snapshot_resolved_save_context, ResolvedSaveContext};
+use crate::shared::current_profile::{ResolvedSaveContext, snapshot_resolved_save_context};
 use crate::shared::decrypt::{decrypt_cached_with_cache, decrypt_if_needed};
 use crate::shared::paths::{game_sii_from_save, mod_directory_path};
 use crate::shared::sii_parser::{
     get_player_id, get_vehicle_ids, parse_trailer_defs_from_sii, parse_trailers_from_sii,
     parse_trucks_from_sii,
 };
-use crate::shared::trace::{lock_mutex, TraceScope};
+use crate::shared::trace::{TraceScope, lock_mutex};
 use crate::shared::user_log;
 use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 
@@ -29,12 +29,38 @@ use super::models::{SaveHealthFixResultDto, SaveHealthProblemDto, SaveHealthRepo
 
 const FIX_SYNC_PLAYER_XP_LEVEL: &str = "sync_player_xp_level";
 const COMMON_TOKENS: &[&str] = &[
-    "accessory", "addon", "cargo", "data", "dds", "def", "ets2", "file", "game", "map",
-    "material", "mod", "model", "prefab", "profile", "save", "sound", "texture", "trailer",
-    "truck", "ui", "unit", "vehicle",
+    "accessory",
+    "addon",
+    "cargo",
+    "data",
+    "dds",
+    "def",
+    "ets2",
+    "file",
+    "game",
+    "map",
+    "material",
+    "mod",
+    "model",
+    "prefab",
+    "profile",
+    "save",
+    "sound",
+    "texture",
+    "trailer",
+    "truck",
+    "ui",
+    "unit",
+    "vehicle",
 ];
 const KNOWN_CUSTOM_TOKENS: &[&str] = &[
-    "jazzycat", "promods", "reforma", "rusmap", "soundfixes", "sierranevada", "schumi",
+    "jazzycat",
+    "promods",
+    "reforma",
+    "rusmap",
+    "soundfixes",
+    "sierranevada",
+    "schumi",
 ];
 const MOD_SCAN_TIMEOUT_SECS: u64 = 8;
 const MOD_SCAN_RETRY_AFTER_SECS: u64 = 30;
@@ -346,7 +372,11 @@ pub fn analyze_resolved_save_health(
         }
     }
 
-    let profile_path = resolved.context.profile_reference.as_deref().map(PathBuf::from);
+    let profile_path = resolved
+        .context
+        .profile_reference
+        .as_deref()
+        .map(PathBuf::from);
     let profile_content = profile_path.as_ref().and_then(|path| {
         let profile_sii = path.join("profile.sii");
         let mut profile_scope = TraceScope::with_fields(
@@ -384,7 +414,10 @@ pub fn analyze_resolved_save_health(
                 mods: Vec::new(),
                 state: ModScanState::Failed,
                 path_index_complete: false,
-                message: Some("The local mod directory could not be resolved for the active game.".to_string()),
+                message: Some(
+                    "The local mod directory could not be resolved for the active game."
+                        .to_string(),
+                ),
                 pending: false,
             })
     };
@@ -545,10 +578,9 @@ pub fn analyze_resolved_save_health(
             log_context
                 .extra
                 .insert("status".to_string(), report.status.clone());
-            log_context.extra.insert(
-                "problemCount".to_string(),
-                report.problem_count.to_string(),
-            );
+            log_context
+                .extra
+                .insert("problemCount".to_string(), report.problem_count.to_string());
             let _ = logging_service::record_warning(
                 "save_health_check",
                 Some("save_health_attention"),
@@ -576,11 +608,9 @@ pub fn apply_safe_fix(
     }
 
     match fix_id {
-        FIX_SYNC_PLAYER_XP_LEVEL => apply_sync_player_xp_level_fix(
-            profile_state,
-            profile_cache,
-            decrypt_cache,
-        ),
+        FIX_SYNC_PLAYER_XP_LEVEL => {
+            apply_sync_player_xp_level_fix(profile_state, profile_cache, decrypt_cache)
+        }
         _ => Err(format!("Unknown health fix `{}`.", fix_id)),
     }
 }
@@ -614,8 +644,7 @@ fn apply_sync_player_xp_level_fix(
     let level_re = Regex::new(r"info_player_level:\s*\d+").map_err(|error| error.to_string())?;
     let new_content = level_re
         .replace(
-            &xp_re
-                .replace(&content, format!("info_players_experience: {}", xp_main)),
+            &xp_re.replace(&content, format!("info_players_experience: {}", xp_main)),
             format!("info_player_level: {}", derived_level),
         )
         .to_string();
@@ -629,9 +658,7 @@ fn apply_sync_player_xp_level_fix(
     context
         .extra
         .insert("fixId".to_string(), FIX_SYNC_PLAYER_XP_LEVEL.to_string());
-    context
-        .extra
-        .insert("xp".to_string(), xp_main.to_string());
+    context.extra.insert("xp".to_string(), xp_main.to_string());
     context
         .extra
         .insert("level".to_string(), derived_level.to_string());
@@ -660,7 +687,10 @@ fn finalize_report(
         .iter()
         .filter(|problem| problem.auto_fix_available)
         .count();
-    let status = if problems.iter().any(|problem| problem.severity == "critical") {
+    let status = if problems
+        .iter()
+        .any(|problem| problem.severity == "critical")
+    {
         "Broken"
     } else if problems.is_empty() {
         "Clean"
@@ -675,7 +705,8 @@ fn finalize_report(
         _ => "The active save is still usable, but one or more risky inconsistencies were detected.".to_string(),
     };
     let summary = if mod_scan_pending {
-        "Lightweight checks completed. The local mod scan is still running in the background.".to_string()
+        "Lightweight checks completed. The local mod scan is still running in the background."
+            .to_string()
     } else if matches!(status.as_str(), "Clean" | "Risky") {
         mod_scan_message.clone().unwrap_or(default_summary)
     } else {
@@ -907,7 +938,8 @@ fn start_background_mod_scan(mod_dir: PathBuf, fingerprint: Vec<String>) -> Resu
             }
         }
 
-        if let Ok(mut inflight) = lock_mutex("health_monitor.mod_scan_inflight", mod_scan_inflight())
+        if let Ok(mut inflight) =
+            lock_mutex("health_monitor.mod_scan_inflight", mod_scan_inflight())
         {
             inflight.remove(&mod_dir);
         }
@@ -977,8 +1009,13 @@ fn scan_installed_mods(mod_dir: &Path) -> Result<ModScanCollected, String> {
         return Ok(ModScanCollected::default());
     }
 
-    let entries = fs::read_dir(mod_dir)
-        .map_err(|error| format!("failed to read mod directory `{}`: {}", mod_dir.display(), error))?;
+    let entries = fs::read_dir(mod_dir).map_err(|error| {
+        format!(
+            "failed to read mod directory `{}`: {}",
+            mod_dir.display(),
+            error
+        )
+    })?;
 
     let mut collected = ModScanCollected {
         mods: Vec::new(),
@@ -991,7 +1028,10 @@ fn scan_installed_mods(mod_dir: &Path) -> Result<ModScanCollected, String> {
         let entry = match entry_result {
             Ok(entry) => entry,
             Err(error) => {
-                crate::dev_log!("[trace] ERROR health_monitor.scan_installed_mods: {}", error);
+                crate::dev_log!(
+                    "[trace] ERROR health_monitor.scan_installed_mods: {}",
+                    error
+                );
                 continue;
             }
         };
@@ -1010,14 +1050,22 @@ fn scan_installed_mods(mod_dir: &Path) -> Result<ModScanCollected, String> {
         };
 
         if is_symlink_or_reparse(&metadata) {
-            crate::dev_log!("[trace] MOD_SCAN skipped_reparse_path path={}", path.display());
+            crate::dev_log!(
+                "[trace] MOD_SCAN skipped_reparse_path path={}",
+                path.display()
+            );
             continue;
         }
 
         let is_archive = path
             .extension()
             .and_then(|value| value.to_str())
-            .map(|value| matches!(value.to_ascii_lowercase().as_str(), "scs" | "zip" | "rar" | "7z"))
+            .map(|value| {
+                matches!(
+                    value.to_ascii_lowercase().as_str(),
+                    "scs" | "zip" | "rar" | "7z"
+                )
+            })
             .unwrap_or(false);
 
         if !metadata.is_dir() && !is_archive {
@@ -1067,7 +1115,10 @@ fn inspect_folder_mod_entry(path: &Path) -> Option<IndexedMod> {
         let entry = match entry_result {
             Ok(entry) => entry,
             Err(error) => {
-                crate::dev_log!("[trace] ERROR health_monitor.scan_installed_mods: {}", error);
+                crate::dev_log!(
+                    "[trace] ERROR health_monitor.scan_installed_mods: {}",
+                    error
+                );
                 continue;
             }
         };
@@ -1095,7 +1146,12 @@ fn inspect_folder_mod_entry(path: &Path) -> Option<IndexedMod> {
         }
     }
 
-    Some(build_indexed_mod(path, display_name, package_name, indexed_paths))
+    Some(build_indexed_mod(
+        path,
+        display_name,
+        package_name,
+        indexed_paths,
+    ))
 }
 
 fn inspect_archive_mod_entry(path: &Path) -> Option<IndexedMod> {
@@ -1161,7 +1217,10 @@ fn active_mod_matches(active_mod: &ActiveModEntry, indexed_mod: &IndexedMod) -> 
     })
 }
 
-fn extract_custom_save_references(save_content: &str, active_mods: &[ActiveModEntry]) -> Vec<String> {
+fn extract_custom_save_references(
+    save_content: &str,
+    active_mods: &[ActiveModEntry],
+) -> Vec<String> {
     let data_path_re = match Regex::new(r#"data_path:\s*"([^"]+)""#) {
         Ok(regex) => regex,
         Err(_) => return Vec::new(),
@@ -1210,19 +1269,30 @@ fn looks_like_custom_reference(path: &str, active_mods: &[ActiveModEntry]) -> bo
 
 fn path_matches_any_mod(path: &str, indexed_mods: &[IndexedMod]) -> bool {
     indexed_mods.iter().any(|indexed_mod| {
-        indexed_mod.path_set.contains(path) || indexed_mod.indexed_paths.iter().any(|candidate| trailing_segment_overlap(candidate, path) >= 2)
+        indexed_mod.path_set.contains(path)
+            || indexed_mod
+                .indexed_paths
+                .iter()
+                .any(|candidate| trailing_segment_overlap(candidate, path) >= 2)
     })
 }
 
 fn collect_block_ids(content: &str, block_type: &str) -> HashSet<String> {
-    let pattern = format!(r"{}\s*:\s*([A-Za-z0-9._-]+)\s*\{{", regex::escape(block_type));
+    let pattern = format!(
+        r"{}\s*:\s*([A-Za-z0-9._-]+)\s*\{{",
+        regex::escape(block_type)
+    );
     let regex = match Regex::new(&pattern) {
         Ok(regex) => regex,
         Err(_) => return HashSet::new(),
     };
     regex
         .captures_iter(content)
-        .filter_map(|capture| capture.get(1).map(|value| value.as_str().to_ascii_lowercase()))
+        .filter_map(|capture| {
+            capture
+                .get(1)
+                .map(|value| value.as_str().to_ascii_lowercase())
+        })
         .collect()
 }
 
@@ -1241,7 +1311,10 @@ fn extract_array_values(
         Ok(regex) => regex,
         Err(_) => return Vec::new(),
     };
-    let field_re = match Regex::new(&format!(r#"{}\[\d+\]:\s*([^\s]+)"#, regex::escape(field_name))) {
+    let field_re = match Regex::new(&format!(
+        r#"{}\[\d+\]:\s*([^\s]+)"#,
+        regex::escape(field_name)
+    )) {
         Ok(regex) => regex,
         Err(_) => return Vec::new(),
     };
@@ -1255,7 +1328,11 @@ fn extract_array_values(
 
     field_re
         .captures_iter(body.as_str())
-        .filter_map(|capture| capture.get(1).map(|value| value.as_str().trim().to_ascii_lowercase()))
+        .filter_map(|capture| {
+            capture
+                .get(1)
+                .map(|value| value.as_str().trim().to_ascii_lowercase())
+        })
         .collect()
 }
 
@@ -1342,7 +1419,9 @@ fn trailing_segment_overlap(left: &str, right: &str) -> usize {
     let mut right_iter = right_segments.iter().rev();
     loop {
         match (left_iter.next(), right_iter.next()) {
-            (Some(left_segment), Some(right_segment)) if left_segment == right_segment => overlap += 1,
+            (Some(left_segment), Some(right_segment)) if left_segment == right_segment => {
+                overlap += 1
+            }
             _ => break,
         }
     }

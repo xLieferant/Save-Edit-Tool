@@ -193,6 +193,116 @@
             "career_settings_saved": "Career settings saved.",
             "member_role_saved": "Member role updated.",
             "settings_note": "API, sync and telemetry configuration hooks are prepared as placeholders.",
+            "analytics": {
+                  "summary_text": "Job analytics, partial save imports and local tracking exports.",
+                  "export": "Export to Excel (CSV)",
+                  "scan_save_data": "Analyze Save Data",
+                  "enable_tracking": "Enable Tracking",
+                  "note": "Note: ETS2/ATS do not necessarily store a complete historical job list. The tool only imports data that is still present in the save/profile. For complete tracking, new jobs are logged in the local database after tracking is enabled.",
+                  "partial_data": "Partial data detected. Save imports and older local entries may not contain complete profit, cost or delivery timing fields.",
+                  "local_tracking_hint": "Live telemetry and local job logging provide the most reliable history after tracking is enabled.",
+                  "loading_title": "Loading analytics",
+                  "loading_body": "Building job history, charts and filter options from the local database.",
+                  "error_title": "Analytics could not be loaded",
+                  "empty": {
+                        "title": "No job data available yet.",
+                        "body": "The tool can analyze existing save data when those details are still stored in the profile. For complete tracking, new jobs are logged automatically in the local database from now on.",
+                        "no_chart_data": "No chart data available for the current filter set.",
+                        "no_rows": "No matching jobs found for the current filters."
+                  },
+                  "filters": {
+                        "from": "From",
+                        "to": "To",
+                        "profile": "Profile",
+                        "game": "Game",
+                        "status": "Status",
+                        "cargo": "Cargo",
+                        "cargo_placeholder": "Search cargo",
+                        "source_city": "Source City",
+                        "destination_city": "Destination City",
+                        "all": "All"
+                  },
+                  "apply_filters": "Apply Filters",
+                  "reset_filters": "Reset Filters",
+                  "charts": {
+                        "revenue_over_time": "Revenue Over Time",
+                        "profit_over_time": "Profit Over Time",
+                        "jobs_per_day": "Jobs Per Day",
+                        "top_cargo": "Top Cargo",
+                        "top_routes": "Top Routes",
+                        "damage_cost": "Damage / Cost Analysis"
+                  },
+                  "aria": {
+                        "refresh_button": "Refresh analytics",
+                        "export_button": "Export analytics CSV",
+                        "scan_button": "Analyze save data for analytics",
+                        "enable_tracking_button": "Enable local analytics tracking",
+                        "source_summary": "Analytics source summary",
+                        "summary_cards": "Analytics summary cards",
+                        "job_history_table": "Analytics job history"
+                  },
+                  "table": {
+                        "date": "Date",
+                        "profile": "Profile",
+                        "game": "Game",
+                        "job_uid": "Job ID",
+                        "status": "Status",
+                        "cargo": "Cargo",
+                        "source_city": "Source City",
+                        "destination_city": "Destination City",
+                        "source_company": "Source Company",
+                        "destination_company": "Destination Company",
+                        "distance": "Distance",
+                        "revenue": "Revenue",
+                        "costs": "Costs",
+                        "damage": "Damage",
+                        "penalties": "Penalties",
+                        "profit": "Profit",
+                        "xp": "XP",
+                        "level": "Level",
+                        "truck": "Truck",
+                        "trailer": "Trailer",
+                        "driven_with_truck": "Driven with Truck",
+                        "source": "Source",
+                        "yes": "Yes",
+                        "no": "No"
+                  },
+                  "summary": {
+                        "total_jobs": "Tracked Jobs",
+                        "total_revenue": "Total Revenue",
+                        "total_costs": "Total Costs",
+                        "total_profit": "Profit / Loss",
+                        "total_distance": "Distance Driven",
+                        "avg_profit_job": "Avg Profit / Job",
+                        "avg_profit_km": "Avg Profit / km",
+                        "damaged_deliveries": "Damaged Deliveries",
+                        "on_time_deliveries": "On-time Deliveries",
+                        "late_deliveries": "Late Deliveries"
+                  },
+                  "sources": {
+                        "local_tracking": "Local Tracking",
+                        "save_import": "Save Import",
+                        "partial_save_data": "Partial Save Data",
+                        "unknown": "Unknown"
+                  },
+                  "messages": {
+                        "tracking_enabled": "Local job tracking enabled.",
+                        "scan_success": "Save analysis completed.",
+                        "scan_failed": "Save analysis failed.",
+                        "export_success": "Analytics export written:",
+                        "export_canceled": "Analytics export canceled.",
+                        "export_failed": "Analytics export failed.",
+                        "refresh_failed": "Analytics refresh failed.",
+                        "api_unavailable": "Tauri API not available."
+                  },
+                  "status": {
+                        "active": "Active",
+                        "completed": "Completed",
+                        "failed": "Failed",
+                        "cancelled": "Cancelled",
+                        "unknown": "Unknown"
+                  }
+            },
             "dispatcher": {
                   "nav_title": "Dispatcher",
                   "summary": "Market, offers, active assignments, company relationships and job history.",
@@ -388,6 +498,7 @@
                   "balance": "Balance",
                   "insurance": "Insurance",
                   "statistics": "Statistics",
+                  "analytics": "Analytics",
                   "achievements": "Achievements",
                   "company": "My Company",
                   "store": "Store",
@@ -872,6 +983,63 @@
                   "settings": "Settings Editing",
                   "settings_desc": "Control language, convoy, traffic and advanced configuration switches."
             },
+            "skilltree": {
+                  "title": "Skilltree Editor",
+                  "subtitle": "Adjust your driver skills visually.",
+                  "launch_kicker": "Driver specialization",
+                  "launch_desc": "Open the focused skilltree workspace for ADR, cargo and driving specializations.",
+                  "launch_action": "Open Skilltree",
+                  "modal_desc": "Edit driver skills in a focused workspace without changing the backend save logic.",
+                  "summary_progress": "Overall Progress",
+                  "summary_assigned": "Assigned Levels",
+                  "summary_peak": "Highest Skill",
+                  "summary_status": "Status",
+                  "summary_open": "Open Levels",
+                  "status_ready": "Ready",
+                  "status_unsaved": "Unsaved Changes",
+                  "status_saving": "Applying Changes",
+                  "status_maxed": "Fully Maxed",
+                  "status_empty": "No Skills Assigned",
+                  "status_requires_save": "Load a Save",
+                  "empty_title": "No active save loaded",
+                  "empty_body": "Select a profile and a save to edit skill values visually.",
+                  "note": "Changes are written to the active save only after you apply them.",
+                  "progress_value": "{value}%",
+                  "assigned_value": "{value} / {max}",
+                  "remaining_value": "{value} remaining",
+                  "peak_value": "{skill} (L{level})",
+                  "peak_none": "No skill assigned",
+                  "level_zero": "Not Assigned",
+                  "level_max": "Max Level",
+                  "level_value": "Level {level} / {max}",
+                  "actions": {
+                        "apply": "Apply Skill Changes",
+                        "reset": "Reset Draft",
+                        "clear": "Set All to 0",
+                        "max": "Set All to Max"
+                  },
+                  "detail": {
+                        "title": "Skill Details",
+                        "hint": "Higher levels strengthen the selected specialization in the active profile.",
+                        "current": "Current Level",
+                        "description": "Description",
+                        "controls": "Level Control",
+                        "reset": "Reset Skill",
+                        "selected_fallback": "Select a skill node to inspect and edit it."
+                  },
+                  "skills": {
+                        "groups": {
+                              "cargo": "Cargo Certifications",
+                              "operations": "Route Efficiency"
+                        },
+                        "adr_desc": "Unlocks hazardous cargo certifications step by step.",
+                        "long_dist_desc": "Improves long-distance haul progression and efficiency.",
+                        "heavy_desc": "Expands access to heavier, higher-value cargo.",
+                        "fragile_desc": "Improves handling of delicate and damage-sensitive freight.",
+                        "urgent_desc": "Boosts time-critical delivery specialization.",
+                        "mechanical_desc": "Represents eco driving and vehicle handling efficiency."
+                  }
+            },
             "reset": {
                   "kicker": "Safe Value Reset",
                   "title": "Safe Value Reset",
@@ -1107,6 +1275,33 @@
             "mod_profile_manager_path_copied": "Folder path copied.",
             "mod_profile_manager_folder_open_failed": "The folder could not be opened or copied.",
             "mod_profile_manager_no_workshop_links": "No workshop links are available.",
+            "mod_sandbox_load_failed": "Mod sandboxes could not be loaded.",
+            "mod_sandbox_created": "Sandbox created.",
+            "mod_sandbox_create_failed": "Sandbox could not be created.",
+            "mod_sandbox_deleted": "Sandbox deleted.",
+            "mod_sandbox_delete_failed": "Sandbox could not be deleted.",
+            "mod_sandbox_input_required": "Select a sandbox and enter a Workshop link or ID.",
+            "mod_sandbox_mod_added": "Workshop mod added.",
+            "mod_sandbox_mod_add_failed": "Workshop mod could not be added.",
+            "mod_sandbox_mod_removed": "Workshop mod removed.",
+            "mod_sandbox_mod_remove_failed": "Workshop mod could not be removed.",
+            "mod_sandbox_saved": "Sandbox saved.",
+            "mod_sandbox_save_failed": "Sandbox could not be saved.",
+            "mod_sandbox_no_active_profile": "Load an ETS2 profile and save before applying a sandbox.",
+            "mod_sandbox_applied": "Sandbox applied to the active save.",
+            "mod_sandbox_applied_with_skips": "Sandbox applied. Some mods were skipped.",
+            "mod_sandbox_apply_failed": "Sandbox could not be applied.",
+            "mod_sandbox_open_workshop_failed": "Steam Workshop could not be opened.",
+            "mod_sandbox_open_steam_console_failed": "Steam Console could not be opened. Check if Steam is installed.",
+            "mod_sandbox_download_check_failed": "Download status could not be checked.",
+            "mod_sandbox_download_status_refreshed": "Download status refreshed.",
+            "mod_sandbox_steam_mods_refreshed": "Steam Workshop Mods refreshed.",
+            "mod_sandbox_steam_mods_refresh_failed": "Steam Workshop Mods could not be refreshed.",
+            "mod_sandbox_steamcmd_copied": "SteamCMD command copied.",
+            "mod_sandbox_steamcmd_copy_failed": "SteamCMD command could not be copied.",
+            "mod_sandbox_test_preset_imported": "Test preset imported.",
+            "mod_sandbox_test_preset_failed": "Test preset could not be imported.",
+            "mod_sandbox_apply_success_validated": "{applied_mod_count} mod(s) were set. {removed_existing_mod_count} old mod(s) were removed. The game.sii was re-read and validated successfully. Backup: {backup_path}",
             "level_system_missing_data": "Load a profile and save before opening the level system.",
             "level_system_load_error": "Failed to load the level table.",
             "level_system_apply_success": "Level {level} with {xp} XP applied.",
@@ -1275,6 +1470,83 @@
             "cancel": "Cancel",
             "close": "Close",
             "apply": "Apply",
+            "wiki": {
+                  "button_label": "Help",
+                  "button_aria_label": "Open in-app help and wiki",
+                  "close_aria_label": "Close help dialog",
+                  "nav_aria_label": "Wiki sections",
+                  "kicker": "In-App Help",
+                  "title": "Wiki & Help",
+                  "description": "Quick guidance for editor workflows, shortcuts, safety features and accessibility inside the app.",
+                  "sections": {
+                        "welcome": {
+                              "title": "Welcome",
+                              "body": "Welcome to the SimNexus / ETS2 Save Edit Tool. This wiki explains the main areas, shortcuts and features directly inside the app."
+                        },
+                        "shortcuts": {
+                              "title": "Shortcuts",
+                              "f1": "Open the Truck section.",
+                              "f2": "Open the Trailer section.",
+                              "f3": "Open the Profile section.",
+                              "f4": "Open the Settings section.",
+                              "esc": "Close open modals or windows when possible."
+                        },
+                        "save_editor": {
+                              "title": "Save Edit Tool",
+                              "item_truck": "Edit truck values such as wear, fuel, mileage and identity fields.",
+                              "item_trailer": "Edit trailer values such as condition, cargo mass and trailer identity data.",
+                              "item_profile": "Edit profile values such as money, XP, level and related progress data.",
+                              "item_validate": "Review values before writing changes to the active save.",
+                              "item_backup": "When backup and restore workflows are available, use them before applying risky changes."
+                        },
+                        "career": {
+                              "title": "Career Mode / VTC",
+                              "item_dispatcher": "Dispatcher workflows help coordinate job generation, assignment and routing decisions.",
+                              "item_jobs": "Jobs, offers, active contracts and history provide operational visibility for current and past work.",
+                              "item_company": "The company profile area covers company identity, visibility and organization settings.",
+                              "item_members": "Members and roles define access, responsibilities and company participation.",
+                              "item_fleet": "Fleet panels summarize trucks, assignments, readiness and maintenance state.",
+                              "item_stats": "Balance, statistics and achievements help track long-term company progress."
+                        },
+                        "health": {
+                              "title": "Save Health Monitor",
+                              "item_status": "Save health can report states such as Clean, Risky or Broken.",
+                              "item_mods": "Missing mods can lead to incomplete loads or unstable save behavior.",
+                              "item_refs": "Broken references indicate objects or links that can no longer be resolved safely.",
+                              "item_xp": "Inconsistent XP or level values can produce progression errors after editing.",
+                              "item_fixes": "Review hints and proposed fixes before applying any automated repair step."
+                        },
+                        "backup": {
+                              "title": "Auto Backup & Restore",
+                              "item_snapshots": "Automatic snapshots can be created before write operations.",
+                              "item_restore": "Restore workflows allow returning to a previous save state when needed.",
+                              "item_diff": "If a diff preview is available, inspect it before restoring or overwriting data.",
+                              "item_why": "Backups matter because save edits can affect progression, references and game stability."
+                        },
+                        "logging": {
+                              "title": "Logging & Error Reports",
+                              "item_reports": "User-facing error reports should explain what failed in a readable way.",
+                              "item_copy": "Use Copy Report when you need to share diagnostic output quickly.",
+                              "item_export": "Use Export Logs when a longer support or debugging trail is required.",
+                              "item_levels": "When both are available, user logs focus on workflows while developer logs include deeper technical traces."
+                        },
+                        "updates": {
+                              "title": "Updates",
+                              "item_check": "Check for updates from inside the app when update functionality is available.",
+                              "item_download": "Download the update package before installation starts.",
+                              "item_install": "Install updates with the built-in flow instead of replacing files manually.",
+                              "item_relaunch": "Relaunch the app after installation if prompted.",
+                              "item_progress": "Use the progress display to monitor download and install status."
+                        },
+                        "accessibility": {
+                              "title": "Accessibility / Controls",
+                              "item_keyboard": "Most core actions should remain reachable with keyboard navigation.",
+                              "item_focus": "Visible focus states make navigation and active controls easier to track.",
+                              "item_contrast": "Readable contrast helps when working for long sessions in dark UI themes.",
+                              "item_help": "The help button keeps this wiki reachable at any time inside the app."
+                        }
+                  }
+            },
             "clone_profile": {
                   "title": "Clone Profile",
                   "source": "Source: {profileName}",
@@ -1319,16 +1591,19 @@
             },
             "level_system": {
                   "kicker": "Profile progression",
-                  "title": "Level & XP System",
-                  "description": "Choose a target level visually, preview the matching XP values and keep the save state consistent.",
+                  "title": "Level & XP",
+                  "description": "Set your profile progression by level or exact XP.",
                   "mode_level": "Set by Level",
+                  "mode_level_desc": "Enter a level and preview the calculated XP.",
                   "mode_xp": "Set by XP",
+                  "mode_xp_desc": "Enter exact XP and preview the resulting level.",
                   "status": {
                         "current": "Current",
-                        "target": "Target"
+                        "target": "Target",
+                        "applying": "Applying"
                   },
                   "current_stats": {
-                        "title": "Current Stats",
+                        "title": "Current Values",
                         "level": "Current Level",
                         "total_xp": "Current XP",
                         "next_step": "Current Step XP",
@@ -1342,11 +1617,22 @@
                         "next_level": "Next Level",
                         "progress": "Target Progress"
                   },
+                  "preview": {
+                        "title": "Target Preview",
+                        "target_level": "Target Level",
+                        "target_xp": "Target XP",
+                        "entered": "Entered",
+                        "calculated": "Calculated"
+                  },
                   "controls": {
-                        "title": "New Target",
+                        "title": "Input",
                         "level_slider": "Level Slider",
                         "level_input": "Level",
+                        "level_placeholder": "Enter level",
+                        "level_help": "XP will be calculated from the shared level table.",
                         "xp_input": "XP",
+                        "xp_placeholder": "Enter XP",
+                        "xp_help": "Level will be calculated from the shared level table.",
                         "level_preset": "Level {level}",
                         "reset_current": "Reset to Current",
                         "max_level": "Max Level"
@@ -1369,7 +1655,10 @@
                   "feedback": {
                         "level_clamped": "Level adjusted to the supported range {min}-{max}.",
                         "xp_clamped": "XP adjusted to the supported range 0-{maxXp}.",
-                        "unchanged": "No change selected yet."
+                        "required": "Enter a value to calculate the target progression.",
+                        "invalid": "Enter a valid whole number.",
+                        "unchanged": "No change selected yet.",
+                        "apply_error": "The level change could not be applied."
                   }
             },
             "user_logs": {
@@ -1651,6 +1940,138 @@
                         "preset_creation_requires_profile": "Preset creation needs a profile with readable profile.sii so the active mod list can be detected.",
                         "preset_creation_ready": "The current active mod list is available. Saving the current setup will store the active mods and detected load order."
                   },
+                  "sandbox": {
+                        "kicker": "Sandbox preset workflow",
+                        "title": "Mod Profile Manager",
+                        "description": "Load bundled sandbox presets, validate local Workshop installs and write the preset to the active save.",
+                        "actions": {
+                              "reload_presets": "Refresh Steam Mods",
+                              "open_steam_console": "Open Steam Console",
+                              "open_workshop": "Open Workshop",
+                              "open_in_steam": "Open in Steam",
+                              "copy_steamcmd": "Copy SteamCMD Command",
+                              "details": "Details",
+                              "check_mods": "Check Mods",
+                              "activate_preset": "Activate Preset"
+                        },
+                        "sections": {
+                              "presets": "Sandbox Presets",
+                              "presets_description": "Validate and activate bundled mod sandbox presets.",
+                              "progress": "Preset Workflow"
+                        },
+                        "filters": {
+                              "search": "Search",
+                              "search_placeholder": "Search presets",
+                              "game": "Game",
+                              "status": "Status",
+                              "all": "All"
+                        },
+                        "fields": {
+                              "id": "ID",
+                              "game": "Game",
+                              "active_profile": "Active Profile",
+                              "active_save": "Active Save",
+                              "steam_id": "Steam ID",
+                              "workshop_id": "Workshop ID",
+                              "app_id": "App ID",
+                              "mod_name": "Mod Name",
+                              "load_order": "Load Order",
+                              "local_path": "Local Path",
+                              "available": "available",
+                              "reachable": "reachable",
+                              "status": "Status",
+                              "mods_count": "Mods",
+                              "verified_mods": "Verified Mods",
+                              "last_check": "Last Check",
+                              "required": "Required",
+                              "installed": "Installed",
+                              "actions": "Actions",
+                              "enabled": "Enabled",
+                              "load_order_locked": "Load Order locked",
+                              "load_order_unlocked": "Load Order unlocked",
+                              "yes": "Yes",
+                              "no": "No"
+                        },
+                        "empty": {
+                              "title": "No presets available",
+                              "body": "No sandbox presets are bundled yet.",
+                              "filtered": "No presets match the current filters."
+                        },
+                        "status": {
+                              "active_save_ready": "Active save ready",
+                              "no_active_save": "No active save",
+                              "load_failed": "Load failed",
+                              "checking": "Checking mods",
+                              "check_failed": "Check failed",
+                              "ready": "Ready",
+                              "mod_missing": "Mod missing",
+                              "activated": "Active",
+                              "error": "Error"
+                        },
+                        "preset_status": {
+                              "not_checked": "Not checked",
+                              "needs_check": "Needs Check",
+                              "ready": "Ready",
+                              "mod_missing": "Mod missing",
+                              "missing_mods": "Missing Mods",
+                              "disabled": "Disabled",
+                              "empty": "Empty preset",
+                              "activating": "Activating",
+                              "activated": "Active",
+                              "error": "Error"
+                        },
+                        "details": {
+                              "kicker": "Preset details",
+                              "title": "Preset: {title}"
+                        },
+                        "hints": {
+                              "progress": "The latest sandbox preset operation is logged here.",
+                              "not_checked": "Check the preset mods before activation.",
+                              "ready": "The preset is ready to be written to the active save.",
+                              "activating": "The preset is currently being written and verified.",
+                              "no_mods_configured": "No mods configured yet.",
+                              "missing_install": "This mod is not installed locally. Open the Steam Workshop page, subscribe to the mod, wait for Steam to finish downloading it, then click Check Mods again."
+                        },
+                        "mod_status": {
+                              "available": "Available",
+                              "not_downloaded": "Not Downloaded",
+                              "path_missing": "Path Missing",
+                              "unknown": "Unknown",
+                              "available_note": "Mod found locally.",
+                              "not_downloaded_note": "Mod not found locally.",
+                              "path_missing_note": "The cached local path is not reachable.",
+                              "unknown_note": "Status could not be checked."
+                        },
+                        "progress": {
+                              "preset_loaded": "Preset loaded",
+                              "mods_checked": "Mods checked",
+                              "profile_opened": "Profile opened",
+                              "active_mods_read": "actived_mods read",
+                              "backup_created": "Backup created",
+                              "active_mods_written": "actived_mods written",
+                              "follow_up_successful": "Follow-up check successful"
+                        },
+                        "apply_result": {
+                              "applied_mods": "{count} mods applied",
+                              "backup_created": "Backup created"
+                        },
+                        "popup": {
+                              "success_title": "Preset activated",
+                              "success_message": "Sandbox preset \"{title}\" was activated successfully.",
+                              "check_success_title": "Mods checked",
+                              "check_success_message": "All required mods for preset \"{title}\" are available locally.",
+                              "check_failed_message": "The preset check could not be completed.",
+                              "mod_missing_title": "Mod not found",
+                              "mod_missing_message": "At least one required Steam Workshop mod is missing locally.",
+                              "save_failed_title": "Saving failed",
+                              "save_failed_message": "The save file could not be written successfully.",
+                              "verification_failed_title": "Verification failed",
+                              "verification_failed_message": "The file was written, but the mod ID could not be confirmed after reading it again.",
+                              "no_active_save_message": "Load an active profile and save before activating a sandbox preset.",
+                              "active_mods_missing_message": "The active save does not contain an actived_mods/active_mods block.",
+                              "error_title": "Sandbox preset error"
+                        }
+                  },
                   "compare": {
                         "missing_mods": "Missing Mods",
                         "extra_mods": "Extra Mods",
@@ -1782,6 +2203,7 @@
             "label_color_theme_dark": "dark",
             "label_color_theme_light": "light",
             "label_color_theme_neon": "neon",
+            "label_color_theme_neon_red": "neon red",
             "label_language": "Language",
             "label_developer": "Developer",
             "label_console": "Console",

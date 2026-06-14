@@ -107,9 +107,12 @@ fn extract_vehicle_block(
         .captures(content)
         .ok_or(format!("{} block for {} not found", block_type, vehicle_id))?;
 
-    let full_match = cap
-        .get(0)
-        .ok_or_else(|| format!("{} block start for {} could not be resolved", block_type, vehicle_id))?;
+    let full_match = cap.get(0).ok_or_else(|| {
+        format!(
+            "{} block start for {} could not be resolved",
+            block_type, vehicle_id
+        )
+    })?;
     let start_pos = full_match.end();
 
     // Count braces to find the matching closing brace
@@ -268,8 +271,8 @@ pub async fn repair_player_truck(
     }
 
     // Fix wheels_wear array
-    let re_wheels = Regex::new(r"wheels_wear\[\d+\]:\s*[^ \r\n]+")
-        .map_err(|error| error.to_string())?;
+    let re_wheels =
+        Regex::new(r"wheels_wear\[\d+\]:\s*[^ \r\n]+").map_err(|error| error.to_string())?;
     block = re_wheels
         .replace_all(&block, |_: &Captures| {
             format!("wheels_wear[0]: {}", float_to_hex(0.0))
@@ -460,8 +463,8 @@ pub async fn repair_player_trailer(
     }
 
     // Fix wheels_wear array - match each individual wheel
-    let re_wheels = Regex::new(r"(wheels_wear\[\d+\]:\s*)([^ \r\n]+)")
-        .map_err(|error| error.to_string())?;
+    let re_wheels =
+        Regex::new(r"(wheels_wear\[\d+\]:\s*)([^ \r\n]+)").map_err(|error| error.to_string())?;
     if re_wheels.is_match(&block) {
         dev_log!("Repairing trailer wheels");
         block = re_wheels

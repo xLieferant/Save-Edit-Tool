@@ -3,19 +3,20 @@ import {
   clampLevel,
   clampXp,
   getLevelForXp,
-  getLevelIncrease,
-  getLevelProgress,
   getMaxLevel,
-  getNextLevelEntry,
   getXpForLevel,
   loadLevelTable,
 } from "./js/level-system.js";
+import { mountSkilltreeEditor } from "./js/skilltree.js";
 
 /* --------------------------------------------------------------
    TOOL LOADER UND TAB HANDLING
 -------------------------------------------------------------- */
 const container = document.querySelector("#tool-container");
 const navButtons = document.querySelectorAll(".editor-tabs .nav-btn");
+const skilltreeModal = document.getElementById("modalSkilltree");
+const skilltreeModalRoot = document.getElementById("skilltreeModalRoot");
+const skilltreeModalClose = document.getElementById("modalSkilltreeClose");
 export let activeTab = "profile";
 let loadToolsRenderId = 0;
 const editorTabShortcuts = {
@@ -48,6 +49,7 @@ export async function loadTools(tab) {
   container.innerHTML = "";
   const renderId = ++loadToolsRenderId;
   const toolList = tools[tab] || [];
+  const hasSkilltreeLauncher = tab === "profile";
   const tabLabelKeyMap = {
     truck: "editor.tab.truck",
     trailer: "editor.tab.trailer",
@@ -57,7 +59,13 @@ export async function loadTools(tab) {
 
   document.dispatchEvent(new CustomEvent("editor-tab-changed", { detail: { tab } }));
 
-  if (!toolList.length) {
+  if (hasSkilltreeLauncher) {
+    const launcherCard = await createSkilltreeLauncherCard();
+    if (renderId !== loadToolsRenderId) return;
+    container.appendChild(launcherCard);
+  }
+
+  if (!toolList.length && !hasSkilltreeLauncher) {
     container.innerHTML = `
       <article class="tool-card">
         <div class="tool-content">
@@ -106,6 +114,53 @@ export async function loadTools(tab) {
   }
 }
 
+async function createSkilltreeLauncherCard() {
+  const card = document.createElement("div");
+  card.className = "tool-card skilltree-launch-card";
+
+  const title = await window.t("editor.skilltree.title");
+  const desc = await window.t("editor.skilltree.launch_desc");
+  const kicker = await window.t("editor.skilltree.launch_kicker");
+  const open = await window.t("editor.skilltree.launch_action");
+
+  card.innerHTML = `
+    <div class="skilltree-launch-visual" aria-hidden="true">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+    <div class="tool-content">
+        <span class="overview-label">${kicker}</span>
+        <h3>${title}</h3>
+        <p>${desc}</p>
+        <button type="button">${open}</button>
+    </div>
+  `;
+
+  card.querySelector("button")?.addEventListener("click", openSkilltreeModal);
+  return card;
+}
+
+async function openSkilltreeModal() {
+  if (!skilltreeModal || !skilltreeModalRoot) return;
+
+  skilltreeModal.style.display = "flex";
+  await mountSkilltreeEditor(skilltreeModalRoot);
+  skilltreeModalClose?.focus();
+}
+
+function closeSkilltreeModal() {
+  if (!skilltreeModal) return;
+  skilltreeModal.style.display = "none";
+}
+
+skilltreeModalClose?.addEventListener("click", closeSkilltreeModal);
+skilltreeModal?.addEventListener("click", (event) => {
+  if (event.target === skilltreeModal) {
+    closeSkilltreeModal();
+  }
+});
+
 navButtons.forEach((btn) => {
   btn.addEventListener("click", () => {
     void activateEditorTab(btn.dataset.tab);
@@ -129,8 +184,8 @@ if (defaultTabBtn) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  const savedTheme = localStorage.getItem("theme") || "neon";
-  document.body.classList.remove("theme-dark", "theme-light", "theme-neon");
+  const savedTheme = localStorage.getItem("theme") || "neon-red";
+  document.body.classList.remove("theme-dark", "theme-light", "theme-neon", "theme-neon-red");
   document.body.classList.add(`theme-${savedTheme}`);
 });
 
@@ -143,6 +198,12 @@ const modalTextTitle = document.querySelector("#modalTextTitle");
 const modalTextInput = document.querySelector("#modalTextInput");
 const modalTextApply = document.getElementById("modalTextApply");
 const modalTextCancel = document.getElementById("modalTextCancel");
+const modalWiki = document.getElementById("modalWiki");
+const modalWikiTitle = document.getElementById("modalWikiTitle");
+const modalWikiClose = document.getElementById("modalWikiClose");
+const modalWikiCloseTop = document.getElementById("modalWikiCloseTop");
+const wikiHelpBtn = document.getElementById("wikiHelpBtn");
+const wikiIndexNav = document.getElementById("wikiIndexNav");
 
 const modalNumber = document.querySelector("#modalNumber");
 const modalNumberTitle = document.querySelector("#modalNumberTitle");
@@ -187,32 +248,18 @@ const modalLevelSystemModePill = document.getElementById("modalLevelSystemModePi
 const levelSystemCurrentStatus = document.getElementById("levelSystemCurrentStatus");
 const levelSystemCurrentBadge = document.getElementById("levelSystemCurrentBadge");
 const levelSystemCurrentXp = document.getElementById("levelSystemCurrentXp");
-const levelSystemCurrentIncrease = document.getElementById("levelSystemCurrentIncrease");
-const levelSystemCurrentProgressText = document.getElementById("levelSystemCurrentProgressText");
-const levelSystemCurrentProgressFill = document.getElementById("levelSystemCurrentProgressFill");
 const levelSystemTargetStatus = document.getElementById("levelSystemTargetStatus");
 const levelSystemTargetBadge = document.getElementById("levelSystemTargetBadge");
 const levelSystemTargetXp = document.getElementById("levelSystemTargetXp");
-const levelSystemTargetIncrease = document.getElementById("levelSystemTargetIncrease");
-const levelSystemTargetNext = document.getElementById("levelSystemTargetNext");
-const levelSystemTargetProgressText = document.getElementById("levelSystemTargetProgressText");
-const levelSystemTargetProgressFill = document.getElementById("levelSystemTargetProgressFill");
 const levelSystemModeLevel = document.getElementById("levelSystemModeLevel");
 const levelSystemModeXp = document.getElementById("levelSystemModeXp");
-const levelSystemSliderValue = document.getElementById("levelSystemSliderValue");
-const levelSystemMinusBtn = document.getElementById("levelSystemMinusBtn");
-const levelSystemSlider = document.getElementById("levelSystemSlider");
-const levelSystemPlusBtn = document.getElementById("levelSystemPlusBtn");
+const levelSystemLevelField = document.getElementById("levelSystemLevelField");
+const levelSystemXpField = document.getElementById("levelSystemXpField");
 const levelSystemLevelInput = document.getElementById("levelSystemLevelInput");
 const levelSystemXpInput = document.getElementById("levelSystemXpInput");
 const levelSystemHint = document.getElementById("levelSystemHint");
-const levelSystemPresetButtons = [...document.querySelectorAll("[data-level-preset]")];
-const levelSystemResetBtn = document.getElementById("levelSystemResetBtn");
-const levelSystemMaxBtn = document.getElementById("levelSystemMaxBtn");
-const levelSystemSummaryLevel = document.getElementById("levelSystemSummaryLevel");
-const levelSystemSummaryXp = document.getElementById("levelSystemSummaryXp");
-const levelSystemSummaryDelta = document.getElementById("levelSystemSummaryDelta");
-const levelSystemSummaryMode = document.getElementById("levelSystemSummaryMode");
+const levelSystemTargetLevelMeta = document.getElementById("levelSystemTargetLevelMeta");
+const levelSystemTargetXpMeta = document.getElementById("levelSystemTargetXpMeta");
 const modalLevelSystemApply = document.getElementById("modalLevelSystemApply");
 const modalLevelSystemClose = document.getElementById("modalLevelSystemClose");
 const modalConflictDiagnostics = document.getElementById("modalConflictDiagnostics");
@@ -260,6 +307,22 @@ const modalSafeValueReset = document.getElementById("modalSafeValueReset");
 const modalSafeValueResetClose = document.getElementById("modalSafeValueResetClose");
 const modalUserLogs = document.getElementById("modalUserLogs");
 const modalUserLogsClose = document.getElementById("modalUserLogsClose");
+const modalModProfileManager = document.getElementById("modalModProfileManager");
+const modalModProfileManagerClose = document.getElementById("modalModProfileManagerClose");
+const modProfileManagerStatusPill = document.getElementById("modProfileManagerStatusPill");
+const modProfileManagerProfilePill = document.getElementById("modProfileManagerProfilePill");
+const modSandboxReloadBtn = document.getElementById("modSandboxReloadBtn");
+const modSteamConsoleBtn = document.getElementById("modSteamConsoleBtn");
+const modSandboxCount = document.getElementById("modSandboxCount");
+const modSandboxPresetList = document.getElementById("modSandboxPresetList");
+const modSandboxEmpty = document.getElementById("modSandboxEmpty");
+const modSandboxSearchInput = document.getElementById("modSandboxSearchInput");
+const modSandboxGameFilter = document.getElementById("modSandboxGameFilter");
+const modSandboxStatusFilter = document.getElementById("modSandboxStatusFilter");
+const modActiveProfileName = document.getElementById("modActiveProfileName");
+const modActiveSaveName = document.getElementById("modActiveSaveName");
+const modSandboxProgressList = document.getElementById("modSandboxProgressList");
+const modApplySandboxResult = document.getElementById("modApplySandboxResult");
 
 const modalProfileShare = document.getElementById("modalProfileShare");
 const profileShareModeKicker = document.getElementById("profileShareModeKicker");
@@ -293,6 +356,7 @@ const saveImportSavesBtn = document.getElementById("saveImportSavesBtn");
 const saveExportSavesBtn = document.getElementById("saveExportSavesBtn");
 const editorModalDescriptors = [
   { element: modalText, closeButton: modalTextCancel },
+  { element: modalWiki, closeButton: modalWikiClose },
   { element: modalNumber, closeButton: modalNumberCancel },
   { element: modalSlider, closeButton: modalSliderCancel },
   { element: modalMulti, closeButton: modalMultiCancelBtn },
@@ -304,8 +368,21 @@ const editorModalDescriptors = [
   { element: modalRestorePreview, closeButton: modalRestorePreviewClose },
   { element: modalSafeValueReset, closeButton: modalSafeValueResetClose },
   { element: modalUserLogs, closeButton: modalUserLogsClose },
+  { element: modalModProfileManager, closeButton: modalModProfileManagerClose },
   { element: modalProfileShare, closeButton: modalProfileShareClose },
+  { element: skilltreeModal, closeButton: skilltreeModalClose },
 ];
+
+const WIKI_FOCUSABLE_SELECTOR = [
+  "a[href]",
+  "button:not([disabled])",
+  "textarea:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "[tabindex]:not([tabindex='-1'])",
+].join(", ");
+
+let lastWikiTrigger = null;
 
 function isEditorModalOpen(element) {
   if (!element || element.hidden) return false;
@@ -352,6 +429,110 @@ function registerEditorShortcuts() {
 
 registerEditorShortcuts();
 
+function getWikiFocusableElements() {
+  if (!modalWiki) return [];
+  return [...modalWiki.querySelectorAll(WIKI_FOCUSABLE_SELECTOR)].filter((element) => {
+    return !element.hasAttribute("hidden") && window.getComputedStyle(element).display !== "none";
+  });
+}
+
+function handleWikiFocusTrap(event) {
+  if (event.key !== "Tab" || !isEditorModalOpen(modalWiki)) return;
+
+  const focusable = getWikiFocusableElements();
+  if (!focusable.length) {
+    event.preventDefault();
+    modalWikiTitle?.focus();
+    return;
+  }
+
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  const active = document.activeElement;
+
+  if (event.shiftKey && active === first) {
+    event.preventDefault();
+    last.focus();
+    return;
+  }
+
+  if (!event.shiftKey && active === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
+async function syncWikiAccessibilityCopy() {
+  if (typeof window.t !== "function") return;
+
+  const helpLabel = await window.t("modals.wiki.button_aria_label");
+  const closeLabel = await window.t("modals.wiki.close_aria_label");
+  const navLabel = await window.t("modals.wiki.nav_aria_label");
+
+  wikiHelpBtn?.setAttribute("aria-label", helpLabel);
+  modalWikiCloseTop?.setAttribute("aria-label", closeLabel);
+  wikiIndexNav?.setAttribute("aria-label", navLabel);
+}
+
+if (typeof window.t === "function") {
+  void syncWikiAccessibilityCopy();
+} else {
+  window.addEventListener(
+    "translations-ready",
+    () => {
+      void syncWikiAccessibilityCopy();
+    },
+    { once: true }
+  );
+}
+
+function closeWikiModal() {
+  if (!modalWiki) return;
+  document.removeEventListener("keydown", handleWikiFocusTrap);
+  modalWiki.style.display = "none";
+
+  const restoreTarget = lastWikiTrigger && document.contains(lastWikiTrigger)
+    ? lastWikiTrigger
+    : wikiHelpBtn;
+  lastWikiTrigger = null;
+  restoreTarget?.focus();
+}
+
+export async function openWikiModal() {
+  if (!modalWiki) return;
+  lastWikiTrigger = document.activeElement instanceof HTMLElement ? document.activeElement : wikiHelpBtn;
+  modalWiki.style.display = "flex";
+  document.addEventListener("keydown", handleWikiFocusTrap);
+
+  window.requestAnimationFrame(() => {
+    modalWikiTitle?.focus();
+  });
+}
+
+if (wikiHelpBtn) {
+  wikiHelpBtn.addEventListener("click", () => {
+    void openWikiModal();
+  });
+}
+
+modalWikiClose?.addEventListener("click", closeWikiModal);
+modalWikiCloseTop?.addEventListener("click", closeWikiModal);
+modalWiki?.addEventListener("click", (event) => {
+  if (event.target === modalWiki) {
+    closeWikiModal();
+  }
+});
+wikiIndexNav?.addEventListener("click", (event) => {
+  const targetLink = event.target.closest("a[href^='#wikiSection']");
+  if (!targetLink) return;
+
+  const targetSection = document.querySelector(targetLink.getAttribute("href"));
+  if (!targetSection) return;
+
+  event.preventDefault();
+  targetSection.scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
 function formatMetric(value, digits = 0) {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return "-";
@@ -369,13 +550,6 @@ function formatDistance(value) {
 
 function formatLevelBadge(level) {
   return `L${formatMetric(level, 0)}`;
-}
-
-function formatSignedMetric(value) {
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return "0";
-  const prefix = numeric > 0 ? "+" : "";
-  return `${prefix}${formatMetric(numeric, 0)}`;
 }
 
 function safeValue(value, fallback = "-") {
@@ -423,14 +597,6 @@ function setLevelSystemHint(message = "") {
   if (!levelSystemHint) return;
   levelSystemHint.textContent = message;
   levelSystemHint.hidden = !message;
-}
-
-function formatLevelProgressSummary(progress, copy) {
-  if (!progress || progress.isMaxLevel) {
-    return copy.progressMax;
-  }
-
-  return `${progress.progressPercent}% | ${formatMetric(progress.xpIntoLevel, 0)} / ${formatMetric(progress.xpNeededForNextLevel, 0)}`;
 }
 
 function setDiagnosticsActionState(disabled) {
@@ -1482,8 +1648,9 @@ export async function openLevelSystemModal() {
     modeXp: await window.t("modals.level_system.mode_xp"),
     statusCurrent: await window.t("modals.level_system.status.current"),
     statusTarget: await window.t("modals.level_system.status.target"),
-    progressMax: await window.t("modals.level_system.progress.max"),
-    progressNoNext: await window.t("modals.level_system.progress.no_next_level"),
+    statusApplying: await window.t("modals.level_system.status.applying"),
+    previewEntered: await window.t("modals.level_system.preview.entered"),
+    previewCalculated: await window.t("modals.level_system.preview.calculated"),
     feedbackLevelClamped: await window.t("modals.level_system.feedback.level_clamped", {
       min: 0,
       max: getMaxLevel(table),
@@ -1492,14 +1659,16 @@ export async function openLevelSystemModal() {
       min: 0,
       maxXp: formatMetric(getXpForLevel(getMaxLevel(table), table), 0),
     }),
+    feedbackRequired: await window.t("modals.level_system.feedback.required"),
+    feedbackInvalid: await window.t("modals.level_system.feedback.invalid"),
     feedbackUnchanged: await window.t("modals.level_system.feedback.unchanged"),
-    presetLabel: await window.t("modals.level_system.controls.level_preset"),
-    summaryUnchanged: await window.t("modals.level_system.summary.unchanged"),
+    feedbackApplyError: await window.t("modals.level_system.feedback.apply_error"),
   };
 
   const maxLevel = getMaxLevel(table);
-  const currentRawXp = Number(window.currentProfileData?.xp ?? 0);
-  const currentXp = clampXp(currentRawXp, table);
+  const maxXp = getXpForLevel(maxLevel, table);
+  const currentRawXp = Math.max(0, Math.floor(Number(window.currentProfileData?.xp ?? 0)));
+  const currentXp = Number.isFinite(currentRawXp) ? currentRawXp : 0;
   const currentLevel = getLevelForXp(currentXp, table);
   const currentLevelXp = getXpForLevel(currentLevel, table);
   const initialMode = currentXp === currentLevelXp ? "level" : "xp";
@@ -1509,58 +1678,101 @@ export async function openLevelSystemModal() {
     currentLevel,
     targetLevel: currentLevel,
     targetXp: currentXp,
+    levelInput: String(currentLevel),
+    xpInput: String(currentXp),
+    valid: true,
     applying: false,
     hint: "",
   };
 
+  const parseIntegerInput = (value) => {
+    const raw = String(value ?? "").trim();
+    if (!raw) {
+      return { valid: false, reason: "required", value: 0 };
+    }
+
+    const numeric = Number(raw);
+    if (!Number.isFinite(numeric)) {
+      return { valid: false, reason: "invalid", value: 0 };
+    }
+
+    return { valid: true, value: Math.floor(numeric) };
+  };
+
+  const hasTargetChange = () => state.targetLevel !== state.currentLevel || state.targetXp !== state.currentXp;
+
   const setMode = (mode) => {
     state.mode = mode === "xp" ? "xp" : "level";
     if (state.mode === "level") {
-      state.targetLevel = getLevelForXp(state.targetXp, table);
+      state.targetLevel = clampLevel(state.targetLevel, table);
       state.targetXp = getXpForLevel(state.targetLevel, table);
+      state.levelInput = String(state.targetLevel);
     } else {
       state.targetXp = clampXp(state.targetXp, table);
       state.targetLevel = getLevelForXp(state.targetXp, table);
+      state.xpInput = String(state.targetXp);
     }
+    state.valid = true;
+    state.hint = "";
   };
 
-  const updateFromLevel = (value, { forceMode = true, inputOrigin = false } = {}) => {
-    const numeric = Number(value);
-    const clampedLevel = clampLevel(numeric, table);
-    if (forceMode) state.mode = "level";
+  const updateFromLevel = (value, { inputOrigin = false } = {}) => {
+    state.mode = "level";
+    state.levelInput = String(value ?? "");
+    const parsed = parseIntegerInput(value);
+    if (!parsed.valid) {
+      state.valid = false;
+      state.hint = parsed.reason === "required" ? copy.feedbackRequired : copy.feedbackInvalid;
+      render();
+      return;
+    }
+
+    const clampedLevel = clampLevel(parsed.value, table);
+    state.valid = true;
     state.targetLevel = clampedLevel;
     state.targetXp = getXpForLevel(clampedLevel, table);
-    state.hint = inputOrigin && clampedLevel !== Math.floor(Number.isFinite(numeric) ? numeric : 0)
+    state.xpInput = String(state.targetXp);
+    state.hint = inputOrigin && clampedLevel !== parsed.value
       ? copy.feedbackLevelClamped
       : "";
     render();
   };
 
   const updateFromXp = (value, { inputOrigin = false } = {}) => {
-    const numeric = Number(value);
-    const clampedTargetXp = clampXp(numeric, table);
     state.mode = "xp";
+    state.xpInput = String(value ?? "");
+    const parsed = parseIntegerInput(value);
+    if (!parsed.valid) {
+      state.valid = false;
+      state.hint = parsed.reason === "required" ? copy.feedbackRequired : copy.feedbackInvalid;
+      render();
+      return;
+    }
+
+    const clampedTargetXp = clampXp(parsed.value, table);
+    state.valid = true;
     state.targetXp = clampedTargetXp;
     state.targetLevel = getLevelForXp(clampedTargetXp, table);
-    state.hint = inputOrigin && clampedTargetXp !== Math.max(0, Math.floor(Number.isFinite(numeric) ? numeric : 0))
+    state.levelInput = String(state.targetLevel);
+    state.hint = inputOrigin && clampedTargetXp !== parsed.value
       ? copy.feedbackXpClamped
       : "";
     render();
   };
 
   const render = () => {
-    const currentProgress = getLevelProgress(state.currentXp, table);
-    const targetProgress = getLevelProgress(state.targetXp, table);
-    const targetNextLevel = getNextLevelEntry(state.targetLevel, table);
-    const targetIncrease = getLevelIncrease(state.targetLevel, table);
-    const xpDelta = state.targetXp - state.currentXp;
-    const levelChanged = state.targetLevel !== state.currentLevel;
-    const xpChanged = state.targetXp !== state.currentXp;
+    const changed = hasTargetChange();
+    const statusState = state.applying ? "loading" : state.valid ? "success" : "error";
+    const statusText = state.applying
+      ? copy.statusApplying
+      : state.mode === "level"
+        ? copy.modeLevel
+        : copy.modeXp;
 
     setModalPillState(
       modalLevelSystemModePill,
-      state.mode === "level" ? "success" : "warning",
-      state.mode === "level" ? copy.modeLevel : copy.modeXp
+      statusState,
+      statusText
     );
 
     if (levelSystemCurrentStatus) levelSystemCurrentStatus.textContent = copy.statusCurrent;
@@ -1568,35 +1780,16 @@ export async function openLevelSystemModal() {
 
     if (levelSystemCurrentBadge) levelSystemCurrentBadge.textContent = formatLevelBadge(state.currentLevel);
     if (levelSystemCurrentXp) levelSystemCurrentXp.textContent = formatMetric(state.currentXp, 0);
-    if (levelSystemCurrentIncrease) {
-      levelSystemCurrentIncrease.textContent = currentProgress.isMaxLevel
-        ? copy.progressMax
-        : formatMetric(getLevelIncrease(state.currentLevel, table), 0);
-    }
-    if (levelSystemCurrentProgressText) {
-      levelSystemCurrentProgressText.textContent = formatLevelProgressSummary(currentProgress, copy);
-    }
-    if (levelSystemCurrentProgressFill) {
-      levelSystemCurrentProgressFill.style.width = `${currentProgress.progressPercent}%`;
-    }
 
-    if (levelSystemTargetBadge) levelSystemTargetBadge.textContent = formatLevelBadge(state.targetLevel);
-    if (levelSystemTargetXp) levelSystemTargetXp.textContent = formatMetric(state.targetXp, 0);
-    if (levelSystemTargetIncrease) {
-      levelSystemTargetIncrease.textContent = targetProgress.isMaxLevel
-        ? copy.progressMax
-        : formatMetric(targetIncrease, 0);
+    if (levelSystemTargetBadge) levelSystemTargetBadge.textContent = state.valid ? formatLevelBadge(state.targetLevel) : "-";
+    if (levelSystemTargetXp) levelSystemTargetXp.textContent = state.valid ? formatMetric(state.targetXp, 0) : "-";
+    if (levelSystemTargetLevelMeta) {
+      levelSystemTargetLevelMeta.textContent = state.mode === "xp" ? copy.previewCalculated : copy.previewEntered;
+      levelSystemTargetLevelMeta.classList.toggle("is-calculated", state.mode === "xp");
     }
-    if (levelSystemTargetNext) {
-      levelSystemTargetNext.textContent = targetNextLevel
-        ? `${formatLevelBadge(targetNextLevel.level)} | ${formatMetric(targetNextLevel.total_xp, 0)} XP`
-        : copy.progressNoNext;
-    }
-    if (levelSystemTargetProgressText) {
-      levelSystemTargetProgressText.textContent = formatLevelProgressSummary(targetProgress, copy);
-    }
-    if (levelSystemTargetProgressFill) {
-      levelSystemTargetProgressFill.style.width = `${targetProgress.progressPercent}%`;
+    if (levelSystemTargetXpMeta) {
+      levelSystemTargetXpMeta.textContent = state.mode === "level" ? copy.previewCalculated : copy.previewEntered;
+      levelSystemTargetXpMeta.classList.toggle("is-calculated", state.mode === "level");
     }
 
     if (levelSystemModeLevel) {
@@ -1608,54 +1801,33 @@ export async function openLevelSystemModal() {
       levelSystemModeXp.setAttribute("aria-pressed", state.mode === "xp" ? "true" : "false");
     }
 
-    if (levelSystemSlider) {
-      levelSystemSlider.min = "0";
-      levelSystemSlider.max = String(maxLevel);
-      levelSystemSlider.value = String(state.targetLevel);
-      levelSystemSlider.disabled = state.mode === "xp" || state.applying;
+    if (levelSystemLevelField) {
+      levelSystemLevelField.hidden = false;
+      levelSystemLevelField.classList.toggle("is-active", state.mode === "level");
     }
-    if (levelSystemSliderValue) levelSystemSliderValue.textContent = formatLevelBadge(state.targetLevel);
-    if (levelSystemMinusBtn) levelSystemMinusBtn.disabled = state.mode === "xp" || state.applying || state.targetLevel <= 0;
-    if (levelSystemPlusBtn) levelSystemPlusBtn.disabled = state.mode === "xp" || state.applying || state.targetLevel >= maxLevel;
+    if (levelSystemXpField) {
+      levelSystemXpField.hidden = false;
+      levelSystemXpField.classList.toggle("is-active", state.mode === "xp");
+    }
 
     if (levelSystemLevelInput) {
-      levelSystemLevelInput.value = String(state.targetLevel);
-      levelSystemLevelInput.disabled = state.mode === "xp" || state.applying;
+      levelSystemLevelInput.value = state.levelInput;
+      levelSystemLevelInput.min = "0";
+      levelSystemLevelInput.max = String(maxLevel);
+      levelSystemLevelInput.disabled = state.applying;
     }
     if (levelSystemXpInput) {
-      levelSystemXpInput.value = String(state.targetXp);
-      levelSystemXpInput.disabled = state.mode === "level" || state.applying;
-    }
-
-    levelSystemPresetButtons.forEach((button) => {
-      const presetLevel = Number(button.dataset.levelPreset);
-      const presetTemplate = copy.presetLabel.includes("{level}") ? copy.presetLabel : "{level}";
-      button.textContent = presetTemplate.replace("{level}", String(presetLevel));
-      button.disabled = state.applying;
-      button.classList.toggle("is-active", state.mode === "level" && presetLevel === state.targetLevel);
-    });
-
-    if (levelSystemResetBtn) levelSystemResetBtn.disabled = state.applying;
-    if (levelSystemMaxBtn) levelSystemMaxBtn.disabled = state.applying;
-
-    if (levelSystemSummaryLevel) {
-      levelSystemSummaryLevel.textContent = `${formatLevelBadge(state.currentLevel)} -> ${formatLevelBadge(state.targetLevel)}`;
-    }
-    if (levelSystemSummaryXp) {
-      levelSystemSummaryXp.textContent = `${formatMetric(state.currentXp, 0)} -> ${formatMetric(state.targetXp, 0)}`;
-    }
-    if (levelSystemSummaryDelta) {
-      levelSystemSummaryDelta.textContent = xpChanged ? `${formatSignedMetric(xpDelta)} XP` : copy.summaryUnchanged;
-    }
-    if (levelSystemSummaryMode) {
-      levelSystemSummaryMode.textContent = state.mode === "level" ? copy.modeLevel : copy.modeXp;
+      levelSystemXpInput.value = state.xpInput;
+      levelSystemXpInput.min = "0";
+      levelSystemXpInput.max = String(maxXp);
+      levelSystemXpInput.disabled = state.applying;
     }
 
     if (modalLevelSystemApply) {
-      modalLevelSystemApply.disabled = state.applying || (!levelChanged && !xpChanged);
+      modalLevelSystemApply.disabled = state.applying || !state.valid || !changed;
     }
 
-    if (!state.hint && !levelChanged && !xpChanged) {
+    if (!state.hint && !changed) {
       setLevelSystemHint(copy.feedbackUnchanged);
       return;
     }
@@ -1670,14 +1842,10 @@ export async function openLevelSystemModal() {
     modalLevelSystem?.removeEventListener("click", handleBackdropClick);
     levelSystemModeLevel?.removeEventListener("click", handleModeLevel);
     levelSystemModeXp?.removeEventListener("click", handleModeXp);
-    levelSystemMinusBtn?.removeEventListener("click", handleDecreaseLevel);
-    levelSystemPlusBtn?.removeEventListener("click", handleIncreaseLevel);
-    levelSystemSlider?.removeEventListener("input", handleSliderInput);
-    levelSystemLevelInput?.removeEventListener("change", handleLevelInputChange);
+    levelSystemLevelInput?.removeEventListener("focus", handleLevelInputFocus);
+    levelSystemXpInput?.removeEventListener("focus", handleXpInputFocus);
+    levelSystemLevelInput?.removeEventListener("input", handleLevelInputChange);
     levelSystemXpInput?.removeEventListener("input", handleXpInputChange);
-    levelSystemPresetButtons.forEach((button) => button.removeEventListener("click", handlePresetClick));
-    levelSystemResetBtn?.removeEventListener("click", handleResetCurrent);
-    levelSystemMaxBtn?.removeEventListener("click", handleMaxLevel);
     modalLevelSystemApply?.removeEventListener("click", handleApply);
     setLevelSystemHint("");
     modalLevelSystem.style.display = "none";
@@ -1701,16 +1869,18 @@ export async function openLevelSystemModal() {
     render();
   }
 
-  function handleDecreaseLevel() {
-    updateFromLevel(state.targetLevel - 1);
+  function handleLevelInputFocus() {
+    if (state.mode !== "level") {
+      setMode("level");
+      render();
+    }
   }
 
-  function handleIncreaseLevel() {
-    updateFromLevel(state.targetLevel + 1);
-  }
-
-  function handleSliderInput(event) {
-    updateFromLevel(event.target.value);
+  function handleXpInputFocus() {
+    if (state.mode !== "xp") {
+      setMode("xp");
+      render();
+    }
   }
 
   function handleLevelInputChange(event) {
@@ -1721,23 +1891,13 @@ export async function openLevelSystemModal() {
     updateFromXp(event.target.value, { inputOrigin: true });
   }
 
-  function handlePresetClick(event) {
-    updateFromLevel(event.currentTarget.dataset.levelPreset);
-  }
-
-  function handleResetCurrent() {
-    state.targetXp = state.currentXp;
-    state.targetLevel = state.currentLevel;
-    state.mode = state.currentXp === getXpForLevel(state.currentLevel, table) ? "level" : "xp";
-    state.hint = "";
-    render();
-  }
-
-  function handleMaxLevel() {
-    updateFromLevel(maxLevel);
-  }
-
   async function handleApply() {
+    if (!state.valid || !hasTargetChange()) {
+      state.hint = state.valid ? copy.feedbackUnchanged : copy.feedbackInvalid;
+      render();
+      return;
+    }
+
     state.applying = true;
     state.hint = "";
     render();
@@ -1762,6 +1922,7 @@ export async function openLevelSystemModal() {
       console.error("Level system apply failed:", error);
       window.showToast("toasts.level_system_apply_error", "error");
       state.applying = false;
+      state.hint = String(error?.message || error || copy.feedbackApplyError);
       render();
     }
   }
@@ -1770,17 +1931,16 @@ export async function openLevelSystemModal() {
   modalLevelSystem?.addEventListener("click", handleBackdropClick);
   levelSystemModeLevel?.addEventListener("click", handleModeLevel);
   levelSystemModeXp?.addEventListener("click", handleModeXp);
-  levelSystemMinusBtn?.addEventListener("click", handleDecreaseLevel);
-  levelSystemPlusBtn?.addEventListener("click", handleIncreaseLevel);
-  levelSystemSlider?.addEventListener("input", handleSliderInput);
-  levelSystemLevelInput?.addEventListener("change", handleLevelInputChange);
+  levelSystemLevelInput?.addEventListener("focus", handleLevelInputFocus);
+  levelSystemXpInput?.addEventListener("focus", handleXpInputFocus);
+  levelSystemLevelInput?.addEventListener("input", handleLevelInputChange);
   levelSystemXpInput?.addEventListener("input", handleXpInputChange);
-  levelSystemPresetButtons.forEach((button) => button.addEventListener("click", handlePresetClick));
-  levelSystemResetBtn?.addEventListener("click", handleResetCurrent);
-  levelSystemMaxBtn?.addEventListener("click", handleMaxLevel);
   modalLevelSystemApply?.addEventListener("click", handleApply);
 
   render();
+  requestAnimationFrame(() => {
+    modalLevelSystem.querySelector(".level-system-scroll")?.scrollTo({ top: 0, left: 0 });
+  });
 }
 
 /* --------------------------------------------------------------
@@ -2618,8 +2778,1327 @@ export function openModConflictDiagnosticsPage() {
 
 export function openModProfileManagerPage() {
   console.info("[trace] START open_mod_manager");
-  window.showToast?.("toasts.coming_soon", "warning");
+  void openModProfileManagerModal();
 }
+
+const modProfileManagerState = {
+  presets: [],
+  selectedPresetId: null,
+  checks: new Map(),
+  checkErrors: new Map(),
+  activations: new Map(),
+  steamWorkshopModCache: null,
+  steamWorkshopCacheError: "",
+  loading: false,
+  checkingPresetId: null,
+  activatingPresetId: null,
+  detailsPresetId: null,
+  filters: {
+    search: "",
+    game: "all",
+    status: "all",
+  },
+  progressLog: [],
+};
+
+window.steamWorkshopModCache = null;
+
+function hasActiveSaveSelected() {
+  return Boolean(window.selectedProfilePath && window.selectedSavePath);
+}
+
+function pathLastSegment(path) {
+  const value = String(path || "").replace(/\\/g, "/");
+  const segments = value.split("/").filter(Boolean);
+  return segments.length ? segments[segments.length - 1] : "";
+}
+
+function shortPathLabel(path) {
+  const value = String(path || "").replace(/\\/g, "/");
+  if (!value) return "-";
+  const segments = value.split("/").filter(Boolean);
+  return segments.slice(-2).join(" / ") || value;
+}
+
+function normalizeSandboxPresets(payload) {
+  return Array.isArray(payload) ? payload : [];
+}
+
+function sandboxPresetModWorkshopId(mod) {
+  return String(mod?.steam_id || mod?.workshop_id || mod?.id || "").trim();
+}
+
+function sandboxPresetModAppId(mod) {
+  const value = Number(mod?.app_id || 227300);
+  return Number.isFinite(value) && value > 0 ? value : 227300;
+}
+
+function sandboxPresetMods(preset) {
+  return Array.isArray(preset?.mods) ? preset.mods : [];
+}
+
+function sandboxPresetDetailMods(preset) {
+  const presetMods = sandboxPresetMods(preset);
+  if (presetMods.length) return presetMods;
+  const check = getSandboxPresetCheck(preset?.id || "");
+  return check?.all_mods || check?.mods || check?.found_mods || [];
+}
+
+function sandboxStatusCacheKey(appId, workshopId) {
+  return `${Number(appId)}:${String(workshopId).trim()}`;
+}
+
+function sandboxPresetModStatusKey(mod) {
+  return sandboxStatusCacheKey(
+    mod?.app_id || 227300,
+    mod?.steam_id || mod?.workshop_id || mod?.id || mod?.package_id || mod?.active_mods_value || mod?.display_name || ""
+  );
+}
+
+function normalizeSteamWorkshopCache(payload) {
+  const mods = Array.isArray(payload?.mods) ? payload.mods : [];
+  return {
+    generated_at: String(payload?.generated_at || ""),
+    mods,
+    byKey: new Map(mods.map((mod) => [
+      sandboxStatusCacheKey(mod.app_id, mod.workshop_id),
+      mod,
+    ])),
+  };
+}
+
+function buildUnknownSandboxPresetCheck(preset, reason = "") {
+  const allMods = sandboxPresetMods(preset).map((presetMod) => {
+    const workshopId = sandboxPresetModWorkshopId(presetMod);
+    const appId = sandboxPresetModAppId(presetMod);
+    return {
+      steam_id: workshopId,
+      source: presetMod.source || (workshopId ? "workshop" : "local"),
+      package_id: presetMod.package_id || null,
+      active_mods_value: presetMod.active_mods_value || null,
+      app_id: appId,
+      game: appId === 270880 ? "ATS" : "ETS2",
+      display_name: presetMod.display_name || presetMod.name || null,
+      required: Boolean(presetMod.required),
+      load_order: Number(presetMod.load_order || 0),
+      found: false,
+      available: false,
+      reachable: false,
+      status: "unknown",
+      local_path: null,
+      workshop_url: presetMod.workshop_url || `https://steamcommunity.com/sharedfiles/filedetails/?id=${encodeURIComponent(workshopId)}`,
+      steam_protocol_url: presetMod.steam_protocol_url || `steam://url/CommunityFilePage/${encodeURIComponent(workshopId)}`,
+      steamcmd_command: `steamcmd +login anonymous +workshop_download_item ${appId} ${workshopId} +quit`,
+      checked_paths: [],
+      reason: reason || "cache_unavailable",
+    };
+  });
+  return {
+    preset_id: preset?.id || "",
+    title: preset?.title || preset?.id || "",
+    ready: false,
+    can_activate: false,
+    mods: allMods,
+    missing_required_mods: allMods.filter((mod) => mod.required),
+    missing_mods: allMods.filter((mod) => mod.required),
+    found_mods: [],
+    all_mods: allMods,
+    checked_libraries: [],
+    checked_at: new Date().toISOString(),
+    message: reason || "Status could not be checked.",
+    progress_log: ["Preset geladen", reason].filter(Boolean),
+    cache_path: null,
+  };
+}
+
+function sandboxModUiStatus(status, copy) {
+  if (!status) {
+    return {
+      state: "unknown",
+      label: copy.statusUnknown,
+      note: copy.statusUnknownNote,
+    };
+  }
+  if (status.available === true && status.reachable === true) {
+    return {
+      state: "found",
+      label: copy.statusAvailable,
+      note: copy.statusAvailableNote,
+    };
+  }
+  if (String(status.status || "") === "path_missing" || status.reachable === false && status.local_path) {
+    return {
+      state: "path-missing",
+      label: copy.statusPathMissing,
+      note: copy.statusPathMissingNote,
+    };
+  }
+  if (String(status.status || "") === "unknown") {
+    return {
+      state: "unknown",
+      label: copy.statusUnknown,
+      note: copy.statusUnknownNote,
+    };
+  }
+  return {
+    state: "missing",
+    label: copy.statusNotDownloaded,
+    note: copy.statusNotDownloadedNote,
+  };
+}
+
+function getSandboxPresetCheck(presetId) {
+  return modProfileManagerState.checks.get(presetId) || null;
+}
+
+function getSandboxPresetCheckError(presetId) {
+  return modProfileManagerState.checkErrors.get(presetId) || "";
+}
+
+function getSandboxPresetActivation(presetId) {
+  return modProfileManagerState.activations.get(presetId) || null;
+}
+
+async function selectSandboxPreset(presetId) {
+  if (!presetId || modProfileManagerState.selectedPresetId === presetId) return;
+  modProfileManagerState.selectedPresetId = presetId;
+  console.log("[ModProfileManager] selected preset", presetId);
+  await renderSandboxPresetCards();
+}
+
+function setModProfileBusy(busy) {
+  modProfileManagerState.loading = Boolean(busy);
+  if (modSandboxReloadBtn) modSandboxReloadBtn.disabled = Boolean(busy);
+  if (modSteamConsoleBtn) modSteamConsoleBtn.disabled = Boolean(busy);
+}
+
+async function setModProfileStatus(key, state = "neutral", params = {}) {
+  if (!modProfileManagerStatusPill) return;
+  modProfileManagerStatusPill.dataset.state = state;
+  modProfileManagerStatusPill.textContent = await window.t(key, params);
+}
+
+async function updateModProfileContextLabels() {
+  if (modActiveProfileName) {
+    modActiveProfileName.textContent = window.selectedProfilePath
+      ? shortPathLabel(window.selectedProfilePath)
+      : await window.t("editor.no_profile");
+  }
+  if (modActiveSaveName) {
+    modActiveSaveName.textContent = window.selectedSavePath
+      ? shortPathLabel(window.selectedSavePath)
+      : await window.t("editor.no_save");
+  }
+  if (modProfileManagerProfilePill) {
+    const hasProfile = Boolean(window.selectedProfilePath);
+    const hasSave = Boolean(window.selectedSavePath);
+    modProfileManagerProfilePill.dataset.state = hasProfile && hasSave ? "success" : "warning";
+    modProfileManagerProfilePill.textContent = hasProfile && hasSave
+      ? await window.t("modals.mod_profile_manager.sandbox.status.active_save_ready")
+      : await window.t("modals.mod_profile_manager.sandbox.status.no_active_save");
+  }
+}
+
+async function translateSandboxProgressEntry(entry) {
+  const mapping = {
+    "Preset geladen": "modals.mod_profile_manager.sandbox.progress.preset_loaded",
+    "Mods geprüft": "modals.mod_profile_manager.sandbox.progress.mods_checked",
+    "Profil geöffnet": "modals.mod_profile_manager.sandbox.progress.profile_opened",
+    "actived_mods gelesen": "modals.mod_profile_manager.sandbox.progress.active_mods_read",
+    "Backup erstellt": "modals.mod_profile_manager.sandbox.progress.backup_created",
+    "actived_mods geschrieben": "modals.mod_profile_manager.sandbox.progress.active_mods_written",
+    "Follow-up Check erfolgreich": "modals.mod_profile_manager.sandbox.progress.follow_up_successful",
+  };
+  const key = mapping[entry];
+  return key ? window.t(key) : Promise.resolve(String(entry || ""));
+}
+
+async function renderSandboxProgressList(entries = modProfileManagerState.progressLog) {
+  if (!modSandboxProgressList) return;
+  const items = Array.isArray(entries) ? entries.filter(Boolean) : [];
+  if (!items.length) {
+    modSandboxProgressList.innerHTML = `
+      <div class="sandbox-progress-item is-muted">
+        ${escapeHtml(await window.t("modals.mod_profile_manager.sandbox.hints.progress"))}
+      </div>
+    `;
+    return;
+  }
+
+  const translated = await Promise.all(items.map((entry) => translateSandboxProgressEntry(entry)));
+  modSandboxProgressList.innerHTML = translated.map((entry) => `
+    <div class="sandbox-progress-item">${escapeHtml(entry)}</div>
+  `).join("");
+}
+
+async function showSandboxPresetPopup(type, title, message) {
+  window.showToast?.(`${title}: ${message}`, type);
+}
+
+async function openSandboxModWorkshopPage(steamId) {
+  console.log("[SandboxPreset] open workshop page:", steamId);
+  await window.invoke("open_sandbox_mod_workshop_page", { steamId });
+}
+
+async function openSandboxModInSteam(steamId) {
+  console.log("[SandboxPreset] open mod in steam:", steamId);
+  await window.invoke("open_sandbox_mod_in_steam", { steamId });
+}
+
+function normalizeSandboxCommandError(error) {
+  if (typeof error === "string") {
+    return error.trim();
+  }
+  if (error && typeof error.message === "string") {
+    return error.message.trim();
+  }
+  return String(error || "").trim();
+}
+
+async function sandboxErrorTitle(errorCode) {
+  switch (String(errorCode || "")) {
+    case "mod_not_found":
+      return window.t("modals.mod_profile_manager.sandbox.popup.mod_missing_title");
+    case "save_write_failed":
+      return window.t("modals.mod_profile_manager.sandbox.popup.save_failed_title");
+    case "verification_failed":
+    case "save_reread_failed":
+      return window.t("modals.mod_profile_manager.sandbox.popup.verification_failed_title");
+    default:
+      return window.t("modals.mod_profile_manager.sandbox.popup.error_title");
+  }
+}
+
+async function renderSandboxInlineMessage(state, title, message) {
+  if (!modApplySandboxResult) return;
+  modApplySandboxResult.hidden = false;
+  modApplySandboxResult.dataset.state = state;
+  modApplySandboxResult.innerHTML = `
+    <div class="mod-apply-result-head">
+      <strong>${escapeHtml(title)}</strong>
+    </div>
+    <p>${escapeHtml(message)}</p>
+  `;
+}
+
+async function sandboxErrorMessage(result) {
+  switch (String(result?.error_code || "")) {
+    case "mod_not_found":
+      return String(result?.message || "");
+    case "save_write_failed":
+      return await window.t("modals.mod_profile_manager.sandbox.popup.save_failed_message");
+    case "verification_failed":
+    case "save_reread_failed":
+      return await window.t("modals.mod_profile_manager.sandbox.popup.verification_failed_message");
+    case "no_active_save":
+      return await window.t("modals.mod_profile_manager.sandbox.popup.no_active_save_message");
+    case "actived_mods_missing":
+      return await window.t("modals.mod_profile_manager.sandbox.popup.active_mods_missing_message");
+    default:
+      return String(result?.message || "");
+  }
+}
+
+function sandboxCheckMessage(result) {
+  if (result && typeof result.message === "string" && result.message.trim()) {
+    return result.message.trim();
+  }
+  return "";
+}
+
+async function renderSandboxResult(result) {
+  if (!modApplySandboxResult) return;
+  if (!result) {
+    modApplySandboxResult.hidden = true;
+    modApplySandboxResult.innerHTML = "";
+    return;
+  }
+
+  const isSuccess = Boolean(result.success);
+  const title = isSuccess
+    ? await window.t("modals.mod_profile_manager.sandbox.popup.success_title")
+    : await sandboxErrorTitle(result.error_code);
+  const message = isSuccess
+    ? await window.t("modals.mod_profile_manager.sandbox.popup.success_message", { title: result.title || "" })
+    : await sandboxErrorMessage(result);
+  const backupLabel = await window.t("modals.mod_profile_manager.sandbox.apply_result.backup_created");
+  const writtenLabel = await window.t("modals.mod_profile_manager.sandbox.apply_result.applied_mods", {
+    count: Array.isArray(result.written_mods) ? result.written_mods.length : 0,
+  });
+  const verifiedLabel = await window.t("modals.mod_profile_manager.sandbox.fields.verified_mods");
+  const verifiedMods = Array.isArray(result.verified_mods) && result.verified_mods.length
+    ? result.verified_mods.join(", ")
+    : "-";
+
+  modApplySandboxResult.hidden = false;
+  modApplySandboxResult.dataset.state = isSuccess ? "success" : "error";
+  modApplySandboxResult.innerHTML = `
+    <div class="mod-apply-result-head">
+      <strong>${escapeHtml(title)}</strong>
+    </div>
+    <p>${escapeHtml(message)}</p>
+    <div class="mod-apply-result-grid">
+      <span>${escapeHtml(writtenLabel)}</span>
+      <span>${escapeHtml(backupLabel)}: ${escapeHtml(result.backup_path || "-")}</span>
+      <span>${escapeHtml(verifiedLabel)}: ${escapeHtml(verifiedMods)}</span>
+    </div>
+  `;
+}
+
+async function sandboxPresetStatusPresentation(preset) {
+  if (sandboxPresetMods(preset).length === 0) {
+    return {
+      label: await window.t("modals.mod_profile_manager.sandbox.preset_status.disabled"),
+      state: "disabled",
+    };
+  }
+
+  if (modProfileManagerState.activatingPresetId === preset.id) {
+    return {
+      label: await window.t("modals.mod_profile_manager.sandbox.preset_status.activating"),
+      state: "needs-check",
+    };
+  }
+
+  const activation = getSandboxPresetActivation(preset.id);
+  if (activation?.success) {
+    return {
+      label: await window.t("modals.mod_profile_manager.sandbox.preset_status.activated"),
+      state: "active",
+    };
+  }
+  if (activation && activation.success === false) {
+    return {
+      label: await window.t("modals.mod_profile_manager.sandbox.preset_status.error"),
+      state: "error",
+    };
+  }
+
+  const checkError = getSandboxPresetCheckError(preset.id);
+  if (checkError) {
+    return {
+      label: await window.t("modals.mod_profile_manager.sandbox.preset_status.error"),
+      state: "error",
+    };
+  }
+
+  const check = getSandboxPresetCheck(preset.id);
+  if (!check) {
+    return {
+      label: await window.t("modals.mod_profile_manager.sandbox.preset_status.needs_check"),
+      state: "needs-check",
+    };
+  }
+  if (check.ready) {
+    return {
+      label: await window.t("modals.mod_profile_manager.sandbox.preset_status.ready"),
+      state: "ready",
+    };
+  }
+  return {
+    label: await window.t("modals.mod_profile_manager.sandbox.preset_status.missing_mods"),
+    state: "missing",
+  };
+}
+
+function sandboxPresetGameMeta(preset) {
+  const presetMods = sandboxPresetMods(preset);
+  const appId = Number(preset?.app_id || presetMods[0]?.app_id || 227300);
+  const normalizedAppId = Number.isFinite(appId) && appId > 0 ? appId : 227300;
+  const rawGame = String(preset?.game || presetMods[0]?.game || "").toLowerCase();
+  const game = rawGame.includes("ats") || normalizedAppId === 270880 ? "ATS" : "ETS2";
+  return { game, appId: normalizedAppId };
+}
+
+function sandboxPresetStatusFilterValue(preset) {
+  if (sandboxPresetMods(preset).length === 0) return "disabled";
+  if (modProfileManagerState.activatingPresetId === preset.id) return "needs-check";
+  const activation = getSandboxPresetActivation(preset.id);
+  if (activation?.success) return "active";
+  if (activation && activation.success === false) return "error";
+  if (getSandboxPresetCheckError(preset.id)) return "error";
+  const check = getSandboxPresetCheck(preset.id);
+  if (!check) return "needs-check";
+  return check.ready ? "ready" : "missing";
+}
+
+function sandboxPresetStatusEntries(preset) {
+  const check = getSandboxPresetCheck(preset.id);
+  const entries = [
+    ...(check?.mods || []),
+    ...(check?.all_mods || []),
+    ...(check?.found_mods || []),
+    ...(check?.missing_mods || []),
+  ];
+  return {
+    check,
+    entries,
+    byKey: new Map(entries.map((entry) => [sandboxPresetModStatusKey(entry), entry])),
+  };
+}
+
+function sandboxPresetCanActivate(preset) {
+  const presetMods = sandboxPresetMods(preset);
+  if (!presetMods.length) return false;
+  const { check } = sandboxPresetStatusEntries(preset);
+  const statuses = check?.mods || check?.all_mods || [];
+  const missingRequiredStatuses = statuses
+    .filter((status) => status.required)
+    .filter((status) => !(status.available === true && status.reachable === true));
+  return Boolean(check?.ready || check?.can_activate)
+    && missingRequiredStatuses.length === 0
+    && hasActiveSaveSelected()
+    && !modProfileManagerState.loading
+    && modProfileManagerState.checkingPresetId !== preset.id
+    && modProfileManagerState.activatingPresetId !== preset.id;
+}
+
+function sandboxPresetLastCheckLabel(check) {
+  if (!check?.checked_at) return "-";
+  const parsed = new Date(check.checked_at);
+  if (Number.isNaN(parsed.getTime())) return String(check.checked_at);
+  return parsed.toLocaleString();
+}
+
+function sandboxPresetSearchText(preset) {
+  return [
+    preset?.id,
+    preset?.title,
+    preset?.name,
+    preset?.description,
+  ].filter(Boolean).join(" ").toLowerCase();
+}
+
+async function renderSandboxPresetCards() {
+  if (!modSandboxPresetList || !modSandboxEmpty) return;
+
+  const presets = modProfileManagerState.presets;
+  const search = modProfileManagerState.filters.search.trim().toLowerCase();
+  const gameFilter = modProfileManagerState.filters.game;
+  const statusFilter = modProfileManagerState.filters.status;
+  modSandboxEmpty.hidden = presets.length > 0;
+
+  if (!presets.length) {
+    if (modSandboxCount) modSandboxCount.textContent = "0";
+    modSandboxPresetList.innerHTML = "";
+    await renderOpenSandboxPresetDetailsModal();
+    return;
+  }
+
+  const detailsLabel = await window.t("modals.mod_profile_manager.sandbox.actions.details");
+  const checkLabel = await window.t("modals.mod_profile_manager.sandbox.actions.check_mods");
+  const activateLabel = await window.t("modals.mod_profile_manager.sandbox.actions.activate_preset");
+  const appIdLabel = await window.t("modals.mod_profile_manager.sandbox.fields.app_id");
+  const emptyPresetLabel = await window.t("modals.mod_profile_manager.sandbox.preset_status.empty");
+  const modsCountLabel = await window.t("modals.mod_profile_manager.sandbox.fields.mods_count");
+  const gameLabel = await window.t("modals.mod_profile_manager.sandbox.fields.game");
+  const statusLabel = await window.t("modals.mod_profile_manager.sandbox.fields.status");
+  const lastCheckLabel = await window.t("modals.mod_profile_manager.sandbox.fields.last_check");
+  const noFilteredLabel = await window.t("modals.mod_profile_manager.sandbox.empty.filtered");
+
+  const rows = await Promise.all(presets.map(async (preset) => {
+    const presetMods = sandboxPresetMods(preset);
+    const isSelected = modProfileManagerState.selectedPresetId === preset.id;
+    const isEmptyPreset = presetMods.length === 0;
+    const statusPresentation = await sandboxPresetStatusPresentation(preset);
+    const statusFilterValue = sandboxPresetStatusFilterValue(preset);
+    const { check, entries } = sandboxPresetStatusEntries(preset);
+    const checkError = getSandboxPresetCheckError(preset.id);
+    const activation = getSandboxPresetActivation(preset.id);
+    const renderedStatuses = check?.mods || check?.all_mods || entries || [];
+    const requiredStatuses = renderedStatuses.filter((status) => status.required);
+    const missingRequiredStatuses = requiredStatuses.filter((status) => !(status.available === true && status.reachable === true));
+    const canActivate = sandboxPresetCanActivate(preset);
+    const isChecking = modProfileManagerState.checkingPresetId === preset.id;
+    const isActivating = modProfileManagerState.activatingPresetId === preset.id;
+    const gameMeta = sandboxPresetGameMeta(preset);
+    const activateButtonLabel = isActivating
+      ? await window.t("modals.mod_profile_manager.sandbox.hints.activating")
+      : activateLabel;
+    console.log("[ModProfileUI] render preset=%s can_activate=%s", preset.id, canActivate);
+
+    let footerMessage = await window.t("modals.mod_profile_manager.sandbox.hints.not_checked");
+    if (isEmptyPreset) {
+      footerMessage = await window.t("modals.mod_profile_manager.sandbox.hints.no_mods_configured");
+    } else if (activation?.success === false) {
+      footerMessage = await sandboxErrorMessage(activation);
+    } else if (checkError) {
+      footerMessage = checkError;
+    } else if (check && !check.ready) {
+      footerMessage = sandboxCheckMessage(check) || await window.t("modals.mod_profile_manager.sandbox.popup.mod_missing_message");
+    } else if (check?.ready) {
+      footerMessage = sandboxCheckMessage(check) || await window.t("modals.mod_profile_manager.sandbox.hints.ready");
+    }
+    if (missingRequiredStatuses.length) {
+      const missingIds = missingRequiredStatuses.map((status) => status.steam_id || status.package_id || status.display_name || "-").join(", ");
+      footerMessage = `${await window.t("modals.mod_profile_manager.sandbox.popup.mod_missing_message")}: ${missingIds}`;
+    }
+
+    return {
+      preset,
+      gameMeta,
+      statusFilterValue,
+      markup: `
+      <article
+        class="sandbox-preset-row sandbox-status-${escapeHtml(statusPresentation.state)}${isSelected ? " is-selected" : ""}"
+        data-preset-id="${escapeHtml(preset.id)}"
+        data-sandbox-action="details"
+        data-sandbox-preset-id="${escapeHtml(preset.id)}">
+        <span class="sandbox-preset-icon" data-state="${escapeHtml(statusPresentation.state)}" aria-hidden="true"></span>
+        <div class="sandbox-preset-main">
+          <div class="sandbox-preset-title-line">
+            <h3 class="sandbox-preset-title">${escapeHtml(preset.title || preset.name || preset.id)}</h3>
+            <span class="sandbox-status-badge sandbox-status-${escapeHtml(statusPresentation.state)}">${escapeHtml(statusPresentation.label)}</span>
+          </div>
+          <p class="sandbox-preset-description">${escapeHtml(preset.description || footerMessage || "-")}</p>
+          <div class="sandbox-preset-meta">
+            <span><strong>${escapeHtml(gameLabel)}:</strong> ${escapeHtml(gameMeta.game)}</span>
+            <span><strong>${escapeHtml(modsCountLabel)}:</strong> ${escapeHtml(String(presetMods.length))}</span>
+            <span><strong>${escapeHtml(appIdLabel)}:</strong> ${escapeHtml(String(gameMeta.appId))}</span>
+            <span><strong>${escapeHtml(statusLabel)}:</strong> ${escapeHtml(statusPresentation.label)}</span>
+            <span><strong>${escapeHtml(lastCheckLabel)}:</strong> ${escapeHtml(sandboxPresetLastCheckLabel(check))}</span>
+          </div>
+          <p class="sandbox-preset-hint">${escapeHtml(isActivating ? await window.t("modals.mod_profile_manager.sandbox.hints.activating") : footerMessage)}</p>
+        </div>
+        <div class="sandbox-preset-actions">
+          <button
+            class="secondary-action"
+            type="button"
+            data-sandbox-action="details"
+            data-sandbox-preset-id="${escapeHtml(preset.id)}">
+            ${escapeHtml(detailsLabel)}
+          </button>
+          <button
+            class="secondary-action"
+            type="button"
+            data-sandbox-action="check-mods"
+            data-sandbox-preset-id="${escapeHtml(preset.id)}"
+            ${isEmptyPreset || isChecking || modProfileManagerState.loading ? "disabled" : ""}>
+            ${escapeHtml(isEmptyPreset ? emptyPresetLabel : checkLabel)}
+          </button>
+          <button
+            class="secondary-action apply sandbox-activate-action"
+            type="button"
+            data-sandbox-action="activate-preset"
+            data-sandbox-preset-id="${escapeHtml(preset.id)}"
+            ${canActivate ? "" : "disabled"}>
+            ${escapeHtml(activateButtonLabel)}
+          </button>
+        </div>
+      </article>
+    `};
+  }));
+
+  const filteredRows = rows.filter(({ preset, gameMeta, statusFilterValue }) => {
+    if (search && !sandboxPresetSearchText(preset).includes(search)) return false;
+    if (gameFilter !== "all" && gameMeta.game.toLowerCase() !== gameFilter) return false;
+    if (statusFilter !== "all" && statusFilterValue !== statusFilter) return false;
+    return true;
+  });
+
+  if (modSandboxCount) {
+    modSandboxCount.textContent = filteredRows.length === presets.length
+      ? String(presets.length)
+      : `${filteredRows.length}/${presets.length}`;
+  }
+
+  modSandboxPresetList.innerHTML = filteredRows.length
+    ? filteredRows.map((row) => row.markup).join("")
+    : `<div class="modal-empty-state sandbox-filter-empty">${escapeHtml(noFilteredLabel)}</div>`;
+  bindSandboxPresetButtonHandlers();
+  await renderOpenSandboxPresetDetailsModal();
+}
+
+async function renderSandboxPresetModsTable(preset) {
+  const presetMods = sandboxPresetDetailMods(preset);
+  const { byKey } = sandboxPresetStatusEntries(preset);
+  const copySteamCmdLabel = await window.t("modals.mod_profile_manager.sandbox.actions.copy_steamcmd");
+  const openWorkshopLabel = await window.t("modals.mod_profile_manager.sandbox.actions.open_workshop");
+  const openInSteamLabel = await window.t("modals.mod_profile_manager.sandbox.actions.open_in_steam");
+  const notCheckedLabel = await window.t("modals.mod_profile_manager.sandbox.preset_status.not_checked");
+  const noModsConfiguredLabel = await window.t("modals.mod_profile_manager.sandbox.hints.no_mods_configured");
+  const statusCopy = {
+    statusAvailable: await window.t("modals.mod_profile_manager.sandbox.mod_status.available"),
+    statusNotDownloaded: await window.t("modals.mod_profile_manager.sandbox.mod_status.not_downloaded"),
+    statusPathMissing: await window.t("modals.mod_profile_manager.sandbox.mod_status.path_missing"),
+    statusUnknown: await window.t("modals.mod_profile_manager.sandbox.mod_status.unknown"),
+    statusAvailableNote: await window.t("modals.mod_profile_manager.sandbox.mod_status.available_note"),
+    statusNotDownloadedNote: await window.t("modals.mod_profile_manager.sandbox.mod_status.not_downloaded_note"),
+    statusPathMissingNote: await window.t("modals.mod_profile_manager.sandbox.mod_status.path_missing_note"),
+    statusUnknownNote: await window.t("modals.mod_profile_manager.sandbox.mod_status.unknown_note"),
+  };
+
+  if (!presetMods.length) {
+    return `<div class="modal-empty-state sandbox-details-empty">${escapeHtml(noModsConfiguredLabel)}</div>`;
+  }
+
+  const headers = [
+    "#",
+    await window.t("modals.mod_profile_manager.sandbox.fields.mod_name"),
+    await window.t("modals.mod_profile_manager.sandbox.fields.workshop_id"),
+    await window.t("modals.mod_profile_manager.sandbox.fields.required"),
+    await window.t("modals.mod_profile_manager.sandbox.fields.installed"),
+    await window.t("modals.mod_profile_manager.sandbox.fields.load_order"),
+    await window.t("modals.mod_profile_manager.sandbox.fields.actions"),
+  ];
+  const yesLabel = await window.t("modals.mod_profile_manager.sandbox.fields.yes");
+  const noLabel = await window.t("modals.mod_profile_manager.sandbox.fields.no");
+
+  const rows = presetMods.map((presetMod, index) => {
+    const workshopId = sandboxPresetModWorkshopId(presetMod);
+    const appId = sandboxPresetModAppId(presetMod);
+    const status = byKey.get(sandboxPresetModStatusKey(presetMod));
+    const uiStatus = status ? sandboxModUiStatus(status, statusCopy) : {
+      state: "unknown",
+      label: notCheckedLabel,
+      note: notCheckedLabel,
+    };
+    const displayName = status?.display_name || presetMod.display_name || presetMod.name || presetMod.package_id || "-";
+    const localPath = status?.local_path || presetMod.local_path || "";
+    const resolvedSteamProtocolUrl = status?.steam_protocol_url || presetMod.steam_protocol_url || "";
+    const resolvedSteamCmd = status?.steamcmd_command || (workshopId ? `steamcmd +login anonymous +workshop_download_item ${appId} ${workshopId} +quit` : "");
+
+    return `
+      <tr class="sandbox-mod-row" data-state="${escapeHtml(uiStatus.state)}">
+        <td>${escapeHtml(String(index + 1))}</td>
+        <td>
+          <strong>${escapeHtml(displayName)}</strong>
+          ${localPath ? `<small>${escapeHtml(localPath)}</small>` : ""}
+        </td>
+        <td><code>${escapeHtml(workshopId || "-")}</code></td>
+        <td>${escapeHtml(presetMod.required ? yesLabel : noLabel)}</td>
+        <td><span class="mod-status-badge" data-state="${escapeHtml(uiStatus.state)}">${escapeHtml(uiStatus.label)}</span></td>
+        <td>${escapeHtml(String(status?.load_order ?? presetMod.load_order ?? index))}</td>
+        <td>
+          <div class="sandbox-mod-actions">
+            <button
+              class="secondary-action"
+              type="button"
+              data-sandbox-action="open-workshop"
+              data-sandbox-steam-id="${escapeHtml(workshopId)}"
+              ${workshopId ? "" : "disabled"}>
+              ${escapeHtml(openWorkshopLabel)}
+            </button>
+            <button
+              class="secondary-action"
+              type="button"
+              data-sandbox-action="open-steam"
+              data-sandbox-steam-id="${escapeHtml(workshopId)}"
+              ${resolvedSteamProtocolUrl || workshopId ? "" : "disabled"}>
+              ${escapeHtml(openInSteamLabel)}
+            </button>
+            <button
+              class="secondary-action"
+              type="button"
+              data-sandbox-action="copy-steamcmd"
+              data-sandbox-steamcmd="${escapeHtml(resolvedSteamCmd)}"
+              ${resolvedSteamCmd ? "" : "disabled"}>
+              ${escapeHtml(copySteamCmdLabel)}
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join("");
+
+  return `
+    <div class="sandbox-mods-table-wrap">
+      <table class="sandbox-mods-table">
+        <thead>
+          <tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join("")}</tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+async function renderSandboxPresetDetailsContent(preset) {
+  const presetMods = sandboxPresetDetailMods(preset);
+  const gameMeta = sandboxPresetGameMeta(preset);
+  const statusPresentation = await sandboxPresetStatusPresentation(preset);
+  const { check } = sandboxPresetStatusEntries(preset);
+  const isChecking = modProfileManagerState.checkingPresetId === preset.id;
+  const isActivating = modProfileManagerState.activatingPresetId === preset.id;
+  const canActivate = sandboxPresetCanActivate(preset);
+  const activateButtonLabel = isActivating
+    ? await window.t("modals.mod_profile_manager.sandbox.hints.activating")
+    : await window.t("modals.mod_profile_manager.sandbox.actions.activate_preset");
+  const loadOrderLocked = Boolean(preset.load_order_locked ?? preset.loadOrderLocked);
+  const enabled = preset.enabled !== false;
+  const fields = [
+    [await window.t("modals.mod_profile_manager.sandbox.fields.id"), preset.id || "-"],
+    [await window.t("modals.mod_profile_manager.sandbox.fields.game"), gameMeta.game],
+    [await window.t("modals.mod_profile_manager.sandbox.fields.app_id"), gameMeta.appId],
+    [await window.t("modals.mod_profile_manager.sandbox.fields.enabled"), enabled ? await window.t("modals.mod_profile_manager.sandbox.fields.yes") : await window.t("modals.mod_profile_manager.sandbox.fields.no")],
+    [await window.t("modals.mod_profile_manager.sandbox.fields.load_order_locked"), loadOrderLocked ? await window.t("modals.mod_profile_manager.sandbox.fields.yes") : await window.t("modals.mod_profile_manager.sandbox.fields.no")],
+    [await window.t("modals.mod_profile_manager.sandbox.fields.mods_count"), presetMods.length],
+    [await window.t("modals.mod_profile_manager.sandbox.fields.last_check"), sandboxPresetLastCheckLabel(check)],
+  ];
+
+  return `
+    <div class="modal-box modal-box--xl modal-box--sheet sandbox-preset-details-modal" role="dialog" aria-modal="true">
+      <div class="detail-modal-head sandbox-details-head">
+        <div>
+          <span class="modal-kicker">${escapeHtml(await window.t("modals.mod_profile_manager.sandbox.details.kicker"))}</span>
+          <h2>${escapeHtml(await window.t("modals.mod_profile_manager.sandbox.details.title", { title: preset.title || preset.name || preset.id || "" }))}</h2>
+          <p class="modal-description">${escapeHtml(preset.description || "-")}</p>
+          <div class="sandbox-details-meta-line">
+            <span>${escapeHtml(gameMeta.game)}</span>
+            <span>${escapeHtml(await window.t("modals.mod_profile_manager.sandbox.fields.app_id"))} ${escapeHtml(String(gameMeta.appId))}</span>
+            <span>${escapeHtml(await window.t("modals.mod_profile_manager.sandbox.fields.mods_count"))}: ${escapeHtml(String(presetMods.length))}</span>
+            <span>${escapeHtml(loadOrderLocked ? await window.t("modals.mod_profile_manager.sandbox.fields.load_order_locked") : await window.t("modals.mod_profile_manager.sandbox.fields.load_order_unlocked"))}</span>
+          </div>
+        </div>
+        <span class="sandbox-status-badge sandbox-status-${escapeHtml(statusPresentation.state)}">${escapeHtml(statusPresentation.label)}</span>
+      </div>
+      <div class="sandbox-details-scroll">
+        <div class="sandbox-details-grid">
+          ${fields.map(([label, value]) => `
+            <div>
+              <span>${escapeHtml(label)}</span>
+              <strong>${escapeHtml(String(value))}</strong>
+            </div>
+          `).join("")}
+        </div>
+        ${await renderSandboxPresetModsTable(preset)}
+      </div>
+      <div class="modal-actions modal-actions--end sandbox-details-footer">
+        <button type="button" data-sandbox-action="close-details">${escapeHtml(await window.t("modals.close"))}</button>
+        <button
+          class="secondary-action"
+          type="button"
+          data-sandbox-action="check-mods"
+          data-sandbox-preset-id="${escapeHtml(preset.id)}"
+          ${presetMods.length === 0 || isChecking || modProfileManagerState.loading ? "disabled" : ""}>
+          ${escapeHtml(presetMods.length === 0 ? await window.t("modals.mod_profile_manager.sandbox.preset_status.empty") : await window.t("modals.mod_profile_manager.sandbox.actions.check_mods"))}
+        </button>
+        <button
+          class="secondary-action apply sandbox-activate-action"
+          type="button"
+          data-sandbox-action="activate-preset"
+          data-sandbox-preset-id="${escapeHtml(preset.id)}"
+          ${canActivate ? "" : "disabled"}>
+          ${escapeHtml(activateButtonLabel)}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function closeSandboxPresetDetailsModal() {
+  const modal = document.getElementById("sandboxPresetDetailsModal");
+  if (modal) modal.remove();
+  modProfileManagerState.detailsPresetId = null;
+}
+
+async function openSandboxPresetDetailsModal(presetId) {
+  const preset = modProfileManagerState.presets.find((item) => item.id === presetId);
+  if (!preset) return;
+
+  modProfileManagerState.selectedPresetId = presetId;
+  modProfileManagerState.detailsPresetId = presetId;
+  let modal = document.getElementById("sandboxPresetDetailsModal");
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = "sandboxPresetDetailsModal";
+    modal.className = "modal-backdrop sandbox-preset-details-backdrop";
+    document.body.appendChild(modal);
+  }
+  modal.style.display = "flex";
+  modal.innerHTML = await renderSandboxPresetDetailsContent(preset);
+  modal.onclick = async (event) => {
+    if (event.target === modal) {
+      closeSandboxPresetDetailsModal();
+      return;
+    }
+    const trigger = event.target.closest("[data-sandbox-action]");
+    if (!trigger) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const action = trigger.dataset.sandboxAction || "";
+    if (action === "close-details") {
+      closeSandboxPresetDetailsModal();
+      return;
+    }
+    await handleSandboxPresetAction(
+      action,
+      trigger.dataset.sandboxPresetId || modProfileManagerState.detailsPresetId || "",
+      trigger.dataset.sandboxSteamId || "",
+      trigger
+    );
+  };
+}
+
+async function renderOpenSandboxPresetDetailsModal() {
+  const modal = document.getElementById("sandboxPresetDetailsModal");
+  if (!modal || !modProfileManagerState.detailsPresetId) return;
+  const preset = modProfileManagerState.presets.find((item) => item.id === modProfileManagerState.detailsPresetId);
+  if (!preset) {
+    closeSandboxPresetDetailsModal();
+    return;
+  }
+  modal.innerHTML = await renderSandboxPresetDetailsContent(preset);
+}
+
+export async function openModProfileManagerModal() {
+  if (!modalModProfileManager) return;
+
+  console.log("[ModProfileUI] opening sandbox");
+  modalModProfileManager.style.display = "flex";
+  await updateModProfileContextLabels();
+  await setModProfileStatus("modals.mod_profile_manager.status.ready", "neutral");
+  await renderSandboxResult(null);
+  await renderSandboxProgressList([]);
+  await loadSandboxPresetsIntoModal();
+}
+
+function closeModProfileManagerModal() {
+  if (!modalModProfileManager) return;
+  modalModProfileManager.style.display = "none";
+  closeSandboxPresetDetailsModal();
+}
+
+async function handleSandboxPresetAction(action, presetId, steamId = "", trigger = null) {
+  console.log("[SandboxPreset] action", {
+    action,
+    presetId,
+    steamId,
+  });
+
+  if (action === "select-preset") {
+    await selectSandboxPreset(presetId);
+    return;
+  }
+
+  if (action === "details") {
+    await openSandboxPresetDetailsModal(presetId);
+    await renderSandboxPresetCards();
+    return;
+  }
+
+  if (action === "check-mods") {
+    modProfileManagerState.selectedPresetId = presetId;
+    console.log("[ModProfileManager] selected preset", presetId);
+    console.log("[ModProfileManager] check preset clicked", presetId);
+    await checkSandboxPresetMods(presetId);
+    return;
+  }
+
+  if (action === "activate-preset") {
+    modProfileManagerState.selectedPresetId = presetId;
+    console.log("[ModProfileManager] selected preset", presetId);
+    console.log("[ModProfileManager] activate preset clicked", presetId);
+    await activateSandboxPreset(presetId);
+    return;
+  }
+
+  if (action === "open-workshop") {
+    try {
+      console.debug("[SandboxPreset] open workshop clicked", { steamId });
+      await openSandboxModWorkshopPage(steamId);
+    } catch (error) {
+      console.error("Open sandbox workshop page failed:", error);
+      await showSandboxPresetPopup(
+        "error",
+        await window.t("modals.mod_profile_manager.sandbox.popup.error_title"),
+        normalizeSandboxCommandError(error)
+      );
+    }
+    return;
+  }
+
+  if (action === "open-steam") {
+    try {
+      console.debug("[SandboxPreset] open in Steam clicked", { steamId });
+      await openSandboxModInSteam(steamId);
+    } catch (error) {
+      console.error("Open sandbox mod in Steam failed:", error);
+      await showSandboxPresetPopup(
+        "error",
+        await window.t("modals.mod_profile_manager.sandbox.popup.error_title"),
+        normalizeSandboxCommandError(error)
+      );
+    }
+    return;
+  }
+
+  if (action === "copy-steamcmd") {
+    try {
+      const steamCmd = trigger?.dataset?.sandboxSteamcmd || "";
+      await copyTextToClipboard(steamCmd);
+      window.showToast?.("toasts.mod_sandbox_steamcmd_copied", "success");
+    } catch (error) {
+      console.error("Copy SteamCMD command failed:", error);
+      window.showToast?.("toasts.mod_sandbox_steamcmd_copy_failed", "error");
+    }
+  }
+}
+
+function bindSandboxPresetButtonHandlers() {
+  if (!modSandboxPresetList) {
+    console.warn("[SandboxPreset] modSandboxPresetList not found. Sandbox button handlers were not bound.");
+    return;
+  }
+  if (modSandboxPresetList.dataset.sandboxBound === "1") return;
+  modSandboxPresetList.dataset.sandboxBound = "1";
+  modSandboxPresetList.addEventListener("click", async (event) => {
+    const trigger = event.target.closest("[data-sandbox-action]");
+    if (!trigger || !modSandboxPresetList.contains(trigger)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (typeof event.stopImmediatePropagation === "function") {
+      event.stopImmediatePropagation();
+    }
+    await handleSandboxPresetAction(
+      trigger.dataset.sandboxAction || "",
+      trigger.dataset.sandboxPresetId || "",
+      trigger.dataset.sandboxSteamId || "",
+      trigger
+    );
+  });
+}
+
+async function refreshSteamWorkshopModsForSandbox(showToast = false) {
+  console.log("[ModProfileUI] refreshing steam workshop cache");
+  try {
+    const cache = normalizeSteamWorkshopCache(await window.invoke("refresh_workshop_mod_cache"));
+    modProfileManagerState.steamWorkshopModCache = cache;
+    modProfileManagerState.steamWorkshopCacheError = "";
+    window.steamWorkshopModCache = cache;
+    console.log("[ModProfileUI] cache refreshed mods=%s", cache.mods.length);
+    if (showToast) {
+      window.showToast?.("toasts.mod_sandbox_steam_mods_refreshed", "success");
+    }
+    return cache;
+  } catch (error) {
+    const message = normalizeSandboxCommandError(error)
+      || await window.t("modals.mod_profile_manager.sandbox.popup.check_failed_message");
+    console.error("[ModProfileUI] steam workshop cache refresh failed", error);
+    modProfileManagerState.steamWorkshopModCache = null;
+    modProfileManagerState.steamWorkshopCacheError = message;
+    window.steamWorkshopModCache = null;
+    if (showToast) {
+      window.showToast?.("toasts.mod_sandbox_steam_mods_refresh_failed", "error");
+    }
+    return null;
+  }
+}
+
+async function checkLoadedSandboxPresets() {
+  const presets = modProfileManagerState.presets;
+  if (!presets.length) return;
+
+  if (modProfileManagerState.steamWorkshopCacheError) {
+    presets.forEach((preset) => {
+      modProfileManagerState.checks.set(
+        preset.id,
+        buildUnknownSandboxPresetCheck(preset, modProfileManagerState.steamWorkshopCacheError)
+      );
+    });
+    return;
+  }
+
+  for (const preset of presets) {
+    console.log("[ModProfileUI] checking preset=%s", preset.id);
+    try {
+      (preset.mods || []).forEach((presetMod) => {
+        const appId = sandboxPresetModAppId(presetMod);
+        const workshopId = sandboxPresetModWorkshopId(presetMod);
+        console.log("[ModProfileUI] checking mod app_id=%s workshop_id=%s", appId, workshopId);
+      });
+      const result = await window.invoke("check_sandbox_preset_mods", { presetId: preset.id });
+      (result?.mods || result?.all_mods || []).forEach((modStatus) => {
+        console.log(
+          "[ModProfileUI] mod result status=%s available=%s reachable=%s",
+          modStatus.status || (modStatus.available ? "available" : "not_downloaded"),
+          Boolean(modStatus.available),
+          Boolean(modStatus.reachable)
+        );
+      });
+      modProfileManagerState.checks.set(preset.id, result);
+      modProfileManagerState.checkErrors.delete(preset.id);
+    } catch (error) {
+      const message = normalizeSandboxCommandError(error)
+        || await window.t("modals.mod_profile_manager.sandbox.popup.check_failed_message");
+      console.error("[ModProfileUI] preset check failed", { presetId: preset.id, error });
+      modProfileManagerState.checks.set(preset.id, buildUnknownSandboxPresetCheck(preset, message));
+      modProfileManagerState.checkErrors.set(preset.id, message);
+    }
+  }
+}
+
+export async function loadSandboxPresetsIntoModal(options = {}) {
+  const refreshSteamMods = options.refreshSteamMods !== false;
+  const showRefreshToast = Boolean(options.showRefreshToast);
+  setModProfileBusy(true);
+  modProfileManagerState.checks.clear();
+  modProfileManagerState.checkErrors.clear();
+  modProfileManagerState.activations.clear();
+  modProfileManagerState.progressLog = [];
+  modProfileManagerState.checkingPresetId = null;
+  modProfileManagerState.activatingPresetId = null;
+  try {
+    if (refreshSteamMods) {
+      await refreshSteamWorkshopModsForSandbox(showRefreshToast);
+    }
+    console.log("[ModProfileUI] loading sandbox presets");
+    modProfileManagerState.presets = normalizeSandboxPresets(
+      await window.invoke("load_sandbox_mod_presets")
+    );
+    console.log("[ModProfileManager] loaded presets", modProfileManagerState.presets);
+    if (!modProfileManagerState.presets.some((preset) => preset.id === modProfileManagerState.selectedPresetId)) {
+      modProfileManagerState.selectedPresetId = modProfileManagerState.presets[0]?.id || null;
+      if (modProfileManagerState.selectedPresetId) {
+        console.log("[ModProfileManager] selected preset", modProfileManagerState.selectedPresetId);
+      }
+    }
+    await renderSandboxPresetCards();
+    await renderSandboxProgressList([]);
+    await setModProfileStatus("modals.mod_profile_manager.status.ready", "success");
+  } catch (error) {
+    console.error("Sandbox preset load failed:", error);
+    modProfileManagerState.presets = [];
+    if (modSandboxPresetList) modSandboxPresetList.innerHTML = "";
+    if (modSandboxEmpty) modSandboxEmpty.hidden = false;
+    await renderSandboxProgressList([]);
+    await renderSandboxResult(null);
+    await setModProfileStatus("modals.mod_profile_manager.sandbox.status.load_failed", "error");
+    window.showToast?.("toasts.mod_sandbox_load_failed", "error");
+  } finally {
+    setModProfileBusy(false);
+    await renderSandboxPresetCards();
+  }
+}
+
+async function checkSandboxPresetMods(presetId) {
+  modProfileManagerState.selectedPresetId = presetId;
+  console.log("[ModProfileManager] check preset clicked", presetId);
+  console.log("[SandboxPreset] checkSandboxPresetMods called", {
+    presetId,
+    hasInvoke: typeof window.invoke === "function",
+  });
+  modProfileManagerState.checkingPresetId = presetId;
+  modProfileManagerState.activatingPresetId = null;
+  modProfileManagerState.checkErrors.delete(presetId);
+  await renderSandboxProgressList(["Preset geladen"]);
+  await setModProfileStatus("modals.mod_profile_manager.sandbox.status.checking", "warning");
+  await renderSandboxResult(null);
+  await renderSandboxPresetCards();
+
+  try {
+    console.log("[ModProfileManager] invoking check_sandbox_preset_mods", { presetId });
+    console.log("[SandboxPreset] invoking check_sandbox_preset_mods", { presetId });
+    const result = await window.invoke("check_sandbox_preset_mods", { presetId });
+    console.log("[ModProfileManager] check preset result", result);
+    console.log("[SandboxPreset] check result:", result);
+    console.log("[SandboxPreset] ready:", Boolean(result?.ready));
+    modProfileManagerState.checks.set(presetId, result);
+    modProfileManagerState.checkErrors.delete(presetId);
+    modProfileManagerState.activations.delete(presetId);
+    modProfileManagerState.progressLog = Array.isArray(result.progress_log) ? result.progress_log : [];
+    await renderSandboxProgressList(modProfileManagerState.progressLog);
+    await renderSandboxPresetCards();
+    if (result.ready) {
+      await setModProfileStatus("modals.mod_profile_manager.sandbox.status.ready", "success");
+      await renderSandboxInlineMessage(
+        "success",
+        await window.t("modals.mod_profile_manager.sandbox.popup.check_success_title"),
+        sandboxCheckMessage(result) || await window.t("modals.mod_profile_manager.sandbox.popup.check_success_message", { title: result.title || "" })
+      );
+      await showSandboxPresetPopup(
+        "success",
+        await window.t("modals.mod_profile_manager.sandbox.popup.check_success_title"),
+        sandboxCheckMessage(result) || await window.t("modals.mod_profile_manager.sandbox.popup.check_success_message", { title: result.title || "" })
+      );
+    } else {
+      await setModProfileStatus("modals.mod_profile_manager.sandbox.status.mod_missing", "warning");
+      await renderSandboxInlineMessage(
+        "error",
+        await window.t("modals.mod_profile_manager.sandbox.popup.mod_missing_title"),
+        sandboxCheckMessage(result) || await window.t("modals.mod_profile_manager.sandbox.popup.mod_missing_message")
+      );
+      await showSandboxPresetPopup(
+        "warning",
+        await window.t("modals.mod_profile_manager.sandbox.popup.mod_missing_title"),
+        sandboxCheckMessage(result) || await window.t("modals.mod_profile_manager.sandbox.popup.mod_missing_message")
+      );
+    }
+  } catch (error) {
+    console.error("[SandboxPreset] check_sandbox_preset_mods failed", error);
+    const errorMessage = normalizeSandboxCommandError(error)
+      || await window.t("modals.mod_profile_manager.sandbox.popup.check_failed_message");
+    modProfileManagerState.checks.delete(presetId);
+    modProfileManagerState.checkErrors.set(presetId, errorMessage);
+    modProfileManagerState.activations.delete(presetId);
+    modProfileManagerState.progressLog = ["Preset geladen", errorMessage];
+    await renderSandboxProgressList(modProfileManagerState.progressLog);
+    await renderSandboxInlineMessage(
+      "error",
+      await window.t("modals.mod_profile_manager.sandbox.popup.error_title"),
+      errorMessage
+    );
+    await setModProfileStatus("modals.mod_profile_manager.sandbox.status.check_failed", "error");
+    await showSandboxPresetPopup(
+      "error",
+      await window.t("modals.mod_profile_manager.sandbox.popup.error_title"),
+      errorMessage
+    );
+  } finally {
+    modProfileManagerState.checkingPresetId = null;
+    await renderSandboxPresetCards();
+  }
+}
+
+async function activateSandboxPreset(presetId) {
+  modProfileManagerState.selectedPresetId = presetId;
+  const activeProfile = window.selectedProfilePath || "";
+  const activeSave = window.selectedSavePath || "";
+  console.log("[ModProfileManager] activate preset clicked", presetId);
+  console.log("[ModProfileManager] activate preset context", { presetId, activeProfile, activeSave });
+
+  if (!hasActiveSaveSelected()) {
+    await setModProfileStatus("modals.mod_profile_manager.sandbox.status.no_active_save", "warning");
+    await showSandboxPresetPopup(
+      "warning",
+      await window.t("modals.mod_profile_manager.sandbox.popup.error_title"),
+      await window.t("modals.mod_profile_manager.sandbox.popup.no_active_save_message")
+    );
+    return;
+  }
+
+  const preset = modProfileManagerState.presets.find((item) => item.id === presetId);
+  if (sandboxPresetMods(preset).length === 0) {
+    const message = await window.t("modals.mod_profile_manager.sandbox.hints.no_mods_configured");
+    await showSandboxPresetPopup(
+      "warning",
+      await window.t("modals.mod_profile_manager.sandbox.preset_status.empty"),
+      message
+    );
+    return;
+  }
+
+  const currentCheck = getSandboxPresetCheck(presetId);
+  const currentStatuses = currentCheck?.mods || currentCheck?.all_mods || [];
+  const missingRequiredStatuses = currentStatuses
+    .filter((status) => status.required)
+    .filter((status) => !(status.available === true && status.reachable === true));
+  if (!currentCheck || !(currentCheck.ready || currentCheck.can_activate) || missingRequiredStatuses.length > 0) {
+    await showSandboxPresetPopup(
+      "warning",
+      await window.t("modals.mod_profile_manager.sandbox.preset_status.not_checked"),
+      await window.t("modals.mod_profile_manager.sandbox.hints.not_checked")
+    );
+    return;
+  }
+
+  modProfileManagerState.activatingPresetId = presetId;
+  await renderSandboxProgressList(["Preset geladen", "Mods geprüft"]);
+  await setModProfileStatus("modals.mod_profile_manager.sandbox.preset_status.activating", "warning");
+  await renderSandboxResult(null);
+  await renderSandboxPresetCards();
+
+  try {
+    const check = getSandboxPresetCheck(presetId);
+    const firstMod = [
+      ...(check?.mods || []),
+      ...(check?.all_mods || []),
+      ...(check?.found_mods || []),
+    ][0];
+    let game = "ets2";
+    try {
+      game = await window.invoke("get_selected_game");
+    } catch (error) {
+      console.warn("[ModProfileManager] get_selected_game failed", error);
+    }
+    const appId = Number(firstMod?.app_id || (game === "ats" ? 270880 : 227300));
+    const payload = {
+      preset_id: presetId,
+      profile_id: pathLastSegment(activeProfile),
+      save_name: pathLastSegment(activeSave),
+      game,
+      app_id: Number.isFinite(appId) && appId > 0 ? appId : 227300,
+    };
+    console.log("[ModProfileManager] invoking activate_sandbox_mod_preset", payload);
+    const result = await window.invoke("activate_sandbox_mod_preset", payload);
+    console.log("[ModProfileManager] activate preset result", result);
+    modProfileManagerState.activations.set(presetId, result);
+    modProfileManagerState.progressLog = Array.isArray(result.progress_log) ? result.progress_log : [];
+    await renderSandboxProgressList(modProfileManagerState.progressLog);
+    await renderSandboxResult(result);
+    await renderSandboxPresetCards();
+
+    if (result.success) {
+      await setModProfileStatus("modals.mod_profile_manager.sandbox.status.activated", "success");
+      await showSandboxPresetPopup(
+        "success",
+        await window.t("modals.mod_profile_manager.sandbox.popup.success_title"),
+        result.message || await window.t("modals.mod_profile_manager.sandbox.popup.success_message", { title: result.title || "" })
+      );
+      await loadSandboxPresetsIntoModal({ refreshSteamMods: false });
+      modProfileManagerState.activations.set(presetId, result);
+      await renderSandboxPresetCards();
+      const refreshedCheck = getSandboxPresetCheck(presetId);
+      if (refreshedCheck?.ready) {
+        await checkSandboxPresetMods(presetId);
+      }
+      return;
+    }
+
+    const title = await sandboxErrorTitle(result.error_code);
+    const message = await sandboxErrorMessage(result);
+    const stateKey = result.error_code === "mod_not_found"
+      ? "modals.mod_profile_manager.sandbox.status.mod_missing"
+      : "modals.mod_profile_manager.sandbox.status.error";
+    await setModProfileStatus(stateKey, result.error_code === "mod_not_found" ? "warning" : "error");
+    await showSandboxPresetPopup("error", title, message);
+  } catch (error) {
+    console.error("[ModProfileManager] activate error", error);
+    modProfileManagerState.progressLog = [];
+    await renderSandboxProgressList([]);
+    await setModProfileStatus("modals.mod_profile_manager.sandbox.status.error", "error");
+    await showSandboxPresetPopup(
+      "error",
+      await window.t("modals.mod_profile_manager.sandbox.popup.error_title"),
+      normalizeSandboxCommandError(error) || await window.t("modals.mod_profile_manager.sandbox.popup.save_failed_message")
+    );
+  } finally {
+    modProfileManagerState.activatingPresetId = null;
+    await renderSandboxPresetCards();
+  }
+}
+
+modSandboxReloadBtn?.addEventListener("click", () => {
+  void loadSandboxPresetsIntoModal({ refreshSteamMods: true, showRefreshToast: true });
+});
+modSandboxSearchInput?.addEventListener("input", () => {
+  modProfileManagerState.filters.search = modSandboxSearchInput.value || "";
+  void renderSandboxPresetCards();
+});
+modSandboxGameFilter?.addEventListener("change", () => {
+  modProfileManagerState.filters.game = modSandboxGameFilter.value || "all";
+  void renderSandboxPresetCards();
+});
+modSandboxStatusFilter?.addEventListener("change", () => {
+  modProfileManagerState.filters.status = modSandboxStatusFilter.value || "all";
+  void renderSandboxPresetCards();
+});
+modSteamConsoleBtn?.addEventListener("click", async () => {
+  try {
+    await window.invoke("open_steam_console");
+  } catch (error) {
+    console.error("Open Steam console failed:", error);
+    window.showToast?.("toasts.mod_sandbox_open_steam_console_failed", "error");
+  }
+});
+modalModProfileManagerClose?.addEventListener("click", closeModProfileManagerModal);
+modalModProfileManager?.addEventListener("click", (event) => {
+  if (event.target === modalModProfileManager) {
+    closeModProfileManagerModal();
+  }
+});
+
+window.openModProfileManagerModal = openModProfileManagerModal;
 
 if (saveImportSavesBtn) {
   saveImportSavesBtn.addEventListener("click", () => {

@@ -35,10 +35,12 @@ pub fn compare_preset(
                 } else {
                     "The preset entry was not found in the current local mod scan.".to_string()
                 },
-                workshop_url: preset_mod
-                    .workshop_id
-                    .as_ref()
-                    .map(|value| format!("https://steamcommunity.com/sharedfiles/filedetails/?id={}", value)),
+                workshop_url: preset_mod.workshop_id.as_ref().map(|value| {
+                    format!(
+                        "https://steamcommunity.com/sharedfiles/filedetails/?id={}",
+                        value
+                    )
+                }),
             });
             continue;
         }
@@ -189,7 +191,10 @@ fn preset_match_score(preset_mod: &PresetModEntry, current_mod: &DiscoveredMod) 
 fn duplicate_mod_entries(current_mods: &[DiscoveredMod]) -> Vec<DuplicateModEntry> {
     let mut grouped: HashMap<String, Vec<&DiscoveredMod>> = HashMap::new();
     for item in current_mods {
-        grouped.entry(item.duplicate_key.clone()).or_default().push(item);
+        grouped
+            .entry(item.duplicate_key.clone())
+            .or_default()
+            .push(item);
     }
 
     grouped

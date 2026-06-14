@@ -346,6 +346,7 @@ export const tools = {
       title: "tools.profile.change_skill_points.title",
       desc: "tools.profile.change_skill_points.desc",
       img: "images/skillPoint.jpg",
+      hidden: true,
       action: async () => {
         try {
           const res = await openModalMulti("tools.profile.change_skill_points.modalTextTitle", [
@@ -513,7 +514,7 @@ export const tools = {
       action: async () => {
         openModProfileManagerPage();
       },
-      disabled: true,
+      disabled: false,
     },
   ],
 
@@ -551,13 +552,14 @@ export const tools = {
       img: "images/themeChooser.png",
       action: async () => {
         try {
-          const currentTheme = localStorage.getItem("theme") || "dark";
+          const currentTheme = localStorage.getItem("theme") || "neon-red";
           
           // Internal values map
           const themeMap = {
             "label.label_color_theme_dark": "dark",
             "label.label_color_theme_light": "light",
-            "label.label_color_theme_neon": "neon"
+            "label.label_color_theme_neon": "neon",
+            "label.label_color_theme_neon_red": "neon-red"
           };
           
           // Reverse map to find key for current theme
@@ -579,7 +581,7 @@ export const tools = {
           const newTheme = themeMap[res.theme];
 
           if (newTheme) {
-            document.body.classList.remove("theme-dark", "theme-light", "theme-neon");
+            document.body.classList.remove("theme-dark", "theme-light", "theme-neon", "theme-neon-red");
             document.body.classList.add(`theme-${newTheme}`);
             localStorage.setItem("theme", newTheme);
             showToast("toasts.color_theme_success", { newTheme }, "success");

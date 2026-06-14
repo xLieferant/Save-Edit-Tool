@@ -2,10 +2,12 @@ use super::models::{
     AnalysisSources, AnalyzedError, AnalyzerLogPaths, AnalyzerOverview, CrashSummary,
     DiagnosticsContext, MissingReference, ModConflictAnalysisReport, SuspectedMod,
 };
-use crate::shared::current_profile::snapshot_resolved_save_context;
 use crate::shared::current_profile::ResolvedSaveContext;
+use crate::shared::current_profile::snapshot_resolved_save_context;
 use crate::shared::decrypt::decrypt_if_needed;
-use crate::shared::paths::{game_crash_path, game_log_path, game_sii_from_save, get_base_path, mod_directory_path};
+use crate::shared::paths::{
+    game_crash_path, game_log_path, game_sii_from_save, get_base_path, mod_directory_path,
+};
 use crate::shared::{logs, user_log};
 use crate::state::{AppProfileState, DecryptCache};
 use chrono::Local;
@@ -16,7 +18,7 @@ use std::collections::{BTreeSet, HashMap, HashSet};
 use std::fs;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
-use std::panic::{catch_unwind, AssertUnwindSafe};
+use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 use walkdir::WalkDir;
@@ -44,21 +46,17 @@ const ANALYZER_MAX_RENDER_ACTIVE_MODS: usize = 50;
 const ANALYZER_MAX_RENDER_LIMITATIONS: usize = 50;
 const ANALYZER_MAX_RENDER_UNREADABLE_MODS: usize = 50;
 
-static ACTIVE_MODS_RE: Lazy<Option<Regex>> = Lazy::new(|| {
-    Regex::new(r#"active_mods\[\d+\]:\s*"([^"]+)""#).ok()
-});
-static COMPATIBLE_VERSIONS_RE: Lazy<Option<Regex>> = Lazy::new(|| {
-    Regex::new(r#"compatible_versions\[\d+\]:\s*"([^"]+)""#).ok()
-});
-static DATA_PATH_RE: Lazy<Option<Regex>> = Lazy::new(|| {
-    Regex::new(r#"data_path:\s*"([^"]+)""#).ok()
-});
+static ACTIVE_MODS_RE: Lazy<Option<Regex>> =
+    Lazy::new(|| Regex::new(r#"active_mods\[\d+\]:\s*"([^"]+)""#).ok());
+static COMPATIBLE_VERSIONS_RE: Lazy<Option<Regex>> =
+    Lazy::new(|| Regex::new(r#"compatible_versions\[\d+\]:\s*"([^"]+)""#).ok());
+static DATA_PATH_RE: Lazy<Option<Regex>> =
+    Lazy::new(|| Regex::new(r#"data_path:\s*"([^"]+)""#).ok());
 static ASSET_RE: Lazy<Option<Regex>> = Lazy::new(|| {
     Regex::new(r#"([A-Za-z0-9_/\.-]+\.(?:sii|sui|pmd|pmg|mat|tobj|dds|ogg|bank|unit))"#).ok()
 });
-static WINDOWS_PATH_RE: Lazy<Option<Regex>> = Lazy::new(|| {
-    Regex::new(r#"([A-Za-z]:\\[^"\r\n]+)"#).ok()
-});
+static WINDOWS_PATH_RE: Lazy<Option<Regex>> =
+    Lazy::new(|| Regex::new(r#"([A-Za-z]:\\[^"\r\n]+)"#).ok());
 static ASSET_PREFIX_RE: Lazy<Option<Regex>> = Lazy::new(|| {
     Regex::new(r#"(/(?:def|vehicle|model|material|map|ui|sound|prefab)[^"\s]*)"#).ok()
 });
@@ -217,7 +215,11 @@ fn compile_regex(pattern: &str, context: &str) -> Option<Regex> {
     match Regex::new(pattern) {
         Ok(regex) => Some(regex),
         Err(error) => {
-            crate::dev_log!("[diagnostics] regex compile failed in {}: {}", context, error);
+            crate::dev_log!(
+                "[diagnostics] regex compile failed in {}: {}",
+                context,
+                error
+            );
             None
         }
     }
@@ -234,12 +236,18 @@ fn panic_message(payload: Box<dyn Any + Send>) -> String {
 }
 
 fn log_user_issue(message: &str) {
-    if let Err(error) = user_log::write_user_log(&format!("mod_conflict_analyzer | {}", message), "error") {
+    if let Err(error) =
+        user_log::write_user_log(&format!("mod_conflict_analyzer | {}", message), "error")
+    {
         crate::dev_log!("[diagnostics] user log write failed: {}", error);
     }
 }
 
-fn record_limitation(limitations: &mut Vec<String>, message: impl Into<String>, user_visible: bool) {
+fn record_limitation(
+    limitations: &mut Vec<String>,
+    message: impl Into<String>,
+    user_visible: bool,
+) {
     let message = message.into();
     crate::dev_log!("[diagnostics] limitation: {}", message);
     let _ = user_log::user_log_warn("ModAnalyzer", &message);
@@ -249,7 +257,10 @@ fn record_limitation(limitations: &mut Vec<String>, message: impl Into<String>, 
     limitations.push(message);
 }
 
-fn resolve_profile_sii_path(profile_path: Option<&str>, limitations: &mut Vec<String>) -> Option<PathBuf> {
+fn resolve_profile_sii_path(
+    profile_path: Option<&str>,
+    limitations: &mut Vec<String>,
+) -> Option<PathBuf> {
     let Some(profile_path) = profile_path else {
         record_limitation(
             limitations,
@@ -266,13 +277,19 @@ fn resolve_profile_sii_path(profile_path: Option<&str>, limitations: &mut Vec<St
 
     record_limitation(
         limitations,
-        format!("Profile path is invalid or missing `profile.sii`: {}", profile_path),
+        format!(
+            "Profile path is invalid or missing `profile.sii`: {}",
+            profile_path
+        ),
         false,
     );
     None
 }
 
-fn resolve_save_sii_path(save_path: Option<&str>, limitations: &mut Vec<String>) -> Option<PathBuf> {
+fn resolve_save_sii_path(
+    save_path: Option<&str>,
+    limitations: &mut Vec<String>,
+) -> Option<PathBuf> {
     let Some(save_path) = save_path else {
         record_limitation(
             limitations,
@@ -332,14 +349,27 @@ fn read_plain_text_tail_lossy(label: &str, path: &Path, max_bytes: u64) -> Resul
     })?;
     let file_len = file
         .metadata()
-        .map_err(|error| format!("plain_text_tail_metadata_failed | label={} | reason={}", label, error))?
+        .map_err(|error| {
+            format!(
+                "plain_text_tail_metadata_failed | label={} | reason={}",
+                label, error
+            )
+        })?
         .len();
     let start = file_len.saturating_sub(max_bytes);
-    file.seek(SeekFrom::Start(start))
-        .map_err(|error| format!("plain_text_tail_seek_failed | label={} | reason={}", label, error))?;
+    file.seek(SeekFrom::Start(start)).map_err(|error| {
+        format!(
+            "plain_text_tail_seek_failed | label={} | reason={}",
+            label, error
+        )
+    })?;
     let mut bytes = Vec::new();
-    file.read_to_end(&mut bytes)
-        .map_err(|error| format!("plain_text_tail_read_failed | label={} | reason={}", label, error))?;
+    file.read_to_end(&mut bytes).map_err(|error| {
+        format!(
+            "plain_text_tail_read_failed | label={} | reason={}",
+            label, error
+        )
+    })?;
 
     match String::from_utf8(bytes) {
         Ok(content) => Ok(content),
@@ -373,7 +403,11 @@ fn phase_end(label: &str, started_at: Instant, extra: &str) {
     }
 }
 
-fn mark_analysis_timed_out(limitations: &mut Vec<String>, timed_out: &mut bool, started_at: Instant) {
+fn mark_analysis_timed_out(
+    limitations: &mut Vec<String>,
+    timed_out: &mut bool,
+    started_at: Instant,
+) {
     if *timed_out {
         return;
     }
@@ -563,8 +597,7 @@ pub fn analyze_mod_conflict_diagnostics_from_snapshot(
         parse_game_log_started,
         &format!(
             "lines_scanned={} matches={}",
-            log_stats.lines_scanned,
-            log_stats.matches
+            log_stats.lines_scanned, log_stats.matches
         ),
     );
 
@@ -576,15 +609,16 @@ pub fn analyze_mod_conflict_diagnostics_from_snapshot(
     let (mut crash_errors, crash_stats) = game_crash
         .content
         .as_deref()
-        .map(|content| extract_crash_errors("game.crash.txt", content, relevant_log_line_limit(mode)))
+        .map(|content| {
+            extract_crash_errors("game.crash.txt", content, relevant_log_line_limit(mode))
+        })
         .unwrap_or_default();
     phase_end(
         "parse_crash_log_errors",
         parse_crash_log_started,
         &format!(
             "lines_scanned={} matches={}",
-            crash_stats.lines_scanned,
-            crash_stats.matches
+            crash_stats.lines_scanned, crash_stats.matches
         ),
     );
 
@@ -792,7 +826,11 @@ fn read_optional_text(
 
     if let Ok(cache) = decrypt_cache.files.lock() {
         if let Some(content) = cache.get(path).cloned() {
-            crate::dev_log!("[diagnostics] {} cache hit ({} chars)", label, content.len());
+            crate::dev_log!(
+                "[diagnostics] {} cache hit ({} chars)",
+                label,
+                content.len()
+            );
             return OptionalText {
                 content: Some(content),
                 found: true,
@@ -802,7 +840,9 @@ fn read_optional_text(
     }
 
     let result = match label {
-        "game.log.txt" | "game.crash.txt" => read_plain_text_tail_lossy(label, path, ANALYZER_LOG_TAIL_BYTES),
+        "game.log.txt" | "game.crash.txt" => {
+            read_plain_text_tail_lossy(label, path, ANALYZER_LOG_TAIL_BYTES)
+        }
         _ => decrypt_if_needed(path),
     };
 
@@ -1176,15 +1216,23 @@ fn score_candidate(
         reasons.push("Exact log path match found inside the indexed local mod.".to_string());
     } else if signals.partial_path_match {
         score += 35;
-        reasons.push("A path suffix or filename from the log matched a file inside the indexed local mod.".to_string());
+        reasons.push(
+            "A path suffix or filename from the log matched a file inside the indexed local mod."
+                .to_string(),
+        );
     }
 
     if signals.category_match {
         score += 25;
-        reasons.push("The mod category inferred from local files matches the extracted error category.".to_string());
+        reasons.push(
+            "The mod category inferred from local files matches the extracted error category."
+                .to_string(),
+        );
     }
 
-    if signals.active_match && (signals.exact_path_match || signals.partial_path_match || signals.category_match) {
+    if signals.active_match
+        && (signals.exact_path_match || signals.partial_path_match || signals.category_match)
+    {
         score += 20;
         reasons.push("The mod appears to be active in the current profile.".to_string());
     }
@@ -1196,12 +1244,15 @@ fn score_candidate(
 
     if signals.label_hint_match && signals.category_match {
         score += 10;
-        reasons.push("The manifest or file name also hints at the same problem category.".to_string());
+        reasons
+            .push("The manifest or file name also hints at the same problem category.".to_string());
     }
 
     if !indexed_mod.readable && indexed_mod.active_state == "Active" {
         score += 10;
-        reasons.push("The mod could not be indexed cleanly and also appears to be active.".to_string());
+        reasons.push(
+            "The mod could not be indexed cleanly and also appears to be active.".to_string(),
+        );
     }
 
     if active_mods_reliably_known
@@ -1209,7 +1260,10 @@ fn score_candidate(
         && (signals.exact_path_match || signals.partial_path_match || signals.category_match)
     {
         score -= 15;
-        reasons.push("The mod matched locally, but it does not appear in the current active mod list.".to_string());
+        reasons.push(
+            "The mod matched locally, but it does not appear in the current active mod list."
+                .to_string(),
+        );
     }
 
     if signals.exact_path_match || signals.partial_path_match {
@@ -1252,9 +1306,11 @@ fn build_crash_summary(errors: &[AnalyzedError], crash_log_found: bool) -> Crash
         .map(|item| item.0);
 
     let headline = if crash_log_found {
-        "game.crash.txt was found and correlated with the most recent relevant error chain.".to_string()
+        "game.crash.txt was found and correlated with the most recent relevant error chain."
+            .to_string()
     } else if error_count > 0 || warning_count > 0 {
-        "Relevant issues were extracted from game.log.txt, but no game.crash.txt was found.".to_string()
+        "Relevant issues were extracted from game.log.txt, but no game.crash.txt was found."
+            .to_string()
     } else {
         "No relevant crash pattern could be extracted from the available logs.".to_string()
     };
@@ -1406,7 +1462,10 @@ fn scan_installed_mods(
 
     let mut mods = Vec::new();
     let mut timed_out = false;
-    let entries = entries.flatten().take(ANALYZER_MAX_ROOT_ENTRIES).collect::<Vec<_>>();
+    let entries = entries
+        .flatten()
+        .take(ANALYZER_MAX_ROOT_ENTRIES)
+        .collect::<Vec<_>>();
     crate::dev_log!(
         "[diagnostics] scanning mod folder {} entries={}",
         mod_dir.display(),
@@ -1480,8 +1539,9 @@ fn scan_installed_mods(
             continue;
         }
 
-        let inspected =
-            catch_unwind(AssertUnwindSafe(|| inspect_installed_mod_entry(&path, is_archive == Some(true), started_at, mode)));
+        let inspected = catch_unwind(AssertUnwindSafe(|| {
+            inspect_installed_mod_entry(&path, is_archive == Some(true), started_at, mode)
+        }));
         match inspected {
             Ok(Ok(indexed_mod)) => mods.push(indexed_mod),
             Ok(Err(error)) => {
@@ -1492,7 +1552,11 @@ fn scan_installed_mods(
                 );
                 record_limitation(
                     limitations,
-                    format!("Could not fully index mod entry `{}`: {}", path.display(), error),
+                    format!(
+                        "Could not fully index mod entry `{}`: {}",
+                        path.display(),
+                        error
+                    ),
                     false,
                 );
                 crate::dev_log!(
@@ -1511,13 +1575,13 @@ fn scan_installed_mods(
                 );
                 record_limitation(
                     limitations,
-                    format!("A mod entry was skipped after an internal analyzer failure: {}", path.display()),
+                    format!(
+                        "A mod entry was skipped after an internal analyzer failure: {}",
+                        path.display()
+                    ),
                     false,
                 );
-                crate::dev_log!(
-                    "[diagnostics] panic caught in analyzer: {}",
-                    message
-                );
+                crate::dev_log!("[diagnostics] panic caught in analyzer: {}", message);
                 mods.push(fallback_indexed_mod(&path, false));
             }
         }
@@ -1550,7 +1614,10 @@ fn inspect_folder_mod_entry(
     let mut readable = true;
 
     let mut files_seen = 0usize;
-    for entry in WalkDir::new(path).follow_links(false).max_depth(ANALYZER_MAX_FOLDER_DEPTH) {
+    for entry in WalkDir::new(path)
+        .follow_links(false)
+        .max_depth(ANALYZER_MAX_FOLDER_DEPTH)
+    {
         if started_at.elapsed() > timeout {
             break;
         }
@@ -1558,7 +1625,11 @@ fn inspect_folder_mod_entry(
             Ok(value) => value,
             Err(error) => {
                 readable = false;
-                crate::dev_log!("[diagnostics] walkdir failed for {}: {}", path.display(), error);
+                crate::dev_log!(
+                    "[diagnostics] walkdir failed for {}: {}",
+                    path.display(),
+                    error
+                );
                 continue;
             }
         };
@@ -1600,7 +1671,11 @@ fn inspect_folder_mod_entry(
     ))
 }
 
-fn inspect_archive_mod_entry(path: &Path, started_at: Instant, mode: AnalysisMode) -> Result<IndexedMod, String> {
+fn inspect_archive_mod_entry(
+    path: &Path,
+    started_at: Instant,
+    mode: AnalysisMode,
+) -> Result<IndexedMod, String> {
     if mode == AnalysisMode::Light {
         crate::dev_log!(
             "[diagnostics] archive deep scan skipped path={} reason=auto_light_mode",
@@ -1638,7 +1713,9 @@ fn inspect_archive_mod_entry(path: &Path, started_at: Instant, mode: AnalysisMod
             manifest_present = true;
             if entry.size() <= ANALYZER_MAX_MANIFEST_BYTES {
                 let mut bytes = Vec::new();
-                entry.read_to_end(&mut bytes).map_err(|error| error.to_string())?;
+                entry
+                    .read_to_end(&mut bytes)
+                    .map_err(|error| error.to_string())?;
                 manifest_summary = parse_manifest_text(&String::from_utf8_lossy(&bytes));
             }
         }
@@ -1866,7 +1943,9 @@ fn build_mod_lookup_index(indexed_mods: &[IndexedMod]) -> ModLookupIndex {
                 .or_default()
                 .push(index);
         }
-        lookup.token_lookup.extend(indexed_mod.tokens.iter().cloned());
+        lookup
+            .token_lookup
+            .extend(indexed_mod.tokens.iter().cloned());
         for alias in [
             normalize_alias(&indexed_mod.name),
             normalize_alias(indexed_mod.package_name.as_deref().unwrap_or_default()),
@@ -1894,7 +1973,9 @@ fn parse_manifest_text(text: &str) -> ManifestSummary {
         .or_else(|| capture_manifest_value(text, "name"));
 
     let Some(compat_re) = COMPATIBLE_VERSIONS_RE.as_ref() else {
-        crate::dev_log!("[diagnostics] regex compile failed in parse_manifest_text.compatible_versions");
+        crate::dev_log!(
+            "[diagnostics] regex compile failed in parse_manifest_text.compatible_versions"
+        );
         return ManifestSummary {
             display_name,
             package_name,
@@ -1926,14 +2007,21 @@ fn capture_manifest_value(text: &str, key: &str) -> Option<String> {
         .map(|value| value.as_str().trim_matches('"').to_string())
 }
 
-fn extract_custom_save_references(save_content: &str, active_mods: &[ActiveModEntry]) -> Vec<String> {
+fn extract_custom_save_references(
+    save_content: &str,
+    active_mods: &[ActiveModEntry],
+) -> Vec<String> {
     let mut references = BTreeSet::new();
     let Some(data_path_re) = DATA_PATH_RE.as_ref() else {
-        crate::dev_log!("[diagnostics] regex compile failed in extract_custom_save_references.data_path");
+        crate::dev_log!(
+            "[diagnostics] regex compile failed in extract_custom_save_references.data_path"
+        );
         return Vec::new();
     };
     let Some(asset_re) = ASSET_RE.as_ref() else {
-        crate::dev_log!("[diagnostics] regex compile failed in extract_custom_save_references.asset_re");
+        crate::dev_log!(
+            "[diagnostics] regex compile failed in extract_custom_save_references.asset_re"
+        );
         return Vec::new();
     };
 
@@ -2053,21 +2141,31 @@ fn classify_error_severity(line: &str, crash_mode: bool) -> String {
     }
 
     let normalized = line.to_ascii_lowercase();
-    if contains_any(&normalized, &["<error", " error", "failed to open", "cannot load", "unknown unit", "unable to find"]) {
+    if contains_any(
+        &normalized,
+        &[
+            "<error",
+            " error",
+            "failed to open",
+            "cannot load",
+            "unknown unit",
+            "unable to find",
+        ],
+    ) {
         return "Error".to_string();
     }
-    if contains_any(&normalized, &["<warning", " warning", "invalid", "incorrect", "missing"]) {
+    if contains_any(
+        &normalized,
+        &["<warning", " warning", "invalid", "incorrect", "missing"],
+    ) {
         return "Warning".to_string();
     }
     "Info".to_string()
 }
 
 fn classify_error_category(line: &str, extracted_path: Option<&str>, crash_mode: bool) -> String {
-    let category = classify_path_category(
-        extracted_path.unwrap_or_default(),
-        Some(line),
-        crash_mode,
-    );
+    let category =
+        classify_path_category(extracted_path.unwrap_or_default(), Some(line), crash_mode);
     if category == "UnknownReference" && crash_mode {
         "CrashContext".to_string()
     } else {
@@ -2079,14 +2177,10 @@ fn classify_path_category(path: &str, line: Option<&str>, crash_mode: bool) -> S
     let normalized_path = path.to_ascii_lowercase();
     let normalized_line = line.unwrap_or_default().to_ascii_lowercase();
 
-    if normalized_path.contains("/def/vehicle/truck")
-        || normalized_line.contains("truck")
-    {
+    if normalized_path.contains("/def/vehicle/truck") || normalized_line.contains("truck") {
         return "TruckReference".to_string();
     }
-    if normalized_path.contains("/def/vehicle/trailer")
-        || normalized_line.contains("trailer")
-    {
+    if normalized_path.contains("/def/vehicle/trailer") || normalized_line.contains("trailer") {
         return "TrailerReference".to_string();
     }
     if normalized_path.contains("accessory") || normalized_line.contains("accessory") {
@@ -2101,7 +2195,10 @@ fn classify_path_category(path: &str, line: Option<&str>, crash_mode: bool) -> S
     if normalized_path.contains("/map/") || normalized_line.contains(" map") {
         return "MapReference".to_string();
     }
-    if normalized_path.ends_with(".mat") || normalized_path.contains("/material/") || normalized_line.contains("material") {
+    if normalized_path.ends_with(".mat")
+        || normalized_path.contains("/material/")
+        || normalized_line.contains("material")
+    {
         return "MaterialReference".to_string();
     }
     if normalized_path.ends_with(".dds")
@@ -2134,7 +2231,12 @@ fn classify_path_category(path: &str, line: Option<&str>, crash_mode: bool) -> S
     }
     if contains_any(
         &normalized_line,
-        &["failed to open", "unable to find", "cannot load", "can't load"],
+        &[
+            "failed to open",
+            "unable to find",
+            "cannot load",
+            "can't load",
+        ],
     ) {
         return "FileOpenError".to_string();
     }
@@ -2150,19 +2252,58 @@ fn classify_path_category(path: &str, line: Option<&str>, crash_mode: bool) -> S
 fn explanation_for_category(category: &str, path: Option<&str>, crash_mode: bool) -> String {
     let subject = path.unwrap_or("the referenced asset");
     match category {
-        "TruckReference" => format!("The logs point at truck-related content. Review truck definitions, owned truck mods and any truck upgrades that reference {}.", subject),
-        "TrailerReference" => format!("The logs point at trailer-related content. Review trailer definitions, cargo packs and trailer accessories linked to {}.", subject),
-        "AccessoryReference" => format!("The logs point at accessory content. Removed or outdated tuning and accessory mods often leave references like {} behind.", subject),
-        "CargoReference" => format!("The logs point at cargo-related content. Cargo packs and trailer economy mods should be checked for {}.", subject),
-        "MapReference" => format!("The logs point at map content. Broken load order or removed map packages can leave missing references such as {}.", subject),
-        "PrefabReference" => format!("The logs point at a prefab reference. Prefab issues are commonly tied to map mods or removed map dependencies such as {}.", subject),
-        "MaterialReference" => format!("The logs point at a material file. Visual, vehicle or map mods may be missing material resources like {}.", subject),
-        "TextureReference" => format!("The logs point at a texture resource. Texture, UI or visual mods should be checked for {}.", subject),
-        "UiReference" => format!("The logs point at UI content. Route advisor, HUD and UI mods should be checked for {}.", subject),
-        "SoundReference" => format!("The logs point at sound content. Sound packs and audio-related mods should be checked for {}.", subject),
-        "DefinitionReference" => format!("The logs point at a definition or unit file. Missing definitions such as {} often come from removed or incompatible mods.", subject),
-        "FileOpenError" => format!("The game could not open {}. That usually means the referenced asset is missing or unreadable.", subject),
-        "ParseError" => format!("The game reported invalid or incorrect data around {}. That often points to malformed definitions or incompatible mod data.", subject),
+        "TruckReference" => format!(
+            "The logs point at truck-related content. Review truck definitions, owned truck mods and any truck upgrades that reference {}.",
+            subject
+        ),
+        "TrailerReference" => format!(
+            "The logs point at trailer-related content. Review trailer definitions, cargo packs and trailer accessories linked to {}.",
+            subject
+        ),
+        "AccessoryReference" => format!(
+            "The logs point at accessory content. Removed or outdated tuning and accessory mods often leave references like {} behind.",
+            subject
+        ),
+        "CargoReference" => format!(
+            "The logs point at cargo-related content. Cargo packs and trailer economy mods should be checked for {}.",
+            subject
+        ),
+        "MapReference" => format!(
+            "The logs point at map content. Broken load order or removed map packages can leave missing references such as {}.",
+            subject
+        ),
+        "PrefabReference" => format!(
+            "The logs point at a prefab reference. Prefab issues are commonly tied to map mods or removed map dependencies such as {}.",
+            subject
+        ),
+        "MaterialReference" => format!(
+            "The logs point at a material file. Visual, vehicle or map mods may be missing material resources like {}.",
+            subject
+        ),
+        "TextureReference" => format!(
+            "The logs point at a texture resource. Texture, UI or visual mods should be checked for {}.",
+            subject
+        ),
+        "UiReference" => format!(
+            "The logs point at UI content. Route advisor, HUD and UI mods should be checked for {}.",
+            subject
+        ),
+        "SoundReference" => format!(
+            "The logs point at sound content. Sound packs and audio-related mods should be checked for {}.",
+            subject
+        ),
+        "DefinitionReference" => format!(
+            "The logs point at a definition or unit file. Missing definitions such as {} often come from removed or incompatible mods.",
+            subject
+        ),
+        "FileOpenError" => format!(
+            "The game could not open {}. That usually means the referenced asset is missing or unreadable.",
+            subject
+        ),
+        "ParseError" => format!(
+            "The game reported invalid or incorrect data around {}. That often points to malformed definitions or incompatible mod data.",
+            subject
+        ),
         "CrashContext" => {
             if crash_mode {
                 "This line comes directly from game.crash.txt and provides crash context, but not proof of a single culprit mod.".to_string()
@@ -2170,7 +2311,10 @@ fn explanation_for_category(category: &str, path: Option<&str>, crash_mode: bool
                 "This line contributes crash context but does not identify a single culprit on its own.".to_string()
             }
         }
-        _ => format!("The analyzer captured {} as a relevant reference, but could not classify it more precisely.", subject),
+        _ => format!(
+            "The analyzer captured {} as a relevant reference, but could not classify it more precisely.",
+            subject
+        ),
     }
 }
 
@@ -2232,10 +2376,24 @@ fn classify_label_hints(label: &str) -> BTreeSet<String> {
     if contains_any(&normalized, &["trailer", "krone", "schmitz"]) {
         hints.insert("TrailerReference".to_string());
     }
-    if contains_any(&normalized, &["truck", "scania", "volvo", "daf", "man", "kenworth", "peterbilt"]) {
+    if contains_any(
+        &normalized,
+        &[
+            "truck",
+            "scania",
+            "volvo",
+            "daf",
+            "man",
+            "kenworth",
+            "peterbilt",
+        ],
+    ) {
         hints.insert("TruckReference".to_string());
     }
-    if contains_any(&normalized, &["accessory", "tuning", "wheel", "interior", "paint"]) {
+    if contains_any(
+        &normalized,
+        &["accessory", "tuning", "wheel", "interior", "paint"],
+    ) {
         hints.insert("AccessoryReference".to_string());
     }
     hints

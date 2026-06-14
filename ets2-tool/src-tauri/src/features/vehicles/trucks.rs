@@ -1,9 +1,11 @@
-use super::{load_save_content, load_save_content_from_save_path, resolve_active_save_from_snapshot};
+use super::{
+    load_save_content, load_save_content_from_save_path, resolve_active_save_from_snapshot,
+};
 use crate::dev_log;
 use crate::models::trucks::ParsedTruck;
 use crate::shared::paths::game_sii_from_save;
-use crate::shared::trace::TraceScope;
 use crate::shared::sii_parser::{get_player_id, get_vehicle_ids, parse_trucks_from_sii};
+use crate::shared::trace::TraceScope;
 use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 use tauri::command;
 
@@ -110,8 +112,8 @@ pub async fn get_player_truck(
     let (trucks, base_truck) = tauri::async_runtime::spawn_blocking(move || {
         let (content, _) = load_save_content_from_save_path(&save_path, &decrypt_cache_cloned)?;
         let trucks = parse_trucks_from_sii(&content);
-        let player_id =
-            get_player_id(&content).ok_or("Player ID nicht im economy block gefunden".to_string())?;
+        let player_id = get_player_id(&content)
+            .ok_or("Player ID nicht im economy block gefunden".to_string())?;
         let (player_truck_id_opt, _) = get_vehicle_ids(&content, &player_id);
         let player_truck_id =
             player_truck_id_opt.ok_or("my_truck nicht im player block gefunden".to_string())?;

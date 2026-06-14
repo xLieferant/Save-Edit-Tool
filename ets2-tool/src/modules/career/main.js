@@ -1,5 +1,6 @@
 import { attachI18nToWindow, t, translateDocument } from "../shared/i18n.js";
 import { hasTauri, invoke, listen, safeInvoke } from "../shared/runtime.js";
+import { createAnalyticsController } from "../../js/analytics.js";
 
 const state = {
   overview: null,
@@ -36,6 +37,8 @@ const state = {
     tab: "market",
   },
 };
+
+let analyticsController = null;
 
 const FALLBACK_ROLES = [
   "owner",
@@ -2513,6 +2516,9 @@ async function refreshAllData() {
   await refreshManagementData();
   await refreshDispatcherData();
   renderAll();
+  if (analyticsController) {
+    await analyticsController.refresh();
+  }
 }
 
 async function handleUpdateUsername() {
@@ -2845,6 +2851,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   registerUserMenuHandlers();
   await initNavigation();
   registerActionHandlers();
+  analyticsController = createAnalyticsController();
+  await analyticsController.init();
 
   await refreshAllData();
   startRefreshLoop();

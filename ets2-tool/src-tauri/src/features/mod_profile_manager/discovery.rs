@@ -116,10 +116,7 @@ impl ScanContext {
             return false;
         }
         self.timed_out = true;
-        crate::dev_log!(
-            "[trace] MOD_SCAN timeout after_ms={}",
-            self.elapsed_ms()
-        );
+        crate::dev_log!("[trace] MOD_SCAN timeout after_ms={}", self.elapsed_ms());
         record_warning(
             warnings,
             format!(
@@ -259,7 +256,11 @@ pub fn scan_inventory_with_mode(
             local_mod_folder.display(),
             local_mod_folder.is_dir()
         );
-        scanned_mods.extend(scan_local_mods(local_mod_folder, &mut warnings, &mut scan_context));
+        scanned_mods.extend(scan_local_mods(
+            local_mod_folder,
+            &mut warnings,
+            &mut scan_context,
+        ));
     } else {
         crate::dev_log!(
             "[mod-profile-manager] local mod folder could not be resolved game={}",
@@ -296,8 +297,13 @@ pub fn scan_inventory_with_mode(
         selected_game: game,
         scan_mode: mode.as_str().to_string(),
         scan_timed_out: scan_context.timed_out,
-        local_mod_folder_path: local_mod_folder.as_ref().map(|path| path.display().to_string()),
-        local_mod_folder_found: local_mod_folder.as_ref().map(|path| path.is_dir()).unwrap_or(false),
+        local_mod_folder_path: local_mod_folder
+            .as_ref()
+            .map(|path| path.display().to_string()),
+        local_mod_folder_found: local_mod_folder
+            .as_ref()
+            .map(|path| path.is_dir())
+            .unwrap_or(false),
         steam_install_found: steam_discovery.steam_install_found,
         steam_library_paths: steam_discovery
             .libraries
@@ -346,7 +352,10 @@ pub fn scan_inventory_with_mode(
     })
 }
 
-fn resolve_game(profile_state: &AppProfileState, requested_game: Option<&str>) -> Result<GameType, String> {
+fn resolve_game(
+    profile_state: &AppProfileState,
+    requested_game: Option<&str>,
+) -> Result<GameType, String> {
     if let Some(game) = requested_game {
         return GameType::try_from(game);
     }
@@ -386,7 +395,11 @@ fn read_profile_content(profile_path: Option<&str>, warnings: &mut Vec<String>) 
         Err(error) => {
             record_warning(
                 warnings,
-                format!("Failed to read profile.sii at {}: {}", path.display(), error),
+                format!(
+                    "Failed to read profile.sii at {}: {}",
+                    path.display(),
+                    error
+                ),
             );
             None
         }
@@ -535,7 +548,8 @@ fn scan_workshop_mods(
                 continue;
             };
             let path = entry.path();
-            let workshop_id = extract_numeric_component(path.file_name().and_then(|value| value.to_str()));
+            let workshop_id =
+                extract_numeric_component(path.file_name().and_then(|value| value.to_str()));
             if path.is_dir() && workshop_id.is_some() {
                 mods.extend(scan_workshop_item_dir(
                     &path,
@@ -672,9 +686,21 @@ fn inspect_generic_entry(
     }
 
     let inspected = if is_archive {
-        inspect_archive_mod(path, source.clone(), workshop_id.clone(), app_id, scan_context)
+        inspect_archive_mod(
+            path,
+            source.clone(),
+            workshop_id.clone(),
+            app_id,
+            scan_context,
+        )
     } else {
-        inspect_folder_mod(path, source.clone(), workshop_id.clone(), app_id, scan_context)
+        inspect_folder_mod(
+            path,
+            source.clone(),
+            workshop_id.clone(),
+            app_id,
+            scan_context,
+        )
     };
 
     match inspected {
@@ -689,7 +715,13 @@ fn inspect_generic_entry(
                 warnings,
                 format!("Could not inspect {}: {}", path.display(), error),
             );
-            Some(fallback_mod(path, source, workshop_id, app_id, "unreadable"))
+            Some(fallback_mod(
+                path,
+                source,
+                workshop_id,
+                app_id,
+                "unreadable",
+            ))
         }
     }
 }
@@ -775,7 +807,11 @@ fn inspect_folder_mod(
         manifest_present,
         readable,
         indexed_paths,
-        if manifest_present { "ok" } else { "manifest_missing" },
+        if manifest_present {
+            "ok"
+        } else {
+            "manifest_missing"
+        },
     ))
 }
 
@@ -787,7 +823,8 @@ fn inspect_archive_mod(
     scan_context: &mut ScanContext,
 ) -> Result<ScannedMod, String> {
     let file = File::open(path).map_err(|error| format!("open failed: {}", error))?;
-    let mut archive = ZipArchive::new(file).map_err(|error| format!("zip read failed: {}", error))?;
+    let mut archive =
+        ZipArchive::new(file).map_err(|error| format!("zip read failed: {}", error))?;
     let mut indexed_paths = Vec::new();
     let mut manifest_metadata = ManifestMetadata::default();
     let mut manifest_present = false;
@@ -811,7 +848,8 @@ fn inspect_archive_mod(
             manifest_present = true;
             if entry.size() <= scan_context.mode.max_manifest_bytes() {
                 let mut bytes = Vec::new();
-                entry.read_to_end(&mut bytes)
+                entry
+                    .read_to_end(&mut bytes)
                     .map_err(|error| format!("manifest read failed: {}", error))?;
                 manifest_metadata = parse_manifest_text(&String::from_utf8_lossy(&bytes));
             }
@@ -830,7 +868,11 @@ fn inspect_archive_mod(
         manifest_present,
         true,
         indexed_paths,
-        if manifest_present { "ok" } else { "manifest_missing" },
+        if manifest_present {
+            "ok"
+        } else {
+            "manifest_missing"
+        },
     ))
 }
 
@@ -872,16 +914,16 @@ fn build_scanned_mod(
         &manifest_metadata.categories,
         &[
             name.clone(),
-            manifest_metadata
-                .package_name
-                .clone()
-                .unwrap_or_default(),
+            manifest_metadata.package_name.clone().unwrap_or_default(),
             manifest_metadata.description.clone().unwrap_or_default(),
         ],
     );
-    let workshop_url = workshop_id
-        .as_ref()
-        .map(|value| format!("https://steamcommunity.com/sharedfiles/filedetails/?id={}", value));
+    let workshop_url = workshop_id.as_ref().map(|value| {
+        format!(
+            "https://steamcommunity.com/sharedfiles/filedetails/?id={}",
+            value
+        )
+    });
 
     let mut match_tokens = tokenize_to_set(&name);
     match_tokens.extend(tokenize_to_set(&fallback_name));
@@ -960,7 +1002,11 @@ fn fallback_mod(
     )
 }
 
-fn invalid_workshop_item(item_dir: &Path, workshop_id: Option<String>, app_id: Option<&str>) -> ScannedMod {
+fn invalid_workshop_item(
+    item_dir: &Path,
+    workshop_id: Option<String>,
+    app_id: Option<&str>,
+) -> ScannedMod {
     let mut item = fallback_mod(
         item_dir,
         ModSource::SteamWorkshop,
@@ -975,7 +1021,11 @@ fn invalid_workshop_item(item_dir: &Path, workshop_id: Option<String>, app_id: O
     item
 }
 
-fn apply_active_state(mods: &mut [ScannedMod], active_mods: &[ActiveModEntry], active_mods_reliably_known: bool) {
+fn apply_active_state(
+    mods: &mut [ScannedMod],
+    active_mods: &[ActiveModEntry],
+    active_mods_reliably_known: bool,
+) {
     if !active_mods_reliably_known {
         apply_estimated_state(mods);
         return;
@@ -1057,7 +1107,10 @@ fn match_active_entry(scanned_mod: &ScannedMod, active_mod: &ActiveModEntry) -> 
     let mut score = 0;
 
     if same_normalized(&scanned_mod.mod_info.duplicate_key, &active_mod.identifier)
-        || same_normalized(&scanned_mod.mod_info.duplicate_key, &active_mod.display_name)
+        || same_normalized(
+            &scanned_mod.mod_info.duplicate_key,
+            &active_mod.display_name,
+        )
         || same_normalized(&scanned_mod.mod_info.duplicate_key, &active_mod.raw)
     {
         score += 90;
@@ -1085,8 +1138,17 @@ fn sort_scanned_mods(mods: &mut [ScannedMod]) {
             .mod_info
             .enabled
             .cmp(&left.mod_info.enabled)
-            .then_with(|| left.mod_info.load_order_index.cmp(&right.mod_info.load_order_index))
-            .then_with(|| left.mod_info.name.to_ascii_lowercase().cmp(&right.mod_info.name.to_ascii_lowercase()))
+            .then_with(|| {
+                left.mod_info
+                    .load_order_index
+                    .cmp(&right.mod_info.load_order_index)
+            })
+            .then_with(|| {
+                left.mod_info
+                    .name
+                    .to_ascii_lowercase()
+                    .cmp(&right.mod_info.name.to_ascii_lowercase())
+            })
     });
 }
 
@@ -1095,7 +1157,15 @@ fn looks_like_direct_mod_root(path: &Path) -> bool {
         return false;
     }
 
-    let markers = ["manifest.sii", "def", "map", "vehicle", "ui", "sound", "material"];
+    let markers = [
+        "manifest.sii",
+        "def",
+        "map",
+        "vehicle",
+        "ui",
+        "sound",
+        "material",
+    ];
     markers.iter().any(|marker| path.join(marker).exists())
         || fs::read_dir(path)
             .ok()
@@ -1131,7 +1201,9 @@ fn normalize_archive_path(path: &Path) -> String {
 }
 
 fn normalize_zip_name(path: &str) -> String {
-    path.trim_matches('/').replace('\\', "/").to_ascii_lowercase()
+    path.trim_matches('/')
+        .replace('\\', "/")
+        .to_ascii_lowercase()
 }
 
 fn build_duplicate_key(
@@ -1148,11 +1220,7 @@ fn build_duplicate_key(
             "workshop:{}:{}:{}",
             app_id,
             workshop_id,
-            normalize_token(
-                package_name
-                    .or(manifest_name)
-                    .unwrap_or(fallback_name)
-            )
+            normalize_token(package_name.or(manifest_name).unwrap_or(fallback_name))
         );
     }
 

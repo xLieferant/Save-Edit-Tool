@@ -13,8 +13,8 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
-use tauri::command;
 use tauri::State;
+use tauri::command;
 
 type CommandResult<T> = Result<T, CommandFailure>;
 const UNDO_SNAPSHOT_LABEL: &str = "Before last edit";
@@ -59,7 +59,12 @@ fn get_active_save_path(profile_state: &AppProfileState) -> CommandResult<PathBu
     let current_save = profile_state
         .current_save
         .lock()
-        .map_err(|_| failure("Savestatus konnte nicht gelesen werden.", "current_save lock poisoned"))?
+        .map_err(|_| {
+            failure(
+                "Savestatus konnte nicht gelesen werden.",
+                "current_save lock poisoned",
+            )
+        })?
         .clone();
     if let Some(save) = current_save {
         return Ok(game_sii_from_save(Path::new(&save)));
@@ -148,8 +153,8 @@ where
 }
 
 fn verify_contains(path: &Path, expected_fragment: &str, user_message: &str) -> CommandResult<()> {
-    let verify = fs::read_to_string(path)
-        .map_err(|error| failure(user_message, error.to_string()))?;
+    let verify =
+        fs::read_to_string(path).map_err(|error| failure(user_message, error.to_string()))?;
     if !verify.contains(expected_fragment) {
         return Err(failure(
             user_message,
@@ -194,7 +199,9 @@ struct ResolvedCustomResetValues {
     xp: Option<u64>,
 }
 
-fn active_selected_save_targets(profile_state: &AppProfileState) -> CommandResult<ActiveSaveTargets> {
+fn active_selected_save_targets(
+    profile_state: &AppProfileState,
+) -> CommandResult<ActiveSaveTargets> {
     let _profile = current_profile_path(profile_state)?;
     let save_dir = profile_state
         .current_save
@@ -237,7 +244,10 @@ fn resolve_custom_reset_values(
             if value < max_level && minimum_xp == 0 && next_increase == 0 {
                 return Err(failure(
                     "Invalid level value",
-                    format!("Level table does not expose progression data for level {}", value),
+                    format!(
+                        "Level table does not expose progression data for level {}",
+                        value
+                    ),
                 ));
             }
             Some(value)
@@ -272,7 +282,9 @@ fn replace_numeric_fields(
 
     for field in fields {
         let pattern = Regex::new(&format!(r"(?m)^(\s*){}:\s*-?\d+", regex::escape(field)))
-            .map_err(|error| failure(user_message, format!("{} regex invalid: {}", field, error)))?;
+            .map_err(|error| {
+                failure(user_message, format!("{} regex invalid: {}", field, error))
+            })?;
         if pattern.is_match(&updated) {
             updated = pattern
                 .replace_all(&updated, format!("${{1}}{}: {}", field, value))
@@ -284,7 +296,11 @@ fn replace_numeric_fields(
     if !replaced {
         return Err(failure(
             user_message,
-            format!("{} missing expected fields: {}", technical_context, fields.join(", ")),
+            format!(
+                "{} missing expected fields: {}",
+                technical_context,
+                fields.join(", ")
+            ),
         ));
     }
 
@@ -382,9 +398,7 @@ fn invalidate_custom_reset_caches(
 }
 
 #[command]
-pub fn get_undo_status(
-    profile_state: State<'_, AppProfileState>,
-) -> Result<UndoStatusDto, String> {
+pub fn get_undo_status(profile_state: State<'_, AppProfileState>) -> Result<UndoStatusDto, String> {
     let mut trace = TraceScope::new("get_undo_status");
     let has_selected_save = profile_state
         .current_save
@@ -522,19 +536,28 @@ pub fn apply_custom_reset_values(
         error.user_message
     })?;
 
-    dev_log!("[trace] WRITE_SAVE_FILE path={}", targets.game_sii_path.display());
+    dev_log!(
+        "[trace] WRITE_SAVE_FILE path={}",
+        targets.game_sii_path.display()
+    );
     write_save_text(&targets.game_sii_path, &updated_game).map_err(|error| {
         trace.finish_error(&error.user_message);
         error.user_message
     })?;
 
-    dev_log!("[trace] WRITE_SAVE_FILE path={}", targets.info_sii_path.display());
+    dev_log!(
+        "[trace] WRITE_SAVE_FILE path={}",
+        targets.info_sii_path.display()
+    );
     write_save_text(&targets.info_sii_path, &updated_info).map_err(|error| {
         trace.finish_error(&error.user_message);
         error.user_message
     })?;
 
-    dev_log!("[trace] INVALIDATE_CACHE save={}", targets.save_dir.display());
+    dev_log!(
+        "[trace] INVALIDATE_CACHE save={}",
+        targets.save_dir.display()
+    );
     invalidate_custom_reset_caches(profile_cache.inner(), decrypt_cache.inner(), &targets);
     let _ = logging_service::record_info(
         "safe_value_reset",
@@ -603,19 +626,27 @@ pub fn undo_last_save_change(
         .extra
         .insert("undoBackupId".to_string(), latest_undo.backup_id.clone());
 
-    let storage_dir = backup_service::get_backup_storage_dir(&latest_undo.backup_id).map_err(|error| {
-        trace.finish_error(&error);
-        error
-    })?;
-    dev_log!("[trace] RESTORE_UNDO_SNAPSHOT path={}", storage_dir.display());
-
-    let execution = backup_service::restore_backup(profile_state.inner(), &latest_undo.backup_id, true)
-        .map_err(|error| {
+    let storage_dir =
+        backup_service::get_backup_storage_dir(&latest_undo.backup_id).map_err(|error| {
             trace.finish_error(&error);
             error
         })?;
+    dev_log!(
+        "[trace] RESTORE_UNDO_SNAPSHOT path={}",
+        storage_dir.display()
+    );
 
-    dev_log!("[trace] INVALIDATE_CACHE save={}", targets.save_dir.display());
+    let execution =
+        backup_service::restore_backup(profile_state.inner(), &latest_undo.backup_id, true)
+            .map_err(|error| {
+                trace.finish_error(&error);
+                error
+            })?;
+
+    dev_log!(
+        "[trace] INVALIDATE_CACHE save={}",
+        targets.save_dir.display()
+    );
     for path in &execution.touched_paths {
         decrypt_cache.invalidate_path(path);
     }

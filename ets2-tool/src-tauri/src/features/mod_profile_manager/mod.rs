@@ -1,8 +1,12 @@
-pub mod commands;
 mod category_detector;
+pub mod commands;
 mod compare;
 mod discovery;
+mod launcher;
 mod manifest_reader;
 pub mod models;
 mod presets;
+mod sandbox;
+mod sii_mods;
 mod steam_paths;
+mod workshop_api;

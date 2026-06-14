@@ -5,8 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title data-translate="career_mode.title">Career Mode Dashboard</title>
     <link rel="stylesheet" href="/styles/career.css" />
+    <link rel="stylesheet" href="/styles/analytics.css" />
   </head>
   <body class="career-page">
+    <script>
+      const savedTheme = localStorage.getItem("theme") || "neon";
+      document.body.classList.remove("theme-dark", "theme-light", "theme-neon", "theme-neon-red");
+      document.body.classList.add(`theme-${savedTheme}`);
+    </script>
     <input id="careerNavToggle" class="career-nav-toggle" type="checkbox" />
     <header class="career-topbar">
       <div class="career-brand">
@@ -160,6 +166,7 @@
           <button class="career-nav-btn" data-panel="fleet" data-translate="career.nav.fleet">Fleet</button>
           <button class="career-nav-btn" data-panel="company" data-translate="career.nav.company">My Company</button>
           <button class="career-nav-btn" data-panel="statistics" data-translate="career.nav.statistics">Statistics</button>
+          <button class="career-nav-btn" data-panel="analytics" data-translate="career.nav.analytics">Analytics</button>
           <button class="career-nav-btn" data-panel="settings" data-translate="career.nav.settings">Settings</button>
         </nav>
       </aside>
@@ -851,6 +858,167 @@
           <div class="career-widget">
             <h3 data-translate="career_mode.statistics_chart">Chart Placeholder</h3>
             <div id="cmChartBars" class="career-chart-bars"></div>
+          </div>
+        </section>
+
+        <section id="panel-analytics" class="career-panel">
+          <div class="career-panel-head">
+            <h2 data-translate="career.nav.analytics">Analytics</h2>
+            <p data-translate="career_mode.analytics.summary_text">Job analytics, partial save imports and local tracking exports.</p>
+          </div>
+
+          <div class="analytics-toolbar">
+            <div class="analytics-toolbar-actions">
+              <button id="analyticsRefreshBtn" class="career-topbar-btn" type="button" aria-label="" data-translate="career_mode.refresh" data-translate-aria-label="career_mode.analytics.aria.refresh_button">Refresh</button>
+              <button id="analyticsExportBtn" class="career-action-btn" type="button" aria-label="" data-translate="career_mode.analytics.export" data-translate-aria-label="career_mode.analytics.aria.export_button">Excel exportieren</button>
+              <button id="analyticsScanBtn" class="career-topbar-btn" type="button" aria-label="" data-translate="career_mode.analytics.scan_save_data" data-translate-aria-label="career_mode.analytics.aria.scan_button">Save-Daten analysieren</button>
+              <button id="analyticsEnableTrackingBtn" class="career-topbar-btn" type="button" aria-label="" data-translate="career_mode.analytics.enable_tracking" data-translate-aria-label="career_mode.analytics.aria.enable_tracking_button">Tracking aktivieren</button>
+            </div>
+          </div>
+
+          <p class="analytics-note" data-translate="career_mode.analytics.note">
+            Hinweis: ETS2/ATS speichern nicht zwingend eine vollständige historische Auftragsliste. Das Tool importiert nur Daten, die im Save/Profil noch vorhanden sind. Für vollständiges Tracking werden neue Aufträge ab Aktivierung des Trackings in der lokalen Datenbank protokolliert.
+          </p>
+          <p id="analyticsDataHint" class="analytics-partial-note"></p>
+          <p id="analyticsLocalHint" class="analytics-local-hint"></p>
+
+          <div id="analyticsSourcePills" class="analytics-source-pills" aria-label="" data-translate-aria-label="career_mode.analytics.aria.source_summary"></div>
+          <div id="analyticsSummaryGrid" class="analytics-summary-grid" aria-label="" data-translate-aria-label="career_mode.analytics.aria.summary_cards"></div>
+
+          <div class="career-form-grid analytics-filter-grid">
+            <label class="career-field">
+              <span data-translate="career_mode.analytics.filters.from">Von</span>
+              <input id="analyticsFilterFrom" type="date" />
+            </label>
+            <label class="career-field">
+              <span data-translate="career_mode.analytics.filters.to">Bis</span>
+              <input id="analyticsFilterTo" type="date" />
+            </label>
+            <label class="career-field">
+              <span data-translate="career_mode.analytics.filters.profile">Profil</span>
+              <select id="analyticsFilterProfile">
+                <option value="all" data-translate="career_mode.analytics.filters.all">Alle</option>
+              </select>
+            </label>
+            <label class="career-field">
+              <span data-translate="career_mode.analytics.filters.game">Game</span>
+              <select id="analyticsFilterGame">
+                <option value="all" data-translate="career_mode.analytics.filters.all">Alle</option>
+                <option value="ETS2">ETS2</option>
+                <option value="ATS">ATS</option>
+              </select>
+            </label>
+            <label class="career-field">
+              <span data-translate="career_mode.analytics.filters.status">Status</span>
+              <select id="analyticsFilterStatus">
+                <option value="all" data-translate="career_mode.analytics.filters.all">Alle</option>
+                <option value="completed" data-translate="career_mode.analytics.status.completed">abgeschlossen</option>
+                <option value="active" data-translate="career_mode.analytics.status.active">aktiv</option>
+                <option value="failed" data-translate="career_mode.analytics.status.failed">fehlgeschlagen</option>
+                <option value="cancelled" data-translate="career_mode.analytics.status.cancelled">abgebrochen</option>
+                <option value="unknown" data-translate="career_mode.analytics.status.unknown">unbekannt</option>
+              </select>
+            </label>
+            <label class="career-field">
+              <span data-translate="career_mode.analytics.filters.cargo">Fracht</span>
+              <input id="analyticsFilterCargo" type="text" data-translate-placeholder="career_mode.analytics.filters.cargo_placeholder" placeholder="Fracht suchen" />
+            </label>
+            <label class="career-field">
+              <span data-translate="career_mode.analytics.filters.source_city">Start-Stadt</span>
+              <select id="analyticsFilterSourceCity">
+                <option value="all" data-translate="career_mode.analytics.filters.all">Alle</option>
+              </select>
+            </label>
+            <label class="career-field">
+              <span data-translate="career_mode.analytics.filters.destination_city">Ziel-Stadt</span>
+              <select id="analyticsFilterDestinationCity">
+                <option value="all" data-translate="career_mode.analytics.filters.all">Alle</option>
+              </select>
+            </label>
+            <div class="analytics-filter-actions">
+              <button id="analyticsApplyBtn" class="career-action-btn" type="button" data-translate="career_mode.analytics.apply_filters">Filter anwenden</button>
+              <button id="analyticsResetBtn" class="career-topbar-btn" type="button" data-translate="career_mode.analytics.reset_filters">Filter zurücksetzen</button>
+            </div>
+          </div>
+
+          <div id="analyticsLoading" class="analytics-empty-state" hidden>
+            <strong data-translate="career_mode.analytics.loading_title">Analytics werden geladen</strong>
+            <p data-translate="career_mode.analytics.loading_body">Job-Historie, Diagramme und Filteroptionen werden aus der lokalen Datenbank aufgebaut.</p>
+          </div>
+
+          <div id="analyticsError" class="analytics-empty-state" hidden>
+            <strong data-translate="career_mode.analytics.error_title">Analytics konnten nicht geladen werden</strong>
+            <p id="analyticsErrorText"></p>
+          </div>
+
+          <div id="analyticsEmpty" class="analytics-empty-state" hidden>
+            <strong data-translate="career_mode.analytics.empty.title">Noch keine Auftragsdaten vorhanden.</strong>
+            <p data-translate="career_mode.analytics.empty.body">Das Tool kann vorhandene Save-Daten analysieren, sofern diese Informationen im Profil gespeichert sind. Für vollständiges Tracking werden neue Aufträge ab jetzt automatisch in der lokalen Datenbank protokolliert.</p>
+            <div class="analytics-empty-actions">
+              <button class="career-action-btn" type="button" id="analyticsEmptyScanBtn" data-translate="career_mode.analytics.scan_save_data">Save-Daten analysieren</button>
+              <button class="career-topbar-btn" type="button" id="analyticsEmptyEnableBtn" data-translate="career_mode.analytics.enable_tracking">Tracking aktivieren</button>
+            </div>
+          </div>
+
+          <div id="analyticsContent" hidden>
+            <div class="analytics-grid">
+              <section class="analytics-card">
+                <h3 data-translate="career_mode.analytics.charts.revenue_over_time">Umsatz über Zeit</h3>
+                <div id="analyticsRevenueChart" class="analytics-chart-list"></div>
+              </section>
+              <section class="analytics-card">
+                <h3 data-translate="career_mode.analytics.charts.profit_over_time">Gewinn über Zeit</h3>
+                <div id="analyticsProfitChart" class="analytics-chart-list"></div>
+              </section>
+              <section class="analytics-card">
+                <h3 data-translate="career_mode.analytics.charts.jobs_per_day">Aufträge pro Tag</h3>
+                <div id="analyticsJobsChart" class="analytics-chart-list"></div>
+              </section>
+              <section class="analytics-card">
+                <h3 data-translate="career_mode.analytics.charts.top_cargo">Top Frachten</h3>
+                <div id="analyticsCargoChart" class="analytics-chart-list"></div>
+              </section>
+              <section class="analytics-card">
+                <h3 data-translate="career_mode.analytics.charts.top_routes">Top Routen</h3>
+                <div id="analyticsRoutesChart" class="analytics-chart-list"></div>
+              </section>
+              <section class="analytics-card">
+                <h3 data-translate="career_mode.analytics.charts.damage_cost">Schaden/Kosten-Analyse</h3>
+                <div id="analyticsDamageChart" class="analytics-chart-list"></div>
+              </section>
+            </div>
+
+            <div class="analytics-table-wrap career-table-wrap">
+              <table class="analytics-table" aria-label="" data-translate-aria-label="career_mode.analytics.aria.job_history_table">
+                <thead>
+                  <tr>
+                    <th data-translate="career_mode.analytics.table.date">Datum</th>
+                    <th data-translate="career_mode.analytics.table.profile">Spielprofil</th>
+                    <th data-translate="career_mode.analytics.table.game">Game</th>
+                    <th data-translate="career_mode.analytics.table.job_uid">Auftrag-ID</th>
+                    <th data-translate="career_mode.analytics.table.status">Status</th>
+                    <th data-translate="career_mode.analytics.table.cargo">Fracht</th>
+                    <th data-translate="career_mode.analytics.table.source_city">Start-Stadt</th>
+                    <th data-translate="career_mode.analytics.table.destination_city">Ziel-Stadt</th>
+                    <th data-translate="career_mode.analytics.table.source_company">Firma Start</th>
+                    <th data-translate="career_mode.analytics.table.destination_company">Firma Ziel</th>
+                    <th data-translate="career_mode.analytics.table.distance">Distanz</th>
+                    <th data-translate="career_mode.analytics.table.revenue">Umsatz</th>
+                    <th data-translate="career_mode.analytics.table.costs">Kosten</th>
+                    <th data-translate="career_mode.analytics.table.damage">Schaden</th>
+                    <th data-translate="career_mode.analytics.table.penalties">Strafe</th>
+                    <th data-translate="career_mode.analytics.table.profit">Gewinn</th>
+                    <th data-translate="career_mode.analytics.table.xp">XP</th>
+                    <th data-translate="career_mode.analytics.table.level">Level</th>
+                    <th data-translate="career_mode.analytics.table.truck">Truck</th>
+                    <th data-translate="career_mode.analytics.table.trailer">Trailer</th>
+                    <th data-translate="career_mode.analytics.table.driven_with_truck">Gefahren mit Truck</th>
+                    <th data-translate="career_mode.analytics.table.source">Quelle</th>
+                  </tr>
+                </thead>
+                <tbody id="analyticsHistoryBody"></tbody>
+              </table>
+            </div>
           </div>
         </section>
 

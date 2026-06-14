@@ -358,6 +358,12 @@ async function translateUI() {
     const key = el.getAttribute("data-translate-placeholder");
     el.setAttribute("placeholder", await t(key));
   }
+
+  const ariaLabels = document.querySelectorAll("[data-translate-aria-label]");
+  for (const el of ariaLabels) {
+    const key = el.getAttribute("data-translate-aria-label");
+    el.setAttribute("aria-label", await t(key));
+  }
 }
 
 window.t = t;
@@ -1896,7 +1902,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           "career.settings.title",
           "career.settings.summary",
           buildDetailCards([
-            { label: await t("career.settings.theme"), value: localStorage.getItem("theme") || "neon" },
+            { label: await t("career.settings.theme"), value: localStorage.getItem("theme") || "neon-red" },
             { label: await t("career.settings.language"), value: careerUi.systemControlled },
             { label: await t("career.settings.modules"), value: careerUi.modulesValue },
           ])
@@ -2987,11 +2993,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const openColorSchemeModal = async () => {
     try {
-      const currentTheme = localStorage.getItem("theme") || "dark";
+      const currentTheme = localStorage.getItem("theme") || "neon-red";
       const themeMap = {
         "label.label_color_theme_dark": "dark",
         "label.label_color_theme_light": "light",
         "label.label_color_theme_neon": "neon",
+        "label.label_color_theme_neon_red": "neon-red",
       };
       const currentKey =
         Object.keys(themeMap).find((key) => themeMap[key] === currentTheme) || "label.label_color_theme_dark";
@@ -3007,7 +3014,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (!res) return;
       const newTheme = themeMap[res.theme];
       if (newTheme) {
-        document.body.classList.remove("theme-dark", "theme-light", "theme-neon");
+        document.body.classList.remove("theme-dark", "theme-light", "theme-neon", "theme-neon-red");
         document.body.classList.add(`theme-${newTheme}`);
         localStorage.setItem("theme", newTheme);
         window.showToast("toasts.color_theme_success", { newTheme }, "success");

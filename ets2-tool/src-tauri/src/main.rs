@@ -20,7 +20,8 @@ mod xp;
 fn main() {
     std::panic::set_hook(Box::new(|info| {
         crate::shared::logs::write_log(format!("[panic] {}", info));
-        let _ = crate::shared::user_log::user_log_error("App", format!("Application panic: {}", info));
+        let _ =
+            crate::shared::user_log::user_log_error("App", format!("Application panic: {}", info));
     }));
     crate::dev_log!("[app] starting");
     let _ = crate::shared::user_log::user_log_info("App", "Application start");
@@ -60,6 +61,12 @@ fn main() {
             let auth = app.state::<AuthState>();
             crate::dev_log!("[app] setup begin");
             let _ = crate::shared::user_log::user_log_info("App", "App setup started");
+
+            crate::dev_log!("[app] setup initialize translator");
+            match features::language::translator::initialize_translator(&handle) {
+                Ok(()) => crate::dev_log!("[language] translator initialized"),
+                Err(error) => crate::dev_log!("[language] translator init failed: {}", error),
+            }
 
             let db_path = db::sqlite::app_db_path();
             crate::dev_log!("[app] setup init db: {}", db_path.display());
@@ -246,6 +253,32 @@ fn main() {
             features::mod_profile_manager::commands::delete_mod_preset,
             features::mod_profile_manager::commands::select_manual_workshop_directory,
             features::mod_profile_manager::commands::clear_manual_workshop_directory,
+            features::mod_profile_manager::commands::fetch_workshop_mod,
+            features::mod_profile_manager::commands::load_mod_sandboxes,
+            features::mod_profile_manager::commands::save_mod_sandboxes,
+            features::mod_profile_manager::commands::create_mod_sandbox,
+            features::mod_profile_manager::commands::delete_mod_sandbox,
+            features::mod_profile_manager::commands::add_mod_to_sandbox,
+            features::mod_profile_manager::commands::upsert_sandbox_preset,
+            features::mod_profile_manager::commands::upsert_test_sandbox_preset,
+            features::mod_profile_manager::commands::remove_mod_from_sandbox,
+            features::mod_profile_manager::commands::toggle_mod_in_sandbox,
+            features::mod_profile_manager::commands::apply_sandbox_to_active_profile,
+            features::mod_profile_manager::commands::open_steam_console,
+            features::mod_profile_manager::commands::open_workshop_page,
+            features::mod_profile_manager::commands::open_workshop_subscribe_page,
+            features::mod_profile_manager::commands::open_sandbox_mod_workshop_page,
+            features::mod_profile_manager::commands::open_sandbox_mod_in_steam,
+            features::mod_profile_manager::commands::check_workshop_mod_downloaded,
+            features::mod_profile_manager::commands::check_workshop_mod_download_status,
+            features::mod_profile_manager::commands::check_workshop_mods_download_status,
+            features::mod_profile_manager::commands::scan_steam_workshop_mods,
+            features::mod_profile_manager::commands::load_steam_workshop_mod_cache,
+            features::mod_profile_manager::commands::refresh_workshop_mod_cache,
+            features::mod_profile_manager::commands::check_workshop_mod_available,
+            features::mod_profile_manager::commands::load_sandbox_mod_presets,
+            features::mod_profile_manager::commands::check_sandbox_preset_mods,
+            features::mod_profile_manager::commands::activate_sandbox_mod_preset,
             // Vehicles and trailers
             features::vehicles::trucks::get_all_trucks,
             features::vehicles::trucks::get_player_truck,
@@ -296,6 +329,10 @@ fn main() {
             features::career::commands::career_get_active_job,
             features::career::commands::career_get_job_log,
             features::career::commands::career_get_job_stats,
+            features::career::commands::career_get_analytics_summary,
+            features::career::commands::career_get_analytics_job_history,
+            features::career::commands::career_scan_profile_job_history,
+            features::career::commands::career_export_analytics_csv,
             features::career::commands::career_list_trips,
             features::career::commands::career_generate_jobs,
             features::career::commands::career_accept_job,

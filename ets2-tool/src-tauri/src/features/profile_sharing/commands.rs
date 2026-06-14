@@ -46,7 +46,11 @@ pub fn inspect_shared_profile_archive(
     profile_name_override: Option<String>,
     profile_state: State<'_, AppProfileState>,
 ) -> Result<ProfileShareImportPreview, String> {
-    service::inspect_shared_profile_archive(&archive_path, profile_name_override, profile_state.inner())
+    service::inspect_shared_profile_archive(
+        &archive_path,
+        profile_name_override,
+        profile_state.inner(),
+    )
 }
 
 #[tauri::command]
