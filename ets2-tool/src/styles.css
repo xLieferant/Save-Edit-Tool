@@ -12177,126 +12177,821 @@ body.mode-career.theme-neon-red {
 }
 
 /* =========================================================
-   Tool stage scroll fix
+   Final viewport, workspace and modal scroll architecture
    ========================================================= */
 
-.save-tool-stage {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  max-height: 100%;
+:root {
+  --app-viewport-height: 100dvh;
+  --modal-viewport-gap: clamp(10px, 2vmin, 24px);
+  --modal-max-height: calc(100dvh - (var(--modal-viewport-gap) * 2));
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
   overflow: hidden;
 }
 
-.save-stage-head {
-  flex: 0 0 auto;
+body {
+  overscroll-behavior: none;
 }
 
-.tool-stage-shell {
+#app,
+.app-shell {
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  height: var(--app-viewport-height);
+  max-height: var(--app-viewport-height);
+  overflow: hidden;
+}
+
+body.mode-editor {
+  --editor-sidebar-width: clamp(320px, 23vw, 376px);
+  --editor-bottom-tabs-height: 72px;
+}
+
+body.mode-editor .app-shell,
+body.mode-editor.diagnostics-page-body .app-shell,
+body.mode-editor.mod-profile-page-body .app-shell,
+body.mode-editor.profile-share-page-body .app-shell {
+  display: flex;
+  flex-direction: column;
+  padding: clamp(10px, 1.2vw, 16px);
+  gap: clamp(8px, 1vw, 14px);
+}
+
+body.mode-editor .command-header {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+body.mode-editor .workspace-shell {
+  display: flex;
   flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  height: auto;
+  overflow: hidden;
+  align-items: stretch;
+}
+
+body.mode-editor .editor-sidebar {
+  display: flex;
+  flex: 0 0 var(--editor-sidebar-width);
+  flex-direction: column;
+  width: var(--editor-sidebar-width);
+  min-width: min(300px, 36vw);
+  max-width: 376px;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
+  align-self: stretch;
+}
+
+body.mode-editor .editor-sidebar-scroll {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
-  padding-right: 8px;
-  padding-bottom: 96px;
+  scrollbar-gutter: stable;
+  padding: clamp(10px, 1.1vw, 14px);
+  gap: clamp(8px, 1vw, 12px);
+  -webkit-mask-image: none;
+  mask-image: none;
 }
 
-#tool-container {
-  min-height: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 16px;
-  align-content: start;
-}
-
-.tool-card {
+body.mode-editor .workspace-main {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
   min-width: 0;
+  min-height: 0;
+  height: auto;
+  overflow-x: hidden !important;
+  overflow-y: hidden !important;
+  position: relative;
+  padding: clamp(14px, 1.6vw, 26px);
 }
 
-/* =========================================================
-   Parent scroll chain fix
-   ========================================================= */
-
-.workspace-shell,
-.workspace-main,
-.save-editor-view,
-.save-editor-shell,
-.save-content-scroll,
-.editor-main,
-.editor-content {
+body.mode-editor .workspace-view,
+body.mode-editor .workspace-view.is-active,
+body.mode-editor .save-editor-view.workspace-view.is-active,
+body.mode-editor .save-editor-shell {
+  min-width: 0;
   min-height: 0;
 }
 
-.workspace-main,
-.save-editor-view,
-.save-editor-shell {
-  overflow: hidden;
+body.mode-editor .workspace-view.is-active,
+body.mode-editor .save-editor-view.workspace-view.is-active,
+body.mode-editor .save-editor-shell {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow-x: hidden !important;
+  overflow-y: hidden !important;
 }
 
-.save-content-scroll,
-.editor-main,
-.editor-content {
+body.mode-editor .save-content-scroll {
+  display: grid;
+  flex: 1 1 auto;
+  align-content: start;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  max-width: 1680px;
+  margin: 0 auto;
+  gap: clamp(10px, 1.2vw, 18px);
+  padding: 0 4px max(92px, calc(var(--editor-bottom-tabs-height) + 28px)) 0;
   overflow-y: auto;
   overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  -webkit-mask-image: none;
+  mask-image: none;
 }
 
-/* =========================================================
-   Global modal scroll fix
-   ========================================================= */
+body.mode-editor .save-hero {
+  grid-template-columns: minmax(0, 1.5fr) minmax(240px, 0.7fr);
+  gap: clamp(12px, 1.2vw, 18px);
+  padding: clamp(14px, 1.5vw, 22px) clamp(16px, 1.7vw, 24px);
+  border-radius: var(--editor-radius-xl, var(--radius-xl));
+}
 
+body.mode-editor .save-hero-copy {
+  gap: clamp(8px, 0.9vw, 12px);
+}
+
+body.mode-editor .save-hero-copy h1 {
+  max-width: 760px;
+  font-size: clamp(26px, 2.4vw, 40px);
+  line-height: 1.04;
+}
+
+body.mode-editor .save-hero-copy p,
+body.mode-editor .save-warning-card p,
+body.mode-editor .save-stage-head p {
+  font-size: clamp(12px, 0.9vw, 14px);
+  line-height: 1.45;
+}
+
+body.mode-editor .save-hero-actions {
+  gap: clamp(7px, 0.8vw, 10px);
+  margin-top: 0;
+}
+
+body.mode-editor .save-hero-actions > *,
+body.mode-editor .editor-bottom-tabs .nav-btn {
+  min-height: clamp(36px, 4.5vh, 42px);
+}
+
+body.mode-editor .save-warning-card {
+  padding: clamp(12px, 1.2vw, 16px);
+  border-radius: var(--editor-radius-lg, var(--radius-lg));
+}
+
+body.mode-editor .save-warning-card h2,
+body.mode-editor .save-stage-head h2 {
+  font-size: clamp(17px, 1.35vw, 22px);
+  line-height: 1.18;
+}
+
+body.mode-editor .save-overview-grid {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: clamp(8px, 0.9vw, 12px);
+}
+
+body.mode-editor .overview-card {
+  min-height: 0;
+  padding: clamp(10px, 1vw, 16px);
+  gap: 7px;
+}
+
+body.mode-editor .overview-card strong {
+  min-width: 0;
+  font-size: clamp(18px, 1.45vw, 26px);
+  line-height: 1.12;
+  overflow-wrap: anywhere;
+}
+
+body.mode-editor .save-tool-stage {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
+  padding: clamp(12px, 1.3vw, 18px);
+  gap: clamp(10px, 1.1vw, 16px);
+}
+
+body.mode-editor .save-stage-head {
+  flex: 0 0 auto;
+  grid-template-columns: minmax(220px, 0.85fr) minmax(260px, 1.15fr);
+  align-items: start;
+  gap: clamp(10px, 1.1vw, 16px);
+}
+
+body.mode-editor .tool-stage-shell {
+  flex: 0 0 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow: visible;
+  padding: 0;
+}
+
+body.mode-editor #tool-container {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(226px, 1fr));
+  gap: clamp(10px, 1.1vw, 16px);
+  align-content: start;
+  padding: 0;
+}
+
+body.mode-editor .tool-card {
+  min-width: 0;
+  min-height: clamp(248px, 26vw, 340px);
+  max-height: none;
+}
+
+body.mode-editor .tool-card img {
+  max-height: clamp(92px, 11vw, 132px);
+}
+
+body.mode-editor .tool-content {
+  gap: clamp(8px, 0.8vw, 10px);
+  padding: clamp(12px, 1vw, 14px);
+}
+
+body.mode-editor .tool-content h3 {
+  font-size: clamp(16px, 1.25vw, 20px);
+  line-height: 1.18;
+  overflow-wrap: anywhere;
+}
+
+body.mode-editor .tool-content p,
+body.mode-editor .modal-description,
+body.mode-editor .share-panel-copy,
+body.mode-editor .sandbox-preset-description,
+body.mode-editor .sandbox-preset-hint {
+  overflow-wrap: anywhere;
+}
+
+body.mode-editor .tool-content p {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
+body.mode-editor .modal-backdrop,
+body.mode-editor .dialog-backdrop,
+body.mode-editor .settings-backdrop,
+body.mode-editor .overlay,
+body.mode-editor .modal-overlay,
 .modal-backdrop,
 .dialog-backdrop,
 .settings-backdrop,
 .overlay,
 .modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 9999;
-  align-items: flex-start;
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: var(--app-viewport-height) !important;
+  max-height: var(--app-viewport-height) !important;
+  align-items: center;
   justify-content: center;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 24px;
-  box-sizing: border-box;
+  padding: var(--modal-viewport-gap) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
   overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
 }
 
+body.mode-editor .modal-box,
+body.mode-editor .modal-panel,
+body.mode-editor .dialog,
+body.mode-editor .settings-modal,
+body.mode-editor .language-modal,
 .modal-box,
 .modal-panel,
 .dialog,
 .settings-modal,
 .language-modal {
-  width: min(960px, calc(100vw - 48px));
-  max-width: calc(100vw - 48px);
-  max-height: calc(100dvh - 48px);
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
+  display: flex !important;
+  flex-direction: column !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  width: min(620px, calc(100vw - (var(--modal-viewport-gap) * 2))) !important;
+  max-width: calc(100vw - (var(--modal-viewport-gap) * 2)) !important;
+  max-height: var(--modal-max-height) !important;
+  height: auto !important;
+  overflow: hidden !important;
   box-sizing: border-box;
+  -webkit-mask-image: none;
+  mask-image: none;
 }
 
+body.mode-editor .modal-box {
+  padding: 0;
+  gap: 0;
+}
+
+body.mode-editor .modal-box--sheet,
+body.mode-editor .modal-box--safe-reset,
+.modal-box--sheet,
+.modal-box--safe-reset {
+  width: min(760px, calc(100vw - (var(--modal-viewport-gap) * 2))) !important;
+}
+
+body.mode-editor .modal-box--xl,
+body.mode-editor .modal-box--wiki,
+body.mode-editor .modal-box--level,
+body.mode-editor .modal-box--recovery,
+body.mode-editor .modal-box--user-logs,
+body.mode-editor .mod-profile-manager-modal,
+body.mode-editor .sandbox-preset-details-modal,
+.modal-box--xl,
+.modal-box--wiki,
+.modal-box--level,
+.modal-box--recovery,
+.modal-box--user-logs,
+.mod-profile-manager-modal,
+.sandbox-preset-details-modal {
+  width: min(1080px, calc(100vw - (var(--modal-viewport-gap) * 2))) !important;
+}
+
+body.mode-editor .modal-box--skilltree,
+.modal-box--skilltree {
+  width: min(1240px, calc(100vw - (var(--modal-viewport-gap) * 2))) !important;
+}
+
+body.mode-editor .modal-box--share,
+.modal-box--share {
+  width: min(1280px, calc(100vw - (var(--modal-viewport-gap) * 2))) !important;
+}
+
+body.mode-editor .modal-box > h2,
+body.mode-editor .detail-modal-head,
+body.mode-editor .wiki-modal-head,
+body.mode-editor .modal-header,
+body.mode-editor .dialog-header,
+body.mode-editor .settings-modal-header,
 .modal-header,
 .dialog-header,
 .settings-modal-header {
+  flex: 0 0 auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+}
+
+body.mode-editor .modal-box > h2,
+body.mode-editor .detail-modal-head,
+body.mode-editor .wiki-modal-head {
+  padding: clamp(14px, 1.5vw, 18px) clamp(16px, 1.7vw, 20px) clamp(11px, 1.2vw, 14px);
+}
+
+body.mode-editor .detail-modal-head {
+  gap: clamp(10px, 1.2vw, 16px);
+}
+
+body.mode-editor .modal-description {
+  max-width: 72ch;
+  margin-bottom: 0;
+  font-size: clamp(12px, 0.9vw, 13px);
+  line-height: 1.45;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+body.mode-editor .modal-body,
+body.mode-editor .dialog-body,
+body.mode-editor .settings-modal-body,
+body.mode-editor .language-modal-body,
+body.mode-editor .modal-scroll,
+body.mode-editor .dialog-scroll,
+body.mode-editor .modal-content-scroll,
+body.mode-editor .level-system-scroll,
+body.mode-editor .recovery-modal-scroll,
+body.mode-editor .diagnostics-modal-scroll,
+body.mode-editor .share-modal-scroll,
+body.mode-editor .skilltree-modal-root,
+body.mode-editor .save-reset-modal-shell,
+body.mode-editor .sandbox-details-scroll,
+body.mode-editor .mod-profile-manager-body,
+body.mode-editor .mod-profile-scroll,
+body.mode-editor #modalMultiContent,
+body.mode-editor #modalTruckInfoContent,
+body.mode-editor #restorePreviewModalContent,
+body.mode-editor .user-logs-viewer-shell,
+.modal-body,
+.dialog-body,
+.settings-modal-body,
+.language-modal-body {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
+}
+
+body.mode-editor #modalTextInput,
+body.mode-editor #modalNumberInput,
+body.mode-editor #modalSlider .toggle-switch--modal,
+body.mode-editor #modalClone > .modal-box > p,
+body.mode-editor #modalClone > .modal-box > input,
+body.mode-editor #cloneValidationMsg,
+body.mode-editor #modalMultiContent {
+  margin-top: clamp(14px, 1.4vw, 18px);
+}
+
+body.mode-editor #modalMultiContent,
+body.mode-editor .clone-options,
+body.mode-editor .save-reset-modal-shell,
+body.mode-editor .sandbox-details-scroll,
+body.mode-editor .mod-profile-manager-body,
+body.mode-editor .mod-profile-scroll {
+  display: grid;
+  align-content: start;
+  gap: clamp(10px, 1vw, 14px);
+}
+
+body.mode-editor .level-system-scroll,
+body.mode-editor .recovery-modal-scroll,
+body.mode-editor .diagnostics-modal-scroll,
+body.mode-editor .share-modal-scroll,
+body.mode-editor .skilltree-modal-root,
+body.mode-editor .sandbox-details-scroll,
+body.mode-editor .mod-profile-manager-body,
+body.mode-editor .mod-profile-scroll {
+  padding: clamp(12px, 1.3vw, 16px) clamp(12px, 1.3vw, 18px);
+}
+
+body.mode-editor #modalLevelSystem .level-system-scroll {
+  display: grid !important;
+  align-content: start !important;
+  gap: clamp(12px, 1.3vw, 18px);
+}
+
+body.mode-editor .modal-actions,
+body.mode-editor .dialog-footer,
+body.mode-editor .settings-modal-footer,
+body.mode-editor .modal-footer,
+.modal-footer,
+.dialog-footer,
+.settings-modal-footer {
+  flex: 0 0 auto !important;
+  position: static !important;
+  inset: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  z-index: auto !important;
+}
+
+body.mode-editor .modal-actions {
+  margin-top: auto;
+  padding: clamp(12px, 1.3vw, 16px) clamp(16px, 1.7vw, 20px);
+  gap: clamp(8px, 1vw, 12px);
+}
+
+body.mode-editor .modal-actions button {
+  min-width: min(150px, 100%);
+  min-height: clamp(38px, 4.5vh, 44px);
+}
+
+body.mode-editor .modal-box--user-logs .user-logs-meta-grid,
+body.mode-editor .modal-box--user-logs .user-logs-toolbar {
+  flex: 0 1 auto;
+  min-height: 0;
+}
+
+body.mode-editor .modal-box--user-logs .user-logs-viewer-shell {
+  flex: 1 1 auto !important;
+  min-height: clamp(96px, 22svh, 220px) !important;
+  overflow: hidden !important;
+}
+
+body.mode-editor .modal-box--user-logs .user-logs-viewer {
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: auto !important;
+}
+
+body.mode-editor.mod-profile-page-body .app-shell,
+body.mode-editor.profile-share-page-body .app-shell,
+body.mode-editor.diagnostics-page-body .app-shell {
+  padding: clamp(10px, 1.4vw, 18px);
+}
+
+body.mode-editor .mod-profile-page-frame,
+body.mode-editor .profile-share-page-frame,
+body.mode-editor .diagnostics-page-frame {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
+  padding: clamp(16px, 2vw, 28px);
+  gap: clamp(12px, 1.5vw, 20px);
+}
+
+body.mode-editor .mod-profile-page-topbar,
+body.mode-editor .profile-share-page-topbar,
+body.mode-editor .diagnostics-page-topbar,
+body.mode-editor .mod-profile-page-frame > .detail-modal-head,
+body.mode-editor .profile-share-page-frame > .detail-modal-head,
+body.mode-editor .diagnostics-page-frame > .detail-modal-head,
+body.mode-editor .profile-share-page-frame > .modal-actions {
   flex: 0 0 auto;
 }
 
-.modal-body,
-.modal-content,
-.dialog-content,
-.settings-modal-body,
-.language-modal-body {
+body.mode-editor .mod-profile-page-frame .mod-profile-scroll,
+body.mode-editor .profile-share-page-frame .share-modal-scroll,
+body.mode-editor .diagnostics-page-frame .diagnostics-modal-scroll {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  overscroll-behavior: contain;
 }
 
-.modal-footer,
-.dialog-footer,
-.settings-modal-footer {
-  flex: 0 0 auto;
+.detail-card-value,
+.picker-value,
+.share-path,
+.share-selection-display,
+.sandbox-details-grid strong,
+.sandbox-mods-table td,
+.mod-profile-list,
+.mod-profile-source-list {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1366px), (max-height: 760px) {
+  body.mode-editor {
+    --editor-sidebar-width: clamp(286px, 24vw, 330px);
+    --editor-bottom-tabs-height: 64px;
+    --modal-viewport-gap: 10px;
+  }
+
+  body.mode-editor .app-shell {
+    padding: 8px;
+    gap: 8px;
+  }
+
+  body.mode-editor .command-header {
+    padding: 8px 12px;
+  }
+
+  body.mode-editor .workspace-main {
+    padding: 10px 14px;
+  }
+
+  body.mode-editor .editor-sidebar-scroll {
+    padding: 9px;
+    gap: 8px;
+  }
+
+  body.mode-editor .editor-sidebar-block {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  body.mode-editor .editor-session-panel {
+    --picker-control-min-height: 70px;
+    --picker-control-padding: 12px 13px;
+    --picker-control-gap: 10px;
+    --picker-item-min-height: 48px;
+    --picker-item-padding: 11px 12px;
+  }
+
+  body.mode-editor .save-content-scroll {
+    gap: 10px;
+    padding-bottom: max(84px, calc(var(--editor-bottom-tabs-height) + 22px));
+  }
+
+  body.mode-editor .save-hero {
+    grid-template-columns: minmax(0, 1fr) minmax(210px, 0.58fr);
+    padding: 12px 14px;
+    gap: 10px;
+  }
+
+  body.mode-editor .save-hero-copy {
+    gap: 7px;
+  }
+
+  body.mode-editor .save-hero-copy h1 {
+    font-size: clamp(22px, 2vw, 30px);
+  }
+
+  body.mode-editor .save-hero-copy p,
+  body.mode-editor .save-warning-card p,
+  body.mode-editor .modal-description,
+  body.mode-editor .tool-content p {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  body.mode-editor .save-hero-actions {
+    gap: 7px;
+  }
+
+  body.mode-editor .save-hero-actions > * {
+    min-height: 34px;
+    padding: 7px 10px;
+  }
+
+  body.mode-editor .save-warning-card {
+    padding: 10px 11px;
+  }
+
+  body.mode-editor .save-warning-card h2,
+  body.mode-editor .save-stage-head h2 {
+    font-size: clamp(16px, 1.25vw, 19px);
+  }
+
+  body.mode-editor .save-overview-grid {
+    grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+    gap: 8px;
+  }
+
+  body.mode-editor .overview-card {
+    padding: 9px 10px;
+  }
+
+  body.mode-editor .overview-label {
+    font-size: 10px;
+  }
+
+  body.mode-editor .overview-card strong {
+    font-size: clamp(16px, 1.2vw, 21px);
+  }
+
+  body.mode-editor .save-tool-stage {
+    padding: 10px;
+    gap: 10px;
+  }
+
+  body.mode-editor .save-stage-head {
+    grid-template-columns: minmax(0, 0.75fr) minmax(220px, 1.25fr);
+    gap: 10px;
+  }
+
+  body.mode-editor #tool-container {
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 10px;
+  }
+
+  body.mode-editor .tool-card {
+    min-height: 226px;
+  }
+
+  body.mode-editor .tool-card img {
+    max-height: 92px;
+  }
+
+  body.mode-editor .tool-content {
+    padding: 10px;
+    gap: 7px;
+  }
+
+  body.mode-editor .tool-content h3 {
+    font-size: 16px;
+  }
+
+  body.mode-editor .modal-box > h2,
+  body.mode-editor .detail-modal-head,
+  body.mode-editor .wiki-modal-head {
+    padding: 12px 14px 10px;
+  }
+
+  body.mode-editor .modal-actions {
+    padding: 10px 14px 12px;
+  }
+
+  body.mode-editor .modal-box--user-logs .user-logs-meta-grid {
+    gap: 8px;
+  }
+
+  body.mode-editor .modal-box--user-logs .user-logs-meta-card {
+    padding: 9px 10px;
+    gap: 5px;
+  }
+
+  body.mode-editor .modal-box--user-logs .user-logs-toolbar {
+    gap: 8px;
+  }
+
+  body.mode-editor .modal-box--user-logs .user-logs-filter,
+  body.mode-editor .modal-box--user-logs .user-logs-toolbar__actions .secondary-action {
+    min-height: 34px;
+    padding: 0 10px;
+  }
+
+  body.mode-editor .level-system-scroll,
+  body.mode-editor .recovery-modal-scroll,
+  body.mode-editor .diagnostics-modal-scroll,
+  body.mode-editor .share-modal-scroll,
+  body.mode-editor .skilltree-modal-root,
+  body.mode-editor .sandbox-details-scroll,
+  body.mode-editor .mod-profile-manager-body,
+  body.mode-editor .mod-profile-scroll {
+    padding: 10px 12px;
+  }
+}
+
+@media (max-height: 720px) {
+  body.mode-editor {
+    --modal-viewport-gap: 8px;
+  }
+
+  body.mode-editor .modal-backdrop,
+  .modal-backdrop,
+  .dialog-backdrop,
+  .settings-backdrop,
+  .overlay,
+  .modal-overlay {
+    align-items: flex-start !important;
+  }
+
+  body.mode-editor .modal-box,
+  body.mode-editor .modal-panel,
+  body.mode-editor .dialog,
+  body.mode-editor .settings-modal,
+  body.mode-editor .language-modal,
+  .modal-box,
+  .modal-panel,
+  .dialog,
+  .settings-modal,
+  .language-modal {
+    max-height: calc(100dvh - 16px) !important;
+  }
+}
+
+@media (max-width: 980px) {
+  body.mode-editor .workspace-shell {
+    display: block;
+  }
+
+  body.mode-editor .editor-sidebar {
+    position: fixed;
+    top: 8px;
+    bottom: 8px;
+    left: 8px;
+    z-index: 60;
+    width: min(390px, calc(100vw - 16px));
+    max-width: none;
+    height: auto;
+    transform: translateX(calc(-100% - 16px));
+  }
+
+  body.mode-editor #appNavToggle:checked ~ .workspace-shell .editor-sidebar {
+    transform: translateX(0);
+  }
+
+  body.mode-editor .workspace-main {
+    height: 100%;
+    padding: 12px;
+  }
+
+  body.mode-editor .save-hero,
+  body.mode-editor .save-stage-head {
+    grid-template-columns: 1fr;
+  }
+
+  body.mode-editor .save-warning-card {
+    align-content: start;
+  }
+}
+
+@media (min-width: 1800px) and (min-height: 1000px) {
+  body.mode-editor .save-content-scroll {
+    max-width: 1760px;
+    gap: 20px;
+  }
+
+  body.mode-editor #tool-container {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  }
 }
