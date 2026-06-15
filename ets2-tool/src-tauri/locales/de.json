@@ -2013,6 +2013,7 @@
           "ready": "Das Preset kann in den aktiven Save geschrieben werden.",
           "activating": "Das Preset wird gerade geschrieben und verifiziert.",
           "no_mods_configured": "Noch keine Mods konfiguriert.",
+          "optional_does_not_block": "[NEEDS TRANSLATION] Optional, does not block activation",
           "missing_install": "Diese Mod ist lokal nicht installiert. Öffne die Steam-Workshop-Seite, abonniere die Mod, warte bis Steam den Download abgeschlossen hat und klicke dann erneut auf Mods prüfen."
         },
         "mod_status": {
@@ -2046,6 +2047,8 @@
           "check_failed_message": "Die Preset-Prüfung konnte nicht abgeschlossen werden.",
           "mod_missing_title": "Mod nicht gefunden",
           "mod_missing_message": "Mindestens eine erforderliche Steam Workshop Mod wurde lokal nicht gefunden.",
+          "optional_missing_title": "[NEEDS TRANSLATION] Optional mod missing",
+          "optional_missing_message": "[NEEDS TRANSLATION] Optional mod missing: {name}. Preset can still be activated.",
           "save_failed_title": "Speichern fehlgeschlagen",
           "save_failed_message": "Die Save-Datei konnte nicht erfolgreich geschrieben werden.",
           "verification_failed_title": "Verifizierung fehlgeschlagen",

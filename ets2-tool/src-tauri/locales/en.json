@@ -2030,7 +2030,8 @@
                               "ready": "The preset is ready to be written to the active save.",
                               "activating": "The preset is currently being written and verified.",
                               "no_mods_configured": "No mods configured yet.",
-                              "missing_install": "This mod is not installed locally. Open the Steam Workshop page, subscribe to the mod, wait for Steam to finish downloading it, then click Check Mods again."
+                              "missing_install": "This mod is not installed locally. Open the Steam Workshop page, subscribe to the mod, wait for Steam to finish downloading it, then click Check Mods again.",
+                              "optional_does_not_block": "Optional, does not block activation"
                         },
                         "mod_status": {
                               "available": "Available",
@@ -2063,6 +2064,8 @@
                               "check_failed_message": "The preset check could not be completed.",
                               "mod_missing_title": "Mod not found",
                               "mod_missing_message": "At least one required Steam Workshop mod is missing locally.",
+                              "optional_missing_title": "Optional mod missing",
+                              "optional_missing_message": "Optional mod missing: {name}. Preset can still be activated.",
                               "save_failed_title": "Saving failed",
                               "save_failed_message": "The save file could not be written successfully.",
                               "verification_failed_title": "Verification failed",

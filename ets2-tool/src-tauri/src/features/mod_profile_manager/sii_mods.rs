@@ -83,9 +83,9 @@ pub fn replace_active_preset_mods_in_game_sii(
     let economy_regex =
         Regex::new(r"(?s)(economy\s*:\s*[^{]+\{\r?\n)(?P<body>.*?)(?P<close>\r?\n\})")
             .map_err(|error| error.to_string())?;
-    let captures = economy_regex
-        .captures(game_sii_content)
-        .ok_or_else(|| "No economy block found in game.sii.".to_string())?;
+    let captures = economy_regex.captures(game_sii_content).ok_or_else(|| {
+        "Could not find a safe insert position for active_mods in game.sii.".to_string()
+    })?;
     let full_match = captures
         .get(0)
         .ok_or_else(|| "No economy block match found.".to_string())?;
@@ -107,12 +107,10 @@ pub fn replace_active_preset_mods_in_game_sii(
         "\n"
     };
     let existing = parse_active_mod_sections(body)?;
-    if !existing.section_present {
-        return Err("No active_mods/actived_mods block found in game.sii.".to_string());
-    }
+    let block_created = !existing.section_present;
     let workshop_ref_prefix = detect_workshop_ref_prefix(&existing.actual_mod_refs);
     let expected_mod_refs = build_expected_mod_refs(workshop_mod_ids, workshop_ref_prefix)?;
-    let preferred_field_name = existing.field_name.clone();
+    let preferred_field_name = "active_mods".to_string();
     let count_regex = active_mod_count_regex()?;
     let entry_regex = active_mod_entry_regex()?;
     let mut prefix = String::new();
@@ -164,6 +162,7 @@ pub fn replace_active_preset_mods_in_game_sii(
     );
     let new_block = new_block_lines.join(newline);
     let new_body = if found_active_mod_section {
+        crate::dev_log!("[SandboxPreset] active_mods existing block found=true");
         let mut composed = String::new();
         composed.push_str(&prefix);
         if !composed.is_empty() && !composed.ends_with('\n') {
@@ -178,10 +177,25 @@ pub fn replace_active_preset_mods_in_game_sii(
         }
         composed
     } else if body.trim().is_empty() {
+        crate::dev_log!("[SandboxPreset] active_mods block not found, inserting new block");
+        crate::dev_log!(
+            "[SandboxPreset] insert position found at byte={}",
+            full_match.start() + header.len()
+        );
         new_block
     } else if body.ends_with('\n') {
+        crate::dev_log!("[SandboxPreset] active_mods block not found, inserting new block");
+        crate::dev_log!(
+            "[SandboxPreset] insert position found at byte={}",
+            full_match.start() + header.len() + body.len()
+        );
         format!("{body}{new_block}")
     } else {
+        crate::dev_log!("[SandboxPreset] active_mods block not found, inserting new block");
+        crate::dev_log!(
+            "[SandboxPreset] insert position found at byte={}",
+            full_match.start() + header.len() + body.len()
+        );
         format!("{body}{newline}{new_block}")
     };
 
@@ -194,6 +208,146 @@ pub fn replace_active_preset_mods_in_game_sii(
         removed_mod_count,
         written_mod_count: expected_mod_refs.len(),
         expected_mod_refs,
+        block_created,
+    })
+}
+
+pub fn replace_active_preset_mod_values_in_game_sii(
+    game_sii_content: &str,
+    active_mod_values: &[String],
+) -> Result<ReplaceActivePresetModsResult, String> {
+    if !looks_like_decoded_sii(game_sii_content) {
+        return Err("game.sii does not look like decoded UTF-8 SII content.".to_string());
+    }
+
+    let economy_regex =
+        Regex::new(r"(?s)(economy\s*:\s*[^{]+\{\r?\n)(?P<body>.*?)(?P<close>\r?\n\})")
+            .map_err(|error| error.to_string())?;
+    let captures = economy_regex.captures(game_sii_content).ok_or_else(|| {
+        "Could not find a safe insert position for active_mods in game.sii.".to_string()
+    })?;
+    let full_match = captures
+        .get(0)
+        .ok_or_else(|| "No economy block match found.".to_string())?;
+    let header = captures
+        .get(1)
+        .ok_or_else(|| "No economy block header found.".to_string())?
+        .as_str();
+    let body = captures
+        .name("body")
+        .ok_or_else(|| "No economy block body found.".to_string())?
+        .as_str();
+    let close = captures
+        .name("close")
+        .ok_or_else(|| "No economy block close found.".to_string())?
+        .as_str();
+    let newline = if game_sii_content.contains("\r\n") {
+        "\r\n"
+    } else {
+        "\n"
+    };
+    let existing = parse_active_mod_sections(body)?;
+    let block_created = !existing.section_present;
+    let expected_mod_refs = active_mod_values.to_vec();
+    let preferred_field_name = "active_mods".to_string();
+    let count_regex = active_mod_count_regex()?;
+    let entry_regex = active_mod_entry_regex()?;
+    let mut prefix = String::new();
+    let mut suffix = String::new();
+    let mut found_active_mod_section = false;
+    let mut removed_mod_count = 0usize;
+    let mut indent = None::<String>;
+
+    for raw_line in body.split_inclusive('\n') {
+        let (line_content, _) = split_line_ending(raw_line);
+        let count_match = count_regex.captures(line_content);
+        let entry_match = entry_regex.captures(line_content);
+        let is_active_mod_line = count_match.is_some() || entry_match.is_some();
+
+        if is_active_mod_line {
+            found_active_mod_section = true;
+            if indent.is_none() {
+                indent = count_match
+                    .as_ref()
+                    .and_then(|captures| captures.get(1))
+                    .or_else(|| entry_match.as_ref().and_then(|captures| captures.get(1)))
+                    .map(|match_| match_.as_str().to_string());
+            }
+            if entry_match.is_some() {
+                removed_mod_count += 1;
+            }
+            continue;
+        }
+
+        if found_active_mod_section {
+            suffix.push_str(raw_line);
+        } else {
+            prefix.push_str(raw_line);
+        }
+    }
+
+    let indent = indent.unwrap_or_else(|| infer_body_indent(body));
+    let mut new_block_lines = vec![format!(
+        "{indent}{preferred_field_name}: {}",
+        expected_mod_refs.len()
+    )];
+    new_block_lines.extend(
+        expected_mod_refs
+            .iter()
+            .enumerate()
+            .map(|(index, mod_ref)| {
+                format!("{indent}{preferred_field_name}[{index}]: \"{mod_ref}\"")
+            }),
+    );
+    let new_block = new_block_lines.join(newline);
+    let new_body = if found_active_mod_section {
+        crate::dev_log!("[SandboxPreset] active_mods existing block found=true");
+        let mut composed = String::new();
+        composed.push_str(&prefix);
+        if !composed.is_empty() && !composed.ends_with('\n') {
+            composed.push_str(newline);
+        }
+        composed.push_str(&new_block);
+        if !suffix.is_empty() {
+            if !composed.ends_with('\n') {
+                composed.push_str(newline);
+            }
+            composed.push_str(&suffix);
+        }
+        composed
+    } else if body.trim().is_empty() {
+        crate::dev_log!("[SandboxPreset] active_mods block not found, inserting new block");
+        crate::dev_log!(
+            "[SandboxPreset] insert position found at byte={}",
+            full_match.start() + header.len()
+        );
+        new_block
+    } else if body.ends_with('\n') {
+        crate::dev_log!("[SandboxPreset] active_mods block not found, inserting new block");
+        crate::dev_log!(
+            "[SandboxPreset] insert position found at byte={}",
+            full_match.start() + header.len() + body.len()
+        );
+        format!("{body}{new_block}")
+    } else {
+        crate::dev_log!("[SandboxPreset] active_mods block not found, inserting new block");
+        crate::dev_log!(
+            "[SandboxPreset] insert position found at byte={}",
+            full_match.start() + header.len() + body.len()
+        );
+        format!("{body}{newline}{new_block}")
+    };
+
+    let replacement = format!("{header}{new_body}{close}");
+    let mut output = game_sii_content.to_string();
+    output.replace_range(full_match.start()..full_match.end(), &replacement);
+
+    Ok(ReplaceActivePresetModsResult {
+        content: output,
+        removed_mod_count,
+        written_mod_count: expected_mod_refs.len(),
+        expected_mod_refs,
+        block_created,
     })
 }
 
@@ -212,6 +366,54 @@ pub fn validate_active_preset_mods_in_game_sii(
     let workshop_ref_prefix = detect_workshop_ref_prefix(&parsed.actual_mod_refs);
     let expected_mod_refs =
         build_expected_mod_refs(expected_workshop_mod_ids, workshop_ref_prefix)?;
+    let order_matches = parsed.actual_indices
+        == (0..parsed.actual_mod_refs.len()).collect::<Vec<_>>()
+        && expected_mod_refs == parsed.actual_mod_refs;
+    let missing_mod_refs = expected_mod_refs
+        .iter()
+        .filter(|mod_ref| !parsed.actual_mod_refs.contains(mod_ref))
+        .cloned()
+        .collect::<Vec<_>>();
+    let mut unexpected_mod_refs = parsed
+        .actual_mod_refs
+        .iter()
+        .filter(|mod_ref| !expected_mod_refs.contains(mod_ref))
+        .cloned()
+        .collect::<Vec<_>>();
+    unexpected_mod_refs.extend(parsed.other_mod_refs.clone());
+
+    let success = parsed.has_count_line
+        && expected_mod_refs.len() == parsed.actual_count
+        && expected_mod_refs == parsed.actual_mod_refs
+        && order_matches
+        && missing_mod_refs.is_empty()
+        && unexpected_mod_refs.is_empty();
+
+    Ok(ValidateActivePresetModsResult {
+        success,
+        expected_count: expected_mod_refs.len(),
+        actual_count: parsed.actual_count,
+        expected_mod_refs,
+        actual_mod_refs: parsed.actual_mod_refs,
+        missing_mod_refs,
+        unexpected_mod_refs,
+        order_matches,
+    })
+}
+
+pub fn validate_active_mod_values_in_game_sii(
+    game_sii_content: &str,
+    expected_values: &[String],
+) -> Result<ValidateActivePresetModsResult, String> {
+    if !looks_like_decoded_sii(game_sii_content) {
+        return Err("game.sii does not look like decoded UTF-8 SII content.".to_string());
+    }
+
+    let parsed = parse_active_mod_sections(economy_block_body(game_sii_content)?)?;
+    if !parsed.section_present {
+        return Err("No active_mods/actived_mods block found in game.sii.".to_string());
+    }
+    let expected_mod_refs = expected_values.to_vec();
     let order_matches = parsed.actual_indices
         == (0..parsed.actual_mod_refs.len()).collect::<Vec<_>>()
         && expected_mod_refs == parsed.actual_mod_refs;
@@ -270,38 +472,57 @@ pub fn parse_active_mod_values_from_profile_text(
     }
 
     let count_regex =
-        Regex::new(r#"^\s*active_mods\s*:\s*(\d+)\s*$"#).map_err(|error| error.to_string())?;
-    let entry_regex = Regex::new(r#"^\s*active_mods\[(\d+)\]\s*:\s*"(.*)"\s*$"#)
+        Regex::new(r#"^\s*(active_mods|actived_mods|mod_activated)\s*:\s*(\d+)\s*$"#)
+            .map_err(|error| error.to_string())?;
+    let entry_regex =
+        Regex::new(r#"^\s*(active_mods|actived_mods|mod_activated)\[(\d+)\]\s*:\s*"(.*)"\s*$"#)
         .map_err(|error| error.to_string())?;
     let mut expected_count = None::<usize>;
     let mut entries = BTreeMap::<usize, String>::new();
+    let mut active_expected_count = None::<usize>;
+    let mut active_entries = BTreeMap::<usize, String>::new();
 
     for line in profile_text.lines() {
         if let Some(captures) = count_regex.captures(line) {
-            expected_count = captures
-                .get(1)
+            let field_name = captures.get(1).map(|value| value.as_str()).unwrap_or_default();
+            let count = captures
+                .get(2)
                 .and_then(|value| value.as_str().parse::<usize>().ok());
+            if field_name == "active_mods" {
+                active_expected_count = count;
+            }
+            expected_count = expected_count.or(count);
             continue;
         }
 
         if let Some(captures) = entry_regex.captures(line) {
+            let field_name = captures.get(1).map(|value| value.as_str()).unwrap_or_default();
             let Some(index) = captures
-                .get(1)
+                .get(2)
                 .and_then(|value| value.as_str().parse::<usize>().ok())
             else {
                 continue;
             };
             let value = captures
-                .get(2)
+                .get(3)
                 .map(|value| value.as_str().to_string())
                 .unwrap_or_default();
+            if field_name == "active_mods" {
+                active_entries.insert(index, value.clone());
+            }
             entries.insert(index, value);
         }
     }
 
-    let count =
-        expected_count.ok_or_else(|| "No active_mods block found in profile.sii.".to_string())?;
-    let actual_indices = entries.keys().copied().collect::<Vec<_>>();
+    let count = active_expected_count
+        .or(expected_count)
+        .ok_or_else(|| "No active_mods block found in profile.sii.".to_string())?;
+    let selected_entries = if active_expected_count.is_some() || !active_entries.is_empty() {
+        active_entries
+    } else {
+        entries
+    };
+    let actual_indices = selected_entries.keys().copied().collect::<Vec<_>>();
     let expected_indices = (0..count).collect::<Vec<_>>();
     if actual_indices != expected_indices {
         return Err(format!(
@@ -309,7 +530,7 @@ pub fn parse_active_mod_values_from_profile_text(
             expected_indices, actual_indices
         ));
     }
-    let values = entries.into_values().collect::<Vec<_>>();
+    let values = selected_entries.into_values().collect::<Vec<_>>();
     if count != values.len() {
         return Err(format!(
             "active_mods count mismatch in profile.sii: header={} entries={}",
@@ -348,9 +569,11 @@ pub fn replace_active_mods_block(
         "\n"
     };
     let had_trailing_newline = profile_text.ends_with('\n');
-    let count_regex = Regex::new(r#"^([ \t]*)(active_mods|actived_mods)\s*:\s*\d+\s*$"#)
-        .map_err(|error| error.to_string())?;
-    let entry_regex = Regex::new(r#"^([ \t]*)(active_mods|actived_mods)\[\d+\]\s*:\s*".*"\s*$"#)
+    let count_regex =
+        Regex::new(r#"^([ \t]*)(active_mods|actived_mods|mod_activated)\s*:\s*\d+\s*$"#)
+            .map_err(|error| error.to_string())?;
+    let entry_regex =
+        Regex::new(r#"^([ \t]*)(active_mods|actived_mods|mod_activated)\[\d+\]\s*:\s*".*"\s*$"#)
         .map_err(|error| error.to_string())?;
 
     let mut output = Vec::<String>::new();
@@ -488,6 +711,20 @@ pub fn write_active_preset_mods_atomic(
 
     let text = decrypt_if_needed(path)?;
     let result = replace_active_preset_mods_in_game_sii(&text, workshop_mod_ids)?;
+    write_text_atomic(path, &result.content)?;
+    Ok(result)
+}
+
+pub fn write_active_mod_values_atomic(
+    path: &Path,
+    active_mod_values: &[String],
+) -> Result<ReplaceActivePresetModsResult, String> {
+    if !path.is_file() {
+        return Err(format!("game.sii not found: {}", path.display()));
+    }
+
+    let text = decrypt_if_needed(path)?;
+    let result = replace_active_preset_mod_values_in_game_sii(&text, active_mod_values)?;
     write_text_atomic(path, &result.content)?;
     Ok(result)
 }
@@ -810,20 +1047,80 @@ mod tests {
     }
 
     #[test]
-    fn preserves_actived_mods_field_name_when_present() {
+    fn replaces_active_mods_with_exact_values_and_validates() {
+        let expected = vec![
+            "mod_workshop_package.00000000DD233E2B|Realistic Cabin Soundproofing".to_string(),
+            "BKC_Bussbygg_3_ax_drawbar|BKC Bussbygg 3 axle drawbar trailer".to_string(),
+        ];
+        let result =
+            replace_active_preset_mod_values_in_game_sii(test_active_mods_sii_text(), &expected)
+                .unwrap();
+
+        assert_eq!(result.removed_mod_count, 2);
+        assert_eq!(result.written_mod_count, 2);
+        assert_eq!(result.expected_mod_refs, expected);
+        assert!(result.content.contains(r#"active_mods: 2"#));
+        assert!(result.content.contains(
+            r#"active_mods[0]: "mod_workshop_package.00000000DD233E2B|Realistic Cabin Soundproofing""#
+        ));
+        assert!(result.content.contains(
+            r#"active_mods[1]: "BKC_Bussbygg_3_ax_drawbar|BKC Bussbygg 3 axle drawbar trailer""#
+        ));
+
+        let validation = validate_active_mod_values_in_game_sii(&result.content, &expected)
+            .expect("active mod values should validate");
+        assert!(validation.success);
+        assert_eq!(validation.expected_count, 2);
+        assert_eq!(validation.actual_count, 2);
+        assert!(validation.order_matches);
+    }
+
+    #[test]
+    fn replaces_legacy_actived_mods_with_active_mods() {
         let result = replace_active_preset_mods_in_game_sii(
             test_actived_mods_sii_text(),
             &["456".to_string()],
         )
         .unwrap();
 
-        assert!(result.content.contains(r#"actived_mods: 1"#));
+        assert!(!result.block_created);
+        assert!(result.content.contains(r#"active_mods: 1"#));
         assert!(
             result
                 .content
-                .contains(r#"actived_mods[0]: "mod_workshop_package.000001c8""#)
+                .contains(r#"active_mods[0]: "mod_workshop_package.000001c8""#)
         );
-        assert!(!result.content.contains("active_mods[0]"));
+        assert!(!result.content.contains("actived_mods"));
+    }
+
+    #[test]
+    fn inserts_active_mods_when_missing() {
+        let expected = vec![
+            "mod_workshop_package.00000000DD233E2B|Realistic Cabin Soundproofing".to_string(),
+            "BKC_Bussbygg_3_ax_drawbar|BKC Bussbygg 3 axle drawbar trailer".to_string(),
+        ];
+        let result = replace_active_preset_mod_values_in_game_sii(
+            test_missing_active_mods_sii_text(),
+            &expected,
+        )
+        .unwrap();
+
+        assert!(result.block_created);
+        assert_eq!(result.removed_mod_count, 0);
+        assert_eq!(result.written_mod_count, 2);
+        assert!(result.content.contains(r#"active_mods: 2"#));
+        assert!(result.content.contains(
+            r#"active_mods[0]: "mod_workshop_package.00000000DD233E2B|Realistic Cabin Soundproofing""#
+        ));
+        assert!(result.content.contains(
+            r#"active_mods[1]: "BKC_Bussbygg_3_ax_drawbar|BKC Bussbygg 3 axle drawbar trailer""#
+        ));
+
+        let validation = validate_active_mod_values_in_game_sii(&result.content, &expected)
+            .expect("inserted active_mods should validate");
+        assert!(validation.success);
+        assert_eq!(validation.actual_count, 2);
+        assert!(validation.order_matches);
     }
 
     #[test]
@@ -948,6 +1245,17 @@ economy : _nameless.123 {
     active_mods: 2
     active_mods[0]: "mod_workshop_package.000001c8"
     active_mods[1]: "mod_workshop_package.dd233e2b"
+}
+}
+"#
+    }
+
+    fn test_missing_active_mods_sii_text() -> &'static str {
+        r#"SiiNunit
+{
+economy : _nameless.123 {
+    bank: 1000
+    cached_discovery: true
 }
 }
 "#

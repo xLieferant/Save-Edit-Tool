@@ -1,6 +1,6 @@
 use super::models::{
-    ActivatedModEntry, ActivationMissingModEntry, ActivationVerification, AppliedWorkshopMod,
-    ApplySandboxResult, ModSandbox, SandboxActiveModsBackupCacheEntry,
+    ActivatedModEntry, ActivationMissingModEntry, ActivationVerification, ActiveModBlockSnapshot,
+    AppliedWorkshopMod, ApplySandboxResult, ModSandbox, SandboxActiveModsBackupCacheEntry,
     SandboxActiveModsBackupCacheFile, SandboxCollection, SandboxModCacheEntry, SandboxModCacheFile,
     SandboxModPreset, SandboxPresetActivationResult, SandboxPresetCheckResult,
     SandboxPresetCollection, SandboxPresetModStatus, SkippedWorkshopMod, SteamWorkshopCache,
@@ -12,7 +12,7 @@ use super::workshop_api;
 use crate::features::backup::service as backup_service;
 use crate::shared::current_profile::snapshot_active_save_selection;
 use crate::shared::decrypt::decrypt_if_needed;
-use crate::shared::paths::{game_sii_from_save, get_base_path};
+use crate::shared::paths::{game_sii_from_save, get_base_path, mod_directory_path};
 use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 use std::collections::BTreeSet;
 use std::fs;
@@ -594,10 +594,16 @@ pub fn check_sandbox_mod_preset(
     let ready = missing_required_mods.is_empty();
     let checked_libraries = collect_checked_libraries(&statuses);
     let message = if ready {
-        "All required mods found.".to_string()
+        optional_missing_mods_summary(&statuses)
+            .unwrap_or_else(|| "All required mods found.".to_string())
     } else {
         missing_mods_summary(&missing_required_mods)
     };
+    if ready {
+        if let Some(optional_warning) = optional_missing_mods_summary(&statuses) {
+            progress_log.push(optional_warning);
+        }
+    }
     progress_log.push(if ready {
         "Preset is ready.".to_string()
     } else {
@@ -622,6 +628,7 @@ pub fn check_sandbox_mod_preset(
     })
 }
 
+#[allow(dead_code, unreachable_code)]
 pub fn activate_sandbox_mod_preset(
     app: &AppHandle,
     profile_state: &AppProfileState,
@@ -630,6 +637,21 @@ pub fn activate_sandbox_mod_preset(
     preset_id: &str,
 ) -> Result<SandboxPresetActivationResult, String> {
     crate::dev_log!("[SandboxPreset] Activating preset: {}", preset_id);
+    crate::dev_log!(
+        "[SandboxPreset] unexpected game.sii usage removed from preset activation flow"
+    );
+    return activate_sandbox_mod_preset_profile_sii(
+        app,
+        profile_state,
+        profile_cache,
+        decrypt_cache,
+        preset_id,
+        None,
+        None,
+        None,
+        None,
+    );
+
     let preset = match find_sandbox_preset(preset_id) {
         Ok(preset) => preset,
         Err(error) => {
@@ -695,6 +717,9 @@ pub fn activate_sandbox_mod_preset(
     progress_log.push("Profil geöffnet".to_string());
     let save_path = selection.save_path.unwrap_or_default();
     let game_sii = game_sii_from_save(Path::new(&save_path));
+    crate::dev_log!("[SandboxPreset] active save dir={}", save_path);
+    crate::dev_log!("[SandboxPreset] game_sii path={}", game_sii.display());
+    crate::dev_log!("[SandboxPreset] game_sii exists={}", game_sii.exists());
     if !game_sii.is_file() {
         return Ok(failure_activation_result(
             &preset.id,
@@ -710,21 +735,30 @@ pub fn activate_sandbox_mod_preset(
     }
 
     let original_state = match sii_mods::inspect_active_mod_block(&game_sii) {
-        Ok(snapshot) => snapshot,
+        Ok(snapshot) => {
+            crate::dev_log!("[SandboxPreset] active_mods existing block found=true");
+            snapshot
+        }
         Err(error) => {
-            let error_code = if error.contains("No active_mods/actived_mods block found") {
-                "actived_mods_missing"
+            if error.contains("No active_mods/actived_mods block found") {
+                crate::dev_log!("[SandboxPreset] active_mods existing block found=false");
+                crate::dev_log!("[SandboxPreset] active_mods block not found, inserting new block");
+                ActiveModBlockSnapshot {
+                    field_name: "active_mods".to_string(),
+                    count: 0,
+                    mod_refs: Vec::new(),
+                    indices: Vec::new(),
+                }
             } else {
-                "save_read_failed"
-            };
-            return Ok(failure_activation_result(
-                &preset.id,
-                &preset.title,
-                error_code,
-                error,
-                progress_log,
-                mod_cache_path.clone(),
-            ));
+                return Ok(failure_activation_result(
+                    &preset.id,
+                    &preset.title,
+                    "save_read_failed",
+                    error,
+                    progress_log,
+                    mod_cache_path.clone(),
+                ));
+            }
         }
     };
     progress_log.push("actived_mods gelesen".to_string());
@@ -766,11 +800,24 @@ pub fn activate_sandbox_mod_preset(
         },
     )?;
 
-    let mods_to_write = statuses
+    let mods_written = match build_activated_mod_entries(&statuses) {
+        Ok(entries) => entries,
+        Err(error) => {
+            return Ok(failure_activation_result(
+                &preset.id,
+                &preset.title,
+                "invalid_mod_identifier",
+                error,
+                progress_log,
+                mod_cache_path.clone(),
+            ));
+        }
+    };
+    let active_mod_values = mods_written
         .iter()
-        .filter(|status| status.found)
-        .map(|status| status.steam_id.clone())
+        .map(|entry| entry.active_mods_value.clone())
         .collect::<Vec<_>>();
+    let mods_to_write = active_mod_values.clone();
     if mods_to_write.is_empty() {
         return Ok(failure_activation_result(
             &preset.id,
@@ -783,12 +830,12 @@ pub fn activate_sandbox_mod_preset(
         ));
     }
 
-    let replace_result = match sii_mods::write_active_preset_mods_atomic(&game_sii, &mods_to_write)
-    {
+    let replace_result = match sii_mods::write_active_mod_values_atomic(&game_sii, &mods_to_write) {
         Ok(result) => result,
         Err(error) => {
             return Ok(SandboxPresetActivationResult {
                 preset_id: preset.id.clone(),
+                preset_name: preset.title.clone(),
                 title: preset.title.clone(),
                 success: false,
                 error_code: Some("save_write_failed".to_string()),
@@ -801,6 +848,8 @@ pub fn activate_sandbox_mod_preset(
                 save_path: Some(game_sii.display().to_string()),
                 message: format!("Speichern fehlgeschlagen: {}", error),
                 progress_log,
+                app_id: preset.app_id.unwrap_or(227300),
+                target_profile_sii_path: game_sii.display().to_string(),
                 ..Default::default()
             });
         }
@@ -815,6 +864,7 @@ pub fn activate_sandbox_mod_preset(
         Err(error) => {
             return Ok(SandboxPresetActivationResult {
                 preset_id: preset.id.clone(),
+                preset_name: preset.title.clone(),
                 title: preset.title.clone(),
                 success: false,
                 error_code: Some("save_reread_failed".to_string()),
@@ -830,12 +880,14 @@ pub fn activate_sandbox_mod_preset(
                     error
                 ),
                 progress_log,
+                app_id: preset.app_id.unwrap_or(227300),
+                target_profile_sii_path: game_sii.display().to_string(),
                 ..Default::default()
             });
         }
     };
 
-    let validation = match sii_mods::validate_active_preset_mods_in_game_sii(
+    let validation = match sii_mods::validate_active_mod_values_in_game_sii(
         &reread_content,
         &mods_to_write,
     ) {
@@ -843,6 +895,7 @@ pub fn activate_sandbox_mod_preset(
         Err(error) => {
             return Ok(SandboxPresetActivationResult {
                 preset_id: preset.id.clone(),
+                preset_name: preset.title.clone(),
                 title: preset.title.clone(),
                 success: false,
                 error_code: Some("verification_failed".to_string()),
@@ -858,6 +911,8 @@ pub fn activate_sandbox_mod_preset(
                     error
                 ),
                 progress_log,
+                app_id: preset.app_id.unwrap_or(227300),
+                target_profile_sii_path: game_sii.display().to_string(),
                 ..Default::default()
             });
         }
@@ -866,6 +921,7 @@ pub fn activate_sandbox_mod_preset(
     if !validation.success {
         return Ok(SandboxPresetActivationResult {
             preset_id: preset.id.clone(),
+            preset_name: preset.title.clone(),
             title: preset.title.clone(),
             success: false,
             error_code: Some("verification_failed".to_string()),
@@ -878,13 +934,29 @@ pub fn activate_sandbox_mod_preset(
             save_path: Some(game_sii.display().to_string()),
             message: "Die Datei wurde geschrieben, aber die Mod-ID konnte nach dem erneuten Auslesen nicht korrekt bestätigt werden.".to_string(),
             progress_log,
+            app_id: preset.app_id.unwrap_or(227300),
+            target_profile_sii_path: game_sii.display().to_string(),
             ..Default::default()
         });
     }
 
     progress_log.push("Follow-up Check erfolgreich".to_string());
+    let optional_missing = statuses
+        .iter()
+        .filter(|status| !status.required && !(status.available && status.reachable))
+        .cloned()
+        .collect::<Vec<_>>();
+    let base_success_message = if replace_result.block_created {
+        "Preset activated successfully. active_mods block was created.".to_string()
+    } else {
+        "Preset activated successfully. active_mods block was updated.".to_string()
+    };
+    let success_message = optional_missing_mods_summary(&statuses)
+        .map(|warning| format!("{} {}", base_success_message, warning))
+        .unwrap_or(base_success_message);
     Ok(SandboxPresetActivationResult {
         preset_id: preset.id.clone(),
+        preset_name: preset.title.clone(),
         title: preset.title.clone(),
         success: true,
         error_code: None,
@@ -895,10 +967,11 @@ pub fn activate_sandbox_mod_preset(
         cache_path: Some(sandbox_cache_path.display().to_string()),
         mod_cache_path,
         save_path: Some(game_sii.display().to_string()),
-        message: format!(
-            "Sandbox Preset \"{}\" wurde erfolgreich aktiviert.",
-            preset.title
-        ),
+        app_id: preset.app_id.unwrap_or(227300),
+        target_profile_sii_path: game_sii.display().to_string(),
+        mods_written,
+        missing_mods: activation_missing_entries(&optional_missing),
+        message: success_message,
         progress_log,
         ..Default::default()
     })
@@ -915,7 +988,11 @@ pub fn activate_sandbox_mod_preset_profile_sii(
     game: Option<String>,
     app_id: Option<u32>,
 ) -> Result<SandboxPresetActivationResult, String> {
-    crate::dev_log!("[mod_profile_manager] activate_sandbox_mod_preset entered");
+    crate::dev_log!(
+        "[SandboxPreset] activate START profile_id={} preset_id={}",
+        profile_id.as_deref().unwrap_or(""),
+        preset_id
+    );
     let preset = match find_sandbox_preset(preset_id) {
         Ok(preset) => preset,
         Err(error) => {
@@ -1036,26 +1113,6 @@ pub fn activate_sandbox_mod_preset_profile_sii(
             ));
         }
     };
-    let active_save_path = match selection.save_path.as_deref() {
-        Some(value) if !value.trim().is_empty() => value.to_string(),
-        _ => {
-            return Ok(profile_activation_failure_result(
-                &preset.id,
-                &preset.title,
-                "no_active_save",
-                "Please select an active save before activating a mod preset.".to_string(),
-                progress_log,
-                mod_cache_path,
-                None,
-                profile_id.unwrap_or_default(),
-                save_name,
-                resolved_app_id,
-                String::new(),
-                Vec::new(),
-            ));
-        }
-    };
-
     if is_game_process_running_for_app_id(resolved_app_id) {
         return Ok(profile_activation_failure_result(
             &preset.id,
@@ -1078,9 +1135,7 @@ pub fn activate_sandbox_mod_preset_profile_sii(
         .filter(|value| !value.trim().is_empty())
         .or_else(|| derive_profile_id_from_path(&active_profile_path))
         .unwrap_or_default();
-    let resolved_save_name = save_name
-        .filter(|value| !value.trim().is_empty())
-        .or_else(|| derive_save_name_from_path(&active_save_path));
+    let resolved_save_name = save_name.filter(|value| !value.trim().is_empty());
     let profile_sii = match resolve_activation_profile_sii(
         profile_state,
         &resolved_profile_id,
@@ -1106,8 +1161,19 @@ pub fn activate_sandbox_mod_preset_profile_sii(
         }
     };
     crate::dev_log!(
-        "[mod_profile_manager] resolved profile.sii path={}",
+        "[SandboxPreset] profile_dir={}",
+        profile_sii
+            .parent()
+            .map(|path| path.display().to_string())
+            .unwrap_or_default()
+    );
+    crate::dev_log!(
+        "[SandboxPreset] target profile_sii={}",
         profile_sii.display()
+    );
+    crate::dev_log!(
+        "[SandboxPreset] profile_sii exists={}",
+        profile_sii.exists()
     );
 
     let backup_path = match backup_profile_sii(&profile_sii) {
@@ -1130,12 +1196,13 @@ pub fn activate_sandbox_mod_preset_profile_sii(
         }
     };
     crate::dev_log!(
-        "[mod_profile_manager] backup created path={}",
+        "[SandboxPreset] backup created path={}",
         backup_path.display()
     );
     let backup_path_string = backup_path.display().to_string();
     progress_log.push("Backup erstellt".to_string());
 
+    crate::dev_log!("[SandboxPreset] decrypt profile_sii START");
     let profile_text = match decrypt_if_needed(&profile_sii) {
         Ok(content) => content,
         Err(error) => {
@@ -1155,6 +1222,11 @@ pub fn activate_sandbox_mod_preset_profile_sii(
             ));
         }
     };
+    crate::dev_log!("[SandboxPreset] decrypt profile_sii END");
+    crate::dev_log!(
+        "[SandboxPreset] active_mods block found in profile_sii={}",
+        sii_mods::parse_active_mod_values_from_profile_text(&profile_text).is_ok()
+    );
     let active_before =
         sii_mods::parse_active_mod_values_from_profile_text(&profile_text).unwrap_or_default();
     crate::dev_log!(
@@ -1203,6 +1275,10 @@ pub fn activate_sandbox_mod_preset_profile_sii(
         .iter()
         .map(|entry| entry.active_mods_value.clone())
         .collect::<Vec<_>>();
+    crate::dev_log!(
+        "[SandboxPreset] writing active_mods count={}",
+        expected_values.len()
+    );
 
     let updated_profile_text =
         match sii_mods::replace_active_mods_block(&profile_text, &expected_values) {
@@ -1242,8 +1318,8 @@ pub fn activate_sandbox_mod_preset_profile_sii(
         ));
     }
     crate::dev_log!(
-        "[mod_profile_manager] file written path={}",
-        profile_sii.display()
+        "[SandboxPreset] profile_sii write success bytes={}",
+        updated_profile_text.len()
     );
     decrypt_cache.invalidate_path(&profile_sii);
     profile_cache.invalidate_save_data();
@@ -1338,6 +1414,10 @@ pub fn activate_sandbox_mod_preset_profile_sii(
             progress_log,
         });
     }
+    crate::dev_log!(
+        "[SandboxPreset] validation success active_mods_count={}",
+        expected_values.len()
+    );
 
     progress_log.push("Follow-up Check erfolgreich".to_string());
     let result = SandboxPresetActivationResult {
@@ -1573,6 +1653,8 @@ fn collect_preset_mod_statuses(
                 let package_id = preset_mod
                     .package_id
                     .as_deref()
+                    .or(preset_mod.active_mod_ref.as_deref())
+                    .or(preset_mod.local_mod_id.as_deref())
                     .filter(|value| !value.trim().is_empty())
                     .ok_or_else(|| {
                         format!(
@@ -1593,9 +1675,20 @@ fn collect_preset_mod_statuses(
                             preset_mod.display_name.as_deref().unwrap_or(package_id)
                         )
                     })?;
+                let local_mod_id = preset_mod
+                    .local_mod_id
+                    .as_deref()
+                    .or(preset_mod.active_mod_ref.as_deref())
+                    .or(Some(package_id))
+                    .unwrap_or(package_id);
+                let local_check = check_local_preset_mod(
+                    game_key_from_app_id(preset_mod.app_id),
+                    &[local_mod_id, package_id],
+                );
                 crate::dev_log!(
-                    "[SandboxPreset] Local mod configured package_id={} display_name={}",
+                    "[SandboxPreset] Local mod configured package_id={} found={} display_name={}",
                     package_id,
+                    local_check.found,
                     preset_mod.display_name.as_deref().unwrap_or("-")
                 );
                 progress_log.push(format!(
@@ -1606,22 +1699,30 @@ fn collect_preset_mod_statuses(
                     steam_id: String::new(),
                     source: Some("local".to_string()),
                     package_id: Some(package_id.to_string()),
+                    active_mod_ref: Some(package_id.to_string()),
+                    local_mod_id: Some(local_mod_id.to_string()),
                     active_mods_value: Some(active_mods_value.to_string()),
                     app_id: preset_mod.app_id,
                     game: workshop_api::game_name_for_app_id(preset_mod.app_id).to_string(),
                     display_name: preset_mod.display_name.clone(),
                     required: preset_mod.required,
                     load_order: preset_mod.load_order,
-                    found: true,
-                    available: true,
-                    reachable: true,
-                    status: "local_configured".to_string(),
-                    local_path: None,
+                    found: local_check.found,
+                    available: local_check.found,
+                    reachable: local_check.found,
+                    status: if local_check.found {
+                        "local_found".to_string()
+                    } else {
+                        "local_missing".to_string()
+                    },
+                    local_path: local_check.local_path,
                     workshop_url: String::new(),
+                    download_url: String::new(),
                     steam_protocol_url: String::new(),
                     steamcmd_command: String::new(),
-                    checked_paths: Vec::new(),
-                    reason: None,
+                    checked_paths: local_check.checked_paths,
+                    reason: local_check.reason,
+                    note: preset_mod.note.clone(),
                 });
             }
             crate::dev_log!(
@@ -1673,6 +1774,11 @@ fn collect_preset_mod_statuses(
                 steam_id: preset_mod.steam_id.clone(),
                 source: Some("workshop".to_string()),
                 package_id: preset_mod.package_id.clone(),
+                active_mod_ref: preset_mod
+                    .active_mod_ref
+                    .clone()
+                    .or_else(|| preset_mod.package_id.clone()),
+                local_mod_id: preset_mod.local_mod_id.clone(),
                 active_mods_value: preset_mod.active_mods_value.clone(),
                 app_id: preset_mod.app_id,
                 game: workshop_api::game_name_for_app_id(preset_mod.app_id).to_string(),
@@ -1692,6 +1798,12 @@ fn collect_preset_mod_statuses(
                     .workshop_url
                     .clone()
                     .unwrap_or_else(|| workshop_api::workshop_page_url(&preset_mod.steam_id)),
+                download_url: preset_mod.download_url.clone().unwrap_or_else(|| {
+                    preset_mod
+                        .workshop_url
+                        .clone()
+                        .unwrap_or_else(|| workshop_api::workshop_page_url(&preset_mod.steam_id))
+                }),
                 steam_protocol_url: preset_mod
                     .steam_protocol_url
                     .clone()
@@ -1702,9 +1814,101 @@ fn collect_preset_mod_statuses(
                 ),
                 checked_paths: install_status.checked_paths,
                 reason: install_status.reason,
+                note: preset_mod.note.clone(),
             })
         })
         .collect()
+}
+
+#[derive(Debug, Clone, Default)]
+struct LocalPresetModCheck {
+    found: bool,
+    local_path: Option<String>,
+    checked_paths: Vec<String>,
+    reason: Option<String>,
+}
+
+fn check_local_preset_mod(game: &str, identifiers: &[&str]) -> LocalPresetModCheck {
+    let identifiers = identifiers
+        .iter()
+        .map(|value| normalize_local_mod_identifier(value))
+        .filter(|value| !value.is_empty())
+        .collect::<BTreeSet<_>>();
+    if identifiers.is_empty() {
+        return LocalPresetModCheck {
+            reason: Some("local_mod_identifier_missing".to_string()),
+            ..Default::default()
+        };
+    }
+
+    let Some(mod_dir) = mod_directory_path(game) else {
+        return LocalPresetModCheck {
+            reason: Some("local_mod_folder_not_found".to_string()),
+            ..Default::default()
+        };
+    };
+    let mut checked_paths = identifiers
+        .iter()
+        .map(|identifier| {
+            mod_dir
+                .join(format!("{identifier}.scs"))
+                .display()
+                .to_string()
+        })
+        .collect::<Vec<_>>();
+    checked_paths.push(mod_dir.display().to_string());
+
+    if !mod_dir.is_dir() {
+        return LocalPresetModCheck {
+            checked_paths,
+            reason: Some("local_mod_folder_not_found".to_string()),
+            ..Default::default()
+        };
+    }
+
+    let Ok(entries) = fs::read_dir(&mod_dir) else {
+        return LocalPresetModCheck {
+            checked_paths,
+            reason: Some("local_mod_folder_unreadable".to_string()),
+            ..Default::default()
+        };
+    };
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let file_name = path
+            .file_name()
+            .and_then(|value| value.to_str())
+            .map(normalize_local_mod_identifier)
+            .unwrap_or_default();
+        let file_stem = path
+            .file_stem()
+            .and_then(|value| value.to_str())
+            .map(normalize_local_mod_identifier)
+            .unwrap_or_default();
+        if identifiers.contains(&file_name) || identifiers.contains(&file_stem) {
+            return LocalPresetModCheck {
+                found: true,
+                local_path: Some(path.display().to_string()),
+                checked_paths,
+                reason: None,
+            };
+        }
+    }
+
+    LocalPresetModCheck {
+        checked_paths,
+        reason: Some("local_mod_not_found".to_string()),
+        ..Default::default()
+    }
+}
+
+fn normalize_local_mod_identifier(value: &str) -> String {
+    value
+        .trim()
+        .trim_end_matches(".scs")
+        .trim()
+        .to_ascii_lowercase()
 }
 
 fn collect_checked_libraries(statuses: &[SandboxPresetModStatus]) -> Vec<String> {
@@ -1886,9 +2090,13 @@ fn activation_missing_entries(
         .iter()
         .map(|status| ActivationMissingModEntry {
             workshop_id: status.steam_id.clone(),
+            active_mod_ref: status.active_mod_ref.clone(),
+            local_mod_id: status.local_mod_id.clone(),
             app_id: status.app_id,
             display_name: status.display_name.clone(),
             workshop_url: status.workshop_url.clone(),
+            download_url: status.download_url.clone(),
+            required: status.required,
             reason: status.reason.clone(),
         })
         .collect()
@@ -1897,10 +2105,7 @@ fn activation_missing_entries(
 fn build_activated_mod_entries(
     statuses: &[SandboxPresetModStatus],
 ) -> Result<Vec<ActivatedModEntry>, String> {
-    let mut writable = statuses
-        .iter()
-        .filter(|status| status.available && status.reachable)
-        .collect::<Vec<_>>();
+    let mut writable = statuses.iter().collect::<Vec<_>>();
     writable.sort_by_key(|status| status.load_order);
 
     writable
@@ -1910,19 +2115,44 @@ fn build_activated_mod_entries(
             let active_mods_value = if let Some(value) = status.active_mods_value.as_deref() {
                 value.to_string()
             } else {
-                let package_id = sii_mods::workshop_id_to_scs_package_id(&status.steam_id)?;
+                let package_id = status
+                    .active_mod_ref
+                    .clone()
+                    .or_else(|| status.package_id.clone())
+                    .or_else(|| {
+                        if status.steam_id.trim().is_empty() {
+                            status.local_mod_id.clone()
+                        } else {
+                            sii_mods::workshop_id_to_scs_package_id(&status.steam_id).ok()
+                        }
+                    })
+                    .ok_or_else(|| {
+                        format!(
+                            "Preset mod '{}' is missing an active_mods identifier.",
+                            status.display_name.as_deref().unwrap_or("unknown")
+                        )
+                    })?;
                 let display_name = status
                     .display_name
                     .clone()
-                    .unwrap_or_else(|| format!("Workshop Mod {}", status.steam_id));
+                    .unwrap_or_else(|| package_id.clone());
                 let safe_display_name = sanitize_active_mod_display_name(&display_name);
                 format!("{package_id}|{safe_display_name}")
             };
             let display_name = status.display_name.clone().unwrap_or_else(|| {
                 status
-                    .package_id
+                    .active_mod_ref
                     .clone()
-                    .unwrap_or_else(|| format!("Workshop Mod {}", status.steam_id))
+                    .or_else(|| status.local_mod_id.clone())
+                    .or_else(|| {
+                        if status.steam_id.trim().is_empty() {
+                            None
+                        } else {
+                            Some(format!("Workshop Mod {}", status.steam_id))
+                        }
+                    })
+                    .or_else(|| status.package_id.clone())
+                    .unwrap_or_else(|| "Preset Mod".to_string())
             });
             Ok(ActivatedModEntry {
                 index,
@@ -2074,10 +2304,8 @@ fn backup_profile_sii(path: &Path) -> Result<PathBuf, String> {
     if !path.is_file() {
         return Err(format!("profile.sii not found: {}", path.display()));
     }
-    let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S");
-    let backup_path = path.with_file_name(format!(
-        "profile.sii.backup_mod_profile_manager_{timestamp}"
-    ));
+    let timestamp = chrono::Local::now().format("%Y%m%d-%H%M%S");
+    let backup_path = path.with_file_name(format!("profile.sii.sandbox-preset-{timestamp}.bak"));
     fs::copy(path, &backup_path).map_err(|error| {
         format!(
             "Failed to create backup {}: {}",
@@ -2211,7 +2439,7 @@ fn sandbox_mod_status_value(cache_status: &SteamWorkshopMod, reason: Option<&str
 fn missing_mods_summary(statuses: &[SandboxPresetModStatus]) -> String {
     let required_missing = statuses
         .iter()
-        .filter(|status| status.required && !status.found)
+        .filter(|status| status.required && !(status.available && status.reachable))
         .collect::<Vec<_>>();
     if required_missing.is_empty() {
         return "All required mods found.".to_string();
@@ -2220,6 +2448,18 @@ fn missing_mods_summary(statuses: &[SandboxPresetModStatus]) -> String {
     let details = required_missing
         .iter()
         .map(|status| {
+            if status.steam_id.trim().is_empty() {
+                return format!(
+                    "{}: {}",
+                    status
+                        .active_mod_ref
+                        .as_deref()
+                        .or(status.local_mod_id.as_deref())
+                        .or(status.package_id.as_deref())
+                        .unwrap_or("local mod"),
+                    status.reason.as_deref().unwrap_or("not_found")
+                );
+            }
             format!(
                 "{} ({} / AppID {}): {}",
                 status.steam_id, status.game, status.app_id, status.workshop_url
@@ -2229,6 +2469,49 @@ fn missing_mods_summary(statuses: &[SandboxPresetModStatus]) -> String {
         .join(" | ");
 
     format!("Required mods are missing: {}", details)
+}
+
+fn optional_missing_mods_summary(statuses: &[SandboxPresetModStatus]) -> Option<String> {
+    let optional_missing = statuses
+        .iter()
+        .filter(|status| !status.required && !(status.available && status.reachable))
+        .collect::<Vec<_>>();
+    if optional_missing.is_empty() {
+        return None;
+    }
+
+    if optional_missing.len() == 1 {
+        let display_name = optional_missing[0]
+            .display_name
+            .as_deref()
+            .or(optional_missing[0].active_mod_ref.as_deref())
+            .or(optional_missing[0].local_mod_id.as_deref())
+            .or(optional_missing[0].package_id.as_deref())
+            .unwrap_or("optional mod");
+        return Some(format!(
+            "Optional mod missing: {}. Preset can still be activated.",
+            display_name
+        ));
+    }
+
+    let display_names = optional_missing
+        .iter()
+        .map(|status| {
+            status
+                .display_name
+                .as_deref()
+                .or(status.active_mod_ref.as_deref())
+                .or(status.local_mod_id.as_deref())
+                .or(status.package_id.as_deref())
+                .unwrap_or("optional mod")
+                .to_string()
+        })
+        .collect::<Vec<_>>()
+        .join(", ");
+    Some(format!(
+        "Optional mods missing: {}. Preset can still be activated.",
+        display_names
+    ))
 }
 
 #[cfg(test)]
