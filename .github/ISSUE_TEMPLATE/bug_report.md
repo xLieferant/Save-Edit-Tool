@@ -1,34 +1,46 @@
 ---
-name: Bug report
-about: Create a report to help us improve
-title: ''
-labels: ''
-assignees: ''
-
+name: Bug Report
+about: Report a reproducible bug in Safe Edit Tool
+title: "[Bug]: "
+labels: "type: bug, needs-triage"
+assignees: ""
 ---
 
-## Describe the bug
-A clear and concise description of what the bug is.
+## Bug Description
+Describe the bug clearly.
 
-## To Reproduce
-Steps to reproduce the behavior:
+## Tool Version
+Example: v0.9.0
 
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+## Windows Version
+Example: Windows 10 / Windows 11
 
-## Expected behavior
-A clear and concise description of what you expected to happen.
+## Affected Area
+- [ ] Save Editor
+- [ ] Profile Scanner
+- [ ] Mod Profile Manager
+- [ ] Steam Workshop Detection
+- [ ] UI / Modal / Scroll
+- [ ] i18n / Language
+- [ ] Installer / Updater
+- [ ] Other
 
-## Screenshots
-If applicable, add screenshots or screen recordings to help explain your problem.
+## Steps to Reproduce
+1.
+2.
+3.
 
-## Desktop (Please complete the following information):
+## Expected Behavior
+What should happen?
 
-*   **OS:** [e.g. Windows 10, Windows 11, Linux (Distribution)]
-*   **Architecture:** [e.g. x64, ARM]
-*   **App Version:** [e.g. 0.1, 0.1.1]
+## Actual Behavior
+What actually happens?
 
-## Additional context
-Add any other context about the problem here (e.g. Did the error occur after an update?).
+## Screenshots / Videos
+Attach screenshots or videos if possible.
+
+## Logs
+Paste logs here if available.
+
+```log
+Paste logs here
