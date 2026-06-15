@@ -1,20 +1,36 @@
 ---
-name: Feature request
-about: Suggest an idea for this project
-title: ''
-labels: ''
-assignees: ''
-
+name: Feature Request
+about: Suggest a new feature or improvement for Safe Edit Tool
+title: "[Feature]: "
+labels: "type: feature, needs-triage"
+assignees: ""
 ---
 
-## Is your feature request related to a problem? Please describe.
-A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+## Problem
+What problem should this feature solve?
 
-## Describe the solution you'd like
-A clear and concise description of what you want to happen.
+## Suggested Solution
+Describe the feature you want.
 
-## Describe alternatives you've considered
-A clear and concise description of any alternative solutions or features you've considered.
+## Affected Area
+- [ ] Save Editor
+- [ ] Profile Scanner
+- [ ] Mod Profile Manager
+- [ ] Steam Workshop
+- [ ] UI / UX
+- [ ] i18n / Languages
+- [ ] Installer / Updater
+- [ ] Documentation
+- [ ] Other
 
-## Additional context
-Add any other context or screenshots about the feature request here.
+## Why is this useful?
+Explain why this matters for users.
+
+## Example / Reference
+Add screenshots, links or examples if possible.
+
+## Priority
+- [ ] Critical
+- [ ] High
+- [ ] Normal
+- [ ] Later
