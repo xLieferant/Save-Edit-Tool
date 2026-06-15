@@ -30,6 +30,34 @@ pub struct ParsedTrailer {
     pub length: f32,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct PlayerTrailerResult {
+    pub success: bool,
+    pub has_trailer: bool,
+    pub trailer: Option<ParsedTrailer>,
+    pub message: String,
+}
+
+impl PlayerTrailerResult {
+    pub fn some(trailer: ParsedTrailer) -> Self {
+        Self {
+            success: true,
+            has_trailer: true,
+            trailer: Some(trailer),
+            message: "Player trailer found.".to_string(),
+        }
+    }
+
+    pub fn none() -> Self {
+        Self {
+            success: true,
+            has_trailer: false,
+            trailer: None,
+            message: "No player trailer found in this save.".to_string(),
+        }
+    }
+}
+
 /// Typ für Trailer-Daten (Zwischenformat beim Parsen)
 #[derive(Debug, Clone)]
 pub struct TrailerData {

@@ -318,6 +318,7 @@ pub struct ReplaceActivePresetModsResult {
     pub removed_mod_count: usize,
     pub written_mod_count: usize,
     pub expected_mod_refs: Vec<String>,
+    pub block_created: bool,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
@@ -365,12 +366,21 @@ pub struct SandboxModPreset {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 pub struct SandboxPresetMod {
-    #[serde(default, alias = "workshop_id", alias = "id")]
+    #[serde(
+        default,
+        alias = "workshop_id",
+        alias = "id",
+        deserialize_with = "deserialize_string_from_null_or_value"
+    )]
     pub steam_id: String,
     #[serde(default)]
     pub source: Option<String>,
     #[serde(default)]
     pub package_id: Option<String>,
+    #[serde(default)]
+    pub active_mod_ref: Option<String>,
+    #[serde(default)]
+    pub local_mod_id: Option<String>,
     #[serde(default)]
     pub active_mods_value: Option<String>,
     #[serde(default = "default_ets2_app_id")]
@@ -384,7 +394,11 @@ pub struct SandboxPresetMod {
     #[serde(default)]
     pub workshop_url: Option<String>,
     #[serde(default)]
+    pub download_url: Option<String>,
+    #[serde(default)]
     pub steam_protocol_url: Option<String>,
+    #[serde(default)]
+    pub note: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
@@ -392,6 +406,8 @@ pub struct SandboxPresetModStatus {
     pub steam_id: String,
     pub source: Option<String>,
     pub package_id: Option<String>,
+    pub active_mod_ref: Option<String>,
+    pub local_mod_id: Option<String>,
     pub active_mods_value: Option<String>,
     pub app_id: u32,
     pub game: String,
@@ -404,10 +420,12 @@ pub struct SandboxPresetModStatus {
     pub status: String,
     pub local_path: Option<String>,
     pub workshop_url: String,
+    pub download_url: String,
     pub steam_protocol_url: String,
     pub steamcmd_command: String,
     pub checked_paths: Vec<String>,
     pub reason: Option<String>,
+    pub note: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
@@ -466,9 +484,13 @@ pub struct ActivatedModEntry {
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ActivationMissingModEntry {
     pub workshop_id: String,
+    pub active_mod_ref: Option<String>,
+    pub local_mod_id: Option<String>,
     pub app_id: u32,
     pub display_name: Option<String>,
+    pub required: bool,
     pub workshop_url: String,
+    pub download_url: String,
     pub reason: Option<String>,
 }
 
@@ -532,6 +554,13 @@ pub struct SandboxActiveModsBackupCacheFile {
 
 fn default_ets2_app_id() -> u32 {
     227300
+}
+
+fn deserialize_string_from_null_or_value<'de, D>(deserializer: D) -> Result<String, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    Ok(Option::<String>::deserialize(deserializer)?.unwrap_or_default())
 }
 
 fn deserialize_u64_from_string_or_number<'de, D>(deserializer: D) -> Result<u64, D::Error>

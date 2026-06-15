@@ -4010,10 +4010,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
   const loadAllTrailers = async () => {
     try {
-      const trailer = await invoke("get_player_trailer", { profilePath: window.selectedProfilePath });
+      const response = await invoke("get_player_trailer", { profilePath: window.selectedProfilePath });
+      const trailer = response && typeof response === "object" && "has_trailer" in response
+        ? response.trailer
+        : response;
       window.playerTrailer = trailer || null;
       window.allTrailers = trailer ? [trailer] : [];
-    } catch {
+    } catch (error) {
+      console.warn("Player trailer refresh failed:", error);
       window.playerTrailer = null;
       window.allTrailers = [];
     }

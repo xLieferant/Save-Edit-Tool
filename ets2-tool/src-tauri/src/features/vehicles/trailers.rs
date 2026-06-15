@@ -2,7 +2,7 @@ use super::{
     load_save_content, load_save_content_from_save_path, resolve_active_save_from_snapshot,
 };
 use crate::dev_log;
-use crate::models::trailers::{ParsedTrailer, TrailerData, TrailerDefData};
+use crate::models::trailers::{ParsedTrailer, PlayerTrailerResult, TrailerData, TrailerDefData};
 use crate::shared::paths::game_sii_from_save;
 use crate::shared::sii_parser::{
     get_player_id, get_vehicle_ids, parse_trailer_defs_from_sii, parse_trailers_from_sii,
@@ -18,7 +18,7 @@ pub async fn get_player_trailer(
     profile_state: tauri::State<'_, AppProfileState>,
     profile_cache: tauri::State<'_, ProfileCache>,
     decrypt_cache: tauri::State<'_, DecryptCache>,
-) -> Result<Option<ParsedTrailer>, String> {
+) -> Result<PlayerTrailerResult, String> {
     let mut trace = TraceScope::new("get_player_trailer");
     dev_log!("get_player_trailer: Profil {}", profile_path);
 
@@ -33,7 +33,7 @@ pub async fn get_player_trailer(
     if let Some(cached) = profile_cache.get_cached_player_trailer(&path_key) {
         dev_log!("get_player_trailer liefert Cache");
         trace.finish_ok();
-        return Ok(cached);
+        return Ok(player_trailer_result(cached));
     }
 
     let decrypt_cache_cloned = decrypt_cache.inner().clone();
@@ -53,13 +53,10 @@ pub async fn get_player_trailer(
         let player_trailer = match player_trailer_id_opt {
             Some(id) => {
                 let id_clean = id.trim().to_lowercase();
-                Some(
-                    parsed_trailers
-                        .iter()
-                        .find(|t| t.trailer_id.to_lowercase() == id_clean)
-                        .cloned()
-                        .ok_or(format!("Player Trailer mit ID {} nicht gefunden", id_clean))?,
-                )
+                parsed_trailers
+                    .iter()
+                    .find(|t| t.trailer_id.to_lowercase() == id_clean)
+                    .cloned()
             }
             None => None,
         };
@@ -87,7 +84,7 @@ pub async fn get_player_trailer(
         dev_log!("Player has no trailer attached - this is normal");
         profile_cache.cache_trailers(path_key.clone(), parsed_trailers.clone(), None);
         trace.finish_ok();
-        return Ok(None);
+        return Ok(PlayerTrailerResult::none());
     }
 
     let player_trailer = player_trailer.unwrap();
@@ -124,13 +121,13 @@ pub async fn get_player_trailer(
 
     profile_cache.cache_trailers(path_key, parsed_trailers, Some(player_trailer.clone()));
     trace.finish_ok();
-    return Ok(Some(player_trailer));
+    return Ok(PlayerTrailerResult::some(player_trailer));
 
     let (content, path_key) = load_save_content(profile_state, decrypt_cache)?;
 
     if let Some(cached) = profile_cache.get_cached_player_trailer(&path_key) {
         dev_log!("get_player_trailer liefert Cache");
-        return Ok(cached);
+        return Ok(player_trailer_result(cached));
     }
 
     let trailers_data = parse_trailers_from_sii(&content);
@@ -148,16 +145,26 @@ pub async fn get_player_trailer(
     let player_trailer = match player_trailer_id_opt {
         Some(id) => {
             let id_clean = id.trim().to_lowercase();
-            parsed_trailers
+            match parsed_trailers
                 .iter()
                 .find(|t| t.trailer_id.to_lowercase() == id_clean)
                 .cloned()
-                .ok_or(format!("Player Trailer mit ID {} nicht gefunden", id_clean))?
+            {
+                Some(trailer) => trailer,
+                None => {
+                    dev_log!(
+                        "Player trailer reference {} was not found in parsed trailers",
+                        id_clean
+                    );
+                    profile_cache.cache_trailers(path_key.clone(), parsed_trailers.clone(), None);
+                    return Ok(PlayerTrailerResult::none());
+                }
+            }
         }
         None => {
             dev_log!("Player has no trailer attached - this is normal");
             profile_cache.cache_trailers(path_key.clone(), parsed_trailers.clone(), None);
-            return Ok(None);
+            return Ok(PlayerTrailerResult::none());
         }
     };
 
@@ -193,7 +200,14 @@ pub async fn get_player_trailer(
     );
 
     profile_cache.cache_trailers(path_key, parsed_trailers, Some(player_trailer.clone()));
-    Ok(Some(player_trailer))
+    Ok(PlayerTrailerResult::some(player_trailer))
+}
+
+fn player_trailer_result(trailer: Option<ParsedTrailer>) -> PlayerTrailerResult {
+    match trailer {
+        Some(trailer) => PlayerTrailerResult::some(trailer),
+        None => PlayerTrailerResult::none(),
+    }
 }
 
 #[command]
