@@ -5,7 +5,7 @@
     "subtitle": "für SCS - xLieferant"
   },
   "tabs": {
-    "truck": "🚛Trucky",
+    "truck": "🚛Truck",
     "trailer": "🚚Trailer",
     "profile": "💠Profile",
     "settings": "⚙\uFE0F Einstellungen"
@@ -792,7 +792,7 @@
     },
     "livemap": {
       "title": "Routenübersicht",
-      "summary": "Verfolge aktive Standorte, Korridorfluss und aktuellen Fahrerstatus auf einer operativen Karte.",
+      "summary": "Sehe dir die Livemap an.",
       "tracking": "Live-Tracking",
       "route_signal": "Signal stabil und Routenspur aktualisiert.",
       "convoy_status": "Fahrerstatus"
@@ -969,9 +969,9 @@
     "skilltree": {
       "title": "Skilltree-Editor",
       "subtitle": "Passe die Fähigkeiten deines Fahrers visuell an.",
-      "launch_kicker": "Fahrerspezialisierung",
+      "launch_kicker": "Skill Management",
       "launch_desc": "Öffne den fokussierten Skilltree-Arbeitsbereich für ADR-, Fracht- und Fahrspezialisierungen.",
-      "launch_action": "Skilltree öffnen",
+      "launch_action": "Öffnen",
       "modal_desc": "Bearbeite Fahrerfähigkeiten in einem fokussierten Bereich, ohne die Backend-Save-Logik zu ändern.",
       "summary_progress": "Gesamtfortschritt",
       "summary_assigned": "Vergebene Level",
@@ -1018,7 +1018,7 @@
         "adr_desc": "Schaltet schrittweise Zertifizierungen für Gefahrgut frei.",
         "long_dist_desc": "Verbessert Fortschritt und Effizienz bei Langstreckenfahrten.",
         "heavy_desc": "Erweitert den Zugang zu schwererer und wertvollerer Fracht.",
-        "fragile_desc": "Verbessert den Umgang mit empfindlicher und Schadensanfälliger Fracht.",
+        "fragile_desc": "Verbessert den Umgang mit empfindlicher und Anfälliger Fracht.",
         "urgent_desc": "Stärkt die Spezialisierung auf zeitkritische Lieferungen.",
         "mechanical_desc": "Steht für Eco-Driving und effizientes Fahrzeughandling."
       }
@@ -1035,12 +1035,12 @@
       "fields": {
         "money": "Geld",
         "level": "Level",
-        "xp": "EP"
+        "xp": "XP"
       },
       "placeholders": {
         "money": "Geldwert",
         "level": "Level-Wert",
-        "xp": "EP-Wert"
+        "xp": "XP-Wert"
       },
       "actions": {
         "apply": "Werte anwenden",
@@ -1050,7 +1050,7 @@
       },
       "errors": {
         "invalid_level": "Ungültiger Level-Wert",
-        "invalid_xp": "Ungültiger EP-Wert",
+        "invalid_xp": "Ungültiger XP-Wert",
         "invalid_money": "Ungültiger Geldwert",
         "no_values": "Gib mindestens einen Zielwert ein."
       }
@@ -1088,7 +1088,7 @@
         "clean_title": "Derzeit wurden keine Probleme erkannt",
         "fix_confirm": "Soll die ausgew?hlte sichere Korrektur auf den aktiven Speicherstand angewendet werden?",
         "fix_apply": "Korrektur anwenden",
-        "fix_sync": "EP / Level synchronisieren",
+        "fix_sync": "XP / Level synchronisieren",
         "issues_count": "{count} Probleme"
       },
       "backups": {
@@ -1106,7 +1106,7 @@
         "no_preview_status": "Keine Vorschau",
         "ready_status": "Vorschau bereit",
         "empty_title": "Keine Wiederherstellungsvorschau geladen",
-        "empty_body": "W?hle ein Backup aus, um änderungen vor der Wiederherstellung zu vergleichen.",
+        "empty_body": "Wähle ein Backup aus, um änderungen vor der Wiederherstellung zu vergleichen.",
         "confirm": "Dieses Backup jetzt wiederherstellen? Zuerst wird ein Sicherheits-Backup erstellt.",
         "changes_suffix": "Änderungen",
         "parseable": "lesbar",
@@ -1318,7 +1318,7 @@
         "modalSliderText": "Verschleiß für Truck-Komponenten festlegen"
       },
       "fuel_level": {
-        "title": "Tankfüllstand",
+        "title": "Tankstand",
         "desc": "Bearbeite deinen Tankfüllstand",
         "modalNumberText": "Tankfüllstand festlegen (0 bis 100)%"
       },
@@ -1328,7 +1328,7 @@
         "modalSliderText": "Truck auf 100% betanken?"
       },
       "truck_mileage": {
-        "title": "Truck-Kilometerstand",
+        "title": "Truck-KM",
         "desc": "Bearbeite den Kilometerstand deines Trucks",
         "modalNumberText": "Kilometerstand in Kilometern festlegen"
       },
@@ -1362,7 +1362,7 @@
         "modalNumberText": "Neuen XP-Wert festlegen"
       },
       "level_system": {
-        "title": "Level- & EP-System",
+        "title": "Level- & XP-System",
         "desc": "Setze ein Ziel-Level visuell mit echter EP-Tabelle und Live-Vorschau."
       },
       "change_money": {
@@ -1454,7 +1454,7 @@
     "close": "Schließen",
     "apply": "Anwenden",
     "wiki": {
-      "button_label": "Hilfe",
+      "button_label": "Hilfe / WIKI",
       "button_aria_label": "In-App-Hilfe und Wiki öffnen",
       "close_aria_label": "Hilfedialog schließen",
       "nav_aria_label": "Wiki-Bereiche",
@@ -1476,9 +1476,9 @@
         },
         "save_editor": {
           "title": "Save Edit Tool",
-          "item_truck": "Bearbeite Truck-Werte wie Verschleiß, Kraftstoff, Kilometerstand und Identitätsfelder.",
-          "item_trailer": "Bearbeite Trailer-Werte wie Zustand, Frachtmasse und Trailer-Identitätsdaten.",
-          "item_profile": "Bearbeite Profilwerte wie Geld, XP, Level und zugehörige Fortschrittsdaten.",
+          "item_truck": "Bearbeite Truck-Werte wie Verschleiß, Kraftstoff, Kilometerstand und Kennzeichen.",
+          "item_trailer": "Bearbeite Trailer-Werte wie Zustand, Frachtmasse und Trailer-Kennzeichen.",
+          "item_profile": "Bearbeite Profilwerte wie Geld, XP, Level und zugehörige Skills.",
           "item_validate": "Prüfe Werte, bevor Änderungen in den aktiven Save geschrieben werden.",
           "item_backup": "Wenn Backup- und Restore-Abläufe verfügbar sind, nutze sie vor riskanten Änderungen."
         },
@@ -1588,14 +1588,14 @@
       "current_stats": {
         "title": "Aktuelle Werte",
         "level": "Aktuelles Level",
-        "total_xp": "Aktuelle EP",
-        "next_step": "Aktuelle Stufen-EP",
+        "total_xp": "Aktuelle XP",
+        "next_step": "Aktuelle Stufen-XP",
         "progress": "Fortschritt"
       },
       "target": {
         "title": "Neues Ziel",
         "selected_level": "Ausgewähltes Level",
-        "total_xp": "Ziel-EP",
+        "total_xp": "Ziel-XP",
         "increase": "EP-Zuwachs",
         "next_level": "Nächstes Level",
         "progress": "Zielfortschritt"
@@ -1623,13 +1623,13 @@
       "summary": {
         "title": "Änderungsübersicht",
         "level_change": "Level-Änderung",
-        "xp_change": "EP-Änderung",
-        "delta": "EP-Differenz",
+        "xp_change": "XP-Änderung",
+        "delta": "XP-Differenz",
         "mode": "Modus",
         "unchanged": "Keine änderung"
       },
       "actions": {
-        "apply": "Level & EP setzen"
+        "apply": "Level & XP setzen"
       },
       "progress": {
         "max": "100 % | Max. Level",
@@ -1637,20 +1637,20 @@
       },
       "feedback": {
         "level_clamped": "Level wurde auf den unterstützten Bereich {min}-{max} angepasst.",
-        "xp_clamped": "EP wurden auf den unterstützten Bereich 0-{maxXp} angepasst.",
-        "required": "Gib einen Wert ein, um den Zielfortschritt zu berechnen.",
+        "xp_clamped": "XP wurden auf den unterstützten Bereich 0-{maxXp} angepasst.",
+        "required": "Gib einen Wert ein, um den fortschritt zu berechnen.",
         "invalid": "Gib eine gültige ganze Zahl ein.",
         "unchanged": "Derzeit ist keine Änderung ausgewählt.",
-        "apply_error": "Die Leveländerung konnte nicht angewendet werden."
+        "apply_error": "Dein Level konnte nicht angewendet werden."
       }
     },
     "user_logs": {
       "kicker": "Benutzerprotokolle",
       "title": "Benutzerprotokolle",
-      "description": "Pr?fe aktuelle Aktionen, Warnungen und Fehler, die das Tool f?r Nutzer protokolliert.",
+      "description": "Prüfe aktuelle Aktionen, Warnungen und Fehler, die das Tool für Nutzer protokolliert.",
       "status": {
         "ready": "Bereit",
-        "loading": "L?dt"
+        "loading": "Lädt"
       },
       "empty": "Es sind keine Nutzerprotokolle vorhanden.",
       "confirm_clear": "Möchtest du die User Logs wirklich leeren?",
@@ -1801,7 +1801,7 @@
         "no_save_health_details": "Es konnten keine weiteren Details zur Speicherstand-Gesundheit isoliert werden.",
         "no_limitations": "Es wurden keine weiteren Einschränkungen verzeichnet.",
         "protected_mods_title": "Geschützte oder unlesbare Mods erkannt",
-        "protected_mods_hint": "Das ist bei ETS2-.scs-Mods ?blich und bedeutet nicht zwangsläufig, dass der Mod defekt ist.",
+        "protected_mods_hint": "Das ist bei ETS2-.scs-Mods üblich und bedeutet nicht zwangsläufig, dass der Mod defekt ist.",
         "removed_suspected": "Möglicherweise entfernter Mod oder veraltete Speicherstand-Referenz.",
         "no_mod_assigned": "Kein Mod konnte sicher zugeordnet werden.",
         "limit_label": "Grenze"
@@ -2013,8 +2013,8 @@
           "ready": "Das Preset kann in den aktiven Save geschrieben werden.",
           "activating": "Das Preset wird gerade geschrieben und verifiziert.",
           "no_mods_configured": "Noch keine Mods konfiguriert.",
-          "optional_does_not_block": "[NEEDS TRANSLATION] Optional, does not block activation",
-          "missing_install": "Diese Mod ist lokal nicht installiert. Öffne die Steam-Workshop-Seite, abonniere die Mod, warte bis Steam den Download abgeschlossen hat und klicke dann erneut auf Mods prüfen."
+          "optional_does_not_block": "Optional, blockt keine Aktivitäten",
+          "missing_install": "Diese Mod ist lokal nicht installiert! Öffne die Steam-Workshop-Seite, abonniere die Mod, warte bis Steam den Download abgeschlossen hat und klicke dann erneut auf Mods prüfen."
         },
         "mod_status": {
           "available": "Verfügbar",
@@ -2030,9 +2030,9 @@
           "preset_loaded": "Preset geladen",
           "mods_checked": "Mods geprüft",
           "profile_opened": "Profil geöffnet",
-          "active_mods_read": "actived_mods gelesen",
+          "active_mods_read": "actived_mods[] gelesen",
           "backup_created": "Backup erstellt",
-          "active_mods_written": "actived_mods geschrieben",
+          "active_mods_written": "actived_mods[] geschrieben",
           "follow_up_successful": "Follow-up Check erfolgreich"
         },
         "apply_result": {
@@ -2047,8 +2047,8 @@
           "check_failed_message": "Die Preset-Prüfung konnte nicht abgeschlossen werden.",
           "mod_missing_title": "Mod nicht gefunden",
           "mod_missing_message": "Mindestens eine erforderliche Steam Workshop Mod wurde lokal nicht gefunden.",
-          "optional_missing_title": "[NEEDS TRANSLATION] Optional mod missing",
-          "optional_missing_message": "[NEEDS TRANSLATION] Optional mod missing: {name}. Preset can still be activated.",
+          "optional_missing_title": "Optionaler MOD fehlt!",
+          "optional_missing_message": "Optionaler mod fehlt: {name}, wird aber dennoch Aktiviert.",
           "save_failed_title": "Speichern fehlgeschlagen",
           "save_failed_message": "Die Save-Datei konnte nicht erfolgreich geschrieben werden.",
           "verification_failed_title": "Verifizierung fehlgeschlagen",

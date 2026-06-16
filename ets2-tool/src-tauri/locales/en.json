@@ -581,7 +581,7 @@
                         "recovery_code_required": "Recovery code is required.",
                         "recovery_code_invalid": "Recovery code is invalid.",
                         "consent_required": "Please accept the privacy policy and terms.",
-                        "not_authenticated": "Not authenticated.",j
+                        "not_authenticated": "Not authenticated.",
                         "forbidden": "Access denied."
                   }
             },

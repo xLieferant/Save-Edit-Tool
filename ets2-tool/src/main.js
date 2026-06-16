@@ -19,6 +19,7 @@ let applySetting = () => {};
 let checkUpdaterOnStartup = () => {};
 let manualUpdateCheck = () => {};
 let scheduleSaveSafetyRefresh = () => {};
+const UPDATE_START_DELAY_MS = 2500;
 
 const SAVE_MUTATION_COMMANDS = new Set([
   "apply_custom_reset_values",
@@ -347,23 +348,37 @@ async function t(key, params = {}) {
 }
 
 async function translateUI() {
+  console.log("[i18n] loading language for save editor");
   const elements = document.querySelectorAll("[data-translate]");
   for (const el of elements) {
     const key = el.getAttribute("data-translate");
-    el.textContent = await t(key);
+    const translated = await t(key);
+    if (translated === key) {
+      console.warn("[i18n] missing translation", key);
+    }
+    el.textContent = translated;
   }
 
   const placeholders = document.querySelectorAll("[data-translate-placeholder]");
   for (const el of placeholders) {
     const key = el.getAttribute("data-translate-placeholder");
-    el.setAttribute("placeholder", await t(key));
+    const translated = await t(key);
+    if (translated === key) {
+      console.warn("[i18n] missing placeholder translation", key);
+    }
+    el.setAttribute("placeholder", translated);
   }
 
   const ariaLabels = document.querySelectorAll("[data-translate-aria-label]");
   for (const el of ariaLabels) {
     const key = el.getAttribute("data-translate-aria-label");
-    el.setAttribute("aria-label", await t(key));
+    const translated = await t(key);
+    if (translated === key) {
+      console.warn("[i18n] missing aria translation", key);
+    }
+    el.setAttribute("aria-label", translated);
   }
+  console.log("[i18n] loaded language for save editor");
 }
 
 window.t = t;
@@ -414,15 +429,17 @@ document.addEventListener("DOMContentLoaded", async () => {
       } catch (error) {
         console.warn("[ui] applySetting module load failed", error);
       }
-
-      try {
-        ({ checkUpdaterOnStartup, manualUpdateCheck } = await import("./js/updater.js"));
-      } catch (error) {
-        console.warn("[ui] updater module load failed", error);
-      }
     }
 
     await translateUI();
+    setTimeout(async () => {
+      try {
+        ({ checkUpdaterOnStartup, manualUpdateCheck } = await import("./js/updater.js"));
+        await checkUpdaterOnStartup(window.showToast);
+      } catch (error) {
+        console.warn("[updater] check failed but app continues", error);
+      }
+    }, UPDATE_START_DELAY_MS);
     document.body.classList.add("mode-editor");
     if (GITHUB_PUBLIC_LOCK) {
       document.body.classList.add("github-public-lock"); // TEMP_GITHUB_BUILD
@@ -3600,8 +3617,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     refs.versionBtn.textContent = `v${await appVersion()}`;
     refs.versionBtn.addEventListener("click", () => manualUpdateCheck(window.showToast));
   }
-
-  setTimeout(() => checkUpdaterOnStartup(window.showToast), 2000);
 
   refs.websiteBtn?.addEventListener("click", () => openUrl("https://www.xlieferant.dev/"));
   refs.youtubeBtn?.addEventListener("click", () => openUrl("https://www.youtube.com/@xLieferant"));

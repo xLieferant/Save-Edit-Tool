@@ -534,11 +534,13 @@ async function maybeLogProgress(downloadedBytes, totalBytes) {
 
 async function checkForUpdate(showToast, options = {}) {
   if (!hasUpdaterRuntime()) {
+    console.warn("[updater] skipped because updater runtime is unavailable");
     await notify(showToast, "update.check_failed", {}, "error");
     return null;
   }
 
   if (isUpdateCheckRunning) {
+    console.warn("[updater] skipped because update check is already running");
     return null;
   }
 
@@ -546,6 +548,7 @@ async function checkForUpdate(showToast, options = {}) {
   isUpdateCheckRunning = true;
 
   try {
+    console.log("[updater] checking for updates ...");
     await logUpdateAction("Update check started");
     const update = await updaterApi.check();
 
@@ -570,7 +573,7 @@ async function checkForUpdate(showToast, options = {}) {
     await renderUpdateModal(update);
     return update;
   } catch (error) {
-    console.error("[updater] check failed", error);
+    console.warn("[updater] check failed but app continues", error);
     await logUpdateAction(`Update check failed: ${String(error?.message || error)}`, "error");
     await notify(showToast, "update.check_failed", {}, "error");
     return null;
@@ -661,9 +664,17 @@ async function downloadAndInstallCurrentUpdate(showToast) {
 }
 
 export async function checkUpdaterOnStartup(showToast) {
-  await checkForUpdate(showToast, { manual: false });
+  try {
+    await checkForUpdate(showToast, { manual: false });
+  } catch (error) {
+    console.warn("[updater] check failed but app continues", error);
+  }
 }
 
 export async function manualUpdateCheck(showToast) {
-  await checkForUpdate(showToast, { manual: true });
+  try {
+    await checkForUpdate(showToast, { manual: true });
+  } catch (error) {
+    console.warn("[updater] manual check failed but app continues", error);
+  }
 }
