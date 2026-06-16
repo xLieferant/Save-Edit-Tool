@@ -222,8 +222,19 @@ impl Translator {
 
         if self.current_language != "en" {
             if let Some(value) = self.resolve_translation("en", key) {
+                log_language(format!(
+                    "fallback to en for key '{}' from locale '{}'",
+                    key, self.current_language
+                ));
                 return value.to_string();
             }
+        }
+
+        if !self.translations.contains_key("en") {
+            log_language(format!(
+                "ERROR: fallback locale 'en' is not loaded; returning key '{}'",
+                key
+            ));
         }
 
         key.to_string()

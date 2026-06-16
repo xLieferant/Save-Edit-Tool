@@ -4,6 +4,7 @@ import { safeInvoke } from "../shared/runtime.js";
 const SAVE_EDITOR_PATH = "/pages/save-editor/index.html";
 const CAREER_PATH = "/pages/career/index.html";
 const GITHUB_PUBLIC_LOCK = true; // TEMP_GITHUB_BUILD
+const UPDATE_START_DELAY_MS = 2500;
 
 function toggleGithubLockState(element, locked) {
   if (!element) return;
@@ -26,6 +27,14 @@ function navigateTo(path) {
 document.addEventListener("DOMContentLoaded", async () => {
   attachI18nToWindow();
   await translateDocument(document);
+  setTimeout(async () => {
+    try {
+      const { checkUpdaterOnStartup } = await import("../../js/updater.js");
+      await checkUpdaterOnStartup();
+    } catch (error) {
+      console.warn("[launcher] updater module load failed", error);
+    }
+  }, UPDATE_START_DELAY_MS);
 
   const saveEditorButton = document.getElementById("openSaveEditorBtn");
   const careerButton = document.getElementById("openCareerBtn");
