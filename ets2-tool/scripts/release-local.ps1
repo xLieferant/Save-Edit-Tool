@@ -2,8 +2,7 @@ param(
   [Parameter(Mandatory = $true)]
   [string]$Version,
 
-  [Parameter(Mandatory = $true)]
-  [string]$Tag,
+  [string]$Tag = "",
 
   [string]$Notes = ""
 )
@@ -14,6 +13,11 @@ $projectRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 $tauriConfigPath = Join-Path $projectRoot "src-tauri/tauri.conf.json"
 $cargoTomlPath = Join-Path $projectRoot "src-tauri/Cargo.toml"
 $bundleDir = Join-Path $projectRoot "src-tauri/target/release/bundle/nsis"
+$releaseTag = if ([string]::IsNullOrWhiteSpace($Tag)) { $Version } else { $Tag }
+
+if ($releaseTag -match '^[vV]') {
+  throw "Release tags must not start with v. Use $Version instead of $releaseTag."
+}
 
 if (-not (Test-Path -LiteralPath $tauriConfigPath)) {
   throw "Tauri config not found: $tauriConfigPath"
@@ -50,21 +54,22 @@ try {
 
 & (Join-Path $PSScriptRoot "generate-latest-json.ps1") `
   -Version $Version `
-  -Tag $Tag `
+  -Tag $releaseTag `
   -Notes $Notes
 
-$installer = Get-ChildItem -LiteralPath $bundleDir -File -Filter "*_$($Version)_x64-setup.exe" | Select-Object -First 1
-if (-not $installer) {
-  throw "Build completed, but installer for version $Version was not found in $bundleDir"
+$assetName = "Save-Edit.Tool.xLieferant_$($Version)_x64-setup.exe"
+$installerPath = Join-Path $bundleDir $assetName
+if (-not (Test-Path -LiteralPath $installerPath)) {
+  throw "Build completed, but normalized installer was not found: $installerPath"
 }
 
-$signaturePath = "$($installer.FullName).sig"
+$signaturePath = "$installerPath.sig"
 $rootLatestJson = Join-Path $projectRoot "latest.json"
 $bundleLatestJson = Join-Path $bundleDir "latest.json"
 
 Write-Host ""
-Write-Host "Upload these files to GitHub release ${Tag}:"
-Write-Host "  $($installer.FullName)"
+Write-Host "Upload these files to GitHub release ${releaseTag}:"
+Write-Host "  $installerPath"
 Write-Host "  $signaturePath"
 Write-Host "  $rootLatestJson"
 Write-Host ""
