@@ -1,5 +1,6 @@
 import { attachI18nToWindow, translateDocument } from "../shared/i18n.js";
 import { safeInvoke } from "../shared/runtime.js";
+import { checkUpdaterOnStartup } from "../../js/updater.js";
 
 const SAVE_EDITOR_PATH = "/pages/save-editor/index.html";
 const CAREER_PATH = "/pages/career/index.html";
@@ -26,6 +27,7 @@ function navigateTo(path) {
 document.addEventListener("DOMContentLoaded", async () => {
   attachI18nToWindow();
   await translateDocument(document);
+  setTimeout(() => checkUpdaterOnStartup(), 2000);
 
   const saveEditorButton = document.getElementById("openSaveEditorBtn");
   const careerButton = document.getElementById("openCareerBtn");

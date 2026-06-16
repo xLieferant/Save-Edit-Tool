@@ -8,13 +8,13 @@
     "truck": "🚛Trucky",
     "trailer": "🚚Trailer",
     "profile": "💠Profile",
-    "settings": "âš™ï¸Einstellungen"
+    "settings": "⚙\uFE0F Einstellungen"
   },
   "buttons": {
     "website": "Webseite",
     "youtube": "🔴 YouTube",
-    "patreon": "âš ï¸ Patreon",
-    "github": "âš ï¸ GitHub"
+    "patreon": "⚠\uFE0F Patreon",
+    "github": "⚠\uFE0F GitHub"
   },
   "profile": {
     "select_profile": "Profil auswählen",
@@ -923,17 +923,17 @@
     }
   },
   "editor": {
-    "eyebrow": "Werkzeuge f?r Speicherst?nde",
-    "title": "Pr?zise Speicherstand-Bearbeitung",
+    "eyebrow": "Werkzeuge für Speicherstände",
+    "title": "Präzise Speicherstand-Bearbeitung",
     "summary": "Separater Hilfsmodus f?r direkte Speicherstand-Bearbeitung mit klarer Warnstufe zwischen Simulation und Bearbeitung.",
     "warning_label": "Wichtiger Hinweis",
-    "warning_title": "Bearbeitungen k?nnen Fortschritt und Balance dauerhaft beeintr?chtigen.",
-    "safe_desc": "Der sichere Modus f?hrt durch empfohlene Aktionen und reduziert die visuelle Betonung riskanter Eingriffe.",
+    "warning_title": "Bearbeitungen können Fortschritt und Balance dauerhaft beeinträchtigen.",
+    "safe_desc": "Der sichere Modus führt durch empfohlene Aktionen und reduziert die visuelle Betonung riskanter Eingriffe.",
     "advanced_desc": "Der erweiterte Modus zeigt direkte Eingriffsbereiche und setzt voraus, dass du die Auswirkungen auf die Balance kennst.",
     "safe_mode": "Sicherer Modus",
     "advanced_mode": "Erweiterter Modus",
-    "import": "Speicherst?nde importieren",
-    "export": "Speicherst?nde exportieren",
+    "import": "Speicherstände importieren",
+    "export": "Speicherstände exportieren",
     "actions_label": "Werkzeugkategorien",
     "quick_actions": "Arbeitsbereich-Aktionen",
     "status_label": "Arbeitsbereich-Status",
@@ -945,9 +945,9 @@
     "fleet_card": "Fuhrpark",
     "clone_button": "Profil klonen",
     "refresh_button": "Profile scannen",
-    "no_profile": "Kein Profil ausgew?hlt",
-    "no_save": "Kein Speicherstand ausgew?hlt",
-    "empty_title": "Keine Werkzeuge verf?gbar",
+    "no_profile": "Kein Profil ausgewählt",
+    "no_save": "Kein Speicherstand ausgewählt",
+    "empty_title": "Keine Werkzeuge verfügbar",
     "empty_desc": "Diese Kategorie stellt im aktuellen Arbeitsbereich keine Werkzeuge bereit.",
     "tab": {
       "truck": "Truck",
@@ -960,9 +960,9 @@
       "truck": "Truck-Bearbeitung",
       "truck_desc": "Reparatur, Kraftstoff, Kilometerstand und Kennzeichen des aktiven Trucks bearbeiten.",
       "trailer": "Trailer-Bearbeitung",
-      "trailer_desc": "Zustand, Frachtgewicht und Identit?tsdaten des Trailers anpassen.",
+      "trailer_desc": "Zustand, Frachtgewicht und Kennzeichen des Trailers anpassen.",
       "profile": "Profil-Bearbeitung",
-      "profile_desc": "Geld, EP, F?higkeiten und speicherstandsgebundene Profilwerte in einem eigenen Bearbeitungsablauf ?ndern.",
+      "profile_desc": "Geld, EP, Fähigkeiten und speicherstandsgebundene Profilwerte in einem eigenen Bearbeitungsablauf ändern.",
       "settings": "Einstellungs-Bearbeitung",
       "settings_desc": "Sprache, Convoy, Verkehr und erweiterte Konfigurationsschalter steuern."
     },
@@ -1018,20 +1018,20 @@
         "adr_desc": "Schaltet schrittweise Zertifizierungen für Gefahrgut frei.",
         "long_dist_desc": "Verbessert Fortschritt und Effizienz bei Langstreckenfahrten.",
         "heavy_desc": "Erweitert den Zugang zu schwererer und wertvollerer Fracht.",
-        "fragile_desc": "Verbessert den Umgang mit empfindlicher und schadensanfälliger Fracht.",
+        "fragile_desc": "Verbessert den Umgang mit empfindlicher und Schadensanfälliger Fracht.",
         "urgent_desc": "Stärkt die Spezialisierung auf zeitkritische Lieferungen.",
         "mechanical_desc": "Steht für Eco-Driving und effizientes Fahrzeughandling."
       }
     },
     "reset": {
-      "kicker": "Sicheres Zur?cksetzen von Werten",
-      "title": "Sicheres Zur?cksetzen von Werten",
-      "summary": "Wende eigene Zielwerte f?r Geld, Level und EP auf den aktiven Speicherstand an. Vorher wird automatisch ein R?ckg?ngig-Snapshot erstellt.",
-      "backup_notice": "Vor dem Anwenden der ?nderungen wird automatisch ein Backup erstellt.",
-      "undo_unavailable": "Kein R?ckg?ngig-Snapshot verf?gbar.",
+      "kicker": "Sicheres Zurücksetzen von Werten",
+      "title": "Sicheres Zurücksetzen von Werten",
+      "summary": "Wende eigene Zielwerte für Geld, Level und EP auf den aktiven Speicherstand an. Vorher wird automatisch ein Rückgängig-Snapshot erstellt.",
+      "backup_notice": "Vor dem Anwenden der änderungen wird automatisch ein Backup erstellt.",
+      "undo_unavailable": "Kein Rückgängig-Snapshot verfügbar.",
       "ready_hint": "Der aktive Speicherstand wird sofort verwendet. Leere Felder behalten ihre aktuellen Werte.",
       "no_save_hint": "W?hle einen Speicherstand aus, bevor du Werte anwendest.",
-      "undo_confirm": "M?chtest du wirklich den Speicherstand vor der letzten ?nderung wiederherstellen?",
+      "undo_confirm": "Möchtest du wirklich den Speicherstand vor der letzten änderung wiederherstellen?",
       "fields": {
         "money": "Geld",
         "level": "Level",
@@ -1044,14 +1044,14 @@
       },
       "actions": {
         "apply": "Werte anwenden",
-        "undo": "Letzte ?nderung r?ckg?ngig machen",
+        "undo": "Letzte änderung rückgängig machen",
         "applying": "Wende an...",
         "undo_running": "Stelle wieder her..."
       },
       "errors": {
-        "invalid_level": "Ung?ltiger Level-Wert",
-        "invalid_xp": "Ung?ltiger EP-Wert",
-        "invalid_money": "Ung?ltiger Geldwert",
+        "invalid_level": "Ungültiger Level-Wert",
+        "invalid_xp": "Ungültiger EP-Wert",
+        "invalid_money": "Ungültiger Geldwert",
         "no_values": "Gib mindestens einen Zielwert ein."
       }
     },
@@ -1066,7 +1066,7 @@
         "hide_details": "Details ausblenden",
         "view_backups": "Backups",
         "hide_backups": "Backups ausblenden",
-        "refresh_health": "Gesundheitspr?fung aktualisieren",
+        "refresh_health": "Check Health aktualisieren",
         "copy_report": "Bericht kopieren",
         "export_logs": "Logs exportieren",
         "refresh_backups": "Backups aktualisieren",
@@ -1074,17 +1074,17 @@
         "restore_backup": "Backup wiederherstellen"
       },
       "status": {
-        "idle": "Nicht gepr?ft",
-        "clean": "Unauff?llig",
+        "idle": "Nicht geprüft",
+        "clean": "Unauffällig",
         "risky": "Riskant",
-        "broken": "Besch?digt"
+        "broken": "Beschädigt"
       },
       "health": {
         "kicker": "Speicherstand-Gesundheit",
-        "title": "Gesundheitspr?fung",
-        "empty_summary": "Lade einen Speicherstand, um eine Gesundheitspr?fung auszuf?hren.",
-        "empty_title": "Kein Speicherstand ausgew?hlt",
-        "empty_body": "Die Gesundheitspr?fung wird aktiv, sobald ein Profil und ein Speicherstand geladen sind.",
+        "title": "Gesundheitsprüfung",
+        "empty_summary": "Lade einen Speicherstand, um eine Gesundheitsprüfung auszuführen.",
+        "empty_title": "Kein Speicherstand ausgewählt",
+        "empty_body": "Die Gesundheitsprüfung wird aktiv, sobald ein Profil und ein Speicherstand geladen sind.",
         "clean_title": "Derzeit wurden keine Probleme erkannt",
         "fix_confirm": "Soll die ausgew?hlte sichere Korrektur auf den aktiven Speicherstand angewendet werden?",
         "fix_apply": "Korrektur anwenden",
@@ -1094,45 +1094,45 @@
       "backups": {
         "kicker": "Wiederherstellung",
         "title": "Automatische Backups",
-        "empty_summary": "Wiederherstellungspunkte erscheinen nach ?nderungen.",
-        "empty_title": "Keine Backups verf?gbar",
-        "empty_body": "Schreibvorg?nge erstellen automatisch Wiederherstellungspunkte mit Zeitstempel.",
+        "empty_summary": "Wiederherstellungspunkte erscheinen nach änderungen.",
+        "empty_title": "Keine Backups verfügbar",
+        "empty_body": "Schreibvorgänge erstellen automatisch Wiederherstellungspunkte mit Zeitstempel.",
         "count": "{count} Backups",
         "files_suffix": "Dateien"
       },
       "restore": {
-        "kicker": "?nderungsvergleich",
+        "kicker": "Änderungsvergleich",
         "title": "Wiederherstellungsvorschau",
         "no_preview_status": "Keine Vorschau",
         "ready_status": "Vorschau bereit",
         "empty_title": "Keine Wiederherstellungsvorschau geladen",
-        "empty_body": "W?hle ein Backup aus, um ?nderungen vor der Wiederherstellung zu vergleichen.",
+        "empty_body": "W?hle ein Backup aus, um änderungen vor der Wiederherstellung zu vergleichen.",
         "confirm": "Dieses Backup jetzt wiederherstellen? Zuerst wird ein Sicherheits-Backup erstellt.",
-        "changes_suffix": "?nderungen",
+        "changes_suffix": "Änderungen",
         "parseable": "lesbar",
-        "binary": "bin?r"
+        "binary": "binär"
       }
     },
     "recovery": {
       "entry_kicker": "Speicherstand-Sicherheit",
       "entry_title": "Wiederherstellungscenter",
-      "entry_summary": "Gesundheitspr?fung, Backups und Wiederherstellungswerkzeuge.",
-      "entry_empty": "Lade einen Speicherstand, um Gesundheitspr?fung, Backups und Wiederherstellungswerkzeuge zu ?ffnen.",
-      "entry_status_idle": "Bei Bedarf ?ffnen",
-      "entry_status_ready": "Wiederherstellungscenter ?ffnen",
-      "open_button": "Wiederherstellungscenter ?ffnen",
+      "entry_summary": "Gesundheitsprüfung, Backups und Wiederherstellungswerkzeuge.",
+      "entry_empty": "Lade einen Speicherstand, Backups und Wiederherstellungswerkzeuge zu öffnen.",
+      "entry_status_idle": "Bei Bedarf öffnen",
+      "entry_status_ready": "Wiederherstellungscenter öffnen",
+      "open_button": "Center öffnen",
       "nav_button": "Wiederherstellungscenter",
-      "back_button": "Zur?ck zum Save Editor",
+      "back_button": "Zurück zum Tool",
       "header_kicker": "Speicherstand-Sicherheit",
       "header_title": "Wiederherstellungscenter",
-      "header_summary": "Speicherstand-Gesundheit ?berwachen, Backups verwalten und sicher wiederherstellen.",
+      "header_summary": "Speicherstand-Gesundheit Überwachen, Backups verwalten und sicher wiederherstellen.",
       "loading": "Wiederherstellungsdaten werden geladen...",
-      "no_scan": "Noch keine Pr?fung",
+      "no_scan": "Noch keine Prüfung",
       "not_loaded": "Nicht geladen",
       "status": {
         "profile": "Aktives Profil",
         "save": "Aktiver Speicherstand",
-        "last_scan": "Letzte Gesundheitspr?fung",
+        "last_scan": "Letzte Scan",
         "backups": "Anzahl der Backups"
       },
       "reports_kicker": "Diagnose",
@@ -1239,7 +1239,7 @@
     "diagnostics_export_success": "Diagnosebericht nach {path} exportiert.",
     "diagnostics_export_failed": "Diagnosebericht konnte nicht exportiert werden.",
     "diagnostics_copy_summary_success": "Diagnosezusammenfassung kopiert.",
-    "diagnostics_copy_mods_success": "Verd?chtige Mods kopiert.",
+    "diagnostics_copy_mods_success": "Verdächtige Mods kopiert.",
     "diagnostics_copy_failed": "Kopieren in die Zwischenablage fehlgeschlagen.",
     "diagnostics_log_path_copied": "Pfad zum Log-Ordner kopiert.",
     "diagnostics_log_open_failed": "Log-Ordner konnte nicht ge?ffnet oder kopiert werden.",
@@ -1247,7 +1247,7 @@
     "mod_profile_manager_scan_timed_out": "Mod-Scan hat das Zeitlimit erreicht. Einige Mods wurden übersprungen.",
     "mod_profile_manager_preset_created": "Preset {name} erstellt.",
     "mod_profile_manager_preset_failed": "Die Preset-Aktion ist fehlgeschlagen.",
-    "mod_profile_manager_preset_deleted": "Preset gel?scht.",
+    "mod_profile_manager_preset_deleted": "Preset gelöscht.",
     "mod_profile_manager_preset_imported": "Preset {name} importiert.",
     "mod_profile_manager_preset_exported": "Preset nach {path} exportiert.",
     "mod_profile_manager_preset_select_required": "W?hle zuerst ein Preset aus.",
@@ -1257,7 +1257,7 @@
     "mod_profile_manager_workshop_links_copied": "Workshop-Links kopiert.",
     "mod_profile_manager_path_copied": "Ordnerpfad kopiert.",
     "mod_profile_manager_folder_open_failed": "Der Ordner konnte nicht ge?ffnet oder kopiert werden.",
-    "mod_profile_manager_no_workshop_links": "Keine Workshop-Links verf?gbar.",
+    "mod_profile_manager_no_workshop_links": "Keine Workshop-Links verfügbar.",
     "mod_sandbox_load_failed": "Mod-Sandboxes konnten nicht geladen werden.",
     "mod_sandbox_created": "Sandbox erstellt.",
     "mod_sandbox_create_failed": "Sandbox konnte nicht erstellt werden.",
@@ -1285,10 +1285,10 @@
     "mod_sandbox_test_preset_imported": "Test-Preset importiert.",
     "mod_sandbox_test_preset_failed": "Test-Preset konnte nicht importiert werden.",
     "mod_sandbox_apply_success_validated": "{applied_mod_count} Mod(s) wurden gesetzt. {removed_existing_mod_count} alte Mod(s) wurden entfernt. Die game.sii wurde erneut eingelesen und erfolgreich validiert. Backup: {backup_path}",
-    "level_system_missing_data": "Lade ein Profil und einen Speicherstand, bevor du das Level-System ?ffnest.",
+    "level_system_missing_data": "Lade ein Profil und einen Speicherstand, bevor du das Level-System öffnest.",
     "level_system_load_error": "Level-Tabelle konnte nicht geladen werden.",
     "level_system_apply_success": "Level {level} mit {xp} EP angewendet.",
-    "level_system_apply_error": "Das ausgew?hlte Level konnte nicht angewendet werden.",
+    "level_system_apply_error": "Das ausgewählte Level konnte nicht angewendet werden.",
     "safety_report_copied": "Support-Bericht kopiert.",
     "safety_logs_exported": "Logs nach {path} exportiert.",
     "safety_logs_export_failed": "Log-Export fehlgeschlagen.",
@@ -1299,7 +1299,7 @@
     "safety_restore_failed": "Backup-Wiederherstellung fehlgeschlagen.",
     "safety_copy_failed": "Kopieren in die Zwischenablage fehlgeschlagen.",
     "reset_values_applied": "Werte wurden erfolgreich angewendet.",
-    "reset_undo_restored": "Die letzte ?nderung wurde wiederhergestellt."
+    "reset_undo_restored": "Die letzte änderung wurde wiederhergestellt."
   },
   "tools": {
     "truck": {
@@ -1315,7 +1315,7 @@
       "advanced_repair": {
         "title": "Erweiterte Reparatur",
         "desc": "Erweiterte Reparaturoptionen",
-        "modalSliderText": "Verschleißwerte für Truck-Komponenten festlegen"
+        "modalSliderText": "Verschleiß für Truck-Komponenten festlegen"
       },
       "fuel_level": {
         "title": "Tankfüllstand",
@@ -1391,11 +1391,11 @@
       },
       "mod_conflict_diagnostics": {
         "title": "Mod-Konflikt-Analyse",
-        "desc": "Analysiere Absturz-Logs, defekte Speicherstand-Referenzen und verd?chtige Mods f?r den aktiven Spielzustand."
+        "desc": "Analysiere Absturz-Logs, defekte Speicherstand-Referenzen und verdächtige Mods f?r den aktiven Spielzustand."
       },
       "mod_profile_manager": {
         "title": "Mod-Profil-Manager",
-        "desc": "Speichere, vergleiche und pr?fe lokale sowie Steam-Workshop-Mod-Setups f?r ETS2 oder ATS."
+        "desc": "Speichere, vergleiche und prüfe lokale sowie Steam-Workshop-Mod-Setups für ETS2 oder ATS."
       }
     },
     "settings": {
@@ -1541,7 +1541,7 @@
       "cloning_button": "Wird geklont...",
       "validation_checking": "Wird geprüft...",
       "validation_valid": "✔ {message}",
-      "validation_invalid": "âŒ {message}"
+      "validation_invalid": "❌ {message}"
     },
     "truck_info": {
       "kicker": "Aktueller Truck",
@@ -1594,10 +1594,10 @@
       },
       "target": {
         "title": "Neues Ziel",
-        "selected_level": "Ausgew?hltes Level",
+        "selected_level": "Ausgewähltes Level",
         "total_xp": "Ziel-EP",
         "increase": "EP-Zuwachs",
-        "next_level": "N?chstes Level",
+        "next_level": "Nächstes Level",
         "progress": "Zielfortschritt"
       },
       "preview": {
@@ -1617,30 +1617,30 @@
         "xp_placeholder": "XP eingeben",
         "xp_help": "Das Level wird aus der gemeinsamen Leveltabelle berechnet.",
         "level_preset": "Level {level}",
-        "reset_current": "Auf aktuell zur?cksetzen",
+        "reset_current": "Auf aktuell zurücksetzen",
         "max_level": "Max. Level"
       },
       "summary": {
-        "title": "?nderungs?bersicht",
-        "level_change": "Level-?nderung",
-        "xp_change": "EP-?nderung",
+        "title": "Änderungsübersicht",
+        "level_change": "Level-Änderung",
+        "xp_change": "EP-Änderung",
         "delta": "EP-Differenz",
         "mode": "Modus",
-        "unchanged": "Keine ?nderung"
+        "unchanged": "Keine änderung"
       },
       "actions": {
         "apply": "Level & EP setzen"
       },
       "progress": {
         "max": "100 % | Max. Level",
-        "no_next_level": "Kein n?chstes Level"
+        "no_next_level": "Kein nächstes Level"
       },
       "feedback": {
-        "level_clamped": "Level wurde auf den unterst?tzten Bereich {min}-{max} angepasst.",
-        "xp_clamped": "EP wurden auf den unterst?tzten Bereich 0-{maxXp} angepasst.",
+        "level_clamped": "Level wurde auf den unterstützten Bereich {min}-{max} angepasst.",
+        "xp_clamped": "EP wurden auf den unterstützten Bereich 0-{maxXp} angepasst.",
         "required": "Gib einen Wert ein, um den Zielfortschritt zu berechnen.",
         "invalid": "Gib eine gültige ganze Zahl ein.",
-        "unchanged": "Derzeit ist keine Aenderung ausgewaehlt.",
+        "unchanged": "Derzeit ist keine Änderung ausgewählt.",
         "apply_error": "Die Leveländerung konnte nicht angewendet werden."
       }
     },
@@ -1653,7 +1653,7 @@
         "loading": "L?dt"
       },
       "empty": "Es sind keine Nutzerprotokolle vorhanden.",
-      "confirm_clear": "M?chtest du die User Logs wirklich leeren?",
+      "confirm_clear": "Möchtest du die User Logs wirklich leeren?",
       "filters": {
         "all": "Alle",
         "info": "Info",
@@ -1667,7 +1667,7 @@
       },
       "meta": {
         "path": "Log-Datei",
-        "size": "Gr??e",
+        "size": "Größe",
         "warnings": "Warnungen",
         "errors": "Fehler",
         "updated": "Aktualisiert"
@@ -1682,7 +1682,7 @@
       "error_title": "Analyse fehlgeschlagen",
       "error_body": "Der Diagnosebericht konnte nicht erstellt werden.",
       "empty_title": "Keine Diagnosedaten gefunden",
-      "empty_body": "Die Analyse hat nicht gen?gend Hinweise gefunden, um einen n?tzlichen Bericht zu erstellen.",
+      "empty_body": "Die Analyse hat nicht genügend Hinweise gefunden, um einen nützlichen Bericht zu erstellen.",
       "overall_label": "Gesamtanalyse",
       "sources": {
         "title": "Datenquellen",
@@ -1707,7 +1707,7 @@
         "base_path": "Basispfad"
       },
       "suspected_mods": {
-        "title": "Verd?chtige Mods"
+        "title": "Verdächtige Mods"
       },
       "missing_references": {
         "title": "Fehlende/entfernte Referenzen"
@@ -1742,15 +1742,15 @@
         "back": "Zurück",
         "refresh": "Analyse aktualisieren",
         "retry_analysis": "Analyse wiederholen",
-        "deep_scan": "Tiefenscan",
+        "deep_scan": "Großer Scan",
         "deep_scan_warning": "Der Deep Scan kann länger dauern und einige geschützte Mods können nicht geprüft werden.",
         "export_report": "Bericht exportieren",
         "export_errors": "errors.txt exportieren",
         "export_crash": "crash-report.txt exportieren",
         "copy_summary": "Zusammenfassung kopieren",
-        "copy_suspicious_mods": "Verd?chtige Mods kopieren",
+        "copy_suspicious_mods": "Verdächtige Mods kopieren",
         "open_logs": "Log-Ordner öffnen",
-        "open_log_folder": "Log-Ordner ?ffnen"
+        "open_log_folder": "Log-Ordner öffnen"
       },
       "fields": {
         "package": "Paket",
@@ -1764,7 +1764,7 @@
         "save_inferred": "Speicherstand abgeleitet"
       },
       "status": {
-        "clean": "Unauff?llig",
+        "clean": "Unauffällig",
         "warnings": "Warnungen",
         "issues_found": "Probleme gefunden",
         "not_enough_data": "Nicht genügend Daten",
@@ -1800,9 +1800,9 @@
         "no_logs": "Keine Analyseprotokollpfade verfügbar.",
         "no_save_health_details": "Es konnten keine weiteren Details zur Speicherstand-Gesundheit isoliert werden.",
         "no_limitations": "Es wurden keine weiteren Einschränkungen verzeichnet.",
-        "protected_mods_title": "Gesch?tzte oder unlesbare Mods erkannt",
-        "protected_mods_hint": "Das ist bei ETS2-.scs-Mods ?blich und bedeutet nicht zwangsl?ufig, dass der Mod defekt ist.",
-        "removed_suspected": "M?glicherweise entfernter Mod oder veraltete Speicherstand-Referenz.",
+        "protected_mods_title": "Geschützte oder unlesbare Mods erkannt",
+        "protected_mods_hint": "Das ist bei ETS2-.scs-Mods ?blich und bedeutet nicht zwangsläufig, dass der Mod defekt ist.",
+        "removed_suspected": "Möglicherweise entfernter Mod oder veraltete Speicherstand-Referenz.",
         "no_mod_assigned": "Kein Mod konnte sicher zugeordnet werden.",
         "limit_label": "Grenze"
       }
@@ -1848,7 +1848,7 @@
         "create_preset": "Preset erstellen",
         "import_preset": "Preset importieren",
         "export_preset": "Preset exportieren",
-        "open": "?ffnen",
+        "open": "Öffnen",
         "compare": "Vergleichen",
         "export_row": "Exportieren",
         "delete": "Löschen",
@@ -1856,9 +1856,9 @@
         "save_preset": "Preset speichern",
         "save_current_setup": "Aktuelles Setup als Preset speichern",
         "copy_workshop_links": "Workshop-Links kopieren",
-        "open_workshop_folder": "Workshop-Ordner ?ffnen",
-        "open_local_mod_folder": "Lokalen Mod-Ordner ?ffnen",
-        "select_workshop_folder": "Workshop-Ordner ausw?hlen",
+        "open_workshop_folder": "Workshop-Ordner Öffnen",
+        "open_local_mod_folder": "Lokalen Mod-Ordner Öffnen",
+        "select_workshop_folder": "Workshop-Ordner auswählen",
         "clear_workshop_folder": "Manuellen Ordner entfernen"
       },
       "fields": {
@@ -1891,14 +1891,14 @@
         "readable": "Lesbar",
         "unreadable": "Nicht lesbar",
         "detected": "Erkannt",
-        "estimated": "Gesch?tzt",
+        "estimated": "Geschützt",
         "unknown": "Unbekannt",
         "local": "Lokal",
         "workshop": "Steam-Workshop",
         "ok": "OK",
         "manifest_missing": "Manifest fehlt",
         "active_manifest_missing": "Aktiver Mod ohne Manifest",
-        "invalid_workshop_item": "Ung?ltiges Workshop-Element"
+        "invalid_workshop_item": "Ungültiges Workshop-Element"
       },
       "content": {
         "no_workshop_folder": "Kein Steam Workshop-Ordner gefunden.",
@@ -1919,7 +1919,7 @@
         "no_workshop_links": "Keine Workshop-Links verfügbar.",
         "restore_not_implemented": "Für dieses Profilformat ist die automatische Aktivierung noch nicht implementiert.",
         "preset_creation_estimated": "Die aktuell aktive Mod-Liste ist nicht direkt verfügbar. Beim Speichern wird der erkannte lokale Bestand mit einer geschätzten Ladereihenfolge verwendet.",
-        "preset_creation_unknown": "Die aktuelle aktive Mod-Liste ist nicht verf?gbar. Beim Speichern wird das aktuelle Scan-Ergebnis unver?ndert ?bernommen.",
+        "preset_creation_unknown": "Die aktuelle aktive Mod-Liste ist nicht verfügbar. Beim Speichern wird das aktuelle Scan-Ergebnis unverändert übernommen.",
         "preset_creation_requires_profile": "Für die Preset-Erstellung ist ein Profil mit einer lesbaren Datei „profile.sii“ erforderlich, damit die aktive Mod-Liste erkannt werden kann.",
         "preset_creation_ready": "Die aktuell aktive Mod-Liste ist verfügbar. Beim Speichern des aktuellen Setups werden die aktiven Mods und die erkannte Ladereihenfolge gespeichert."
       },
@@ -2061,7 +2061,7 @@
       "compare": {
         "missing_mods": "Fehlende Mods",
         "extra_mods": "Zusätzliche Mods",
-        "changed_paths": "Ge?nderte Pfade",
+        "changed_paths": "Geänderte Pfade",
         "load_order": "Unterschiede in der Ladereihenfolge",
         "duplicate_mods": "Doppelte Mods",
         "unreadable_mods": "Unlesbare Mods",
@@ -2189,7 +2189,7 @@
     "label_color_theme_dark": "dunkel",
     "label_color_theme_light": "hell",
     "label_color_theme_neon": "neon",
-    "label_color_theme_neon_red": "Neonrot",
+    "label_color_theme_neon_red": "Neon-Rot",
     "label_language": "Sprache",
     "label_developer": "Entwickler",
     "label_console": "Konsole",
