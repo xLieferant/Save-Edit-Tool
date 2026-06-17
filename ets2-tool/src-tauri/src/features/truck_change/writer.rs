@@ -40,6 +40,41 @@ pub fn set_unit_field_value(
     Ok((content.to_string(), false))
 }
 
+pub fn set_unit_array_value(
+    content: &str,
+    unit_id: &str,
+    field: &str,
+    array_index: usize,
+    value: &str,
+) -> Result<(String, bool), String> {
+    let blocks = parse_unit_blocks(content);
+    let block = blocks
+        .iter()
+        .find(|block| block.id.eq_ignore_ascii_case(unit_id))
+        .ok_or_else(|| format!("unit_not_found:{}", unit_id))?;
+    let mut lines = content
+        .lines()
+        .map(|line| line.to_string())
+        .collect::<Vec<_>>();
+    let prefix = format!("{}[{}]:", field, array_index);
+
+    for index in block.start_line..=block.end_line {
+        let Some(line) = lines.get(index) else {
+            continue;
+        };
+        let trimmed = line.trim_start();
+        if !trimmed.starts_with(&prefix) {
+            continue;
+        }
+        let indent_len = line.len() - trimmed.len();
+        let indent = &line[..indent_len];
+        lines[index] = format!("{}{}[{}]: {}", indent, field, array_index, value);
+        return Ok((join_content_lines(lines, content.ends_with('\n')), true));
+    }
+
+    Ok((content.to_string(), false))
+}
+
 pub fn unit_field_exists(content: &str, unit_id: &str, field: &str) -> bool {
     parse_unit_blocks(content)
         .into_iter()
@@ -51,13 +86,8 @@ pub fn unit_field_exists(content: &str, unit_id: &str, field: &str) -> bool {
 pub fn write_verified_content(
     target_path: &Path,
     content: &str,
-    backup_id: &str,
     verify_temp: impl Fn(&str) -> Result<(), String>,
 ) -> Result<(), String> {
-    if backup_id.trim().is_empty() {
-        return Err("backup_required_before_write".to_string());
-    }
-
     verify_temp(content)?;
 
     let tmp_path = temp_path_for(target_path);
@@ -74,12 +104,81 @@ pub fn write_verified_content(
     replace_file_atomic(&tmp_path, target_path).map_err(format_app_error)
 }
 
+#[derive(Debug)]
+pub struct TemporaryRollbackSnapshot {
+    target_path: PathBuf,
+    snapshot_path: PathBuf,
+    cleaned: bool,
+}
+
+impl TemporaryRollbackSnapshot {
+    pub fn create(target_path: &Path) -> Result<Self, String> {
+        if !target_path.exists() {
+            return Err(format!(
+                "temporary_rollback_source_missing:{}",
+                target_path.display()
+            ));
+        }
+        let snapshot_path = rollback_path_for(target_path);
+        fs::copy(target_path, &snapshot_path).map_err(|error| {
+            format!(
+                "temporary_rollback_create_failed:{}:{}",
+                snapshot_path.display(),
+                error
+            )
+        })?;
+        crate::dev_log!("[truck_change] temporary rollback snapshot created");
+        Ok(Self {
+            target_path: target_path.to_path_buf(),
+            snapshot_path,
+            cleaned: false,
+        })
+    }
+
+    pub fn restore(&self) -> Result<(), String> {
+        fs::copy(&self.snapshot_path, &self.target_path).map_err(|error| {
+            format!(
+                "temporary_rollback_restore_failed:{}:{}",
+                self.target_path.display(),
+                error
+            )
+        })?;
+        Ok(())
+    }
+
+    pub fn cleanup(&mut self) -> Result<(), String> {
+        if self.snapshot_path.exists() {
+            fs::remove_file(&self.snapshot_path).map_err(|error| {
+                format!(
+                    "temporary_rollback_cleanup_failed:{}:{}",
+                    self.snapshot_path.display(),
+                    error
+                )
+            })?;
+        }
+        self.cleaned = true;
+        Ok(())
+    }
+
+    pub fn cleaned(&self) -> bool {
+        self.cleaned
+    }
+}
+
 fn temp_path_for(target_path: &Path) -> PathBuf {
     let file_name = target_path
         .file_name()
         .and_then(|value| value.to_str())
         .unwrap_or("game.sii");
     target_path.with_file_name(format!("{}.truck_change.tmp", file_name))
+}
+
+fn rollback_path_for(target_path: &Path) -> PathBuf {
+    let file_name = target_path
+        .file_name()
+        .and_then(|value| value.to_str())
+        .unwrap_or("game.sii");
+    target_path.with_file_name(format!("{}.truck_change.rollback.tmp", file_name))
 }
 
 fn join_content_lines(lines: Vec<String>, trailing_newline: bool) -> String {
@@ -105,7 +204,10 @@ fn format_app_error(error: AppError) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::{set_unit_field_value, write_verified_content};
+    use super::{
+        TemporaryRollbackSnapshot, set_unit_array_value, set_unit_field_value,
+        write_verified_content,
+    };
 
     #[test]
     fn set_unit_field_value_updates_only_target_unit() {
@@ -128,11 +230,45 @@ player_job : _nameless.job {
     }
 
     #[test]
-    fn write_requires_backup_id() {
+    fn write_verified_content_does_not_require_persistent_backup() {
         let path =
             std::env::temp_dir().join(format!("truck_change_no_backup_{}.sii", std::process::id()));
-        let result = write_verified_content(&path, "SiiNunit\n{\n}\n", "", |_| Ok(()));
-        assert_eq!(result.unwrap_err(), "backup_required_before_write");
-        assert!(!path.exists());
+        std::fs::write(&path, "old").unwrap();
+        let result = write_verified_content(&path, "SiiNunit\n{\n}\n", |_| Ok(()));
+        assert!(result.is_ok(), "{:?}", result);
+        assert!(path.exists());
+        let _ = std::fs::remove_file(path);
+    }
+
+    #[test]
+    fn temporary_rollback_snapshot_restores_original_file() {
+        let path =
+            std::env::temp_dir().join(format!("truck_change_rollback_{}.sii", std::process::id()));
+        std::fs::write(&path, "before").unwrap();
+        let mut snapshot = TemporaryRollbackSnapshot::create(&path).unwrap();
+        std::fs::write(&path, "after").unwrap();
+        snapshot.restore().unwrap();
+        assert_eq!(std::fs::read_to_string(&path).unwrap(), "before");
+        snapshot.cleanup().unwrap();
+        assert!(snapshot.cleaned());
+        let _ = std::fs::remove_file(path);
+    }
+
+    #[test]
+    fn set_unit_array_value_updates_only_target_slot() {
+        let content = r#"SiiNunit
+{
+garage : garage.berlin {
+ drivers: 2
+ drivers[0]: null
+ drivers[1]: driver.1
+}
+}
+"#;
+        let (updated, changed) =
+            set_unit_array_value(content, "garage.berlin", "drivers", 0, "driver.1").unwrap();
+        assert!(changed);
+        assert!(updated.contains(" drivers[0]: driver.1"));
+        assert!(updated.contains(" drivers[1]: driver.1"));
     }
 }

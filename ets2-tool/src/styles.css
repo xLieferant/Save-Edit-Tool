@@ -13104,6 +13104,12 @@ body.mode-editor .truck-change-box {
   color: var(--text-main);
 }
 
+.truck-change-summary {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .truck-change-list {
   min-height: 0;
   max-height: calc(100vh - 360px);
@@ -13211,6 +13217,26 @@ body.mode-editor .truck-change-box {
   display: grid;
   gap: 8px;
   padding: 12px;
+  border: 1px solid rgba(255, 165, 0, 0.24);
+  border-radius: 8px;
+  background: rgba(255, 165, 0, 0.08);
+}
+
+.truck-change-backup-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-main);
+  font-weight: 700;
+}
+
+.truck-change-backup-toggle input {
+  width: 18px;
+  min-height: 18px;
+}
+
+.truck-change-backup-note {
+  padding: 10px 12px;
   border: 1px solid rgba(255, 165, 0, 0.24);
   border-radius: 8px;
   background: rgba(255, 165, 0, 0.08);

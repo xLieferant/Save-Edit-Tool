@@ -1174,9 +1174,9 @@
     "truck_mileage_error": "Truck-Kilometerstand konnte nicht gesetzt werden",
     "truck_license_plate_success": "Truck-Kennzeichen auf {newValue} geändert!",
     "truck_license_plate_error": "Truck-Kennzeichen konnte nicht geändert werden",
-    "truck_change_apply_success": "[NEEDS TRANSLATION] Truck switch verified successfully.",
-    "truck_change_apply_failed": "[NEEDS TRANSLATION] Truck switch failed.",
-    "truck_change_save_required": "[NEEDS TRANSLATION] Select a profile and save first.",
+    "truck_change_apply_success": "Truckwechsel erfolgreich verifiziert.",
+    "truck_change_apply_failed": "Truckwechsel fehlgeschlagen.",
+    "truck_change_save_required": "Bitte zuerst Profil und Spielstand auswählen.",
     "trailer_repair_success": "Trailer erfolgreich repariert",
     "trailer_repair_error": "Trailer konnte nicht repariert werden",
     "trailer_license_plate_success": "Trailer-Kennzeichen auf {newValue} geändert!",
@@ -1311,8 +1311,8 @@
         "desc": "Öffne eine schnelle Übersicht des aktiven Trucks aus dem aktuellen Spielstand."
       },
       "truck_change": {
-        "title": "[NEEDS TRANSLATION] Truck Change on the Road",
-        "desc": "[NEEDS TRANSLATION] Switch the active truck in the selected save with backup and verification."
+        "title": "Truckwechsel unterwegs",
+        "desc": "Wechsle den aktiven Truck im gewählten Spielstand mit Prüfung und optionalem Backup."
       },
       "repair_truck": {
         "title": "Truck reparieren",
@@ -1580,69 +1580,88 @@
       }
     },
     "truck_change": {
-      "kicker": "[NEEDS TRANSLATION] Truck Change on the Road",
-      "title": "[NEEDS TRANSLATION] Truck Change on the Road",
-      "description": "[NEEDS TRANSLATION] Switch the active truck in the selected save, or preview upcoming transfer and powertrain tools.",
-      "close": "[NEEDS TRANSLATION] Close",
+      "kicker": "Truckwechsel unterwegs",
+      "title": "Truckwechsel unterwegs",
+      "description": "Wechsle den aktiven Truck im gewählten Spielstand oder prüfe die vorbereiteten Transfer- und Antriebsstrang-Funktionen.",
+      "close": "Schließen",
       "status": {
-        "loading": "[NEEDS TRANSLATION] Loading",
-        "ready": "[NEEDS TRANSLATION] Ready",
-        "preview": "[NEEDS TRANSLATION] Preview",
-        "applying": "[NEEDS TRANSLATION] Applying",
-        "success": "[NEEDS TRANSLATION] Verified",
-        "error": "[NEEDS TRANSLATION] Error"
+        "loading": "Lädt",
+        "ready": "Bereit",
+        "preview": "Vorschau",
+        "applying": "Wird angewendet",
+        "success": "Verifiziert",
+        "error": "Fehler"
       },
       "tabs": {
-        "switch": "[NEEDS TRANSLATION] Truck switch",
-        "transfer": "[NEEDS TRANSLATION] Truck transfer",
-        "powertrain": "[NEEDS TRANSLATION] Engine & gearbox"
+        "switch": "Truck wechseln",
+        "transfer": "Truck übertragen",
+        "powertrain": "Motor & Getriebe"
       },
       "switch": {
-        "search": "[NEEDS TRANSLATION] Search trucks",
-        "loading": "[NEEDS TRANSLATION] Loading trucks...",
-        "empty": "[NEEDS TRANSLATION] No trucks found.",
-        "active": "[NEEDS TRANSLATION] Active",
-        "selectable": "[NEEDS TRANSLATION] Available",
-        "unavailable": "[NEEDS TRANSLATION] Unavailable",
-        "garage": "[NEEDS TRANSLATION] Garage",
-        "driver": "[NEEDS TRANSLATION] Driver",
-        "no_garage": "[NEEDS TRANSLATION] No garage assignment",
-        "no_plate": "[NEEDS TRANSLATION] No plate",
-        "preview_title": "[NEEDS TRANSLATION] Write preview",
-        "current_truck": "[NEEDS TRANSLATION] Current truck",
-        "target_truck": "[NEEDS TRANSLATION] Target truck",
-        "warnings": "[NEEDS TRANSLATION] Checks",
-        "no_warnings": "[NEEDS TRANSLATION] No blocking warnings.",
-        "confirm": "[NEEDS TRANSLATION] Applying creates a backup, writes a temporary game.sii, reloads the save and verifies the active truck.",
-        "apply": "[NEEDS TRANSLATION] Apply switch",
-        "applying": "[NEEDS TRANSLATION] Applying...",
-        "refresh": "[NEEDS TRANSLATION] Refresh",
-        "verified": "[NEEDS TRANSLATION] The save was reloaded and the new active truck was verified.",
-        "backup": "[NEEDS TRANSLATION] Backup",
-        "select_prompt": "[NEEDS TRANSLATION] Select an available truck to preview the switch."
+        "search": "Nach Marke, Nummer, Kennzeichen, Garage oder Fahrer suchen",
+        "loading": "Trucks werden geladen...",
+        "empty": "Keine Trucks gefunden.",
+        "no_matches": "Keine passenden Trucks gefunden.",
+        "active": "Aktiver Truck",
+        "selectable": "Verfügbar",
+        "driver_swap": "Trucktausch mit Fahrer",
+        "driver_receives": "Fahrer erhält",
+        "you_receive": "Du erhältst",
+        "unavailable": "Nicht verfügbar",
+        "garage": "Garage",
+        "driver": "Fahrer",
+        "no_garage": "Keine Garage zugewiesen",
+        "no_plate": "Kein Kennzeichen",
+        "unreadable_plate": "Kennzeichen nicht lesbar",
+        "ai_driver": "KI-Fahrer",
+        "unknown_truck": "Truck",
+        "owned_count": "Eigene Trucks",
+        "preview_title": "Schreibvorschau",
+        "current_truck": "Aktueller Truck",
+        "target_truck": "Zieltruck",
+        "affected_driver": "Aktueller Fahrer",
+        "warnings": "Prüfungen",
+        "no_warnings": "Keine blockierenden Warnungen.",
+        "confirm": "Beim Anwenden wird eine temporäre game.sii geschrieben, der Spielstand neu geladen und der aktive Truck verifiziert.",
+        "confirm_driver_swap": "Beim Anwenden erhältst du den ausgewählten Truck; der betroffene Fahrer erhält deinen bisherigen Truck. Danach wird der Spielstand neu geladen und beide Zuweisungen werden verifiziert.",
+        "apply": "Truckwechsel anwenden",
+        "applying": "Wird angewendet...",
+        "refresh": "Aktualisieren",
+        "verified": "Der Spielstand wurde neu geladen und der neue aktive Truck wurde verifiziert.",
+        "backup": "Backup",
+        "backup_label": "Backup vor der Änderung erstellen",
+        "no_persistent_backup": "Es wird kein dauerhaftes Backup gespeichert.",
+        "temporary_rollback": "Eine temporäre Sicherheitskopie wird nur bis zum Abschluss der Prüfung verwendet.",
+        "select_prompt": "Wähle einen Truck aus, um den Wechsel zu prüfen."
       },
       "transfer": {
-        "wip": "[NEEDS TRANSLATION] Transfer preview is available in the backend. Real target-profile writes remain blocked until garage and ownership fixtures are complete."
+        "wip": "Die Transfer-Vorschau ist im Backend vorbereitet. Echte Schreibvorgänge in Zielprofile bleiben blockiert, bis Garage- und Ownership-Fixtures vollständig abgesichert sind."
       },
       "powertrain": {
-        "wip": "[NEEDS TRANSLATION] Powertrain catalog loading and preview are prepared. Real engine and gearbox writes remain blocked in this WIP.",
-        "catalog_unavailable": "[NEEDS TRANSLATION] No official powertrain catalog is available for the selected game version yet."
+        "wip": "Katalogladen und Vorschau für Motor und Getriebe sind vorbereitet. Echte Änderungen an Motor und Getriebe bleiben in diesem WIP blockiert.",
+        "catalog_unavailable": "Für die gewählte Spielversion ist noch kein offizieller Antriebsstrang-Katalog verfügbar."
       },
       "warnings": {
-        "save_changed_since_list": "[NEEDS TRANSLATION] The save changed since the truck list was loaded.",
-        "current_truck_not_found": "[NEEDS TRANSLATION] The current active truck could not be found.",
-        "target_truck_not_found": "[NEEDS TRANSLATION] The selected truck is not present in this save.",
-        "target_already_active": "[NEEDS TRANSLATION] The selected truck is already active.",
-        "truck_assigned_to_driver": "[NEEDS TRANSLATION] The selected truck is assigned to a hired driver.",
-        "dangling_vehicle_references": "[NEEDS TRANSLATION] The selected truck has missing accessory references.",
-        "target_vehicle_block_missing": "[NEEDS TRANSLATION] The selected truck vehicle block is missing.",
-        "target_has_garage_assignment": "[NEEDS TRANSLATION] The selected truck has a garage assignment that will be preserved."
+        "save_changed_since_list": "Der Spielstand hat sich seit dem Laden der Truckliste geändert.",
+        "current_truck_not_found": "Der aktuell aktive Truck konnte nicht gefunden werden.",
+        "target_truck_not_found": "Der ausgewählte Truck ist in diesem Spielstand nicht vorhanden.",
+        "target_already_active": "Der ausgewählte Truck ist bereits aktiv.",
+        "truck_assigned_to_driver": "Der ausgewählte Truck ist einem angestellten Fahrer zugewiesen und wird per Trucktausch behandelt.",
+        "driver_assignment_unresolved": "Die Fahrerzuweisung konnte nicht sicher aufgelöst werden.",
+        "driver_swap_assignment_missing": "Die Garage-Zuweisung des bisherigen oder ausgewählten Trucks fehlt.",
+        "duplicate_assignment_detected": "Ein Truck oder Fahrer ist mehrfach zugewiesen.",
+        "dangling_vehicle_references": "Der ausgewählte Truck hat fehlende Zubehör-Referenzen.",
+        "target_vehicle_block_missing": "Der Vehicle-Block des ausgewählten Trucks fehlt.",
+        "target_has_garage_assignment": "Die Garage-Zuweisung des ausgewählten Trucks bleibt erhalten."
       },
       "errors": {
-        "save_changed_since_preview": "[NEEDS TRANSLATION] The save changed after the preview. Refresh and preview again.",
-        "truck_assigned_to_driver": "[NEEDS TRANSLATION] Driver-assigned trucks cannot be selected in this WIP.",
-        "target_truck_not_found": "[NEEDS TRANSLATION] The selected truck no longer exists in the save.",
-        "backup_required_before_write": "[NEEDS TRANSLATION] The write was blocked because no backup was available."
+        "save_changed_since_preview": "Der Spielstand wurde nach der Vorschau geändert. Bitte aktualisieren und erneut prüfen.",
+        "truck_assigned_to_driver": "Die Fahrerzuweisung konnte nicht sicher getauscht werden.",
+        "driver_assignment_unresolved": "Die Fahrerzuweisung konnte nicht sicher aufgelöst werden.",
+        "driver_swap_assignment_missing": "Die benötigte Garage-Zuweisung für den Fahrer-Tausch fehlt.",
+        "duplicate_assignment_detected": "Eine doppelte Truck- oder Fahrerzuweisung blockiert den Wechsel.",
+        "target_truck_not_found": "Der ausgewählte Truck existiert nicht mehr im Spielstand.",
+        "backup_required_before_write": "Der Schreibvorgang wurde blockiert, weil keine Sicherung verfügbar war."
       }
     },
     "level_system": {

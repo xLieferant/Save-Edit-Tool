@@ -2049,24 +2049,37 @@ export async function openTruckChangeModal() {
     search: await window.t("modals.truck_change.switch.search"),
     loading: await window.t("modals.truck_change.switch.loading"),
     empty: await window.t("modals.truck_change.switch.empty"),
+    noMatches: await window.t("modals.truck_change.switch.no_matches"),
     active: await window.t("modals.truck_change.switch.active"),
     selectable: await window.t("modals.truck_change.switch.selectable"),
+    driverSwap: await window.t("modals.truck_change.switch.driver_swap"),
+    driverReceives: await window.t("modals.truck_change.switch.driver_receives"),
+    youReceive: await window.t("modals.truck_change.switch.you_receive"),
     unavailable: await window.t("modals.truck_change.switch.unavailable"),
     garage: await window.t("modals.truck_change.switch.garage"),
     driver: await window.t("modals.truck_change.switch.driver"),
     noGarage: await window.t("modals.truck_change.switch.no_garage"),
     noPlate: await window.t("modals.truck_change.switch.no_plate"),
+    unreadablePlate: await window.t("modals.truck_change.switch.unreadable_plate"),
+    aiDriver: await window.t("modals.truck_change.switch.ai_driver"),
+    unknownTruck: await window.t("modals.truck_change.switch.unknown_truck"),
+    ownedCount: await window.t("modals.truck_change.switch.owned_count"),
     previewTitle: await window.t("modals.truck_change.switch.preview_title"),
     currentTruck: await window.t("modals.truck_change.switch.current_truck"),
     targetTruck: await window.t("modals.truck_change.switch.target_truck"),
+    affectedDriver: await window.t("modals.truck_change.switch.affected_driver"),
     warnings: await window.t("modals.truck_change.switch.warnings"),
     noWarnings: await window.t("modals.truck_change.switch.no_warnings"),
     confirm: await window.t("modals.truck_change.switch.confirm"),
+    confirmDriverSwap: await window.t("modals.truck_change.switch.confirm_driver_swap"),
     apply: await window.t("modals.truck_change.switch.apply"),
     applying: await window.t("modals.truck_change.switch.applying"),
     refresh: await window.t("modals.truck_change.switch.refresh"),
     verified: await window.t("modals.truck_change.switch.verified"),
     backup: await window.t("modals.truck_change.switch.backup"),
+    backupLabel: await window.t("modals.truck_change.switch.backup_label"),
+    noPersistentBackup: await window.t("modals.truck_change.switch.no_persistent_backup"),
+    temporaryRollback: await window.t("modals.truck_change.switch.temporary_rollback"),
     selectPrompt: await window.t("modals.truck_change.switch.select_prompt"),
     transferWip: await window.t("modals.truck_change.transfer.wip"),
     powertrainWip: await window.t("modals.truck_change.powertrain.wip"),
@@ -2079,6 +2092,9 @@ export async function openTruckChangeModal() {
     target_truck_not_found: await window.t("modals.truck_change.warnings.target_truck_not_found"),
     target_already_active: await window.t("modals.truck_change.warnings.target_already_active"),
     truck_assigned_to_driver: await window.t("modals.truck_change.warnings.truck_assigned_to_driver"),
+    driver_assignment_unresolved: await window.t("modals.truck_change.warnings.driver_assignment_unresolved"),
+    driver_swap_assignment_missing: await window.t("modals.truck_change.warnings.driver_swap_assignment_missing"),
+    duplicate_assignment_detected: await window.t("modals.truck_change.warnings.duplicate_assignment_detected"),
     dangling_vehicle_references: await window.t("modals.truck_change.warnings.dangling_vehicle_references"),
     target_vehicle_block_missing: await window.t("modals.truck_change.warnings.target_vehicle_block_missing"),
     target_has_garage_assignment: await window.t("modals.truck_change.warnings.target_has_garage_assignment"),
@@ -2086,6 +2102,9 @@ export async function openTruckChangeModal() {
   const errorLabels = {
     save_changed_since_preview: await window.t("modals.truck_change.errors.save_changed_since_preview"),
     truck_assigned_to_driver: await window.t("modals.truck_change.errors.truck_assigned_to_driver"),
+    driver_assignment_unresolved: await window.t("modals.truck_change.errors.driver_assignment_unresolved"),
+    driver_swap_assignment_missing: await window.t("modals.truck_change.errors.driver_swap_assignment_missing"),
+    duplicate_assignment_detected: await window.t("modals.truck_change.errors.duplicate_assignment_detected"),
     target_truck_not_found: await window.t("modals.truck_change.errors.target_truck_not_found"),
     backup_required_before_write: await window.t("modals.truck_change.errors.backup_required_before_write"),
   };
@@ -2132,7 +2151,7 @@ export async function openTruckChangeModal() {
   const state = {
     activeTab: "switch",
     list: null,
-    filter: "",
+    searchQuery: "",
     selectedTruckId: null,
     preview: null,
     result: null,
@@ -2141,7 +2160,9 @@ export async function openTruckChangeModal() {
     applying: false,
     error: "",
     catalogError: "",
+    createPersistentBackup: true,
   };
+  let switchShellMounted = false;
 
   function cleanup() {
     closeBtn.removeEventListener("click", cleanup);
@@ -2166,19 +2187,34 @@ export async function openTruckChangeModal() {
     if (!tab || tab === state.activeTab) return;
     state.activeTab = tab;
     tabButtons.forEach((button) => button.classList.toggle("is-active", button.dataset.tab === tab));
+    switchShellMounted = false;
     render();
+  }
+
+  function normalizeTruckSearchValue(value) {
+    return String(value ?? "")
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, " ")
+      .toLocaleLowerCase()
+      .trim();
+  }
+
+  function compactTruckSearchValue(value) {
+    return normalizeTruckSearchValue(value).replace(/[\s._-]+/g, "");
   }
 
   function truckLabel(truck) {
     const name = [truck?.brand, truck?.model].filter(Boolean).join(" ").trim();
-    return name || safeValue(truck?.truckId);
+    return name || `${copy.unknownTruck} ${truck?.displayIndex || ""}`.trim();
   }
 
   function truckMeta(truck) {
     return [
-      truck?.licensePlate || copy.noPlate,
-      truck?.assignedGarage ? `${copy.garage}: ${truck.assignedGarage}` : copy.noGarage,
-      truck?.assignedDriverId ? `${copy.driver}: ${truck.assignedDriverId}` : "",
+      truck?.displayLicensePlate || truck?.licensePlate || copy.unreadablePlate || copy.noPlate,
+      truck?.countryDisplayName || truck?.countryCode || "",
+      truck?.garageDisplayName || truck?.assignedGarage || copy.noGarage,
+      truck?.driverDisplayName ? `${copy.driver}: ${truck.driverDisplayName}` : "",
     ].filter(Boolean);
   }
 
@@ -2194,17 +2230,30 @@ export async function openTruckChangeModal() {
 
   function filteredTrucks() {
     const trucks = state.list?.trucks || [];
-    const filter = state.filter.trim().toLowerCase();
-    if (!filter) return trucks;
+    const query = normalizeTruckSearchValue(state.searchQuery);
+    const compactQuery = compactTruckSearchValue(state.searchQuery);
+    if (!query && !compactQuery) return trucks;
+    const numberMatch = String(state.searchQuery || "").trim().match(/^(?:#|nr\.?\s*)?(\d+)$/i);
+    if (numberMatch && String(state.searchQuery || "").trim().startsWith("#")) {
+      const targetIndex = Number(numberMatch[1]);
+      return trucks.filter((truck) => Number(truck.displayIndex) === targetIndex);
+    }
     return trucks.filter((truck) => {
-      return [
+      const values = [
+        truck.displayIndex,
         truck.truckId,
         truck.brand,
         truck.model,
-        truck.licensePlate,
-        truck.assignedGarage,
-        truck.assignedDriverId,
-      ].filter(Boolean).join(" ").toLowerCase().includes(filter);
+        [truck.brand, truck.model].filter(Boolean).join(" "),
+        truck.displayLicensePlate || truck.licensePlate,
+        truck.garageDisplayName || truck.assignedGarage,
+        truck.countryDisplayName || truck.countryCode,
+        truck.driverDisplayName,
+      ].filter(Boolean);
+      const text = normalizeTruckSearchValue(values.join(" "));
+      const compact = compactTruckSearchValue(values.join(" "));
+      if (numberMatch && Number(truck.displayIndex) === Number(numberMatch[1])) return true;
+      return text.includes(query) || compact.includes(compactQuery);
     });
   }
 
@@ -2238,10 +2287,49 @@ export async function openTruckChangeModal() {
       return;
     }
 
+    mountSwitchShell();
+    renderTruckList();
+    renderPreviewPanel();
+  }
+
+  function mountSwitchShell() {
+    if (switchShellMounted && body.querySelector(".truck-change-search")) return;
+    body.innerHTML = `
+      <div class="truck-change-switch-grid">
+        <section class="truck-change-panel truck-change-list-panel">
+          <div class="truck-change-summary"></div>
+          <input class="truck-change-search" type="search" value="${escapeHtml(state.searchQuery)}" placeholder="${escapeHtml(copy.search)}" />
+          <div class="truck-change-list" role="list"></div>
+        </section>
+        <section class="truck-change-panel truck-change-preview-panel"></section>
+      </div>
+    `;
+    const search = body.querySelector(".truck-change-search");
+    search?.addEventListener("input", (event) => {
+      state.searchQuery = event.target.value;
+      renderTruckList();
+      renderPreviewPanel();
+    });
+    switchShellMounted = true;
+  }
+
+  function renderTruckList() {
+    const list = body.querySelector(".truck-change-list");
+    const summary = body.querySelector(".truck-change-summary");
+    if (!list) return;
+    if (summary) {
+      summary.textContent = `${copy.ownedCount}: ${state.list?.trucks?.length || 0}`;
+    }
     const trucks = filteredTrucks();
     const rows = trucks.map((truck) => {
       const selected = truck.truckId === state.selectedTruckId;
-      const statusText = truck.isActive ? copy.active : truck.isSwitchable ? copy.selectable : copy.unavailable;
+      const statusText = truck.isActive
+        ? copy.active
+        : truck.requiresDriverSwap
+          ? copy.driverSwap
+          : truck.isSwitchable
+            ? copy.selectable
+            : copy.unavailable;
       const disabled = !truck.isSwitchable || truck.isActive;
       return `
         <button type="button" class="truck-change-row${selected ? " is-selected" : ""}${truck.isActive ? " is-active" : ""}" data-truck-id="${escapeHtml(truck.truckId)}" ${disabled ? "disabled" : ""}>
@@ -2254,53 +2342,10 @@ export async function openTruckChangeModal() {
         </button>
       `;
     }).join("");
-    const warningRows = (state.preview?.warnings || []).map((warning) => {
-      return `<li>${escapeHtml(warningText(warning))}</li>`;
-    }).join("");
-    const selectedTruck = state.list?.trucks?.find((truck) => truck.truckId === state.selectedTruckId);
-    const resultHtml = state.result?.success
-      ? `<div class="truck-change-result">
-          <strong>${escapeHtml(copy.verified)}</strong>
-          <span>${escapeHtml(copy.backup)}: ${escapeHtml(state.result.backupId || "-")}</span>
-        </div>`
-      : "";
-    const errorHtml = state.error
-      ? `<div class="truck-change-error">${escapeHtml(state.error)}</div>`
-      : "";
-
-    body.innerHTML = `
-      <div class="truck-change-switch-grid">
-        <section class="truck-change-panel truck-change-list-panel">
-          <input class="truck-change-search" type="search" value="${escapeHtml(state.filter)}" placeholder="${escapeHtml(copy.search)}" />
-          <div class="truck-change-list" role="list">
-            ${state.loading ? `<div class="truck-change-empty">${escapeHtml(copy.loading)}</div>` : rows || `<div class="truck-change-empty">${escapeHtml(copy.empty)}</div>`}
-          </div>
-        </section>
-        <section class="truck-change-panel truck-change-preview-panel">
-          <h3>${escapeHtml(copy.previewTitle)}</h3>
-          ${selectedTruck ? `
-            <dl class="truck-change-preview-list">
-              <div><dt>${escapeHtml(copy.currentTruck)}</dt><dd>${escapeHtml(truckLabel(state.preview?.currentTruck || state.list?.trucks?.find((truck) => truck.isActive)))}</dd></div>
-              <div><dt>${escapeHtml(copy.targetTruck)}</dt><dd>${escapeHtml(truckLabel(selectedTruck))}</dd></div>
-            </dl>
-            <div class="truck-change-warning-box">
-              <strong>${escapeHtml(copy.warnings)}</strong>
-              ${warningRows ? `<ul>${warningRows}</ul>` : `<p>${escapeHtml(copy.noWarnings)}</p>`}
-            </div>
-            <p class="truck-change-confirm">${escapeHtml(copy.confirm)}</p>
-          ` : `<p>${escapeHtml(copy.selectPrompt)}</p>`}
-          ${resultHtml}
-          ${errorHtml}
-        </section>
-      </div>
-    `;
-
-    const search = body.querySelector(".truck-change-search");
-    search?.addEventListener("input", (event) => {
-      state.filter = event.target.value;
-      render();
-    });
-    body.querySelectorAll(".truck-change-row").forEach((row) => {
+    list.innerHTML = state.loading
+      ? `<div class="truck-change-empty">${escapeHtml(copy.loading)}</div>`
+      : rows || `<div class="truck-change-empty">${escapeHtml(state.searchQuery ? copy.noMatches : copy.empty)}</div>`;
+    list.querySelectorAll(".truck-change-row").forEach((row) => {
       row.addEventListener("click", async () => {
         const truckId = row.dataset.truckId;
         if (!truckId) return;
@@ -2311,6 +2356,58 @@ export async function openTruckChangeModal() {
         render();
         await loadPreview(truckId);
       });
+    });
+  }
+
+  function renderPreviewPanel() {
+    const panel = body.querySelector(".truck-change-preview-panel");
+    if (!panel) return;
+    const warningRows = (state.preview?.warnings || []).map((warning) => {
+      return `<li>${escapeHtml(warningText(warning))}</li>`;
+    }).join("");
+    const selectedTruck = state.list?.trucks?.find((truck) => truck.truckId === state.selectedTruckId);
+    const affectedDriver = state.preview?.affectedDriver;
+    const driverReceivesTruck = state.preview?.driverReceivesTruck;
+    const resultHtml = state.result?.success
+      ? `<div class="truck-change-result">
+          <strong>${escapeHtml(copy.verified)}</strong>
+          <span>${escapeHtml(copy.backup)}: ${escapeHtml(state.result.persistentBackupCreated ? state.result.backupId || "-" : copy.noPersistentBackup)}</span>
+          <span>${escapeHtml(copy.temporaryRollback)}: ${escapeHtml(state.result.temporaryRollbackCleaned ? copy.verified : "-")}</span>
+        </div>`
+      : "";
+    const errorHtml = state.error
+      ? `<div class="truck-change-error">${escapeHtml(state.error)}</div>`
+      : "";
+    const backupWarning = state.createPersistentBackup
+      ? ""
+      : `<p class="truck-change-backup-note">${escapeHtml(copy.noPersistentBackup)} ${escapeHtml(copy.temporaryRollback)}</p>`;
+
+    panel.innerHTML = `
+      <h3>${escapeHtml(copy.previewTitle)}</h3>
+      ${selectedTruck ? `
+        <dl class="truck-change-preview-list">
+          <div><dt>${escapeHtml(copy.youReceive)}</dt><dd>${escapeHtml(truckLabel(selectedTruck))}</dd></div>
+          <div><dt>${escapeHtml(copy.currentTruck)}</dt><dd>${escapeHtml(truckLabel(state.preview?.currentTruck || state.list?.trucks?.find((truck) => truck.isActive)))}</dd></div>
+          ${affectedDriver ? `<div><dt>${escapeHtml(copy.affectedDriver)}</dt><dd>${escapeHtml(affectedDriver.displayName || copy.aiDriver)}</dd></div>` : ""}
+          ${driverReceivesTruck ? `<div><dt>${escapeHtml(copy.driverReceives)}</dt><dd>${escapeHtml(truckLabel(driverReceivesTruck))}</dd></div>` : ""}
+        </dl>
+        <label class="truck-change-backup-toggle">
+          <input type="checkbox" class="truck-change-backup-checkbox" ${state.createPersistentBackup ? "checked" : ""} />
+          <span>${escapeHtml(copy.backupLabel)}</span>
+        </label>
+        ${backupWarning}
+        <div class="truck-change-warning-box">
+          <strong>${escapeHtml(copy.warnings)}</strong>
+          ${warningRows ? `<ul>${warningRows}</ul>` : `<p>${escapeHtml(copy.noWarnings)}</p>`}
+        </div>
+        <p class="truck-change-confirm">${escapeHtml(selectedTruck.requiresDriverSwap ? copy.confirmDriverSwap : copy.confirm)}</p>
+      ` : `<p>${escapeHtml(copy.selectPrompt)}</p>`}
+      ${resultHtml}
+      ${errorHtml}
+    `;
+    panel.querySelector(".truck-change-backup-checkbox")?.addEventListener("input", (event) => {
+      state.createPersistentBackup = event.target.checked;
+      renderPreviewPanel();
     });
   }
 
@@ -2371,6 +2468,7 @@ export async function openTruckChangeModal() {
         savePath,
         targetTruckId: state.selectedTruckId,
         expectedFileHash: state.preview.expectedFileHash,
+        createPersistentBackup: state.createPersistentBackup,
       });
       state.applying = false;
       await window.loadAllTrucks?.();

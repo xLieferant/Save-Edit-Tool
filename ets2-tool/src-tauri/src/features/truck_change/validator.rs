@@ -1,9 +1,13 @@
 use super::models::TruckWriteValidation;
-use super::parser::{graph_dangling_accessories, parse_truck_save};
+use super::parser::{
+    assignment_conflicts_from_blocks, graph_dangling_accessories, parse_truck_save,
+};
 
 pub fn validate_truck_switch_content(
     content: &str,
     expected_truck_id: &str,
+    expected_driver_id: Option<&str>,
+    expected_driver_truck_id: Option<&str>,
 ) -> TruckWriteValidation {
     let parsed = parse_truck_save(content);
     let actual_truck_id = parsed.active_truck_id.clone();
@@ -24,22 +28,49 @@ pub fn validate_truck_switch_content(
         errors.push("expected_truck_not_found".to_string());
     }
 
-    match parsed.truck_graphs.get(expected_truck_id) {
-        Some(graph) => {
-            dangling_references.extend(graph_dangling_accessories(graph, &parsed.unit_ids));
-            for reference in &graph.referenced_unit_ids {
-                if reference.starts_with("_nameless.") && !parsed.unit_ids.contains(reference) {
-                    dangling_references.push(reference.clone());
-                }
-            }
-            dangling_references.sort();
-            dangling_references.dedup();
-            if !dangling_references.is_empty() {
-                errors.push("dangling_vehicle_references".to_string());
-            }
+    validate_graph_presence_and_refs(
+        &parsed,
+        expected_truck_id,
+        &mut dangling_references,
+        &mut errors,
+    );
+
+    if let (Some(driver_id), Some(driver_truck_id)) = (expected_driver_id, expected_driver_truck_id)
+    {
+        validate_graph_presence_and_refs(
+            &parsed,
+            driver_truck_id,
+            &mut dangling_references,
+            &mut errors,
+        );
+        let assigned_to_driver = parsed
+            .garage_assignments
+            .get(driver_truck_id)
+            .and_then(|assignment| assignment.driver_id.as_deref())
+            .map(|actual| actual.eq_ignore_ascii_case(driver_id))
+            .unwrap_or(false);
+        if !assigned_to_driver {
+            errors.push("driver_truck_assignment_mismatch".to_string());
         }
-        None => errors.push("vehicle_block_not_found".to_string()),
+
+        let player_target_has_driver = parsed
+            .garage_assignments
+            .get(expected_truck_id)
+            .and_then(|assignment| assignment.driver_id.as_deref())
+            .is_some();
+        if player_target_has_driver {
+            errors.push("player_truck_still_assigned_to_driver".to_string());
+        }
     }
+
+    let duplicate_assignments = duplicate_assigned_trucks(&parsed);
+    if !duplicate_assignments.is_empty() {
+        errors.push("duplicate_assignment_detected".to_string());
+    }
+    dangling_references.sort();
+    dangling_references.dedup();
+    errors.sort();
+    errors.dedup();
 
     TruckWriteValidation {
         success: errors.is_empty(),
@@ -48,6 +79,33 @@ pub fn validate_truck_switch_content(
         dangling_references,
         errors,
     }
+}
+
+fn validate_graph_presence_and_refs(
+    parsed: &super::parser::ParsedTruckSave,
+    truck_id: &str,
+    dangling_references: &mut Vec<String>,
+    errors: &mut Vec<String>,
+) {
+    match parsed.truck_graphs.get(truck_id) {
+        Some(graph) => {
+            dangling_references.extend(graph_dangling_accessories(graph, &parsed.unit_ids));
+            for reference in &graph.referenced_unit_ids {
+                if reference.starts_with("_nameless.") && !parsed.unit_ids.contains(reference) {
+                    dangling_references.push(reference.clone());
+                }
+            }
+            if !dangling_references.is_empty() {
+                errors.push("dangling_vehicle_references".to_string());
+            }
+        }
+        None => errors.push("vehicle_block_not_found".to_string()),
+    }
+}
+
+fn duplicate_assigned_trucks(parsed: &super::parser::ParsedTruckSave) -> Vec<String> {
+    let blocks = parsed.unit_blocks.values().cloned().collect::<Vec<_>>();
+    assignment_conflicts_from_blocks(&blocks)
 }
 
 #[cfg(test)]
@@ -75,7 +133,7 @@ vehicle_accessory : _nameless.acc.a {
 }
 }
 "#;
-        let validation = validate_truck_switch_content(content, "_nameless.truck.b");
+        let validation = validate_truck_switch_content(content, "_nameless.truck.b", None, None);
         assert!(!validation.success);
         assert!(
             validation
@@ -102,11 +160,62 @@ vehicle : _nameless.truck.a {
 }
 }
 "#;
-        let validation = validate_truck_switch_content(content, "_nameless.truck.a");
+        let validation = validate_truck_switch_content(content, "_nameless.truck.a", None, None);
         assert!(!validation.success);
         assert_eq!(
             validation.dangling_references,
             vec!["_nameless.acc.missing".to_string()]
+        );
+    }
+
+    #[test]
+    fn validation_reports_duplicate_driver_assignment() {
+        let content = r#"SiiNunit
+{
+economy : _nameless.economy {
+ player: _nameless.player
+}
+player : _nameless.player {
+ my_truck: _nameless.truck.b
+ trucks: 2
+ trucks[0]: _nameless.truck.a
+ trucks[1]: _nameless.truck.b
+}
+vehicle : _nameless.truck.a {
+ accessories: 1
+ accessories[0]: _nameless.acc.a
+}
+vehicle_accessory : _nameless.acc.a {
+ data_path: "/def/vehicle/truck/scania.s_2016/data.sii"
+}
+vehicle : _nameless.truck.b {
+ accessories: 1
+ accessories[0]: _nameless.acc.b
+}
+vehicle_accessory : _nameless.acc.b {
+ data_path: "/def/vehicle/truck/man.tgx/data.sii"
+}
+garage : garage.berlin {
+ vehicles: 2
+ vehicles[0]: _nameless.truck.a
+ vehicles[1]: _nameless.truck.b
+ drivers: 2
+ drivers[0]: driver.1
+ drivers[1]: driver.1
+}
+}
+"#;
+        let validation = validate_truck_switch_content(
+            content,
+            "_nameless.truck.b",
+            Some("driver.1"),
+            Some("_nameless.truck.a"),
+        );
+        assert!(!validation.success);
+        assert!(
+            validation
+                .errors
+                .contains(&"duplicate_assignment_detected".to_string())
         );
     }
 }
