@@ -1,6 +1,7 @@
 pub mod fuzzy;
 pub mod import;
 pub mod models;
+pub mod powertrain;
 pub mod validate;
 
 use std::collections::{BTreeMap, HashMap};

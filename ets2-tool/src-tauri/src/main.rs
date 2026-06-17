@@ -293,6 +293,12 @@ fn main() {
             features::vehicles::editor::repair_player_trailer,
             features::vehicles::editor::set_player_trailer_cargo_mass,
             features::vehicles::editor::edit_truck_odometer,
+            features::truck_change::commands::list_owned_trucks_for_switch,
+            features::truck_change::commands::preview_active_truck_switch,
+            features::truck_change::commands::apply_active_truck_switch,
+            features::truck_change::commands::get_official_powertrain_catalog,
+            features::truck_change::commands::preview_truck_powertrain_change,
+            features::truck_change::commands::preview_truck_transfer,
             // FEATURE: PROFILE CLONE + Rename
             features::profile_clone::commands::clone_profile_command,
             features::profile_clone::commands::validate_clone_target,

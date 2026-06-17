@@ -26,5 +26,6 @@ pub mod save_analysis;
 pub mod save_editor;
 pub mod settings;
 pub mod telemetry;
+pub mod truck_change;
 pub mod vehicles;
 pub mod vtc;

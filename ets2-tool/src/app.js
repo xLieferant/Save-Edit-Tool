@@ -2023,6 +2023,383 @@ export async function openCurrentTruckModal() {
 }
 
 /* --------------------------------------------------------------
+   TRUCK CHANGE MODAL
+-------------------------------------------------------------- */
+export async function openTruckChangeModal() {
+  const savePath = window.selectedSavePath || window.currentSavePath;
+  if (!window.selectedProfilePath || !savePath) {
+    window.showToast("toasts.truck_change_save_required", "warning");
+    return;
+  }
+
+  const copy = {
+    title: await window.t("modals.truck_change.title"),
+    kicker: await window.t("modals.truck_change.kicker"),
+    description: await window.t("modals.truck_change.description"),
+    close: await window.t("modals.truck_change.close"),
+    statusLoading: await window.t("modals.truck_change.status.loading"),
+    statusReady: await window.t("modals.truck_change.status.ready"),
+    statusPreview: await window.t("modals.truck_change.status.preview"),
+    statusApplying: await window.t("modals.truck_change.status.applying"),
+    statusSuccess: await window.t("modals.truck_change.status.success"),
+    statusError: await window.t("modals.truck_change.status.error"),
+    tabSwitch: await window.t("modals.truck_change.tabs.switch"),
+    tabTransfer: await window.t("modals.truck_change.tabs.transfer"),
+    tabPowertrain: await window.t("modals.truck_change.tabs.powertrain"),
+    search: await window.t("modals.truck_change.switch.search"),
+    loading: await window.t("modals.truck_change.switch.loading"),
+    empty: await window.t("modals.truck_change.switch.empty"),
+    active: await window.t("modals.truck_change.switch.active"),
+    selectable: await window.t("modals.truck_change.switch.selectable"),
+    unavailable: await window.t("modals.truck_change.switch.unavailable"),
+    garage: await window.t("modals.truck_change.switch.garage"),
+    driver: await window.t("modals.truck_change.switch.driver"),
+    noGarage: await window.t("modals.truck_change.switch.no_garage"),
+    noPlate: await window.t("modals.truck_change.switch.no_plate"),
+    previewTitle: await window.t("modals.truck_change.switch.preview_title"),
+    currentTruck: await window.t("modals.truck_change.switch.current_truck"),
+    targetTruck: await window.t("modals.truck_change.switch.target_truck"),
+    warnings: await window.t("modals.truck_change.switch.warnings"),
+    noWarnings: await window.t("modals.truck_change.switch.no_warnings"),
+    confirm: await window.t("modals.truck_change.switch.confirm"),
+    apply: await window.t("modals.truck_change.switch.apply"),
+    applying: await window.t("modals.truck_change.switch.applying"),
+    refresh: await window.t("modals.truck_change.switch.refresh"),
+    verified: await window.t("modals.truck_change.switch.verified"),
+    backup: await window.t("modals.truck_change.switch.backup"),
+    selectPrompt: await window.t("modals.truck_change.switch.select_prompt"),
+    transferWip: await window.t("modals.truck_change.transfer.wip"),
+    powertrainWip: await window.t("modals.truck_change.powertrain.wip"),
+    catalogUnavailable: await window.t("modals.truck_change.powertrain.catalog_unavailable"),
+  };
+
+  const warningLabels = {
+    save_changed_since_list: await window.t("modals.truck_change.warnings.save_changed_since_list"),
+    current_truck_not_found: await window.t("modals.truck_change.warnings.current_truck_not_found"),
+    target_truck_not_found: await window.t("modals.truck_change.warnings.target_truck_not_found"),
+    target_already_active: await window.t("modals.truck_change.warnings.target_already_active"),
+    truck_assigned_to_driver: await window.t("modals.truck_change.warnings.truck_assigned_to_driver"),
+    dangling_vehicle_references: await window.t("modals.truck_change.warnings.dangling_vehicle_references"),
+    target_vehicle_block_missing: await window.t("modals.truck_change.warnings.target_vehicle_block_missing"),
+    target_has_garage_assignment: await window.t("modals.truck_change.warnings.target_has_garage_assignment"),
+  };
+  const errorLabels = {
+    save_changed_since_preview: await window.t("modals.truck_change.errors.save_changed_since_preview"),
+    truck_assigned_to_driver: await window.t("modals.truck_change.errors.truck_assigned_to_driver"),
+    target_truck_not_found: await window.t("modals.truck_change.errors.target_truck_not_found"),
+    backup_required_before_write: await window.t("modals.truck_change.errors.backup_required_before_write"),
+  };
+
+  const existing = document.getElementById("truckChangeModal");
+  existing?.remove();
+
+  const modal = document.createElement("section");
+  modal.id = "truckChangeModal";
+  modal.className = "modal-backdrop truck-change-modal";
+  modal.innerHTML = `
+    <div class="modal-box modal-box--xl truck-change-box" role="dialog" aria-modal="true" aria-labelledby="truckChangeTitle">
+      <div class="detail-modal-head truck-change-head">
+        <div>
+          <span class="modal-kicker">${escapeHtml(copy.kicker)}</span>
+          <h2 id="truckChangeTitle">${escapeHtml(copy.title)}</h2>
+          <p class="modal-description">${escapeHtml(copy.description)}</p>
+        </div>
+        <div class="truck-change-head-actions">
+          <span class="modal-status-pill" data-state="loading" id="truckChangeStatus">${escapeHtml(copy.statusLoading)}</span>
+          <button type="button" class="modal-close truck-change-close" aria-label="${escapeHtml(copy.close)}">×</button>
+        </div>
+      </div>
+      <div class="truck-change-tabs" role="tablist">
+        <button type="button" class="truck-change-tab is-active" data-tab="switch">${escapeHtml(copy.tabSwitch)}</button>
+        <button type="button" class="truck-change-tab" data-tab="transfer">${escapeHtml(copy.tabTransfer)}</button>
+        <button type="button" class="truck-change-tab" data-tab="powertrain">${escapeHtml(copy.tabPowertrain)}</button>
+      </div>
+      <div class="truck-change-body"></div>
+      <div class="modal-actions truck-change-actions">
+        <button type="button" class="secondary-btn truck-change-refresh">${escapeHtml(copy.refresh)}</button>
+        <button type="button" class="primary-btn truck-change-apply" disabled>${escapeHtml(copy.apply)}</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  const body = modal.querySelector(".truck-change-body");
+  const closeBtn = modal.querySelector(".truck-change-close");
+  const status = modal.querySelector("#truckChangeStatus");
+  const refreshBtn = modal.querySelector(".truck-change-refresh");
+  const applyBtn = modal.querySelector(".truck-change-apply");
+  const tabButtons = [...modal.querySelectorAll(".truck-change-tab")];
+  const state = {
+    activeTab: "switch",
+    list: null,
+    filter: "",
+    selectedTruckId: null,
+    preview: null,
+    result: null,
+    loading: false,
+    previewLoading: false,
+    applying: false,
+    error: "",
+    catalogError: "",
+  };
+
+  function cleanup() {
+    closeBtn.removeEventListener("click", cleanup);
+    modal.removeEventListener("click", handleBackdropClick);
+    document.removeEventListener("keydown", handleEscape);
+    refreshBtn.removeEventListener("click", handleRefresh);
+    applyBtn.removeEventListener("click", handleApply);
+    tabButtons.forEach((button) => button.removeEventListener("click", handleTabClick));
+    modal.remove();
+  }
+
+  function handleBackdropClick(event) {
+    if (event.target === modal) cleanup();
+  }
+
+  function handleEscape(event) {
+    if (event.key === "Escape") cleanup();
+  }
+
+  function handleTabClick(event) {
+    const tab = event.currentTarget.dataset.tab;
+    if (!tab || tab === state.activeTab) return;
+    state.activeTab = tab;
+    tabButtons.forEach((button) => button.classList.toggle("is-active", button.dataset.tab === tab));
+    render();
+  }
+
+  function truckLabel(truck) {
+    const name = [truck?.brand, truck?.model].filter(Boolean).join(" ").trim();
+    return name || safeValue(truck?.truckId);
+  }
+
+  function truckMeta(truck) {
+    return [
+      truck?.licensePlate || copy.noPlate,
+      truck?.assignedGarage ? `${copy.garage}: ${truck.assignedGarage}` : copy.noGarage,
+      truck?.assignedDriverId ? `${copy.driver}: ${truck.assignedDriverId}` : "",
+    ].filter(Boolean);
+  }
+
+  function warningText(code) {
+    return warningLabels[code] || safeValue(code);
+  }
+
+  function errorText(error) {
+    const raw = String(error?.message || error || "");
+    const key = Object.keys(errorLabels).find((candidate) => raw.includes(candidate));
+    return key ? errorLabels[key] : safeValue(raw);
+  }
+
+  function filteredTrucks() {
+    const trucks = state.list?.trucks || [];
+    const filter = state.filter.trim().toLowerCase();
+    if (!filter) return trucks;
+    return trucks.filter((truck) => {
+      return [
+        truck.truckId,
+        truck.brand,
+        truck.model,
+        truck.licensePlate,
+        truck.assignedGarage,
+        truck.assignedDriverId,
+      ].filter(Boolean).join(" ").toLowerCase().includes(filter);
+    });
+  }
+
+  function render() {
+    if (state.applying) {
+      setModalPillState(status, "loading", copy.statusApplying);
+    } else if (state.error) {
+      setModalPillState(status, "error", copy.statusError);
+    } else if (state.result?.success) {
+      setModalPillState(status, "success", copy.statusSuccess);
+    } else if (state.preview) {
+      setModalPillState(status, "warning", copy.statusPreview);
+    } else if (state.loading) {
+      setModalPillState(status, "loading", copy.statusLoading);
+    } else {
+      setModalPillState(status, "success", copy.statusReady);
+    }
+
+    refreshBtn.hidden = state.activeTab !== "switch";
+    applyBtn.hidden = state.activeTab !== "switch";
+    applyBtn.textContent = state.applying ? copy.applying : copy.apply;
+    applyBtn.disabled = state.applying || !state.preview?.canApply || !state.selectedTruckId;
+
+    if (state.activeTab === "transfer") {
+      body.innerHTML = `<div class="truck-change-panel"><p>${escapeHtml(copy.transferWip)}</p></div>`;
+      return;
+    }
+    if (state.activeTab === "powertrain") {
+      const message = state.catalogError ? copy.catalogUnavailable : copy.powertrainWip;
+      body.innerHTML = `<div class="truck-change-panel"><p>${escapeHtml(message)}</p></div>`;
+      return;
+    }
+
+    const trucks = filteredTrucks();
+    const rows = trucks.map((truck) => {
+      const selected = truck.truckId === state.selectedTruckId;
+      const statusText = truck.isActive ? copy.active : truck.isSwitchable ? copy.selectable : copy.unavailable;
+      const disabled = !truck.isSwitchable || truck.isActive;
+      return `
+        <button type="button" class="truck-change-row${selected ? " is-selected" : ""}${truck.isActive ? " is-active" : ""}" data-truck-id="${escapeHtml(truck.truckId)}" ${disabled ? "disabled" : ""}>
+          <span class="truck-change-index">${escapeHtml(truck.displayIndex)}</span>
+          <span class="truck-change-main">
+            <strong>${escapeHtml(truckLabel(truck))}</strong>
+            <span>${truckMeta(truck).map(escapeHtml).join(" · ")}</span>
+          </span>
+          <span class="truck-change-row-status">${escapeHtml(statusText)}</span>
+        </button>
+      `;
+    }).join("");
+    const warningRows = (state.preview?.warnings || []).map((warning) => {
+      return `<li>${escapeHtml(warningText(warning))}</li>`;
+    }).join("");
+    const selectedTruck = state.list?.trucks?.find((truck) => truck.truckId === state.selectedTruckId);
+    const resultHtml = state.result?.success
+      ? `<div class="truck-change-result">
+          <strong>${escapeHtml(copy.verified)}</strong>
+          <span>${escapeHtml(copy.backup)}: ${escapeHtml(state.result.backupId || "-")}</span>
+        </div>`
+      : "";
+    const errorHtml = state.error
+      ? `<div class="truck-change-error">${escapeHtml(state.error)}</div>`
+      : "";
+
+    body.innerHTML = `
+      <div class="truck-change-switch-grid">
+        <section class="truck-change-panel truck-change-list-panel">
+          <input class="truck-change-search" type="search" value="${escapeHtml(state.filter)}" placeholder="${escapeHtml(copy.search)}" />
+          <div class="truck-change-list" role="list">
+            ${state.loading ? `<div class="truck-change-empty">${escapeHtml(copy.loading)}</div>` : rows || `<div class="truck-change-empty">${escapeHtml(copy.empty)}</div>`}
+          </div>
+        </section>
+        <section class="truck-change-panel truck-change-preview-panel">
+          <h3>${escapeHtml(copy.previewTitle)}</h3>
+          ${selectedTruck ? `
+            <dl class="truck-change-preview-list">
+              <div><dt>${escapeHtml(copy.currentTruck)}</dt><dd>${escapeHtml(truckLabel(state.preview?.currentTruck || state.list?.trucks?.find((truck) => truck.isActive)))}</dd></div>
+              <div><dt>${escapeHtml(copy.targetTruck)}</dt><dd>${escapeHtml(truckLabel(selectedTruck))}</dd></div>
+            </dl>
+            <div class="truck-change-warning-box">
+              <strong>${escapeHtml(copy.warnings)}</strong>
+              ${warningRows ? `<ul>${warningRows}</ul>` : `<p>${escapeHtml(copy.noWarnings)}</p>`}
+            </div>
+            <p class="truck-change-confirm">${escapeHtml(copy.confirm)}</p>
+          ` : `<p>${escapeHtml(copy.selectPrompt)}</p>`}
+          ${resultHtml}
+          ${errorHtml}
+        </section>
+      </div>
+    `;
+
+    const search = body.querySelector(".truck-change-search");
+    search?.addEventListener("input", (event) => {
+      state.filter = event.target.value;
+      render();
+    });
+    body.querySelectorAll(".truck-change-row").forEach((row) => {
+      row.addEventListener("click", async () => {
+        const truckId = row.dataset.truckId;
+        if (!truckId) return;
+        state.selectedTruckId = truckId;
+        state.preview = null;
+        state.result = null;
+        state.error = "";
+        render();
+        await loadPreview(truckId);
+      });
+    });
+  }
+
+  async function loadList() {
+    state.loading = true;
+    state.preview = null;
+    state.result = null;
+    state.error = "";
+    render();
+    try {
+      state.list = await window.invoke("list_owned_trucks_for_switch", { savePath });
+      const active = state.list?.trucks?.find((truck) => !truck.isActive && truck.isSwitchable);
+      state.selectedTruckId = active?.truckId || null;
+      state.loading = false;
+      render();
+      if (state.selectedTruckId) {
+        await loadPreview(state.selectedTruckId);
+      }
+    } catch (error) {
+      console.error("Truck switch list failed:", error);
+      state.loading = false;
+      state.error = errorText(error);
+      render();
+    }
+  }
+
+  async function loadPreview(truckId) {
+    if (!state.list?.fileHash) return;
+    state.previewLoading = true;
+    render();
+    try {
+      state.preview = await window.invoke("preview_active_truck_switch", {
+        savePath,
+        targetTruckId: truckId,
+        expectedFileHash: state.list.fileHash,
+      });
+      state.previewLoading = false;
+      render();
+    } catch (error) {
+      console.error("Truck switch preview failed:", error);
+      state.previewLoading = false;
+      state.error = errorText(error);
+      render();
+    }
+  }
+
+  async function handleRefresh() {
+    await loadList();
+  }
+
+  async function handleApply() {
+    if (!state.preview?.canApply || !state.selectedTruckId || state.applying) return;
+    state.applying = true;
+    state.error = "";
+    render();
+    try {
+      const result = await window.invoke("apply_active_truck_switch", {
+        savePath,
+        targetTruckId: state.selectedTruckId,
+        expectedFileHash: state.preview.expectedFileHash,
+      });
+      state.applying = false;
+      await window.loadAllTrucks?.();
+      window.showToast("toasts.truck_change_apply_success", "success");
+      await loadList();
+      state.result = result;
+      state.preview = null;
+      state.selectedTruckId = null;
+      render();
+    } catch (error) {
+      console.error("Truck switch apply failed:", error);
+      state.applying = false;
+      state.error = errorText(error);
+      window.showToast("toasts.truck_change_apply_failed", "error");
+      render();
+    }
+  }
+
+  closeBtn.addEventListener("click", cleanup);
+  modal.addEventListener("click", handleBackdropClick);
+  document.addEventListener("keydown", handleEscape);
+  refreshBtn.addEventListener("click", handleRefresh);
+  applyBtn.addEventListener("click", handleApply);
+  tabButtons.forEach((button) => button.addEventListener("click", handleTabClick));
+  modal.style.display = "flex";
+  await loadList();
+}
+
+/* --------------------------------------------------------------
    MOD CONFLICT DIAGNOSTICS MODAL
 -------------------------------------------------------------- */
 export async function openModConflictDiagnosticsModal(options = {}) {

@@ -23,6 +23,7 @@ const UPDATE_START_DELAY_MS = 2500;
 
 const SAVE_MUTATION_COMMANDS = new Set([
   "apply_custom_reset_values",
+  "apply_active_truck_switch",
   "apply_save_health_fix",
   "apply_setting",
   "edit_config_value",

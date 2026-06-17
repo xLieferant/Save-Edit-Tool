@@ -1,6 +1,4 @@
-use super::{
-    load_save_content, load_save_content_from_save_path, resolve_active_save_from_snapshot,
-};
+use super::{load_save_content_from_save_path, resolve_active_save_from_snapshot};
 use crate::dev_log;
 use crate::models::trucks::ParsedTruck;
 use crate::shared::paths::game_sii_from_save;
@@ -8,6 +6,17 @@ use crate::shared::sii_parser::{get_player_id, get_vehicle_ids, parse_trucks_fro
 use crate::shared::trace::TraceScope;
 use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 use tauri::command;
+
+fn player_truck_from_content(content: &str, trucks: &[ParsedTruck]) -> Option<ParsedTruck> {
+    let player_id = get_player_id(content)?;
+    let (player_truck_id_opt, _) = get_vehicle_ids(content, &player_id);
+    let player_truck_id = player_truck_id_opt?;
+    let id_clean = player_truck_id.trim().to_lowercase();
+    trucks
+        .iter()
+        .find(|truck| truck.truck_id.to_lowercase() == id_clean)
+        .cloned()
+}
 
 #[command]
 pub async fn get_all_trucks(
@@ -28,7 +37,7 @@ pub async fn get_all_trucks(
         .to_string();
 
     if let Some(cached) = profile_cache.get_cached_trucks(&path_key) {
-        dev_log!("get_all_trucks liefert Cache: {} EintrÃ¤ge", cached.len());
+        dev_log!("get_all_trucks liefert Cache: {} Eintraege", cached.len());
         trace.finish_ok();
         return Ok(cached);
     }
@@ -37,17 +46,7 @@ pub async fn get_all_trucks(
     let (trucks, player_truck) = tauri::async_runtime::spawn_blocking(move || {
         let (content, _) = load_save_content_from_save_path(&save_path, &decrypt_cache_cloned)?;
         let trucks = parse_trucks_from_sii(&content);
-        let player_id = get_player_id(&content);
-        let player_truck = player_id.as_ref().and_then(|id| {
-            let (_, player_truck_id_opt) = get_vehicle_ids(&content, id);
-            player_truck_id_opt.and_then(|player_truck_id| {
-                let id_clean = player_truck_id.trim().to_lowercase();
-                trucks
-                    .iter()
-                    .find(|t| t.truck_id.to_lowercase() == id_clean)
-                    .cloned()
-            })
-        });
+        let player_truck = player_truck_from_content(&content, &trucks);
         Ok::<(Vec<ParsedTruck>, Option<ParsedTruck>), String>((trucks, player_truck))
     })
     .await
@@ -56,31 +55,6 @@ pub async fn get_all_trucks(
     profile_cache.cache_trucks(path_key.clone(), trucks.clone(), player_truck.clone());
     dev_log!("{} Trucks gefunden", trucks.len());
     trace.finish_ok();
-    return Ok(trucks);
-
-    let (content, path_key) = load_save_content(profile_state, decrypt_cache)?;
-
-    if let Some(cached) = profile_cache.get_cached_trucks(&path_key) {
-        dev_log!("get_all_trucks liefert Cache: {} Einträge", cached.len());
-        return Ok(cached);
-    }
-
-    let trucks = parse_trucks_from_sii(&content);
-    let player_id = get_player_id(&content);
-    let player_truck = player_id.as_ref().and_then(|id| {
-        let (_, player_truck_id_opt) = get_vehicle_ids(&content, id);
-        player_truck_id_opt.and_then(|player_truck_id| {
-            let id_clean = player_truck_id.trim().to_lowercase();
-            trucks
-                .iter()
-                .find(|t| t.truck_id.to_lowercase() == id_clean)
-                .cloned()
-        })
-    });
-
-    profile_cache.cache_trucks(path_key.clone(), trucks.clone(), player_truck.clone());
-    dev_log!("{} Trucks gefunden", trucks.len());
-
     Ok(trucks)
 }
 
@@ -120,7 +94,7 @@ pub async fn get_player_truck(
         let id_clean = player_truck_id.trim().to_lowercase();
         let base_truck = trucks
             .iter()
-            .find(|t| t.truck_id.to_lowercase() == id_clean)
+            .find(|truck| truck.truck_id.to_lowercase() == id_clean)
             .cloned()
             .ok_or(format!("Player Truck mit ID {} nicht gefunden", id_clean))?;
         Ok::<(Vec<ParsedTruck>, ParsedTruck), String>((trucks, base_truck))
@@ -130,33 +104,61 @@ pub async fn get_player_truck(
 
     profile_cache.cache_trucks(path_key.clone(), trucks, Some(base_truck.clone()));
     trace.finish_ok();
-    return Ok(base_truck);
+    Ok(base_truck)
+}
 
-    let (content, path_key) = load_save_content(profile_state, decrypt_cache)?;
+#[cfg(test)]
+mod tests {
+    use super::player_truck_from_content;
+    use crate::shared::sii_parser::{get_vehicle_ids, parse_trucks_from_sii};
 
-    if let Some(cached) = profile_cache.get_cached_player_truck(&path_key) {
-        dev_log!("get_player_truck liefert Cache");
-        return Ok(cached);
+    #[test]
+    fn vehicle_ids_returns_truck_then_trailer() {
+        let content = r#"SiiNunit
+{
+economy : _nameless.economy {
+ player: _nameless.player
+}
+player : _nameless.player {
+ my_truck: _nameless.truck.active
+ my_trailer: _nameless.trailer.attached
+}
+}
+"#;
+        let ids = get_vehicle_ids(content, "_nameless.player");
+        assert_eq!(ids.0.as_deref(), Some("_nameless.truck.active"));
+        assert_eq!(ids.1.as_deref(), Some("_nameless.trailer.attached"));
     }
 
-    let trucks = parse_trucks_from_sii(&content);
-
-    let player_id =
-        get_player_id(&content).ok_or("Player ID nicht im economy block gefunden".to_string())?;
-    let (player_truck_id_opt, _) = get_vehicle_ids(&content, &player_id);
-
-    let player_truck_id =
-        player_truck_id_opt.ok_or("my_truck nicht im player block gefunden".to_string())?;
-
-    let id_clean = player_truck_id.trim().to_lowercase();
-
-    let base_truck = trucks
-        .iter()
-        .find(|t| t.truck_id.to_lowercase() == id_clean)
-        .cloned()
-        .ok_or(format!("Player Truck mit ID {} nicht gefunden", id_clean))?;
-
-    profile_cache.cache_trucks(path_key.clone(), trucks, Some(base_truck.clone()));
-
-    Ok(base_truck)
+    #[test]
+    fn get_all_trucks_player_resolution_uses_truck_id_not_trailer_id() {
+        let content = r#"SiiNunit
+{
+economy : _nameless.economy {
+ player: _nameless.player
+}
+player : _nameless.player {
+ my_truck: _nameless.truck.active
+ my_trailer: _nameless.truck.trailer_like
+}
+vehicle : _nameless.truck.active {
+ accessories: 1
+ accessories[0]: _nameless.acc.active
+}
+vehicle_accessory : _nameless.acc.active {
+ data_path: "/def/vehicle/truck/scania.s_2016/data.sii"
+}
+vehicle : _nameless.truck.trailer_like {
+ accessories: 1
+ accessories[0]: _nameless.acc.trailer_like
+}
+vehicle_accessory : _nameless.acc.trailer_like {
+ data_path: "/def/vehicle/truck/man.tgx/data.sii"
+}
+}
+"#;
+        let trucks = parse_trucks_from_sii(content);
+        let player = player_truck_from_content(content, &trucks).unwrap();
+        assert_eq!(player.truck_id, "_nameless.truck.active");
+    }
 }

@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://xlieferant.local/schemas/powertrain_catalog.schema.json",
+  "title": "Official SCS Powertrain Catalog",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "game",
+    "gameVersion",
+    "generatedAt",
+    "sources",
+    "engines",
+    "transmissions"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "game": { "type": "string", "enum": ["ets2", "ats"] },
+    "gameVersion": { "type": "string" },
+    "generatedAt": { "type": "string" },
+    "sources": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "engines": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/engine" }
+    },
+    "transmissions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/transmission" }
+    }
+  },
+  "$defs": {
+    "engine": {
+      "type": "object",
+      "required": [
+        "id",
+        "dataPath",
+        "brand",
+        "truckModel",
+        "name",
+        "type",
+        "official",
+        "sourceArchive"
+      ],
+      "properties": {
+        "id": { "type": "string" },
+        "dataPath": { "type": "string" },
+        "brand": { "type": "string" },
+        "truckModel": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "torqueNm": { "type": ["number", "null"] },
+        "power": { "type": ["number", "null"] },
+        "rpmIdle": { "type": ["number", "null"] },
+        "rpmLimit": { "type": ["number", "null"] },
+        "official": { "type": "boolean" },
+        "sourceArchive": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "transmission": {
+      "type": "object",
+      "required": [
+        "id",
+        "dataPath",
+        "brand",
+        "truckModel",
+        "name",
+        "ratiosForward",
+        "ratiosReverse",
+        "official",
+        "sourceArchive"
+      ],
+      "properties": {
+        "id": { "type": "string" },
+        "dataPath": { "type": "string" },
+        "brand": { "type": "string" },
+        "truckModel": { "type": "string" },
+        "name": { "type": "string" },
+        "gearsForward": { "type": ["integer", "null"] },
+        "ratiosForward": {
+          "type": "array",
+          "items": { "type": "number" }
+        },
+        "ratiosReverse": {
+          "type": "array",
+          "items": { "type": "number" }
+        },
+        "differentialRatio": { "type": ["number", "null"] },
+        "retarderSteps": { "type": ["integer", "null"] },
+        "official": { "type": "boolean" },
+        "sourceArchive": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

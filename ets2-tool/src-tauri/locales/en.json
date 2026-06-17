@@ -1191,6 +1191,9 @@
             "truck_mileage_error": "Failed to set truck odometer",
             "truck_license_plate_success": "Truck license plate changed to {newValue}!",
             "truck_license_plate_error": "Failed to change truck license plate",
+            "truck_change_apply_success": "Truck switch verified successfully.",
+            "truck_change_apply_failed": "Truck switch failed.",
+            "truck_change_save_required": "Select a profile and save first.",
             "trailer_repair_success": "Trailer repaired successfully",
             "trailer_repair_error": "Failed to repair trailer",
             "trailer_license_plate_success": "Trailer license plate changed to {newValue}!",
@@ -1323,6 +1326,10 @@
                   "current_truck": {
                         "title": "My Current Truck",
                         "desc": "Open a fast summary of the active truck from the current save."
+                  },
+                  "truck_change": {
+                        "title": "Truck Change on the Road",
+                        "desc": "Switch the active truck in the selected save with backup and verification."
                   },
                   "repair_truck": {
                         "title": "Repair Truck",
@@ -1587,6 +1594,72 @@
                         "trip_distance": "Trip Distance",
                         "garage": "Assigned Garage",
                         "vehicle_id": "Vehicle ID"
+                  }
+            },
+            "truck_change": {
+                  "kicker": "Truck Change on the Road",
+                  "title": "Truck Change on the Road",
+                  "description": "Switch the active truck in the selected save, or preview upcoming transfer and powertrain tools.",
+                  "close": "Close",
+                  "status": {
+                        "loading": "Loading",
+                        "ready": "Ready",
+                        "preview": "Preview",
+                        "applying": "Applying",
+                        "success": "Verified",
+                        "error": "Error"
+                  },
+                  "tabs": {
+                        "switch": "Truck switch",
+                        "transfer": "Truck transfer",
+                        "powertrain": "Engine & gearbox"
+                  },
+                  "switch": {
+                        "search": "Search trucks",
+                        "loading": "Loading trucks...",
+                        "empty": "No trucks found.",
+                        "active": "Active",
+                        "selectable": "Available",
+                        "unavailable": "Unavailable",
+                        "garage": "Garage",
+                        "driver": "Driver",
+                        "no_garage": "No garage assignment",
+                        "no_plate": "No plate",
+                        "preview_title": "Write preview",
+                        "current_truck": "Current truck",
+                        "target_truck": "Target truck",
+                        "warnings": "Checks",
+                        "no_warnings": "No blocking warnings.",
+                        "confirm": "Applying creates a backup, writes a temporary game.sii, reloads the save and verifies the active truck.",
+                        "apply": "Apply switch",
+                        "applying": "Applying...",
+                        "refresh": "Refresh",
+                        "verified": "The save was reloaded and the new active truck was verified.",
+                        "backup": "Backup",
+                        "select_prompt": "Select an available truck to preview the switch."
+                  },
+                  "transfer": {
+                        "wip": "Transfer preview is available in the backend. Real target-profile writes remain blocked until garage and ownership fixtures are complete."
+                  },
+                  "powertrain": {
+                        "wip": "Powertrain catalog loading and preview are prepared. Real engine and gearbox writes remain blocked in this WIP.",
+                        "catalog_unavailable": "No official powertrain catalog is available for the selected game version yet."
+                  },
+                  "warnings": {
+                        "save_changed_since_list": "The save changed since the truck list was loaded.",
+                        "current_truck_not_found": "The current active truck could not be found.",
+                        "target_truck_not_found": "The selected truck is not present in this save.",
+                        "target_already_active": "The selected truck is already active.",
+                        "truck_assigned_to_driver": "The selected truck is assigned to a hired driver.",
+                        "dangling_vehicle_references": "The selected truck has missing accessory references.",
+                        "target_vehicle_block_missing": "The selected truck vehicle block is missing.",
+                        "target_has_garage_assignment": "The selected truck has a garage assignment that will be preserved."
+                  },
+                  "errors": {
+                        "save_changed_since_preview": "The save changed after the preview. Refresh and preview again.",
+                        "truck_assigned_to_driver": "Driver-assigned trucks cannot be selected in this WIP.",
+                        "target_truck_not_found": "The selected truck no longer exists in the save.",
+                        "backup_required_before_write": "The write was blocked because no backup was available."
                   }
             },
             "level_system": {
