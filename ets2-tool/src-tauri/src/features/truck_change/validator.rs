@@ -1,6 +1,7 @@
 use super::models::TruckWriteValidation;
 use super::parser::{
-    assignment_conflicts_from_blocks, graph_dangling_accessories, parse_truck_save,
+    assignment_conflicts_from_blocks, graph_dangling_accessories, normalize_sii_unit_id,
+    parse_truck_save,
 };
 
 pub fn validate_truck_switch_content(
@@ -45,27 +46,51 @@ pub fn validate_truck_switch_content(
         );
         let assigned_to_driver = parsed
             .garage_assignments
-            .get(driver_truck_id)
+            .get(&normalize_sii_unit_id(driver_truck_id))
             .and_then(|assignment| assignment.driver_id.as_deref())
-            .map(|actual| actual.eq_ignore_ascii_case(driver_id))
+            .map(|actual| normalize_sii_unit_id(actual) == normalize_sii_unit_id(driver_id))
             .unwrap_or(false);
         if !assigned_to_driver {
             errors.push("driver_truck_assignment_mismatch".to_string());
         }
 
+        let driver_declares_previous_truck = parsed
+            .driver_infos
+            .get(&normalize_sii_unit_id(driver_id))
+            .and_then(|driver| driver.current_truck_id.as_deref())
+            .map(|actual| normalize_sii_unit_id(actual) == normalize_sii_unit_id(driver_truck_id))
+            .unwrap_or(true);
+        if !driver_declares_previous_truck {
+            errors.push("driver_assigned_truck_field_mismatch".to_string());
+        }
+
         let player_target_has_driver = parsed
             .garage_assignments
-            .get(expected_truck_id)
+            .get(&normalize_sii_unit_id(expected_truck_id))
             .and_then(|assignment| assignment.driver_id.as_deref())
             .is_some();
         if player_target_has_driver {
             errors.push("player_truck_still_assigned_to_driver".to_string());
+        }
+
+        if actual_truck_id
+            .as_deref()
+            .map(|actual| actual.eq_ignore_ascii_case(driver_truck_id))
+            .unwrap_or(false)
+        {
+            errors.push("driver_truck_still_active".to_string());
         }
     }
 
     let duplicate_assignments = duplicate_assigned_trucks(&parsed);
     if !duplicate_assignments.is_empty() {
         errors.push("duplicate_assignment_detected".to_string());
+    }
+    if garage_driver_references_unresolved(&parsed) {
+        errors.push("driver_assignment_unresolved".to_string());
+    }
+    if garage_drivers_without_trucks(&parsed) {
+        errors.push("driver_without_truck".to_string());
     }
     dangling_references.sort();
     dangling_references.dedup();
@@ -106,6 +131,40 @@ fn validate_graph_presence_and_refs(
 fn duplicate_assigned_trucks(parsed: &super::parser::ParsedTruckSave) -> Vec<String> {
     let blocks = parsed.unit_blocks.values().cloned().collect::<Vec<_>>();
     assignment_conflicts_from_blocks(&blocks)
+}
+
+fn garage_driver_references_unresolved(parsed: &super::parser::ParsedTruckSave) -> bool {
+    parsed.garage_assignments.values().any(|assignment| {
+        assignment
+            .driver_id
+            .as_deref()
+            .map(|driver_id| {
+                !parsed
+                    .driver_infos
+                    .contains_key(&normalize_sii_unit_id(driver_id))
+            })
+            .unwrap_or(false)
+    })
+}
+
+fn garage_drivers_without_trucks(parsed: &super::parser::ParsedTruckSave) -> bool {
+    parsed
+        .unit_blocks
+        .values()
+        .filter(|block| block.unit_type == "garage")
+        .any(|block| {
+            let vehicles = super::parser::extract_array_entries(&block.raw_block, "vehicles")
+                .into_iter()
+                .collect::<std::collections::HashMap<_, _>>();
+            let drivers = super::parser::extract_array_entries(&block.raw_block, "drivers");
+            drivers.iter().any(|(index, driver_id)| {
+                !super::parser::is_null_ref(driver_id)
+                    && vehicles
+                        .get(index)
+                        .map(|truck_id| super::parser::is_null_ref(truck_id))
+                        .unwrap_or(true)
+            })
+        })
 }
 
 #[cfg(test)]

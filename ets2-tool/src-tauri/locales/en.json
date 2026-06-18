@@ -988,7 +988,7 @@
                   "subtitle": "Adjust your driver skills visually.",
                   "launch_kicker": "Driver specialization",
                   "launch_desc": "Open the focused skilltree workspace for ADR, cargo and driving specializations.",
-                  "launch_action": "Open Skilltree",
+                  "launch_action": "Open",
                   "modal_desc": "Edit driver skills in a focused workspace without changing the backend save logic.",
                   "summary_progress": "Overall Progress",
                   "summary_assigned": "Assigned Levels",
@@ -1607,7 +1607,9 @@
                         "preview": "Preview",
                         "applying": "Applying",
                         "success": "Verified",
-                        "error": "Error"
+                        "error": "Error",
+                        "preparing": "Preparing",
+                        "verifying": "Verifying"
                   },
                   "tabs": {
                         "switch": "Truck switch",
@@ -1649,7 +1651,28 @@
                         "backup_label": "Create backup before changing",
                         "no_persistent_backup": "No persistent backup will be saved.",
                         "temporary_rollback": "A temporary rollback copy is used until verification completes.",
-                        "select_prompt": "Select an available truck to preview the switch."
+                        "select_prompt": "Select an available truck to preview the switch.",
+                        "current_truck_heading": "Current truck",
+                        "loading_session": "Loading truck data...",
+                        "preparing_preview": "Preparing truck switch...",
+                        "checking_save": "Checking save...",
+                        "verifying_result": "Verifying result...",
+                        "preview_failed": "The truck switch could not be prepared.",
+                        "error_code": "Error code",
+                        "retry": "Retry",
+                        "truck_swap_available": "Truck swap available",
+                        "driver_truck_hint": "When switching, the driver receives your current truck.",
+                        "technical_details": "Technical details",
+                        "resolution_error": "Resolution error",
+                        "target_truck_id": "Truck ID",
+                        "garage_slot": "Garage slot",
+                        "garage_driver_id": "Garage driver ID",
+                        "recognized_drivers": "Recognized driver blocks",
+                        "drivers_pointing_to_target": "Drivers with matching truck reference",
+                        "arrays_consistent": "Garage array indices consistent",
+                        "similar_driver_ids": "Similar driver IDs",
+                        "yes": "Yes",
+                        "no": "No"
                   },
                   "transfer": {
                         "wip": "Transfer preview is available in the backend. Real target-profile writes remain blocked until garage and ownership fixtures are complete."
@@ -1659,12 +1682,13 @@
                         "catalog_unavailable": "No official powertrain catalog is available for the selected game version yet."
                   },
                   "warnings": {
+                        "save_changed_since_session": "The save changed since this truck change session was loaded.",
                         "save_changed_since_list": "The save changed since the truck list was loaded.",
                         "current_truck_not_found": "The current active truck could not be found.",
                         "target_truck_not_found": "The selected truck is not present in this save.",
                         "target_already_active": "The selected truck is already active.",
                         "truck_assigned_to_driver": "The selected truck is assigned to a hired driver.",
-                        "driver_assignment_unresolved": "The driver assignment could not be resolved safely.",
+                        "driver_assignment_unresolved": "The driver assignment could not be resolved clearly. Reload the save or open the technical details.",
                         "driver_swap_assignment_missing": "The previous or selected truck garage assignment is missing.",
                         "duplicate_assignment_detected": "A truck or driver assignment appears more than once.",
                         "dangling_vehicle_references": "The selected truck has missing accessory references.",
@@ -1672,9 +1696,10 @@
                         "target_has_garage_assignment": "The selected truck has a garage assignment that will be preserved."
                   },
                   "errors": {
+                        "save_changed_since_session": "The save changed since this truck change session was loaded. Refresh and preview again.",
                         "save_changed_since_preview": "The save changed after the preview. Refresh and preview again.",
                         "truck_assigned_to_driver": "The selected driver assignment could not be swapped safely.",
-                        "driver_assignment_unresolved": "The driver assignment could not be resolved safely.",
+                        "driver_assignment_unresolved": "The driver assignment could not be resolved clearly. The truck is linked to garage or driver data, but the save references are not unique.",
                         "driver_swap_assignment_missing": "The required garage assignment for the driver swap is missing.",
                         "duplicate_assignment_detected": "A duplicate truck or driver assignment blocks the switch.",
                         "target_truck_not_found": "The selected truck no longer exists in the save.",

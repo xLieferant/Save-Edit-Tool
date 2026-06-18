@@ -1590,7 +1590,9 @@
         "preview": "Vorschau",
         "applying": "Wird angewendet",
         "success": "Verifiziert",
-        "error": "Fehler"
+        "error": "Fehler",
+        "preparing": "[NEEDS TRANSLATION] Preparing",
+        "verifying": "[NEEDS TRANSLATION] Verifying"
       },
       "tabs": {
         "switch": "Truck wechseln",
@@ -1632,7 +1634,28 @@
         "backup_label": "Backup vor der Änderung erstellen",
         "no_persistent_backup": "Es wird kein dauerhaftes Backup gespeichert.",
         "temporary_rollback": "Eine temporäre Sicherheitskopie wird nur bis zum Abschluss der Prüfung verwendet.",
-        "select_prompt": "Wähle einen Truck aus, um den Wechsel zu prüfen."
+        "select_prompt": "Wähle einen Truck aus, um den Wechsel zu prüfen.",
+        "current_truck_heading": "[NEEDS TRANSLATION] Current truck",
+        "loading_session": "[NEEDS TRANSLATION] Loading truck data...",
+        "preparing_preview": "[NEEDS TRANSLATION] Preparing truck switch...",
+        "checking_save": "[NEEDS TRANSLATION] Checking save...",
+        "verifying_result": "[NEEDS TRANSLATION] Verifying result...",
+        "preview_failed": "[NEEDS TRANSLATION] The truck switch could not be prepared.",
+        "error_code": "[NEEDS TRANSLATION] Error code",
+        "retry": "[NEEDS TRANSLATION] Retry",
+        "truck_swap_available": "[NEEDS TRANSLATION] Truck swap available",
+        "driver_truck_hint": "[NEEDS TRANSLATION] When switching, the driver receives your current truck.",
+        "technical_details": "[NEEDS TRANSLATION] Technical details",
+        "resolution_error": "[NEEDS TRANSLATION] Resolution error",
+        "target_truck_id": "[NEEDS TRANSLATION] Truck ID",
+        "garage_slot": "[NEEDS TRANSLATION] Garage slot",
+        "garage_driver_id": "[NEEDS TRANSLATION] Garage driver ID",
+        "recognized_drivers": "[NEEDS TRANSLATION] Recognized driver blocks",
+        "drivers_pointing_to_target": "[NEEDS TRANSLATION] Drivers with matching truck reference",
+        "arrays_consistent": "[NEEDS TRANSLATION] Garage array indices consistent",
+        "similar_driver_ids": "[NEEDS TRANSLATION] Similar driver IDs",
+        "yes": "[NEEDS TRANSLATION] Yes",
+        "no": "[NEEDS TRANSLATION] No"
       },
       "transfer": {
         "wip": "Die Transfer-Vorschau ist im Backend vorbereitet. Echte Schreibvorgänge in Zielprofile bleiben blockiert, bis Garage- und Ownership-Fixtures vollständig abgesichert sind."
@@ -1642,12 +1665,13 @@
         "catalog_unavailable": "Für die gewählte Spielversion ist noch kein offizieller Antriebsstrang-Katalog verfügbar."
       },
       "warnings": {
+        "save_changed_since_session": "[NEEDS TRANSLATION] The save changed since this truck change session was loaded.",
         "save_changed_since_list": "Der Spielstand hat sich seit dem Laden der Truckliste geändert.",
         "current_truck_not_found": "Der aktuell aktive Truck konnte nicht gefunden werden.",
         "target_truck_not_found": "Der ausgewählte Truck ist in diesem Spielstand nicht vorhanden.",
         "target_already_active": "Der ausgewählte Truck ist bereits aktiv.",
         "truck_assigned_to_driver": "Der ausgewählte Truck ist einem angestellten Fahrer zugewiesen und wird per Trucktausch behandelt.",
-        "driver_assignment_unresolved": "Die Fahrerzuweisung konnte nicht sicher aufgelöst werden.",
+        "driver_assignment_unresolved": "[NEEDS TRANSLATION] The driver assignment could not be resolved clearly. Reload the save or open the technical details.",
         "driver_swap_assignment_missing": "Die Garage-Zuweisung des bisherigen oder ausgewählten Trucks fehlt.",
         "duplicate_assignment_detected": "Ein Truck oder Fahrer ist mehrfach zugewiesen.",
         "dangling_vehicle_references": "Der ausgewählte Truck hat fehlende Zubehör-Referenzen.",
@@ -1655,9 +1679,10 @@
         "target_has_garage_assignment": "Die Garage-Zuweisung des ausgewählten Trucks bleibt erhalten."
       },
       "errors": {
+        "save_changed_since_session": "[NEEDS TRANSLATION] The save changed since this truck change session was loaded. Refresh and preview again.",
         "save_changed_since_preview": "Der Spielstand wurde nach der Vorschau geändert. Bitte aktualisieren und erneut prüfen.",
         "truck_assigned_to_driver": "Die Fahrerzuweisung konnte nicht sicher getauscht werden.",
-        "driver_assignment_unresolved": "Die Fahrerzuweisung konnte nicht sicher aufgelöst werden.",
+        "driver_assignment_unresolved": "[NEEDS TRANSLATION] The driver assignment could not be resolved clearly. The truck is linked to garage or driver data, but the save references are not unique.",
         "driver_swap_assignment_missing": "Die benötigte Garage-Zuweisung für den Fahrer-Tausch fehlt.",
         "duplicate_assignment_detected": "Eine doppelte Truck- oder Fahrerzuweisung blockiert den Wechsel.",
         "target_truck_not_found": "Der ausgewählte Truck existiert nicht mehr im Spielstand.",

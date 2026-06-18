@@ -3,15 +3,16 @@ use tauri::{State, command};
 use crate::shared::ets2data;
 use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 
+use super::cache::TruckChangeSessionCache;
 use super::catalog::{load_official_powertrain_catalog, preview_powertrain_change_from_content};
 use super::graph::preview_truck_transfer_from_content;
 use super::models::{
-    ApplyTruckChangeResult, PowertrainCatalog, TruckChangePreview, TruckPowertrainPreview,
-    TruckSwitchList, TruckTransferPreview, TruckTransferSelection,
+    ApplyTruckChangeResult, PowertrainCatalog, TruckChangePreview, TruckChangeSession,
+    TruckPowertrainPreview, TruckSwitchList, TruckTransferPreview, TruckTransferSelection,
 };
 use super::service::{
     apply_active_truck_switch_transaction, read_content_for_path, read_switch_list,
-    read_switch_preview, resolve_game_sii_path,
+    read_switch_preview, read_truck_change_session, resolve_game_sii_path,
 };
 
 #[command]
@@ -21,6 +22,21 @@ pub async fn list_owned_trucks_for_switch(
     decrypt_cache: State<'_, DecryptCache>,
 ) -> Result<TruckSwitchList, String> {
     read_switch_list(save_path, profile_state.inner(), decrypt_cache.inner())
+}
+
+#[command]
+pub async fn initialize_truck_change_session(
+    save_path: Option<String>,
+    profile_state: State<'_, AppProfileState>,
+    decrypt_cache: State<'_, DecryptCache>,
+    truck_change_cache: State<'_, TruckChangeSessionCache>,
+) -> Result<TruckChangeSession, String> {
+    read_truck_change_session(
+        save_path,
+        profile_state.inner(),
+        decrypt_cache.inner(),
+        truck_change_cache.inner(),
+    )
 }
 
 #[command]
@@ -49,6 +65,7 @@ pub async fn apply_active_truck_switch(
     profile_state: State<'_, AppProfileState>,
     profile_cache: State<'_, ProfileCache>,
     decrypt_cache: State<'_, DecryptCache>,
+    truck_change_cache: State<'_, TruckChangeSessionCache>,
 ) -> Result<ApplyTruckChangeResult, String> {
     apply_active_truck_switch_transaction(
         save_path,
@@ -58,6 +75,7 @@ pub async fn apply_active_truck_switch(
         profile_state.inner(),
         profile_cache.inner(),
         decrypt_cache.inner(),
+        truck_change_cache.inner(),
     )
 }
 

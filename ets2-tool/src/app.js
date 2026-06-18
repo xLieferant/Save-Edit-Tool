@@ -2043,6 +2043,8 @@ export async function openTruckChangeModal() {
     statusApplying: await window.t("modals.truck_change.status.applying"),
     statusSuccess: await window.t("modals.truck_change.status.success"),
     statusError: await window.t("modals.truck_change.status.error"),
+    statusPreparing: await window.t("modals.truck_change.status.preparing"),
+    statusVerifying: await window.t("modals.truck_change.status.verifying"),
     tabSwitch: await window.t("modals.truck_change.tabs.switch"),
     tabTransfer: await window.t("modals.truck_change.tabs.transfer"),
     tabPowertrain: await window.t("modals.truck_change.tabs.powertrain"),
@@ -2081,12 +2083,34 @@ export async function openTruckChangeModal() {
     noPersistentBackup: await window.t("modals.truck_change.switch.no_persistent_backup"),
     temporaryRollback: await window.t("modals.truck_change.switch.temporary_rollback"),
     selectPrompt: await window.t("modals.truck_change.switch.select_prompt"),
+    currentTruckHeading: await window.t("modals.truck_change.switch.current_truck_heading"),
+    loadingSession: await window.t("modals.truck_change.switch.loading_session"),
+    preparingPreview: await window.t("modals.truck_change.switch.preparing_preview"),
+    checkingSave: await window.t("modals.truck_change.switch.checking_save"),
+    verifyingResult: await window.t("modals.truck_change.switch.verifying_result"),
+    previewFailed: await window.t("modals.truck_change.switch.preview_failed"),
+    errorCode: await window.t("modals.truck_change.switch.error_code"),
+    retry: await window.t("modals.truck_change.switch.retry"),
+    truckSwapAvailable: await window.t("modals.truck_change.switch.truck_swap_available"),
+    driverTruckHint: await window.t("modals.truck_change.switch.driver_truck_hint"),
+    technicalDetails: await window.t("modals.truck_change.switch.technical_details"),
+    resolutionError: await window.t("modals.truck_change.switch.resolution_error"),
+    targetTruckId: await window.t("modals.truck_change.switch.target_truck_id"),
+    garageSlot: await window.t("modals.truck_change.switch.garage_slot"),
+    garageDriverId: await window.t("modals.truck_change.switch.garage_driver_id"),
+    recognizedDrivers: await window.t("modals.truck_change.switch.recognized_drivers"),
+    driversPointingToTarget: await window.t("modals.truck_change.switch.drivers_pointing_to_target"),
+    arraysConsistent: await window.t("modals.truck_change.switch.arrays_consistent"),
+    similarDriverIds: await window.t("modals.truck_change.switch.similar_driver_ids"),
+    yes: await window.t("modals.truck_change.switch.yes"),
+    no: await window.t("modals.truck_change.switch.no"),
     transferWip: await window.t("modals.truck_change.transfer.wip"),
     powertrainWip: await window.t("modals.truck_change.powertrain.wip"),
     catalogUnavailable: await window.t("modals.truck_change.powertrain.catalog_unavailable"),
   };
 
   const warningLabels = {
+    save_changed_since_session: await window.t("modals.truck_change.warnings.save_changed_since_session"),
     save_changed_since_list: await window.t("modals.truck_change.warnings.save_changed_since_list"),
     current_truck_not_found: await window.t("modals.truck_change.warnings.current_truck_not_found"),
     target_truck_not_found: await window.t("modals.truck_change.warnings.target_truck_not_found"),
@@ -2100,6 +2124,7 @@ export async function openTruckChangeModal() {
     target_has_garage_assignment: await window.t("modals.truck_change.warnings.target_has_garage_assignment"),
   };
   const errorLabels = {
+    save_changed_since_session: await window.t("modals.truck_change.errors.save_changed_since_session"),
     save_changed_since_preview: await window.t("modals.truck_change.errors.save_changed_since_preview"),
     truck_assigned_to_driver: await window.t("modals.truck_change.errors.truck_assigned_to_driver"),
     driver_assignment_unresolved: await window.t("modals.truck_change.errors.driver_assignment_unresolved"),
@@ -2151,14 +2176,22 @@ export async function openTruckChangeModal() {
   const state = {
     activeTab: "switch",
     list: null,
+    session: null,
+    saveHash: "",
+    currentTruck: null,
+    ownedTrucks: [],
     searchQuery: "",
     selectedTruckId: null,
     preview: null,
     result: null,
-    loading: false,
+    initialized: false,
+    initialLoading: false,
     previewLoading: false,
-    applying: false,
-    error: "",
+    applyLoading: false,
+    progressMessage: "",
+    initializationError: null,
+    previewError: null,
+    applyError: null,
     catalogError: "",
     createPersistentBackup: true,
   };
@@ -2222,14 +2255,80 @@ export async function openTruckChangeModal() {
     return warningLabels[code] || safeValue(code);
   }
 
-  function errorText(error) {
+  function normalizeTruckChangeError(error) {
     const raw = String(error?.message || error || "");
     const key = Object.keys(errorLabels).find((candidate) => raw.includes(candidate));
-    return key ? errorLabels[key] : safeValue(raw);
+    return {
+      code: key || raw || "unknown_error",
+      message: key ? errorLabels[key] : safeValue(raw),
+    };
+  }
+
+  function errorText(error) {
+    return normalizeTruckChangeError(error).message;
+  }
+
+  function codeText(code) {
+    return errorLabels[code] || warningLabels[code] || safeValue(code);
+  }
+
+  function renderErrorBlock(error, fallbackCode = "") {
+    if (!error && !fallbackCode) return "";
+    const normalized = error || {
+      code: fallbackCode,
+      message: codeText(fallbackCode),
+    };
+    return `<div class="truck-change-error">
+      <strong>${escapeHtml(normalized.message || copy.previewFailed)}</strong>
+      ${normalized.code ? `<span>${escapeHtml(copy.errorCode)}: ${escapeHtml(normalized.code)}</span>` : ""}
+    </div>`;
+  }
+
+  function truckChangeDebugDetailsEnabled() {
+    return document.body?.classList.contains("mode-editor")
+      || Number(window.baseConfig?.developer || 0) > 0
+      || localStorage.getItem("truck_change_debug") === "1";
+  }
+
+  function diagnosticValue(value) {
+    if (Array.isArray(value)) return value.length ? value.join(", ") : "-";
+    if (typeof value === "boolean") return value ? copy.yes : copy.no;
+    return safeValue(value, "-");
+  }
+
+  function renderDriverResolutionDiagnostics(diagnostics) {
+    if (!diagnostics || !truckChangeDebugDetailsEnabled()) return "";
+    const garageSlot = [
+      diagnostics.garageId,
+      diagnostics.garageSlotIndex !== null && diagnostics.garageSlotIndex !== undefined
+        ? `#${diagnostics.garageSlotIndex}`
+        : "",
+    ].filter(Boolean).join(" ");
+    const rows = [
+      [copy.resolutionError, diagnostics.resolutionError],
+      [copy.targetTruckId, diagnostics.targetTruckId],
+      [copy.garageSlot, garageSlot],
+      [copy.garageDriverId, diagnostics.garageDriverIdRaw],
+      [copy.recognizedDrivers, diagnostics.recognizedDriverCount],
+      [copy.driversPointingToTarget, diagnostics.driversPointingToTargetTruck || []],
+      [copy.arraysConsistent, diagnostics.arraysHaveMatchingIndices],
+      [copy.similarDriverIds, diagnostics.similarDriverIds || []],
+    ].map(([label, value]) => `
+      <div>
+        <dt>${escapeHtml(label)}</dt>
+        <dd>${escapeHtml(diagnosticValue(value))}</dd>
+      </div>
+    `).join("");
+    return `
+      <details class="truck-change-diagnostics">
+        <summary>${escapeHtml(copy.technicalDetails)}</summary>
+        <dl class="truck-change-preview-list">${rows}</dl>
+      </details>
+    `;
   }
 
   function filteredTrucks() {
-    const trucks = state.list?.trucks || [];
+    const trucks = state.ownedTrucks || [];
     const query = normalizeTruckSearchValue(state.searchQuery);
     const compactQuery = compactTruckSearchValue(state.searchQuery);
     if (!query && !compactQuery) return trucks;
@@ -2258,24 +2357,28 @@ export async function openTruckChangeModal() {
   }
 
   function render() {
-    if (state.applying) {
+    const hasError = state.initializationError || state.previewError || state.applyError;
+    if (state.applyLoading) {
       setModalPillState(status, "loading", copy.statusApplying);
-    } else if (state.error) {
+    } else if (state.previewLoading) {
+      setModalPillState(status, "loading", copy.statusPreparing);
+    } else if (state.initialLoading) {
+      setModalPillState(status, "loading", copy.statusLoading);
+    } else if (hasError) {
       setModalPillState(status, "error", copy.statusError);
     } else if (state.result?.success) {
       setModalPillState(status, "success", copy.statusSuccess);
     } else if (state.preview) {
       setModalPillState(status, "warning", copy.statusPreview);
-    } else if (state.loading) {
-      setModalPillState(status, "loading", copy.statusLoading);
     } else {
       setModalPillState(status, "success", copy.statusReady);
     }
 
     refreshBtn.hidden = state.activeTab !== "switch";
-    applyBtn.hidden = state.activeTab !== "switch";
-    applyBtn.textContent = state.applying ? copy.applying : copy.apply;
-    applyBtn.disabled = state.applying || !state.preview?.canApply || !state.selectedTruckId;
+    const canShowApply = state.preview && state.preview.canApply === true && state.previewLoading === false;
+    applyBtn.hidden = state.activeTab !== "switch" || !canShowApply;
+    applyBtn.textContent = state.applyLoading ? copy.applying : copy.apply;
+    applyBtn.disabled = state.applyLoading || !canShowApply;
 
     if (state.activeTab === "transfer") {
       body.innerHTML = `<div class="truck-change-panel"><p>${escapeHtml(copy.transferWip)}</p></div>`;
@@ -2297,6 +2400,7 @@ export async function openTruckChangeModal() {
     body.innerHTML = `
       <div class="truck-change-switch-grid">
         <section class="truck-change-panel truck-change-list-panel">
+          <div class="truck-change-current-card"></div>
           <div class="truck-change-summary"></div>
           <input class="truck-change-search" type="search" value="${escapeHtml(state.searchQuery)}" placeholder="${escapeHtml(copy.search)}" />
           <div class="truck-change-list" role="list"></div>
@@ -2316,9 +2420,19 @@ export async function openTruckChangeModal() {
   function renderTruckList() {
     const list = body.querySelector(".truck-change-list");
     const summary = body.querySelector(".truck-change-summary");
+    const currentCard = body.querySelector(".truck-change-current-card");
     if (!list) return;
+    if (currentCard) {
+      const current = state.currentTruck;
+      currentCard.innerHTML = current
+        ? `<dl class="truck-change-preview-list">
+            <div><dt>${escapeHtml(copy.currentTruckHeading)}</dt><dd>${escapeHtml(truckLabel(current))}</dd></div>
+            <div><dt>${escapeHtml(copy.garage)}</dt><dd>${truckMeta(current).map(escapeHtml).join(" &middot; ") || "-"}</dd></div>
+          </dl>`
+        : `<div class="truck-change-empty">${escapeHtml(state.initialLoading ? copy.loadingSession : copy.selectPrompt)}</div>`;
+    }
     if (summary) {
-      summary.textContent = `${copy.ownedCount}: ${state.list?.trucks?.length || 0}`;
+      summary.textContent = `${copy.ownedCount}: ${state.ownedTrucks?.length || 0}`;
     }
     const trucks = filteredTrucks();
     const rows = trucks.map((truck) => {
@@ -2326,35 +2440,28 @@ export async function openTruckChangeModal() {
       const statusText = truck.isActive
         ? copy.active
         : truck.requiresDriverSwap
-          ? copy.driverSwap
-          : truck.isSwitchable
-            ? copy.selectable
-            : copy.unavailable;
-      const disabled = !truck.isSwitchable || truck.isActive;
+          ? copy.truckSwapAvailable
+          : copy.selectable;
+      const disabled = truck.isActive;
       return `
         <button type="button" class="truck-change-row${selected ? " is-selected" : ""}${truck.isActive ? " is-active" : ""}" data-truck-id="${escapeHtml(truck.truckId)}" ${disabled ? "disabled" : ""}>
           <span class="truck-change-index">${escapeHtml(truck.displayIndex)}</span>
           <span class="truck-change-main">
             <strong>${escapeHtml(truckLabel(truck))}</strong>
-            <span>${truckMeta(truck).map(escapeHtml).join(" · ")}</span>
+            <span>${truckMeta(truck).map(escapeHtml).join(" &middot; ")}</span>
           </span>
           <span class="truck-change-row-status">${escapeHtml(statusText)}</span>
         </button>
       `;
     }).join("");
-    list.innerHTML = state.loading
+    list.innerHTML = state.initialLoading
       ? `<div class="truck-change-empty">${escapeHtml(copy.loading)}</div>`
       : rows || `<div class="truck-change-empty">${escapeHtml(state.searchQuery ? copy.noMatches : copy.empty)}</div>`;
     list.querySelectorAll(".truck-change-row").forEach((row) => {
       row.addEventListener("click", async () => {
         const truckId = row.dataset.truckId;
         if (!truckId) return;
-        state.selectedTruckId = truckId;
-        state.preview = null;
-        state.result = null;
-        state.error = "";
-        render();
-        await loadPreview(truckId);
+        await selectTruckForSwitch(truckId);
       });
     });
   }
@@ -2362,12 +2469,29 @@ export async function openTruckChangeModal() {
   function renderPreviewPanel() {
     const panel = body.querySelector(".truck-change-preview-panel");
     if (!panel) return;
+    if (state.initialLoading) {
+      panel.innerHTML = `<h3>${escapeHtml(copy.previewTitle)}</h3><p>${escapeHtml(copy.loadingSession)}</p>`;
+      return;
+    }
+    if (state.initializationError) {
+      panel.innerHTML = `
+        <h3>${escapeHtml(copy.previewTitle)}</h3>
+        ${renderErrorBlock(state.initializationError)}
+        <button type="button" class="secondary-btn truck-change-retry">${escapeHtml(copy.retry)}</button>
+      `;
+      panel.querySelector(".truck-change-retry")?.addEventListener("click", handleRefresh);
+      return;
+    }
     const warningRows = (state.preview?.warnings || []).map((warning) => {
       return `<li>${escapeHtml(warningText(warning))}</li>`;
     }).join("");
-    const selectedTruck = state.list?.trucks?.find((truck) => truck.truckId === state.selectedTruckId);
+    const selectedTruck = state.ownedTrucks?.find((truck) => truck.truckId === state.selectedTruckId);
     const affectedDriver = state.preview?.affectedDriver;
     const driverReceivesTruck = state.preview?.driverReceivesTruck;
+    const previewError = state.previewError
+      || (state.preview?.canApply === false && state.preview?.errorCode
+        ? { code: state.preview.errorCode, message: codeText(state.preview.errorCode) }
+        : null);
     const resultHtml = state.result?.success
       ? `<div class="truck-change-result">
           <strong>${escapeHtml(copy.verified)}</strong>
@@ -2375,22 +2499,36 @@ export async function openTruckChangeModal() {
           <span>${escapeHtml(copy.temporaryRollback)}: ${escapeHtml(state.result.temporaryRollbackCleaned ? copy.verified : "-")}</span>
         </div>`
       : "";
-    const errorHtml = state.error
-      ? `<div class="truck-change-error">${escapeHtml(state.error)}</div>`
+    const errorHtml = renderErrorBlock(previewError || state.applyError);
+    const diagnosticsHtml = renderDriverResolutionDiagnostics(state.preview?.diagnostics);
+    const retryHtml = previewError
+      ? `<button type="button" class="secondary-btn truck-change-retry">${escapeHtml(copy.retry)}</button>`
       : "";
     const backupWarning = state.createPersistentBackup
       ? ""
       : `<p class="truck-change-backup-note">${escapeHtml(copy.noPersistentBackup)} ${escapeHtml(copy.temporaryRollback)}</p>`;
+    const previewLoadingHtml = state.previewLoading
+      ? `<p>${escapeHtml(copy.preparingPreview)}</p>`
+      : "";
+    const applyLoadingHtml = state.applyLoading
+      ? `<p>${escapeHtml(state.progressMessage || copy.checkingSave)}</p>`
+      : "";
+    const driverHint = selectedTruck?.requiresDriverSwap
+      ? `<p class="truck-change-confirm">${escapeHtml(copy.driverTruckHint)}</p>`
+      : "";
 
     panel.innerHTML = `
       <h3>${escapeHtml(copy.previewTitle)}</h3>
       ${selectedTruck ? `
         <dl class="truck-change-preview-list">
           <div><dt>${escapeHtml(copy.youReceive)}</dt><dd>${escapeHtml(truckLabel(selectedTruck))}</dd></div>
-          <div><dt>${escapeHtml(copy.currentTruck)}</dt><dd>${escapeHtml(truckLabel(state.preview?.currentTruck || state.list?.trucks?.find((truck) => truck.isActive)))}</dd></div>
+          <div><dt>${escapeHtml(copy.currentTruck)}</dt><dd>${escapeHtml(truckLabel(state.preview?.currentTruck || state.currentTruck))}</dd></div>
           ${affectedDriver ? `<div><dt>${escapeHtml(copy.affectedDriver)}</dt><dd>${escapeHtml(affectedDriver.displayName || copy.aiDriver)}</dd></div>` : ""}
           ${driverReceivesTruck ? `<div><dt>${escapeHtml(copy.driverReceives)}</dt><dd>${escapeHtml(truckLabel(driverReceivesTruck))}</dd></div>` : ""}
         </dl>
+        ${driverHint}
+        ${previewLoadingHtml}
+        ${applyLoadingHtml}
         <label class="truck-change-backup-toggle">
           <input type="checkbox" class="truck-change-backup-checkbox" ${state.createPersistentBackup ? "checked" : ""} />
           <span>${escapeHtml(copy.backupLabel)}</span>
@@ -2404,64 +2542,106 @@ export async function openTruckChangeModal() {
       ` : `<p>${escapeHtml(copy.selectPrompt)}</p>`}
       ${resultHtml}
       ${errorHtml}
+      ${diagnosticsHtml}
+      ${retryHtml}
     `;
     panel.querySelector(".truck-change-backup-checkbox")?.addEventListener("input", (event) => {
       state.createPersistentBackup = event.target.checked;
       renderPreviewPanel();
     });
+    panel.querySelector(".truck-change-retry")?.addEventListener("click", handleRefresh);
   }
 
-  async function loadList() {
-    state.loading = true;
+  function applyTruckChangeSession(session) {
+    state.session = session;
+    state.saveHash = session?.saveHash || "";
+    state.currentTruck = session?.currentTruck || null;
+    state.ownedTrucks = session?.ownedTrucks || [];
+    state.list = {
+      savePath: session?.savePath || savePath,
+      fileHash: session?.saveHash || "",
+      activeTruckId: session?.currentTruck?.truckId || null,
+      trucks: session?.ownedTrucks || [],
+      diagnostics: session?.diagnostics || null,
+      warnings: session?.warnings || [],
+    };
+  }
+
+  async function loadSession() {
+    state.initialLoading = true;
+    state.initialized = false;
     state.preview = null;
     state.result = null;
-    state.error = "";
+    state.selectedTruckId = null;
+    state.initializationError = null;
+    state.previewError = null;
+    state.applyError = null;
+    state.progressMessage = "";
     render();
     try {
-      state.list = await window.invoke("list_owned_trucks_for_switch", { savePath });
-      const active = state.list?.trucks?.find((truck) => !truck.isActive && truck.isSwitchable);
+      const session = await window.invoke("initialize_truck_change_session", { savePath });
+      applyTruckChangeSession(session);
+      state.initialized = true;
+      const active = state.ownedTrucks?.find((truck) => !truck.isActive);
       state.selectedTruckId = active?.truckId || null;
-      state.loading = false;
-      render();
       if (state.selectedTruckId) {
         await loadPreview(state.selectedTruckId);
       }
     } catch (error) {
-      console.error("Truck switch list failed:", error);
-      state.loading = false;
-      state.error = errorText(error);
+      console.error("Truck switch session initialization failed:", error);
+      state.initializationError = normalizeTruckChangeError(error);
+    } finally {
+      state.initialLoading = false;
       render();
     }
   }
 
+  async function selectTruckForSwitch(truckId) {
+    state.selectedTruckId = truckId;
+    state.preview = null;
+    state.result = null;
+    state.previewError = null;
+    state.applyError = null;
+    state.progressMessage = "";
+    render();
+    await loadPreview(truckId);
+  }
+
   async function loadPreview(truckId) {
-    if (!state.list?.fileHash) return;
+    if (!state.saveHash) return;
     state.previewLoading = true;
+    state.previewError = null;
+    state.progressMessage = copy.preparingPreview;
     render();
     try {
       state.preview = await window.invoke("preview_active_truck_switch", {
         savePath,
         targetTruckId: truckId,
-        expectedFileHash: state.list.fileHash,
+        expectedFileHash: state.saveHash,
       });
-      state.previewLoading = false;
-      render();
+      if (state.preview?.canApply === true) {
+        console.log("[truck_change] apply button enabled");
+      }
     } catch (error) {
       console.error("Truck switch preview failed:", error);
+      state.previewError = normalizeTruckChangeError(error);
+    } finally {
       state.previewLoading = false;
-      state.error = errorText(error);
+      state.progressMessage = "";
+      console.log("[truck_change] preview loading state cleared");
       render();
     }
   }
 
   async function handleRefresh() {
-    await loadList();
+    await loadSession();
   }
 
   async function handleApply() {
-    if (!state.preview?.canApply || !state.selectedTruckId || state.applying) return;
-    state.applying = true;
-    state.error = "";
+    if (state.preview?.canApply !== true || !state.selectedTruckId || state.applyLoading) return;
+    state.applyLoading = true;
+    state.applyError = null;
+    state.progressMessage = copy.checkingSave;
     render();
     try {
       const result = await window.invoke("apply_active_truck_switch", {
@@ -2470,19 +2650,25 @@ export async function openTruckChangeModal() {
         expectedFileHash: state.preview.expectedFileHash,
         createPersistentBackup: state.createPersistentBackup,
       });
-      state.applying = false;
+      state.progressMessage = copy.verifyingResult;
+      render();
       await window.loadAllTrucks?.();
       window.showToast("toasts.truck_change_apply_success", "success");
-      await loadList();
       state.result = result;
+      if (result?.refreshedSession) {
+        applyTruckChangeSession(result.refreshedSession);
+      } else {
+        await loadSession();
+      }
       state.preview = null;
       state.selectedTruckId = null;
-      render();
     } catch (error) {
       console.error("Truck switch apply failed:", error);
-      state.applying = false;
-      state.error = errorText(error);
+      state.applyError = normalizeTruckChangeError(error);
       window.showToast("toasts.truck_change_apply_failed", "error");
+    } finally {
+      state.applyLoading = false;
+      state.progressMessage = "";
       render();
     }
   }
@@ -2494,7 +2680,7 @@ export async function openTruckChangeModal() {
   applyBtn.addEventListener("click", handleApply);
   tabButtons.forEach((button) => button.addEventListener("click", handleTabClick));
   modal.style.display = "flex";
-  await loadList();
+  await loadSession();
 }
 
 /* --------------------------------------------------------------

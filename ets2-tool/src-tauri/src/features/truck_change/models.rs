@@ -1,6 +1,15 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+pub type NormalizedSiiId = String;
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum TruckSwitchMode {
+    FreeTruck,
+    DriverSwap,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct TruckInventoryItem {
@@ -31,8 +40,90 @@ pub struct TruckInventoryItem {
 #[serde(rename_all = "camelCase")]
 pub struct DriverDisplayInfo {
     pub driver_id: String,
+    pub raw_id: String,
+    pub normalized_id: NormalizedSiiId,
+    pub unit_type: String,
     pub display_name: Option<String>,
     pub current_truck_id: Option<String>,
+    pub current_truck_id_normalized: Option<NormalizedSiiId>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct DriverParserDiagnostics {
+    pub total_units: usize,
+    pub recognized_driver_blocks: usize,
+    pub ignored_driver_like_blocks: usize,
+    pub recognized_unit_types: Vec<String>,
+    pub unresolved_driver_ids: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum DriverAssignmentSource {
+    GarageSlot,
+    DriverAssignedTruck,
+    ReconciledGarageAndDriver,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct DriverAssignmentEvidence {
+    pub source: DriverAssignmentSource,
+    pub driver_id: Option<String>,
+    pub truck_id: Option<String>,
+    pub garage_id: Option<String>,
+    pub slot_index: Option<usize>,
+    pub detail: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct ResolvedDriverAssignment {
+    pub driver: DriverDisplayInfo,
+    pub source: DriverAssignmentSource,
+    pub garage_id: Option<String>,
+    pub slot_index: Option<usize>,
+    pub evidence: Vec<DriverAssignmentEvidence>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum DriverResolutionError {
+    MissingDriverBlock,
+    AmbiguousDriverAssignment,
+    ConflictingDriverAssignment,
+}
+
+impl DriverResolutionError {
+    pub fn code(&self) -> &'static str {
+        match self {
+            DriverResolutionError::MissingDriverBlock => "missing_driver_block",
+            DriverResolutionError::AmbiguousDriverAssignment => "ambiguous_driver_assignment",
+            DriverResolutionError::ConflictingDriverAssignment => "conflicting_driver_assignment",
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct DriverResolutionDiagnostics {
+    pub target_truck_id: String,
+    pub target_truck_id_normalized: String,
+    pub garage_id: Option<String>,
+    pub garage_slot_index: Option<usize>,
+    pub garage_driver_id_raw: Option<String>,
+    pub garage_driver_id_normalized: Option<String>,
+    pub recognized_driver_count: usize,
+    pub recognized_driver_unit_types: Vec<String>,
+    pub exact_driver_id_match: bool,
+    pub case_insensitive_match: bool,
+    pub drivers_pointing_to_target_truck: Vec<String>,
+    pub similar_driver_ids: Vec<String>,
+    pub garage_vehicle_count: Option<usize>,
+    pub garage_driver_count: Option<usize>,
+    pub arrays_have_matching_indices: bool,
+    pub resolution_error: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -69,6 +160,7 @@ pub struct TruckGraph {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct TruckChangePreview {
+    pub mode: TruckSwitchMode,
     pub current_truck: TruckInventoryItem,
     pub target_truck: TruckInventoryItem,
     pub current_player_truck: TruckInventoryItem,
@@ -76,6 +168,8 @@ pub struct TruckChangePreview {
     pub affected_driver: Option<DriverDisplayInfo>,
     pub driver_receives_truck: Option<TruckInventoryItem>,
     pub warnings: Vec<String>,
+    pub error_code: Option<String>,
+    pub diagnostics: Option<DriverResolutionDiagnostics>,
     pub expected_file_hash: String,
     pub can_apply: bool,
 }
@@ -105,6 +199,7 @@ pub struct ApplyTruckChangeResult {
     pub file_hash_before: String,
     pub file_hash_after: String,
     pub validation: TruckWriteValidation,
+    pub refreshed_session: TruckChangeSession,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -118,6 +213,17 @@ pub struct TruckSwitchList {
     pub warnings: Vec<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct TruckChangeSession {
+    pub save_path: String,
+    pub save_hash: String,
+    pub current_truck: TruckInventoryItem,
+    pub owned_trucks: Vec<TruckInventoryItem>,
+    pub diagnostics: Option<OwnedTruckDiagnostics>,
+    pub warnings: Vec<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct GarageSlotAssignment {
@@ -127,7 +233,12 @@ pub struct GarageSlotAssignment {
     pub country_display_name: Option<String>,
     pub slot_index: usize,
     pub truck_id: String,
+    pub truck_id_normalized: NormalizedSiiId,
     pub driver_id: Option<String>,
+    pub driver_id_normalized: Option<NormalizedSiiId>,
+    pub garage_vehicle_count: usize,
+    pub garage_driver_count: usize,
+    pub arrays_have_matching_indices: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

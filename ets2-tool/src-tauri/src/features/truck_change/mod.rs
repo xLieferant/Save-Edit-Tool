@@ -1,3 +1,4 @@
+pub mod cache;
 pub mod catalog;
 pub mod commands;
 pub mod graph;

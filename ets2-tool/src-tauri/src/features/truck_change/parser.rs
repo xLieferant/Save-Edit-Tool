@@ -1,4 +1,4 @@
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use regex::Regex;
 
@@ -6,8 +6,8 @@ use crate::models::trucks::ParsedTruck;
 use crate::shared::sii_parser::{get_player_id, get_vehicle_ids, parse_trucks_from_sii};
 
 use super::models::{
-    DriverDisplayInfo, GarageCapacity, GarageSlotAssignment, OwnedTruckDiagnostics,
-    TruckAssignment, TruckGraph, TruckInventoryItem,
+    DriverDisplayInfo, DriverParserDiagnostics, GarageCapacity, GarageSlotAssignment,
+    OwnedTruckDiagnostics, TruckAssignment, TruckGraph, TruckInventoryItem,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -29,6 +29,7 @@ pub struct ParsedTruckSave {
     pub garage_assignments: HashMap<String, GarageSlotAssignment>,
     pub garages: Vec<GarageCapacity>,
     pub driver_infos: HashMap<String, DriverDisplayInfo>,
+    pub driver_diagnostics: DriverParserDiagnostics,
     pub truck_assignments: HashMap<String, TruckAssignment>,
     pub diagnostics: OwnedTruckDiagnostics,
     pub unit_ids: HashSet<String>,
@@ -62,7 +63,22 @@ pub fn parse_truck_save(content: &str) -> ParsedTruckSave {
         .filter(|value| !is_null_ref(value))
         .collect::<Vec<_>>();
     let garage_scan = parse_garages(&unit_blocks);
-    let driver_infos = parse_driver_infos(&unit_blocks);
+    let mut driver_scan = parse_driver_infos(&unit_blocks);
+    driver_scan.diagnostics.unresolved_driver_ids = garage_scan
+        .assignments
+        .values()
+        .filter_map(|assignment| {
+            let normalized = assignment.driver_id_normalized.as_deref()?;
+            if driver_scan.infos.contains_key(normalized) {
+                None
+            } else {
+                assignment.driver_id.clone()
+            }
+        })
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect();
+    let driver_infos = driver_scan.infos;
     let accessory_blocks = unit_blocks
         .iter()
         .filter(|block| {
@@ -121,6 +137,7 @@ pub fn parse_truck_save(content: &str) -> ParsedTruckSave {
         garage_assignments: garage_scan.assignments,
         garages: garage_scan.garages,
         driver_infos,
+        driver_diagnostics: driver_scan.diagnostics,
         truck_assignments,
         diagnostics: owned_collection.diagnostics,
         unit_ids,
@@ -193,6 +210,13 @@ pub fn extract_field_value(raw_block: &str, field: &str) -> Option<String> {
 }
 
 pub fn extract_array_values(raw_block: &str, field: &str) -> Vec<String> {
+    extract_array_entries(raw_block, field)
+        .into_iter()
+        .map(|(_, value)| value)
+        .collect()
+}
+
+pub fn extract_array_entries(raw_block: &str, field: &str) -> Vec<(usize, String)> {
     let item_re = Regex::new(&format!(r"^{}\[(\d+)\]\s*:", regex::escape(field)))
         .expect("valid array field regex");
     let mut values = raw_block
@@ -214,7 +238,7 @@ pub fn extract_array_values(raw_block: &str, field: &str) -> Vec<String> {
         })
         .collect::<Vec<_>>();
     values.sort_by_key(|(index, _)| *index);
-    values.into_iter().map(|(_, value)| value).collect()
+    values
 }
 
 pub fn normalize_value(value: &str) -> String {
@@ -224,6 +248,20 @@ pub fn normalize_value(value: &str) -> String {
         .trim_matches('"')
         .trim()
         .to_string()
+}
+
+pub fn normalize_sii_unit_id(value: &str) -> String {
+    let mut normalized = normalize_value(value)
+        .trim_end_matches(';')
+        .trim_end_matches('{')
+        .trim_end_matches('}')
+        .trim()
+        .to_ascii_lowercase();
+    while normalized.ends_with(',') || normalized.ends_with(';') {
+        normalized.pop();
+        normalized = normalized.trim().to_string();
+    }
+    normalized
 }
 
 pub fn is_null_ref(value: &str) -> bool {
@@ -350,6 +388,11 @@ struct GarageScan {
     garages: Vec<GarageCapacity>,
 }
 
+struct DriverScan {
+    infos: HashMap<String, DriverDisplayInfo>,
+    diagnostics: DriverParserDiagnostics,
+}
+
 struct OwnedTruckCollection {
     owned_ids: Vec<String>,
     diagnostics: OwnedTruckDiagnostics,
@@ -363,8 +406,36 @@ fn parse_garages(unit_blocks: &[UnitBlock]) -> GarageScan {
         .iter()
         .filter(|block| block.unit_type == "garage")
     {
-        let vehicles = extract_array_values(&block.raw_block, "vehicles");
-        let drivers = extract_array_values(&block.raw_block, "drivers");
+        let vehicles = extract_array_entries(&block.raw_block, "vehicles");
+        let drivers = extract_array_entries(&block.raw_block, "drivers");
+        let vehicles_by_index = vehicles.iter().cloned().collect::<BTreeMap<_, _>>();
+        let drivers_by_index = drivers.iter().cloned().collect::<BTreeMap<_, _>>();
+        let declared_vehicle_count = extract_field_value(&block.raw_block, "vehicles")
+            .and_then(|value| value.parse::<usize>().ok())
+            .unwrap_or(0);
+        let declared_driver_count = extract_field_value(&block.raw_block, "drivers")
+            .and_then(|value| value.parse::<usize>().ok())
+            .unwrap_or(0);
+        let indexed_vehicle_count = vehicles
+            .iter()
+            .map(|(index, _)| index + 1)
+            .max()
+            .unwrap_or(0);
+        let indexed_driver_count = drivers
+            .iter()
+            .map(|(index, _)| index + 1)
+            .max()
+            .unwrap_or(0);
+        let garage_vehicle_count = declared_vehicle_count.max(indexed_vehicle_count);
+        let garage_driver_count = declared_driver_count.max(indexed_driver_count);
+        let arrays_have_matching_indices = vehicles_by_index
+            .iter()
+            .filter(|(_, truck_id)| !is_null_ref(truck_id))
+            .all(|(index, _)| drivers_by_index.contains_key(index))
+            && drivers_by_index
+                .iter()
+                .filter(|(_, driver_id)| !is_null_ref(driver_id))
+                .all(|(index, _)| vehicles_by_index.contains_key(index));
         let garage_display_name = garage_display_name(block);
         let country_code = extract_first_existing_field(
             &block.raw_block,
@@ -374,18 +445,27 @@ fn parse_garages(unit_blocks: &[UnitBlock]) -> GarageScan {
         let mut occupied = 0usize;
         let mut free = 0usize;
 
-        for (index, truck_id) in vehicles.iter().enumerate() {
+        for index in 0..garage_vehicle_count {
+            let Some(truck_id) = vehicles_by_index.get(&index) else {
+                free += 1;
+                continue;
+            };
             if is_null_ref(truck_id) {
                 free += 1;
                 continue;
             }
             occupied += 1;
-            let driver_id = drivers
-                .get(index)
+            let driver_id = drivers_by_index
+                .get(&index)
                 .filter(|value| !is_null_ref(value))
                 .cloned();
+            let truck_id_normalized = normalize_sii_unit_id(truck_id);
+            let driver_id_normalized = driver_id
+                .as_deref()
+                .map(normalize_sii_unit_id)
+                .filter(|value| !value.is_empty());
             assignments.insert(
-                truck_id.clone(),
+                truck_id_normalized.clone(),
                 GarageSlotAssignment {
                     garage_id: block.id.clone(),
                     garage_display_name: garage_display_name.clone(),
@@ -393,22 +473,24 @@ fn parse_garages(unit_blocks: &[UnitBlock]) -> GarageScan {
                     country_display_name: country_display_name.clone(),
                     slot_index: index,
                     truck_id: truck_id.clone(),
+                    truck_id_normalized,
                     driver_id,
+                    driver_id_normalized,
+                    garage_vehicle_count,
+                    garage_driver_count,
+                    arrays_have_matching_indices,
                 },
             );
         }
 
-        if vehicles.is_empty() {
-            let total = extract_field_value(&block.raw_block, "vehicles")
-                .and_then(|value| value.parse::<usize>().ok())
-                .unwrap_or(0);
-            free = total;
+        if garage_vehicle_count == 0 {
+            free = declared_vehicle_count;
         }
 
         garages.push(GarageCapacity {
             garage_id: block.id.clone(),
             garage_display_name: garage_display_name.clone(),
-            total_truck_slots: occupied + free,
+            total_truck_slots: garage_vehicle_count.max(occupied + free),
             occupied_truck_slots: occupied,
             free_truck_slots: free,
         });
@@ -429,16 +511,23 @@ pub fn assignment_conflicts_from_blocks(unit_blocks: &[UnitBlock]) -> Vec<String
         .iter()
         .filter(|block| block.unit_type == "garage")
     {
-        let vehicles = extract_array_values(&block.raw_block, "vehicles");
-        let drivers = extract_array_values(&block.raw_block, "drivers");
+        let vehicles = extract_array_entries(&block.raw_block, "vehicles")
+            .into_iter()
+            .collect::<BTreeMap<_, _>>();
+        let drivers = extract_array_entries(&block.raw_block, "drivers")
+            .into_iter()
+            .collect::<BTreeMap<_, _>>();
 
-        for (index, truck_id) in vehicles.iter().enumerate() {
+        for (index, truck_id) in vehicles.iter() {
             if is_null_ref(truck_id) {
                 continue;
             }
 
             let truck_slot = format!("{}:{}", block.id, index);
-            if let Some(previous_slot) = truck_slots.insert(truck_id.clone(), truck_slot.clone()) {
+            let normalized_truck_id = normalize_sii_unit_id(truck_id);
+            if let Some(previous_slot) =
+                truck_slots.insert(normalized_truck_id.clone(), truck_slot.clone())
+            {
                 conflicts.push(format!(
                     "duplicate_truck_assignment:{}:{}:{}",
                     truck_id, previous_slot, truck_slot
@@ -449,7 +538,9 @@ pub fn assignment_conflicts_from_blocks(unit_blocks: &[UnitBlock]) -> Vec<String
                 continue;
             };
 
-            if let Some(previous_slot) = driver_slots.insert(driver_id.clone(), truck_slot.clone())
+            let normalized_driver_id = normalize_sii_unit_id(driver_id);
+            if let Some(previous_slot) =
+                driver_slots.insert(normalized_driver_id.clone(), truck_slot.clone())
             {
                 conflicts.push(format!(
                     "duplicate_driver_assignment:{}:{}:{}",
@@ -464,51 +555,119 @@ pub fn assignment_conflicts_from_blocks(unit_blocks: &[UnitBlock]) -> Vec<String
     conflicts
 }
 
-fn parse_driver_infos(unit_blocks: &[UnitBlock]) -> HashMap<String, DriverDisplayInfo> {
-    unit_blocks
-        .iter()
-        .filter(|block| block.unit_type == "driver")
-        .map(|block| {
-            let first = extract_first_existing_field(
-                &block.raw_block,
-                &["first_name", "forename", "name", "given_name"],
-            )
-            .map(|value| sanitize_sii_display_text(&value))
-            .filter(|value| is_readable_display_value(value, &block.id));
-            let last = extract_first_existing_field(
-                &block.raw_block,
-                &["last_name", "surname", "family_name"],
-            )
-            .map(|value| sanitize_sii_display_text(&value))
-            .filter(|value| is_readable_display_value(value, &block.id));
-            let joined = [first.as_deref(), last.as_deref()]
-                .into_iter()
-                .flatten()
-                .collect::<Vec<_>>()
-                .join(" ");
-            let display_name = if joined.trim().is_empty() {
-                extract_first_existing_field(
-                    &block.raw_block,
-                    &["display_name", "localized_name", "full_name", "driver_name"],
-                )
-                .map(|value| sanitize_sii_display_text(&value))
-                .filter(|value| is_readable_display_value(value, &block.id))
-            } else {
-                Some(joined)
-            };
-            let current_truck_id =
-                extract_first_existing_field(&block.raw_block, &["assigned_truck", "truck"]);
+fn parse_driver_infos(unit_blocks: &[UnitBlock]) -> DriverScan {
+    let mut infos = HashMap::new();
+    let mut recognized_unit_types = BTreeSet::new();
+    let mut ignored_driver_like_blocks = 0usize;
 
-            (
-                block.id.clone(),
-                DriverDisplayInfo {
-                    driver_id: block.id.clone(),
-                    display_name,
-                    current_truck_id,
-                },
+    for block in unit_blocks {
+        if !is_recognized_driver_block(block) {
+            if is_driver_like_block(block) {
+                ignored_driver_like_blocks += 1;
+            }
+            continue;
+        }
+
+        let first = extract_first_existing_field(
+            &block.raw_block,
+            &["first_name", "forename", "name", "given_name"],
+        )
+        .map(|value| sanitize_sii_display_text(&value))
+        .filter(|value| is_readable_display_value(value, &block.id));
+        let last = extract_first_existing_field(
+            &block.raw_block,
+            &["last_name", "surname", "family_name"],
+        )
+        .map(|value| sanitize_sii_display_text(&value))
+        .filter(|value| is_readable_display_value(value, &block.id));
+        let joined = [first.as_deref(), last.as_deref()]
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>()
+            .join(" ");
+        let display_name = if joined.trim().is_empty() {
+            extract_first_existing_field(
+                &block.raw_block,
+                &["display_name", "localized_name", "full_name", "driver_name"],
             )
-        })
-        .collect()
+            .map(|value| sanitize_sii_display_text(&value))
+            .filter(|value| is_readable_display_value(value, &block.id))
+        } else {
+            Some(joined)
+        };
+        let current_truck_id =
+            extract_first_existing_field(&block.raw_block, &["assigned_truck", "truck"])
+                .filter(|value| !is_null_ref(value));
+        let current_truck_id_normalized = current_truck_id
+            .as_deref()
+            .map(normalize_sii_unit_id)
+            .filter(|value| !value.is_empty());
+        let normalized_id = normalize_sii_unit_id(&block.id);
+        if normalized_id.is_empty() {
+            ignored_driver_like_blocks += 1;
+            continue;
+        }
+
+        recognized_unit_types.insert(block.unit_type.clone());
+        infos.insert(
+            normalized_id.clone(),
+            DriverDisplayInfo {
+                driver_id: block.id.clone(),
+                raw_id: block.id.clone(),
+                normalized_id,
+                unit_type: block.unit_type.clone(),
+                display_name,
+                current_truck_id,
+                current_truck_id_normalized,
+            },
+        );
+    }
+
+    let diagnostics = DriverParserDiagnostics {
+        total_units: unit_blocks.len(),
+        recognized_driver_blocks: infos.len(),
+        ignored_driver_like_blocks,
+        recognized_unit_types: recognized_unit_types.into_iter().collect(),
+        unresolved_driver_ids: Vec::new(),
+    };
+
+    DriverScan { infos, diagnostics }
+}
+
+fn is_recognized_driver_block(block: &UnitBlock) -> bool {
+    block.unit_type == "driver" && has_driver_structure(block)
+}
+
+fn has_driver_structure(block: &UnitBlock) -> bool {
+    let normalized_id = normalize_sii_unit_id(&block.id);
+    normalized_id.starts_with("driver.")
+        || normalized_id.starts_with("_nameless.")
+        || extract_first_existing_field(
+            &block.raw_block,
+            &[
+                "first_name",
+                "forename",
+                "name",
+                "given_name",
+                "last_name",
+                "surname",
+                "family_name",
+                "display_name",
+                "localized_name",
+                "full_name",
+                "driver_name",
+                "assigned_truck",
+                "truck",
+            ],
+        )
+        .is_some()
+}
+
+fn is_driver_like_block(block: &UnitBlock) -> bool {
+    let unit_type = block.unit_type.to_ascii_lowercase();
+    unit_type.contains("driver")
+        || unit_type == "employee"
+        || extract_first_existing_field(&block.raw_block, &["driver_name"]).is_some()
 }
 
 pub fn collect_owned_player_truck_ids_from_save(parsed: &ParsedTruckSave) -> OwnedTruckDiagnostics {
@@ -546,15 +705,16 @@ fn collect_owned_player_truck_ids(
         add_owned_id(active, graphs, &mut owned, &mut seen, &mut diagnostics);
     }
 
-    let mut garage_ids = assignments.keys().cloned().collect::<Vec<_>>();
-    garage_ids.sort_by_key(|id| {
-        assignments
-            .get(id)
-            .map(|item| (item.garage_id.clone(), item.slot_index))
-            .unwrap_or_else(|| (String::new(), usize::MAX))
-    });
-    for id in garage_ids {
-        add_owned_id(&id, graphs, &mut owned, &mut seen, &mut diagnostics);
+    let mut garage_assignments = assignments.values().collect::<Vec<_>>();
+    garage_assignments.sort_by_key(|item| (item.garage_id.clone(), item.slot_index));
+    for assignment in garage_assignments {
+        add_owned_id(
+            &assignment.truck_id,
+            graphs,
+            &mut owned,
+            &mut seen,
+            &mut diagnostics,
+        );
     }
 
     for graph in graphs.values() {
@@ -746,7 +906,7 @@ fn build_inventory(
                 parsed,
                 active_truck_id,
                 graphs.get(truck_id),
-                assignments.get(truck_id),
+                assignments.get(&normalize_sii_unit_id(truck_id)),
                 driver_infos,
             ))
         })
@@ -768,7 +928,7 @@ fn build_inventory_item(
     let is_driver_assigned = assigned_driver_id.is_some() && !is_active;
     let driver_display_name = assigned_driver_id
         .as_deref()
-        .and_then(|id| driver_infos.get(id))
+        .and_then(|id| driver_infos.get(&normalize_sii_unit_id(id)))
         .and_then(|info| info.display_name.clone());
     let family = graph.and_then(graph_primary_family);
     let (brand_from_path, model_from_path) = family
@@ -824,11 +984,11 @@ fn build_truck_assignments(
     trucks
         .iter()
         .map(|truck| {
-            let assignment = assignments.get(&truck.truck_id);
+            let assignment = assignments.get(&normalize_sii_unit_id(&truck.truck_id));
             let driver_id = assignment.and_then(|item| item.driver_id.clone());
             let driver_name = driver_id
                 .as_deref()
-                .and_then(|id| driver_infos.get(id))
+                .and_then(|id| driver_infos.get(&normalize_sii_unit_id(id)))
                 .and_then(|info| info.display_name.clone());
             (
                 truck.truck_id.clone(),
@@ -858,7 +1018,10 @@ fn non_empty(value: &str) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{extract_array_values, graph_dangling_accessories, parse_truck_save};
+    use super::{
+        extract_array_entries, extract_array_values, graph_dangling_accessories,
+        normalize_sii_unit_id, parse_truck_save,
+    };
 
     fn fixture() -> &'static str {
         r#"SiiNunit
@@ -996,5 +1159,83 @@ driver : driver.2 {
                 "driver.1".to_string()
             ]
         );
+    }
+
+    #[test]
+    fn normalize_sii_unit_id_handles_safe_lookup_variants() {
+        assert_eq!(normalize_sii_unit_id(" driver.1 "), "driver.1");
+        assert_eq!(normalize_sii_unit_id("\"Driver.1\""), "driver.1");
+        assert_eq!(
+            normalize_sii_unit_id(" _nameless.Truck.ABC, "),
+            "_nameless.truck.abc"
+        );
+        assert_ne!(
+            normalize_sii_unit_id("driver.abc"),
+            normalize_sii_unit_id("driver.abd")
+        );
+    }
+
+    #[test]
+    fn array_entries_preserve_sparse_indices() {
+        let raw = r#"garage : garage.berlin {
+ vehicles: 4
+ vehicles[2]: _nameless.truck.two
+ vehicles[3]: _nameless.truck.three
+ drivers: 4
+ drivers[3]: driver.3
+}"#;
+        assert_eq!(
+            extract_array_entries(raw, "vehicles"),
+            vec![
+                (2, "_nameless.truck.two".to_string()),
+                (3, "_nameless.truck.three".to_string())
+            ]
+        );
+        assert_eq!(
+            extract_array_entries(raw, "drivers"),
+            vec![(3, "driver.3".to_string())]
+        );
+    }
+
+    #[test]
+    fn garage_slots_pair_by_explicit_index_without_shifting() {
+        let content = fixture().replace(" drivers[1]: null\n", "");
+        let parsed = parse_truck_save(&content);
+        let free = parsed
+            .trucks
+            .iter()
+            .find(|truck| truck.truck_id == "_nameless.truck.free")
+            .unwrap();
+        let driver = parsed
+            .trucks
+            .iter()
+            .find(|truck| truck.truck_id == "_nameless.truck.driver")
+            .unwrap();
+
+        assert_eq!(free.assigned_driver_id, None);
+        assert_eq!(driver.assigned_driver_id.as_deref(), Some("driver.2"));
+        assert!(
+            !parsed
+                .garage_assignments
+                .get(&normalize_sii_unit_id("_nameless.truck.driver"))
+                .unwrap()
+                .arrays_have_matching_indices
+        );
+    }
+
+    #[test]
+    fn driver_parser_reports_recognized_and_ignored_driver_like_blocks() {
+        let content = fixture().replace(
+            "driver : driver.2 {",
+            "employee : employee.driver_like {\n assigned_truck: _nameless.truck.driver\n}\ndriver : driver.2 {",
+        );
+        let parsed = parse_truck_save(&content);
+
+        assert_eq!(parsed.driver_diagnostics.recognized_driver_blocks, 1);
+        assert_eq!(
+            parsed.driver_diagnostics.recognized_unit_types,
+            vec!["driver".to_string()]
+        );
+        assert_eq!(parsed.driver_diagnostics.ignored_driver_like_blocks, 1);
     }
 }
