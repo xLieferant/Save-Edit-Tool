@@ -1,7 +1,8 @@
 use super::models::TruckWriteValidation;
 use super::parser::{
-    assignment_conflicts_from_blocks, graph_dangling_accessories, normalize_sii_unit_id,
-    parse_truck_save,
+    assignment_conflicts_from_blocks, garage_driver_ref_is_unique, graph_dangling_accessories,
+    is_valid_garage_driver_ref, normalize_sii_unit_id, parse_truck_save,
+    resolve_current_truck_pointer,
 };
 
 pub fn validate_truck_switch_content(
@@ -11,14 +12,16 @@ pub fn validate_truck_switch_content(
     expected_driver_truck_id: Option<&str>,
 ) -> TruckWriteValidation {
     let parsed = parse_truck_save(content);
-    let actual_truck_id = parsed.active_truck_id.clone();
+    let actual_truck_id = resolve_current_truck_pointer(&parsed)
+        .ok()
+        .map(|pointer| pointer.truck_id);
     let mut dangling_references = Vec::new();
     let mut errors = Vec::new();
 
     match actual_truck_id.as_deref() {
         Some(actual) if actual.eq_ignore_ascii_case(expected_truck_id) => {}
         Some(_) => errors.push("active_truck_mismatch".to_string()),
-        None => errors.push("missing_my_truck_pointer".to_string()),
+        None => errors.push("current_truck_not_found".to_string()),
     }
 
     if !parsed
@@ -139,9 +142,15 @@ fn garage_driver_references_unresolved(parsed: &super::parser::ParsedTruckSave) 
             .driver_id
             .as_deref()
             .map(|driver_id| {
-                !parsed
+                if parsed
                     .driver_infos
                     .contains_key(&normalize_sii_unit_id(driver_id))
+                {
+                    return false;
+                }
+
+                !is_valid_garage_driver_ref(driver_id)
+                    || !garage_driver_ref_is_unique(parsed, driver_id, &assignment.truck_id)
             })
             .unwrap_or(false)
     })
@@ -198,6 +207,42 @@ vehicle_accessory : _nameless.acc.a {
             validation
                 .errors
                 .contains(&"active_truck_mismatch".to_string())
+        );
+    }
+
+    #[test]
+    fn validation_uses_assigned_vehicles_pointer_when_my_truck_is_null() {
+        let content = r#"SiiNunit
+{
+economy : _nameless.economy {
+ player: _nameless.player
+}
+player : _nameless.player {
+ assigned_vehicles: _nameless.assigned.1
+ trucks: 1
+ trucks[0]: _nameless.truck.b
+ my_truck: null
+ assigned_truck: null
+}
+player_vehicles : _nameless.assigned.1 {
+ vehicle: _nameless.truck.b
+ trailer: null
+}
+vehicle : _nameless.truck.b {
+ accessories: 1
+ accessories[0]: _nameless.acc.b
+}
+vehicle_accessory : _nameless.acc.b {
+ data_path: "/def/vehicle/truck/scania.s_2016/data.sii"
+}
+}
+"#;
+        let validation = validate_truck_switch_content(content, "_nameless.truck.b", None, None);
+
+        assert!(validation.success, "{:?}", validation.errors);
+        assert_eq!(
+            validation.actual_truck_id.as_deref(),
+            Some("_nameless.truck.b")
         );
     }
 

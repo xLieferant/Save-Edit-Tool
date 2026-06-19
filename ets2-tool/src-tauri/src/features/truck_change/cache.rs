@@ -4,7 +4,7 @@ use std::sync::Mutex;
 
 use chrono::Utc;
 
-use super::models::{TruckChangeSession, TruckInventoryItem};
+use super::models::{OwnedTruckDiagnostics, TruckChangeSession, TruckInventoryItem};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TruckChangeSessionCacheKey {
@@ -21,6 +21,7 @@ pub struct CurrentTruckCacheEntry {
     pub truck_id: String,
     pub truck: TruckInventoryItem,
     pub owned_trucks: Vec<TruckInventoryItem>,
+    pub diagnostics: Option<OwnedTruckDiagnostics>,
     pub loaded_at: String,
 }
 
@@ -37,6 +38,7 @@ impl CurrentTruckCacheEntry {
             truck_id: session.current_truck.truck_id.clone(),
             truck: session.current_truck.clone(),
             owned_trucks: session.owned_trucks.clone(),
+            diagnostics: session.diagnostics.clone(),
             loaded_at: Utc::now().to_rfc3339(),
         }
     }
@@ -121,6 +123,7 @@ mod tests {
             truck_id: truck.truck_id.clone(),
             truck: truck.clone(),
             owned_trucks: vec![truck],
+            diagnostics: None,
             loaded_at: "2026-06-18T00:00:00Z".to_string(),
         }
     }

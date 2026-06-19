@@ -67,6 +67,13 @@ pub enum DriverAssignmentSource {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum DriverResolutionKind {
+    FullDriverBlock,
+    GarageDriverRefOnly,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct DriverAssignmentEvidence {
     pub source: DriverAssignmentSource,
@@ -81,6 +88,7 @@ pub struct DriverAssignmentEvidence {
 #[serde(rename_all = "camelCase")]
 pub struct ResolvedDriverAssignment {
     pub driver: DriverDisplayInfo,
+    pub resolution_kind: DriverResolutionKind,
     pub source: DriverAssignmentSource,
     pub garage_id: Option<String>,
     pub slot_index: Option<usize>,
@@ -89,8 +97,52 @@ pub struct ResolvedDriverAssignment {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
+pub enum CurrentTruckPointerKind {
+    PlayerMyTruck,
+    PlayerAssignedVehicles,
+    PlayerAssignedTruck,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct CurrentTruckPointer {
+    pub kind: CurrentTruckPointerKind,
+    pub truck_id: String,
+    pub owner_unit_id: String,
+    pub field_name: String,
+    pub referenced_player_vehicle_unit_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum OwnedTruckSource {
+    PlayerTrucksArray,
+    CurrentTruckPointer,
+    GarageVehicleSlot,
+    LegacyParserFallback,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct CurrentTruckPointerDiagnostics {
+    pub player_found: bool,
+    pub my_truck_raw: Option<String>,
+    pub my_truck_vehicle_block_found: bool,
+    pub assigned_vehicles_raw: Option<String>,
+    pub assigned_vehicles_unit_found: bool,
+    pub assigned_vehicles_vehicle_raw: Option<String>,
+    pub assigned_vehicles_vehicle_block_found: bool,
+    pub assigned_truck_raw: Option<String>,
+    pub assigned_truck_vehicle_block_found: bool,
+    pub current_truck_pointer_kind: Option<CurrentTruckPointerKind>,
+    pub current_truck_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
 pub enum DriverResolutionError {
     MissingDriverBlock,
+    AmbiguousGarageDriverRef,
     AmbiguousDriverAssignment,
     ConflictingDriverAssignment,
 }
@@ -99,6 +151,7 @@ impl DriverResolutionError {
     pub fn code(&self) -> &'static str {
         match self {
             DriverResolutionError::MissingDriverBlock => "missing_driver_block",
+            DriverResolutionError::AmbiguousGarageDriverRef => "ambiguous_garage_driver_ref",
             DriverResolutionError::AmbiguousDriverAssignment => "ambiguous_driver_assignment",
             DriverResolutionError::ConflictingDriverAssignment => "conflicting_driver_assignment",
         }
@@ -114,6 +167,8 @@ pub struct DriverResolutionDiagnostics {
     pub garage_slot_index: Option<usize>,
     pub garage_driver_id_raw: Option<String>,
     pub garage_driver_id_normalized: Option<String>,
+    pub resolution_kind: Option<DriverResolutionKind>,
+    pub garage_driver_ref_unique: Option<bool>,
     pub recognized_driver_count: usize,
     pub recognized_driver_unit_types: Vec<String>,
     pub exact_driver_id_match: bool,
@@ -257,6 +312,13 @@ pub struct OwnedTruckDiagnostics {
     pub total_vehicle_blocks: usize,
     pub candidate_trucks: usize,
     pub owned_trucks: usize,
+    pub current_truck_pointer_kind: Option<CurrentTruckPointerKind>,
+    pub current_truck_id: Option<String>,
+    pub assigned_vehicles_unit_id: Option<String>,
+    pub player_trucks_array_count: usize,
+    pub player_truck_refs_with_vehicle_blocks: usize,
+    pub player_truck_reference_missing_vehicle_blocks: Vec<String>,
+    pub current_truck_pointer: CurrentTruckPointerDiagnostics,
     pub excluded_trailers: usize,
     pub excluded_unreferenced: usize,
     pub excluded_job_vehicles: usize,

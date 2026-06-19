@@ -2068,6 +2068,14 @@ export async function openTruckChangeModal() {
     ownedCount: await window.t("modals.truck_change.switch.owned_count"),
     previewTitle: await window.t("modals.truck_change.switch.preview_title"),
     currentTruck: await window.t("modals.truck_change.switch.current_truck"),
+    currentTruckSource: await window.t("modals.truck_change.switch.current_truck_source"),
+    currentTruckSourceMyTruck: await window.t("modals.truck_change.switch.current_truck_source_my_truck"),
+    currentTruckSourceAssignedVehicles: await window.t("modals.truck_change.switch.current_truck_source_assigned_vehicles"),
+    currentTruckSourceAssignedTruck: await window.t("modals.truck_change.switch.current_truck_source_assigned_truck"),
+    assignedVehiclesFormatHint: await window.t("modals.truck_change.switch.assigned_vehicles_format_hint"),
+    assignedVehiclesUnit: await window.t("modals.truck_change.switch.assigned_vehicles_unit"),
+    playerTrucksArrayCount: await window.t("modals.truck_change.switch.player_trucks_array_count"),
+    playerTruckRefsWithVehicleBlocks: await window.t("modals.truck_change.switch.player_truck_refs_with_vehicle_blocks"),
     targetTruck: await window.t("modals.truck_change.switch.target_truck"),
     affectedDriver: await window.t("modals.truck_change.switch.affected_driver"),
     warnings: await window.t("modals.truck_change.switch.warnings"),
@@ -2095,13 +2103,17 @@ export async function openTruckChangeModal() {
     driverTruckHint: await window.t("modals.truck_change.switch.driver_truck_hint"),
     technicalDetails: await window.t("modals.truck_change.switch.technical_details"),
     resolutionError: await window.t("modals.truck_change.switch.resolution_error"),
+    resolutionKind: await window.t("modals.truck_change.switch.resolution_kind"),
     targetTruckId: await window.t("modals.truck_change.switch.target_truck_id"),
     garageSlot: await window.t("modals.truck_change.switch.garage_slot"),
+    driverReference: await window.t("modals.truck_change.switch.driver_reference"),
     garageDriverId: await window.t("modals.truck_change.switch.garage_driver_id"),
+    garageRefUnique: await window.t("modals.truck_change.switch.garage_ref_unique"),
     recognizedDrivers: await window.t("modals.truck_change.switch.recognized_drivers"),
     driversPointingToTarget: await window.t("modals.truck_change.switch.drivers_pointing_to_target"),
     arraysConsistent: await window.t("modals.truck_change.switch.arrays_consistent"),
     similarDriverIds: await window.t("modals.truck_change.switch.similar_driver_ids"),
+    aiDriverSwapHint: await window.t("modals.truck_change.switch.ai_driver_swap_hint"),
     yes: await window.t("modals.truck_change.switch.yes"),
     no: await window.t("modals.truck_change.switch.no"),
     transferWip: await window.t("modals.truck_change.transfer.wip"),
@@ -2116,17 +2128,20 @@ export async function openTruckChangeModal() {
     target_truck_not_found: await window.t("modals.truck_change.warnings.target_truck_not_found"),
     target_already_active: await window.t("modals.truck_change.warnings.target_already_active"),
     truck_assigned_to_driver: await window.t("modals.truck_change.warnings.truck_assigned_to_driver"),
+    driver_assignment_ambiguous: await window.t("modals.truck_change.warnings.driver_assignment_ambiguous"),
     driver_assignment_unresolved: await window.t("modals.truck_change.warnings.driver_assignment_unresolved"),
     driver_swap_assignment_missing: await window.t("modals.truck_change.warnings.driver_swap_assignment_missing"),
     duplicate_assignment_detected: await window.t("modals.truck_change.warnings.duplicate_assignment_detected"),
     dangling_vehicle_references: await window.t("modals.truck_change.warnings.dangling_vehicle_references"),
     target_vehicle_block_missing: await window.t("modals.truck_change.warnings.target_vehicle_block_missing"),
     target_has_garage_assignment: await window.t("modals.truck_change.warnings.target_has_garage_assignment"),
+    player_truck_reference_missing_vehicle_block: await window.t("modals.truck_change.warnings.player_truck_reference_missing_vehicle_block"),
   };
   const errorLabels = {
     save_changed_since_session: await window.t("modals.truck_change.errors.save_changed_since_session"),
     save_changed_since_preview: await window.t("modals.truck_change.errors.save_changed_since_preview"),
     truck_assigned_to_driver: await window.t("modals.truck_change.errors.truck_assigned_to_driver"),
+    driver_assignment_ambiguous: await window.t("modals.truck_change.errors.driver_assignment_ambiguous"),
     driver_assignment_unresolved: await window.t("modals.truck_change.errors.driver_assignment_unresolved"),
     driver_swap_assignment_missing: await window.t("modals.truck_change.errors.driver_swap_assignment_missing"),
     duplicate_assignment_detected: await window.t("modals.truck_change.errors.duplicate_assignment_detected"),
@@ -2243,11 +2258,12 @@ export async function openTruckChangeModal() {
   }
 
   function truckMeta(truck) {
+    const driverLabel = truck?.driverDisplayName || (truck?.assignedDriverId ? copy.aiDriver : "");
     return [
       truck?.displayLicensePlate || truck?.licensePlate || copy.unreadablePlate || copy.noPlate,
       truck?.countryDisplayName || truck?.countryCode || "",
       truck?.garageDisplayName || truck?.assignedGarage || copy.noGarage,
-      truck?.driverDisplayName ? `${copy.driver}: ${truck.driverDisplayName}` : "",
+      driverLabel ? `${copy.driver}: ${driverLabel}` : "",
     ].filter(Boolean);
   }
 
@@ -2296,6 +2312,41 @@ export async function openTruckChangeModal() {
     return safeValue(value, "-");
   }
 
+  function currentTruckSourceText(kind) {
+    if (kind === "player_assigned_vehicles") return copy.currentTruckSourceAssignedVehicles;
+    if (kind === "player_assigned_truck") return copy.currentTruckSourceAssignedTruck;
+    if (kind === "player_my_truck") return copy.currentTruckSourceMyTruck;
+    return safeValue(kind, "-");
+  }
+
+  function renderCurrentTruckDiagnostics(diagnostics) {
+    if (!diagnostics || !truckChangeDebugDetailsEnabled()) return "";
+    const pointer = diagnostics.currentTruckPointer || {};
+    const kind = diagnostics.currentTruckPointerKind || pointer.currentTruckPointerKind;
+    const rows = [
+      [copy.currentTruckSource, currentTruckSourceText(kind)],
+      [copy.currentTruck, diagnostics.currentTruckId || pointer.currentTruckId],
+      [copy.assignedVehiclesUnit, diagnostics.assignedVehiclesUnitId || pointer.assignedVehiclesRaw],
+      [copy.playerTrucksArrayCount, diagnostics.playerTrucksArrayCount],
+      [copy.playerTruckRefsWithVehicleBlocks, diagnostics.playerTruckRefsWithVehicleBlocks],
+    ].map(([label, value]) => `
+      <div>
+        <dt>${escapeHtml(label)}</dt>
+        <dd>${escapeHtml(diagnosticValue(value))}</dd>
+      </div>
+    `).join("");
+    const hint = kind === "player_assigned_vehicles"
+      ? `<p class="truck-change-confirm">${escapeHtml(copy.assignedVehiclesFormatHint)}</p>`
+      : "";
+    return `
+      <details class="truck-change-diagnostics">
+        <summary>${escapeHtml(copy.technicalDetails)}</summary>
+        ${hint}
+        <dl class="truck-change-preview-list">${rows}</dl>
+      </details>
+    `;
+  }
+
   function renderDriverResolutionDiagnostics(diagnostics) {
     if (!diagnostics || !truckChangeDebugDetailsEnabled()) return "";
     const garageSlot = [
@@ -2306,9 +2357,11 @@ export async function openTruckChangeModal() {
     ].filter(Boolean).join(" ");
     const rows = [
       [copy.resolutionError, diagnostics.resolutionError],
+      [copy.resolutionKind, diagnostics.resolutionKind],
       [copy.targetTruckId, diagnostics.targetTruckId],
       [copy.garageSlot, garageSlot],
-      [copy.garageDriverId, diagnostics.garageDriverIdRaw],
+      [copy.driverReference, diagnostics.garageDriverIdRaw],
+      [copy.garageRefUnique, diagnostics.garageDriverRefUnique],
       [copy.recognizedDrivers, diagnostics.recognizedDriverCount],
       [copy.driversPointingToTarget, diagnostics.driversPointingToTargetTruck || []],
       [copy.arraysConsistent, diagnostics.arraysHaveMatchingIndices],
@@ -2487,6 +2540,8 @@ export async function openTruckChangeModal() {
     }).join("");
     const selectedTruck = state.ownedTrucks?.find((truck) => truck.truckId === state.selectedTruckId);
     const affectedDriver = state.preview?.affectedDriver;
+    const isDriverSwapPreview = state.preview?.mode === "driver_swap" || selectedTruck?.requiresDriverSwap === true;
+    const isGarageOnlyDriver = affectedDriver?.unitType === "garage_driver_ref";
     const driverReceivesTruck = state.preview?.driverReceivesTruck;
     const previewError = state.previewError
       || (state.preview?.canApply === false && state.preview?.errorCode
@@ -2500,7 +2555,10 @@ export async function openTruckChangeModal() {
         </div>`
       : "";
     const errorHtml = renderErrorBlock(previewError || state.applyError);
-    const diagnosticsHtml = renderDriverResolutionDiagnostics(state.preview?.diagnostics);
+    const diagnosticsHtml = [
+      renderCurrentTruckDiagnostics(state.session?.diagnostics || state.list?.diagnostics),
+      renderDriverResolutionDiagnostics(state.preview?.diagnostics),
+    ].filter(Boolean).join("");
     const retryHtml = previewError
       ? `<button type="button" class="secondary-btn truck-change-retry">${escapeHtml(copy.retry)}</button>`
       : "";
@@ -2513,8 +2571,8 @@ export async function openTruckChangeModal() {
     const applyLoadingHtml = state.applyLoading
       ? `<p>${escapeHtml(state.progressMessage || copy.checkingSave)}</p>`
       : "";
-    const driverHint = selectedTruck?.requiresDriverSwap
-      ? `<p class="truck-change-confirm">${escapeHtml(copy.driverTruckHint)}</p>`
+    const driverHint = isDriverSwapPreview
+      ? `<p class="truck-change-confirm">${escapeHtml(isGarageOnlyDriver ? copy.aiDriverSwapHint : copy.driverTruckHint)}</p>`
       : "";
 
     panel.innerHTML = `
@@ -2538,7 +2596,7 @@ export async function openTruckChangeModal() {
           <strong>${escapeHtml(copy.warnings)}</strong>
           ${warningRows ? `<ul>${warningRows}</ul>` : `<p>${escapeHtml(copy.noWarnings)}</p>`}
         </div>
-        <p class="truck-change-confirm">${escapeHtml(selectedTruck.requiresDriverSwap ? copy.confirmDriverSwap : copy.confirm)}</p>
+        <p class="truck-change-confirm">${escapeHtml(isDriverSwapPreview ? copy.confirmDriverSwap : copy.confirm)}</p>
       ` : `<p>${escapeHtml(copy.selectPrompt)}</p>`}
       ${resultHtml}
       ${errorHtml}

@@ -3,11 +3,12 @@ use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use regex::Regex;
 
 use crate::models::trucks::ParsedTruck;
-use crate::shared::sii_parser::{get_player_id, get_vehicle_ids, parse_trucks_from_sii};
+use crate::shared::sii_parser::{get_player_id, parse_trucks_from_sii};
 
 use super::models::{
+    CurrentTruckPointer, CurrentTruckPointerDiagnostics, CurrentTruckPointerKind,
     DriverDisplayInfo, DriverParserDiagnostics, GarageCapacity, GarageSlotAssignment,
-    OwnedTruckDiagnostics, TruckAssignment, TruckGraph, TruckInventoryItem,
+    OwnedTruckDiagnostics, OwnedTruckSource, TruckAssignment, TruckGraph, TruckInventoryItem,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -22,6 +23,8 @@ pub struct UnitBlock {
 #[derive(Debug, Clone)]
 pub struct ParsedTruckSave {
     pub active_truck_id: Option<String>,
+    pub current_truck_pointer: Option<CurrentTruckPointer>,
+    pub current_truck_diagnostics: CurrentTruckPointerDiagnostics,
     pub player_id: Option<String>,
     pub truck_order: Vec<String>,
     pub trucks: Vec<TruckInventoryItem>,
@@ -47,10 +50,6 @@ pub fn parse_truck_save(content: &str) -> ParsedTruckSave {
         .map(|block| (block.id.clone(), block.clone()))
         .collect::<HashMap<_, _>>();
     let player_id = get_player_id(content);
-    let active_truck_id = player_id
-        .as_ref()
-        .and_then(|id| get_vehicle_ids(content, id).0)
-        .filter(|value| !is_null_ref(value));
     let player_block = player_id
         .as_ref()
         .and_then(|id| blocks_by_id.get(id))
@@ -94,6 +93,15 @@ pub fn parse_truck_save(content: &str) -> ParsedTruckSave {
             (graph.vehicle_id.clone(), graph)
         })
         .collect::<HashMap<_, _>>();
+    let current_truck_resolution = resolve_current_truck_pointer_from_parts(
+        player_block.as_ref(),
+        &blocks_by_id,
+        &truck_graphs,
+    );
+    let active_truck_id = current_truck_resolution
+        .pointer
+        .as_ref()
+        .map(|pointer| pointer.truck_id.clone());
     let owned_collection = collect_owned_player_truck_ids(
         &unit_blocks,
         &truck_order,
@@ -101,17 +109,31 @@ pub fn parse_truck_save(content: &str) -> ParsedTruckSave {
         &truck_graphs,
         &garage_scan.assignments,
     );
+    let mut owned_diagnostics = owned_collection.diagnostics;
+    owned_diagnostics.current_truck_pointer_kind = current_truck_resolution
+        .pointer
+        .as_ref()
+        .map(|pointer| pointer.kind.clone());
+    owned_diagnostics.current_truck_id = current_truck_resolution
+        .pointer
+        .as_ref()
+        .map(|pointer| pointer.truck_id.clone());
+    owned_diagnostics.assigned_vehicles_unit_id = current_truck_resolution
+        .pointer
+        .as_ref()
+        .and_then(|pointer| pointer.referenced_player_vehicle_unit_id.clone());
+    owned_diagnostics.current_truck_pointer = current_truck_resolution.diagnostics.clone();
     crate::dev_log!(
         "[truck_change] owned truck collection completed vehicle_blocks={} candidate_trucks={} owned_trucks={}",
-        owned_collection.diagnostics.total_vehicle_blocks,
-        owned_collection.diagnostics.candidate_trucks,
-        owned_collection.diagnostics.owned_trucks
+        owned_diagnostics.total_vehicle_blocks,
+        owned_diagnostics.candidate_trucks,
+        owned_diagnostics.owned_trucks
     );
     crate::dev_log!(
         "[truck_change] excluded non-owned vehicle blocks: {}",
-        owned_collection.diagnostics.excluded_unreferenced
-            + owned_collection.diagnostics.excluded_job_vehicles
-            + owned_collection.diagnostics.excluded_invalid
+        owned_diagnostics.excluded_unreferenced
+            + owned_diagnostics.excluded_job_vehicles
+            + owned_diagnostics.excluded_invalid
     );
     let trucks = build_inventory(
         content,
@@ -130,6 +152,8 @@ pub fn parse_truck_save(content: &str) -> ParsedTruckSave {
 
     ParsedTruckSave {
         active_truck_id,
+        current_truck_pointer: current_truck_resolution.pointer,
+        current_truck_diagnostics: current_truck_resolution.diagnostics,
         player_id,
         truck_order,
         trucks,
@@ -139,7 +163,7 @@ pub fn parse_truck_save(content: &str) -> ParsedTruckSave {
         driver_infos,
         driver_diagnostics: driver_scan.diagnostics,
         truck_assignments,
-        diagnostics: owned_collection.diagnostics,
+        diagnostics: owned_diagnostics,
         unit_ids,
         unit_blocks: blocks_by_id,
     }
@@ -269,6 +293,251 @@ pub fn is_null_ref(value: &str) -> bool {
     normalized.is_empty()
         || normalized.eq_ignore_ascii_case("null")
         || normalized.eq_ignore_ascii_case("nil")
+}
+
+struct CurrentTruckResolution {
+    pointer: Option<CurrentTruckPointer>,
+    diagnostics: CurrentTruckPointerDiagnostics,
+}
+
+pub fn resolve_current_truck_pointer(
+    parsed: &ParsedTruckSave,
+) -> Result<CurrentTruckPointer, String> {
+    parsed
+        .current_truck_pointer
+        .clone()
+        .ok_or_else(|| "current_truck_not_found".to_string())
+}
+
+fn resolve_current_truck_pointer_from_parts(
+    player_block: Option<&UnitBlock>,
+    blocks_by_id: &HashMap<String, UnitBlock>,
+    graphs: &HashMap<String, TruckGraph>,
+) -> CurrentTruckResolution {
+    let mut diagnostics = CurrentTruckPointerDiagnostics {
+        player_found: player_block.is_some(),
+        ..CurrentTruckPointerDiagnostics::default()
+    };
+    let Some(player_block) = player_block else {
+        return CurrentTruckResolution {
+            pointer: None,
+            diagnostics,
+        };
+    };
+
+    diagnostics.my_truck_raw = extract_field_value(&player_block.raw_block, "my_truck");
+    if let Some(my_truck_raw) = diagnostics.my_truck_raw.clone() {
+        if !is_null_ref(&my_truck_raw) {
+            if let Some(graph) = find_truck_graph_by_id(graphs, &my_truck_raw) {
+                diagnostics.my_truck_vehicle_block_found = true;
+                return resolved_current_truck_pointer(
+                    CurrentTruckPointer {
+                        kind: CurrentTruckPointerKind::PlayerMyTruck,
+                        truck_id: graph.vehicle_id.clone(),
+                        owner_unit_id: player_block.id.clone(),
+                        field_name: "my_truck".to_string(),
+                        referenced_player_vehicle_unit_id: None,
+                    },
+                    diagnostics,
+                );
+            }
+        }
+    }
+
+    diagnostics.assigned_vehicles_raw =
+        extract_field_value(&player_block.raw_block, "assigned_vehicles");
+    if let Some(assigned_vehicles_raw) = diagnostics.assigned_vehicles_raw.clone() {
+        if !is_null_ref(&assigned_vehicles_raw) {
+            if let Some(player_vehicle_block) = find_unit_block_by_id(
+                blocks_by_id,
+                &assigned_vehicles_raw,
+                Some("player_vehicles"),
+            ) {
+                diagnostics.assigned_vehicles_unit_found = true;
+                diagnostics.assigned_vehicles_vehicle_raw =
+                    extract_field_value(&player_vehicle_block.raw_block, "vehicle");
+                if let Some(vehicle_raw) = diagnostics.assigned_vehicles_vehicle_raw.clone() {
+                    if !is_null_ref(&vehicle_raw) {
+                        if let Some(graph) = find_truck_graph_by_id(graphs, &vehicle_raw) {
+                            diagnostics.assigned_vehicles_vehicle_block_found = true;
+                            return resolved_current_truck_pointer(
+                                CurrentTruckPointer {
+                                    kind: CurrentTruckPointerKind::PlayerAssignedVehicles,
+                                    truck_id: graph.vehicle_id.clone(),
+                                    owner_unit_id: player_vehicle_block.id.clone(),
+                                    field_name: "vehicle".to_string(),
+                                    referenced_player_vehicle_unit_id: Some(
+                                        player_vehicle_block.id.clone(),
+                                    ),
+                                },
+                                diagnostics,
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    diagnostics.assigned_truck_raw = extract_field_value(&player_block.raw_block, "assigned_truck");
+    if let Some(assigned_truck_raw) = diagnostics.assigned_truck_raw.clone() {
+        if !is_null_ref(&assigned_truck_raw) {
+            if let Some(graph) = find_truck_graph_by_id(graphs, &assigned_truck_raw) {
+                diagnostics.assigned_truck_vehicle_block_found = true;
+                return resolved_current_truck_pointer(
+                    CurrentTruckPointer {
+                        kind: CurrentTruckPointerKind::PlayerAssignedTruck,
+                        truck_id: graph.vehicle_id.clone(),
+                        owner_unit_id: player_block.id.clone(),
+                        field_name: "assigned_truck".to_string(),
+                        referenced_player_vehicle_unit_id: None,
+                    },
+                    diagnostics,
+                );
+            }
+        }
+    }
+
+    CurrentTruckResolution {
+        pointer: None,
+        diagnostics,
+    }
+}
+
+fn resolved_current_truck_pointer(
+    pointer: CurrentTruckPointer,
+    mut diagnostics: CurrentTruckPointerDiagnostics,
+) -> CurrentTruckResolution {
+    diagnostics.current_truck_pointer_kind = Some(pointer.kind.clone());
+    diagnostics.current_truck_id = Some(pointer.truck_id.clone());
+    CurrentTruckResolution {
+        pointer: Some(pointer),
+        diagnostics,
+    }
+}
+
+fn find_unit_block_by_id<'a>(
+    blocks_by_id: &'a HashMap<String, UnitBlock>,
+    unit_id: &str,
+    unit_type: Option<&str>,
+) -> Option<&'a UnitBlock> {
+    let normalized = normalize_sii_unit_id(unit_id);
+    blocks_by_id.values().find(|block| {
+        normalize_sii_unit_id(&block.id) == normalized
+            && unit_type
+                .map(|expected| block.unit_type.eq_ignore_ascii_case(expected))
+                .unwrap_or(true)
+    })
+}
+
+fn find_truck_graph_by_id<'a>(
+    graphs: &'a HashMap<String, TruckGraph>,
+    truck_id: &str,
+) -> Option<&'a TruckGraph> {
+    graphs.get(truck_id).or_else(|| {
+        let normalized = normalize_sii_unit_id(truck_id);
+        graphs
+            .values()
+            .find(|graph| normalize_sii_unit_id(&graph.vehicle_id) == normalized)
+    })
+}
+
+pub fn is_valid_garage_driver_ref(value: &str) -> bool {
+    let normalized = normalize_sii_unit_id(value);
+    if normalized.is_empty()
+        || is_null_ref(&normalized)
+        || normalized.eq_ignore_ascii_case("none")
+        || normalized == "0"
+        || normalized.starts_with("_nameless.")
+    {
+        return false;
+    }
+
+    let Some(suffix) = normalized.strip_prefix("driver.") else {
+        return false;
+    };
+
+    !suffix.is_empty() && suffix.chars().all(|value| value.is_ascii_digit())
+}
+
+pub fn garage_driver_ref_is_unique(
+    parsed: &ParsedTruckSave,
+    driver_id: &str,
+    target_truck_id: &str,
+) -> bool {
+    if !is_valid_garage_driver_ref(driver_id) {
+        return false;
+    }
+
+    let driver_id_normalized = normalize_sii_unit_id(driver_id);
+    let target_truck_id_normalized = normalize_sii_unit_id(target_truck_id);
+    if driver_id_normalized.is_empty() || target_truck_id_normalized.is_empty() {
+        return false;
+    }
+
+    let Some(target_assignment) = parsed.garage_assignments.get(&target_truck_id_normalized) else {
+        return false;
+    };
+    if !target_assignment.arrays_have_matching_indices {
+        return false;
+    }
+
+    let mut target_slots = Vec::new();
+    let mut driver_slots = Vec::new();
+
+    for block in parsed
+        .unit_blocks
+        .values()
+        .filter(|block| block.unit_type == "garage")
+    {
+        let vehicles = extract_array_entries(&block.raw_block, "vehicles")
+            .into_iter()
+            .collect::<BTreeMap<_, _>>();
+        let drivers = extract_array_entries(&block.raw_block, "drivers")
+            .into_iter()
+            .collect::<BTreeMap<_, _>>();
+
+        for (index, truck_id) in vehicles.iter() {
+            if is_null_ref(truck_id) {
+                continue;
+            }
+
+            if normalize_sii_unit_id(truck_id) == target_truck_id_normalized {
+                target_slots.push((block.id.clone(), *index));
+            }
+        }
+
+        for (index, slot_driver_id) in drivers.iter() {
+            if is_null_ref(slot_driver_id) {
+                continue;
+            }
+            if normalize_sii_unit_id(slot_driver_id) != driver_id_normalized {
+                continue;
+            }
+
+            let Some(slot_truck_id) = vehicles.get(index).filter(|value| !is_null_ref(value))
+            else {
+                return false;
+            };
+
+            driver_slots.push((
+                block.id.clone(),
+                *index,
+                normalize_sii_unit_id(slot_truck_id),
+            ));
+        }
+    }
+
+    if target_slots.len() != 1 || driver_slots.len() != 1 {
+        return false;
+    }
+
+    let (target_garage_id, target_slot_index) = &target_slots[0];
+    let (driver_garage_id, driver_slot_index, driver_truck_id) = &driver_slots[0];
+
+    target_garage_id == driver_garage_id
+        && target_slot_index == driver_slot_index
+        && driver_truck_id == &target_truck_id_normalized
 }
 
 pub fn truck_family_from_data_path(data_path: &str) -> Option<String> {
@@ -698,11 +967,33 @@ fn collect_owned_player_truck_ids(
     let mut owned = Vec::new();
     let mut seen = HashSet::new();
 
+    diagnostics.player_trucks_array_count = truck_order.len();
     for id in truck_order {
-        add_owned_id(id, graphs, &mut owned, &mut seen, &mut diagnostics);
+        if find_truck_graph_by_id(graphs, id).is_some() {
+            diagnostics.player_truck_refs_with_vehicle_blocks += 1;
+        } else {
+            diagnostics
+                .player_truck_reference_missing_vehicle_blocks
+                .push(id.to_string());
+        }
+        add_owned_id(
+            id,
+            OwnedTruckSource::PlayerTrucksArray,
+            graphs,
+            &mut owned,
+            &mut seen,
+            &mut diagnostics,
+        );
     }
     if let Some(active) = active_truck_id {
-        add_owned_id(active, graphs, &mut owned, &mut seen, &mut diagnostics);
+        add_owned_id(
+            active,
+            OwnedTruckSource::CurrentTruckPointer,
+            graphs,
+            &mut owned,
+            &mut seen,
+            &mut diagnostics,
+        );
     }
 
     let mut garage_assignments = assignments.values().collect::<Vec<_>>();
@@ -710,6 +1001,7 @@ fn collect_owned_player_truck_ids(
     for assignment in garage_assignments {
         add_owned_id(
             &assignment.truck_id,
+            OwnedTruckSource::GarageVehicleSlot,
             graphs,
             &mut owned,
             &mut seen,
@@ -718,7 +1010,7 @@ fn collect_owned_player_truck_ids(
     }
 
     for graph in graphs.values() {
-        if seen.contains(&graph.vehicle_id) {
+        if seen.contains(&normalize_sii_unit_id(&graph.vehicle_id)) {
             continue;
         }
         if !is_truck_graph(graph) {
@@ -739,6 +1031,7 @@ fn collect_owned_player_truck_ids(
 
 fn add_owned_id(
     id: &str,
+    source: OwnedTruckSource,
     graphs: &HashMap<String, TruckGraph>,
     owned: &mut Vec<String>,
     seen: &mut HashSet<String>,
@@ -747,19 +1040,24 @@ fn add_owned_id(
     if is_null_ref(id) {
         return;
     }
-    if !seen.insert(id.to_string()) {
+    let seen_key = normalize_sii_unit_id(id);
+    if !seen.insert(seen_key) {
         diagnostics.excluded_duplicates += 1;
         return;
     }
-    let Some(graph) = graphs.get(id) else {
+    let Some(graph) = find_truck_graph_by_id(graphs, id) else {
         diagnostics.excluded_invalid += 1;
         return;
     };
-    if !is_truck_graph(graph) {
+    let allow_existing_vehicle_block = matches!(
+        source,
+        OwnedTruckSource::PlayerTrucksArray | OwnedTruckSource::CurrentTruckPointer
+    );
+    if !allow_existing_vehicle_block && !is_truck_graph(graph) {
         diagnostics.excluded_trailers += 1;
         return;
     }
-    owned.push(id.to_string());
+    owned.push(graph.vehicle_id.clone());
 }
 
 fn is_truck_graph(graph: &TruckGraph) -> bool {
@@ -1020,8 +1318,10 @@ fn non_empty(value: &str) -> Option<String> {
 mod tests {
     use super::{
         extract_array_entries, extract_array_values, graph_dangling_accessories,
-        normalize_sii_unit_id, parse_truck_save,
+        is_valid_garage_driver_ref, normalize_sii_unit_id, parse_truck_save,
+        resolve_current_truck_pointer,
     };
+    use crate::features::truck_change::models::CurrentTruckPointerKind;
 
     fn fixture() -> &'static str {
         r#"SiiNunit
@@ -1082,6 +1382,66 @@ driver : driver.2 {
 "#
     }
 
+    fn assigned_vehicles_fixture() -> &'static str {
+        r#"SiiNunit
+{
+economy : _nameless.economy {
+ player: _nameless.player
+}
+player : _nameless.player {
+ assigned_vehicles: _nameless.assigned.1
+ trucks: 5
+ trucks[0]: _nameless.truck.1
+ trucks[1]: _nameless.truck.2
+ trucks[2]: _nameless.truck.3
+ trucks[3]: _nameless.truck.4
+ trucks[4]: _nameless.truck.5
+ my_truck: null
+ assigned_truck: null
+}
+player_vehicles : _nameless.assigned.1 {
+ vehicle: _nameless.truck.4
+ trailer: null
+}
+vehicle : _nameless.truck.1 {
+ accessories: 1
+ accessories[0]: _nameless.acc.1
+}
+vehicle_accessory : _nameless.acc.1 {
+ data_path: "/def/vehicle/truck/scania.s_2016/data.sii"
+}
+vehicle : _nameless.truck.2 {
+ accessories: 1
+ accessories[0]: _nameless.acc.2
+}
+vehicle_accessory : _nameless.acc.2 {
+ data_path: "/def/vehicle/truck/man.tgx/data.sii"
+}
+vehicle : _nameless.truck.3 {
+ accessories: 1
+ accessories[0]: _nameless.acc.3
+}
+vehicle_accessory : _nameless.acc.3 {
+ data_path: "/def/vehicle/truck/volvo.fh16/data.sii"
+}
+vehicle : _nameless.truck.4 {
+ accessories: 1
+ accessories[0]: _nameless.acc.4
+}
+vehicle_accessory : _nameless.acc.4 {
+ data_path: "/def/vehicle/truck/daf.xf/data.sii"
+}
+vehicle : _nameless.truck.5 {
+ accessories: 1
+ accessories[0]: _nameless.acc.5
+}
+vehicle_accessory : _nameless.acc.5 {
+ data_path: "/def/vehicle/truck/renault.t/data.sii"
+}
+}
+"#
+    }
+
     #[test]
     fn inventory_keeps_save_order_and_separate_ids() {
         let parsed = parse_truck_save(fixture());
@@ -1090,6 +1450,130 @@ driver : driver.2 {
         assert_eq!(parsed.trucks[1].truck_id, "_nameless.truck.free");
         assert_eq!(parsed.trucks[2].truck_id, "_nameless.truck.driver");
         assert!(parsed.trucks[0].is_active);
+    }
+
+    #[test]
+    fn assigned_vehicles_pointer_resolves_current_truck_with_null_my_truck() {
+        let parsed = parse_truck_save(assigned_vehicles_fixture());
+        let pointer = resolve_current_truck_pointer(&parsed).unwrap();
+
+        assert_eq!(
+            pointer.kind,
+            CurrentTruckPointerKind::PlayerAssignedVehicles
+        );
+        assert_eq!(pointer.truck_id, "_nameless.truck.4");
+        assert_eq!(pointer.owner_unit_id, "_nameless.assigned.1");
+        assert_eq!(pointer.field_name, "vehicle");
+        assert_eq!(
+            pointer.referenced_player_vehicle_unit_id.as_deref(),
+            Some("_nameless.assigned.1")
+        );
+        assert_eq!(parsed.active_truck_id.as_deref(), Some("_nameless.truck.4"));
+        assert_eq!(
+            parsed.current_truck_diagnostics.my_truck_raw.as_deref(),
+            Some("null")
+        );
+        assert_eq!(
+            parsed.diagnostics.current_truck_pointer_kind,
+            Some(CurrentTruckPointerKind::PlayerAssignedVehicles)
+        );
+        assert_eq!(
+            parsed.diagnostics.assigned_vehicles_unit_id.as_deref(),
+            Some("_nameless.assigned.1")
+        );
+    }
+
+    #[test]
+    fn player_trucks_array_is_primary_ownership_source() {
+        let parsed = parse_truck_save(assigned_vehicles_fixture());
+
+        assert_eq!(parsed.trucks.len(), 5);
+        assert_eq!(parsed.diagnostics.player_trucks_array_count, 5);
+        assert_eq!(parsed.diagnostics.player_truck_refs_with_vehicle_blocks, 5);
+        assert_eq!(parsed.diagnostics.owned_trucks, 5);
+        assert!(
+            parsed
+                .trucks
+                .iter()
+                .any(|truck| { truck.truck_id == "_nameless.truck.4" && truck.is_active })
+        );
+    }
+
+    #[test]
+    fn missing_assigned_vehicles_unit_is_diagnosed() {
+        let content = assigned_vehicles_fixture().replace(
+            "player_vehicles : _nameless.assigned.1",
+            "player_vehicles : _nameless.assigned.other",
+        );
+        let parsed = parse_truck_save(&content);
+
+        assert!(resolve_current_truck_pointer(&parsed).is_err());
+        assert!(parsed.current_truck_diagnostics.player_found);
+        assert_eq!(
+            parsed
+                .current_truck_diagnostics
+                .assigned_vehicles_raw
+                .as_deref(),
+            Some("_nameless.assigned.1")
+        );
+        assert!(
+            !parsed
+                .current_truck_diagnostics
+                .assigned_vehicles_unit_found
+        );
+    }
+
+    #[test]
+    fn missing_assigned_vehicles_vehicle_block_is_diagnosed() {
+        let content = assigned_vehicles_fixture().replace(
+            "vehicle : _nameless.truck.4",
+            "vehicle : _nameless.truck.other",
+        );
+        let parsed = parse_truck_save(&content);
+
+        assert!(resolve_current_truck_pointer(&parsed).is_err());
+        assert!(
+            parsed
+                .current_truck_diagnostics
+                .assigned_vehicles_unit_found
+        );
+        assert_eq!(
+            parsed
+                .current_truck_diagnostics
+                .assigned_vehicles_vehicle_raw
+                .as_deref(),
+            Some("_nameless.truck.4")
+        );
+        assert!(
+            !parsed
+                .current_truck_diagnostics
+                .assigned_vehicles_vehicle_block_found
+        );
+    }
+
+    #[test]
+    fn player_trucks_array_missing_vehicle_blocks_are_diagnosed_and_hidden() {
+        let content = assigned_vehicles_fixture().replace(
+            "trucks[1]: _nameless.truck.2",
+            "trucks[1]: _nameless.truck.missing",
+        );
+        let parsed = parse_truck_save(&content);
+
+        assert_eq!(parsed.diagnostics.player_trucks_array_count, 5);
+        assert_eq!(parsed.diagnostics.player_truck_refs_with_vehicle_blocks, 4);
+        assert_eq!(
+            parsed
+                .diagnostics
+                .player_truck_reference_missing_vehicle_blocks,
+            vec!["_nameless.truck.missing".to_string()]
+        );
+        assert_eq!(parsed.trucks.len(), 4);
+        assert!(
+            !parsed
+                .trucks
+                .iter()
+                .any(|truck| truck.truck_id == "_nameless.truck.missing")
+        );
     }
 
     #[test]
@@ -1173,6 +1657,20 @@ driver : driver.2 {
             normalize_sii_unit_id("driver.abc"),
             normalize_sii_unit_id("driver.abd")
         );
+    }
+
+    #[test]
+    fn garage_driver_ref_validation_accepts_only_exact_driver_numbers() {
+        assert!(is_valid_garage_driver_ref("driver.163"));
+        assert!(is_valid_garage_driver_ref("driver.0"));
+        assert!(is_valid_garage_driver_ref("driver.999"));
+        assert!(!is_valid_garage_driver_ref("null"));
+        assert!(!is_valid_garage_driver_ref("nil"));
+        assert!(!is_valid_garage_driver_ref("none"));
+        assert!(!is_valid_garage_driver_ref("0"));
+        assert!(!is_valid_garage_driver_ref(""));
+        assert!(!is_valid_garage_driver_ref("_nameless.truck.123"));
+        assert!(!is_valid_garage_driver_ref("driver.abc"));
     }
 
     #[test]
