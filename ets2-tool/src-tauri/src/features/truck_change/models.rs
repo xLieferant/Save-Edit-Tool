@@ -322,6 +322,7 @@ pub struct TruckChangePreview {
     pub diagnostics: Option<DriverResolutionDiagnostics>,
     pub swap_plan: Option<TruckSwapPreviewDetails>,
     pub expected_file_hash: String,
+    pub safe_to_write: bool,
     pub can_apply: bool,
 }
 

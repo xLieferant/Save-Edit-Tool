@@ -176,7 +176,9 @@ pub fn preview_active_truck_switch_from_content(
 
     if let Some(pointer) = current_pointer.as_ref() {
         if target_owned && !pointer.truck_id.eq_ignore_ascii_case(target_truck_id) {
-            if let Err(reason) = resolve_truck_switch_write_plan(&parsed, &pointer.truck_id, target_truck_id) {
+            if let Err(reason) =
+                resolve_truck_switch_write_plan(&parsed, pointer, target_truck_id)
+            {
                 warnings.push(reason.to_string());
                 can_apply = false;
             }
@@ -192,6 +194,7 @@ pub fn preview_active_truck_switch_from_content(
         Some(preview_error_code(&warnings))
     };
     let diagnostics = None;
+    let safe_to_write = swap_plan.can_write_safely;
 
     TruckChangePreview {
         mode: mode.clone(),
@@ -210,6 +213,7 @@ pub fn preview_active_truck_switch_from_content(
         diagnostics,
         swap_plan: Some(swap_plan),
         expected_file_hash: actual_hash,
+        safe_to_write,
         can_apply,
     }
 }
@@ -241,6 +245,35 @@ pub fn apply_active_truck_switch_transaction(
         &content,
         &target_truck_id,
         &expected_file_hash,
+    );
+    let preview_write_case = preview
+        .swap_plan
+        .as_ref()
+        .and_then(|plan| plan.write_case.as_deref())
+        .unwrap_or("-");
+    let preview_target_location = preview
+        .swap_plan
+        .as_ref()
+        .and_then(|plan| plan.target_location.as_deref())
+        .unwrap_or("-");
+    let preview_safe_to_write = preview
+        .swap_plan
+        .as_ref()
+        .map(|plan| plan.can_write_safely)
+        .unwrap_or(false);
+    let preview_availability = if preview.target_truck.is_switchable {
+        "available"
+    } else {
+        "unavailable"
+    };
+    crate::dev_log!(
+        "[truck_change] apply stage=preview current={} target={} safe_to_write={} write_case={} target_location={} availability={}",
+        current_pointer_before_preview.truck_id,
+        target_truck_id,
+        preview_safe_to_write,
+        preview_write_case,
+        preview_target_location,
+        preview_availability
     );
     if !preview.can_apply {
         return Err(format!("preview_blocked:{}", preview.warnings.join(",")));
@@ -376,6 +409,32 @@ pub fn apply_active_truck_switch_transaction(
     match result {
         Ok(value) => Ok(value),
         Err(error) => {
+            let error_code = truck_change_error_code(&error);
+            let assigned_vehicles_id = current_pointer_before_preview
+                .referenced_player_vehicle_unit_id
+                .as_deref()
+                .or(parsed_before_preview
+                    .current_truck_diagnostics
+                    .assigned_vehicles_raw
+                    .as_deref())
+                .unwrap_or("-");
+            let old_vehicle = parsed_before_preview
+                .current_truck_diagnostics
+                .assigned_vehicles_vehicle_raw
+                .as_deref()
+                .unwrap_or("-");
+            crate::dev_log!(
+                "[truck_change] apply failed code={} message={} write_case={} target_location={} safe_to_write={} assigned_vehicles_id={} assigned_vehicles_unit_found={} old_vehicle={} new_target_vehicle={}",
+                error_code,
+                error,
+                preview_write_case,
+                preview_target_location,
+                preview_safe_to_write,
+                assigned_vehicles_id,
+                parsed_before_preview.current_truck_diagnostics.assigned_vehicles_unit_found,
+                old_vehicle,
+                target_truck_id
+            );
             let rollback_result = rollback.restore();
             invalidate_after_write(&game_path, profile_cache, decrypt_cache);
             truck_change_cache.invalidate_save(&profile_id, &game_path);
@@ -402,6 +461,10 @@ struct TruckSwitchWritePlan {
     target_driver: Option<DriverDisplayInfo>,
     write_case: &'static str,
     old_truck_destination: String,
+    assigned_vehicles_id: Option<String>,
+    assigned_vehicles_unit_found: bool,
+    old_vehicle: Option<String>,
+    new_target_vehicle: String,
 }
 
 #[derive(Debug, Clone)]
@@ -424,6 +487,17 @@ pub fn apply_switch_to_content(
     let parsed = parse_truck_save(content);
     let current_pointer = resolve_current_truck_pointer(&parsed)?;
     let previous_truck_id = current_pointer.truck_id.clone();
+    crate::dev_log!(
+        "[truck_change] apply stage=assigned_vehicles player_assigned_vehicles={}",
+        current_pointer
+            .referenced_player_vehicle_unit_id
+            .as_deref()
+            .or(parsed
+                .current_truck_diagnostics
+                .assigned_vehicles_raw
+                .as_deref())
+            .unwrap_or("-")
+    );
     if previous_truck_id.eq_ignore_ascii_case(target_truck_id) {
         return Err("target_already_active".to_string());
     }
@@ -442,8 +516,18 @@ pub fn apply_switch_to_content(
             dangling.join(",")
         ));
     }
-    let switch_plan = resolve_truck_switch_write_plan(&parsed, &previous_truck_id, target_truck_id)
+    let switch_plan = resolve_truck_switch_write_plan(&parsed, &current_pointer, target_truck_id)
         .map_err(|reason| reason.to_string())?;
+    crate::dev_log!(
+        "[truck_change] apply stage=writer current_assignment_unit_found={} assigned_vehicles_id={}",
+        switch_plan.assigned_vehicles_unit_found,
+        switch_plan.assigned_vehicles_id.as_deref().unwrap_or("-")
+    );
+    crate::dev_log!(
+        "[truck_change] apply stage=writer old_vehicle={} new_vehicle={}",
+        switch_plan.old_vehicle.as_deref().unwrap_or("-"),
+        switch_plan.new_target_vehicle
+    );
     let mut updated = content.to_string();
 
     let (next, changed_current_slot) = set_unit_field_value(
@@ -678,6 +762,14 @@ fn preview_error_code(warnings: &[String]) -> String {
         .unwrap_or_else(|| "preview_blocked".to_string())
 }
 
+fn truck_change_error_code(message: &str) -> &str {
+    message
+        .split([':', ';'])
+        .next()
+        .filter(|code| !code.trim().is_empty())
+        .unwrap_or("unknown_error")
+}
+
 fn player_trucks_contains(parsed: &super::parser::ParsedTruckSave, truck_id: &str) -> bool {
     let normalized = normalize_sii_unit_id(truck_id);
     parsed
@@ -705,6 +797,38 @@ fn player_vehicle_slot_for_truck(
         .player_vehicle_assignments
         .get(&normalize_sii_unit_id(truck_id))
         .cloned()
+}
+
+fn player_vehicle_slot_by_id(
+    parsed: &super::parser::ParsedTruckSave,
+    slot_id: &str,
+) -> Option<PlayerVehicleSlotAssignment> {
+    let normalized = normalize_sii_unit_id(slot_id);
+    parsed
+        .player_vehicle_slots
+        .iter()
+        .find(|slot| slot.slot_id_normalized == normalized)
+        .cloned()
+}
+
+fn current_assignment_slot_for_write(
+    parsed: &super::parser::ParsedTruckSave,
+    pointer: &CurrentTruckPointer,
+) -> Result<PlayerVehicleSlotAssignment, &'static str> {
+    if let Some(assigned_vehicles_id) = pointer.referenced_player_vehicle_unit_id.as_deref() {
+        let slot = player_vehicle_slot_by_id(parsed, assigned_vehicles_id)
+            .ok_or("current_slot_unresolved")?;
+        let contains_current = slot
+            .truck_id_normalized
+            .as_deref()
+            .map(|truck_id| truck_id == normalize_sii_unit_id(&pointer.truck_id))
+            .unwrap_or(false);
+        if contains_current {
+            return Ok(slot);
+        }
+        return Err("current_slot_unresolved");
+    }
+    player_vehicle_slot_for_truck(parsed, &pointer.truck_id).ok_or("current_slot_unresolved")
 }
 
 fn unique_driver_assigned_to_truck(
@@ -736,14 +860,16 @@ fn unique_driver_assigned_to_truck(
 
 fn resolve_truck_switch_write_plan(
     parsed: &super::parser::ParsedTruckSave,
-    previous_truck_id: &str,
+    current_pointer: &CurrentTruckPointer,
     target_truck_id: &str,
 ) -> Result<TruckSwitchWritePlan, &'static str> {
-    let current_slot =
-        player_vehicle_slot_for_truck(parsed, previous_truck_id).ok_or("current_slot_unresolved")?;
+    let current_slot = current_assignment_slot_for_write(parsed, current_pointer)?;
     let target_slot = player_vehicle_slot_for_truck(parsed, target_truck_id);
     let target_driver = unique_driver_assigned_to_truck(parsed, target_truck_id)
         .map_err(|_| "old_truck_destination_missing")?;
+    let assigned_vehicles_id = current_pointer.referenced_player_vehicle_unit_id.clone();
+    let assigned_vehicles_unit_found = assigned_vehicles_id.is_some();
+    let old_vehicle = current_slot.truck_id.clone();
     if let Some(target_slot) = target_slot {
         let write_case = if target_driver.is_some() {
             "player_vehicle_slot_and_driver"
@@ -756,6 +882,10 @@ fn resolve_truck_switch_write_plan(
             target_slot: Some(target_slot),
             target_driver,
             write_case,
+            assigned_vehicles_id,
+            assigned_vehicles_unit_found,
+            old_vehicle,
+            new_target_vehicle: target_truck_id.to_string(),
         });
     }
 
@@ -766,6 +896,10 @@ fn resolve_truck_switch_write_plan(
             target_slot: None,
             target_driver: None,
             write_case: "target_unassigned_owned",
+            assigned_vehicles_id,
+            assigned_vehicles_unit_found,
+            old_vehicle,
+            new_target_vehicle: target_truck_id.to_string(),
         });
     };
     Ok(TruckSwitchWritePlan {
@@ -774,6 +908,10 @@ fn resolve_truck_switch_write_plan(
         target_slot: None,
         target_driver: Some(target_driver),
         write_case: "driver_assigned_truck",
+        assigned_vehicles_id,
+        assigned_vehicles_unit_found,
+        old_vehicle,
+        new_target_vehicle: target_truck_id.to_string(),
     })
 }
 
@@ -789,7 +927,7 @@ fn build_truck_swap_preview_details(
         target_slot.is_none() && target_driver.is_none() && target_driver_result.is_ok();
     let plan = current_pointer
         .and_then(|pointer| {
-            resolve_truck_switch_write_plan(parsed, &pointer.truck_id, target_truck_id).ok()
+            resolve_truck_switch_write_plan(parsed, pointer, target_truck_id).ok()
         });
     let target_location = if target_slot.is_some() {
         Some("player_vehicle_slot".to_string())
@@ -1050,7 +1188,7 @@ fn inspect_truck_assignment_context(
             TruckAssignmentKind::AiDriverAssigned,
             Some("ai_driver_resolved".to_string()),
         )
-    } else if in_player_trucks && vehicle_unit_found && !has_garage_driver_ref {
+    } else if in_player_trucks && vehicle_unit_found {
         (
             TruckAssignmentKind::UnassignedOwnedTruck,
             Some("unassigned_owned_truck".to_string()),
@@ -2365,7 +2503,7 @@ driver_ai : driver.1 {
     }
 
     #[test]
-    fn unresolved_driver_assignment_does_not_make_other_trucks_unavailable() {
+    fn unresolved_driver_assignment_does_not_block_owned_truck_switch() {
         let content = fixture()
             .replace("drivers[2]: null", "drivers[2]: driver.missing")
             .replace(
@@ -2386,11 +2524,9 @@ driver_ai : driver.1 {
 
         assert!(free_truck.is_switchable);
         assert!(!free_truck.requires_driver_swap);
-        assert!(!unresolved_truck.is_switchable);
-        assert_eq!(
-            unresolved_truck.blocked_reason.as_deref(),
-            Some("driver_assignment_unresolved")
-        );
+        assert!(unresolved_truck.is_switchable);
+        assert!(!unresolved_truck.requires_driver_swap);
+        assert_eq!(unresolved_truck.blocked_reason.as_deref(), None);
     }
 
     #[test]
@@ -2540,6 +2676,40 @@ driver_ai : driver.1 {
         let validation =
             validate_truck_switch_content(&plan.content, "_nameless.truck.5", None, None);
         assert!(validation.success, "{:?}", validation.errors);
+    }
+
+    #[test]
+    fn assigned_vehicles_writer_uses_global_assignment_unit_not_my_vehicles_only() {
+        let content = assigned_vehicles_fixture()
+            .replace(
+                " my_vehicles: 5\n my_vehicles[0]: _nameless.assigned.1\n my_vehicles[1]: _nameless.assigned.2\n my_vehicles[2]: _nameless.assigned.3\n my_vehicles[3]: _nameless.assigned.4\n my_vehicles[4]: _nameless.assigned.5\n",
+                " my_vehicles: 4\n my_vehicles[0]: _nameless.assigned.2\n my_vehicles[1]: _nameless.assigned.3\n my_vehicles[2]: _nameless.assigned.4\n my_vehicles[3]: _nameless.assigned.5\n",
+            )
+            .replace(
+                "player_vehicles : _nameless.assigned.5 {\n vehicle: _nameless.truck.5\n trailer: null\n}",
+                "player_vehicles : _nameless.assigned.5 {\n vehicle: null\n trailer: null\n}",
+            );
+
+        let list = list_owned_trucks_for_switch_from_content(Path::new("game.sii"), &content);
+        let preview = preview_active_truck_switch_from_content(
+            Path::new("game.sii"),
+            &content,
+            "_nameless.truck.5",
+            &list.file_hash,
+        );
+        assert!(preview.can_apply, "{:?}", preview.warnings);
+        assert_eq!(
+            preview
+                .swap_plan
+                .as_ref()
+                .and_then(|plan| plan.write_case.as_deref()),
+            Some("target_unassigned_owned")
+        );
+
+        let plan = apply_switch_to_content(&content, "_nameless.truck.5").unwrap();
+        assert_eq!(plan.previous_truck_id, "_nameless.truck.4");
+        assert!(plan.content.contains("player_vehicles : _nameless.assigned.1 {\n vehicle: _nameless.truck.5"));
+        assert!(plan.content.contains(" trucks[3]: _nameless.truck.4"));
     }
 
     #[test]

@@ -2525,7 +2525,12 @@ export async function openTruckChangeModal() {
     }
 
     refreshBtn.hidden = state.activeTab !== "switch";
-    const canShowApply = state.preview && state.preview.canApply === true && state.previewLoading === false;
+    const previewSafeToWrite = state.preview?.safeToWrite === true
+      || state.preview?.swapPlan?.canWriteSafely === true;
+    const canShowApply = state.preview
+      && state.preview.canApply === true
+      && previewSafeToWrite
+      && state.previewLoading === false;
     applyBtn.hidden = state.activeTab !== "switch" || !canShowApply;
     applyBtn.textContent = state.applyLoading ? copy.applying : copy.apply;
     applyBtn.disabled = state.applyLoading || !canShowApply;
@@ -2840,12 +2845,31 @@ export async function openTruckChangeModal() {
   }
 
   async function handleApply() {
-    if (state.preview?.canApply !== true || !state.selectedTruckId || state.applyLoading) return;
+    if (
+      state.preview?.canApply !== true
+      || (state.preview?.safeToWrite !== true && state.preview?.swapPlan?.canWriteSafely !== true)
+      || !state.selectedTruckId
+      || state.applyLoading
+    ) return;
     state.applyLoading = true;
     state.applyError = null;
     state.progressMessage = copy.checkingSave;
     render();
     try {
+      const swapPlan = state.preview?.swapPlan || {};
+      const assignedVehiclesId = state.session?.diagnostics?.assignedVehiclesUnitId
+        || state.list?.diagnostics?.assignedVehiclesUnitId
+        || "-";
+      const assignedVehiclesFound = Boolean(assignedVehiclesId && assignedVehiclesId !== "-");
+      const oldVehicle = state.session?.diagnostics?.assignedVehiclesVehicleRaw
+        || state.list?.diagnostics?.assignedVehiclesVehicleRaw
+        || state.preview?.currentTruck?.truckId
+        || "-";
+      const safeToWrite = state.preview?.safeToWrite === true || swapPlan.canWriteSafely === true;
+      console.log(`[truck_change] apply stage=preview current=${state.preview?.currentTruck?.truckId || "-"} target=${state.selectedTruckId || "-"} safe_to_write=${safeToWrite} write_case=${swapPlan.writeCase || "-"} target_location=${swapPlan.targetLocation || "-"} availability=${state.preview?.targetTruck?.isSwitchable ? "available" : "unavailable"}`);
+      console.log(`[truck_change] apply stage=assigned_vehicles player_assigned_vehicles=${assignedVehiclesId}`);
+      console.log(`[truck_change] apply stage=writer current_assignment_unit_found=${assignedVehiclesFound} assigned_vehicles_id=${assignedVehiclesId}`);
+      console.log(`[truck_change] apply stage=writer old_vehicle=${oldVehicle} new_vehicle=${state.selectedTruckId || "-"}`);
       const result = await window.invoke("apply_active_truck_switch", {
         savePath,
         targetTruckId: state.selectedTruckId,
@@ -2867,6 +2891,11 @@ export async function openTruckChangeModal() {
     } catch (error) {
       console.error("Truck switch apply failed:", error);
       state.applyError = normalizeTruckChangeError(error);
+      console.error(`[truck_change] apply failed code=${state.applyError.code || "unknown_error"} message=${state.applyError.message || String(error || "")}`, {
+        writeCase: state.preview?.swapPlan?.writeCase || null,
+        targetLocation: state.preview?.swapPlan?.targetLocation || null,
+        safeToWrite: state.preview?.safeToWrite === true || state.preview?.swapPlan?.canWriteSafely === true,
+      });
       logTruckChangeError("apply", state.applyError);
       window.showToast("toasts.truck_change_apply_failed", "error");
     } finally {
