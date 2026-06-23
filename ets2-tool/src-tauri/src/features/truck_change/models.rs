@@ -34,6 +34,11 @@ pub struct TruckInventoryItem {
     pub engine_data_path: Option<String>,
     pub transmission_data_path: Option<String>,
     pub accessory_count: usize,
+    pub odometer_km: Option<f32>,
+    pub fuel_relative: Option<f32>,
+    pub wear: Option<f32>,
+    pub player_vehicle_slot_id: Option<String>,
+    pub player_vehicle_slot_index: Option<usize>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -46,6 +51,7 @@ pub struct DriverDisplayInfo {
     pub display_name: Option<String>,
     pub current_truck_id: Option<String>,
     pub current_truck_id_normalized: Option<NormalizedSiiId>,
+    pub current_truck_field: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
@@ -98,9 +104,11 @@ pub struct ResolvedDriverAssignment {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum CurrentTruckPointerKind {
-    PlayerMyTruck,
     PlayerAssignedVehicles,
     PlayerAssignedTruck,
+    PlayerMyTruck,
+    FallbackPlayerVehicles,
+    FallbackFirstOwnedTruck,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -111,6 +119,9 @@ pub struct CurrentTruckPointer {
     pub owner_unit_id: String,
     pub field_name: String,
     pub referenced_player_vehicle_unit_id: Option<String>,
+    pub source: String,
+    pub confidence: String,
+    pub writable: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -136,6 +147,11 @@ pub struct CurrentTruckPointerDiagnostics {
     pub assigned_truck_vehicle_block_found: bool,
     pub current_truck_pointer_kind: Option<CurrentTruckPointerKind>,
     pub current_truck_id: Option<String>,
+    pub current_truck_source: Option<String>,
+    pub current_truck_confidence: Option<String>,
+    pub fallback_player_vehicle_unit_id: Option<String>,
+    pub fallback_player_vehicle_vehicle_raw: Option<String>,
+    pub fallback_first_owned_truck_raw: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -163,9 +179,18 @@ impl DriverResolutionError {
 pub struct DriverResolutionDiagnostics {
     pub target_truck_id: String,
     pub target_truck_id_normalized: String,
+    pub selected_assignment_kind: Option<TruckAssignmentKind>,
+    pub current_assignment_kind: Option<TruckAssignmentKind>,
+    pub current_truck_id: Option<String>,
+    pub current_garage_id: Option<String>,
+    pub current_garage_slot_index: Option<usize>,
+    pub current_garage_driver_id_raw: Option<String>,
+    pub current_driver_ref: Option<String>,
     pub garage_id: Option<String>,
     pub garage_slot_index: Option<usize>,
     pub garage_driver_id_raw: Option<String>,
+    pub selected_driver_ref: Option<String>,
+    pub player_vehicles_ref: Option<String>,
     pub garage_driver_id_normalized: Option<String>,
     pub resolution_kind: Option<DriverResolutionKind>,
     pub garage_driver_ref_unique: Option<bool>,
@@ -178,7 +203,77 @@ pub struct DriverResolutionDiagnostics {
     pub garage_vehicle_count: Option<usize>,
     pub garage_driver_count: Option<usize>,
     pub arrays_have_matching_indices: bool,
+    pub checked_sources: Vec<String>,
+    pub selected_reverse_references: Vec<String>,
+    pub current_reverse_references: Vec<String>,
+    pub selected_evidence: Vec<String>,
+    pub current_evidence: Vec<String>,
+    pub unsafe_reason: Option<String>,
     pub resolution_error: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum TruckAssignmentKind {
+    PlayerActive,
+    AiDriverAssigned,
+    UnassignedOwnedTruck,
+    Ambiguous,
+    Unknown,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct TruckReferenceMatch {
+    pub unit_type: String,
+    pub unit_id: String,
+    pub field_name: String,
+    pub value: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct TruckGarageSlotReference {
+    pub garage_id: String,
+    pub garage_display_name: Option<String>,
+    pub slot_index: usize,
+    pub vehicle_ref: Option<String>,
+    pub driver_ref: Option<String>,
+    pub arrays_have_matching_indices: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct TruckAssignmentContext {
+    pub truck_id: String,
+    pub truck_id_normalized: NormalizedSiiId,
+    pub vehicle_unit_found: bool,
+    pub in_player_trucks: bool,
+    pub active_for_player: bool,
+    pub player_assigned_vehicles_unit: Option<String>,
+    pub player_vehicles_vehicle: Option<String>,
+    pub assignment_kind: TruckAssignmentKind,
+    pub driver_ref: Option<String>,
+    pub garage_ref: Option<String>,
+    pub garage_slot_index: Option<usize>,
+    pub driver_references: Vec<TruckReferenceMatch>,
+    pub garage_references: Vec<TruckGarageSlotReference>,
+    pub reverse_references: Vec<TruckReferenceMatch>,
+    pub other_references: Vec<TruckReferenceMatch>,
+    pub ai_driver_candidate_count: usize,
+    pub garage_slot_candidate_count: usize,
+    pub evidence: Vec<String>,
+    pub unsafe_reason: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct PlayerVehicleSlotAssignment {
+    pub slot_id: String,
+    pub slot_id_normalized: NormalizedSiiId,
+    pub slot_index: Option<usize>,
+    pub truck_id: Option<String>,
+    pub truck_id_normalized: Option<NormalizedSiiId>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -225,8 +320,24 @@ pub struct TruckChangePreview {
     pub warnings: Vec<String>,
     pub error_code: Option<String>,
     pub diagnostics: Option<DriverResolutionDiagnostics>,
+    pub swap_plan: Option<TruckSwapPreviewDetails>,
     pub expected_file_hash: String,
     pub can_apply: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct TruckSwapPreviewDetails {
+    pub current_truck_id: Option<String>,
+    pub target_truck_id: String,
+    pub target_location: Option<String>,
+    pub old_truck_destination: Option<String>,
+    pub target_is_free: bool,
+    pub target_player_vehicle_slot_id: Option<String>,
+    pub target_player_vehicle_slot_index: Option<usize>,
+    pub target_driver_id: Option<String>,
+    pub write_case: Option<String>,
+    pub can_write_safely: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -319,6 +430,8 @@ pub struct OwnedTruckDiagnostics {
     pub player_truck_refs_with_vehicle_blocks: usize,
     pub player_truck_reference_missing_vehicle_blocks: Vec<String>,
     pub current_truck_pointer: CurrentTruckPointerDiagnostics,
+    pub current_truck_source: Option<String>,
+    pub current_truck_confidence: Option<String>,
     pub excluded_trailers: usize,
     pub excluded_unreferenced: usize,
     pub excluded_job_vehicles: usize,

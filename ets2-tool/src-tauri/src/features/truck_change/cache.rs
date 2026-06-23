@@ -111,6 +111,11 @@ mod tests {
             engine_data_path: None,
             transmission_data_path: None,
             accessory_count: 0,
+            odometer_km: None,
+            fuel_relative: None,
+            wear: None,
+            player_vehicle_slot_id: None,
+            player_vehicle_slot_index: None,
         }
     }
 

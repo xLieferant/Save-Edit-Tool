@@ -1,8 +1,8 @@
 use super::models::TruckWriteValidation;
 use super::parser::{
-    assignment_conflicts_from_blocks, garage_driver_ref_is_unique, graph_dangling_accessories,
-    is_valid_garage_driver_ref, normalize_sii_unit_id, parse_truck_save,
-    resolve_current_truck_pointer,
+    assignment_conflicts_from_blocks, extract_array_values, garage_driver_ref_is_unique,
+    graph_dangling_accessories, is_valid_garage_driver_ref, normalize_sii_unit_id,
+    parse_truck_save, resolve_current_truck_pointer,
 };
 
 pub fn validate_truck_switch_content(
@@ -21,7 +21,7 @@ pub fn validate_truck_switch_content(
     match actual_truck_id.as_deref() {
         Some(actual) if actual.eq_ignore_ascii_case(expected_truck_id) => {}
         Some(_) => errors.push("active_truck_mismatch".to_string()),
-        None => errors.push("current_truck_not_found".to_string()),
+        None => errors.push("current_truck_unresolved".to_string()),
     }
 
     if !parsed
@@ -30,6 +30,9 @@ pub fn validate_truck_switch_content(
         .any(|truck| truck.truck_id.eq_ignore_ascii_case(expected_truck_id))
     {
         errors.push("expected_truck_not_found".to_string());
+    }
+    if !player_trucks_contains(&parsed, expected_truck_id) {
+        errors.push("expected_truck_missing_from_player_trucks".to_string());
     }
 
     validate_graph_presence_and_refs(
@@ -47,12 +50,22 @@ pub fn validate_truck_switch_content(
             &mut dangling_references,
             &mut errors,
         );
-        let assigned_to_driver = parsed
+        if !player_trucks_contains(&parsed, driver_truck_id) {
+            errors.push("driver_truck_missing_from_player_trucks".to_string());
+        }
+        let garage_assigned_to_driver = parsed
             .garage_assignments
             .get(&normalize_sii_unit_id(driver_truck_id))
             .and_then(|assignment| assignment.driver_id.as_deref())
             .map(|actual| normalize_sii_unit_id(actual) == normalize_sii_unit_id(driver_id))
             .unwrap_or(false);
+        let driver_unit_assigned_to_truck = parsed
+            .driver_infos
+            .get(&normalize_sii_unit_id(driver_id))
+            .and_then(|driver| driver.current_truck_id_normalized.as_deref())
+            .map(|actual| actual == normalize_sii_unit_id(driver_truck_id))
+            .unwrap_or(false);
+        let assigned_to_driver = garage_assigned_to_driver || driver_unit_assigned_to_truck;
         if !assigned_to_driver {
             errors.push("driver_truck_assignment_mismatch".to_string());
         }
@@ -67,15 +80,6 @@ pub fn validate_truck_switch_content(
             errors.push("driver_assigned_truck_field_mismatch".to_string());
         }
 
-        let player_target_has_driver = parsed
-            .garage_assignments
-            .get(&normalize_sii_unit_id(expected_truck_id))
-            .and_then(|assignment| assignment.driver_id.as_deref())
-            .is_some();
-        if player_target_has_driver {
-            errors.push("player_truck_still_assigned_to_driver".to_string());
-        }
-
         if actual_truck_id
             .as_deref()
             .map(|actual| actual.eq_ignore_ascii_case(driver_truck_id))
@@ -88,12 +92,6 @@ pub fn validate_truck_switch_content(
     let duplicate_assignments = duplicate_assigned_trucks(&parsed);
     if !duplicate_assignments.is_empty() {
         errors.push("duplicate_assignment_detected".to_string());
-    }
-    if garage_driver_references_unresolved(&parsed) {
-        errors.push("driver_assignment_unresolved".to_string());
-    }
-    if garage_drivers_without_trucks(&parsed) {
-        errors.push("driver_without_truck".to_string());
     }
     dangling_references.sort();
     dangling_references.dedup();
@@ -131,9 +129,49 @@ fn validate_graph_presence_and_refs(
     }
 }
 
+fn player_trucks_contains(parsed: &super::parser::ParsedTruckSave, truck_id: &str) -> bool {
+    let normalized = normalize_sii_unit_id(truck_id);
+    parsed
+        .truck_order
+        .iter()
+        .any(|candidate| normalize_sii_unit_id(candidate) == normalized)
+}
+
 fn duplicate_assigned_trucks(parsed: &super::parser::ParsedTruckSave) -> Vec<String> {
     let blocks = parsed.unit_blocks.values().cloned().collect::<Vec<_>>();
     assignment_conflicts_from_blocks(&blocks)
+}
+
+fn is_player_driver_ref(parsed: &super::parser::ParsedTruckSave, driver_id: &str) -> bool {
+    let driver_id_normalized = normalize_sii_unit_id(driver_id);
+    if driver_id_normalized.is_empty() {
+        return false;
+    }
+
+    if parsed
+        .driver_infos
+        .get(&driver_id_normalized)
+        .map(|driver| driver.unit_type == "driver_player")
+        .unwrap_or(false)
+    {
+        return true;
+    }
+
+    parsed
+        .player_id
+        .as_deref()
+        .and_then(|player_id| {
+            parsed.unit_blocks.values().find(|block| {
+                normalize_sii_unit_id(&block.id) == normalize_sii_unit_id(player_id)
+                    && block.unit_type == "player"
+            })
+        })
+        .map(|block| {
+            extract_array_values(&block.raw_block, "drivers")
+                .iter()
+                .any(|value| normalize_sii_unit_id(value) == driver_id_normalized)
+        })
+        .unwrap_or(false)
 }
 
 fn garage_driver_references_unresolved(parsed: &super::parser::ParsedTruckSave) -> bool {
@@ -203,11 +241,9 @@ vehicle_accessory : _nameless.acc.a {
 "#;
         let validation = validate_truck_switch_content(content, "_nameless.truck.b", None, None);
         assert!(!validation.success);
-        assert!(
-            validation
-                .errors
-                .contains(&"active_truck_mismatch".to_string())
-        );
+        assert!(validation
+            .errors
+            .contains(&"active_truck_mismatch".to_string()));
     }
 
     #[test]
@@ -316,10 +352,8 @@ garage : garage.berlin {
             Some("_nameless.truck.a"),
         );
         assert!(!validation.success);
-        assert!(
-            validation
-                .errors
-                .contains(&"duplicate_assignment_detected".to_string())
-        );
+        assert!(validation
+            .errors
+            .contains(&"duplicate_assignment_detected".to_string()));
     }
 }

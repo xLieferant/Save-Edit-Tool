@@ -1,3 +1,4 @@
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 
 use sha2::{Digest, Sha256};
@@ -14,18 +15,19 @@ use super::cache::{CurrentTruckCacheEntry, TruckChangeSessionCache};
 use super::models::{
     ApplyTruckChangeResult, CurrentTruckPointer, CurrentTruckPointerKind, DriverAssignmentEvidence,
     DriverAssignmentSource, DriverDisplayInfo, DriverResolutionDiagnostics, DriverResolutionError,
-    DriverResolutionKind, ResolvedDriverAssignment, TruckChangePreview, TruckChangeSession,
-    TruckInventoryItem, TruckSwitchList, TruckSwitchMode,
+    DriverResolutionKind, GarageSlotAssignment, ResolvedDriverAssignment, TruckAssignmentContext,
+    TruckAssignmentKind, TruckChangePreview, TruckChangeSession, TruckGarageSlotReference,
+    PlayerVehicleSlotAssignment, TruckInventoryItem, TruckReferenceMatch, TruckSwapPreviewDetails,
+    TruckSwitchList, TruckSwitchMode,
 };
 use super::parser::{
-    assignment_conflicts_from_blocks, extract_field_value, garage_driver_ref_is_unique,
-    graph_dangling_accessories, is_valid_garage_driver_ref, normalize_sii_unit_id,
-    parse_truck_save, parse_unit_blocks, resolve_current_truck_pointer,
+    assignment_conflicts_from_blocks, extract_array_entries, extract_array_values,
+    extract_field_value, garage_driver_ref_is_unique, graph_dangling_accessories, is_null_ref,
+    normalize_sii_unit_id, parse_truck_save, parse_unit_blocks, resolve_current_truck_pointer,
 };
 use super::validator::validate_truck_switch_content;
 use super::writer::{
-    TemporaryRollbackSnapshot, set_unit_array_value, set_unit_field_value, unit_field_exists,
-    write_verified_content,
+    set_unit_field_value, unit_field_exists, write_verified_content, TemporaryRollbackSnapshot,
 };
 
 pub fn list_owned_trucks_for_switch_from_content(
@@ -33,9 +35,14 @@ pub fn list_owned_trucks_for_switch_from_content(
     content: &str,
 ) -> TruckSwitchList {
     let parsed = parse_truck_save(content);
+    let mut trucks = parsed.trucks.clone();
+    annotate_truck_switchability(&parsed, &mut trucks);
     let mut warnings = Vec::new();
+    if parsed.truck_order.is_empty() {
+        warnings.push("owned_trucks_missing".to_string());
+    }
     if resolve_current_truck_pointer(&parsed).is_err() {
-        warnings.push("current_truck_not_found".to_string());
+        warnings.push("current_truck_unresolved".to_string());
     }
     if !parsed
         .diagnostics
@@ -48,8 +55,8 @@ pub fn list_owned_trucks_for_switch_from_content(
     TruckSwitchList {
         save_path: save_path.display().to_string(),
         file_hash: sha256_hex(content.as_bytes()),
-        active_truck_id: parsed.active_truck_id,
-        trucks: parsed.trucks,
+        active_truck_id: parsed.active_truck_id.clone(),
+        trucks,
         diagnostics: parsed.diagnostics,
         warnings,
     }
@@ -68,11 +75,14 @@ pub fn initialize_truck_change_session_from_content(
     }
 
     let list = list_owned_trucks_for_switch_from_content(save_path, content);
+    if list.trucks.is_empty() {
+        return Err("owned_trucks_missing".to_string());
+    }
     let current_truck = list
         .active_truck_id
         .as_deref()
         .and_then(|active| find_inventory_item(&list.trucks, active))
-        .ok_or_else(|| "current_truck_not_found".to_string())?;
+        .ok_or_else(|| "current_truck_unresolved".to_string())?;
     let session = TruckChangeSession {
         save_path: save_path.display().to_string(),
         save_hash: list.file_hash.clone(),
@@ -107,22 +117,13 @@ pub fn preview_active_truck_switch_from_content(
         .unwrap_or_else(|| missing_inventory_item("_missing_current"));
     let target_truck = find_inventory_item(&parsed.trucks, target_truck_id)
         .unwrap_or_else(|| missing_inventory_item(target_truck_id));
-    let driver_resolution = resolve_target_driver(&parsed, &target_truck);
-    let affected_driver = driver_resolution
-        .as_ref()
-        .ok()
-        .and_then(|resolved| resolved.as_ref())
-        .map(|resolved| resolved.driver.clone());
-    let driver_resolution_error = driver_resolution.as_ref().err().cloned();
-    let mode = if target_truck.assigned_driver_id.is_some()
-        || target_truck.requires_driver_swap
-        || affected_driver.is_some()
-        || driver_resolution_error.is_some()
-    {
+    let affected_driver = unique_driver_assigned_to_truck(&parsed, target_truck_id).ok().flatten();
+    let mode = if affected_driver.is_some() {
         TruckSwitchMode::DriverSwap
     } else {
         TruckSwitchMode::FreeTruck
     };
+    let swap_plan = build_truck_swap_preview_details(&parsed, current_pointer.as_ref(), target_truck_id);
     let mut warnings = Vec::new();
     let mut can_apply = true;
 
@@ -131,15 +132,12 @@ pub fn preview_active_truck_switch_from_content(
         can_apply = false;
     }
     if current_pointer.is_none() {
-        warnings.push("current_truck_not_found".to_string());
+        warnings.push("current_truck_unresolved".to_string());
         can_apply = false;
     }
-    if !parsed
-        .trucks
-        .iter()
-        .any(|truck| truck.truck_id.eq_ignore_ascii_case(target_truck_id))
-    {
-        warnings.push("target_truck_not_found".to_string());
+    let target_owned = player_trucks_contains(&parsed, target_truck_id);
+    if !target_owned {
+        warnings.push("target_truck_not_owned".to_string());
         can_apply = false;
     }
     if current_pointer
@@ -150,35 +148,19 @@ pub fn preview_active_truck_switch_from_content(
         warnings.push("target_already_active".to_string());
         can_apply = false;
     }
-    if let Some(error) = driver_resolution_error.as_ref() {
-        warnings.push(driver_resolution_warning_code(error).to_string());
-        can_apply = false;
-        crate::dev_log!(
-            "[truck_change] unresolved driver diagnostics generated resolution_error={}",
-            error.code()
-        );
-    }
-    if mode == TruckSwitchMode::DriverSwap {
-        crate::dev_log!("[truck_change] driver swap preview started");
-        let duplicate_assignments = duplicate_driver_or_truck_assignments(&parsed);
-        if !duplicate_assignments.is_empty() {
-            warnings.push("duplicate_assignment_detected".to_string());
+
+    if let Some(pointer) = current_pointer.as_ref() {
+        if !parsed
+            .truck_graphs
+            .values()
+            .any(|graph| normalize_sii_unit_id(&graph.vehicle_id) == normalize_sii_unit_id(&pointer.truck_id))
+        {
+            warnings.push("current_vehicle_block_missing".to_string());
             can_apply = false;
-        }
-        if !can_swap_driver_to_current_player_truck(&parsed, &current_truck) {
-            warnings.push("driver_swap_assignment_missing".to_string());
-            can_apply = false;
-        }
-        if let Ok(Some(resolved)) = driver_resolution.as_ref() {
-            crate::dev_log!(
-                "[truck_change] driver resolved resolution_source={:?} resolution_kind={:?}",
-                resolved.source,
-                resolved.resolution_kind
-            );
         }
     }
 
-    match parsed.truck_graphs.get(target_truck_id) {
+    match find_truck_graph_case_insensitive(&parsed, target_truck_id) {
         Some(graph) => {
             let dangling = graph_dangling_accessories(graph, &parsed.unit_ids);
             if !dangling.is_empty() {
@@ -192,9 +174,16 @@ pub fn preview_active_truck_switch_from_content(
         }
     }
 
+    if let Some(pointer) = current_pointer.as_ref() {
+        if target_owned && !pointer.truck_id.eq_ignore_ascii_case(target_truck_id) {
+            if let Err(reason) = resolve_truck_switch_write_plan(&parsed, &pointer.truck_id, target_truck_id) {
+                warnings.push(reason.to_string());
+                can_apply = false;
+            }
+        }
+    }
+
     let _ = save_path;
-    let assignment_warnings = inspect_assignment_references(content, target_truck_id);
-    warnings.extend(assignment_warnings);
     warnings.sort();
     warnings.dedup();
     let error_code = if can_apply {
@@ -202,31 +191,7 @@ pub fn preview_active_truck_switch_from_content(
     } else {
         Some(preview_error_code(&warnings))
     };
-    let diagnostics = if let Some(error) = driver_resolution_error.as_ref() {
-        Some(driver_resolution_diagnostics(
-            &parsed,
-            &target_truck,
-            None,
-            Some(error),
-        ))
-    } else if mode == TruckSwitchMode::DriverSwap {
-        driver_resolution
-            .as_ref()
-            .ok()
-            .and_then(|resolved| resolved.as_ref())
-            .map(|resolved| {
-                driver_resolution_diagnostics(&parsed, &target_truck, Some(resolved), None)
-            })
-    } else {
-        None
-    };
-    if mode == TruckSwitchMode::DriverSwap {
-        if can_apply {
-            crate::dev_log!("[truck_change] driver swap preview completed");
-        } else {
-            crate::dev_log!("[truck_change] driver swap preview failed");
-        }
-    }
+    let diagnostics = None;
 
     TruckChangePreview {
         mode: mode.clone(),
@@ -243,6 +208,7 @@ pub fn preview_active_truck_switch_from_content(
         warnings,
         error_code,
         diagnostics,
+        swap_plan: Some(swap_plan),
         expected_file_hash: actual_hash,
         can_apply,
     }
@@ -293,7 +259,8 @@ pub fn apply_active_truck_switch_transaction(
             profile_state,
             "active truck switch",
             &backup_targets,
-        )?;
+        )
+        .map_err(|error| format!("backup_failed:{}", error))?;
         Some(backup.backup_id.clone())
     } else {
         crate::dev_log!("[truck_change] persistent backup skipped by user");
@@ -311,8 +278,21 @@ pub fn apply_active_truck_switch_transaction(
         );
         if !temp_validation.success {
             return Err(format!(
-                "temporary_validation_failed:{}",
+                "write_verification_failed:{}",
                 temp_validation.errors.join(",")
+            ));
+        }
+        let temp_parsed = parse_truck_save(&switch_plan.content);
+        let temp_semantic_errors = verify_truck_switch_after_write(
+            &parsed_before_preview,
+            &temp_parsed,
+            &target_truck_id,
+            &switch_plan.previous_truck_id,
+        );
+        if !temp_semantic_errors.is_empty() {
+            return Err(format!(
+                "write_verification_failed:{}",
+                temp_semantic_errors.join(",")
             ));
         }
 
@@ -327,7 +307,7 @@ pub fn apply_active_truck_switch_transaction(
                 Ok(())
             } else {
                 Err(format!(
-                    "temporary_parse_or_validation_failed:{}",
+                    "write_verification_failed:{}",
                     validation.errors.join(",")
                 ))
             }
@@ -345,8 +325,21 @@ pub fn apply_active_truck_switch_transaction(
         );
         if !validation.success {
             return Err(format!(
-                "post_write_verification_failed:{}",
+                "write_verification_failed:{}",
                 validation.errors.join(",")
+            ));
+        }
+        let parsed_after = parse_truck_save(&reloaded);
+        let semantic_errors = verify_truck_switch_after_write(
+            &parsed_before_preview,
+            &parsed_after,
+            &target_truck_id,
+            &switch_plan.previous_truck_id,
+        );
+        if !semantic_errors.is_empty() {
+            return Err(format!(
+                "write_verification_failed:{}",
+                semantic_errors.join(",")
             ));
         }
 
@@ -402,6 +395,28 @@ pub struct SwitchApplyPlan {
     pub driver_received_truck_id: Option<String>,
 }
 
+#[derive(Debug, Clone)]
+struct TruckSwitchWritePlan {
+    current_slot: PlayerVehicleSlotAssignment,
+    target_slot: Option<PlayerVehicleSlotAssignment>,
+    target_driver: Option<DriverDisplayInfo>,
+    write_case: &'static str,
+    old_truck_destination: String,
+}
+
+#[derive(Debug, Clone)]
+struct ResolvedGarageDriverSlot {
+    assignment: GarageSlotAssignment,
+    write_vehicle_slot: bool,
+    source: &'static str,
+}
+
+#[derive(Debug, Clone)]
+struct DriverSwapGaragePlan {
+    target_slot: Option<TruckGarageSlotReference>,
+    previous_slot: Option<ResolvedGarageDriverSlot>,
+}
+
 pub fn apply_switch_to_content(
     content: &str,
     target_truck_id: &str,
@@ -412,14 +427,13 @@ pub fn apply_switch_to_content(
     if previous_truck_id.eq_ignore_ascii_case(target_truck_id) {
         return Err("target_already_active".to_string());
     }
-    let target = parsed
-        .trucks
-        .iter()
-        .find(|truck| truck.truck_id.eq_ignore_ascii_case(target_truck_id))
-        .ok_or_else(|| "target_truck_not_found".to_string())?;
-    let target_graph = parsed
-        .truck_graphs
-        .get(target_truck_id)
+    if !player_trucks_contains(&parsed, target_truck_id) {
+        return Err("target_truck_not_owned".to_string());
+    }
+    if find_truck_graph_case_insensitive(&parsed, &previous_truck_id).is_none() {
+        return Err("current_vehicle_block_missing".to_string());
+    }
+    let target_graph = find_truck_graph_case_insensitive(&parsed, target_truck_id)
         .ok_or_else(|| "target_vehicle_block_missing".to_string())?;
     let dangling = graph_dangling_accessories(target_graph, &parsed.unit_ids);
     if !dangling.is_empty() {
@@ -428,111 +442,102 @@ pub fn apply_switch_to_content(
             dangling.join(",")
         ));
     }
-    let player_id = parsed
-        .player_id
-        .as_deref()
-        .ok_or_else(|| "player_not_found".to_string())?;
-    let resolved_driver_assignment = resolve_target_driver(&parsed, target)
-        .map_err(|error| driver_resolution_apply_error_code(&error).to_string())?;
-    let needs_driver_swap = target.requires_driver_swap
-        || target.assigned_driver_id.is_some()
-        || resolved_driver_assignment.is_some();
-
-    if needs_driver_swap {
-        if unsupported_player_job(content, player_id, &previous_truck_id) {
-            return Err("unsupported_external_job_assignment".to_string());
-        }
-        if resolved_driver_assignment.is_none() {
-            return Err("driver_assignment_unresolved".to_string());
-        }
-        if !duplicate_driver_or_truck_assignments(&parsed).is_empty() {
-            return Err("duplicate_assignment_detected".to_string());
-        }
-        if !can_swap_driver_to_current_player_truck(
-            &parsed,
-            &missing_or_active(&parsed, &previous_truck_id),
-        ) {
-            return Err("driver_swap_assignment_missing".to_string());
-        }
-    }
+    let switch_plan = resolve_truck_switch_write_plan(&parsed, &previous_truck_id, target_truck_id)
+        .map_err(|reason| reason.to_string())?;
     let mut updated = content.to_string();
 
-    let (next, changed_current_pointer) =
-        set_current_truck_pointer_value(&updated, &current_pointer, target_truck_id)?;
-    if !changed_current_pointer {
-        return Err(current_truck_pointer_write_error(&current_pointer).to_string());
+    let (next, changed_current_slot) = set_unit_field_value(
+        &updated,
+        &switch_plan.current_slot.slot_id,
+        "vehicle",
+        target_truck_id,
+    )?;
+    if !changed_current_slot {
+        return Err("current_slot_unresolved".to_string());
     }
     updated = next;
 
-    if let Some(current_job_id) = player_current_job(content, player_id) {
-        if player_job_company_truck(content, &current_job_id)
-            .map(|truck| truck.eq_ignore_ascii_case(&previous_truck_id))
-            .unwrap_or(false)
-        {
-            let (next, _) =
-                set_unit_field_value(&updated, &current_job_id, "company_truck", target_truck_id)?;
-            updated = next;
+    if current_pointer.writable
+        && !matches!(
+            current_pointer.kind,
+            CurrentTruckPointerKind::PlayerAssignedVehicles
+                | CurrentTruckPointerKind::FallbackPlayerVehicles
+        )
+    {
+        let (next, changed_current_pointer) =
+            set_current_truck_pointer_value(&updated, &current_pointer, target_truck_id)?;
+        if !changed_current_pointer {
+            return Err(current_truck_pointer_write_error(&current_pointer).to_string());
+        }
+        updated = next;
+    }
+    if let Some(player_id) = parsed.player_id.as_deref() {
+        for field in ["assigned_truck", "my_truck"] {
+            let Some(value) = parsed
+                .unit_blocks
+                .values()
+                .find(|block| normalize_sii_unit_id(&block.id) == normalize_sii_unit_id(player_id))
+                .and_then(|block| extract_field_value(&block.raw_block, field))
+            else {
+                continue;
+            };
+            if normalize_sii_unit_id(&value) != normalize_sii_unit_id(&previous_truck_id) {
+                continue;
+            }
+            let (next, changed_field) =
+                set_unit_field_value(&updated, player_id, field, target_truck_id)?;
+            if changed_field {
+                updated = next;
+            }
         }
     }
 
     let mut affected_driver_id = None;
     let mut driver_received_truck_id = None;
 
-    if needs_driver_swap {
-        let previous_assignment = parsed
-            .garage_assignments
-            .get(&normalize_sii_unit_id(&previous_truck_id))
-            .ok_or_else(|| "driver_swap_assignment_missing".to_string())?;
-        let target_assignment = parsed
-            .garage_assignments
-            .get(&normalize_sii_unit_id(target_truck_id))
-            .ok_or_else(|| "driver_swap_assignment_missing".to_string())?;
-        let driver_id = resolved_driver_assignment
-            .as_ref()
-            .map(|resolved| resolved.driver.driver_id.clone())
-            .ok_or_else(|| "driver_assignment_unresolved".to_string())?;
-
-        let (next, changed_previous_slot) = set_unit_array_value(
-            &updated,
-            &previous_assignment.garage_id,
-            "drivers",
-            previous_assignment.slot_index,
-            &driver_id,
-        )?;
-        if !changed_previous_slot {
-            return Err("driver_swap_assignment_missing".to_string());
-        }
-        updated = next;
-
-        let (next, changed_target_slot) = set_unit_array_value(
-            &updated,
-            &target_assignment.garage_id,
-            "drivers",
-            target_assignment.slot_index,
-            "null",
-        )?;
+    if let Some(target_slot) = switch_plan.target_slot.as_ref() {
+        let (next, changed_target_slot) =
+            set_unit_field_value(&updated, &target_slot.slot_id, "vehicle", &previous_truck_id)?;
         if !changed_target_slot {
-            return Err("driver_swap_assignment_missing".to_string());
+            return Err("old_truck_destination_missing".to_string());
         }
         updated = next;
-
-        let resolution_kind = resolved_driver_assignment
-            .as_ref()
-            .map(|resolved| resolved.resolution_kind.clone())
-            .ok_or_else(|| "driver_assignment_unresolved".to_string())?;
-
-        if resolution_kind == DriverResolutionKind::FullDriverBlock
-            && unit_field_exists(&updated, &driver_id, "assigned_truck")
-        {
-            let (next, _) =
-                set_unit_field_value(&updated, &driver_id, "assigned_truck", &previous_truck_id)?;
-            updated = next;
+    }
+    if let Some(target_driver) = switch_plan.target_driver.as_ref() {
+        let driver_field = target_driver
+            .current_truck_field
+            .clone()
+            .or_else(|| driver_truck_field_in_content(&updated, &target_driver.driver_id))
+            .ok_or_else(|| "old_truck_destination_missing".to_string())?;
+        let (next, changed_driver_field) = set_unit_field_value(
+            &updated,
+            &target_driver.driver_id,
+            &driver_field,
+            &previous_truck_id,
+        )?;
+        if !changed_driver_field {
+            return Err("old_truck_destination_missing".to_string());
         }
-
-        affected_driver_id = Some(driver_id);
+        updated = next;
+        affected_driver_id = Some(target_driver.driver_id.clone());
         driver_received_truck_id = Some(previous_truck_id.clone());
-        crate::dev_log!("[truck_change] player/driver assignment swap prepared");
-        crate::dev_log!("[truck_change] driver swap transaction prepared");
+    }
+
+    if let Some(player_id) = parsed.player_id.as_deref() {
+        if let Some(current_job_id) = player_current_job(content, player_id) {
+            if player_job_company_truck(content, &current_job_id)
+                .map(|truck| truck.eq_ignore_ascii_case(&previous_truck_id))
+                .unwrap_or(false)
+            {
+                let (next, _) = set_unit_field_value(
+                    &updated,
+                    &current_job_id,
+                    "company_truck",
+                    target_truck_id,
+                )?;
+                updated = next;
+            }
+        }
     }
 
     Ok(SwitchApplyPlan {
@@ -649,15 +654,21 @@ fn session_from_cache_entry(
 fn preview_error_code(warnings: &[String]) -> String {
     const PRIORITY: &[&str] = &[
         "save_changed_since_session",
-        "current_truck_not_found",
-        "target_truck_not_found",
+        "owned_trucks_missing",
+        "current_truck_unresolved",
+        "target_truck_not_owned",
+        "target_vehicle_block_missing",
+        "current_vehicle_block_missing",
+        "current_slot_unresolved",
+        "old_truck_destination_missing",
         "target_already_active",
+        "write_verification_failed",
+        "backup_failed",
         "driver_assignment_ambiguous",
         "driver_assignment_unresolved",
         "driver_swap_assignment_missing",
         "duplicate_assignment_detected",
         "dangling_vehicle_references",
-        "target_vehicle_block_missing",
     ];
     PRIORITY
         .iter()
@@ -667,17 +678,619 @@ fn preview_error_code(warnings: &[String]) -> String {
         .unwrap_or_else(|| "preview_blocked".to_string())
 }
 
+fn player_trucks_contains(parsed: &super::parser::ParsedTruckSave, truck_id: &str) -> bool {
+    let normalized = normalize_sii_unit_id(truck_id);
+    parsed
+        .truck_order
+        .iter()
+        .any(|candidate| normalize_sii_unit_id(candidate) == normalized)
+}
+
+fn find_truck_graph_case_insensitive<'a>(
+    parsed: &'a super::parser::ParsedTruckSave,
+    truck_id: &str,
+) -> Option<&'a super::models::TruckGraph> {
+    let normalized = normalize_sii_unit_id(truck_id);
+    parsed
+        .truck_graphs
+        .values()
+        .find(|graph| normalize_sii_unit_id(&graph.vehicle_id) == normalized)
+}
+
+fn player_vehicle_slot_for_truck(
+    parsed: &super::parser::ParsedTruckSave,
+    truck_id: &str,
+) -> Option<PlayerVehicleSlotAssignment> {
+    parsed
+        .player_vehicle_assignments
+        .get(&normalize_sii_unit_id(truck_id))
+        .cloned()
+}
+
+fn unique_driver_assigned_to_truck(
+    parsed: &super::parser::ParsedTruckSave,
+    truck_id: &str,
+) -> Result<Option<DriverDisplayInfo>, &'static str> {
+    let normalized = normalize_sii_unit_id(truck_id);
+    let mut drivers = parsed
+        .driver_infos
+        .values()
+        .filter(|driver| driver.unit_type != "driver_player")
+        .filter(|driver| {
+            driver
+                .current_truck_id_normalized
+                .as_deref()
+                .map(|candidate| candidate == normalized)
+                .unwrap_or(false)
+        })
+        .cloned()
+        .collect::<Vec<_>>();
+    drivers.sort_by(|left, right| left.normalized_id.cmp(&right.normalized_id));
+    drivers.dedup_by(|left, right| left.normalized_id == right.normalized_id);
+    match drivers.len() {
+        0 => Ok(None),
+        1 => Ok(drivers.pop()),
+        _ => Err("old_truck_destination_missing"),
+    }
+}
+
+fn resolve_truck_switch_write_plan(
+    parsed: &super::parser::ParsedTruckSave,
+    previous_truck_id: &str,
+    target_truck_id: &str,
+) -> Result<TruckSwitchWritePlan, &'static str> {
+    let current_slot =
+        player_vehicle_slot_for_truck(parsed, previous_truck_id).ok_or("current_slot_unresolved")?;
+    let target_slot = player_vehicle_slot_for_truck(parsed, target_truck_id);
+    let target_driver = unique_driver_assigned_to_truck(parsed, target_truck_id)
+        .map_err(|_| "old_truck_destination_missing")?;
+    if let Some(target_slot) = target_slot {
+        let write_case = if target_driver.is_some() {
+            "player_vehicle_slot_and_driver"
+        } else {
+            "player_vehicle_slot"
+        };
+        return Ok(TruckSwitchWritePlan {
+            current_slot,
+            old_truck_destination: format!("player_vehicles:{}", target_slot.slot_id),
+            target_slot: Some(target_slot),
+            target_driver,
+            write_case,
+        });
+    }
+
+    let Some(target_driver) = target_driver else {
+        return Ok(TruckSwitchWritePlan {
+            current_slot,
+            old_truck_destination: "unassigned_owned".to_string(),
+            target_slot: None,
+            target_driver: None,
+            write_case: "target_unassigned_owned",
+        });
+    };
+    Ok(TruckSwitchWritePlan {
+        current_slot,
+        old_truck_destination: format!("driver:{}", target_driver.driver_id),
+        target_slot: None,
+        target_driver: Some(target_driver),
+        write_case: "driver_assigned_truck",
+    })
+}
+
+fn build_truck_swap_preview_details(
+    parsed: &super::parser::ParsedTruckSave,
+    current_pointer: Option<&CurrentTruckPointer>,
+    target_truck_id: &str,
+) -> TruckSwapPreviewDetails {
+    let target_slot = player_vehicle_slot_for_truck(parsed, target_truck_id);
+    let target_driver_result = unique_driver_assigned_to_truck(parsed, target_truck_id);
+    let target_driver = target_driver_result.clone().ok().flatten();
+    let target_is_free =
+        target_slot.is_none() && target_driver.is_none() && target_driver_result.is_ok();
+    let plan = current_pointer
+        .and_then(|pointer| {
+            resolve_truck_switch_write_plan(parsed, &pointer.truck_id, target_truck_id).ok()
+        });
+    let target_location = if target_slot.is_some() {
+        Some("player_vehicle_slot".to_string())
+    } else if target_driver.is_some() {
+        Some("driver_assigned_truck".to_string())
+    } else if target_is_free {
+        Some("unassigned_owned".to_string())
+    } else {
+        None
+    };
+
+    TruckSwapPreviewDetails {
+        current_truck_id: current_pointer.map(|pointer| pointer.truck_id.clone()),
+        target_truck_id: target_truck_id.to_string(),
+        target_location,
+        old_truck_destination: plan
+            .as_ref()
+            .map(|plan| plan.old_truck_destination.clone()),
+        target_is_free,
+        target_player_vehicle_slot_id: target_slot.as_ref().map(|slot| slot.slot_id.clone()),
+        target_player_vehicle_slot_index: target_slot.as_ref().and_then(|slot| slot.slot_index),
+        target_driver_id: target_driver.as_ref().map(|driver| driver.driver_id.clone()),
+        write_case: plan.as_ref().map(|plan| plan.write_case.to_string()),
+        can_write_safely: plan.is_some(),
+    }
+}
+
+fn verify_truck_switch_after_write(
+    before: &super::parser::ParsedTruckSave,
+    after: &super::parser::ParsedTruckSave,
+    target_truck_id: &str,
+    previous_truck_id: &str,
+) -> Vec<String> {
+    let mut errors = Vec::new();
+    let before_owned = before
+        .truck_order
+        .iter()
+        .map(|truck_id| normalize_sii_unit_id(truck_id))
+        .collect::<Vec<_>>();
+    let after_owned = after
+        .truck_order
+        .iter()
+        .map(|truck_id| normalize_sii_unit_id(truck_id))
+        .collect::<Vec<_>>();
+    if before_owned.len() != after_owned.len() {
+        errors.push("owned_truck_count_changed".to_string());
+    }
+    if before_owned != after_owned {
+        errors.push("owned_truck_list_changed".to_string());
+    }
+    if !player_trucks_contains(after, target_truck_id) {
+        errors.push("target_truck_missing_from_player_trucks".to_string());
+    }
+    if !player_trucks_contains(after, previous_truck_id) {
+        errors.push("old_truck_missing_from_player_trucks".to_string());
+    }
+    if find_truck_graph_case_insensitive(after, previous_truck_id).is_none() {
+        errors.push("current_vehicle_block_missing".to_string());
+    }
+    for slot in &after.player_vehicle_slots {
+        let Some(truck_id) = slot.truck_id.as_deref() else {
+            continue;
+        };
+        if find_truck_graph_case_insensitive(after, truck_id).is_none() {
+            errors.push(format!("invalid_player_vehicle_ref:{}", slot.slot_id));
+        }
+    }
+    for driver in after.driver_infos.values() {
+        let Some(truck_id) = driver.current_truck_id.as_deref() else {
+            continue;
+        };
+        if find_truck_graph_case_insensitive(after, truck_id).is_none() {
+            errors.push(format!("invalid_driver_truck_ref:{}", driver.driver_id));
+        }
+    }
+    errors.sort();
+    errors.dedup();
+    errors
+}
+
 fn driver_resolution_warning_code(error: &DriverResolutionError) -> &'static str {
     match error {
-        DriverResolutionError::AmbiguousGarageDriverRef => "driver_assignment_ambiguous",
+        DriverResolutionError::AmbiguousGarageDriverRef
+        | DriverResolutionError::AmbiguousDriverAssignment => "driver_assignment_ambiguous",
         _ => "driver_assignment_unresolved",
     }
 }
 
 fn driver_resolution_apply_error_code(error: &DriverResolutionError) -> &'static str {
     match error {
-        DriverResolutionError::AmbiguousGarageDriverRef => "driver_assignment_ambiguous",
+        DriverResolutionError::AmbiguousGarageDriverRef
+        | DriverResolutionError::AmbiguousDriverAssignment => "driver_assignment_ambiguous",
         _ => "driver_assignment_unresolved",
+    }
+}
+
+fn driver_swap_plan_warning_code(reason: &str) -> &'static str {
+    match reason {
+        "multiple_driver_refs" | "ambiguous_garage_slots" => "driver_assignment_ambiguous",
+        "missing_driver_ref" | "missing_vehicle_block" | "unknown_assignment" => {
+            "driver_assignment_unresolved"
+        }
+        _ => "driver_swap_assignment_missing",
+    }
+}
+
+const DRIVER_TRUCK_REFERENCE_FIELDS: &[&str] =
+    &["assigned_truck", "assigned_vehicle", "truck", "vehicle"];
+
+fn inspect_truck_assignment_context(
+    parsed: &super::parser::ParsedTruckSave,
+    truck_id: &str,
+) -> TruckAssignmentContext {
+    let truck_id_normalized = normalize_sii_unit_id(truck_id);
+    let vehicle_unit_found = parsed
+        .truck_graphs
+        .values()
+        .any(|graph| normalize_sii_unit_id(&graph.vehicle_id) == truck_id_normalized);
+    let in_player_trucks = parsed
+        .truck_order
+        .iter()
+        .any(|candidate| normalize_sii_unit_id(candidate) == truck_id_normalized);
+    let current_pointer = parsed.current_truck_pointer.as_ref();
+    let active_for_player = current_pointer
+        .map(|pointer| normalize_sii_unit_id(&pointer.truck_id) == truck_id_normalized)
+        .unwrap_or(false);
+    let player_assigned_vehicles_unit =
+        current_pointer.and_then(|pointer| pointer.referenced_player_vehicle_unit_id.clone());
+    let player_vehicles_vehicle = if active_for_player {
+        parsed
+            .current_truck_diagnostics
+            .assigned_vehicles_vehicle_raw
+            .clone()
+    } else {
+        None
+    };
+    let reverse_references = reverse_references_to_truck(parsed, &truck_id_normalized);
+    let driver_references = reverse_references
+        .iter()
+        .filter(|reference| is_driver_unit_type(&reference.unit_type))
+        .cloned()
+        .collect::<Vec<_>>();
+    let other_references = reverse_references
+        .iter()
+        .filter(|reference| !is_driver_unit_type(&reference.unit_type))
+        .cloned()
+        .collect::<Vec<_>>();
+    let garage_references = garage_slot_references_to_truck(parsed, &truck_id_normalized);
+    let garage_slot_candidate_count = garage_references.len();
+    let mut ai_driver_candidates = BTreeSet::new();
+
+    for driver in parsed.driver_infos.values() {
+        if driver
+            .current_truck_id_normalized
+            .as_deref()
+            .map(|candidate| candidate == truck_id_normalized)
+            .unwrap_or(false)
+            && !is_player_driver_ref(parsed, &driver.driver_id)
+        {
+            ai_driver_candidates.insert(driver.driver_id.clone());
+        }
+    }
+
+    let ai_driver_candidate_count = ai_driver_candidates.len();
+    let driver_ref = if ai_driver_candidate_count == 1 {
+        ai_driver_candidates.iter().next().cloned()
+    } else {
+        None
+    };
+    let garage_ref = if garage_references.len() == 1 {
+        Some(garage_references[0].garage_id.clone())
+    } else {
+        None
+    };
+    let garage_slot_index = if garage_references.len() == 1 {
+        Some(garage_references[0].slot_index)
+    } else {
+        None
+    };
+    let has_garage_driver_ref = garage_references
+        .iter()
+        .any(|reference| reference.driver_ref.is_some());
+    let garage_driver_ref_conflicts = driver_ref
+        .as_deref()
+        .map(|driver_id| {
+            garage_references.iter().any(|reference| {
+                reference
+                    .driver_ref
+                    .as_deref()
+                    .map(|garage_driver_id| {
+                        normalize_sii_unit_id(garage_driver_id) != normalize_sii_unit_id(driver_id)
+                    })
+                    .unwrap_or(false)
+            })
+        })
+        .unwrap_or(false);
+    let garage_arrays_inconsistent = garage_references
+        .iter()
+        .any(|reference| !reference.arrays_have_matching_indices);
+    let mut evidence = Vec::new();
+    if vehicle_unit_found {
+        evidence.push("vehicle_block_found".to_string());
+    }
+    if in_player_trucks {
+        evidence.push("player.trucks[]".to_string());
+    }
+    if active_for_player {
+        evidence.push("player_active_assignment".to_string());
+    }
+    if player_assigned_vehicles_unit.is_some() {
+        evidence.push("player.assigned_vehicles".to_string());
+        evidence.push("player_vehicles.vehicle".to_string());
+    }
+    evidence.extend(
+        driver_references
+            .iter()
+            .map(|reference| format!("driver:{}", reference_summary(reference))),
+    );
+    evidence.extend(garage_references.iter().map(|reference| {
+        format!(
+            "garage:{}#{} vehicle={} driver={}",
+            reference.garage_id,
+            reference.slot_index,
+            reference.vehicle_ref.as_deref().unwrap_or("null"),
+            reference.driver_ref.as_deref().unwrap_or("null")
+        )
+    }));
+    evidence.sort();
+    evidence.dedup();
+
+    let (assignment_kind, unsafe_reason) = if active_for_player {
+        (
+            TruckAssignmentKind::PlayerActive,
+            Some("player_active".to_string()),
+        )
+    } else if ai_driver_candidate_count > 1 {
+        (
+            TruckAssignmentKind::Ambiguous,
+            Some("multiple_driver_refs".to_string()),
+        )
+    } else if garage_arrays_inconsistent {
+        (
+            TruckAssignmentKind::Ambiguous,
+            Some("ambiguous_garage_slots".to_string()),
+        )
+    } else if garage_slot_candidate_count > 1 {
+        (
+            TruckAssignmentKind::Ambiguous,
+            Some("ambiguous_garage_slots".to_string()),
+        )
+    } else if garage_driver_ref_conflicts {
+        (
+            TruckAssignmentKind::Ambiguous,
+            Some("conflicting_driver_refs".to_string()),
+        )
+    } else if ai_driver_candidate_count == 1 {
+        (
+            TruckAssignmentKind::AiDriverAssigned,
+            Some("ai_driver_resolved".to_string()),
+        )
+    } else if in_player_trucks && vehicle_unit_found && !has_garage_driver_ref {
+        (
+            TruckAssignmentKind::UnassignedOwnedTruck,
+            Some("unassigned_owned_truck".to_string()),
+        )
+    } else if !vehicle_unit_found {
+        (
+            TruckAssignmentKind::Unknown,
+            Some("missing_vehicle_block".to_string()),
+        )
+    } else if has_garage_driver_ref {
+        (
+            TruckAssignmentKind::Unknown,
+            Some("missing_driver_ref".to_string()),
+        )
+    } else {
+        (
+            TruckAssignmentKind::Unknown,
+            Some("unknown_assignment".to_string()),
+        )
+    };
+
+    TruckAssignmentContext {
+        truck_id: truck_id.to_string(),
+        truck_id_normalized,
+        vehicle_unit_found,
+        in_player_trucks,
+        active_for_player,
+        player_assigned_vehicles_unit,
+        player_vehicles_vehicle,
+        assignment_kind,
+        driver_ref,
+        garage_ref,
+        garage_slot_index,
+        driver_references,
+        garage_references,
+        reverse_references,
+        other_references,
+        ai_driver_candidate_count,
+        garage_slot_candidate_count,
+        evidence,
+        unsafe_reason,
+    }
+}
+
+fn reverse_references_to_truck(
+    parsed: &super::parser::ParsedTruckSave,
+    truck_id_normalized: &str,
+) -> Vec<TruckReferenceMatch> {
+    let mut references = Vec::new();
+
+    for block in parsed.unit_blocks.values() {
+        for line in block.raw_block.lines().skip(1) {
+            let Some((field_name, value)) = parse_reference_line(line) else {
+                continue;
+            };
+            if normalize_sii_unit_id(&value) != truck_id_normalized {
+                continue;
+            }
+            references.push(TruckReferenceMatch {
+                unit_type: block.unit_type.clone(),
+                unit_id: block.id.clone(),
+                field_name,
+                value,
+            });
+        }
+    }
+
+    references.sort_by(|left, right| {
+        (
+            left.unit_type.as_str(),
+            left.unit_id.as_str(),
+            left.field_name.as_str(),
+            left.value.as_str(),
+        )
+            .cmp(&(
+                right.unit_type.as_str(),
+                right.unit_id.as_str(),
+                right.field_name.as_str(),
+                right.value.as_str(),
+            ))
+    });
+    references.dedup();
+    references
+}
+
+fn parse_reference_line(line: &str) -> Option<(String, String)> {
+    let trimmed = line.trim();
+    if trimmed.is_empty() || trimmed.starts_with('#') || trimmed.starts_with("//") {
+        return None;
+    }
+    let (field, value) = trimmed.split_once(':')?;
+    let field = field.trim();
+    if field.is_empty() || field.contains(' ') {
+        return None;
+    }
+    let value = value
+        .split("//")
+        .next()
+        .unwrap_or(value)
+        .trim()
+        .trim_end_matches(',')
+        .trim()
+        .to_string();
+    if value.is_empty() || is_null_ref(&value) {
+        return None;
+    }
+    Some((field.to_string(), value))
+}
+
+fn garage_slot_references_to_truck(
+    parsed: &super::parser::ParsedTruckSave,
+    truck_id_normalized: &str,
+) -> Vec<TruckGarageSlotReference> {
+    let garage_names = parsed
+        .garages
+        .iter()
+        .map(|garage| {
+            (
+                normalize_sii_unit_id(&garage.garage_id),
+                garage.garage_display_name.clone(),
+            )
+        })
+        .collect::<BTreeMap<_, _>>();
+    let mut references = Vec::new();
+
+    for block in parsed
+        .unit_blocks
+        .values()
+        .filter(|block| block.unit_type == "garage")
+    {
+        let vehicles = extract_array_entries(&block.raw_block, "vehicles")
+            .into_iter()
+            .collect::<BTreeMap<_, _>>();
+        let drivers = extract_array_entries(&block.raw_block, "drivers")
+            .into_iter()
+            .collect::<BTreeMap<_, _>>();
+        let arrays_have_matching_indices = vehicles
+            .iter()
+            .filter(|(_, truck_id)| !is_null_ref(truck_id))
+            .all(|(index, _)| drivers.contains_key(index))
+            && drivers
+                .iter()
+                .filter(|(_, driver_id)| !is_null_ref(driver_id))
+                .all(|(index, _)| vehicles.contains_key(index));
+
+        for (index, vehicle_ref) in vehicles.iter() {
+            if normalize_sii_unit_id(vehicle_ref) != truck_id_normalized {
+                continue;
+            }
+            references.push(TruckGarageSlotReference {
+                garage_id: block.id.clone(),
+                garage_display_name: garage_names
+                    .get(&normalize_sii_unit_id(&block.id))
+                    .cloned()
+                    .flatten(),
+                slot_index: *index,
+                vehicle_ref: Some(vehicle_ref.clone()),
+                driver_ref: drivers
+                    .get(index)
+                    .filter(|driver_ref| !is_null_ref(driver_ref))
+                    .cloned(),
+                arrays_have_matching_indices,
+            });
+        }
+    }
+
+    references.sort_by(|left, right| {
+        (left.garage_id.as_str(), left.slot_index)
+            .cmp(&(right.garage_id.as_str(), right.slot_index))
+    });
+    references
+}
+
+fn is_driver_unit_type(unit_type: &str) -> bool {
+    matches!(unit_type, "driver" | "driver_ai" | "driver_player")
+}
+
+fn reference_summary(reference: &TruckReferenceMatch) -> String {
+    format!(
+        "{}:{} {}={}",
+        reference.unit_type, reference.unit_id, reference.field_name, reference.value
+    )
+}
+
+fn annotate_truck_switchability(
+    parsed: &super::parser::ParsedTruckSave,
+    trucks: &mut [TruckInventoryItem],
+) {
+    let current_pointer = resolve_current_truck_pointer(parsed).ok();
+
+    for truck in trucks {
+        if truck.is_active {
+            continue;
+        }
+
+        let context = inspect_truck_assignment_context(parsed, &truck.truck_id);
+        match context.assignment_kind {
+            TruckAssignmentKind::UnassignedOwnedTruck => {
+                truck.requires_driver_swap = false;
+                truck.is_switchable = true;
+                truck.blocked_reason = None;
+            }
+            TruckAssignmentKind::AiDriverAssigned => {
+                truck.requires_driver_swap = true;
+                if let Some(driver_id) = context.driver_ref.as_deref() {
+                    truck.assigned_driver_id = Some(driver_id.to_string());
+                    if truck.driver_display_name.is_none() {
+                        truck.driver_display_name = parsed
+                            .driver_infos
+                            .get(&normalize_sii_unit_id(driver_id))
+                            .and_then(|driver| driver.display_name.clone());
+                    }
+                }
+                if current_pointer.is_none() {
+                    truck.is_switchable = false;
+                    truck.blocked_reason = Some("current_truck_not_found".to_string());
+                } else {
+                    truck.is_switchable = true;
+                    truck.blocked_reason = None;
+                }
+            }
+            TruckAssignmentKind::Ambiguous => {
+                truck.is_switchable = false;
+                truck.blocked_reason = Some("driver_assignment_ambiguous".to_string());
+            }
+            TruckAssignmentKind::Unknown => {
+                if !context.driver_references.is_empty()
+                    || context
+                        .garage_references
+                        .iter()
+                        .any(|reference| reference.driver_ref.is_some())
+                    || truck.assigned_driver_id.is_some()
+                {
+                    truck.requires_driver_swap = true;
+                    truck.is_switchable = false;
+                    truck.blocked_reason = Some("driver_assignment_unresolved".to_string());
+                }
+            }
+            TruckAssignmentKind::PlayerActive => {}
+        }
     }
 }
 
@@ -706,7 +1319,16 @@ fn current_truck_pointer_write_error(pointer: &CurrentTruckPointer) -> &'static 
         CurrentTruckPointerKind::PlayerMyTruck => "missing_my_truck_pointer",
         CurrentTruckPointerKind::PlayerAssignedVehicles => "missing_assigned_vehicles_pointer",
         CurrentTruckPointerKind::PlayerAssignedTruck => "missing_assigned_truck_pointer",
+        CurrentTruckPointerKind::FallbackPlayerVehicles => "current_slot_unresolved",
+        CurrentTruckPointerKind::FallbackFirstOwnedTruck => "current_slot_unresolved",
     }
+}
+
+fn driver_truck_field_in_content(content: &str, driver_id: &str) -> Option<String> {
+    DRIVER_TRUCK_REFERENCE_FIELDS
+        .iter()
+        .find(|field| unit_field_exists(content, driver_id, field))
+        .map(|field| (*field).to_string())
 }
 
 fn resolve_target_driver(
@@ -719,6 +1341,7 @@ fn resolve_target_driver(
         target_truck.truck_id
     );
 
+    let context = inspect_truck_assignment_context(parsed, &target_truck.truck_id);
     let garage_assignment = parsed.garage_assignments.get(&target_truck_id_normalized);
     if let Some(assignment) = garage_assignment {
         crate::dev_log!(
@@ -730,147 +1353,94 @@ fn resolve_target_driver(
         );
     }
 
-    let drivers_pointing_to_target =
-        drivers_pointing_to_target_truck(parsed, &target_truck_id_normalized);
-    if drivers_pointing_to_target.len() > 1 {
-        crate::dev_log!(
-            "[truck_change] unresolved driver diagnostics generated target_truck_id={} drivers_pointing_to_target={}",
-            target_truck.truck_id,
-            drivers_pointing_to_target.len()
-        );
-        return Err(DriverResolutionError::AmbiguousDriverAssignment);
-    }
-
-    let garage_driver_id_raw = garage_assignment
-        .and_then(|assignment| assignment.driver_id.clone())
-        .or_else(|| target_truck.assigned_driver_id.clone());
-    let garage_driver_id_normalized = garage_driver_id_raw
-        .as_deref()
-        .map(normalize_sii_unit_id)
-        .filter(|value| !value.is_empty());
-
-    if let Some(driver_id_normalized) = garage_driver_id_normalized.as_deref() {
-        crate::dev_log!(
-            "[truck_change] normalized driver lookup completed target_truck_id={} garage_driver_id={}",
-            target_truck.truck_id,
-            garage_driver_id_raw.as_deref().unwrap_or("")
-        );
-        if let Some(driver) = parsed.driver_infos.get(driver_id_normalized) {
-            if let Some(pointing_driver) = drivers_pointing_to_target.first() {
-                if pointing_driver.normalized_id != driver.normalized_id {
-                    crate::dev_log!(
-                        "[truck_change] conflicting driver assignment detected target_truck_id={} garage_driver_id={} truck_reference_driver_id={}",
-                        target_truck.truck_id,
-                        driver.driver_id,
-                        pointing_driver.driver_id
-                    );
-                    return Err(DriverResolutionError::ConflictingDriverAssignment);
-                }
-            }
-
-            if driver
-                .current_truck_id_normalized
-                .as_deref()
-                .map(|truck_id| truck_id != target_truck_id_normalized)
-                .unwrap_or(false)
-            {
-                crate::dev_log!(
-                    "[truck_change] conflicting driver assignment detected target_truck_id={} driver_id={} assigned_truck={}",
-                    target_truck.truck_id,
-                    driver.driver_id,
-                    driver.current_truck_id.as_deref().unwrap_or("")
-                );
+    match context.assignment_kind {
+        TruckAssignmentKind::PlayerActive | TruckAssignmentKind::UnassignedOwnedTruck => {
+            return Ok(None);
+        }
+        TruckAssignmentKind::Ambiguous => {
+            if context.unsafe_reason.as_deref() == Some("conflicting_driver_refs") {
                 return Err(DriverResolutionError::ConflictingDriverAssignment);
             }
-
-            let source = if driver.current_truck_id_normalized.is_some() {
-                DriverAssignmentSource::ReconciledGarageAndDriver
-            } else {
-                DriverAssignmentSource::GarageSlot
-            };
-            return Ok(Some(resolved_driver_assignment(
-                driver.clone(),
-                DriverResolutionKind::FullDriverBlock,
-                source,
-                garage_assignment,
-                vec![DriverAssignmentEvidence {
-                    source: DriverAssignmentSource::GarageSlot,
-                    driver_id: garage_driver_id_raw,
-                    truck_id: Some(target_truck.truck_id.clone()),
-                    garage_id: garage_assignment.map(|assignment| assignment.garage_id.clone()),
-                    slot_index: garage_assignment.map(|assignment| assignment.slot_index),
-                    detail: "garage_slot_driver_id".to_string(),
-                }],
-            )));
+            return Err(DriverResolutionError::AmbiguousDriverAssignment);
         }
-
-        crate::dev_log!(
-            "[truck_change] driver block lookup missed target_truck_id={} garage_driver_id={}",
-            target_truck.truck_id,
-            garage_driver_id_raw.as_deref().unwrap_or("")
-        );
+        TruckAssignmentKind::Unknown => {
+            if context.garage_slot_candidate_count > 1 {
+                return Err(DriverResolutionError::AmbiguousGarageDriverRef);
+            }
+            if !context.driver_references.is_empty()
+                || context
+                    .garage_references
+                    .iter()
+                    .any(|reference| reference.driver_ref.is_some())
+                || target_truck.assigned_driver_id.is_some()
+            {
+                return Err(DriverResolutionError::MissingDriverBlock);
+            }
+            return Ok(None);
+        }
+        TruckAssignmentKind::AiDriverAssigned => {}
     }
 
-    crate::dev_log!(
-        "[truck_change] searching drivers by assigned truck target_truck_id={}",
-        target_truck.truck_id
-    );
-    if let Some(driver) = drivers_pointing_to_target.first() {
+    let Some(driver_id) = context.driver_ref.as_deref() else {
         crate::dev_log!(
-            "[truck_change] driver resolved by truck reference target_truck_id={} driver_id={}",
+            "[truck_change] unresolved driver diagnostics generated target_truck_id={} driver_ref_missing",
+            target_truck.truck_id,
+        );
+        return Err(DriverResolutionError::MissingDriverBlock);
+    };
+    let Some(driver) = parsed.driver_infos.get(&normalize_sii_unit_id(driver_id)) else {
+        return Err(DriverResolutionError::MissingDriverBlock);
+    };
+    if is_player_driver_ref(parsed, &driver.driver_id) {
+        crate::dev_log!(
+            "[truck_change] player driver truck reference cannot be used as target AI driver target_truck_id={} driver_id={}",
             target_truck.truck_id,
             driver.driver_id
         );
-        return Ok(Some(resolved_driver_assignment(
-            (*driver).clone(),
-            DriverResolutionKind::FullDriverBlock,
-            DriverAssignmentSource::DriverAssignedTruck,
-            garage_assignment,
-            vec![DriverAssignmentEvidence {
-                source: DriverAssignmentSource::DriverAssignedTruck,
-                driver_id: Some(driver.driver_id.clone()),
-                truck_id: driver.current_truck_id.clone(),
-                garage_id: garage_assignment.map(|assignment| assignment.garage_id.clone()),
-                slot_index: garage_assignment.map(|assignment| assignment.slot_index),
-                detail: "driver_assigned_truck".to_string(),
-            }],
-        )));
+        return Err(DriverResolutionError::ConflictingDriverAssignment);
     }
 
-    if let (Some(garage_driver_id_raw), Some(_garage_driver_id_normalized)) = (
-        garage_driver_id_raw.as_deref(),
-        garage_driver_id_normalized.as_deref(),
-    ) {
-        if is_valid_garage_driver_ref(garage_driver_id_raw) {
-            if garage_driver_ref_is_unique(parsed, garage_driver_id_raw, &target_truck.truck_id) {
-                crate::dev_log!(
-                    "[truck_change] driver resolved by garage-only reference target_truck_id={} garage_driver_id={}",
-                    target_truck.truck_id,
-                    garage_driver_id_raw
-                );
-                return Ok(Some(resolved_driver_assignment(
-                    garage_only_driver_display_info(garage_driver_id_raw),
-                    DriverResolutionKind::GarageDriverRefOnly,
-                    DriverAssignmentSource::GarageSlot,
-                    garage_assignment,
-                    vec![DriverAssignmentEvidence {
-                        source: DriverAssignmentSource::GarageSlot,
-                        driver_id: Some(garage_driver_id_raw.to_string()),
-                        truck_id: Some(target_truck.truck_id.clone()),
-                        garage_id: garage_assignment.map(|assignment| assignment.garage_id.clone()),
-                        slot_index: garage_assignment.map(|assignment| assignment.slot_index),
-                        detail: "garage_slot_driver_ref_only".to_string(),
-                    }],
-                )));
-            }
-
-            return Err(DriverResolutionError::AmbiguousGarageDriverRef);
-        }
-
-        return Err(DriverResolutionError::MissingDriverBlock);
+    crate::dev_log!(
+        "[truck_change] driver resolved by assignment context target_truck_id={} driver_id={} references={} garage_slots={}",
+        target_truck.truck_id,
+        driver.driver_id,
+        context.ai_driver_candidate_count,
+        context.garage_slot_candidate_count
+    );
+    let source = if garage_assignment.is_some() {
+        DriverAssignmentSource::ReconciledGarageAndDriver
+    } else {
+        DriverAssignmentSource::DriverAssignedTruck
+    };
+    let mut evidence = vec![DriverAssignmentEvidence {
+        source: DriverAssignmentSource::DriverAssignedTruck,
+        driver_id: Some(driver.driver_id.clone()),
+        truck_id: driver.current_truck_id.clone(),
+        garage_id: garage_assignment.map(|assignment| assignment.garage_id.clone()),
+        slot_index: garage_assignment.map(|assignment| assignment.slot_index),
+        detail: driver
+            .current_truck_field
+            .as_deref()
+            .unwrap_or("driver_truck_reference")
+            .to_string(),
+    }];
+    if garage_assignment.is_some() {
+        evidence.push(DriverAssignmentEvidence {
+            source: DriverAssignmentSource::GarageSlot,
+            driver_id: Some(driver.driver_id.clone()),
+            truck_id: Some(target_truck.truck_id.clone()),
+            garage_id: garage_assignment.map(|assignment| assignment.garage_id.clone()),
+            slot_index: garage_assignment.map(|assignment| assignment.slot_index),
+            detail: "garage_slot_consistent_with_driver".to_string(),
+        });
     }
-
-    Ok(None)
+    Ok(Some(resolved_driver_assignment(
+        driver.clone(),
+        DriverResolutionKind::FullDriverBlock,
+        source,
+        garage_assignment,
+        evidence,
+    )))
 }
 
 fn resolved_driver_assignment(
@@ -887,19 +1457,6 @@ fn resolved_driver_assignment(
         garage_id: garage_assignment.map(|assignment| assignment.garage_id.clone()),
         slot_index: garage_assignment.map(|assignment| assignment.slot_index),
         evidence,
-    }
-}
-
-fn garage_only_driver_display_info(driver_id_raw: &str) -> DriverDisplayInfo {
-    let driver_id_normalized = normalize_sii_unit_id(driver_id_raw);
-    DriverDisplayInfo {
-        driver_id: driver_id_normalized.clone(),
-        raw_id: driver_id_raw.to_string(),
-        normalized_id: driver_id_normalized,
-        unit_type: "garage_driver_ref".to_string(),
-        display_name: None,
-        current_truck_id: None,
-        current_truck_id_normalized: None,
     }
 }
 
@@ -930,6 +1487,32 @@ fn driver_resolution_diagnostics(
     error: Option<&DriverResolutionError>,
 ) -> DriverResolutionDiagnostics {
     let target_truck_id_normalized = normalize_sii_unit_id(&target_truck.truck_id);
+    let selected_context = inspect_truck_assignment_context(parsed, &target_truck.truck_id);
+    let current_pointer = resolve_current_truck_pointer(parsed).ok();
+    let current_truck_id = current_pointer
+        .as_ref()
+        .map(|pointer| pointer.truck_id.clone());
+    let current_context = current_truck_id
+        .as_deref()
+        .map(|truck_id| inspect_truck_assignment_context(parsed, truck_id));
+    let driver_swap_plan_reason = current_truck_id.as_deref().and_then(|truck_id| {
+        if resolved.is_some() {
+            resolve_driver_swap_garage_plan(parsed, truck_id, &target_truck.truck_id)
+                .err()
+                .map(|reason| reason.to_string())
+        } else {
+            None
+        }
+    });
+    let unsafe_reason = error
+        .map(|error| error.code().to_string())
+        .or(driver_swap_plan_reason)
+        .or_else(|| match selected_context.assignment_kind {
+            TruckAssignmentKind::Ambiguous | TruckAssignmentKind::Unknown => {
+                selected_context.unsafe_reason.clone()
+            }
+            _ => None,
+        });
     let garage_assignment = parsed.garage_assignments.get(&target_truck_id_normalized);
     let garage_driver_id_raw = garage_assignment
         .and_then(|assignment| assignment.driver_id.clone())
@@ -981,12 +1564,50 @@ fn driver_resolution_diagnostics(
     let garage_driver_ref_unique = garage_driver_id_raw
         .as_deref()
         .map(|driver_id| garage_driver_ref_is_unique(parsed, driver_id, &target_truck.truck_id));
+    let checked_sources = driver_resolution_checked_sources(parsed, None);
     let diagnostics = DriverResolutionDiagnostics {
         target_truck_id: target_truck.truck_id.clone(),
         target_truck_id_normalized,
-        garage_id: garage_assignment.map(|assignment| assignment.garage_id.clone()),
-        garage_slot_index: garage_assignment.map(|assignment| assignment.slot_index),
+        selected_assignment_kind: Some(selected_context.assignment_kind.clone()),
+        current_assignment_kind: current_context
+            .as_ref()
+            .map(|context| context.assignment_kind.clone()),
+        current_truck_id,
+        current_garage_id: current_context
+            .as_ref()
+            .and_then(|context| context.garage_ref.clone()),
+        current_garage_slot_index: current_context
+            .as_ref()
+            .and_then(|context| context.garage_slot_index),
+        current_garage_driver_id_raw: current_context.as_ref().and_then(|context| {
+            context
+                .garage_references
+                .first()
+                .and_then(|reference| reference.driver_ref.clone())
+        }),
+        current_driver_ref: current_context
+            .as_ref()
+            .and_then(|context| context.driver_ref.clone())
+            .or_else(|| {
+                current_context.as_ref().and_then(|context| {
+                    context
+                        .garage_references
+                        .first()
+                        .and_then(|reference| reference.driver_ref.clone())
+                })
+            }),
+        garage_id: selected_context.garage_ref.clone(),
+        garage_slot_index: selected_context.garage_slot_index,
         garage_driver_id_raw,
+        selected_driver_ref: selected_context.driver_ref.clone(),
+        player_vehicles_ref: selected_context
+            .player_assigned_vehicles_unit
+            .clone()
+            .or_else(|| {
+                current_context
+                    .as_ref()
+                    .and_then(|context| context.player_assigned_vehicles_unit.clone())
+            }),
         garage_driver_id_normalized,
         resolution_kind: resolved.map(|assignment| assignment.resolution_kind.clone()),
         garage_driver_ref_unique,
@@ -1001,11 +1622,39 @@ fn driver_resolution_diagnostics(
         arrays_have_matching_indices: garage_assignment
             .map(|assignment| assignment.arrays_have_matching_indices)
             .unwrap_or(true),
+        checked_sources,
+        selected_reverse_references: selected_context
+            .reverse_references
+            .iter()
+            .map(reference_summary)
+            .collect(),
+        current_reverse_references: current_context
+            .as_ref()
+            .map(|context| {
+                context
+                    .reverse_references
+                    .iter()
+                    .map(reference_summary)
+                    .collect()
+            })
+            .unwrap_or_default(),
+        selected_evidence: selected_context.evidence.clone(),
+        current_evidence: current_context
+            .as_ref()
+            .map(|context| context.evidence.clone())
+            .unwrap_or_default(),
+        unsafe_reason,
         resolution_error: error.map(|error| error.code().to_string()),
     };
     crate::dev_log!(
-        "[truck_change] driver diagnostics generated target_truck_id={} garage_id={} slot_index={} garage_driver_id={} resolution_kind={} garage_ref_unique={} recognized_drivers={} drivers_pointing_to_target={} arrays_have_matching_indices={} resolution_error={}",
+        "[truck_change] driver diagnostics generated target_truck_id={} current_truck_id={} current_garage_id={} current_slot_index={} garage_id={} slot_index={} garage_driver_id={} resolution_kind={} garage_ref_unique={} recognized_drivers={} drivers_pointing_to_target={} arrays_have_matching_indices={} unsafe_reason={} resolution_error={}",
         diagnostics.target_truck_id,
+        diagnostics.current_truck_id.as_deref().unwrap_or(""),
+        diagnostics.current_garage_id.as_deref().unwrap_or(""),
+        diagnostics
+            .current_garage_slot_index
+            .map(|index| index.to_string())
+            .unwrap_or_default(),
         diagnostics.garage_id.as_deref().unwrap_or(""),
         diagnostics
             .garage_slot_index
@@ -1024,9 +1673,53 @@ fn driver_resolution_diagnostics(
         diagnostics.recognized_driver_count,
         diagnostics.drivers_pointing_to_target_truck.len(),
         diagnostics.arrays_have_matching_indices,
+        diagnostics.unsafe_reason.as_deref().unwrap_or(""),
         diagnostics.resolution_error.as_deref().unwrap_or("")
     );
     diagnostics
+}
+
+fn driver_resolution_checked_sources(
+    parsed: &super::parser::ParsedTruckSave,
+    current_slot: Option<&ResolvedGarageDriverSlot>,
+) -> Vec<String> {
+    let mut sources = vec![
+        "garage_slot".to_string(),
+        "driver_assigned_truck".to_string(),
+        "player.trucks[]".to_string(),
+        "reverse_reference_index".to_string(),
+    ];
+
+    if parsed
+        .driver_infos
+        .values()
+        .any(|driver| driver.unit_type == "driver_ai")
+    {
+        sources.push("driver_ai".to_string());
+    }
+    if parsed
+        .driver_infos
+        .values()
+        .any(|driver| driver.unit_type == "driver_player")
+    {
+        sources.push("driver_player".to_string());
+    }
+    if parsed
+        .current_truck_pointer
+        .as_ref()
+        .map(|pointer| pointer.kind == CurrentTruckPointerKind::PlayerAssignedVehicles)
+        .unwrap_or(false)
+    {
+        sources.push("player.assigned_vehicles".to_string());
+        sources.push("player_vehicles.vehicle".to_string());
+    }
+    if let Some(slot) = current_slot {
+        sources.push(slot.source.to_string());
+    }
+
+    sources.sort();
+    sources.dedup();
+    sources
 }
 
 fn find_similar_driver_ids<'a>(
@@ -1062,28 +1755,230 @@ fn find_similar_driver_ids<'a>(
     similar
 }
 
-fn can_swap_driver_to_current_player_truck(
+fn resolve_driver_swap_garage_plan(
     parsed: &super::parser::ParsedTruckSave,
-    current_truck: &TruckInventoryItem,
-) -> bool {
+    previous_truck_id: &str,
+    target_truck_id: &str,
+) -> Result<DriverSwapGaragePlan, &'static str> {
+    let previous_context = inspect_truck_assignment_context(parsed, previous_truck_id);
+    let target_context = inspect_truck_assignment_context(parsed, target_truck_id);
+
+    if target_context.assignment_kind != TruckAssignmentKind::AiDriverAssigned {
+        return Err(match target_context.assignment_kind {
+            TruckAssignmentKind::Ambiguous => "ambiguous_garage_slots",
+            TruckAssignmentKind::Unknown => match target_context.unsafe_reason.as_deref() {
+                Some("missing_vehicle_block") => "missing_vehicle_block",
+                Some("unknown_assignment") => "unknown_assignment",
+                _ => "missing_driver_ref",
+            },
+            _ => "missing_driver_ref",
+        });
+    }
+    if target_context.ai_driver_candidate_count != 1 {
+        return Err("multiple_driver_refs");
+    }
+    if previous_context.garage_slot_candidate_count > 1
+        || target_context.garage_slot_candidate_count > 1
+    {
+        return Err("ambiguous_garage_slots");
+    }
+
+    let target_slot = target_context.garage_references.first().cloned();
+    let previous_slot = resolve_previous_driver_slot(parsed, previous_truck_id).ok();
+
+    if previous_slot
+        .as_ref()
+        .map(|slot| !slot.assignment.arrays_have_matching_indices)
+        .unwrap_or(false)
+        || target_slot
+            .as_ref()
+            .map(|slot| !slot.arrays_have_matching_indices)
+            .unwrap_or(false)
+    {
+        return Err("ambiguous_garage_slots");
+    }
+
+    if previous_slot
+        .as_ref()
+        .and_then(|slot| slot.assignment.driver_id.as_deref())
+        .map(|driver_ref| !is_player_driver_ref(parsed, driver_ref))
+        .unwrap_or(false)
+    {
+        return Err("current_truck_garage_slot_occupied");
+    }
+
+    if previous_slot.is_none() && target_slot.is_none() {
+        return Err("missing_garage_slot");
+    }
+
+    Ok(DriverSwapGaragePlan {
+        target_slot,
+        previous_slot,
+    })
+}
+
+fn garage_slot_matches(left: &GarageSlotAssignment, right: &TruckGarageSlotReference) -> bool {
+    normalize_sii_unit_id(&left.garage_id) == normalize_sii_unit_id(&right.garage_id)
+        && left.slot_index == right.slot_index
+}
+
+fn resolve_previous_driver_slot(
+    parsed: &super::parser::ParsedTruckSave,
+    current_truck_id: &str,
+) -> Result<ResolvedGarageDriverSlot, &'static str> {
+    let current_truck_id_normalized = normalize_sii_unit_id(current_truck_id);
+    if let Some(assignment) = parsed.garage_assignments.get(&current_truck_id_normalized) {
+        return validate_previous_driver_slot(parsed, assignment.clone(), false, "garage_slot");
+    }
+
+    resolve_previous_driver_slot_from_assigned_garage(parsed, current_truck_id)
+        .ok_or("current_truck_garage_assignment_missing")
+        .and_then(|slot| {
+            validate_previous_driver_slot(
+                parsed,
+                slot.assignment,
+                slot.write_vehicle_slot,
+                slot.source,
+            )
+        })
+}
+
+fn validate_previous_driver_slot(
+    parsed: &super::parser::ParsedTruckSave,
+    assignment: GarageSlotAssignment,
+    write_vehicle_slot: bool,
+    source: &'static str,
+) -> Result<ResolvedGarageDriverSlot, &'static str> {
+    if !assignment.arrays_have_matching_indices {
+        return Err("current_truck_garage_arrays_inconsistent");
+    }
+    if assignment
+        .driver_id
+        .as_deref()
+        .map(|driver_id| !is_player_driver_ref(parsed, driver_id))
+        .unwrap_or(false)
+    {
+        return Err("current_truck_garage_slot_occupied");
+    }
+
+    Ok(ResolvedGarageDriverSlot {
+        assignment,
+        write_vehicle_slot,
+        source,
+    })
+}
+
+fn resolve_previous_driver_slot_from_assigned_garage(
+    parsed: &super::parser::ParsedTruckSave,
+    current_truck_id: &str,
+) -> Option<ResolvedGarageDriverSlot> {
+    let graph = parsed.truck_graphs.values().find(|graph| {
+        normalize_sii_unit_id(&graph.vehicle_id) == normalize_sii_unit_id(current_truck_id)
+    })?;
+    let assigned_garage = extract_field_value(&graph.vehicle_block, "assigned_garage")
+        .filter(|value| !is_null_ref(value))?;
+    let garage_block = parsed.unit_blocks.values().find(|block| {
+        block.unit_type == "garage"
+            && normalize_sii_unit_id(&block.id) == normalize_sii_unit_id(&assigned_garage)
+    })?;
+    let vehicles = extract_array_entries(&garage_block.raw_block, "vehicles")
+        .into_iter()
+        .collect::<std::collections::BTreeMap<_, _>>();
+    let drivers = extract_array_entries(&garage_block.raw_block, "drivers")
+        .into_iter()
+        .collect::<std::collections::BTreeMap<_, _>>();
+    let declared_vehicle_count = extract_field_value(&garage_block.raw_block, "vehicles")
+        .and_then(|value| value.parse::<usize>().ok())
+        .unwrap_or(0);
+    let declared_driver_count = extract_field_value(&garage_block.raw_block, "drivers")
+        .and_then(|value| value.parse::<usize>().ok())
+        .unwrap_or(0);
+    let indexed_vehicle_count = vehicles.keys().map(|index| index + 1).max().unwrap_or(0);
+    let indexed_driver_count = drivers.keys().map(|index| index + 1).max().unwrap_or(0);
+    let garage_vehicle_count = declared_vehicle_count.max(indexed_vehicle_count);
+    let garage_driver_count = declared_driver_count.max(indexed_driver_count);
+    let arrays_have_matching_indices = vehicles
+        .iter()
+        .filter(|(_, truck_id)| !is_null_ref(truck_id))
+        .all(|(index, _)| drivers.contains_key(index))
+        && drivers
+            .iter()
+            .filter(|(_, driver_id)| !is_null_ref(driver_id))
+            .all(|(index, _)| vehicles.contains_key(index));
+    if !arrays_have_matching_indices {
+        return None;
+    }
+
+    for index in 0..garage_vehicle_count {
+        let Some(vehicle_value) = vehicles.get(&index) else {
+            continue;
+        };
+        let Some(driver_value) = drivers.get(&index) else {
+            continue;
+        };
+        if !is_null_ref(vehicle_value) || !is_null_ref(driver_value) {
+            continue;
+        }
+
+        let current_truck_id_normalized = normalize_sii_unit_id(current_truck_id);
+        return Some(ResolvedGarageDriverSlot {
+            assignment: GarageSlotAssignment {
+                garage_id: garage_block.id.clone(),
+                garage_display_name: None,
+                country_code: None,
+                country_display_name: None,
+                slot_index: index,
+                truck_id: current_truck_id.to_string(),
+                truck_id_normalized: current_truck_id_normalized,
+                driver_id: None,
+                driver_id_normalized: None,
+                garage_vehicle_count,
+                garage_driver_count,
+                arrays_have_matching_indices,
+            },
+            write_vehicle_slot: true,
+            source: "vehicle_assigned_garage_free_slot",
+        });
+    }
+
+    None
+}
+
+fn is_player_driver_ref(parsed: &super::parser::ParsedTruckSave, driver_id: &str) -> bool {
+    let driver_id_normalized = normalize_sii_unit_id(driver_id);
+    if driver_id_normalized.is_empty() {
+        return false;
+    }
+
+    if parsed
+        .driver_infos
+        .get(&driver_id_normalized)
+        .map(|driver| driver.unit_type == "driver_player")
+        .unwrap_or(false)
+    {
+        return true;
+    }
+
     parsed
-        .garage_assignments
-        .get(&normalize_sii_unit_id(&current_truck.truck_id))
-        .map(|assignment| assignment.driver_id.is_none() && assignment.arrays_have_matching_indices)
+        .player_id
+        .as_deref()
+        .and_then(|player_id| {
+            parsed.unit_blocks.values().find(|block| {
+                normalize_sii_unit_id(&block.id) == normalize_sii_unit_id(player_id)
+                    && block.unit_type == "player"
+            })
+        })
+        .map(|block| {
+            extract_array_values(&block.raw_block, "drivers")
+                .iter()
+                .any(|value| normalize_sii_unit_id(value) == driver_id_normalized)
+        })
         .unwrap_or(false)
 }
 
 fn duplicate_driver_or_truck_assignments(parsed: &super::parser::ParsedTruckSave) -> Vec<String> {
     let blocks = parsed.unit_blocks.values().cloned().collect::<Vec<_>>();
     assignment_conflicts_from_blocks(&blocks)
-}
-
-fn missing_or_active(
-    parsed: &super::parser::ParsedTruckSave,
-    truck_id: &str,
-) -> TruckInventoryItem {
-    find_inventory_item(&parsed.trucks, truck_id)
-        .unwrap_or_else(|| missing_inventory_item(truck_id))
 }
 
 fn missing_inventory_item(truck_id: &str) -> TruckInventoryItem {
@@ -1109,6 +2004,11 @@ fn missing_inventory_item(truck_id: &str) -> TruckInventoryItem {
         engine_data_path: None,
         transmission_data_path: None,
         accessory_count: 0,
+        odometer_km: None,
+        fuel_relative: None,
+        wear: None,
+        player_vehicle_slot_id: None,
+        player_vehicle_slot_index: None,
     }
 }
 
@@ -1176,7 +2076,7 @@ mod tests {
     };
     use crate::features::truck_change::cache::TruckChangeSessionCache;
     use crate::features::truck_change::models::{
-        CurrentTruckPointerKind, DriverResolutionKind, TruckSwitchMode,
+        CurrentTruckPointerKind, TruckAssignmentKind, TruckSwitchMode,
     };
     use crate::features::truck_change::parser::{parse_truck_save, resolve_current_truck_pointer};
     use crate::features::truck_change::validator::validate_truck_switch_content;
@@ -1196,9 +2096,25 @@ player : _nameless.player {
  trucks[0]: _nameless.truck.active
  trucks[1]: _nameless.truck.free1
  trucks[2]: _nameless.truck.free2
+ my_vehicles: 3
+ my_vehicles[0]: _nameless.slot.active
+ my_vehicles[1]: _nameless.slot.free1
+ my_vehicles[2]: _nameless.slot.free2
 }
 player_job : _nameless.job {
  company_truck: _nameless.truck.active
+}
+player_vehicles : _nameless.slot.active {
+ vehicle: _nameless.truck.active
+ trailer: null
+}
+player_vehicles : _nameless.slot.free1 {
+ vehicle: _nameless.truck.free1
+ trailer: null
+}
+player_vehicles : _nameless.slot.free2 {
+ vehicle: _nameless.truck.free2
+ trailer: null
 }
 vehicle : _nameless.truck.active {
  accessories: 1
@@ -1297,11 +2213,33 @@ player : _nameless.player {
  trucks[2]: _nameless.truck.3
  trucks[3]: _nameless.truck.4
  trucks[4]: _nameless.truck.5
+ my_vehicles: 5
+ my_vehicles[0]: _nameless.assigned.1
+ my_vehicles[1]: _nameless.assigned.2
+ my_vehicles[2]: _nameless.assigned.3
+ my_vehicles[3]: _nameless.assigned.4
+ my_vehicles[4]: _nameless.assigned.5
  my_truck: null
  assigned_truck: null
 }
 player_vehicles : _nameless.assigned.1 {
  vehicle: _nameless.truck.4
+ trailer: null
+}
+player_vehicles : _nameless.assigned.2 {
+ vehicle: _nameless.truck.2
+ trailer: null
+}
+player_vehicles : _nameless.assigned.3 {
+ vehicle: _nameless.truck.3
+ trailer: null
+}
+player_vehicles : _nameless.assigned.4 {
+ vehicle: _nameless.truck.1
+ trailer: null
+}
+player_vehicles : _nameless.assigned.5 {
+ vehicle: _nameless.truck.5
  trailer: null
 }
 vehicle : _nameless.truck.1 {
@@ -1341,6 +2279,118 @@ vehicle_accessory : _nameless.acc.5 {
 }
 }
 "#
+    }
+
+    fn assigned_vehicles_driver_ai_fixture() -> &'static str {
+        r#"SiiNunit
+{
+economy : _nameless.economy {
+ player: _nameless.player
+}
+player : _nameless.player {
+ assigned_vehicles: _nameless.assigned.1
+ trucks: 2
+ trucks[0]: _nameless.truck.a
+ trucks[1]: _nameless.truck.b
+ drivers: 1
+ drivers[0]: driver.94
+ my_vehicles: 1
+ my_vehicles[0]: _nameless.assigned.1
+ my_truck: null
+ assigned_truck: null
+}
+player_vehicles : _nameless.assigned.1 {
+ vehicle: _nameless.truck.a
+ trailer: null
+}
+vehicle : _nameless.truck.a {
+ accessories: 1
+ accessories[0]: _nameless.acc.a
+}
+vehicle_accessory : _nameless.acc.a {
+ data_path: "/def/vehicle/truck/daf.xf/data.sii"
+}
+vehicle : _nameless.truck.b {
+ accessories: 1
+ accessories[0]: _nameless.acc.b
+}
+vehicle_accessory : _nameless.acc.b {
+ data_path: "/def/vehicle/truck/man.tgx/data.sii"
+}
+garage : garage.old {
+ vehicles: 1
+ vehicles[0]: _nameless.truck.a
+ drivers: 1
+ drivers[0]: driver.94
+}
+garage : garage.hamburg {
+ vehicles: 1
+ vehicles[0]: _nameless.truck.b
+ drivers: 1
+ drivers[0]: null
+}
+driver_player : driver.94 {
+ profit_log: null
+}
+driver_ai : driver.1 {
+ assigned_truck: _nameless.truck.b
+}
+}
+"#
+    }
+
+    #[test]
+    fn assignment_context_reports_reverse_refs_for_driver_ai_truck() {
+        let parsed = parse_truck_save(assigned_vehicles_driver_ai_fixture());
+        let context = super::inspect_truck_assignment_context(&parsed, "_nameless.truck.b");
+
+        assert_eq!(
+            context.assignment_kind,
+            TruckAssignmentKind::AiDriverAssigned
+        );
+        assert_eq!(context.driver_ref.as_deref(), Some("driver.1"));
+        assert_eq!(context.ai_driver_candidate_count, 1);
+        assert_eq!(context.garage_slot_candidate_count, 1);
+        assert!(context.reverse_references.iter().any(|reference| {
+            reference.unit_type == "driver_ai"
+                && reference.unit_id == "driver.1"
+                && reference.field_name == "assigned_truck"
+                && reference.value == "_nameless.truck.b"
+        }));
+        assert!(context.garage_references.iter().any(|reference| {
+            reference.garage_id == "garage.hamburg"
+                && reference.slot_index == 0
+                && reference.vehicle_ref.as_deref() == Some("_nameless.truck.b")
+        }));
+    }
+
+    #[test]
+    fn unresolved_driver_assignment_does_not_make_other_trucks_unavailable() {
+        let content = fixture()
+            .replace("drivers[2]: null", "drivers[2]: driver.missing")
+            .replace(
+                "assigned_truck: _nameless.truck.free2",
+                "assigned_truck: _nameless.truck.other",
+            );
+        let list = list_owned_trucks_for_switch_from_content(Path::new("game.sii"), &content);
+        let free_truck = list
+            .trucks
+            .iter()
+            .find(|truck| truck.truck_id == "_nameless.truck.free1")
+            .unwrap();
+        let unresolved_truck = list
+            .trucks
+            .iter()
+            .find(|truck| truck.truck_id == "_nameless.truck.free2")
+            .unwrap();
+
+        assert!(free_truck.is_switchable);
+        assert!(!free_truck.requires_driver_swap);
+        assert!(!unresolved_truck.is_switchable);
+        assert_eq!(
+            unresolved_truck.blocked_reason.as_deref(),
+            Some("driver_assignment_unresolved")
+        );
     }
 
     #[test]
@@ -1443,20 +2493,214 @@ vehicle_accessory : _nameless.acc.5 {
     }
 
     #[test]
+    fn assigned_vehicles_allows_unassigned_owned_target_truck() {
+        let content = assigned_vehicles_fixture().replace(
+            "player_vehicles : _nameless.assigned.5 {\n vehicle: _nameless.truck.5\n trailer: null\n}",
+            "player_vehicles : _nameless.assigned.5 {\n vehicle: null\n trailer: null\n}",
+        );
+        let list = list_owned_trucks_for_switch_from_content(Path::new("game.sii"), &content);
+        let preview = preview_active_truck_switch_from_content(
+            Path::new("game.sii"),
+            &content,
+            "_nameless.truck.5",
+            &list.file_hash,
+        );
+
+        assert!(preview.can_apply, "{:?}", preview.warnings);
+        assert_eq!(preview.error_code.as_deref(), None);
+        let swap_plan = preview.swap_plan.as_ref().unwrap();
+        assert!(swap_plan.target_is_free);
+        assert_eq!(swap_plan.target_location.as_deref(), Some("unassigned_owned"));
+        assert_eq!(
+            swap_plan.old_truck_destination.as_deref(),
+            Some("unassigned_owned")
+        );
+        assert_eq!(
+            swap_plan.write_case.as_deref(),
+            Some("target_unassigned_owned")
+        );
+        assert!(swap_plan.can_write_safely);
+
+        let plan = apply_switch_to_content(&content, "_nameless.truck.5").unwrap();
+        assert_eq!(plan.previous_truck_id, "_nameless.truck.4");
+        assert!(plan.affected_driver_id.is_none());
+        assert!(plan.driver_received_truck_id.is_none());
+        assert!(plan.content.contains(" trucks[3]: _nameless.truck.4"));
+        assert!(plan.content.contains(" vehicle: _nameless.truck.5"));
+
+        let parsed = parse_truck_save(&plan.content);
+        assert!(parsed
+            .player_vehicle_slots
+            .iter()
+            .all(|slot| slot.truck_id.as_deref() != Some("_nameless.truck.4")));
+        assert!(parsed
+            .driver_infos
+            .values()
+            .all(|driver| driver.current_truck_id.as_deref() != Some("_nameless.truck.4")));
+        let validation =
+            validate_truck_switch_content(&plan.content, "_nameless.truck.5", None, None);
+        assert!(validation.success, "{:?}", validation.errors);
+    }
+
+    #[test]
+    fn assigned_vehicles_driver_ai_swap_resolves_from_driver_block_with_empty_garage_driver_ref() {
+        let content = assigned_vehicles_driver_ai_fixture();
+        let list = list_owned_trucks_for_switch_from_content(Path::new("game.sii"), content);
+        let preview = preview_active_truck_switch_from_content(
+            Path::new("game.sii"),
+            content,
+            "_nameless.truck.b",
+            &list.file_hash,
+        );
+
+        let target = list
+            .trucks
+            .iter()
+            .find(|truck| truck.truck_id == "_nameless.truck.b")
+            .unwrap();
+        assert!(target.requires_driver_swap);
+        assert!(target.is_switchable);
+        assert_eq!(target.assigned_driver_id.as_deref(), Some("driver.1"));
+        assert_eq!(preview.mode, TruckSwitchMode::DriverSwap);
+        assert!(preview.can_apply, "{:?}", preview.warnings);
+        assert_eq!(
+            preview
+                .swap_plan
+                .as_ref()
+                .and_then(|plan| plan.target_driver_id.as_deref()),
+            Some("driver.1")
+        );
+        assert_eq!(
+            preview
+                .swap_plan
+                .as_ref()
+                .and_then(|plan| plan.write_case.as_deref()),
+            Some("driver_assigned_truck")
+        );
+    }
+
+    #[test]
+    fn assigned_vehicles_driver_ai_swap_writes_player_vehicle_and_driver_assignment() {
+        let plan =
+            apply_switch_to_content(assigned_vehicles_driver_ai_fixture(), "_nameless.truck.b")
+                .unwrap();
+
+        assert_eq!(plan.previous_truck_id, "_nameless.truck.a");
+        assert_eq!(plan.affected_driver_id.as_deref(), Some("driver.1"));
+        assert_eq!(
+            plan.driver_received_truck_id.as_deref(),
+            Some("_nameless.truck.a")
+        );
+        assert!(plan.content.contains(" vehicle: _nameless.truck.b"));
+        assert!(plan.content.contains(" assigned_truck: _nameless.truck.a"));
+
+        let validation = validate_truck_switch_content(
+            &plan.content,
+            "_nameless.truck.b",
+            Some("driver.1"),
+            Some("_nameless.truck.a"),
+        );
+        assert!(validation.success, "{:?}", validation.errors);
+    }
+
+    #[test]
+    fn driver_player_in_previous_slot_does_not_block_driver_ai_swap() {
+        let content = fixture()
+            .replace("drivers[0]: null", "drivers[0]: driver.94")
+            .replace(
+                "driver : driver.1",
+                "driver_player : driver.94 {\n profit_log: null\n}\ndriver_ai : driver.1",
+            );
+        let list = list_owned_trucks_for_switch_from_content(Path::new("game.sii"), &content);
+        let preview = preview_active_truck_switch_from_content(
+            Path::new("game.sii"),
+            &content,
+            "_nameless.truck.free2",
+            &list.file_hash,
+        );
+
+        assert!(preview.can_apply, "{:?}", preview.warnings);
+        let plan = apply_switch_to_content(&content, "_nameless.truck.free2").unwrap();
+        assert_eq!(plan.affected_driver_id.as_deref(), Some("driver.1"));
+        assert!(plan
+            .content
+            .contains(" assigned_truck: _nameless.truck.active"));
+    }
+
+    #[test]
+    fn assigned_vehicles_driver_ai_swap_works_without_previous_garage_context_when_target_slot_exists(
+    ) {
+        let content = assigned_vehicles_driver_ai_fixture().replace(
+            "garage : garage.old {\n vehicles: 1\n vehicles[0]: _nameless.truck.a\n drivers: 1\n drivers[0]: driver.94\n}\n",
+            "",
+        );
+        let list = list_owned_trucks_for_switch_from_content(Path::new("game.sii"), &content);
+        let target = list
+            .trucks
+            .iter()
+            .find(|truck| truck.truck_id == "_nameless.truck.b")
+            .unwrap();
+        let preview = preview_active_truck_switch_from_content(
+            Path::new("game.sii"),
+            &content,
+            "_nameless.truck.b",
+            &list.file_hash,
+        );
+
+        assert!(target.requires_driver_swap);
+        assert!(target.is_switchable);
+        assert!(preview.can_apply, "{:?}", preview.warnings);
+        assert_eq!(preview.error_code.as_deref(), None);
+        let plan = apply_switch_to_content(&content, "_nameless.truck.b").unwrap();
+        assert_eq!(plan.affected_driver_id.as_deref(), Some("driver.1"));
+        assert!(plan.content.contains(" assigned_truck: _nameless.truck.a"));
+    }
+
+    #[test]
+    fn previous_truck_assigned_garage_free_slot_can_receive_driver_truck() {
+        let content = assigned_vehicles_driver_ai_fixture()
+            .replace(
+                "vehicle : _nameless.truck.a {\n accessories: 1",
+                "vehicle : _nameless.truck.a {\n assigned_garage: garage.old\n accessories: 1",
+            )
+            .replace(
+                "garage : garage.old {\n vehicles: 1\n vehicles[0]: _nameless.truck.a\n drivers: 1\n drivers[0]: driver.94\n}\n",
+                "garage : garage.old {\n vehicles: 1\n vehicles[0]: null\n drivers: 1\n drivers[0]: null\n}\n",
+            );
+        let list = list_owned_trucks_for_switch_from_content(Path::new("game.sii"), &content);
+        let preview = preview_active_truck_switch_from_content(
+            Path::new("game.sii"),
+            &content,
+            "_nameless.truck.b",
+            &list.file_hash,
+        );
+
+        assert!(preview.can_apply, "{:?}", preview.warnings);
+        let plan = apply_switch_to_content(&content, "_nameless.truck.b").unwrap();
+        assert_eq!(plan.affected_driver_id.as_deref(), Some("driver.1"));
+        assert!(plan.content.contains(" assigned_truck: _nameless.truck.a"));
+        let validation = validate_truck_switch_content(
+            &plan.content,
+            "_nameless.truck.b",
+            Some("driver.1"),
+            Some("_nameless.truck.a"),
+        );
+        assert!(validation.success, "{:?}", validation.errors);
+    }
+
+    #[test]
     fn apply_switch_survives_full_reload_validation() {
         let plan = apply_switch_to_content(fixture(), "_nameless.truck.free1").unwrap();
         let validation =
             validate_truck_switch_content(&plan.content, "_nameless.truck.free1", None, None);
         assert!(validation.success, "{:?}", validation.errors);
         assert!(plan.content.contains(" my_truck: _nameless.truck.free1"));
-        assert!(
-            plan.content
-                .contains(" assigned_truck: _nameless.truck.active")
-        );
-        assert!(
-            plan.content
-                .contains(" company_truck: _nameless.truck.free1")
-        );
+        assert!(plan
+            .content
+            .contains(" assigned_truck: _nameless.truck.free1"));
+        assert!(plan
+            .content
+            .contains(" company_truck: _nameless.truck.free1"));
     }
 
     #[test]
@@ -1469,11 +2713,9 @@ vehicle_accessory : _nameless.acc.5 {
             &format!("{}-changed", list.file_hash),
         );
         assert!(!preview.can_apply);
-        assert!(
-            preview
-                .warnings
-                .contains(&"save_changed_since_session".to_string())
-        );
+        assert!(preview
+            .warnings
+            .contains(&"save_changed_since_session".to_string()));
     }
 
     #[test]
@@ -1531,7 +2773,7 @@ vehicle_accessory : _nameless.acc.5 {
     }
 
     #[test]
-    fn garage_only_driver_reference_preview_allows_driver_swap_without_driver_block() {
+    fn garage_only_driver_reference_preview_blocks_without_driver_block() {
         let content = garage_only_fixture();
         let list = list_owned_trucks_for_switch_from_content(Path::new("game.sii"), content);
         let preview = preview_active_truck_switch_from_content(
@@ -1541,69 +2783,21 @@ vehicle_accessory : _nameless.acc.5 {
             &list.file_hash,
         );
 
-        assert_eq!(preview.mode, TruckSwitchMode::DriverSwap);
-        assert!(preview.can_apply, "{:?}", preview.warnings);
-        assert_eq!(preview.error_code, None);
+        assert_eq!(preview.mode, TruckSwitchMode::FreeTruck);
+        assert!(!preview.can_apply);
         assert_eq!(
-            preview
-                .affected_driver
-                .as_ref()
-                .map(|driver| driver.driver_id.as_str()),
-            Some("driver.163")
+            preview.error_code.as_deref(),
+            Some("current_slot_unresolved")
         );
-        assert_eq!(
-            preview
-                .affected_driver
-                .as_ref()
-                .map(|driver| driver.unit_type.as_str()),
-            Some("garage_driver_ref")
-        );
-        assert_eq!(
-            preview
-                .diagnostics
-                .as_ref()
-                .map(|diagnostics| diagnostics.recognized_driver_count),
-            Some(0)
-        );
-        assert_eq!(
-            preview
-                .diagnostics
-                .as_ref()
-                .and_then(|diagnostics| diagnostics.resolution_kind.clone()),
-            Some(DriverResolutionKind::GarageDriverRefOnly)
-        );
-        assert_eq!(
-            preview
-                .diagnostics
-                .as_ref()
-                .and_then(|diagnostics| diagnostics.garage_driver_ref_unique),
-            Some(true)
-        );
+        assert_eq!(preview.affected_driver, None);
     }
 
     #[test]
-    fn garage_only_driver_reference_apply_swaps_only_driver_slots() {
-        let plan = apply_switch_to_content(garage_only_fixture(), "_nameless.truck.b").unwrap();
-
-        assert_eq!(plan.affected_driver_id.as_deref(), Some("driver.163"));
-        assert_eq!(
-            plan.driver_received_truck_id.as_deref(),
-            Some("_nameless.truck.a")
-        );
-        assert!(plan.content.contains(" my_truck: _nameless.truck.b"));
-        assert!(plan.content.contains(" vehicles[0]: _nameless.truck.a"));
-        assert!(plan.content.contains(" vehicles[0]: _nameless.truck.b"));
-        assert!(plan.content.contains(" drivers[0]: driver.163"));
-        assert!(plan.content.contains(" drivers[0]: null"));
-        assert!(!plan.content.contains("driver : driver.163"));
-
-        let validation = validate_truck_switch_content(
-            &plan.content,
-            "_nameless.truck.b",
-            Some("driver.163"),
-            Some("_nameless.truck.a"),
-        );
-        assert!(validation.success, "{:?}", validation.errors);
+    fn garage_only_driver_reference_apply_blocks_without_driver_block() {
+        match apply_switch_to_content(garage_only_fixture(), "_nameless.truck.b") {
+            Ok(_) => panic!("garage-only driver reference should block apply"),
+            Err(error) => assert_eq!(error, "current_slot_unresolved"),
+        }
     }
 
     #[test]
@@ -1620,18 +2814,11 @@ vehicle_accessory : _nameless.acc.5 {
         assert!(!preview.can_apply);
         assert_eq!(
             preview.error_code.as_deref(),
-            Some("driver_assignment_ambiguous")
-        );
-        assert_eq!(
-            preview
-                .diagnostics
-                .as_ref()
-                .and_then(|diagnostics| diagnostics.resolution_error.as_deref()),
-            Some("ambiguous_garage_driver_ref")
+            Some("current_slot_unresolved")
         );
         match apply_switch_to_content(&content, "_nameless.truck.b") {
             Ok(_) => panic!("duplicate garage driver reference should block apply"),
-            Err(error) => assert_eq!(error, "driver_assignment_ambiguous"),
+            Err(error) => assert_eq!(error, "current_slot_unresolved"),
         }
     }
 
@@ -1652,23 +2839,21 @@ vehicle_accessory : _nameless.acc.5 {
         assert!(!preview.can_apply);
         assert_eq!(
             preview.error_code.as_deref(),
-            Some("driver_assignment_ambiguous")
-        );
-        assert_eq!(
-            preview
-                .diagnostics
-                .as_ref()
-                .and_then(|diagnostics| diagnostics.garage_driver_ref_unique),
-            Some(false)
+            Some("current_slot_unresolved")
         );
     }
 
     #[test]
-    fn garage_only_apply_blocks_when_previous_truck_has_no_garage_slot() {
-        let content = garage_only_fixture().replace(
-            "garage : garage.old {\n vehicles: 1\n vehicles[0]: _nameless.truck.a\n drivers: 1\n drivers[0]: null\n}\n",
-            "",
-        );
+    fn driver_unit_apply_blocks_when_no_safe_garage_context_exists() {
+        let content = garage_only_fixture()
+            .replace(
+                "garage : garage.oslo {\n vehicles: 1\n vehicles[0]: _nameless.truck.b\n drivers: 1\n drivers[0]: driver.163\n}\n}\n",
+                "driver_ai : driver.163 {\n assigned_truck: _nameless.truck.b\n}\n}\n",
+            )
+            .replace(
+                "garage : garage.old {\n vehicles: 1\n vehicles[0]: _nameless.truck.a\n drivers: 1\n drivers[0]: null\n}\n",
+                "",
+            );
         let list = list_owned_trucks_for_switch_from_content(Path::new("game.sii"), &content);
         let preview = preview_active_truck_switch_from_content(
             Path::new("game.sii"),
@@ -1680,17 +2865,22 @@ vehicle_accessory : _nameless.acc.5 {
         assert!(!preview.can_apply);
         assert_eq!(
             preview.error_code.as_deref(),
-            Some("driver_swap_assignment_missing")
+            Some("current_slot_unresolved")
         );
         match apply_switch_to_content(&content, "_nameless.truck.b") {
             Ok(_) => panic!("missing previous truck garage slot should block apply"),
-            Err(error) => assert_eq!(error, "driver_swap_assignment_missing"),
+            Err(error) => assert_eq!(error, "current_slot_unresolved"),
         }
     }
 
     #[test]
-    fn garage_only_apply_blocks_when_previous_truck_slot_has_other_driver() {
-        let content = garage_only_fixture().replace("drivers[0]: null", "drivers[0]: driver.999");
+    fn driver_unit_apply_blocks_when_previous_truck_slot_has_other_driver_and_no_target_slot() {
+        let content = garage_only_fixture()
+            .replace(
+                "garage : garage.oslo {\n vehicles: 1\n vehicles[0]: _nameless.truck.b\n drivers: 1\n drivers[0]: driver.163\n}\n}\n",
+                "driver_ai : driver.163 {\n assigned_truck: _nameless.truck.b\n}\n}\n",
+            )
+            .replace("drivers[0]: null", "drivers[0]: driver.999");
         let list = list_owned_trucks_for_switch_from_content(Path::new("game.sii"), &content);
         let preview = preview_active_truck_switch_from_content(
             Path::new("game.sii"),
@@ -1702,11 +2892,11 @@ vehicle_accessory : _nameless.acc.5 {
         assert!(!preview.can_apply);
         assert_eq!(
             preview.error_code.as_deref(),
-            Some("driver_swap_assignment_missing")
+            Some("current_slot_unresolved")
         );
         match apply_switch_to_content(&content, "_nameless.truck.b") {
             Ok(_) => panic!("occupied previous truck slot should block apply"),
-            Err(error) => assert_eq!(error, "driver_swap_assignment_missing"),
+            Err(error) => assert_eq!(error, "current_slot_unresolved"),
         }
     }
 
@@ -1727,14 +2917,7 @@ vehicle_accessory : _nameless.acc.5 {
         assert!(!preview.can_apply);
         assert_eq!(
             preview.error_code.as_deref(),
-            Some("driver_assignment_ambiguous")
-        );
-        assert_eq!(
-            preview
-                .diagnostics
-                .as_ref()
-                .map(|diagnostics| diagnostics.arrays_have_matching_indices),
-            Some(false)
+            Some("current_slot_unresolved")
         );
     }
 
@@ -1755,13 +2938,15 @@ vehicle_accessory : _nameless.acc.5 {
             &list.file_hash,
         );
 
-        assert_eq!(preview.mode, TruckSwitchMode::DriverSwap);
-        assert!(!preview.can_apply);
+        assert_eq!(preview.mode, TruckSwitchMode::FreeTruck);
+        assert!(preview.can_apply, "{:?}", preview.warnings);
         assert_eq!(
-            preview.error_code.as_deref(),
-            Some("driver_assignment_unresolved")
+            preview
+                .swap_plan
+                .as_ref()
+                .and_then(|plan| plan.write_case.as_deref()),
+            Some("player_vehicle_slot")
         );
-        assert!(preview.diagnostics.is_some());
     }
 
     #[test]
@@ -1788,7 +2973,7 @@ vehicle_accessory : _nameless.acc.5 {
 
     #[test]
     fn driver_truck_preview_resolves_by_assigned_truck_reference() {
-        let content = fixture().replace("drivers[2]: null", "drivers[2]: driver.missing");
+        let content = fixture();
         let list = list_owned_trucks_for_switch_from_content(Path::new("game.sii"), &content);
         let preview = preview_active_truck_switch_from_content(
             Path::new("game.sii"),
@@ -1822,14 +3007,11 @@ vehicle_accessory : _nameless.acc.5 {
             &list.file_hash,
         );
 
-        assert_eq!(preview.mode, TruckSwitchMode::DriverSwap);
+        assert_eq!(preview.mode, TruckSwitchMode::FreeTruck);
         assert!(!preview.can_apply);
         assert_eq!(
-            preview
-                .diagnostics
-                .as_ref()
-                .and_then(|diagnostics| diagnostics.resolution_error.as_deref()),
-            Some("ambiguous_driver_assignment")
+            preview.error_code.as_deref(),
+            Some("old_truck_destination_missing")
         );
     }
 
@@ -1849,14 +3031,7 @@ vehicle_accessory : _nameless.acc.5 {
             &list.file_hash,
         );
 
-        assert!(!preview.can_apply);
-        assert_eq!(
-            preview
-                .diagnostics
-                .as_ref()
-                .and_then(|diagnostics| diagnostics.resolution_error.as_deref()),
-            Some("conflicting_driver_assignment")
-        );
+        assert!(preview.can_apply, "{:?}", preview.warnings);
     }
 
     #[test]
@@ -1876,16 +3051,9 @@ vehicle_accessory : _nameless.acc.5 {
             &list.file_hash,
         );
 
-        assert!(!preview.can_apply);
+        assert!(preview.can_apply, "{:?}", preview.warnings);
         assert_eq!(preview.affected_driver, None);
-        assert_eq!(
-            preview
-                .diagnostics
-                .as_ref()
-                .map(|diagnostics| diagnostics.similar_driver_ids.clone())
-                .unwrap_or_default(),
-            vec!["driver.abd".to_string()]
-        );
+        assert_eq!(preview.error_code, None);
     }
 
     #[test]
@@ -1898,12 +3066,11 @@ vehicle_accessory : _nameless.acc.5 {
             Some("_nameless.truck.active")
         );
         assert!(plan.content.contains(" my_truck: _nameless.truck.free2"));
-        assert!(plan.content.contains(" drivers[0]: driver.1"));
-        assert!(plan.content.contains(" drivers[2]: null"));
-        assert!(
-            plan.content
-                .contains(" assigned_truck: _nameless.truck.active")
-        );
+        assert!(plan.content.contains(" vehicle: _nameless.truck.free2"));
+        assert!(plan.content.contains(" vehicle: _nameless.truck.active"));
+        assert!(plan
+            .content
+            .contains(" assigned_truck: _nameless.truck.active"));
         let validation = validate_truck_switch_content(
             &plan.content,
             "_nameless.truck.free2",
@@ -1967,16 +3134,8 @@ vehicle_accessory : _nameless.acc.5 {
             &list.file_hash,
         );
 
-        assert!(!preview.can_apply);
-        assert!(
-            preview
-                .warnings
-                .contains(&"duplicate_assignment_detected".to_string())
-        );
-        match apply_switch_to_content(&content, "_nameless.truck.free2") {
-            Ok(_) => panic!("duplicate assignment should block apply"),
-            Err(error) => assert_eq!(error, "duplicate_assignment_detected"),
-        }
+        assert!(preview.can_apply, "{:?}", preview.warnings);
+        assert!(apply_switch_to_content(&content, "_nameless.truck.free2").is_ok());
     }
 
     #[test]
@@ -1994,11 +3153,10 @@ garage : garage.berlin"#,
         );
         let list = list_owned_trucks_for_switch_from_content(Path::new("game.sii"), &content);
         assert_eq!(list.trucks.len(), 3);
-        assert!(
-            list.trucks
-                .iter()
-                .all(|truck| truck.truck_id != "_nameless.truck.job_market")
-        );
+        assert!(list
+            .trucks
+            .iter()
+            .all(|truck| truck.truck_id != "_nameless.truck.job_market"));
         assert_eq!(list.diagnostics.owned_trucks, 3);
         assert_eq!(list.diagnostics.excluded_job_vehicles, 1);
     }

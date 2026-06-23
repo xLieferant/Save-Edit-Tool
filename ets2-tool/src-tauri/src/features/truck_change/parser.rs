@@ -8,7 +8,8 @@ use crate::shared::sii_parser::{get_player_id, parse_trucks_from_sii};
 use super::models::{
     CurrentTruckPointer, CurrentTruckPointerDiagnostics, CurrentTruckPointerKind,
     DriverDisplayInfo, DriverParserDiagnostics, GarageCapacity, GarageSlotAssignment,
-    OwnedTruckDiagnostics, OwnedTruckSource, TruckAssignment, TruckGraph, TruckInventoryItem,
+    OwnedTruckDiagnostics, OwnedTruckSource, PlayerVehicleSlotAssignment, TruckAssignment,
+    TruckGraph, TruckInventoryItem,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -29,6 +30,8 @@ pub struct ParsedTruckSave {
     pub truck_order: Vec<String>,
     pub trucks: Vec<TruckInventoryItem>,
     pub truck_graphs: HashMap<String, TruckGraph>,
+    pub player_vehicle_slots: Vec<PlayerVehicleSlotAssignment>,
+    pub player_vehicle_assignments: HashMap<String, PlayerVehicleSlotAssignment>,
     pub garage_assignments: HashMap<String, GarageSlotAssignment>,
     pub garages: Vec<GarageCapacity>,
     pub driver_infos: HashMap<String, DriverDisplayInfo>,
@@ -61,6 +64,7 @@ pub fn parse_truck_save(content: &str) -> ParsedTruckSave {
         .into_iter()
         .filter(|value| !is_null_ref(value))
         .collect::<Vec<_>>();
+    let player_vehicle_scan = parse_player_vehicle_slots(player_block.as_ref(), &unit_blocks);
     let garage_scan = parse_garages(&unit_blocks);
     let mut driver_scan = parse_driver_infos(&unit_blocks);
     driver_scan.diagnostics.unresolved_driver_ids = garage_scan
@@ -97,6 +101,8 @@ pub fn parse_truck_save(content: &str) -> ParsedTruckSave {
         player_block.as_ref(),
         &blocks_by_id,
         &truck_graphs,
+        &truck_order,
+        &player_vehicle_scan.assignments,
     );
     let active_truck_id = current_truck_resolution
         .pointer
@@ -105,9 +111,7 @@ pub fn parse_truck_save(content: &str) -> ParsedTruckSave {
     let owned_collection = collect_owned_player_truck_ids(
         &unit_blocks,
         &truck_order,
-        active_truck_id.as_deref(),
         &truck_graphs,
-        &garage_scan.assignments,
     );
     let mut owned_diagnostics = owned_collection.diagnostics;
     owned_diagnostics.current_truck_pointer_kind = current_truck_resolution
@@ -123,6 +127,14 @@ pub fn parse_truck_save(content: &str) -> ParsedTruckSave {
         .as_ref()
         .and_then(|pointer| pointer.referenced_player_vehicle_unit_id.clone());
     owned_diagnostics.current_truck_pointer = current_truck_resolution.diagnostics.clone();
+    owned_diagnostics.current_truck_source = current_truck_resolution
+        .pointer
+        .as_ref()
+        .map(|pointer| pointer.source.clone());
+    owned_diagnostics.current_truck_confidence = current_truck_resolution
+        .pointer
+        .as_ref()
+        .map(|pointer| pointer.confidence.clone());
     crate::dev_log!(
         "[truck_change] owned truck collection completed vehicle_blocks={} candidate_trucks={} owned_trucks={}",
         owned_diagnostics.total_vehicle_blocks,
@@ -141,6 +153,7 @@ pub fn parse_truck_save(content: &str) -> ParsedTruckSave {
         active_truck_id.as_deref(),
         &truck_graphs,
         &garage_scan.assignments,
+        &player_vehicle_scan.assignments,
         &driver_infos,
     );
     let truck_assignments = build_truck_assignments(
@@ -158,6 +171,8 @@ pub fn parse_truck_save(content: &str) -> ParsedTruckSave {
         truck_order,
         trucks,
         truck_graphs,
+        player_vehicle_slots: player_vehicle_scan.slots,
+        player_vehicle_assignments: player_vehicle_scan.assignments,
         garage_assignments: garage_scan.assignments,
         garages: garage_scan.garages,
         driver_infos,
@@ -306,13 +321,15 @@ pub fn resolve_current_truck_pointer(
     parsed
         .current_truck_pointer
         .clone()
-        .ok_or_else(|| "current_truck_not_found".to_string())
+        .ok_or_else(|| "current_truck_unresolved".to_string())
 }
 
 fn resolve_current_truck_pointer_from_parts(
     player_block: Option<&UnitBlock>,
     blocks_by_id: &HashMap<String, UnitBlock>,
     graphs: &HashMap<String, TruckGraph>,
+    truck_order: &[String],
+    player_vehicle_assignments: &HashMap<String, PlayerVehicleSlotAssignment>,
 ) -> CurrentTruckResolution {
     let mut diagnostics = CurrentTruckPointerDiagnostics {
         player_found: player_block.is_some(),
@@ -326,26 +343,10 @@ fn resolve_current_truck_pointer_from_parts(
     };
 
     diagnostics.my_truck_raw = extract_field_value(&player_block.raw_block, "my_truck");
-    if let Some(my_truck_raw) = diagnostics.my_truck_raw.clone() {
-        if !is_null_ref(&my_truck_raw) {
-            if let Some(graph) = find_truck_graph_by_id(graphs, &my_truck_raw) {
-                diagnostics.my_truck_vehicle_block_found = true;
-                return resolved_current_truck_pointer(
-                    CurrentTruckPointer {
-                        kind: CurrentTruckPointerKind::PlayerMyTruck,
-                        truck_id: graph.vehicle_id.clone(),
-                        owner_unit_id: player_block.id.clone(),
-                        field_name: "my_truck".to_string(),
-                        referenced_player_vehicle_unit_id: None,
-                    },
-                    diagnostics,
-                );
-            }
-        }
-    }
-
     diagnostics.assigned_vehicles_raw =
         extract_field_value(&player_block.raw_block, "assigned_vehicles");
+    diagnostics.assigned_truck_raw = extract_field_value(&player_block.raw_block, "assigned_truck");
+
     if let Some(assigned_vehicles_raw) = diagnostics.assigned_vehicles_raw.clone() {
         if !is_null_ref(&assigned_vehicles_raw) {
             if let Some(player_vehicle_block) = find_unit_block_by_id(
@@ -369,6 +370,9 @@ fn resolve_current_truck_pointer_from_parts(
                                     referenced_player_vehicle_unit_id: Some(
                                         player_vehicle_block.id.clone(),
                                     ),
+                                    source: "player.assigned_vehicles".to_string(),
+                                    confidence: "high".to_string(),
+                                    writable: true,
                                 },
                                 diagnostics,
                             );
@@ -379,7 +383,6 @@ fn resolve_current_truck_pointer_from_parts(
         }
     }
 
-    diagnostics.assigned_truck_raw = extract_field_value(&player_block.raw_block, "assigned_truck");
     if let Some(assigned_truck_raw) = diagnostics.assigned_truck_raw.clone() {
         if !is_null_ref(&assigned_truck_raw) {
             if let Some(graph) = find_truck_graph_by_id(graphs, &assigned_truck_raw) {
@@ -391,10 +394,83 @@ fn resolve_current_truck_pointer_from_parts(
                         owner_unit_id: player_block.id.clone(),
                         field_name: "assigned_truck".to_string(),
                         referenced_player_vehicle_unit_id: None,
+                        source: "player.assigned_truck".to_string(),
+                        confidence: "medium".to_string(),
+                        writable: true,
                     },
                     diagnostics,
                 );
             }
+        }
+    }
+
+    if let Some(my_truck_raw) = diagnostics.my_truck_raw.clone() {
+        if !is_null_ref(&my_truck_raw) {
+            if let Some(graph) = find_truck_graph_by_id(graphs, &my_truck_raw) {
+                diagnostics.my_truck_vehicle_block_found = true;
+                return resolved_current_truck_pointer(
+                    CurrentTruckPointer {
+                        kind: CurrentTruckPointerKind::PlayerMyTruck,
+                        truck_id: graph.vehicle_id.clone(),
+                        owner_unit_id: player_block.id.clone(),
+                        field_name: "my_truck".to_string(),
+                        referenced_player_vehicle_unit_id: None,
+                        source: "player.my_truck".to_string(),
+                        confidence: "medium".to_string(),
+                        writable: true,
+                    },
+                    diagnostics,
+                );
+            }
+        }
+    }
+
+    let mut player_vehicle_slots = player_vehicle_assignments.values().collect::<Vec<_>>();
+    player_vehicle_slots.sort_by_key(|slot| {
+        (
+            slot.slot_index.unwrap_or(usize::MAX),
+            slot.slot_id.to_ascii_lowercase(),
+        )
+    });
+    for slot in player_vehicle_slots {
+        let Some(truck_id) = slot.truck_id.as_deref() else {
+            continue;
+        };
+        if let Some(graph) = find_truck_graph_by_id(graphs, truck_id) {
+            diagnostics.fallback_player_vehicle_unit_id = Some(slot.slot_id.clone());
+            diagnostics.fallback_player_vehicle_vehicle_raw = Some(truck_id.to_string());
+            return resolved_current_truck_pointer(
+                CurrentTruckPointer {
+                    kind: CurrentTruckPointerKind::FallbackPlayerVehicles,
+                    truck_id: graph.vehicle_id.clone(),
+                    owner_unit_id: slot.slot_id.clone(),
+                    field_name: "vehicle".to_string(),
+                    referenced_player_vehicle_unit_id: Some(slot.slot_id.clone()),
+                    source: "fallback:first_player_vehicles_vehicle".to_string(),
+                    confidence: "low".to_string(),
+                    writable: true,
+                },
+                diagnostics,
+            );
+        }
+    }
+
+    for truck_id in truck_order {
+        if let Some(graph) = find_truck_graph_by_id(graphs, truck_id) {
+            diagnostics.fallback_first_owned_truck_raw = Some(truck_id.to_string());
+            return resolved_current_truck_pointer(
+                CurrentTruckPointer {
+                    kind: CurrentTruckPointerKind::FallbackFirstOwnedTruck,
+                    truck_id: graph.vehicle_id.clone(),
+                    owner_unit_id: player_block.id.clone(),
+                    field_name: "trucks[0]".to_string(),
+                    referenced_player_vehicle_unit_id: None,
+                    source: "fallback:first_owned_truck".to_string(),
+                    confidence: "low".to_string(),
+                    writable: false,
+                },
+                diagnostics,
+            );
         }
     }
 
@@ -410,6 +486,8 @@ fn resolved_current_truck_pointer(
 ) -> CurrentTruckResolution {
     diagnostics.current_truck_pointer_kind = Some(pointer.kind.clone());
     diagnostics.current_truck_id = Some(pointer.truck_id.clone());
+    diagnostics.current_truck_source = Some(pointer.source.clone());
+    diagnostics.current_truck_confidence = Some(pointer.confidence.clone());
     CurrentTruckResolution {
         pointer: Some(pointer),
         diagnostics,
@@ -629,7 +707,18 @@ pub fn graph_primary_family(graph: &TruckGraph) -> Option<String> {
         .accessories
         .iter()
         .filter_map(|accessory| accessory.data_path.as_deref())
-        .find_map(truck_family_from_data_path)
+        .find(|path| {
+            let normalized = path.replace('\\', "/").to_ascii_lowercase();
+            normalized.starts_with("/def/vehicle/truck/") && normalized.ends_with("/data.sii")
+        })
+        .and_then(truck_family_from_data_path)
+        .or_else(|| {
+            graph
+                .accessories
+                .iter()
+                .filter_map(|accessory| accessory.data_path.as_deref())
+                .find_map(truck_family_from_data_path)
+        })
 }
 
 pub fn graph_dangling_accessories(graph: &TruckGraph, unit_ids: &HashSet<String>) -> Vec<String> {
@@ -657,6 +746,11 @@ struct GarageScan {
     garages: Vec<GarageCapacity>,
 }
 
+struct PlayerVehicleScan {
+    slots: Vec<PlayerVehicleSlotAssignment>,
+    assignments: HashMap<String, PlayerVehicleSlotAssignment>,
+}
+
 struct DriverScan {
     infos: HashMap<String, DriverDisplayInfo>,
     diagnostics: DriverParserDiagnostics,
@@ -665,6 +759,77 @@ struct DriverScan {
 struct OwnedTruckCollection {
     owned_ids: Vec<String>,
     diagnostics: OwnedTruckDiagnostics,
+}
+
+fn parse_player_vehicle_slots(
+    player_block: Option<&UnitBlock>,
+    unit_blocks: &[UnitBlock],
+) -> PlayerVehicleScan {
+    let mut slots = Vec::new();
+    let mut assignments = HashMap::new();
+    let mut seen_slot_ids = HashSet::new();
+    let blocks_by_id = unit_blocks
+        .iter()
+        .map(|block| (normalize_sii_unit_id(&block.id), block))
+        .collect::<HashMap<_, _>>();
+
+    if let Some(player_block) = player_block {
+        for (index, slot_id) in extract_array_entries(&player_block.raw_block, "my_vehicles") {
+            if is_null_ref(&slot_id) {
+                continue;
+            }
+            let normalized_slot_id = normalize_sii_unit_id(&slot_id);
+            let Some(slot_block) = blocks_by_id.get(&normalized_slot_id).copied() else {
+                continue;
+            };
+            if slot_block.unit_type != "player_vehicles" {
+                continue;
+            }
+            if !seen_slot_ids.insert(normalized_slot_id) {
+                continue;
+            }
+            push_player_vehicle_slot(slot_block, Some(index), &mut slots, &mut assignments);
+        }
+    }
+
+    for block in unit_blocks
+        .iter()
+        .filter(|block| block.unit_type == "player_vehicles")
+    {
+        let normalized_slot_id = normalize_sii_unit_id(&block.id);
+        if !seen_slot_ids.insert(normalized_slot_id) {
+            continue;
+        }
+        push_player_vehicle_slot(block, None, &mut slots, &mut assignments);
+    }
+
+    PlayerVehicleScan { slots, assignments }
+}
+
+fn push_player_vehicle_slot(
+    block: &UnitBlock,
+    slot_index: Option<usize>,
+    slots: &mut Vec<PlayerVehicleSlotAssignment>,
+    assignments: &mut HashMap<String, PlayerVehicleSlotAssignment>,
+) {
+    let truck_id = extract_field_value(&block.raw_block, "vehicle").filter(|value| !is_null_ref(value));
+    let truck_id_normalized = truck_id
+        .as_deref()
+        .map(normalize_sii_unit_id)
+        .filter(|value| !value.is_empty());
+    let slot = PlayerVehicleSlotAssignment {
+        slot_id: block.id.clone(),
+        slot_id_normalized: normalize_sii_unit_id(&block.id),
+        slot_index,
+        truck_id: truck_id.clone(),
+        truck_id_normalized: truck_id_normalized.clone(),
+    };
+    if let Some(normalized_truck_id) = truck_id_normalized {
+        assignments
+            .entry(normalized_truck_id)
+            .or_insert_with(|| slot.clone());
+    }
+    slots.push(slot);
 }
 
 fn parse_garages(unit_blocks: &[UnitBlock]) -> GarageScan {
@@ -864,9 +1029,15 @@ fn parse_driver_infos(unit_blocks: &[UnitBlock]) -> DriverScan {
         } else {
             Some(joined)
         };
-        let current_truck_id =
-            extract_first_existing_field(&block.raw_block, &["assigned_truck", "truck"])
-                .filter(|value| !is_null_ref(value));
+        let current_truck_reference = extract_first_existing_field_with_name(
+            &block.raw_block,
+            &["assigned_truck", "assigned_vehicle", "truck", "vehicle"],
+        )
+        .filter(|(_, value)| !is_null_ref(value));
+        let current_truck_field = current_truck_reference
+            .as_ref()
+            .map(|(field, _)| (*field).to_string());
+        let current_truck_id = current_truck_reference.map(|(_, value)| value);
         let current_truck_id_normalized = current_truck_id
             .as_deref()
             .map(normalize_sii_unit_id)
@@ -888,6 +1059,7 @@ fn parse_driver_infos(unit_blocks: &[UnitBlock]) -> DriverScan {
                 display_name,
                 current_truck_id,
                 current_truck_id_normalized,
+                current_truck_field,
             },
         );
     }
@@ -904,7 +1076,10 @@ fn parse_driver_infos(unit_blocks: &[UnitBlock]) -> DriverScan {
 }
 
 fn is_recognized_driver_block(block: &UnitBlock) -> bool {
-    block.unit_type == "driver" && has_driver_structure(block)
+    matches!(
+        block.unit_type.as_str(),
+        "driver" | "driver_ai" | "driver_player"
+    ) && has_driver_structure(block)
 }
 
 fn has_driver_structure(block: &UnitBlock) -> bool {
@@ -946,9 +1121,7 @@ pub fn collect_owned_player_truck_ids_from_save(parsed: &ParsedTruckSave) -> Own
 fn collect_owned_player_truck_ids(
     unit_blocks: &[UnitBlock],
     truck_order: &[String],
-    active_truck_id: Option<&str>,
     graphs: &HashMap<String, TruckGraph>,
-    assignments: &HashMap<String, GarageSlotAssignment>,
 ) -> OwnedTruckCollection {
     let total_vehicle_blocks = unit_blocks
         .iter()
@@ -979,29 +1152,6 @@ fn collect_owned_player_truck_ids(
         add_owned_id(
             id,
             OwnedTruckSource::PlayerTrucksArray,
-            graphs,
-            &mut owned,
-            &mut seen,
-            &mut diagnostics,
-        );
-    }
-    if let Some(active) = active_truck_id {
-        add_owned_id(
-            active,
-            OwnedTruckSource::CurrentTruckPointer,
-            graphs,
-            &mut owned,
-            &mut seen,
-            &mut diagnostics,
-        );
-    }
-
-    let mut garage_assignments = assignments.values().collect::<Vec<_>>();
-    garage_assignments.sort_by_key(|item| (item.garage_id.clone(), item.slot_index));
-    for assignment in garage_assignments {
-        add_owned_id(
-            &assignment.truck_id,
-            OwnedTruckSource::GarageVehicleSlot,
             graphs,
             &mut owned,
             &mut seen,
@@ -1145,6 +1295,17 @@ fn extract_first_existing_field(raw_block: &str, fields: &[&str]) -> Option<Stri
         .filter(|value| !is_null_ref(value))
 }
 
+fn extract_first_existing_field_with_name<'a>(
+    raw_block: &str,
+    fields: &'a [&str],
+) -> Option<(&'a str, String)> {
+    fields.iter().find_map(|field| {
+        extract_field_value(raw_block, field)
+            .filter(|value| !is_null_ref(value))
+            .map(|value| (*field, value))
+    })
+}
+
 fn pretty_token_value(value: &str) -> String {
     let without_prefix = value
         .trim()
@@ -1186,6 +1347,7 @@ fn build_inventory(
     active_truck_id: Option<&str>,
     graphs: &HashMap<String, TruckGraph>,
     assignments: &HashMap<String, GarageSlotAssignment>,
+    player_vehicle_assignments: &HashMap<String, PlayerVehicleSlotAssignment>,
     driver_infos: &HashMap<String, DriverDisplayInfo>,
 ) -> Vec<TruckInventoryItem> {
     let parsed_trucks = parse_trucks_from_sii(content);
@@ -1205,6 +1367,7 @@ fn build_inventory(
                 active_truck_id,
                 graphs.get(truck_id),
                 assignments.get(&normalize_sii_unit_id(truck_id)),
+                player_vehicle_assignments.get(&normalize_sii_unit_id(truck_id)),
                 driver_infos,
             ))
         })
@@ -1217,12 +1380,14 @@ fn build_inventory_item(
     active_truck_id: Option<&str>,
     graph: Option<&TruckGraph>,
     assignment: Option<&GarageSlotAssignment>,
+    player_vehicle_assignment: Option<&PlayerVehicleSlotAssignment>,
     driver_infos: &HashMap<String, DriverDisplayInfo>,
 ) -> TruckInventoryItem {
     let is_active = active_truck_id
         .map(|id| id.eq_ignore_ascii_case(&parsed.truck_id))
         .unwrap_or(false);
-    let assigned_driver_id = assignment.and_then(|item| item.driver_id.clone());
+    let assigned_driver_id = driver_for_truck(driver_infos, &parsed.truck_id)
+        .or_else(|| assignment.and_then(|item| item.driver_id.clone()));
     let is_driver_assigned = assigned_driver_id.is_some() && !is_active;
     let driver_display_name = assigned_driver_id
         .as_deref()
@@ -1234,22 +1399,22 @@ fn build_inventory_item(
         .map(brand_model_from_family)
         .unwrap_or((None, None));
 
+    let raw_license_plate = parsed.license_plate.clone();
+    let display_license_plate = raw_license_plate
+        .as_deref()
+        .map(license_plate_display_value)
+        .filter(|value| !value.trim().is_empty());
+    let country_code_from_plate = raw_license_plate.as_deref().and_then(license_plate_country_code);
+    let wear = truck_wear(parsed);
+
     TruckInventoryItem {
         truck_id: parsed.truck_id.clone(),
         display_index,
         brand: non_empty(&parsed.brand).or(brand_from_path),
         model: non_empty(&parsed.model).or(model_from_path),
-        raw_license_plate: parsed.license_plate.clone(),
-        display_license_plate: parsed
-            .license_plate
-            .as_deref()
-            .map(sanitize_sii_display_text)
-            .filter(|value| !value.trim().is_empty()),
-        license_plate: parsed
-            .license_plate
-            .as_deref()
-            .map(sanitize_sii_display_text)
-            .filter(|value| !value.trim().is_empty()),
+        raw_license_plate,
+        display_license_plate: display_license_plate.clone(),
+        license_plate: display_license_plate,
         garage_id: assignment
             .map(|item| item.garage_id.clone())
             .or_else(|| parsed.assigned_garage.clone()),
@@ -1261,8 +1426,12 @@ fn build_inventory_item(
             .or_else(|| parsed.assigned_garage.clone()),
         assigned_driver_id,
         driver_display_name,
-        country_code: assignment.and_then(|item| item.country_code.clone()),
-        country_display_name: assignment.and_then(|item| item.country_display_name.clone()),
+        country_code: assignment
+            .and_then(|item| item.country_code.clone())
+            .or(country_code_from_plate.clone()),
+        country_display_name: assignment
+            .and_then(|item| item.country_display_name.clone())
+            .or_else(|| country_code_from_plate.as_deref().map(pretty_token_value)),
         is_active,
         is_switchable: true,
         blocked_reason: None,
@@ -1270,7 +1439,65 @@ fn build_inventory_item(
         engine_data_path: graph.and_then(graph_engine_data_path),
         transmission_data_path: graph.and_then(graph_transmission_data_path),
         accessory_count: graph.map(|graph| graph.accessory_ids.len()).unwrap_or(0),
+        odometer_km: Some(parsed.odometer),
+        fuel_relative: Some(parsed.fuel_relative),
+        wear,
+        player_vehicle_slot_id: player_vehicle_assignment.map(|slot| slot.slot_id.clone()),
+        player_vehicle_slot_index: player_vehicle_assignment.and_then(|slot| slot.slot_index),
     }
+}
+
+fn driver_for_truck(
+    driver_infos: &HashMap<String, DriverDisplayInfo>,
+    truck_id: &str,
+) -> Option<String> {
+    let normalized = normalize_sii_unit_id(truck_id);
+    let mut drivers = driver_infos
+        .values()
+        .filter(|driver| driver.unit_type != "driver_player")
+        .filter(|driver| {
+            driver
+                .current_truck_id_normalized
+                .as_deref()
+                .map(|candidate| candidate == normalized)
+                .unwrap_or(false)
+        })
+        .map(|driver| driver.driver_id.clone())
+        .collect::<Vec<_>>();
+    drivers.sort();
+    drivers.dedup();
+    if drivers.len() == 1 {
+        drivers.pop()
+    } else {
+        None
+    }
+}
+
+fn truck_wear(parsed: &ParsedTruck) -> Option<f32> {
+    let mut values = vec![
+        parsed.engine_wear,
+        parsed.transmission_wear,
+        parsed.cabin_wear,
+        parsed.chassis_wear,
+    ];
+    values.extend(parsed.wheels_wear.iter().copied());
+    values.retain(|value| value.is_finite());
+    if values.is_empty() {
+        None
+    } else {
+        Some(values.into_iter().fold(0.0_f32, f32::max))
+    }
+}
+
+fn license_plate_display_value(raw: &str) -> String {
+    let visible = raw.split('|').next().unwrap_or(raw);
+    sanitize_sii_display_text(visible)
+}
+
+fn license_plate_country_code(raw: &str) -> Option<String> {
+    raw.split_once('|')
+        .map(|(_, country)| country.trim().to_string())
+        .filter(|country| !country.is_empty())
 }
 
 fn build_truck_assignments(
@@ -1491,12 +1718,10 @@ vehicle_accessory : _nameless.acc.5 {
         assert_eq!(parsed.diagnostics.player_trucks_array_count, 5);
         assert_eq!(parsed.diagnostics.player_truck_refs_with_vehicle_blocks, 5);
         assert_eq!(parsed.diagnostics.owned_trucks, 5);
-        assert!(
-            parsed
-                .trucks
-                .iter()
-                .any(|truck| { truck.truck_id == "_nameless.truck.4" && truck.is_active })
-        );
+        assert!(parsed
+            .trucks
+            .iter()
+            .any(|truck| { truck.truck_id == "_nameless.truck.4" && truck.is_active }));
     }
 
     #[test]
@@ -1506,8 +1731,9 @@ vehicle_accessory : _nameless.acc.5 {
             "player_vehicles : _nameless.assigned.other",
         );
         let parsed = parse_truck_save(&content);
+        let pointer = resolve_current_truck_pointer(&parsed).unwrap();
 
-        assert!(resolve_current_truck_pointer(&parsed).is_err());
+        assert_eq!(pointer.kind, CurrentTruckPointerKind::FallbackPlayerVehicles);
         assert!(parsed.current_truck_diagnostics.player_found);
         assert_eq!(
             parsed
@@ -1530,8 +1756,9 @@ vehicle_accessory : _nameless.acc.5 {
             "vehicle : _nameless.truck.other",
         );
         let parsed = parse_truck_save(&content);
+        let pointer = resolve_current_truck_pointer(&parsed).unwrap();
 
-        assert!(resolve_current_truck_pointer(&parsed).is_err());
+        assert_eq!(pointer.kind, CurrentTruckPointerKind::FallbackFirstOwnedTruck);
         assert!(
             parsed
                 .current_truck_diagnostics
@@ -1568,12 +1795,10 @@ vehicle_accessory : _nameless.acc.5 {
             vec!["_nameless.truck.missing".to_string()]
         );
         assert_eq!(parsed.trucks.len(), 4);
-        assert!(
-            !parsed
-                .trucks
-                .iter()
-                .any(|truck| truck.truck_id == "_nameless.truck.missing")
-        );
+        assert!(!parsed
+            .trucks
+            .iter()
+            .any(|truck| truck.truck_id == "_nameless.truck.missing"));
     }
 
     #[test]
@@ -1735,5 +1960,22 @@ vehicle_accessory : _nameless.acc.5 {
             vec!["driver".to_string()]
         );
         assert_eq!(parsed.driver_diagnostics.ignored_driver_like_blocks, 1);
+    }
+
+    #[test]
+    fn driver_ai_and_driver_player_blocks_are_recognized() {
+        let content = fixture().replace(
+            "driver : driver.2 {",
+            "driver_player : driver.1 {\n profit_log: null\n}\ndriver_ai : driver.2 {",
+        );
+        let parsed = parse_truck_save(&content);
+
+        assert_eq!(parsed.driver_diagnostics.recognized_driver_blocks, 2);
+        assert_eq!(
+            parsed.driver_diagnostics.recognized_unit_types,
+            vec!["driver_ai".to_string(), "driver_player".to_string()]
+        );
+        assert!(parsed.driver_infos.contains_key("driver.1"));
+        assert!(parsed.driver_infos.contains_key("driver.2"));
     }
 }
