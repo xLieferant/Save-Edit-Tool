@@ -297,6 +297,7 @@ fn main() {
             features::truck_change::commands::list_owned_trucks_for_switch,
             features::truck_change::commands::initialize_truck_change_session,
             features::truck_change::commands::preview_active_truck_switch,
+            features::truck_change::commands::log_truck_change_frontend_event,
             features::truck_change::commands::apply_active_truck_switch,
             features::truck_change::commands::get_official_powertrain_catalog,
             features::truck_change::commands::preview_truck_powertrain_change,

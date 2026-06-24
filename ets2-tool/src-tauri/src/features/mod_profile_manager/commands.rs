@@ -1,5 +1,5 @@
 use super::compare;
-use super::discovery::{load_manager_state, scan_inventory, scan_inventory_with_mode, ScanMode};
+use super::discovery::{ScanMode, load_manager_state, scan_inventory, scan_inventory_with_mode};
 use super::models::{
     ApplySandboxResult, DiscoveredMod, GameType, ModPreset, ModSandbox, PresetCompareResult,
     PresetModEntry, SandboxCollection, SandboxModPreset, SandboxPresetActivationResult,
@@ -11,7 +11,7 @@ use super::{launcher, sandbox, workshop_api};
 use crate::shared::user_log;
 use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 use std::any::Any;
-use std::panic::{catch_unwind, AssertUnwindSafe};
+use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{AppHandle, State};
 use uuid::Uuid;

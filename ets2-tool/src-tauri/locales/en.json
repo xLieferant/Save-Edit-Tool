@@ -1600,10 +1600,14 @@
                   "kicker": "Truck Change on the Road",
                   "title": "Truck Change on the Road",
                   "description": "Switch the active truck in the selected save, or preview upcoming transfer and powertrain tools.",
+                  "beta_notice": "This feature is still being improved. Please use backups before applying changes.",
                   "close": "Close",
                   "status": {
+                        "wip": "WiP / Beta",
                         "loading": "Loading",
                         "ready": "Ready",
+                        "warning": "Warning",
+                        "blocked": "Blocked",
                         "preview": "Preview",
                         "applying": "Applying",
                         "success": "Verified",
@@ -1623,13 +1627,15 @@
                         "no_matches": "No matching trucks found.",
                         "active": "Active",
                         "selectable": "Available",
+                        "owned": "Owned",
                         "driver_swap": "Driver swap",
                         "driver_receives": "Driver receives",
                         "you_receive": "You receive",
                         "unavailable": "Unavailable",
+                        "plate": "License plate",
                         "garage": "Garage",
                         "driver": "Driver",
-                        "no_garage": "No garage assignment",
+                        "no_garage": "Unknown / No garage",
                         "no_plate": "No plate",
                         "unreadable_plate": "License plate unreadable",
                         "ai_driver": "AI driver",
@@ -1662,7 +1668,7 @@
                         "no_warnings": "No blocking warnings.",
                         "confirm": "Applying creates a backup, writes a temporary game.sii, reloads the save and verifies the active truck.",
                         "confirm_driver_swap": "Applying swaps the selected driver to your previous truck, writes a temporary game.sii, reloads the save and verifies both assignments.",
-                        "apply": "Apply switch",
+                        "apply": "Apply",
                         "applying": "Applying...",
                         "refresh": "Refresh",
                         "verified": "The save was reloaded and the new active truck was verified.",
@@ -1713,10 +1719,60 @@
                         "yes": "Yes",
                         "no": "No"
                   },
+                  "preview": {
+                        "title": "Truck Change",
+                        "description": "Your current truck will be exchanged with the selected owned truck.",
+                        "wip_hint": "WiP feature - backup recommended"
+                  },
+                  "sidebar": {
+                        "status_title": "Status",
+                        "status_notice": "Please use backups.",
+                        "ready_message": "Ready to switch trucks.",
+                        "error_message": "Truck change is currently not possible.",
+                        "backup_enabled": "Backup: Enabled",
+                        "backup_disabled": "Backup: Disabled",
+                        "backup_failed": "Backup: Failed"
+                  },
+                  "current_truck": {
+                        "title": "Current Truck"
+                  },
+                  "selected_truck": {
+                        "title": "Selected Truck",
+                        "empty": "Select an owned truck to preview the change.",
+                        "effect_receive": "You will receive this truck.",
+                        "effect_driver_swap": "The previous driver will receive your current truck.",
+                        "effect_unresolved": "Driver assignment could not be resolved."
+                  },
+                  "driver": {
+                        "you": "You",
+                        "ai": "AI Driver",
+                        "none": "No driver",
+                        "unknown": "Unknown"
+                  },
+                  "safety": {
+                        "title": "Safety Checks",
+                        "backup_enabled": "Backup enabled",
+                        "ownership_verified": "Truck ownership verified",
+                        "driver_resolved": "Driver assignment resolved",
+                        "garage_preserved": "Garage assignment preserved",
+                        "save_writable": "Save can be written",
+                        "verification_enabled": "Verification after write enabled"
+                  },
+                  "action": {
+                        "title": "Action",
+                        "blocked": "This truck cannot be selected because the change is not safe to write. Please reload the save or choose another truck."
+                  },
+                  "support": {
+                        "show_details": "Show technical details for support",
+                        "copy_details": "Copy support details",
+                        "copied": "Support details copied."
+                  },
                   "transfer": {
                         "wip": "Transfer preview is available in the backend. Real target-profile writes remain blocked until garage and ownership fixtures are complete."
                   },
                   "powertrain": {
+                        "wip_title": "WiP",
+                        "wip_description": "Coming in a future update.",
                         "wip": "Powertrain catalog loading and preview are prepared. Real engine and gearbox writes remain blocked in this WIP.",
                         "catalog_unavailable": "No official powertrain catalog is available for the selected game version yet."
                   },
@@ -1725,9 +1781,9 @@
                         "save_changed_since_list": "The save changed since the truck list was loaded.",
                         "current_truck_not_found": "The current active truck could not be found.",
                         "current_truck_unresolved": "The current truck could not be resolved from player assignment data.",
-                        "owned_trucks_missing": "No owned trucks were found in player.trucks[].",
+                        "owned_trucks_missing": "No owned trucks were found in this save.",
                         "target_truck_not_found": "The selected truck is not present in this save.",
-                        "target_truck_not_owned": "The selected truck is not listed in player.trucks[].",
+                        "target_truck_not_owned": "This truck is not recognized as one of your owned trucks and cannot be selected.",
                         "target_already_active": "The selected truck is already active.",
                         "truck_assigned_to_driver": "The selected truck is assigned to a hired driver.",
                         "driver_assignment_ambiguous": "The garage driver reference is not unique.",
@@ -1742,7 +1798,7 @@
                         "write_verification_failed": "The write verification failed after reloading the save.",
                         "backup_failed": "The backup could not be created.",
                         "target_has_garage_assignment": "The selected truck has a garage assignment that will be preserved.",
-                        "player_truck_reference_missing_vehicle_block": "A truck listed in player.trucks[] has no matching vehicle block and was not shown."
+                        "player_truck_reference_missing_vehicle_block": "A truck listed in player.trucks[] has no matching vehicle block. It is shown with limited details."
                   },
                   "errors": {
                         "save_changed_since_session": "The save changed since this truck change session was loaded. Refresh and preview again.",
@@ -1751,7 +1807,10 @@
                         "current_truck_unresolved": "The current truck could not be resolved from player.assigned_vehicles, player.assigned_truck, player.my_truck or fallback ownership data.",
                         "truck_assigned_to_driver": "The selected driver assignment could not be swapped safely.",
                         "driver_assignment_ambiguous": "The garage driver reference is not unique enough to swap safely.",
-                        "driver_assignment_unresolved": "The driver assignment could not be resolved clearly. The truck is linked to garage or driver data, but the save references are not unique.",
+                        "driver_assignment_unresolved": "The selected truck is linked to driver data that could not be resolved safely. Please reload the save or choose another truck.",
+                        "verification_failed": "The save was written, but the result could not be verified. Please restore the backup before continuing.",
+                        "write_failed": "The save file could not be written. No truck change was applied.",
+                        "truck_not_owned": "This truck is not recognized as one of your owned trucks and cannot be selected.",
                         "driver_swap_assignment_missing": "The required garage assignment for the driver swap is missing.",
                         "duplicate_assignment_detected": "A duplicate truck or driver assignment blocks the switch.",
                         "target_truck_not_found": "The selected truck no longer exists in the save.",
@@ -1760,8 +1819,8 @@
                         "current_vehicle_block_missing": "The current truck vehicle block is missing.",
                         "current_slot_unresolved": "The current player_vehicles slot could not be resolved safely.",
                         "old_truck_destination_missing": "The target truck is owned, but the old current truck has no safe slot or driver destination.",
-                        "write_verification_failed": "The save was written but failed post-write verification.",
-                        "backup_failed": "The backup could not be created.",
+                        "write_verification_failed": "The save was written, but the result could not be verified. Please restore the backup before continuing.",
+                        "backup_failed": "The backup could not be created. The change was stopped for safety.",
                         "backup_required_before_write": "The write was blocked because no backup was available."
                   }
             },

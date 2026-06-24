@@ -9,17 +9,18 @@ fn compile_regex(pattern: &str, context: &str) -> Option<Regex> {
     match Regex::new(pattern) {
         Ok(regex) => Some(regex),
         Err(error) => {
-            dev_log!("[sii_parser] regex compile failed in {}: {}", context, error);
+            dev_log!(
+                "[sii_parser] regex compile failed in {}: {}",
+                context,
+                error
+            );
             None
         }
     }
 }
 
 fn extract_numeric_value_auto(block: &str, key: &str) -> f32 {
-    let pattern = format!(
-        r"{}\s*:\s*(&[0-9a-fA-F]+|[0-9\.\-]+)",
-        regex::escape(key)
-    );
+    let pattern = format!(r"{}\s*:\s*(&[0-9a-fA-F]+|[0-9\.\-]+)", regex::escape(key));
     let Some(regex) = compile_regex(&pattern, "extract_numeric_value_auto") else {
         return 0.0;
     };
@@ -253,10 +254,8 @@ pub fn parse_trucks_from_sii(content: &str) -> Vec<ParsedTruck> {
         let transmission_wear_unfixable =
             extract_numeric_value_auto(&block, "transmission_wear_unfixable");
         let cabin_wear_unfixable = extract_numeric_value_auto(&block, "cabin_wear_unfixable");
-        let chassis_wear_unfixable =
-            extract_numeric_value_auto(&block, "chassis_wear_unfixable");
-        let wheels_wear_unfixable =
-            extract_numeric_array_auto(&block, "wheels_wear_unfixable");
+        let chassis_wear_unfixable = extract_numeric_value_auto(&block, "chassis_wear_unfixable");
+        let wheels_wear_unfixable = extract_numeric_array_auto(&block, "wheels_wear_unfixable");
 
         trucks.push(ParsedTruck {
             truck_id,

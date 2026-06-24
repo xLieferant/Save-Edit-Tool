@@ -112,19 +112,19 @@ impl Translator {
                 Ok(content) => {
                     let content = content.trim_start_matches('\u{feff}');
                     match serde_json::from_str::<Value>(content) {
-                    Ok(json) => {
-                        self.translations.insert(code.to_string(), json);
-                        log_language(format!("loaded locale: {} ({})", code, path.display()));
-                    }
-                    Err(error) => {
-                        log_language(format!(
-                            "failed to parse locale file {}: {}",
-                            path.display(),
-                            error
-                        ));
+                        Ok(json) => {
+                            self.translations.insert(code.to_string(), json);
+                            log_language(format!("loaded locale: {} ({})", code, path.display()));
+                        }
+                        Err(error) => {
+                            log_language(format!(
+                                "failed to parse locale file {}: {}",
+                                path.display(),
+                                error
+                            ));
+                        }
                     }
                 }
-                },
                 Err(error) => {
                     log_language(format!(
                         "failed to read locale file {}: {}",

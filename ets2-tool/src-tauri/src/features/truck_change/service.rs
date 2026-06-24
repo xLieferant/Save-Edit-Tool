@@ -1,5 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
+use std::time::Instant;
 
 use sha2::{Digest, Sha256};
 
@@ -9,16 +10,17 @@ use crate::models::trucks::ParsedTruck;
 use crate::shared::decrypt::decrypt_cached_with_cache;
 use crate::shared::paths::game_sii_from_save;
 use crate::shared::sii_parser::parse_trucks_from_sii;
+use crate::shared::user_log;
 use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 
 use super::cache::{CurrentTruckCacheEntry, TruckChangeSessionCache};
 use super::models::{
     ApplyTruckChangeResult, CurrentTruckPointer, CurrentTruckPointerKind, DriverAssignmentEvidence,
     DriverAssignmentSource, DriverDisplayInfo, DriverResolutionDiagnostics, DriverResolutionError,
-    DriverResolutionKind, GarageSlotAssignment, ResolvedDriverAssignment, TruckAssignmentContext,
-    TruckAssignmentKind, TruckChangePreview, TruckChangeSession, TruckGarageSlotReference,
-    PlayerVehicleSlotAssignment, TruckInventoryItem, TruckReferenceMatch, TruckSwapPreviewDetails,
-    TruckSwitchList, TruckSwitchMode,
+    DriverResolutionKind, GarageSlotAssignment, PlayerVehicleSlotAssignment,
+    ResolvedDriverAssignment, TruckAssignmentContext, TruckAssignmentKind, TruckChangePreview,
+    TruckChangeSession, TruckGarageSlotReference, TruckInventoryItem, TruckReferenceMatch,
+    TruckSwapPreviewDetails, TruckSwitchList, TruckSwitchMode,
 };
 use super::parser::{
     assignment_conflicts_from_blocks, extract_array_entries, extract_array_values,
@@ -30,6 +32,269 @@ use super::writer::{
     set_unit_field_value, unit_field_exists, write_verified_content, TemporaryRollbackSnapshot,
 };
 
+const TRUCK_CHANGE_FEATURE_STATUS: &str = "WiP/Beta";
+
+fn truck_change_user_message(error_code: &str) -> &'static str {
+    match error_code {
+        "driver_assignment_unresolved" => {
+            "The selected truck is linked to driver data that could not be resolved safely."
+        }
+        "write_verification_failed" | "verification_failed" => {
+            "The save was written, but the result could not be verified."
+        }
+        "backup_failed" => "The backup could not be created. The change was stopped for safety.",
+        "write_failed" => "The save file could not be written. No truck change was applied.",
+        "target_truck_not_owned" | "truck_not_owned" => {
+            "This truck is not recognized as one of your owned trucks and cannot be selected."
+        }
+        "preview_blocked" => "The truck change is blocked by the current safety checks.",
+        _ => "The truck change could not be completed.",
+    }
+}
+
+fn save_type_from_game_path(game_path: &Path) -> String {
+    game_path
+        .parent()
+        .and_then(|path| path.file_name())
+        .and_then(|value| value.to_str())
+        .map(|value| value.to_string())
+        .unwrap_or_else(|| "unknown".to_string())
+}
+
+fn masked_profile(profile_id: &str) -> String {
+    Path::new(profile_id)
+        .file_name()
+        .and_then(|value| value.to_str())
+        .map(|value| value.to_string())
+        .unwrap_or_else(|| "<masked profile>".to_string())
+}
+
+fn truck_log_summary(truck: Option<&TruckInventoryItem>) -> String {
+    let Some(truck) = truck else {
+        return "-".to_string();
+    };
+    let label = [truck.brand.as_deref(), truck.model.as_deref()]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>()
+        .join(" ");
+    let driver = if truck.is_active {
+        "Player"
+    } else if truck.assigned_driver_id.is_some() || truck.driver_display_name.is_some() {
+        "AI"
+    } else {
+        "No driver"
+    };
+    format!(
+        "{} | Plate: {} | Garage: {} | Driver: {}",
+        if label.trim().is_empty() {
+            "Unknown truck"
+        } else {
+            label.trim()
+        },
+        truck
+            .display_license_plate
+            .as_deref()
+            .or(truck.license_plate.as_deref())
+            .unwrap_or("-"),
+        truck
+            .garage_display_name
+            .as_deref()
+            .or(truck.assigned_garage.as_deref())
+            .unwrap_or("-"),
+        driver
+    )
+}
+
+fn assignment_format(session: Option<&TruckChangeSession>) -> &'static str {
+    match session
+        .and_then(|value| value.diagnostics.as_ref())
+        .and_then(|diagnostics| diagnostics.current_truck_pointer_kind.as_ref())
+    {
+        Some(CurrentTruckPointerKind::PlayerAssignedVehicles) => "player_vehicles",
+        Some(CurrentTruckPointerKind::PlayerAssignedTruck)
+        | Some(CurrentTruckPointerKind::PlayerMyTruck) => "direct",
+        Some(CurrentTruckPointerKind::FallbackPlayerVehicles)
+        | Some(CurrentTruckPointerKind::FallbackFirstOwnedTruck) => "fallback",
+        None => "unknown",
+    }
+}
+
+fn driver_resolver_status(preview: Option<&TruckChangePreview>) -> &'static str {
+    let Some(preview) = preview else {
+        return "unknown";
+    };
+    if preview
+        .diagnostics
+        .as_ref()
+        .and_then(|diagnostics| diagnostics.resolution_error.as_deref())
+        .is_some()
+    {
+        "unresolved"
+    } else if preview.affected_driver.is_some() || preview.can_apply {
+        "resolved"
+    } else {
+        "unknown"
+    }
+}
+
+fn write_truck_change_log(level: &str, lines: Vec<String>) {
+    let mut body = Vec::new();
+    body.push("[TruckChange] ==================================================".to_string());
+    body.push(format!(
+        "[TruckChange] App version: {}",
+        env!("CARGO_PKG_VERSION")
+    ));
+    body.push(format!(
+        "[TruckChange] Feature status: {}",
+        TRUCK_CHANGE_FEATURE_STATUS
+    ));
+    body.extend(
+        lines
+            .into_iter()
+            .map(|line| format!("[TruckChange] {}", line)),
+    );
+    body.push("[TruckChange] ==================================================".to_string());
+    let message = body.join("\n");
+    let result = match level {
+        "error" => user_log::user_log_error("TruckChange", message),
+        "warn" => user_log::user_log_warn("TruckChange", message),
+        _ => user_log::user_log_info("TruckChange", message),
+    };
+    if let Err(error) = result {
+        crate::dev_log!("[truck_change] user log write failed: {}", error);
+    }
+}
+
+fn truck_log_model(truck: &TruckInventoryItem) -> String {
+    let label = [truck.brand.as_deref(), truck.model.as_deref()]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>()
+        .join(" ");
+    if label.trim().is_empty() {
+        "Unknown truck".to_string()
+    } else {
+        label.trim().to_string()
+    }
+}
+
+fn truck_log_plate(truck: &TruckInventoryItem) -> String {
+    truck
+        .display_license_plate
+        .as_deref()
+        .or(truck.license_plate.as_deref())
+        .unwrap_or("Unknown")
+        .to_string()
+}
+
+fn truck_log_garage(truck: &TruckInventoryItem) -> String {
+    let garage = truck
+        .garage_display_name
+        .as_deref()
+        .or(truck.assigned_garage.as_deref())
+        .unwrap_or("Unknown / No garage");
+    let country = truck
+        .country_display_name
+        .as_deref()
+        .or(truck.country_code.as_deref());
+    match country {
+        Some(country) if !country.trim().is_empty() => format!("{} / {}", garage, country.trim()),
+        _ => garage.to_string(),
+    }
+}
+
+fn truck_log_driver_status(truck: &TruckInventoryItem) -> &'static str {
+    if truck.is_active {
+        "Player"
+    } else if truck.assigned_driver_id.is_some()
+        || truck.driver_display_name.is_some()
+        || truck.requires_driver_swap
+    {
+        "AI"
+    } else {
+        "Unknown"
+    }
+}
+
+fn log_owned_truck_scan(parsed: &super::parser::ParsedTruckSave, trucks: &[TruckInventoryItem]) {
+    let mut lines = vec![
+        "Owned truck scan".to_string(),
+        format!("vehicle_blocks={}", parsed.diagnostics.total_vehicle_blocks),
+        format!("candidate_trucks={}", parsed.diagnostics.candidate_trucks),
+        format!(
+            "player.trucks_refs={}",
+            parsed.diagnostics.player_trucks_array_count
+        ),
+        format!(
+            "owned_trucks_resolved={}",
+            parsed.diagnostics.player_truck_refs_with_vehicle_blocks
+        ),
+        format!(
+            "owned_trucks_missing_vehicle_block={}",
+            parsed
+                .diagnostics
+                .player_truck_reference_missing_vehicle_blocks
+                .len()
+        ),
+        format!("garages_scanned={}", parsed.garages.len()),
+        "hq_filter_used=false".to_string(),
+    ];
+
+    for (index, truck) in trucks.iter().enumerate() {
+        lines.push(format!(
+            "Owned truck #{}: model={} plate={} garage={} driver={} source=player.trucks[]",
+            index + 1,
+            truck_log_model(truck),
+            truck_log_plate(truck),
+            truck_log_garage(truck),
+            truck_log_driver_status(truck)
+        ));
+    }
+
+    write_truck_change_log("info", lines);
+}
+
+fn log_truck_change_action(
+    action: &str,
+    game_path: Option<&Path>,
+    profile_id: Option<&str>,
+    current: Option<&TruckInventoryItem>,
+    selected: Option<&TruckInventoryItem>,
+    session: Option<&TruckChangeSession>,
+    preview: Option<&TruckChangePreview>,
+    extra: Vec<String>,
+) {
+    let mut lines = vec![format!("Action: {}", action)];
+    if let Some(path) = game_path {
+        lines.push(format!("Save type: {}", save_type_from_game_path(path)));
+    }
+    if let Some(profile_id) = profile_id {
+        lines.push(format!("Profile: {}", masked_profile(profile_id)));
+    }
+    lines.push(format!("Current truck: {}", truck_log_summary(current)));
+    lines.push(format!("Selected truck: {}", truck_log_summary(selected)));
+    lines.push(format!("Assignment format: {}", assignment_format(session)));
+    lines.push(format!(
+        "Driver resolver: {}",
+        driver_resolver_status(preview)
+    ));
+    lines.extend(extra);
+    write_truck_change_log("info", lines);
+}
+
+pub fn log_truck_change_frontend_event(
+    event: String,
+    detail: Option<String>,
+) -> Result<(), String> {
+    let mut lines = vec![format!("Action: {}", event.trim())];
+    if let Some(detail) = detail.filter(|value| !value.trim().is_empty()) {
+        lines.push(format!("Technical detail: {}", detail.trim()));
+    }
+    write_truck_change_log("info", lines);
+    Ok(())
+}
+
 pub fn list_owned_trucks_for_switch_from_content(
     save_path: &Path,
     content: &str,
@@ -37,6 +302,7 @@ pub fn list_owned_trucks_for_switch_from_content(
     let parsed = parse_truck_save(content);
     let mut trucks = parsed.trucks.clone();
     annotate_truck_switchability(&parsed, &mut trucks);
+    log_owned_truck_scan(&parsed, &trucks);
     let mut warnings = Vec::new();
     if parsed.truck_order.is_empty() {
         warnings.push("owned_trucks_missing".to_string());
@@ -117,13 +383,16 @@ pub fn preview_active_truck_switch_from_content(
         .unwrap_or_else(|| missing_inventory_item("_missing_current"));
     let target_truck = find_inventory_item(&parsed.trucks, target_truck_id)
         .unwrap_or_else(|| missing_inventory_item(target_truck_id));
-    let affected_driver = unique_driver_assigned_to_truck(&parsed, target_truck_id).ok().flatten();
+    let affected_driver = unique_driver_assigned_to_truck(&parsed, target_truck_id)
+        .ok()
+        .flatten();
     let mode = if affected_driver.is_some() {
         TruckSwitchMode::DriverSwap
     } else {
         TruckSwitchMode::FreeTruck
     };
-    let swap_plan = build_truck_swap_preview_details(&parsed, current_pointer.as_ref(), target_truck_id);
+    let swap_plan =
+        build_truck_swap_preview_details(&parsed, current_pointer.as_ref(), target_truck_id);
     let mut warnings = Vec::new();
     let mut can_apply = true;
 
@@ -150,11 +419,9 @@ pub fn preview_active_truck_switch_from_content(
     }
 
     if let Some(pointer) = current_pointer.as_ref() {
-        if !parsed
-            .truck_graphs
-            .values()
-            .any(|graph| normalize_sii_unit_id(&graph.vehicle_id) == normalize_sii_unit_id(&pointer.truck_id))
-        {
+        if !parsed.truck_graphs.values().any(|graph| {
+            normalize_sii_unit_id(&graph.vehicle_id) == normalize_sii_unit_id(&pointer.truck_id)
+        }) {
             warnings.push("current_vehicle_block_missing".to_string());
             can_apply = false;
         }
@@ -176,8 +443,7 @@ pub fn preview_active_truck_switch_from_content(
 
     if let Some(pointer) = current_pointer.as_ref() {
         if target_owned && !pointer.truck_id.eq_ignore_ascii_case(target_truck_id) {
-            if let Err(reason) =
-                resolve_truck_switch_write_plan(&parsed, pointer, target_truck_id)
+            if let Err(reason) = resolve_truck_switch_write_plan(&parsed, pointer, target_truck_id)
             {
                 warnings.push(reason.to_string());
                 can_apply = false;
@@ -228,6 +494,7 @@ pub fn apply_active_truck_switch_transaction(
     decrypt_cache: &DecryptCache,
     truck_change_cache: &TruckChangeSessionCache,
 ) -> Result<ApplyTruckChangeResult, String> {
+    let started_at = Instant::now();
     let profile_id = current_profile_id(profile_state)?;
     let game_path = resolve_game_sii_path(save_path_arg, profile_state)?;
     decrypt_cache.invalidate_path(&game_path);
@@ -276,6 +543,34 @@ pub fn apply_active_truck_switch_transaction(
         preview_availability
     );
     if !preview.can_apply {
+        write_truck_change_log(
+            "warn",
+            vec![
+                "Action: Apply truck change blocked".to_string(),
+                format!("Save type: {}", save_type_from_game_path(&game_path)),
+                format!("Profile: {}", masked_profile(&profile_id)),
+                format!(
+                    "Current truck: {}",
+                    truck_log_summary(Some(&preview.current_truck))
+                ),
+                format!(
+                    "Selected truck: {}",
+                    truck_log_summary(Some(&preview.target_truck))
+                ),
+                format!(
+                    "Driver resolver: {}",
+                    driver_resolver_status(Some(&preview))
+                ),
+                format!("Error code: {}", preview_error_code(&preview.warnings)),
+                format!(
+                    "User message: {}",
+                    truck_change_user_message(&preview_error_code(&preview.warnings))
+                ),
+                format!("Technical detail: {}", preview.warnings.join(",")),
+                "Write result: not_started".to_string(),
+                format!("Duration: {} ms", started_at.elapsed().as_millis()),
+            ],
+        );
         return Err(format!("preview_blocked:{}", preview.warnings.join(",")));
     }
     if !preview
@@ -283,20 +578,95 @@ pub fn apply_active_truck_switch_transaction(
         .truck_id
         .eq_ignore_ascii_case(&current_pointer_before_preview.truck_id)
     {
+        write_truck_change_log(
+            "error",
+            vec![
+                "ERROR".to_string(),
+                "Step: preview_consistency".to_string(),
+                "Error code: current_truck_changed_since_preview".to_string(),
+                "User message: The active truck changed before the write could start.".to_string(),
+                format!(
+                    "Expected active truck: {}",
+                    current_pointer_before_preview.truck_id
+                ),
+                format!("Actual active truck: {}", preview.current_truck.truck_id),
+                "Write result: not_started".to_string(),
+                format!("Duration: {} ms", started_at.elapsed().as_millis()),
+            ],
+        );
         return Err("current_truck_changed_since_preview".to_string());
     }
 
+    log_truck_change_action(
+        "Apply truck change",
+        Some(&game_path),
+        Some(&profile_id),
+        Some(&preview.current_truck),
+        Some(&preview.target_truck),
+        None,
+        Some(&preview),
+        vec![
+            format!(
+                "Backup: {}",
+                if create_persistent_backup {
+                    "requested"
+                } else {
+                    "skipped"
+                }
+            ),
+            "Write result: pending".to_string(),
+            "Verification: pending".to_string(),
+        ],
+    );
+
     let backup_id = if create_persistent_backup {
         let backup_targets = backup_service::recommended_targets(&game_path);
-        let backup = backup_service::create_backup_for_targets(
+        let backup = match backup_service::create_backup_for_targets(
             profile_state,
             "active truck switch",
             &backup_targets,
-        )
-        .map_err(|error| format!("backup_failed:{}", error))?;
+        ) {
+            Ok(backup) => backup,
+            Err(error) => {
+                write_truck_change_log(
+                    "error",
+                    vec![
+                        "ERROR".to_string(),
+                        "Step: create_backup".to_string(),
+                        "Error code: backup_failed".to_string(),
+                        format!(
+                            "User message: {}",
+                            truck_change_user_message("backup_failed")
+                        ),
+                        format!("Technical detail: {}", error),
+                        "Backup: failed".to_string(),
+                        "Write result: not_started".to_string(),
+                        "Rollback: not_needed".to_string(),
+                        format!("Duration: {} ms", started_at.elapsed().as_millis()),
+                    ],
+                );
+                return Err(format!("backup_failed:{}", error));
+            }
+        };
+        write_truck_change_log(
+            "info",
+            vec![
+                "Action: Backup created".to_string(),
+                format!("Backup: created ({})", backup.backup_id),
+                format!("Save type: {}", save_type_from_game_path(&game_path)),
+            ],
+        );
         Some(backup.backup_id.clone())
     } else {
         crate::dev_log!("[truck_change] persistent backup skipped by user");
+        write_truck_change_log(
+            "warn",
+            vec![
+                "Action: Backup skipped".to_string(),
+                "Backup: skipped".to_string(),
+                "User message: The user disabled persistent backup creation.".to_string(),
+            ],
+        );
         None
     };
     let mut rollback = TemporaryRollbackSnapshot::create(&game_path)?;
@@ -345,10 +715,29 @@ pub fn apply_active_truck_switch_transaction(
                 ))
             }
         })?;
+        write_truck_change_log(
+            "info",
+            vec![
+                "Action: game.sii written".to_string(),
+                "Write result: success".to_string(),
+                format!(
+                    "Current truck before write: {}",
+                    switch_plan.previous_truck_id
+                ),
+                format!("Selected truck after write: {}", target_truck_id),
+            ],
+        );
 
         invalidate_after_write(&game_path, profile_cache, decrypt_cache);
         truck_change_cache.invalidate_save(&profile_id, &game_path);
         let reloaded = decrypt_cached_with_cache(&game_path, decrypt_cache)?;
+        write_truck_change_log(
+            "info",
+            vec![
+                "Action: Save reloaded".to_string(),
+                format!("Save type: {}", save_type_from_game_path(&game_path)),
+            ],
+        );
         let _production_trucks: Vec<ParsedTruck> = parse_trucks_from_sii(&reloaded);
         let validation = validate_truck_switch_content(
             &reloaded,
@@ -375,6 +764,15 @@ pub fn apply_active_truck_switch_transaction(
                 semantic_errors.join(",")
             ));
         }
+        write_truck_change_log(
+            "info",
+            vec![
+                "Action: Verification successful".to_string(),
+                "Verification: success".to_string(),
+                format!("Previous active truck: {}", switch_plan.previous_truck_id),
+                format!("New active truck: {}", target_truck_id),
+            ],
+        );
 
         let file_hash_after = sha256_hex(reloaded.as_bytes());
         let refreshed_session = initialize_truck_change_session_from_content(
@@ -407,7 +805,28 @@ pub fn apply_active_truck_switch_transaction(
     })();
 
     match result {
-        Ok(value) => Ok(value),
+        Ok(value) => {
+            write_truck_change_log(
+                "info",
+                vec![
+                    "Action: Apply truck change completed".to_string(),
+                    format!(
+                        "Backup: {}",
+                        if value.persistent_backup_created {
+                            "created"
+                        } else {
+                            "skipped"
+                        }
+                    ),
+                    "Write result: success".to_string(),
+                    "Verification: success".to_string(),
+                    format!("Previous active truck: {}", value.previous_truck_id),
+                    format!("New active truck: {}", value.active_truck_id),
+                    format!("Duration: {} ms", started_at.elapsed().as_millis()),
+                ],
+            );
+            Ok(value)
+        }
         Err(error) => {
             let error_code = truck_change_error_code(&error);
             let assigned_vehicles_id = current_pointer_before_preview
@@ -431,7 +850,9 @@ pub fn apply_active_truck_switch_transaction(
                 preview_target_location,
                 preview_safe_to_write,
                 assigned_vehicles_id,
-                parsed_before_preview.current_truck_diagnostics.assigned_vehicles_unit_found,
+                parsed_before_preview
+                    .current_truck_diagnostics
+                    .assigned_vehicles_unit_found,
                 old_vehicle,
                 target_truck_id
             );
@@ -439,6 +860,38 @@ pub fn apply_active_truck_switch_transaction(
             invalidate_after_write(&game_path, profile_cache, decrypt_cache);
             truck_change_cache.invalidate_save(&profile_id, &game_path);
             let _ = rollback.cleanup();
+            write_truck_change_log(
+                "error",
+                vec![
+                    "ERROR".to_string(),
+                    "Step: apply".to_string(),
+                    format!("Error code: {}", error_code),
+                    format!("User message: {}", truck_change_user_message(&error_code)),
+                    format!("Technical detail: {}", error),
+                    format!(
+                        "Driver resolver: {}",
+                        driver_resolver_status(Some(&preview))
+                    ),
+                    format!(
+                        "Backup created: {}",
+                        if backup_id.is_some() { "yes" } else { "no" }
+                    ),
+                    "Backup path: <managed backup id only>".to_string(),
+                    "Write result: failed_or_unverified".to_string(),
+                    format!(
+                        "Rollback: {}",
+                        if rollback_result.is_ok() {
+                            "restored"
+                        } else {
+                            "failed"
+                        }
+                    ),
+                    format!("Expected active truck: {}", target_truck_id),
+                    format!("Actual active truck: {}", old_vehicle),
+                    "Suggested fix: Restore backup or reload the save and try again.".to_string(),
+                    format!("Duration: {} ms", started_at.elapsed().as_millis()),
+                ],
+            );
             match rollback_result {
                 Ok(_) => Err(format!("{};temporary_rollback_restored", error)),
                 Err(rollback_error) => Err(format!("{};rollback_failed:{}", error, rollback_error)),
@@ -580,8 +1033,12 @@ pub fn apply_switch_to_content(
     let mut driver_received_truck_id = None;
 
     if let Some(target_slot) = switch_plan.target_slot.as_ref() {
-        let (next, changed_target_slot) =
-            set_unit_field_value(&updated, &target_slot.slot_id, "vehicle", &previous_truck_id)?;
+        let (next, changed_target_slot) = set_unit_field_value(
+            &updated,
+            &target_slot.slot_id,
+            "vehicle",
+            &previous_truck_id,
+        )?;
         if !changed_target_slot {
             return Err("old_truck_destination_missing".to_string());
         }
@@ -670,7 +1127,31 @@ pub fn read_truck_change_session(
     crate::dev_log!("[truck_change] session initialization started");
     decrypt_cache.invalidate_path(&game_path);
     let content = decrypt_cached_with_cache(&game_path, decrypt_cache)?;
-    initialize_truck_change_session_from_content(&profile_id, &game_path, &content, session_cache)
+    write_truck_change_log(
+        "info",
+        vec![
+            "Action: Save loaded".to_string(),
+            format!("Save type: {}", save_type_from_game_path(&game_path)),
+            format!("Profile: {}", masked_profile(&profile_id)),
+        ],
+    );
+    let session = initialize_truck_change_session_from_content(
+        &profile_id,
+        &game_path,
+        &content,
+        session_cache,
+    )?;
+    log_truck_change_action(
+        "Trucks analyzed",
+        Some(&game_path),
+        Some(&profile_id),
+        Some(&session.current_truck),
+        None,
+        Some(&session),
+        None,
+        vec![format!("Owned trucks: {}", session.owned_trucks.len())],
+    );
+    Ok(session)
 }
 
 pub fn read_switch_preview(
@@ -683,12 +1164,36 @@ pub fn read_switch_preview(
     let game_path = resolve_game_sii_path(save_path_arg, profile_state)?;
     decrypt_cache.invalidate_path(&game_path);
     let content = decrypt_cached_with_cache(&game_path, decrypt_cache)?;
-    Ok(preview_active_truck_switch_from_content(
+    let preview = preview_active_truck_switch_from_content(
         &game_path,
         &content,
         &target_truck_id,
         &expected_file_hash,
-    ))
+    );
+    log_truck_change_action(
+        "Write Preview created",
+        Some(&game_path),
+        None,
+        Some(&preview.current_truck),
+        Some(&preview.target_truck),
+        None,
+        Some(&preview),
+        vec![
+            format!(
+                "Write result: {}",
+                if preview.safe_to_write {
+                    "can_write"
+                } else {
+                    "blocked"
+                }
+            ),
+            format!(
+                "Error code: {}",
+                preview.error_code.as_deref().unwrap_or("-")
+            ),
+        ],
+    );
+    Ok(preview)
 }
 
 pub fn read_content_for_path(
@@ -926,9 +1431,7 @@ fn build_truck_swap_preview_details(
     let target_is_free =
         target_slot.is_none() && target_driver.is_none() && target_driver_result.is_ok();
     let plan = current_pointer
-        .and_then(|pointer| {
-            resolve_truck_switch_write_plan(parsed, pointer, target_truck_id).ok()
-        });
+        .and_then(|pointer| resolve_truck_switch_write_plan(parsed, pointer, target_truck_id).ok());
     let target_location = if target_slot.is_some() {
         Some("player_vehicle_slot".to_string())
     } else if target_driver.is_some() {
@@ -943,13 +1446,13 @@ fn build_truck_swap_preview_details(
         current_truck_id: current_pointer.map(|pointer| pointer.truck_id.clone()),
         target_truck_id: target_truck_id.to_string(),
         target_location,
-        old_truck_destination: plan
-            .as_ref()
-            .map(|plan| plan.old_truck_destination.clone()),
+        old_truck_destination: plan.as_ref().map(|plan| plan.old_truck_destination.clone()),
         target_is_free,
         target_player_vehicle_slot_id: target_slot.as_ref().map(|slot| slot.slot_id.clone()),
         target_player_vehicle_slot_index: target_slot.as_ref().and_then(|slot| slot.slot_index),
-        target_driver_id: target_driver.as_ref().map(|driver| driver.driver_id.clone()),
+        target_driver_id: target_driver
+            .as_ref()
+            .map(|driver| driver.driver_id.clone()),
         write_case: plan.as_ref().map(|plan| plan.write_case.to_string()),
         can_write_safely: plan.is_some(),
     }
@@ -2646,7 +3149,10 @@ driver_ai : driver.1 {
         assert_eq!(preview.error_code.as_deref(), None);
         let swap_plan = preview.swap_plan.as_ref().unwrap();
         assert!(swap_plan.target_is_free);
-        assert_eq!(swap_plan.target_location.as_deref(), Some("unassigned_owned"));
+        assert_eq!(
+            swap_plan.target_location.as_deref(),
+            Some("unassigned_owned")
+        );
         assert_eq!(
             swap_plan.old_truck_destination.as_deref(),
             Some("unassigned_owned")
@@ -2708,7 +3214,9 @@ driver_ai : driver.1 {
 
         let plan = apply_switch_to_content(&content, "_nameless.truck.5").unwrap();
         assert_eq!(plan.previous_truck_id, "_nameless.truck.4");
-        assert!(plan.content.contains("player_vehicles : _nameless.assigned.1 {\n vehicle: _nameless.truck.5"));
+        assert!(plan
+            .content
+            .contains("player_vehicles : _nameless.assigned.1 {\n vehicle: _nameless.truck.5"));
         assert!(plan.content.contains(" trucks[3]: _nameless.truck.4"));
     }
 

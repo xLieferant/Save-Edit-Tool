@@ -241,9 +241,11 @@ vehicle_accessory : _nameless.acc.a {
 "#;
         let validation = validate_truck_switch_content(content, "_nameless.truck.b", None, None);
         assert!(!validation.success);
-        assert!(validation
-            .errors
-            .contains(&"active_truck_mismatch".to_string()));
+        assert!(
+            validation
+                .errors
+                .contains(&"active_truck_mismatch".to_string())
+        );
     }
 
     #[test]
@@ -352,8 +354,10 @@ garage : garage.berlin {
             Some("_nameless.truck.a"),
         );
         assert!(!validation.success);
-        assert!(validation
-            .errors
-            .contains(&"duplicate_assignment_detected".to_string()));
+        assert!(
+            validation
+                .errors
+                .contains(&"duplicate_assignment_detected".to_string())
+        );
     }
 }

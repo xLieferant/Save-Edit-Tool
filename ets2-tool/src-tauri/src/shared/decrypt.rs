@@ -1,5 +1,7 @@
 use crate::dev_log;
-use crate::shared::trace::{lock_mutex, log_lock_acquired, log_lock_released, log_lock_wait, TraceScope};
+use crate::shared::trace::{
+    TraceScope, lock_mutex, log_lock_acquired, log_lock_released, log_lock_wait,
+};
 use crate::state::{DecryptCache, InFlightDecrypt, InFlightState};
 use decrypt_truck::decrypt_bin_file;
 use std::fs;
@@ -211,15 +213,23 @@ fn run_decrypt_with_timeout(path: PathBuf) -> Result<String, String> {
                 let _ = sender.send(result);
             }
         })
-        .map_err(|error| format!("decrypt_worker_spawn_failed | source={} | reason={}", path.display(), error))?;
+        .map_err(|error| {
+            format!(
+                "decrypt_worker_spawn_failed | source={} | reason={}",
+                path.display(),
+                error
+            )
+        })?;
 
-    receiver.recv_timeout(Duration::from_secs(DECRYPT_TIMEOUT_SECS)).map_err(|_| {
-        format!(
-            "decode_failed | source={} | reason=timeout_after_{}s",
-            path.display(),
-            DECRYPT_TIMEOUT_SECS
-        )
-    })?
+    receiver
+        .recv_timeout(Duration::from_secs(DECRYPT_TIMEOUT_SECS))
+        .map_err(|_| {
+            format!(
+                "decode_failed | source={} | reason=timeout_after_{}s",
+                path.display(),
+                DECRYPT_TIMEOUT_SECS
+            )
+        })?
 }
 
 fn decrypt_path(path: &Path) -> Result<String, String> {
@@ -238,11 +248,7 @@ fn cached_content(cache: &DecryptCache, path: &Path) -> Result<Option<String>, S
     Ok(guard.get(path).cloned())
 }
 
-fn insert_cached_content(
-    cache: &DecryptCache,
-    path: &Path,
-    content: String,
-) -> Result<(), String> {
+fn insert_cached_content(cache: &DecryptCache, path: &Path, content: String) -> Result<(), String> {
     let mut guard = lock_mutex("decrypt_cache.files", &cache.files)?;
     guard.insert(path.to_path_buf(), content);
     Ok(())

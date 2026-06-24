@@ -1,4 +1,4 @@
-use tauri::{State, command};
+use tauri::{command, State};
 
 use crate::shared::ets2data;
 use crate::state::{AppProfileState, DecryptCache, ProfileCache};
@@ -54,6 +54,14 @@ pub async fn preview_active_truck_switch(
         profile_state.inner(),
         decrypt_cache.inner(),
     )
+}
+
+#[command]
+pub async fn log_truck_change_frontend_event(
+    event: String,
+    detail: Option<String>,
+) -> Result<(), String> {
+    super::service::log_truck_change_frontend_event(event, detail)
 }
 
 #[command]

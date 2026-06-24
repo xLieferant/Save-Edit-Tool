@@ -471,12 +471,11 @@ pub fn parse_active_mod_values_from_profile_text(
         return Err("profile.sii does not look like decoded UTF-8 SII content.".to_string());
     }
 
-    let count_regex =
-        Regex::new(r#"^\s*(active_mods|actived_mods|mod_activated)\s*:\s*(\d+)\s*$"#)
-            .map_err(|error| error.to_string())?;
+    let count_regex = Regex::new(r#"^\s*(active_mods|actived_mods|mod_activated)\s*:\s*(\d+)\s*$"#)
+        .map_err(|error| error.to_string())?;
     let entry_regex =
         Regex::new(r#"^\s*(active_mods|actived_mods|mod_activated)\[(\d+)\]\s*:\s*"(.*)"\s*$"#)
-        .map_err(|error| error.to_string())?;
+            .map_err(|error| error.to_string())?;
     let mut expected_count = None::<usize>;
     let mut entries = BTreeMap::<usize, String>::new();
     let mut active_expected_count = None::<usize>;
@@ -484,7 +483,10 @@ pub fn parse_active_mod_values_from_profile_text(
 
     for line in profile_text.lines() {
         if let Some(captures) = count_regex.captures(line) {
-            let field_name = captures.get(1).map(|value| value.as_str()).unwrap_or_default();
+            let field_name = captures
+                .get(1)
+                .map(|value| value.as_str())
+                .unwrap_or_default();
             let count = captures
                 .get(2)
                 .and_then(|value| value.as_str().parse::<usize>().ok());
@@ -496,7 +498,10 @@ pub fn parse_active_mod_values_from_profile_text(
         }
 
         if let Some(captures) = entry_regex.captures(line) {
-            let field_name = captures.get(1).map(|value| value.as_str()).unwrap_or_default();
+            let field_name = captures
+                .get(1)
+                .map(|value| value.as_str())
+                .unwrap_or_default();
             let Some(index) = captures
                 .get(2)
                 .and_then(|value| value.as_str().parse::<usize>().ok())
@@ -574,7 +579,7 @@ pub fn replace_active_mods_block(
             .map_err(|error| error.to_string())?;
     let entry_regex =
         Regex::new(r#"^([ \t]*)(active_mods|actived_mods|mod_activated)\[\d+\]\s*:\s*".*"\s*$"#)
-        .map_err(|error| error.to_string())?;
+            .map_err(|error| error.to_string())?;
 
     let mut output = Vec::<String>::new();
     let mut insert_at = None::<usize>;
