@@ -35,8 +35,13 @@ pub fn technical_log_path() -> PathBuf {
 
 pub fn ensure_log_directory() -> Result<PathBuf, String> {
     let path = default_log_root();
-    fs::create_dir_all(&path)
-        .map_err(|error| format!("Could not create log directory {}: {}", path.display(), error))?;
+    fs::create_dir_all(&path).map_err(|error| {
+        format!(
+            "Could not create log directory {}: {}",
+            path.display(),
+            error
+        )
+    })?;
     Ok(path)
 }
 
@@ -91,8 +96,13 @@ pub fn clear_log_archives(path: &Path) -> Result<(), String> {
 pub fn rotate_log_file(path: &Path) -> Result<(), String> {
     ensure_log_file(path)?;
 
-    let metadata = fs::metadata(path)
-        .map_err(|error| format!("Could not read log file metadata {}: {}", path.display(), error))?;
+    let metadata = fs::metadata(path).map_err(|error| {
+        format!(
+            "Could not read log file metadata {}: {}",
+            path.display(),
+            error
+        )
+    })?;
     if metadata.len() < MAX_LOG_SIZE_BYTES {
         return Ok(());
     }

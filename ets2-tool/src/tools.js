@@ -5,6 +5,7 @@ import {
   openModalMulti,
   openCloneProfileModal,
   openCurrentTruckModal,
+  openTruckChangeModal,
   openLevelSystemModal,
   openModConflictDiagnosticsPage,
   openModProfileManagerPage,
@@ -45,6 +46,15 @@ export const tools = {
       img: "images/odometer.png",
       action: async () => {
         await openCurrentTruckModal();
+      },
+      disabled: false,
+    },
+    {
+      title: "tools.truck.truck_change.title",
+      desc: "tools.truck.truck_change.desc",
+      img: "images/odometer.png",
+      action: async () => {
+        await openTruckChangeModal();
       },
       disabled: false,
     },

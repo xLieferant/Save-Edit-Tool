@@ -16,12 +16,9 @@ use crate::shared::ets2data::validate::{validate_cities, validate_companies, val
 
 const DATASET_MIGRATION_SQL: &str =
     include_str!("../../db/migrations/2026-04-06_create_ets2_datasets.sql");
-const EMBEDDED_COUNTRIES_DATASET_JSON: &str =
-    include_str!("../../../../data/ets2/countries.json");
-const EMBEDDED_CITIES_DATASET_JSON: &str =
-    include_str!("../../../../data/ets2/cities.json");
-const EMBEDDED_COMPANIES_DATASET_JSON: &str =
-    include_str!("../../../../data/ets2/companies.json");
+const EMBEDDED_COUNTRIES_DATASET_JSON: &str = include_str!("../../../../data/ets2/countries.json");
+const EMBEDDED_CITIES_DATASET_JSON: &str = include_str!("../../../../data/ets2/cities.json");
+const EMBEDDED_COMPANIES_DATASET_JSON: &str = include_str!("../../../../data/ets2/companies.json");
 
 pub fn ensure_tables(conn: &Connection) -> Result<(), String> {
     conn.execute_batch(DATASET_MIGRATION_SQL)

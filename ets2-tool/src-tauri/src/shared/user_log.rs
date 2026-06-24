@@ -204,7 +204,10 @@ pub fn get_log_status() -> Result<UserLogStatus, String> {
 
     let entries = get_user_logs(None, Some(10_000))?;
     let warning_count = entries.iter().filter(|entry| entry.level == "WARN").count() as u32;
-    let error_count = entries.iter().filter(|entry| entry.level == "ERROR").count() as u32;
+    let error_count = entries
+        .iter()
+        .filter(|entry| entry.level == "ERROR")
+        .count() as u32;
     let metadata = fs::metadata(user_log_path())
         .map_err(|error| format!("Could not read user log metadata: {}", error))?;
 
@@ -223,7 +226,10 @@ fn build_clear_backup_path() -> PathBuf {
     let timestamp = Local::now().format("%Y-%m-%d_%H-%M-%S");
     logs::log_directory_path()
         .unwrap_or_else(|| PathBuf::from("."))
-        .join(format!("ets2_tool_user_logs_before_clear_{}.txt", timestamp))
+        .join(format!(
+            "ets2_tool_user_logs_before_clear_{}.txt",
+            timestamp
+        ))
 }
 
 fn clear_single_log(path: &Path) -> Result<(), String> {

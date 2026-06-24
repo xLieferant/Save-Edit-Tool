@@ -1,5 +1,5 @@
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use crate::features::ets2save::errors::{AppError, AppErrorCode};
 use crate::shared::decrypt::decrypt_if_needed;
@@ -39,12 +39,16 @@ pub fn write_lines_atomic(path: &Path, lines: &[String]) -> Result<(), AppError>
         )
     })?;
 
-    replace_file(&tmp_path, path)?;
+    replace_file_atomic(&tmp_path, path)?;
     Ok(())
 }
 
+pub fn replace_file_atomic(tmp_path: &Path, target_path: &Path) -> Result<(), AppError> {
+    replace_file_impl(tmp_path, target_path)
+}
+
 #[cfg(target_os = "windows")]
-fn replace_file(tmp_path: &Path, target_path: &Path) -> Result<(), AppError> {
+fn replace_file_impl(tmp_path: &Path, target_path: &Path) -> Result<(), AppError> {
     use windows_sys::Win32::Storage::FileSystem::{
         MOVEFILE_REPLACE_EXISTING, MOVEFILE_WRITE_THROUGH, MoveFileExW,
     };
@@ -79,7 +83,7 @@ fn replace_file(tmp_path: &Path, target_path: &Path) -> Result<(), AppError> {
 }
 
 #[cfg(not(target_os = "windows"))]
-fn replace_file(tmp_path: &Path, target_path: &Path) -> Result<(), AppError> {
+fn replace_file_impl(tmp_path: &Path, target_path: &Path) -> Result<(), AppError> {
     if target_path.exists() {
         fs::remove_file(target_path).map_err(|error| {
             AppError::new(
