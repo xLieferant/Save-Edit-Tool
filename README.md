@@ -1,6 +1,6 @@
 # ETS2 Save Edit Tool
 
-[Deutsch Version](README.de.md) | [English Version](README.en.md) | [Versão em Português](README.pt-BR.md) 🔴
+[Deutsch Version](README.de.md) | [English Version](README.en.md) | [Portuguese Version](README.pt-br.md) 🔴
 
 Welcome to the ETS2 Save Editor – Alex Edition, a powerful yet user-friendly tool to modify your Euro Truck Simulator 2 profiles, truck settings, and game preferences.
 This project is developed as a hobby project, fully open-source, and intended for learning and customization purposes.
