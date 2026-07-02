@@ -29,7 +29,7 @@ use super::parser::{
 };
 use super::validator::validate_truck_switch_content;
 use super::writer::{
-    set_unit_field_value, unit_field_exists, write_verified_content, TemporaryRollbackSnapshot,
+    TemporaryRollbackSnapshot, set_unit_field_value, unit_field_exists, write_verified_content,
 };
 
 const TRUCK_CHANGE_FEATURE_STATUS: &str = "WiP/Beta";
@@ -3171,14 +3171,18 @@ driver_ai : driver.1 {
         assert!(plan.content.contains(" vehicle: _nameless.truck.5"));
 
         let parsed = parse_truck_save(&plan.content);
-        assert!(parsed
-            .player_vehicle_slots
-            .iter()
-            .all(|slot| slot.truck_id.as_deref() != Some("_nameless.truck.4")));
-        assert!(parsed
-            .driver_infos
-            .values()
-            .all(|driver| driver.current_truck_id.as_deref() != Some("_nameless.truck.4")));
+        assert!(
+            parsed
+                .player_vehicle_slots
+                .iter()
+                .all(|slot| slot.truck_id.as_deref() != Some("_nameless.truck.4"))
+        );
+        assert!(
+            parsed
+                .driver_infos
+                .values()
+                .all(|driver| driver.current_truck_id.as_deref() != Some("_nameless.truck.4"))
+        );
         let validation =
             validate_truck_switch_content(&plan.content, "_nameless.truck.5", None, None);
         assert!(validation.success, "{:?}", validation.errors);
@@ -3214,9 +3218,10 @@ driver_ai : driver.1 {
 
         let plan = apply_switch_to_content(&content, "_nameless.truck.5").unwrap();
         assert_eq!(plan.previous_truck_id, "_nameless.truck.4");
-        assert!(plan
-            .content
-            .contains("player_vehicles : _nameless.assigned.1 {\n vehicle: _nameless.truck.5"));
+        assert!(
+            plan.content
+                .contains("player_vehicles : _nameless.assigned.1 {\n vehicle: _nameless.truck.5")
+        );
         assert!(plan.content.contains(" trucks[3]: _nameless.truck.4"));
     }
 
@@ -3300,14 +3305,15 @@ driver_ai : driver.1 {
         assert!(preview.can_apply, "{:?}", preview.warnings);
         let plan = apply_switch_to_content(&content, "_nameless.truck.free2").unwrap();
         assert_eq!(plan.affected_driver_id.as_deref(), Some("driver.1"));
-        assert!(plan
-            .content
-            .contains(" assigned_truck: _nameless.truck.active"));
+        assert!(
+            plan.content
+                .contains(" assigned_truck: _nameless.truck.active")
+        );
     }
 
     #[test]
-    fn assigned_vehicles_driver_ai_swap_works_without_previous_garage_context_when_target_slot_exists(
-    ) {
+    fn assigned_vehicles_driver_ai_swap_works_without_previous_garage_context_when_target_slot_exists()
+     {
         let content = assigned_vehicles_driver_ai_fixture().replace(
             "garage : garage.old {\n vehicles: 1\n vehicles[0]: _nameless.truck.a\n drivers: 1\n drivers[0]: driver.94\n}\n",
             "",
@@ -3373,12 +3379,14 @@ driver_ai : driver.1 {
             validate_truck_switch_content(&plan.content, "_nameless.truck.free1", None, None);
         assert!(validation.success, "{:?}", validation.errors);
         assert!(plan.content.contains(" my_truck: _nameless.truck.free1"));
-        assert!(plan
-            .content
-            .contains(" assigned_truck: _nameless.truck.free1"));
-        assert!(plan
-            .content
-            .contains(" company_truck: _nameless.truck.free1"));
+        assert!(
+            plan.content
+                .contains(" assigned_truck: _nameless.truck.free1")
+        );
+        assert!(
+            plan.content
+                .contains(" company_truck: _nameless.truck.free1")
+        );
     }
 
     #[test]
@@ -3391,9 +3399,11 @@ driver_ai : driver.1 {
             &format!("{}-changed", list.file_hash),
         );
         assert!(!preview.can_apply);
-        assert!(preview
-            .warnings
-            .contains(&"save_changed_since_session".to_string()));
+        assert!(
+            preview
+                .warnings
+                .contains(&"save_changed_since_session".to_string())
+        );
     }
 
     #[test]
@@ -3746,9 +3756,10 @@ driver_ai : driver.1 {
         assert!(plan.content.contains(" my_truck: _nameless.truck.free2"));
         assert!(plan.content.contains(" vehicle: _nameless.truck.free2"));
         assert!(plan.content.contains(" vehicle: _nameless.truck.active"));
-        assert!(plan
-            .content
-            .contains(" assigned_truck: _nameless.truck.active"));
+        assert!(
+            plan.content
+                .contains(" assigned_truck: _nameless.truck.active")
+        );
         let validation = validate_truck_switch_content(
             &plan.content,
             "_nameless.truck.free2",
@@ -3831,10 +3842,11 @@ garage : garage.berlin"#,
         );
         let list = list_owned_trucks_for_switch_from_content(Path::new("game.sii"), &content);
         assert_eq!(list.trucks.len(), 3);
-        assert!(list
-            .trucks
-            .iter()
-            .all(|truck| truck.truck_id != "_nameless.truck.job_market"));
+        assert!(
+            list.trucks
+                .iter()
+                .all(|truck| truck.truck_id != "_nameless.truck.job_market")
+        );
         assert_eq!(list.diagnostics.owned_trucks, 3);
         assert_eq!(list.diagnostics.excluded_job_vehicles, 1);
     }

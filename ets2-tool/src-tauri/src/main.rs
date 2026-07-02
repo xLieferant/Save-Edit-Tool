@@ -41,6 +41,7 @@ fn main() {
         .manage(AppProfileState::default())
         .manage(ProfileCache::default())
         .manage(features::truck_change::cache::TruckChangeSessionCache::default())
+        .manage(features::trailer_change::cache::TrailerChangeSessionCache::default())
         .manage(HubState::default())
         .manage(CareerState::default())
         .manage(AuthState::default())
@@ -302,6 +303,11 @@ fn main() {
             features::truck_change::commands::get_official_powertrain_catalog,
             features::truck_change::commands::preview_truck_powertrain_change,
             features::truck_change::commands::preview_truck_transfer,
+            features::trailer_change::commands::list_owned_trailers_for_switch,
+            features::trailer_change::commands::initialize_trailer_change_session,
+            features::trailer_change::commands::preview_active_trailer_switch,
+            features::trailer_change::commands::log_trailer_change_frontend_event,
+            features::trailer_change::commands::apply_active_trailer_switch,
             // FEATURE: PROFILE CLONE + Rename
             features::profile_clone::commands::clone_profile_command,
             features::profile_clone::commands::validate_clone_target,

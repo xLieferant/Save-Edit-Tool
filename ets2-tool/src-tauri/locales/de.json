@@ -1176,6 +1176,9 @@
     "truck_license_plate_error": "Truck-Kennzeichen konnte nicht geändert werden",
     "truck_change_apply_success": "Truckwechsel erfolgreich verifiziert.",
     "truck_change_apply_failed": "Truckwechsel fehlgeschlagen.",
+    "trailer_change_apply_success": "[NEEDS TRANSLATION] Trailer switch verified successfully.",
+    "trailer_change_apply_failed": "[NEEDS TRANSLATION] Trailer switch failed.",
+    "trailer_change_save_required": "[NEEDS TRANSLATION] Select a profile and save first.",
     "truck_change_save_required": "Bitte zuerst Profil und Spielstand auswählen.",
     "trailer_repair_success": "Trailer erfolgreich repariert",
     "trailer_repair_error": "Trailer konnte nicht repariert werden",
@@ -1346,6 +1349,10 @@
       }
     },
     "trailer": {
+      "trailer_change": {
+        "title": "[NEEDS TRANSLATION] Change Trailer on the Road",
+        "desc": "[NEEDS TRANSLATION] Switch the active trailer in the selected save with backup and verification."
+      },
       "repair_trailer": {
         "title": "Trailer reparieren",
         "desc": "Repariere deinen Trailer",
@@ -1729,6 +1736,107 @@
         "old_truck_destination_missing": "Der Ziel-LKW ist im Besitz, aber der bisherige aktuelle LKW hat keinen sicheren Slot oder Fahrer als Ziel.",
         "write_verification_failed": "Der Spielstand wurde geschrieben, aber die anschließende Schreibprüfung ist fehlgeschlagen.",
         "backup_failed": "Das Backup konnte nicht erstellt werden."
+      }
+    },
+    "trailer_change": {
+      "kicker": "[NEEDS TRANSLATION] Change Trailer on the Road",
+      "title": "[NEEDS TRANSLATION] Change Trailer on the Road",
+      "close": "[NEEDS TRANSLATION] Close",
+      "status": {
+        "loading": "[NEEDS TRANSLATION] Loading",
+        "ready": "[NEEDS TRANSLATION] Ready",
+        "warning": "[NEEDS TRANSLATION] Warning",
+        "blocked": "[NEEDS TRANSLATION] Blocked",
+        "applying": "[NEEDS TRANSLATION] Applying",
+        "success": "[NEEDS TRANSLATION] Verified",
+        "error": "[NEEDS TRANSLATION] Error",
+        "preparing": "[NEEDS TRANSLATION] Preparing"
+      },
+      "switch": {
+        "search": "[NEEDS TRANSLATION] Search trailers",
+        "loading": "[NEEDS TRANSLATION] Loading trailers...",
+        "empty": "[NEEDS TRANSLATION] No trailers found.",
+        "no_matches": "[NEEDS TRANSLATION] No matching trailers found.",
+        "active": "[NEEDS TRANSLATION] Active",
+        "owned": "[NEEDS TRANSLATION] Owned",
+        "unavailable": "[NEEDS TRANSLATION] Unavailable",
+        "plate": "[NEEDS TRANSLATION] License plate",
+        "garage": "[NEEDS TRANSLATION] Garage",
+        "no_garage": "[NEEDS TRANSLATION] Unknown / No garage",
+        "no_plate": "[NEEDS TRANSLATION] No plate",
+        "unreadable_plate": "[NEEDS TRANSLATION] License plate unreadable",
+        "unknown_trailer": "[NEEDS TRANSLATION] Trailer",
+        "owned_count": "[NEEDS TRANSLATION] Owned trailers",
+        "current_trailer": "[NEEDS TRANSLATION] Current trailer",
+        "selected_trailer": "[NEEDS TRANSLATION] Selected trailer",
+        "select_prompt": "[NEEDS TRANSLATION] Select an available trailer to preview the switch.",
+        "loading_session": "[NEEDS TRANSLATION] Loading trailer data...",
+        "preparing_preview": "[NEEDS TRANSLATION] Preparing trailer switch...",
+        "checking_save": "[NEEDS TRANSLATION] Checking save...",
+        "verifying_result": "[NEEDS TRANSLATION] Verifying result...",
+        "preview_failed": "[NEEDS TRANSLATION] The trailer switch could not be prepared.",
+        "apply": "[NEEDS TRANSLATION] Apply",
+        "applying": "[NEEDS TRANSLATION] Applying...",
+        "refresh": "[NEEDS TRANSLATION] Refresh",
+        "verified": "[NEEDS TRANSLATION] The save was reloaded and the new active trailer was verified.",
+        "backup": "[NEEDS TRANSLATION] Backup",
+        "backup_label": "[NEEDS TRANSLATION] Create backup before changing",
+        "technical_details": "[NEEDS TRANSLATION] Technical details",
+        "error_code": "[NEEDS TRANSLATION] Error code",
+        "retry": "[NEEDS TRANSLATION] Retry",
+        "yes": "[NEEDS TRANSLATION] Yes",
+        "no": "[NEEDS TRANSLATION] No"
+      },
+      "preview": {
+        "title": "[NEEDS TRANSLATION] Trailer Change"
+      },
+      "sidebar": {
+        "status_title": "[NEEDS TRANSLATION] Status",
+        "ready_message": "[NEEDS TRANSLATION] Ready to switch trailers.",
+        "error_message": "[NEEDS TRANSLATION] Trailer change is currently not possible.",
+        "backup_enabled": "[NEEDS TRANSLATION] Backup: Enabled",
+        "backup_disabled": "[NEEDS TRANSLATION] Backup: Disabled",
+        "backup_failed": "[NEEDS TRANSLATION] Backup: Failed"
+      },
+      "support": {
+        "copy_details": "[NEEDS TRANSLATION] Copy support details",
+        "copied": "[NEEDS TRANSLATION] Support details copied."
+      },
+      "warnings": {
+        "save_changed_since_session": "[NEEDS TRANSLATION] The save changed since this trailer change session was loaded.",
+        "save_changed_since_list": "[NEEDS TRANSLATION] The save changed since the trailer list was loaded.",
+        "active_trailer_not_found": "[NEEDS TRANSLATION] The active trailer could not be resolved.",
+        "owned_trailers_missing": "[NEEDS TRANSLATION] No owned trailers were found in this save.",
+        "target_trailer_not_found": "[NEEDS TRANSLATION] The selected trailer is not present in this save.",
+        "target_trailer_not_owned": "[NEEDS TRANSLATION] This trailer is not recognized as one of your owned trailers and cannot be selected.",
+        "target_already_active": "[NEEDS TRANSLATION] The selected trailer is already active.",
+        "target_trailer_not_available": "[NEEDS TRANSLATION] The selected trailer is not available.",
+        "trailer_assignment_unresolved": "[NEEDS TRANSLATION] The trailer assignment could not be resolved clearly.",
+        "trailer_storage_unresolved": "[NEEDS TRANSLATION] The trailer storage assignment could not be resolved clearly.",
+        "current_slot_unresolved": "[NEEDS TRANSLATION] The current player_vehicles slot could not be resolved safely.",
+        "old_trailer_destination_missing": "[NEEDS TRANSLATION] No safe destination for the previous active trailer was found.",
+        "dangling_trailer_references": "[NEEDS TRANSLATION] The selected trailer has missing accessory references.",
+        "write_verification_failed": "[NEEDS TRANSLATION] The write verification failed after reloading the save.",
+        "backup_failed": "[NEEDS TRANSLATION] The backup could not be created.",
+        "player_trailer_reference_missing_block": "[NEEDS TRANSLATION] A trailer listed in player.trailers[] has no matching trailer block. It is shown with limited details."
+      },
+      "errors": {
+        "save_changed_since_session": "[NEEDS TRANSLATION] The save changed since this trailer change session was loaded. Refresh and preview again.",
+        "save_changed_since_preview": "[NEEDS TRANSLATION] The save changed after the preview. Refresh and preview again.",
+        "active_trailer_not_found": "[NEEDS TRANSLATION] The active trailer could not be resolved from player.assigned_vehicles, player.assigned_trailer, player.my_trailer or fallback ownership data.",
+        "owned_trailers_missing": "[NEEDS TRANSLATION] No owned trailers were found in player.trailers[].",
+        "target_trailer_not_found": "[NEEDS TRANSLATION] The selected trailer no longer exists in the save.",
+        "target_trailer_not_owned": "[NEEDS TRANSLATION] The selected trailer is not listed in player.trailers[].",
+        "target_trailer_not_available": "[NEEDS TRANSLATION] The selected trailer is not available.",
+        "trailer_assignment_unresolved": "[NEEDS TRANSLATION] The trailer assignment could not be resolved clearly. Reload the save or choose another trailer.",
+        "trailer_storage_unresolved": "[NEEDS TRANSLATION] The trailer storage assignment could not be resolved clearly.",
+        "current_slot_unresolved": "[NEEDS TRANSLATION] The current player_vehicles slot could not be resolved safely.",
+        "old_trailer_destination_missing": "[NEEDS TRANSLATION] The target trailer is owned, but the old current trailer has no safe destination.",
+        "dangling_trailer_references": "[NEEDS TRANSLATION] The selected trailer has missing accessory references.",
+        "verification_failed": "[NEEDS TRANSLATION] The save was written, but the result could not be verified. Please restore the backup before continuing.",
+        "write_failed": "[NEEDS TRANSLATION] The save file could not be written. No trailer change was applied.",
+        "backup_failed": "[NEEDS TRANSLATION] The backup could not be created. The change was stopped for safety.",
+        "write_verification_failed": "[NEEDS TRANSLATION] The save was written, but the result could not be verified. Please restore the backup before continuing."
       }
     },
     "level_system": {

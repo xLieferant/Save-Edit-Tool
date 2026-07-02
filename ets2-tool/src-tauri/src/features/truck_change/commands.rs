@@ -1,4 +1,4 @@
-use tauri::{command, State};
+use tauri::{State, command};
 
 use crate::shared::ets2data;
 use crate::state::{AppProfileState, DecryptCache, ProfileCache};

@@ -6,6 +6,7 @@ import {
   openCloneProfileModal,
   openCurrentTruckModal,
   openTruckChangeModal,
+  openTrailerChangeModal,
   openLevelSystemModal,
   openModConflictDiagnosticsPage,
   openModProfileManagerPage,
@@ -227,6 +228,15 @@ export const tools = {
   ],
 
   trailer: [
+    {
+      title: "tools.trailer.trailer_change.title",
+      desc: "tools.trailer.trailer_change.desc",
+      img: "images/trailerRepair.jpg",
+      action: async () => {
+        await openTrailerChangeModal();
+      },
+      disabled: false,
+    },
     {
       title: "tools.trailer.repair_trailer.title",
       desc: "tools.trailer.repair_trailer.desc",

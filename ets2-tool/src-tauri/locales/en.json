@@ -1194,6 +1194,9 @@
             "truck_change_apply_success": "Truck switch verified successfully.",
             "truck_change_apply_failed": "Truck switch failed.",
             "truck_change_save_required": "Select a profile and save first.",
+            "trailer_change_apply_success": "Trailer switch verified successfully.",
+            "trailer_change_apply_failed": "Trailer switch failed.",
+            "trailer_change_save_required": "Select a profile and save first.",
             "trailer_repair_success": "Trailer repaired successfully",
             "trailer_repair_error": "Failed to repair trailer",
             "trailer_license_plate_success": "Trailer license plate changed to {newValue}!",
@@ -1363,6 +1366,10 @@
                   }
             },
             "trailer": {
+                  "trailer_change": {
+                        "title": "Change Trailer on the Road",
+                        "desc": "Switch the active trailer in the selected save with backup and verification."
+                  },
                   "repair_trailer": {
                         "title": "Repair Trailer",
                         "desc": "Repair your trailer",
@@ -1822,6 +1829,107 @@
                         "write_verification_failed": "The save was written, but the result could not be verified. Please restore the backup before continuing.",
                         "backup_failed": "The backup could not be created. The change was stopped for safety.",
                         "backup_required_before_write": "The write was blocked because no backup was available."
+                  }
+            },
+            "trailer_change": {
+                  "kicker": "Change Trailer on the Road",
+                  "title": "Change Trailer on the Road",
+                  "close": "Close",
+                  "status": {
+                        "loading": "Loading",
+                        "ready": "Ready",
+                        "warning": "Warning",
+                        "blocked": "Blocked",
+                        "applying": "Applying",
+                        "success": "Verified",
+                        "error": "Error",
+                        "preparing": "Preparing"
+                  },
+                  "switch": {
+                        "search": "Search trailers",
+                        "loading": "Loading trailers...",
+                        "empty": "No trailers found.",
+                        "no_matches": "No matching trailers found.",
+                        "active": "Active",
+                        "owned": "Owned",
+                        "unavailable": "Unavailable",
+                        "plate": "License plate",
+                        "garage": "Garage",
+                        "no_garage": "Unknown / No garage",
+                        "no_plate": "No plate",
+                        "unreadable_plate": "License plate unreadable",
+                        "unknown_trailer": "Trailer",
+                        "owned_count": "Owned trailers",
+                        "current_trailer": "Current trailer",
+                        "selected_trailer": "Selected trailer",
+                        "select_prompt": "Select an available trailer to preview the switch.",
+                        "loading_session": "Loading trailer data...",
+                        "preparing_preview": "Preparing trailer switch...",
+                        "checking_save": "Checking save...",
+                        "verifying_result": "Verifying result...",
+                        "preview_failed": "The trailer switch could not be prepared.",
+                        "apply": "Apply",
+                        "applying": "Applying...",
+                        "refresh": "Refresh",
+                        "verified": "The save was reloaded and the new active trailer was verified.",
+                        "backup": "Backup",
+                        "backup_label": "Create backup before changing",
+                        "technical_details": "Technical details",
+                        "error_code": "Error code",
+                        "retry": "Retry",
+                        "yes": "Yes",
+                        "no": "No"
+                  },
+                  "preview": {
+                        "title": "Trailer Change"
+                  },
+                  "sidebar": {
+                        "status_title": "Status",
+                        "ready_message": "Ready to switch trailers.",
+                        "error_message": "Trailer change is currently not possible.",
+                        "backup_enabled": "Backup: Enabled",
+                        "backup_disabled": "Backup: Disabled",
+                        "backup_failed": "Backup: Failed"
+                  },
+                  "support": {
+                        "copy_details": "Copy support details",
+                        "copied": "Support details copied."
+                  },
+                  "warnings": {
+                        "save_changed_since_session": "The save changed since this trailer change session was loaded.",
+                        "save_changed_since_list": "The save changed since the trailer list was loaded.",
+                        "active_trailer_not_found": "The active trailer could not be resolved.",
+                        "owned_trailers_missing": "No owned trailers were found in this save.",
+                        "target_trailer_not_found": "The selected trailer is not present in this save.",
+                        "target_trailer_not_owned": "This trailer is not recognized as one of your owned trailers and cannot be selected.",
+                        "target_already_active": "The selected trailer is already active.",
+                        "target_trailer_not_available": "The selected trailer is not available.",
+                        "trailer_assignment_unresolved": "The trailer assignment could not be resolved clearly.",
+                        "trailer_storage_unresolved": "The trailer storage assignment could not be resolved clearly.",
+                        "current_slot_unresolved": "The current player_vehicles slot could not be resolved safely.",
+                        "old_trailer_destination_missing": "No safe destination for the previous active trailer was found.",
+                        "dangling_trailer_references": "The selected trailer has missing accessory references.",
+                        "write_verification_failed": "The write verification failed after reloading the save.",
+                        "backup_failed": "The backup could not be created.",
+                        "player_trailer_reference_missing_block": "A trailer listed in player.trailers[] has no matching trailer block. It is shown with limited details."
+                  },
+                  "errors": {
+                        "save_changed_since_session": "The save changed since this trailer change session was loaded. Refresh and preview again.",
+                        "save_changed_since_preview": "The save changed after the preview. Refresh and preview again.",
+                        "active_trailer_not_found": "The active trailer could not be resolved from player.assigned_vehicles, player.assigned_trailer, player.my_trailer or fallback ownership data.",
+                        "owned_trailers_missing": "No owned trailers were found in player.trailers[].",
+                        "target_trailer_not_found": "The selected trailer no longer exists in the save.",
+                        "target_trailer_not_owned": "The selected trailer is not listed in player.trailers[].",
+                        "target_trailer_not_available": "The selected trailer is not available.",
+                        "trailer_assignment_unresolved": "The trailer assignment could not be resolved clearly. Reload the save or choose another trailer.",
+                        "trailer_storage_unresolved": "The trailer storage assignment could not be resolved clearly.",
+                        "current_slot_unresolved": "The current player_vehicles slot could not be resolved safely.",
+                        "old_trailer_destination_missing": "The target trailer is owned, but the old current trailer has no safe destination.",
+                        "dangling_trailer_references": "The selected trailer has missing accessory references.",
+                        "verification_failed": "The save was written, but the result could not be verified. Please restore the backup before continuing.",
+                        "write_failed": "The save file could not be written. No trailer change was applied.",
+                        "backup_failed": "The backup could not be created. The change was stopped for safety.",
+                        "write_verification_failed": "The save was written, but the result could not be verified. Please restore the backup before continuing."
                   }
             },
             "level_system": {
