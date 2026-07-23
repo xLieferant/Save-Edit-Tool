@@ -3,8 +3,8 @@ use super::models::{
     AppliedWorkshopMod, ApplySandboxResult, ModSandbox, SandboxActiveModsBackupCacheEntry,
     SandboxActiveModsBackupCacheFile, SandboxCollection, SandboxModCacheEntry, SandboxModCacheFile,
     SandboxModPreset, SandboxPresetActivationResult, SandboxPresetCheckResult,
-    SandboxPresetCollection, SandboxPresetModStatus, SkippedWorkshopMod, SteamWorkshopCache,
-    SteamWorkshopMod, ValidateActivePresetModsResult, WorkshopMod,
+    SandboxPresetCollection, SandboxPresetMod, SandboxPresetModStatus, SkippedWorkshopMod,
+    SteamWorkshopCache, SteamWorkshopMod, ValidateActivePresetModsResult, WorkshopMod,
 };
 use super::sii_mods;
 use super::steam_paths;
@@ -26,6 +26,20 @@ const MOD_SANDBOX_PRESETS_JSON: &str = include_str!("../../../data/mod_sandbox_p
 const MOD_SANDBOX_CACHE_FILE_NAME: &str = "modCacheSandbox.json";
 const SANDBOX_TEST_CACHE_FILE_NAME: &str = "sandboxTestCache.json";
 const STEAM_WORKSHOP_CACHE_FILE_NAME: &str = "steam_workshop_mods_cache.json";
+const STEAM_WORKSHOP_PACKAGE_PREFIX: &str = "mod_workshop_package.";
+const PROMODS_DOWNLOAD_URL: &str = "https://promods.net/";
+const BKC_BUSSBYGG_DOWNLOAD_URL: &str =
+    "https://www.jstruckstyling.com/product/bkc-bussbygg-3-ax-drawbar/";
+const PROMODS_V283_PACKAGE_IDS: [&str; 8] = [
+    "promods-eu-dlcsupport-v283",
+    "promods-eu-media-v283",
+    "promods-eu-model3-v283",
+    "promods-eu-model2-v283",
+    "promods-eu-model1-v283",
+    "promods-eu-assets-v283",
+    "promods-eu-map-v283",
+    "promods-eu-def-v283",
+];
 
 pub fn load_sandboxes(app: &AppHandle) -> Result<SandboxCollection, String> {
     let path = sandboxes_path(app)?;
@@ -372,9 +386,87 @@ pub fn sandboxes_path(app: &AppHandle) -> Result<PathBuf, String> {
     storage_dir(app).map(|dir| dir.join(SANDBOXES_FILE_NAME))
 }
 
+fn workshop_id_from_package_id(package_id: &str) -> Option<String> {
+    let hexadecimal_id = package_id
+        .trim()
+        .strip_prefix(STEAM_WORKSHOP_PACKAGE_PREFIX)?;
+    if hexadecimal_id.len() != 16
+        || !hexadecimal_id
+            .chars()
+            .all(|character| character.is_ascii_hexdigit())
+        || !hexadecimal_id[..8].eq_ignore_ascii_case("00000000")
+    {
+        return None;
+    }
+
+    u64::from_str_radix(hexadecimal_id, 16)
+        .ok()
+        .map(|workshop_id| workshop_id.to_string())
+}
+
+fn download_url_from_package_id(package_id: &str) -> Option<String> {
+    let package_id = package_id.trim();
+    if PROMODS_V283_PACKAGE_IDS.contains(&package_id) {
+        return Some(PROMODS_DOWNLOAD_URL.to_string());
+    }
+    if package_id == "BKC_Bussbygg_3_ax_drawbar" {
+        return Some(BKC_BUSSBYGG_DOWNLOAD_URL.to_string());
+    }
+
+    workshop_id_from_package_id(package_id)
+        .map(|workshop_id| workshop_api::workshop_page_url(&workshop_id))
+}
+
+fn hydrate_preset_mod_download_data(preset_mod: &mut SandboxPresetMod) {
+    let package_id = preset_mod
+        .package_id
+        .as_deref()
+        .or(preset_mod.active_mod_ref.as_deref())
+        .or(preset_mod.local_mod_id.as_deref())
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_string);
+    let Some(package_id) = package_id else {
+        return;
+    };
+
+    if preset_mod.steam_id.trim().is_empty() {
+        preset_mod.steam_id = workshop_id_from_package_id(&package_id).unwrap_or_default();
+    }
+    if preset_mod
+        .download_url
+        .as_deref()
+        .map_or(true, |url| url.trim().is_empty())
+    {
+        preset_mod.download_url = download_url_from_package_id(&package_id);
+    }
+    if !preset_mod.steam_id.is_empty() {
+        if preset_mod
+            .workshop_url
+            .as_deref()
+            .map_or(true, |url| url.trim().is_empty())
+        {
+            preset_mod.workshop_url = Some(workshop_api::workshop_page_url(&preset_mod.steam_id));
+        }
+        if preset_mod
+            .steam_protocol_url
+            .as_deref()
+            .map_or(true, |url| url.trim().is_empty())
+        {
+            preset_mod.steam_protocol_url =
+                Some(workshop_api::steam_protocol_url(&preset_mod.steam_id));
+        }
+    }
+}
+
 pub fn load_sandbox_mod_presets() -> Result<Vec<SandboxModPreset>, String> {
-    let collection: SandboxPresetCollection = serde_json::from_str(MOD_SANDBOX_PRESETS_JSON)
+    let mut collection: SandboxPresetCollection = serde_json::from_str(MOD_SANDBOX_PRESETS_JSON)
         .map_err(|error| format!("Failed to parse bundled sandbox presets: {}", error))?;
+    for preset in &mut collection.sandbox_presets {
+        for preset_mod in &mut preset.mods {
+            hydrate_preset_mod_download_data(preset_mod);
+        }
+    }
     crate::dev_log!(
         "[SandboxPreset] loaded bundled presets count={}",
         collection.sandbox_presets.len()
@@ -1649,7 +1741,7 @@ fn collect_preset_mod_statuses(
                     } else {
                         "workshop"
                     });
-            if source.eq_ignore_ascii_case("local") {
+            if !source.eq_ignore_ascii_case("workshop") {
                 let package_id = preset_mod
                     .package_id
                     .as_deref()
@@ -1697,7 +1789,7 @@ fn collect_preset_mod_statuses(
                 ));
                 return Ok(SandboxPresetModStatus {
                     steam_id: String::new(),
-                    source: Some("local".to_string()),
+                    source: Some(source.to_string()),
                     package_id: Some(package_id.to_string()),
                     active_mod_ref: Some(package_id.to_string()),
                     local_mod_id: Some(local_mod_id.to_string()),
@@ -1716,9 +1808,9 @@ fn collect_preset_mod_statuses(
                         "local_missing".to_string()
                     },
                     local_path: local_check.local_path,
-                    workshop_url: String::new(),
-                    download_url: String::new(),
-                    steam_protocol_url: String::new(),
+                    workshop_url: preset_mod.workshop_url.clone().unwrap_or_default(),
+                    download_url: preset_mod.download_url.clone().unwrap_or_default(),
+                    steam_protocol_url: preset_mod.steam_protocol_url.clone().unwrap_or_default(),
                     steamcmd_command: String::new(),
                     checked_paths: local_check.checked_paths,
                     reason: local_check.reason,
@@ -2563,5 +2655,287 @@ mod tests {
         assert_eq!(sandbox.mods[0].id, 3710074411);
         assert_eq!(sandbox.mods[0].name, "Test");
         assert_eq!(sandbox.mods[0].app_id, 227300);
+    }
+
+    #[test]
+    fn loads_updated_ets2_160_promods_preset() {
+        let presets = load_sandbox_mod_presets().unwrap();
+        let preset = presets
+            .iter()
+            .find(|preset| preset.id == "realistic_transport_scaniapack")
+            .unwrap();
+        let expected_active_mods = [
+            "promods-eu-dlcsupport-v283|ProMods DLC Support Package",
+            "promods-eu-media-v283|ProMods Media Package",
+            "promods-eu-model3-v283|ProMods Models Package 3",
+            "promods-eu-model2-v283|ProMods Models Package 2",
+            "promods-eu-model1-v283|ProMods Models Package 1",
+            "promods-eu-assets-v283|ProMods Assets Package",
+            "promods-eu-map-v283|ProMods Map Package",
+            "promods-eu-def-v283|ProMods Definition Package",
+            "mod_workshop_package.000000009304243E|RJL Scania T & T 4-series",
+            "mod_workshop_package.0000000097DF3BEA|[1.60] Krone Swap Body Pack (Mod Dependency) [Krone DLC required]",
+            "mod_workshop_package.0000000090538A24|[1.60] Krone Profi Box Carrier Pack [Krone DLC required]",
+            "mod_workshop_package.000000009133223C|[1.60] Swap Body Carrier Chassis Pack [Krone DLC required]",
+            "mod_workshop_package.00000000DD22A6CE|[1.60] Krone LHV Type 3 Trailer Pack [Krone DLC required]",
+            "BKC_Bussbygg_3_ax_drawbar|BKC Bussbygg 3 axle drawbar trailer",
+            "mod_workshop_package.00000000A14077E1|SGD CONTAINER TRAILER PACK ( v1.1.0 )",
+            "mod_workshop_package.0000000069363093|SCS TRAILER TUNING PACK ( v2.0.0 )",
+            "mod_workshop_package.000000003233D46A|SiSL's Trailer Pack",
+            "mod_workshop_package.00000000267A5DC4|SiSL's Mega Pack",
+            "mod_workshop_package.00000000B44EF83B|White SUPER 2023 skin for Scania and trailers pack",
+            "mod_workshop_package.00000000B7D85E3D|Scania S - White LED tuning all cabins",
+            "mod_workshop_package.00000000B95C5775|Venus Scania NG Parts",
+            "mod_workshop_package.00000000BC0AC657|Venus Scania Badge",
+            "mod_workshop_package.00000000C91083BA|TruckWorks Scania NG V8 Boards",
+            "mod_workshop_package.000000009D6FA57A|F1 Mega Pack",
+            "mod_workshop_package.00000000D4F8830D|Dashboard MAN MY25",
+            "mod_workshop_package.00000000ACC00361|BC-Interior Belka accessory 0.8.1 beta",
+            "mod_workshop_package.000000009D561B3F|BC-Talmu pack",
+            "mod_workshop_package.00000000B16592F4|SUPER logo for Scania NG Improved Dashboard",
+            "mod_workshop_package.00000000B3D1A1EC|Animated Steering Wheel..",
+            "mod_workshop_package.00000000B307C176|Camera Mod",
+            "mod_workshop_package.00000000C979F414|Unlimited Seat Adjustment (Works with Scania SUPER Smart Dash)",
+            "mod_workshop_package.00000000ADC1F1FD|Real Company Trailers & Trucks - Volume 1 [TRAFFIC+OWNED]",
+            "mod_workshop_package.00000000B8E53DC6|Real Company Trailers & Trucks - MAN TGX 2020 [ADDON]",
+            "mod_workshop_package.000000009262F420|Slow Vehicles In Traffic",
+            "mod_workshop_package.00000000D769FB75|Real life traffic density",
+            "mod_workshop_package.000000002A84AE38|Realistic Truck Physics Mod v9.1.2",
+            "mod_workshop_package.000000004E09E2CD|Air Ride : Premium",
+            "mod_workshop_package.00000000C7FAAD75|TRUE MIRROR FOV by xLieferant",
+            "mod_workshop_package.0000000091BE9657|Realistic Truck-Effect-Sounds V1.1 by Max2712",
+            "mod_workshop_package.000000006AFA4829|HN Immersive Symbols Extreme",
+        ];
+
+        assert_eq!(preset.title, "ETS2 Version 1.60 by xLieferant with ProMods");
+        assert!(!presets
+            .iter()
+            .any(|preset| preset.title == "Realistic Transport & Scania Pack"));
+        assert_eq!(preset.mods.len(), 40);
+        assert_eq!(
+            preset
+                .mods
+                .iter()
+                .map(|preset_mod| preset_mod.active_mods_value.as_deref().unwrap())
+                .collect::<Vec<_>>(),
+            expected_active_mods
+        );
+        assert!(preset
+            .mods
+            .iter()
+            .enumerate()
+            .all(|(index, preset_mod)| preset_mod.load_order == index));
+
+        let expected_values = expected_active_mods
+            .iter()
+            .map(|value| value.to_string())
+            .collect::<Vec<_>>();
+        let profile_text = r#"SiiNunit
+{
+profile : profile.1 {
+ active_mods: 1
+ active_mods[0]: "old|Old Mod"
+}
+}"#;
+        let written_profile =
+            sii_mods::replace_active_mods_block(profile_text, &expected_values).unwrap();
+        let verification =
+            sii_mods::validate_active_mods_in_profile_text(&written_profile, &expected_values)
+                .unwrap();
+        assert!(written_profile.contains("active_mods: 40"));
+        assert_eq!(verification.expected_count, 40);
+        assert_eq!(verification.actual_count, 40);
+        assert!(verification.order_matches);
+        assert!(verification.values_match);
+        let expected_workshop_ids = [
+            (8, "2466522174"),
+            (9, "2547989482"),
+            (10, "2421393956"),
+            (11, "2436047420"),
+            (12, "3710035662"),
+            (14, "2705356769"),
+            (15, "1765159059"),
+            (16, "842257514"),
+            (17, "645553604"),
+            (18, "3025074235"),
+            (19, "3084410429"),
+            (20, "3109836661"),
+            (21, "3154822743"),
+            (22, "3373302714"),
+            (23, "2641339770"),
+            (24, "3573056269"),
+            (25, "2898264929"),
+            (26, "2639665983"),
+            (27, "2976223988"),
+            (28, "3016860140"),
+            (29, "3003629942"),
+            (30, "3380212756"),
+            (31, "2915168765"),
+            (32, "3102031302"),
+            (33, "2455958560"),
+            (34, "3614047093"),
+            (35, "713338424"),
+            (36, "1309270733"),
+            (37, "3355094389"),
+            (38, "2445186647"),
+            (39, "1794787369"),
+        ];
+        for (index, expected_id) in expected_workshop_ids {
+            let preset_mod = &preset.mods[index];
+            assert_eq!(preset_mod.steam_id, expected_id);
+            let expected_url = workshop_api::workshop_page_url(expected_id);
+            assert_eq!(
+                preset_mod.download_url.as_deref(),
+                Some(expected_url.as_str())
+            );
+        }
+        assert!(preset.mods[..8].iter().all(|preset_mod| {
+            preset_mod.download_url.as_deref() == Some(PROMODS_DOWNLOAD_URL)
+        }));
+        assert_eq!(
+            preset.mods[13].download_url.as_deref(),
+            Some(BKC_BUSSBYGG_DOWNLOAD_URL)
+        );
+    }
+
+    #[test]
+    fn keeps_real_eco_presets_unchanged() {
+        let presets = load_sandbox_mod_presets().unwrap();
+        let without_promods = presets
+            .iter()
+            .find(|preset| preset.id == "real_economy_no_promods")
+            .unwrap();
+        let with_promods = presets
+            .iter()
+            .find(|preset| preset.id == "real_economy")
+            .unwrap();
+        let expected_base_mod_ids = [
+            "mod_workshop_package.0000000025026C3E",
+            "mod_workshop_package.000000009304075C",
+            "mod_workshop_package.000000009304243E",
+            "mod_workshop_package.00000000D99A4A6D",
+            "mod_workshop_package.0000000036DE9E01",
+            "mod_workshop_package.00000000B3D1A1EC",
+            "mod_workshop_package.000000009133223C",
+            "mod_workshop_package.00000000CBB11721",
+            "mod_workshop_package.00000000CB6BB3FC",
+            "mod_workshop_package.00000000D6069721",
+            "mod_workshop_package.00000000A14077E1",
+            "mod_workshop_package.0000000069363093",
+            "mod_workshop_package.0000000090538A24",
+            "mod_workshop_package.000000003533A403",
+            "BKC_Bussbygg_3_ax_drawbar",
+            "mod_workshop_package.00000000ACC00361",
+            "mod_workshop_package.000000009EA34157",
+            "mod_workshop_package.000000009D561B3F",
+            "mod_workshop_package.00000000D30EC543",
+            "mod_workshop_package.00000000A2A860C1",
+            "mod_workshop_package.00000000A1E46E25",
+            "mod_workshop_package.00000000D6D76CA6",
+            "mod_workshop_package.00000000C91083BA",
+            "mod_workshop_package.00000000BC0AC657",
+            "mod_workshop_package.00000000B95C5775",
+            "mod_workshop_package.00000000CB354363",
+            "mod_workshop_package.00000000D4F8830D",
+            "mod_workshop_package.0000000099EECB7F",
+            "mod_workshop_package.00000000D769FB75",
+            "mod_workshop_package.000000004E09E2CD",
+            "mod_workshop_package.000000002A84AE38",
+            "mod_workshop_package.00000000ADB916A1",
+            "mod_workshop_package.000000009CE39299",
+            "mod_workshop_package.00000000C7971BED",
+            "mod_workshop_package.0000000091BE9657",
+            "mod_workshop_package.000000009CF6F440",
+            "mod_workshop_package.00000000C979F414",
+            "mod_workshop_package.00000000B307C176",
+            "mod_workshop_package.00000000C5D284B9",
+            "mod_workshop_package.000000006AFA4829",
+            "mod_workshop_package.00000000C7FAAD75",
+        ];
+        let expected_promods_ids = [
+            "promods-eu-def-v282",
+            "promods-eu-map-v282",
+            "promods-eu-assets-v282",
+            "promods-eu-model1-v282",
+            "promods-eu-model2-v282",
+            "promods-eu-model3-v282",
+            "promods-eu-media-v282",
+            "promods-eu-dlcsupport-v282",
+        ];
+        fn technical_ids(preset: &SandboxModPreset) -> Vec<&str> {
+            preset
+                .mods
+                .iter()
+                .map(|preset_mod| {
+                    preset_mod
+                        .active_mods_value
+                        .as_deref()
+                        .unwrap()
+                        .split_once('|')
+                        .unwrap()
+                        .0
+                })
+                .collect::<Vec<_>>()
+        }
+
+        assert_eq!(without_promods.title, "Real Economy without Promods!");
+        assert_eq!(with_promods.title, "Real Economy with Promods!");
+        assert_eq!(
+            without_promods.description.as_deref(),
+            Some("Real Eco preset for the 100 Tage Challange profile with the exact active_mods load order.")
+        );
+        assert_eq!(with_promods.description, without_promods.description);
+        for preset in [without_promods, with_promods] {
+            assert_eq!(preset.game.as_deref(), Some("ets2"));
+            assert_eq!(preset.app_id, Some(227300));
+            assert_eq!(preset.enabled, Some(true));
+        }
+        assert_eq!(without_promods.load_order_locked, Some(true));
+        assert_eq!(with_promods.load_order_locked, Some(false));
+        assert_eq!(technical_ids(without_promods), expected_base_mod_ids);
+        let with_promods_ids = technical_ids(with_promods);
+        assert_eq!(&with_promods_ids[..8], expected_promods_ids);
+        assert_eq!(&with_promods_ids[8..], expected_base_mod_ids);
+        assert_eq!(without_promods.mods.len(), 41);
+        assert_eq!(with_promods.mods.len(), 49);
+    }
+
+    #[test]
+    fn resolves_preset_download_urls_from_package_ids() {
+        let mappings = [
+            ("9304243E", "2466522174"),
+            ("97DF3BEA", "2547989482"),
+            ("DD22A6CE", "3710035662"),
+            ("2A84AE38", "713338424"),
+            ("6AFA4829", "1794787369"),
+            ("9304243e", "2466522174"),
+        ];
+        for (hexadecimal_id, expected_workshop_id) in mappings {
+            let package_id = format!("mod_workshop_package.00000000{hexadecimal_id}");
+            assert_eq!(
+                workshop_id_from_package_id(&package_id).as_deref(),
+                Some(expected_workshop_id)
+            );
+            let expected_url = workshop_api::workshop_page_url(expected_workshop_id);
+            assert_eq!(
+                download_url_from_package_id(&package_id).as_deref(),
+                Some(expected_url.as_str())
+            );
+        }
+
+        assert_eq!(
+            download_url_from_package_id("promods-eu-map-v283").as_deref(),
+            Some(PROMODS_DOWNLOAD_URL)
+        );
+        assert_eq!(
+            download_url_from_package_id("BKC_Bussbygg_3_ax_drawbar").as_deref(),
+            Some(BKC_BUSSBYGG_DOWNLOAD_URL)
+        );
+        assert_eq!(workshop_id_from_package_id("invalid"), None);
+        assert_eq!(
+            workshop_id_from_package_id("mod_workshop_package.00000000NOTHEXID"),
+            None
+        );
+        assert_eq!(download_url_from_package_id("unknown_local_mod"), None);
     }
 }
