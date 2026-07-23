@@ -269,6 +269,7 @@ fn main() {
             features::mod_profile_manager::commands::open_workshop_page,
             features::mod_profile_manager::commands::open_workshop_subscribe_page,
             features::mod_profile_manager::commands::open_sandbox_mod_workshop_page,
+            features::mod_profile_manager::commands::open_sandbox_mod_download_url,
             features::mod_profile_manager::commands::open_sandbox_mod_in_steam,
             features::mod_profile_manager::commands::check_workshop_mod_downloaded,
             features::mod_profile_manager::commands::check_workshop_mod_download_status,
