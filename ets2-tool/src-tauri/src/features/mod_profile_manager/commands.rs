@@ -680,6 +680,13 @@ pub fn open_sandbox_mod_workshop_page(steam_id: String) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub fn open_sandbox_mod_download_url(url: String) -> Result<(), String> {
+    catch_command("open_sandbox_mod_download_url", || {
+        launcher::open_external_url(&url)
+    })
+}
+
+#[tauri::command]
 pub fn open_sandbox_mod_in_steam(steam_id: String) -> Result<(), String> {
     catch_command("open_sandbox_mod_in_steam", || {
         launcher::open_sandbox_mod_in_steam(&steam_id)
