@@ -3,7 +3,7 @@ pub mod command;
 #[cfg(test)]
 mod tests {
     use super::command::{
-        calculate_level, calculate_xp, total_xp_to_reach_level, xp_required_for_level, JobType,
+        JobType, calculate_level, calculate_xp, total_xp_to_reach_level, xp_required_for_level,
     };
 
     #[test]

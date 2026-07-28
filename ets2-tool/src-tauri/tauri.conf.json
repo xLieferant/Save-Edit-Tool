@@ -1,8 +1,8 @@
 {
-  "$schema": "https://schema.tauri.app/config/2",
+  "$schema": "https://schema.tauri.app/config/2.0/schema.json",
 
   "productName": "Save-Edit Tool xLieferant",
-  "version": "0.9.4",
+  "version": "0.9.5",
   "identifier": "com.xlieferant.saveedittool",
 
   "build": {

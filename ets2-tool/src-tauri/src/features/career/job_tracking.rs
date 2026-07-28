@@ -59,7 +59,7 @@ pub fn process_snapshot(
     snapshot: &TelemetrySnapshot,
 ) -> Result<(), String> {
     let Some(job) = snapshot.job.as_ref() else {
-        return handle_job_inactive(runtime);
+        return handle_job_inactive(runtime, snapshot.job_event);
     };
 
     let incoming_job_id = job.job_id.trim().to_string();
@@ -73,7 +73,7 @@ pub fn process_snapshot(
         || job.delivery_time_min != 0;
 
     if incoming_job_id.is_empty() && !has_any_job_signal {
-        return handle_job_inactive(runtime);
+        return handle_job_inactive(runtime, snapshot.job_event);
     }
 
     let now = Utc::now().to_rfc3339();
@@ -211,14 +211,20 @@ pub fn process_snapshot(
     Ok(())
 }
 
-fn handle_job_inactive(runtime: &CareerRuntime) -> Result<(), String> {
+fn handle_job_inactive(
+    runtime: &CareerRuntime,
+    final_event: Option<JobEvent>,
+) -> Result<(), String> {
     let now = Utc::now().to_rfc3339();
     let mut guard = runtime
         .active_job
         .lock()
         .map_err(|_| "Career active_job lock poisoned".to_string())?;
 
-    if let Some(previous) = guard.take() {
+    if let Some(mut previous) = guard.take() {
+        if let Some(event) = final_event {
+            previous.last_event = Some(to_state_event(event));
+        }
         crate::dev_log!("[career] active job ended: {}", previous.job_id);
         finalize_job(runtime, &previous, &now)?;
         runtime

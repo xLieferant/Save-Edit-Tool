@@ -2,6 +2,13 @@ use super::{
     load_save_content, load_save_content_from_save_path, resolve_active_save_from_snapshot,
 };
 use crate::dev_log;
+use crate::features::trailer_change::parser::{
+    ParsedTrailerSave, find_trailer_block_by_id, find_unit_block_by_id, parse_trailer_save,
+    resolve_current_trailer_pointer,
+};
+use crate::features::truck_change::parser::{
+    extract_field_value, is_null_ref, sanitize_sii_display_text,
+};
 use crate::models::trailers::{ParsedTrailer, PlayerTrailerResult, TrailerData, TrailerDefData};
 use crate::shared::paths::game_sii_from_save;
 use crate::shared::sii_parser::{
@@ -30,25 +37,31 @@ pub async fn get_player_trailer(
         .display()
         .to_string();
 
-    if let Some(cached) = profile_cache.get_cached_player_trailer(&path_key) {
-        dev_log!("get_player_trailer liefert Cache");
-        trace.finish_ok();
-        return Ok(player_trailer_result(cached));
-    }
-
     let decrypt_cache_cloned = decrypt_cache.inner().clone();
     let worker_result = tauri::async_runtime::spawn_blocking(move || {
         let (content, _) = load_save_content_from_save_path(&save_path, &decrypt_cache_cloned)?;
+        let parsed_context = parse_trailer_save(&content);
+        let has_active_job = player_has_active_job(&parsed_context);
         let trailers_data = parse_trailers_from_sii(&content);
         let defs_data = parse_trailer_defs_from_sii(&content);
         let parsed_trailers: Vec<ParsedTrailer> = trailers_data
             .iter()
             .map(|trailer_data| parsed_trailer_from_data(trailer_data, &defs_data))
             .collect();
+        let active_job_cargo_mass = active_job_trailer_id(&parsed_context).and_then(|trailer_id| {
+            parsed_trailers
+                .iter()
+                .find(|trailer| trailer.trailer_id.eq_ignore_ascii_case(&trailer_id))
+                .map(|trailer| trailer.cargo_mass)
+        });
         let trucks_data = parse_trucks_from_sii(&content);
         let player_id = get_player_id(&content)
             .ok_or("Player ID nicht im economy block gefunden".to_string())?;
-        let (player_truck_id_opt, player_trailer_id_opt) = get_vehicle_ids(&content, &player_id);
+        let (player_truck_id_opt, _) = get_vehicle_ids(&content, &player_id);
+        let player_trailer_id_opt = resolve_current_trailer_pointer(&parsed_context)
+            .ok()
+            .filter(|pointer| pointer.writable)
+            .map(|pointer| pointer.trailer_id);
 
         let player_trailer = match player_trailer_id_opt {
             Some(id) => {
@@ -67,6 +80,8 @@ pub async fn get_player_trailer(
                 Option<ParsedTrailer>,
                 Vec<crate::models::trucks::ParsedTruck>,
                 Option<String>,
+                bool,
+                Option<f32>,
             ),
             String,
         >((
@@ -74,17 +89,28 @@ pub async fn get_player_trailer(
             player_trailer,
             trucks_data,
             player_truck_id_opt,
+            has_active_job,
+            active_job_cargo_mass,
         ))
     })
     .await
     .map_err(|error| format!("get_player_trailer join failed: {}", error))??;
 
-    let (parsed_trailers, player_trailer, trucks_data, player_truck_id_opt) = worker_result;
+    let (
+        parsed_trailers,
+        player_trailer,
+        trucks_data,
+        player_truck_id_opt,
+        has_active_job,
+        active_job_cargo_mass,
+    ) = worker_result;
     if player_trailer.is_none() {
         dev_log!("Player has no trailer attached - this is normal");
         profile_cache.cache_trailers(path_key.clone(), parsed_trailers.clone(), None);
         trace.finish_ok();
-        return Ok(PlayerTrailerResult::none());
+        return Ok(PlayerTrailerResult::none()
+            .with_active_job(has_active_job)
+            .with_active_job_cargo_mass(active_job_cargo_mass));
     }
 
     let player_trailer = player_trailer.unwrap();
@@ -121,7 +147,9 @@ pub async fn get_player_trailer(
 
     profile_cache.cache_trailers(path_key, parsed_trailers, Some(player_trailer.clone()));
     trace.finish_ok();
-    return Ok(PlayerTrailerResult::some(player_trailer));
+    return Ok(PlayerTrailerResult::some(player_trailer)
+        .with_active_job(has_active_job)
+        .with_active_job_cargo_mass(active_job_cargo_mass));
 
     let (content, path_key) = load_save_content(profile_state, decrypt_cache)?;
 
@@ -210,6 +238,43 @@ fn player_trailer_result(trailer: Option<ParsedTrailer>) -> PlayerTrailerResult 
     }
 }
 
+fn player_has_active_job(parsed: &ParsedTrailerSave) -> bool {
+    let Some(player_id) = parsed.player_id.as_deref() else {
+        return false;
+    };
+    let Some(player_block) = find_unit_block_by_id(&parsed.unit_blocks, player_id, Some("player"))
+    else {
+        return false;
+    };
+    let Some(job_id) = extract_field_value(&player_block.raw_block, "current_job") else {
+        return false;
+    };
+
+    !is_null_ref(&job_id) && find_unit_block_by_id(&parsed.unit_blocks, &job_id, None).is_some()
+}
+
+fn active_job_trailer_id(parsed: &ParsedTrailerSave) -> Option<String> {
+    let player_id = parsed.player_id.as_deref()?;
+    let player_block = find_unit_block_by_id(&parsed.unit_blocks, player_id, Some("player"))?;
+    let job_id = extract_field_value(&player_block.raw_block, "current_job")?;
+    if is_null_ref(&job_id) {
+        return None;
+    }
+    let job_block = find_unit_block_by_id(&parsed.unit_blocks, &job_id, None)?;
+
+    if let Some(company_trailer_id) = extract_field_value(&job_block.raw_block, "company_trailer")
+        .filter(|value| !is_null_ref(value))
+    {
+        return find_trailer_block_by_id(&parsed.trailer_blocks, &company_trailer_id)
+            .map(|block| block.id.clone());
+    }
+
+    resolve_current_trailer_pointer(parsed)
+        .ok()
+        .filter(|pointer| pointer.writable)
+        .map(|pointer| pointer.trailer_id)
+}
+
 #[command]
 pub async fn get_all_trailers(
     profile_path: String,
@@ -291,6 +356,12 @@ fn parsed_trailer_from_data(
         .get(&tr.trailer_definition)
         .cloned()
         .unwrap_or_default();
+    let display_license_plate = tr
+        .license_plate
+        .as_deref()
+        .map(|plate| plate.split('|').next().unwrap_or(plate))
+        .map(sanitize_sii_display_text)
+        .filter(|plate| !plate.is_empty());
 
     ParsedTrailer {
         trailer_id: tr.trailer_id.clone(),
@@ -311,6 +382,7 @@ fn parsed_trailer_from_data(
         wheels_wear,
         odometer,
         license_plate: tr.license_plate.clone(),
+        display_license_plate,
 
         gross_trailer_weight_limit: def.gross_trailer_weight_limit,
         chassis_mass: def.chassis_mass,
@@ -318,5 +390,60 @@ fn parsed_trailer_from_data(
         body_type: def.body_type,
         chain_type: def.chain_type,
         length: def.length,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn job_fixture(company_trailer: &str) -> String {
+        format!(
+            r#"SiiNunit
+{{
+economy : _nameless.economy {{
+ player: _nameless.player
+}}
+player : _nameless.player {{
+ assigned_vehicles: _nameless.assigned.1
+ current_job: _nameless.job
+ trailers: 2
+ trailers[0]: _nameless.trailer.active
+ trailers[1]: _nameless.trailer.company
+}}
+player_vehicles : _nameless.assigned.1 {{
+ vehicle: _nameless.truck.active
+ trailer: _nameless.trailer.active
+}}
+player_job : _nameless.job {{
+ company_trailer: {company_trailer}
+}}
+trailer : _nameless.trailer.active {{
+ cargo_mass: &3f800000
+}}
+trailer : _nameless.trailer.company {{
+ cargo_mass: &40000000
+}}
+}}
+"#
+        )
+    }
+
+    #[test]
+    fn resolves_company_trailer_for_job_weight_context() {
+        let parsed = parse_trailer_save(&job_fixture("_nameless.trailer.company"));
+        assert_eq!(
+            active_job_trailer_id(&parsed).as_deref(),
+            Some("_nameless.trailer.company")
+        );
+    }
+
+    #[test]
+    fn resolves_active_owned_trailer_for_job_weight_context() {
+        let parsed = parse_trailer_save(&job_fixture("null"));
+        assert_eq!(
+            active_job_trailer_id(&parsed).as_deref(),
+            Some("_nameless.trailer.active")
+        );
     }
 }

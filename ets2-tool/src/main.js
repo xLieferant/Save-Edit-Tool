@@ -120,17 +120,29 @@ async function safeInvoke(command, args = {}, options = {}) {
 
   try {
     const shouldRedact = ["auth_login", "auth_register", "auth_reset_password_with_recovery_code"].includes(command);
-    if (shouldRedact) {
+    const shouldRedactTrailerPlate = command === "set_player_trailer_license_plate";
+    if (shouldRedact || shouldRedactTrailerPlate) {
       const safeArgs = { ...(args || {}) };
       for (const key of ["password", "passwordConfirm", "password_confirm"]) {
         if (key in safeArgs) safeArgs[key] = "[REDACTED]";
       }
+      if ("plate" in safeArgs) safeArgs.plate = "[REDACTED]";
       console.log("[invoke:start]", command, safeArgs);
     } else {
       console.log("[invoke:start]", command, args);
     }
     const result = await tauriInvoke(command, args);
-    console.log("[invoke:ok]", command, result);
+    if (command === "get_player_trailer" && result && typeof result === "object") {
+      console.log("[invoke:ok]", command, {
+        success: result.success,
+        hasTrailer: result.has_trailer,
+        hasActiveJob: result.has_active_job,
+        hasActiveJobCargoMass: result.active_job_cargo_mass !== null
+          && result.active_job_cargo_mass !== undefined,
+      });
+    } else {
+      console.log("[invoke:ok]", command, result);
+    }
     if (SAVE_MUTATION_COMMANDS.has(command)) {
       scheduleSaveSafetyRefresh(command, result);
     }
@@ -3648,6 +3660,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   window.playerTruck = null;
   window.allTrailers = [];
   window.playerTrailer = null;
+  window.playerTrailerHasActiveJob = false;
+  window.playerTrailerJobCargoMass = null;
+  window.playerTrailerLoadError = null;
   window.extractPlateText = (plate) => (plate ? plate.replace(/^"|"$/g, "") : "");
 
   const dropdownCheckIcon = `
@@ -4032,10 +4047,29 @@ document.addEventListener("DOMContentLoaded", async () => {
         : response;
       window.playerTrailer = trailer || null;
       window.allTrailers = trailer ? [trailer] : [];
+      window.playerTrailerHasActiveJob = Boolean(response?.has_active_job);
+      window.playerTrailerJobCargoMass = Number.isFinite(response?.active_job_cargo_mass)
+        ? response.active_job_cargo_mass
+        : null;
+      window.playerTrailerLoadError = null;
+      console.debug("[Trailer] context loaded", {
+        hasTrailer: Boolean(window.playerTrailer),
+        hasActiveJob: window.playerTrailerHasActiveJob,
+        hasActiveJobCargoMass: window.playerTrailerJobCargoMass !== null,
+      });
+      return {
+        trailer: window.playerTrailer,
+        hasActiveJob: window.playerTrailerHasActiveJob,
+        activeJobCargoMass: window.playerTrailerJobCargoMass,
+      };
     } catch (error) {
       console.warn("Player trailer refresh failed:", error);
       window.playerTrailer = null;
       window.allTrailers = [];
+      window.playerTrailerHasActiveJob = false;
+      window.playerTrailerJobCargoMass = null;
+      window.playerTrailerLoadError = String(error);
+      return null;
     }
   };
 
@@ -4176,6 +4210,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       window.playerTruck = null;
       window.allTrailers = [];
       window.playerTrailer = null;
+      window.playerTrailerHasActiveJob = false;
+      window.playerTrailerJobCargoMass = null;
+      window.playerTrailerLoadError = null;
       clearSafeResetInputs();
       activeUndoStatus = {
         canUndo: false,

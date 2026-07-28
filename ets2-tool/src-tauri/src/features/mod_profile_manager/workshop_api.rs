@@ -2,6 +2,7 @@ use super::models::{SteamWorkshopMod, WorkshopInstallStatus, WorkshopMod};
 use super::steam_paths;
 use regex::Regex;
 use serde::Deserialize;
+use serde::Serialize;
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
@@ -59,9 +60,15 @@ pub fn fetch_workshop_mod(input: &str) -> Result<WorkshopMod, String> {
         ("publishedfileids[0]".to_string(), requested_id.to_string()),
     ];
 
+    let body = serde_urlencoded::to_string(&params).map_err(|error| error.to_string())?;
+
     let response: PublishedFileDetailsResponse = reqwest::blocking::Client::new()
         .post(PUBLISHED_FILE_DETAILS_URL)
-        .form(&params)
+        .header(
+            reqwest::header::CONTENT_TYPE,
+            "application/x-www-form-urlencoded",
+        )
+        .body(body)
         .send()
         .map_err(|error| format!("Failed to read Steam Workshop metadata: {}", error))?
         .error_for_status()
