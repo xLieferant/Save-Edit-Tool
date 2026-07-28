@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="E:\Coding Projects\Save Edit Tool\ets2-tool\native\simnexus_sdk\build-v3-x64\CMakeFiles\3f4d2a2c37f1818cc49aa65fa56004a2\generate.stamp.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{941ACDC9-CB5F-3436-92DC-BE3BF3FB4041}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

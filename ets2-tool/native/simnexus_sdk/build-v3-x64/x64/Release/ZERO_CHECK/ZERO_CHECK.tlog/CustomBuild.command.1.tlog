@@ -1,0 +1,10 @@
+^E:\CODING PROJECTS\SAVE EDIT TOOL\ETS2-TOOL\NATIVE\SIMNEXUS_SDK\BUILD-V3-X64\CMAKEFILES\3F4D2A2C37F1818CC49AA65FA56004A2\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe" "-SE:/Coding Projects/Save Edit Tool/ets2-tool/native/simnexus_sdk" "-BE:/Coding Projects/Save Edit Tool/ets2-tool/native/simnexus_sdk/build-v3-x64" --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file "E:/Coding Projects/Save Edit Tool/ets2-tool/native/simnexus_sdk/build-v3-x64/simnexus_sdk.sln"
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

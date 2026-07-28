@@ -1,0 +1,4 @@
+E:/Coding Projects/Save Edit Tool/ets2-tool/native/simnexus_sdk/build-v3-x64/CMakeFiles/simnexus_sdk.dir
+E:/Coding Projects/Save Edit Tool/ets2-tool/native/simnexus_sdk/build-v3-x64/CMakeFiles/simnexus_bridge_selftest.dir
+E:/Coding Projects/Save Edit Tool/ets2-tool/native/simnexus_sdk/build-v3-x64/CMakeFiles/ALL_BUILD.dir
+E:/Coding Projects/Save Edit Tool/ets2-tool/native/simnexus_sdk/build-v3-x64/CMakeFiles/ZERO_CHECK.dir
