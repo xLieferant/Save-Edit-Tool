@@ -4711,6 +4711,11 @@ async function openSandboxModWorkshopPage(steamId) {
   await window.invoke("open_sandbox_mod_workshop_page", { steamId });
 }
 
+async function openSandboxModDownloadUrl(url) {
+  console.log("[SandboxPreset] open download URL:", url);
+  await window.invoke("open_sandbox_mod_download_url", { url });
+}
+
 async function openSandboxModInSteam(steamId) {
   console.log("[SandboxPreset] open mod in steam:", steamId);
   await window.invoke("open_sandbox_mod_in_steam", { steamId });
@@ -5088,6 +5093,9 @@ async function renderSandboxPresetModsTable(preset) {
   const copySteamCmdLabel = await window.t("modals.mod_profile_manager.sandbox.actions.copy_steamcmd");
   const openWorkshopLabel = await window.t("modals.mod_profile_manager.sandbox.actions.open_workshop");
   const openInSteamLabel = await window.t("modals.mod_profile_manager.sandbox.actions.open_in_steam");
+  const sourceHeaderLabel = await window.t("modals.mod_conflict_diagnostics.fields.source");
+  const workshopSourceLabel = await window.t("modals.mod_profile_manager.filters.workshop_source");
+  const localSourceLabel = await window.t("modals.mod_profile_manager.filters.local_source");
   const optionalDoesNotBlockLabel = await window.t("modals.mod_profile_manager.sandbox.hints.optional_does_not_block");
   const notCheckedLabel = await window.t("modals.mod_profile_manager.sandbox.preset_status.not_checked");
   const noModsConfiguredLabel = await window.t("modals.mod_profile_manager.sandbox.hints.no_mods_configured");
@@ -5110,6 +5118,7 @@ async function renderSandboxPresetModsTable(preset) {
     "#",
     await window.t("modals.mod_profile_manager.sandbox.fields.mod_name"),
     await window.t("modals.mod_profile_manager.sandbox.fields.workshop_id"),
+    sourceHeaderLabel,
     await window.t("modals.mod_profile_manager.sandbox.fields.required"),
     await window.t("modals.mod_profile_manager.sandbox.fields.installed"),
     await window.t("modals.mod_profile_manager.sandbox.fields.load_order"),
@@ -5132,8 +5141,18 @@ async function renderSandboxPresetModsTable(preset) {
     const modIdentifier = workshopId || status?.local_mod_id || presetMod.local_mod_id || status?.active_mod_ref || presetMod.active_mod_ref || presetMod.package_id || "-";
     const localPath = status?.local_path || presetMod.local_path || "";
     const note = status?.note || presetMod.note || "";
+    const source = String(status?.source || presetMod.source || (workshopId ? "workshop" : "local")).trim().toLowerCase();
+    const sourceName = source === "promods"
+      ? "ProMods"
+      : source === "external"
+        ? "JS Truckstyling"
+        : source === "workshop"
+          ? workshopSourceLabel
+          : localSourceLabel;
+    const resolvedDownloadUrl = status?.download_url || presetMod.download_url || status?.workshop_url || presetMod.workshop_url || "";
     const resolvedSteamProtocolUrl = status?.steam_protocol_url || presetMod.steam_protocol_url || "";
     const resolvedSteamCmd = status?.steamcmd_command || (workshopId ? `steamcmd +login anonymous +workshop_download_item ${appId} ${workshopId} +quit` : "");
+    const useWorkshopAction = source === "workshop" && Boolean(workshopId);
 
     return `
       <tr class="sandbox-mod-row" data-state="${escapeHtml(uiStatus.state)}">
@@ -5145,6 +5164,7 @@ async function renderSandboxPresetModsTable(preset) {
           ${note ? `<small>${escapeHtml(note)}</small>` : ""}
         </td>
         <td><code>${escapeHtml(modIdentifier)}</code></td>
+        <td>${escapeHtml(sourceName)}</td>
         <td>${escapeHtml(required ? yesLabel : noLabel)}</td>
         <td><span class="mod-status-badge" data-state="${escapeHtml(uiStatus.state)}">${escapeHtml(uiStatus.label)}</span></td>
         <td>${escapeHtml(String(status?.load_order ?? presetMod.load_order ?? index))}</td>
@@ -5153,10 +5173,11 @@ async function renderSandboxPresetModsTable(preset) {
             <button
               class="secondary-action"
               type="button"
-              data-sandbox-action="open-workshop"
+              data-sandbox-action="${useWorkshopAction ? "open-workshop" : "open-download"}"
               data-sandbox-steam-id="${escapeHtml(workshopId)}"
-              ${workshopId ? "" : "disabled"}>
-              ${escapeHtml(openWorkshopLabel)}
+              data-sandbox-download-url="${escapeHtml(resolvedDownloadUrl)}"
+              ${useWorkshopAction || resolvedDownloadUrl ? "" : "disabled"}>
+              ${escapeHtml(useWorkshopAction ? openWorkshopLabel : sourceName)}
             </button>
             <button
               class="secondary-action"
@@ -5378,6 +5399,22 @@ async function handleSandboxPresetAction(action, presetId, steamId = "", trigger
       await openSandboxModWorkshopPage(steamId);
     } catch (error) {
       console.error("Open sandbox workshop page failed:", error);
+      await showSandboxPresetPopup(
+        "error",
+        await window.t("modals.mod_profile_manager.sandbox.popup.error_title"),
+        normalizeSandboxCommandError(error)
+      );
+    }
+    return;
+  }
+
+  if (action === "open-download") {
+    try {
+      const url = trigger?.dataset?.sandboxDownloadUrl || "";
+      console.debug("[SandboxPreset] open download clicked", { url });
+      await openSandboxModDownloadUrl(url);
+    } catch (error) {
+      console.error("Open sandbox download URL failed:", error);
       await showSandboxPresetPopup(
         "error",
         await window.t("modals.mod_profile_manager.sandbox.popup.error_title"),
