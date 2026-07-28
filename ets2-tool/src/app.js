@@ -3070,6 +3070,622 @@ export async function openTruckChangeModal() {
 }
 
 /* --------------------------------------------------------------
+   TRAILER CHANGE MODAL
+-------------------------------------------------------------- */
+export async function openTrailerChangeModal() {
+  const savePath = window.selectedSavePath || window.currentSavePath;
+  if (!window.selectedProfilePath || !savePath) {
+    window.showToast("toasts.trailer_change_save_required", "warning");
+    return;
+  }
+
+  try {
+    await window.invoke("log_trailer_change_frontend_event", {
+      event: "Feature opened",
+      detail: "Trailer Change modal opened",
+    });
+  } catch (error) {
+    console.warn("[trailer_change] frontend event log failed", error);
+  }
+
+  const copy = {
+    title: await window.t("modals.trailer_change.title"),
+    kicker: await window.t("modals.trailer_change.kicker"),
+    close: await window.t("modals.trailer_change.close"),
+    statusLoading: await window.t("modals.trailer_change.status.loading"),
+    statusReady: await window.t("modals.trailer_change.status.ready"),
+    statusWarning: await window.t("modals.trailer_change.status.warning"),
+    statusBlocked: await window.t("modals.trailer_change.status.blocked"),
+    statusApplying: await window.t("modals.trailer_change.status.applying"),
+    statusSuccess: await window.t("modals.trailer_change.status.success"),
+    statusError: await window.t("modals.trailer_change.status.error"),
+    statusPreparing: await window.t("modals.trailer_change.status.preparing"),
+    search: await window.t("modals.trailer_change.switch.search"),
+    loading: await window.t("modals.trailer_change.switch.loading"),
+    empty: await window.t("modals.trailer_change.switch.empty"),
+    noMatches: await window.t("modals.trailer_change.switch.no_matches"),
+    active: await window.t("modals.trailer_change.switch.active"),
+    owned: await window.t("modals.trailer_change.switch.owned"),
+    unavailable: await window.t("modals.trailer_change.switch.unavailable"),
+    plate: await window.t("modals.trailer_change.switch.plate"),
+    garage: await window.t("modals.trailer_change.switch.garage"),
+    noGarage: await window.t("modals.trailer_change.switch.no_garage"),
+    noPlate: await window.t("modals.trailer_change.switch.no_plate"),
+    unreadablePlate: await window.t("modals.trailer_change.switch.unreadable_plate"),
+    unknownTrailer: await window.t("modals.trailer_change.switch.unknown_trailer"),
+    ownedCount: await window.t("modals.trailer_change.switch.owned_count"),
+    currentTrailer: await window.t("modals.trailer_change.switch.current_trailer"),
+    selectedTrailer: await window.t("modals.trailer_change.switch.selected_trailer"),
+    selectPrompt: await window.t("modals.trailer_change.switch.select_prompt"),
+    loadingSession: await window.t("modals.trailer_change.switch.loading_session"),
+    preparingPreview: await window.t("modals.trailer_change.switch.preparing_preview"),
+    checkingSave: await window.t("modals.trailer_change.switch.checking_save"),
+    verifyingResult: await window.t("modals.trailer_change.switch.verifying_result"),
+    previewFailed: await window.t("modals.trailer_change.switch.preview_failed"),
+    apply: await window.t("modals.trailer_change.switch.apply"),
+    applying: await window.t("modals.trailer_change.switch.applying"),
+    refresh: await window.t("modals.trailer_change.switch.refresh"),
+    verified: await window.t("modals.trailer_change.switch.verified"),
+    backup: await window.t("modals.trailer_change.switch.backup"),
+    backupLabel: await window.t("modals.trailer_change.switch.backup_label"),
+    technicalDetails: await window.t("modals.trailer_change.switch.technical_details"),
+    supportCopyDetails: await window.t("modals.trailer_change.support.copy_details"),
+    supportCopied: await window.t("modals.trailer_change.support.copied"),
+    statusTitle: await window.t("modals.trailer_change.sidebar.status_title"),
+    readyMessage: await window.t("modals.trailer_change.sidebar.ready_message"),
+    errorMessage: await window.t("modals.trailer_change.sidebar.error_message"),
+    backupEnabled: await window.t("modals.trailer_change.sidebar.backup_enabled"),
+    backupDisabled: await window.t("modals.trailer_change.sidebar.backup_disabled"),
+    backupFailed: await window.t("modals.trailer_change.sidebar.backup_failed"),
+    swapPreviewTitle: await window.t("modals.trailer_change.preview.title"),
+    errorCode: await window.t("modals.trailer_change.switch.error_code"),
+    retry: await window.t("modals.trailer_change.switch.retry"),
+    yes: await window.t("modals.trailer_change.switch.yes"),
+    no: await window.t("modals.trailer_change.switch.no"),
+  };
+
+  const warningLabels = {
+    save_changed_since_session: await window.t("modals.trailer_change.warnings.save_changed_since_session"),
+    save_changed_since_list: await window.t("modals.trailer_change.warnings.save_changed_since_list"),
+    active_trailer_not_found: await window.t("modals.trailer_change.warnings.active_trailer_not_found"),
+    owned_trailers_missing: await window.t("modals.trailer_change.warnings.owned_trailers_missing"),
+    target_trailer_not_found: await window.t("modals.trailer_change.warnings.target_trailer_not_found"),
+    target_trailer_not_owned: await window.t("modals.trailer_change.warnings.target_trailer_not_owned"),
+    target_already_active: await window.t("modals.trailer_change.warnings.target_already_active"),
+    target_trailer_not_available: await window.t("modals.trailer_change.warnings.target_trailer_not_available"),
+    trailer_assignment_unresolved: await window.t("modals.trailer_change.warnings.trailer_assignment_unresolved"),
+    trailer_storage_unresolved: await window.t("modals.trailer_change.warnings.trailer_storage_unresolved"),
+    current_slot_unresolved: await window.t("modals.trailer_change.warnings.current_slot_unresolved"),
+    old_trailer_destination_missing: await window.t("modals.trailer_change.warnings.old_trailer_destination_missing"),
+    dangling_trailer_references: await window.t("modals.trailer_change.warnings.dangling_trailer_references"),
+    write_verification_failed: await window.t("modals.trailer_change.warnings.write_verification_failed"),
+    backup_failed: await window.t("modals.trailer_change.warnings.backup_failed"),
+    player_trailer_reference_missing_block: await window.t("modals.trailer_change.warnings.player_trailer_reference_missing_block"),
+  };
+  const errorLabels = {
+    save_changed_since_session: await window.t("modals.trailer_change.errors.save_changed_since_session"),
+    save_changed_since_preview: await window.t("modals.trailer_change.errors.save_changed_since_preview"),
+    active_trailer_not_found: await window.t("modals.trailer_change.errors.active_trailer_not_found"),
+    owned_trailers_missing: await window.t("modals.trailer_change.errors.owned_trailers_missing"),
+    target_trailer_not_found: await window.t("modals.trailer_change.errors.target_trailer_not_found"),
+    target_trailer_not_owned: await window.t("modals.trailer_change.errors.target_trailer_not_owned"),
+    target_trailer_not_available: await window.t("modals.trailer_change.errors.target_trailer_not_available"),
+    trailer_assignment_unresolved: await window.t("modals.trailer_change.errors.trailer_assignment_unresolved"),
+    trailer_storage_unresolved: await window.t("modals.trailer_change.errors.trailer_storage_unresolved"),
+    current_slot_unresolved: await window.t("modals.trailer_change.errors.current_slot_unresolved"),
+    old_trailer_destination_missing: await window.t("modals.trailer_change.errors.old_trailer_destination_missing"),
+    dangling_trailer_references: await window.t("modals.trailer_change.errors.dangling_trailer_references"),
+    verification_failed: await window.t("modals.trailer_change.errors.verification_failed"),
+    write_failed: await window.t("modals.trailer_change.errors.write_failed"),
+    backup_failed: await window.t("modals.trailer_change.errors.backup_failed"),
+    write_verification_failed: await window.t("modals.trailer_change.errors.write_verification_failed"),
+  };
+
+  document.getElementById("trailerChangeModal")?.remove();
+
+  const modal = document.createElement("section");
+  modal.id = "trailerChangeModal";
+  modal.className = "modal-backdrop truck-change-modal";
+  modal.innerHTML = `
+    <div class="modal-box modal-box--xl truck-change-box" role="dialog" aria-modal="true" aria-labelledby="trailerChangeTitle">
+      <div class="detail-modal-head truck-change-head">
+        <div>
+          <span class="modal-kicker">${escapeHtml(copy.kicker)}</span>
+          <div class="truck-change-title-line">
+            <h2 id="trailerChangeTitle">${escapeHtml(copy.title)}</h2>
+          </div>
+        </div>
+        <div class="truck-change-head-actions">
+          <span class="modal-status-pill" data-state="loading" id="trailerChangeStatus">${escapeHtml(copy.statusLoading)}</span>
+          <button type="button" class="modal-close truck-change-close" aria-label="${escapeHtml(copy.close)}">&times;</button>
+        </div>
+      </div>
+      <div class="truck-change-body"></div>
+      <div class="modal-actions truck-change-actions">
+        <button type="button" class="secondary-btn truck-change-refresh">${escapeHtml(copy.refresh)}</button>
+        <button type="button" class="primary-btn truck-change-apply" disabled>${escapeHtml(copy.apply)}</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  const body = modal.querySelector(".truck-change-body");
+  const closeBtn = modal.querySelector(".truck-change-close");
+  const status = modal.querySelector("#trailerChangeStatus");
+  const refreshBtn = modal.querySelector(".truck-change-refresh");
+  const applyBtn = modal.querySelector(".truck-change-apply");
+  const state = {
+    session: null,
+    saveHash: "",
+    currentTrailer: null,
+    ownedTrailers: [],
+    searchQuery: "",
+    selectedTrailerId: null,
+    preview: null,
+    result: null,
+    initialLoading: false,
+    previewLoading: false,
+    applyLoading: false,
+    initializationError: null,
+    previewError: null,
+    applyError: null,
+    createPersistentBackup: true,
+  };
+  let shellMounted = false;
+
+  function cleanup() {
+    closeBtn.removeEventListener("click", cleanup);
+    modal.removeEventListener("click", handleBackdropClick);
+    document.removeEventListener("keydown", handleEscape);
+    refreshBtn.removeEventListener("click", handleRefresh);
+    applyBtn.removeEventListener("click", handleApply);
+    modal.remove();
+  }
+
+  function handleBackdropClick(event) {
+    if (event.target === modal) cleanup();
+  }
+
+  function handleEscape(event) {
+    if (event.key === "Escape") cleanup();
+  }
+
+  function normalizeSearchValue(value) {
+    return String(value ?? "")
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/\s+/g, " ")
+      .toLocaleLowerCase()
+      .trim();
+  }
+
+  function compactSearchValue(value) {
+    return normalizeSearchValue(value).replace(/[\s._-]+/g, "");
+  }
+
+  function trailerLabel(trailer) {
+    const name = trailer?.displayName || [trailer?.brand, trailer?.model].filter(Boolean).join(" ").trim();
+    return name || `${copy.unknownTrailer} ${trailer?.displayIndex || ""}`.trim();
+  }
+
+  function trailerPlate(trailer) {
+    return trailer?.displayLicensePlate || trailer?.licensePlate || copy.unreadablePlate || copy.noPlate;
+  }
+
+  function trailerGarage(trailer) {
+    return trailer?.garageDisplayName || trailer?.assignedGarage || trailer?.garageCity || copy.noGarage;
+  }
+
+  function trailerMeta(trailer) {
+    return [
+      trailerPlate(trailer),
+      trailer?.garageCountry || "",
+      trailerGarage(trailer),
+      trailer?.assignmentLabel || "",
+    ].filter(Boolean);
+  }
+
+  function normalizeTrailerChangeError(error) {
+    const raw = String(error?.message || error || "");
+    const key = Object.keys(errorLabels).find((candidate) => raw.includes(candidate));
+    return {
+      code: key || raw || "unknown_error",
+      message: key ? errorLabels[key] : safeValue(raw),
+    };
+  }
+
+  function codeText(code) {
+    return errorLabels[code] || warningLabels[code] || safeValue(code);
+  }
+
+  function currentPreviewError() {
+    return state.previewError
+      || state.applyError
+      || (state.preview?.canApply === false && state.preview?.errorCode
+        ? { code: state.preview.errorCode, message: codeText(state.preview.errorCode) }
+        : null);
+  }
+
+  function trailerChangeStatus(previewError, selectedTrailer) {
+    if (state.applyLoading || state.previewLoading || state.initialLoading) {
+      return { state: "loading", label: copy.statusLoading, ready: false, message: copy.loading };
+    }
+    if (state.initializationError || state.applyError || previewError) {
+      return { state: "error", label: copy.statusError, ready: false, message: copy.errorMessage };
+    }
+    if (state.preview?.canApply === false) {
+      return { state: "blocked", label: copy.statusBlocked, ready: false, message: copy.errorMessage };
+    }
+    if (selectedTrailer && state.preview?.canApply === true) {
+      return { state: "ready", label: copy.statusReady, ready: true, message: copy.readyMessage };
+    }
+    return { state: "warning", label: copy.statusWarning, ready: false, message: copy.selectPrompt };
+  }
+
+  function canApplyTrailerChange() {
+    const selectedTrailer = state.ownedTrailers?.find((trailer) => trailer.trailerId === state.selectedTrailerId);
+    const visibleStatus = trailerChangeStatus(currentPreviewError(), selectedTrailer);
+    return Boolean(visibleStatus.ready && selectedTrailer && !state.applyLoading);
+  }
+
+  function supportDetailsText(previewError, selectedTrailer) {
+    return JSON.stringify({
+      status: trailerChangeStatus(previewError, selectedTrailer).label,
+      error: previewError || state.initializationError || null,
+      currentTrailer: state.currentTrailer,
+      selectedTrailer,
+      preview: state.preview,
+      diagnostics: state.session?.diagnostics || null,
+      warnings: state.preview?.warnings || state.session?.warnings || [],
+      saveHash: state.saveHash || "",
+    }, null, 2);
+  }
+
+  function renderSupportDetails(previewError, selectedTrailer) {
+    const technicalText = supportDetailsText(previewError, selectedTrailer);
+    return `
+      <details class="truck-change-support">
+        <summary>${escapeHtml(copy.technicalDetails)}</summary>
+        <pre>${escapeHtml(technicalText)}</pre>
+        <button type="button" class="secondary-btn truck-change-copy-support">${escapeHtml(copy.supportCopyDetails)}</button>
+      </details>
+    `;
+  }
+
+  function renderSimpleStatus(visibleStatus) {
+    return `
+      <section class="truck-change-status-card truck-change-status-card--simple" data-state="${escapeHtml(visibleStatus.state)}">
+        <h3>${escapeHtml(copy.statusTitle)}</h3>
+        <strong>${escapeHtml(visibleStatus.label)}</strong>
+        <p>${escapeHtml(visibleStatus.message || "")}</p>
+      </section>
+    `;
+  }
+
+  function renderSimpleTrailerChange(currentTrailer, selectedTrailer) {
+    return `
+      <section class="truck-change-simple-swap">
+        <h3>${escapeHtml(copy.swapPreviewTitle)}</h3>
+        <strong>${escapeHtml(currentTrailer ? trailerLabel(currentTrailer) : "-")}</strong>
+        <span aria-hidden="true">&darr;</span>
+        <strong>${escapeHtml(selectedTrailer ? trailerLabel(selectedTrailer) : "-")}</strong>
+      </section>
+    `;
+  }
+
+  function renderSimpleBackup() {
+    const backupFailed = state.applyError?.code === "backup_failed";
+    const backupState = backupFailed
+      ? copy.backupFailed
+      : state.createPersistentBackup
+        ? copy.backupEnabled
+        : copy.backupDisabled;
+    return `
+      <section class="truck-change-simple-backup">
+        <h3>${escapeHtml(copy.backup)}</h3>
+        <p>${escapeHtml(backupState)}</p>
+        <label class="truck-change-backup-toggle">
+          <input type="checkbox" class="truck-change-backup-checkbox" ${state.createPersistentBackup ? "checked" : ""} />
+          <span>${escapeHtml(copy.backupLabel)}</span>
+        </label>
+      </section>
+    `;
+  }
+
+  function filteredTrailers() {
+    const trailers = state.ownedTrailers || [];
+    const query = normalizeSearchValue(state.searchQuery);
+    const compactQuery = compactSearchValue(state.searchQuery);
+    if (!query && !compactQuery) return trailers;
+    const numberMatch = String(state.searchQuery || "").trim().match(/^(?:#|nr\.?\s*)?(\d+)$/i);
+    if (numberMatch && String(state.searchQuery || "").trim().startsWith("#")) {
+      const targetIndex = Number(numberMatch[1]);
+      return trailers.filter((trailer) => Number(trailer.displayIndex) === targetIndex);
+    }
+    return trailers.filter((trailer) => {
+      const values = [
+        trailer.displayIndex,
+        trailer.trailerId,
+        trailer.displayName,
+        trailer.brand,
+        trailer.model,
+        trailer.displayLicensePlate || trailer.licensePlate,
+        trailer.garageDisplayName || trailer.assignedGarage || trailer.garageCity,
+        trailer.garageCountry,
+        trailer.assignmentLabel,
+      ].filter(Boolean);
+      const text = normalizeSearchValue(values.join(" "));
+      const compact = compactSearchValue(values.join(" "));
+      if (numberMatch && Number(trailer.displayIndex) === Number(numberMatch[1])) return true;
+      return text.includes(query) || compact.includes(compactQuery);
+    });
+  }
+
+  function render() {
+    const selectedTrailer = state.ownedTrailers?.find((trailer) => trailer.trailerId === state.selectedTrailerId);
+    const previewError = currentPreviewError();
+    const visibleStatus = trailerChangeStatus(previewError, selectedTrailer);
+    if (state.applyLoading) {
+      setModalPillState(status, "loading", copy.statusApplying);
+    } else if (state.previewLoading) {
+      setModalPillState(status, "loading", copy.statusPreparing);
+    } else if (state.initialLoading) {
+      setModalPillState(status, "loading", copy.statusLoading);
+    } else if (visibleStatus.state === "error") {
+      setModalPillState(status, "error", copy.statusError);
+    } else if (visibleStatus.state === "blocked") {
+      setModalPillState(status, "warning", copy.statusBlocked);
+    } else if (state.result?.success) {
+      setModalPillState(status, "success", copy.statusSuccess);
+    } else if (visibleStatus.ready) {
+      setModalPillState(status, "success", copy.statusReady);
+    } else {
+      setModalPillState(status, "warning", visibleStatus.label);
+    }
+
+    applyBtn.textContent = state.applyLoading ? copy.applying : copy.apply;
+    applyBtn.disabled = !canApplyTrailerChange() || state.applyLoading;
+
+    mountShell();
+    renderTrailerList();
+    renderPreviewPanel();
+  }
+
+  function mountShell() {
+    if (shellMounted && body.querySelector(".truck-change-search")) return;
+    body.innerHTML = `
+      <div class="truck-change-switch-grid">
+        <section class="truck-change-panel truck-change-list-panel">
+          <div class="truck-change-current-card"></div>
+          <div class="truck-change-summary"></div>
+          <input class="truck-change-search" type="search" value="${escapeHtml(state.searchQuery)}" placeholder="${escapeHtml(copy.search)}" />
+          <div class="truck-change-list" role="list"></div>
+        </section>
+        <section class="truck-change-panel truck-change-preview-panel"></section>
+      </div>
+    `;
+    const search = body.querySelector(".truck-change-search");
+    search?.addEventListener("input", (event) => {
+      state.searchQuery = event.target.value;
+      renderTrailerList();
+      renderPreviewPanel();
+    });
+    shellMounted = true;
+  }
+
+  function renderTrailerList() {
+    const list = body.querySelector(".truck-change-list");
+    const summary = body.querySelector(".truck-change-summary");
+    const currentCard = body.querySelector(".truck-change-current-card");
+    if (!list) return;
+    if (currentCard) {
+      const current = state.currentTrailer;
+      currentCard.innerHTML = current
+        ? `<dl class="truck-change-preview-list">
+            <div><dt>${escapeHtml(copy.currentTrailer)}</dt><dd>${escapeHtml(trailerLabel(current))}</dd></div>
+            <div><dt>${escapeHtml(copy.garage)}</dt><dd>${trailerMeta(current).map(escapeHtml).join(" &middot; ") || "-"}</dd></div>
+          </dl>`
+        : `<div class="truck-change-empty">${escapeHtml(state.initialLoading ? copy.loadingSession : copy.selectPrompt)}</div>`;
+    }
+    if (summary) {
+      summary.textContent = `${copy.ownedCount}: ${state.ownedTrailers?.length || 0}`;
+    }
+    const rows = filteredTrailers().map((trailer) => {
+      const selected = trailer.trailerId === state.selectedTrailerId;
+      const statusText = trailer.isActive
+        ? copy.active
+        : trailer.isAvailable === false || trailer.isSwitchable === false
+          ? copy.unavailable
+          : copy.owned;
+      const disabled = trailer.isActive || trailer.isAvailable === false || trailer.isSwitchable === false;
+      return `
+        <button type="button" class="truck-change-row${selected ? " is-selected" : ""}${trailer.isActive ? " is-active" : ""}" data-trailer-id="${escapeHtml(trailer.trailerId)}" ${disabled ? "disabled" : ""}>
+          <span class="truck-change-index">${escapeHtml(trailer.displayIndex)}</span>
+          <span class="truck-change-main">
+            <strong>${escapeHtml(trailerLabel(trailer))}</strong>
+            <span>${trailerMeta(trailer).map(escapeHtml).join(" &middot; ")}</span>
+          </span>
+          <span class="truck-change-row-status">${escapeHtml(statusText)}</span>
+        </button>
+      `;
+    }).join("");
+    list.innerHTML = state.initialLoading
+      ? `<div class="truck-change-empty">${escapeHtml(copy.loading)}</div>`
+      : rows || `<div class="truck-change-empty">${escapeHtml(state.searchQuery ? copy.noMatches : copy.empty)}</div>`;
+    list.querySelectorAll(".truck-change-row").forEach((row) => {
+      row.addEventListener("click", async () => {
+        const trailerId = row.dataset.trailerId;
+        if (!trailerId) return;
+        await selectTrailerForSwitch(trailerId);
+      });
+    });
+  }
+
+  function renderPreviewPanel() {
+    const panel = body.querySelector(".truck-change-preview-panel");
+    if (!panel) return;
+    const selectedTrailer = state.ownedTrailers?.find((trailer) => trailer.trailerId === state.selectedTrailerId);
+    const previewError = currentPreviewError();
+    const visibleStatus = trailerChangeStatus(previewError, selectedTrailer);
+    const currentTrailer = state.preview?.currentTrailer || state.currentTrailer;
+    const errorHtml = previewError
+      ? `<section class="truck-change-simple-error">
+          <h3>${escapeHtml(visibleStatus.state === "blocked" ? copy.statusBlocked : copy.statusError)}</h3>
+          <p>${escapeHtml(previewError.message || copy.errorMessage)}</p>
+          ${previewError.code ? `<span>${escapeHtml(copy.errorCode)}: ${escapeHtml(previewError.code)}</span>` : ""}
+        </section>`
+      : "";
+    const resultHtml = state.result?.success ? `<p class="truck-change-simple-success">${escapeHtml(copy.verified)}</p>` : "";
+    const initializationErrorHtml = state.initializationError
+      ? `<section class="truck-change-simple-error">
+          <h3>${escapeHtml(copy.statusError)}</h3>
+          <p>${escapeHtml(normalizeTrailerChangeError(state.initializationError).message || copy.errorMessage)}</p>
+        </section>
+        <button type="button" class="secondary-btn truck-change-retry">${escapeHtml(copy.retry)}</button>`
+      : "";
+
+    panel.innerHTML = `
+      ${renderSimpleStatus(visibleStatus)}
+      ${renderSimpleTrailerChange(currentTrailer, selectedTrailer)}
+      ${renderSimpleBackup()}
+      ${resultHtml}
+      ${initializationErrorHtml || errorHtml}
+      ${renderSupportDetails(previewError, selectedTrailer)}
+    `;
+    panel.querySelector(".truck-change-backup-checkbox")?.addEventListener("input", (event) => {
+      state.createPersistentBackup = event.target.checked;
+      renderPreviewPanel();
+    });
+    panel.querySelector(".truck-change-retry")?.addEventListener("click", handleRefresh);
+    panel.querySelector(".truck-change-copy-support")?.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard?.writeText(supportDetailsText(previewError, selectedTrailer));
+        window.showToast("modals.trailer_change.support.copied", "success");
+      } catch (error) {
+        console.warn("[trailer_change] support copy failed", error);
+      }
+    });
+  }
+
+  function applyTrailerChangeSession(session) {
+    state.session = session;
+    state.saveHash = session?.saveHash || "";
+    state.currentTrailer = session?.currentTrailer || null;
+    state.ownedTrailers = session?.ownedTrailers || [];
+  }
+
+  async function loadSession() {
+    state.initialLoading = true;
+    state.preview = null;
+    state.result = null;
+    state.selectedTrailerId = null;
+    state.initializationError = null;
+    state.previewError = null;
+    state.applyError = null;
+    render();
+    try {
+      const session = await window.invoke("initialize_trailer_change_session", { savePath });
+      applyTrailerChangeSession(session);
+      const firstAvailable = state.ownedTrailers?.find((trailer) => !trailer.isActive && trailer.isAvailable !== false && trailer.isSwitchable !== false);
+      state.selectedTrailerId = firstAvailable?.trailerId || null;
+      if (state.selectedTrailerId) {
+        await loadPreview(state.selectedTrailerId);
+      }
+    } catch (error) {
+      console.error("Trailer switch session initialization failed:", error);
+      state.initializationError = normalizeTrailerChangeError(error);
+    } finally {
+      state.initialLoading = false;
+      render();
+    }
+  }
+
+  async function selectTrailerForSwitch(trailerId) {
+    state.selectedTrailerId = trailerId;
+    state.preview = null;
+    state.result = null;
+    state.previewError = null;
+    state.applyError = null;
+    render();
+    try {
+      const selected = state.ownedTrailers?.find((trailer) => trailer.trailerId === trailerId);
+      await window.invoke("log_trailer_change_frontend_event", {
+        event: "Trailer selected",
+        detail: selected ? trailerLabel(selected) : trailerId,
+      });
+    } catch (error) {
+      console.warn("[trailer_change] trailer selection log failed", error);
+    }
+    await loadPreview(trailerId);
+  }
+
+  async function loadPreview(trailerId) {
+    if (!state.saveHash) return;
+    state.previewLoading = true;
+    state.previewError = null;
+    render();
+    try {
+      state.preview = await window.invoke("preview_active_trailer_switch", {
+        savePath,
+        targetTrailerId: trailerId,
+        expectedFileHash: state.saveHash,
+      });
+    } catch (error) {
+      console.error("Trailer switch preview failed:", error);
+      state.previewError = normalizeTrailerChangeError(error);
+    } finally {
+      state.previewLoading = false;
+      render();
+    }
+  }
+
+  async function handleRefresh() {
+    shellMounted = false;
+    await loadSession();
+  }
+
+  async function handleApply() {
+    if (!canApplyTrailerChange()) return;
+    state.applyLoading = true;
+    state.applyError = null;
+    render();
+    try {
+      const result = await window.invoke("apply_active_trailer_switch", {
+        savePath,
+        targetTrailerId: state.selectedTrailerId,
+        expectedFileHash: state.preview.expectedFileHash,
+        createPersistentBackup: state.createPersistentBackup,
+      });
+      await window.loadAllTrailers?.();
+      window.showToast("toasts.trailer_change_apply_success", "success");
+      state.result = result;
+      if (result?.refreshedSession) {
+        applyTrailerChangeSession(result.refreshedSession);
+      } else {
+        await loadSession();
+      }
+      state.preview = null;
+      state.selectedTrailerId = null;
+    } catch (error) {
+      console.error("Trailer switch apply failed:", error);
+      state.applyError = normalizeTrailerChangeError(error);
+      window.showToast("toasts.trailer_change_apply_failed", "error");
+    } finally {
+      state.applyLoading = false;
+      render();
+    }
+  }
+
+  closeBtn.addEventListener("click", cleanup);
+  modal.addEventListener("click", handleBackdropClick);
+  document.addEventListener("keydown", handleEscape);
+  refreshBtn.addEventListener("click", handleRefresh);
+  applyBtn.addEventListener("click", handleApply);
+  modal.style.display = "flex";
+  await loadSession();
+}
+
+/* --------------------------------------------------------------
    MOD CONFLICT DIAGNOSTICS MODAL
 -------------------------------------------------------------- */
 export async function openModConflictDiagnosticsModal(options = {}) {

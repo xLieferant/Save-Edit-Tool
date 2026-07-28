@@ -1162,6 +1162,15 @@
     "clone_failed": "Klonen fehlgeschlagen: {error}",
     "coming_soon": "Demnächst verfügbar",
     "no_trailer_assigned_error": "Dir ist kein Trailer zugewiesen",
+    "trailer_context_load_error": "Trailer-Daten konnten nicht geladen werden.",
+    "trailer_modal_load_error": "Der Trailer-Editor konnte nicht geladen werden.",
+    "trailer_no_active_job": "Kein aktiver Auftrag für den Trailer gefunden.",
+    "trailer_license_plate_empty": "Gebe ein Kennzeichen für den Trailer ein.",
+    "trailer_license_plate_invalid": "Das Trailer-Kennzeichen enthält nicht unterstützte Zeichen.",
+    "trailer_license_plate_too_long": "Das Trailer-Kennzeichen darf nicht länger als {max} Zeichen sein.",
+    "modify_job_weight_invalid": "Gebe ein Auftragsgewicht zwischen 0 und {max} kg ein.",
+    "trailer_repair_fields_not_found": "Keine reparierbaren Verschleißwerte auf dem aktiven Trailer gefunden.",
+    "trailer_write_verification_error": "Die Trailer-Änderung konnte nach dem Schreiben nicht verifiziert werden. Stelle das automatische Backup wieder her, bevor du fortfährst.",
     "repair_truck_success": "Truck erfolgreich repariert",
     "repair_truck_error": "Truck konnte nicht repariert werden!",
     "advanced_repair_success": "Erweiterte Reparatur erfolgreich angewendet",
@@ -1176,6 +1185,9 @@
     "truck_license_plate_error": "Truck-Kennzeichen konnte nicht geändert werden",
     "truck_change_apply_success": "Truckwechsel erfolgreich verifiziert.",
     "truck_change_apply_failed": "Truckwechsel fehlgeschlagen.",
+    "trailer_change_apply_success": "Trailer-Wechsel erfolgreich verifiziert.",
+    "trailer_change_apply_failed": "Trailer-Wechsel fehlgeschlagen.",
+    "trailer_change_save_required": "Bitte zuerst Profil und Spielstand auswählen.",
     "truck_change_save_required": "Bitte zuerst Profil und Spielstand auswählen.",
     "trailer_repair_success": "Trailer erfolgreich repariert",
     "trailer_repair_error": "Trailer konnte nicht repariert werden",
@@ -1346,6 +1358,10 @@
       }
     },
     "trailer": {
+      "trailer_change": {
+        "title": "Trailerwechsel unterwegs",
+        "desc": "Wechsle den aktiven Trailer im gewählten Spielstand mit Backup und Verifikation."
+      },
       "repair_trailer": {
         "title": "Trailer reparieren",
         "desc": "Repariere deinen Trailer",
@@ -1354,7 +1370,8 @@
       "trailer_license_plate": {
         "title": "Trailer-Kennzeichen",
         "desc": "Bearbeite dein Trailer-Kennzeichen",
-        "modalTextTitle": "Neues Kennzeichen eingeben"
+        "modalTextTitle": "Neues Kennzeichen eingeben",
+        "modalTextPlaceholder": "Kennzeichen eingeben"
       },
       "modify_job_weight": {
         "title": "Auftragsgewicht ändern",
@@ -1729,6 +1746,106 @@
         "old_truck_destination_missing": "Der Ziel-LKW ist im Besitz, aber der bisherige aktuelle LKW hat keinen sicheren Slot oder Fahrer als Ziel.",
         "write_verification_failed": "Der Spielstand wurde geschrieben, aber die anschließende Schreibprüfung ist fehlgeschlagen.",
         "backup_failed": "Das Backup konnte nicht erstellt werden."
+      }
+    },
+    "trailer_change": {
+      "kicker": "Wechsel Trailer unterwegs",
+      "title": "Wechsel Trailer unterwegs",
+      "close": "Schließen",
+      "status": {
+        "loading": "Lade",
+        "ready": "Bereit",
+        "warning": "Warnung",
+        "blocked": "Blockiert",
+        "applying": "Wende an",
+        "success": "Verifiziert",
+        "error": "Fehler",
+        "preparing": "Vorbereiten"
+      },
+      "switch": {
+        "search": "Trailer suchen",
+        "loading": "Trailer werden geladen...",
+        "empty": "Keine Trailer gefunden.",
+        "no_matches": "Keine passenden Trailer gefunden.",
+        "active": "Aktiv",
+        "owned": "Im Besitz",
+        "unavailable": "Nicht verfügbar",
+        "plate": "Kennzeichen",
+        "garage": "Garage",
+        "no_garage": "Unbekannt / Keine Garage",
+        "no_plate": "Kein Kennzeichen",
+        "unreadable_plate": "Kennzeichen nicht lesbar",
+        "unknown_trailer": "Trailer",
+        "owned_count": "Im Besitz",
+        "current_trailer": "Aktueller Trailer",
+        "selected_trailer": "Ausgewählter Trailer",
+        "select_prompt": "Wählen Sie einen verfügbaren Trailer aus, um den Wechsel vorzuschauen.",
+        "loading_session": "Lade Trailer-Daten...",
+        "preparing_preview": "Bereite Trailer-Wechsel vor...",
+        "verifying_result": "Bestätige Trailer-Wechsel...",
+        "preview_failed": "Der Trailer-Wechsel konnte nicht vorbereitet werden.",
+        "apply": "Anwenden",
+        "applying": "Wende an...",
+        "refresh": "Aktualisieren",
+        "verified": "Der Spielstand wurde neu geladen und der neue aktive Trailer wurde bestätigt.",
+        "backup": "Backup",
+        "backup_label": "Backup erstellen vor Änderung",
+        "technical_details": "Technische Details",
+        "error_code": "Fehlercode",
+        "retry": "Wiederholen",
+        "yes": "Ja",
+        "no": "Nein"
+      },
+      "preview": {
+        "title": "Wechsel Trailer unterwegs"
+      },
+      "sidebar": {
+        "status_title": "Status",
+        "ready_message": "Bereit zum Wechseln von Trailern.",
+        "error_message": "Trailer-Wechsel ist derzeit nicht möglich.",
+        "backup_enabled": "Backup: Aktiviert",
+        "backup_disabled": "Backup: Deaktiviert",
+        "backup_failed": "Backup: Fehlgeschlagen"
+      },
+      "support": {
+        "copy_details": "Kopiere Support-Details",
+        "copied": "Support-Details kopiert."
+      },
+      "warnings": {
+        "save_changed_since_session": "Der Spielstand hat sich seit dem Laden dieser Trailer-Änderungssession geändert.",
+        "save_changed_since_list": "Der Spielstand hat sich seit dem Laden der Trailer-Liste geändert.",
+        "active_trailer_not_found": "Der aktive Trailer konnte nicht aufgelöst werden.",
+        "owned_trailers_missing": "Keine im Besitz befindlichen Trailer wurden in diesem Spielstand gefunden.",
+        "target_trailer_not_found": "Der ausgewählte Trailer ist in diesem Spielstand nicht vorhanden.",
+        "target_trailer_not_owned": "Dieser Trailer ist nicht als einer Ihrer im Besitz befindlichen Trailer erkannt und kann daher nicht ausgewählt werden.",
+        "target_already_active": "Der ausgewählte Trailer ist bereits aktiv.",
+        "target_trailer_not_available": "Der ausgewählte Trailer ist nicht verfügbar.",
+        "trailer_assignment_unresolved": "Die Trailer-Zuweisung konnte nicht eindeutig aufgelöst werden.",
+        "trailer_storage_unresolved": "Die Trailer-Lagerungszuweisung konnte nicht eindeutig aufgelöst werden.",
+        "current_slot_unresolved": "Der aktuelle player_vehicles-Slot konnte nicht sicher aufgelöst werden.",
+        "old_trailer_destination_missing": "Kein sicherer Zielort für den vorherigen aktiven Trailer wurde gefunden.",
+        "dangling_trailer_references": "Der ausgewählte Trailer hat fehlende Zubehör-Referenzen.",
+        "write_verification_failed": "Die Verifizierung des Spielstands nach dem Schreiben ist fehlgeschlagen.",
+        "backup_failed": "Das Backup konnte nicht erstellt werden.",
+        "player_trailer_reference_missing_block": "Ein Trailer, der in player.trailers[] aufgeführt ist, hat keinen passenden Trailer-Block. Er wird mit begrenzten Details angezeigt."
+      },
+      "errors": {
+        "save_changed_since_session": "Der Spielstand hat sich seit dem Laden dieser Trailer-Änderungssession geändert. Aktualisieren und Vorschau erneut anzeigen.",
+        "save_changed_since_preview": "Der Spielstand hat sich nach der Vorschau geändert. Aktualisieren und Vorschau erneut anzeigen.",
+        "active_trailer_not_found": "Der aktive Trailer konnte nicht aus player.assigned_vehicles, player.assigned_trailer, player.my_trailer oder den Fallback-Eigentumsdaten aufgelöst werden.",
+        "owned_trailers_missing": "Keine im Besitz befindlichen Trailer wurden in player.trailers[] gefunden.",
+        "target_trailer_not_found": "Der ausgewählte Trailer ist nicht mehr in diesem Spielstand vorhanden.",
+        "target_trailer_not_owned": "Der ausgewählte Trailer ist nicht in player.trailers[] aufgeführt.",
+        "target_trailer_not_available": "Der ausgewählte Trailer ist nicht verfügbar.",
+        "trailer_assignment_unresolved": "Die Trailer-Zuweisung konnte nicht eindeutig aufgelöst werden. Laden Sie den Spielstand erneut oder wählen Sie einen anderen Trailer.",
+        "trailer_storage_unresolved": "Die Trailer-Lagerungszuweisung konnte nicht eindeutig aufgelöst werden.",
+        "current_slot_unresolved": "Der aktuelle player_vehicles-Slot konnte nicht sicher aufgelöst werden.",
+        "old_trailer_destination_missing": "Der Ziel-Trailers ist im Besitz, aber der alte aktive Trailer hat keinen sicheren Zielort.",
+        "dangling_trailer_references": "Der ausgewählte Trailer hat fehlende Zubehör-Referenzen.",
+        "verification_failed": "Der Spielstand wurde geschrieben, aber das Ergebnis konnte nicht verifiziert werden. Bitte stelle das Backup wieder her, bevor du fortfährst.",
+        "write_failed": "Die Speicherdatei konnte nicht geschrieben werden. Es wurde kein Trailer-Wechsel angewendet.",
+        "backup_failed": "Das Backup konnte nicht erstellt werden. Die Änderung wurde aus Sicherheitsgründen gestoppt.",
+        "write_verification_failed": "Der Spielstand wurde geschrieben, aber das Ergebnis konnte nicht verifiziert werden. Bitte stelle das Backup wieder her, bevor du fortfährst."
       }
     },
     "level_system": {

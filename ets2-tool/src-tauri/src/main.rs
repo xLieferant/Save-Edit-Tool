@@ -26,8 +26,6 @@ fn main() {
     crate::dev_log!("[app] starting");
     let _ = crate::shared::user_log::user_log_info("App", "Application start");
 
-    features::career::scs_sdk_telemetry::start_terminal_telemetry_loop();
-    features::career::telemetry_debug::start_telemetry_debug_thread();
     let sqlite_pool = tauri::async_runtime::block_on(db::sqlite::init_sqlite())
         .expect("failed to initialize central sqlite pool");
     let sqlite_path = db::sqlite::app_db_path();
@@ -41,6 +39,7 @@ fn main() {
         .manage(AppProfileState::default())
         .manage(ProfileCache::default())
         .manage(features::truck_change::cache::TruckChangeSessionCache::default())
+        .manage(features::trailer_change::cache::TrailerChangeSessionCache::default())
         .manage(HubState::default())
         .manage(CareerState::default())
         .manage(AuthState::default())
@@ -164,10 +163,6 @@ fn main() {
             }
             crate::dev_log!("[app] setup start telemetry bridge + background threads");
             crate::dev_log!("[trace] START telemetry_bridge_startup");
-            features::career::scs_sdk_telemetry::start_frontend_telemetry_bridge(
-                handle.clone(),
-                runtime.clone(),
-            );
             features::career::service::start_background(handle, runtime);
             let ets_db = app.state::<EtsDbState>();
             features::telemetry::scs_shared_mem::start(app.handle().clone(), ets_db.pool.clone());
@@ -303,6 +298,11 @@ fn main() {
             features::truck_change::commands::get_official_powertrain_catalog,
             features::truck_change::commands::preview_truck_powertrain_change,
             features::truck_change::commands::preview_truck_transfer,
+            features::trailer_change::commands::list_owned_trailers_for_switch,
+            features::trailer_change::commands::initialize_trailer_change_session,
+            features::trailer_change::commands::preview_active_trailer_switch,
+            features::trailer_change::commands::log_trailer_change_frontend_event,
+            features::trailer_change::commands::apply_active_trailer_switch,
             // FEATURE: PROFILE CLONE + Rename
             features::profile_clone::commands::clone_profile_command,
             features::profile_clone::commands::validate_clone_target,

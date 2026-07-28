@@ -20,6 +20,7 @@ pub struct ParsedTrailer {
 
     pub accessories: Vec<String>,
     pub license_plate: Option<String>,
+    pub display_license_plate: Option<String>,
 
     // Definition Data
     pub gross_trailer_weight_limit: f32,
@@ -34,6 +35,8 @@ pub struct ParsedTrailer {
 pub struct PlayerTrailerResult {
     pub success: bool,
     pub has_trailer: bool,
+    pub has_active_job: bool,
+    pub active_job_cargo_mass: Option<f32>,
     pub trailer: Option<ParsedTrailer>,
     pub message: String,
 }
@@ -43,6 +46,8 @@ impl PlayerTrailerResult {
         Self {
             success: true,
             has_trailer: true,
+            has_active_job: false,
+            active_job_cargo_mass: None,
             trailer: Some(trailer),
             message: "Player trailer found.".to_string(),
         }
@@ -52,9 +57,21 @@ impl PlayerTrailerResult {
         Self {
             success: true,
             has_trailer: false,
+            has_active_job: false,
+            active_job_cargo_mass: None,
             trailer: None,
             message: "No player trailer found in this save.".to_string(),
         }
+    }
+
+    pub fn with_active_job(mut self, has_active_job: bool) -> Self {
+        self.has_active_job = has_active_job;
+        self
+    }
+
+    pub fn with_active_job_cargo_mass(mut self, active_job_cargo_mass: Option<f32>) -> Self {
+        self.active_job_cargo_mass = active_job_cargo_mass;
+        self
     }
 }
 

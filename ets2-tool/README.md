@@ -14,6 +14,16 @@ cargo tauri android init
 For Desktop development, run:
 cargo tauri dev
 
+## Trailer Change on the Road
+
+The save editor includes a trailer switch workflow for the active save.
+
+- Reads the active trailer from player assignment data.
+- Lists owned trailers from the loaded save.
+- Previews the selected trailer switch before writing.
+- Supports an optional backup before applying the change.
+- Re-reads the save and verifies the active trailer after writing.
+
 For Android development, run:
 cargo tauri android dev
 
