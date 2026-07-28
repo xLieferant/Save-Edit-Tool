@@ -6,6 +6,7 @@ use std::time::SystemTime;
 
 #[cfg(target_os = "windows")]
 use regex::Regex;
+use sha2::{Digest, Sha256};
 use tauri::{AppHandle, Manager, Runtime};
 #[cfg(target_os = "windows")]
 use winreg::{RegKey, enums::*};
@@ -76,6 +77,45 @@ pub fn plugin_file_installed(game: ScsGame) -> Result<bool, String> {
     Ok(plugin_target_path(&install).is_file())
 }
 
+fn files_match_by_content(left: &Path, right: &Path) -> Result<bool, String> {
+    let left_bytes =
+        fs::read(left).map_err(|e| format!("Failed to read {}: {e}", left.display()))?;
+    let right_bytes =
+        fs::read(right).map_err(|e| format!("Failed to read {}: {e}", right.display()))?;
+    Ok(left_bytes == right_bytes)
+}
+
+fn file_sha256(path: &Path) -> Result<String, String> {
+    let bytes = fs::read(path).map_err(|e| format!("Failed to read {}: {e}", path.display()))?;
+    Ok(format!("{:x}", Sha256::digest(bytes)))
+}
+
+#[cfg(target_os = "windows")]
+fn is_process_running(exe_name: &str) -> bool {
+    use std::os::windows::process::CommandExt;
+    use std::process::Command;
+
+    const CREATE_NO_WINDOW: u32 = 0x08000000;
+    let output = Command::new("tasklist")
+        .creation_flags(CREATE_NO_WINDOW)
+        .arg("/FI")
+        .arg(format!("IMAGENAME eq {exe_name}"))
+        .arg("/NH")
+        .output();
+
+    let Ok(output) = output else {
+        return false;
+    };
+    String::from_utf8_lossy(&output.stdout)
+        .to_lowercase()
+        .contains(&exe_name.to_lowercase())
+}
+
+#[cfg(not(target_os = "windows"))]
+fn is_process_running(_exe_name: &str) -> bool {
+    false
+}
+
 pub fn install_plugin_files<R: Runtime>(
     app: &AppHandle<R>,
     game: ScsGame,
@@ -83,6 +123,7 @@ pub fn install_plugin_files<R: Runtime>(
     let install = find_game_installation(game)?;
     let source = resolve_plugin_resource(app)?;
     let target = plugin_target_path(&install);
+    let source_hash = file_sha256(&source)?;
 
     if let Some(parent) = target.parent() {
         fs::create_dir_all(parent).map_err(|e| {
@@ -95,31 +136,37 @@ pub fn install_plugin_files<R: Runtime>(
     }
 
     if target.is_file() {
-        let source_meta = fs::metadata(&source).map_err(|e| e.to_string())?;
-        let target_meta = fs::metadata(&target).map_err(|e| e.to_string())?;
-        let source_mtime = source_meta
-            .modified()
-            .unwrap_or(SystemTime::UNIX_EPOCH)
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_secs();
-        let target_mtime = target_meta
-            .modified()
-            .unwrap_or(SystemTime::UNIX_EPOCH)
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_secs();
-
-        if source_meta.len() == target_meta.len() && source_mtime <= target_mtime {
-            crate::dev_log!(
-                "[career] plugin DLL unchanged ({} bytes, source_mtime={}, target_mtime={}): {}",
-                target_meta.len(),
-                source_mtime,
-                target_mtime,
-                target.display()
-            );
-            return Ok(target);
+        if let Ok(same_content) = files_match_by_content(&source, &target) {
+            if same_content {
+                let target_meta = fs::metadata(&target).map_err(|e| e.to_string())?;
+                crate::dev_log!(
+                    "[career] plugin DLL unchanged ({} bytes, sha256={}): {}",
+                    target_meta.len(),
+                    source_hash,
+                    target.display()
+                );
+                return Ok(target);
+            }
         }
+    }
+
+    if is_process_running(game.exe_name()) {
+        return Err(format!(
+            "Cannot update {} while {} is running. Close the game and try again.",
+            target.display(),
+            game.exe_name()
+        ));
+    }
+
+    if target.is_file() {
+        let backup = target.with_extension("dll.bak");
+        fs::copy(&target, &backup).map_err(|e| {
+            format!(
+                "Failed to back up existing plugin DLL to {}: {e}",
+                backup.display()
+            )
+        })?;
+        crate::dev_log!("[career] plugin DLL backup created: {}", backup.display());
     }
 
     fs::copy(&source, &target).map_err(|e| {
@@ -129,6 +176,20 @@ pub fn install_plugin_files<R: Runtime>(
             e
         )
     })?;
+
+    if !files_match_by_content(&source, &target)? {
+        return Err(format!(
+            "Plugin DLL verification failed after copying to {}",
+            target.display()
+        ));
+    }
+    let target_hash = file_sha256(&target)?;
+    if source_hash != target_hash {
+        return Err(format!(
+            "Plugin DLL SHA-256 mismatch after copying: source={} target={}",
+            source_hash, target_hash
+        ));
+    }
 
     let source_meta = fs::metadata(&source).map_err(|e| e.to_string())?;
     let target_meta = fs::metadata(&target).map_err(|e| e.to_string())?;
@@ -140,12 +201,13 @@ pub fn install_plugin_files<R: Runtime>(
         .as_secs();
 
     crate::dev_log!(
-        "[career] plugin DLL copied: source={} ({} bytes) -> target={} ({} bytes, mtime={})",
+        "[career] plugin DLL copied: source={} ({} bytes) -> target={} ({} bytes, mtime={}, sha256={})",
         source.display(),
         source_meta.len(),
         target.display(),
         target_meta.len(),
-        modified
+        modified,
+        target_hash
     );
 
     Ok(target)
@@ -155,14 +217,7 @@ pub fn ensure_plugin_files<R: Runtime>(
     app: &AppHandle<R>,
     game: ScsGame,
 ) -> Result<PathBuf, String> {
-    match plugin_file_installed(game) {
-        Ok(true) => {
-            let install = find_game_installation(game)?;
-            Ok(plugin_target_path(&install))
-        }
-        Ok(false) => install_plugin_files(app, game),
-        Err(_) => install_plugin_files(app, game),
-    }
+    install_plugin_files(app, game)
 }
 
 fn resolve_plugin_resource<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, String> {

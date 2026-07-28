@@ -26,8 +26,6 @@ fn main() {
     crate::dev_log!("[app] starting");
     let _ = crate::shared::user_log::user_log_info("App", "Application start");
 
-    features::career::scs_sdk_telemetry::start_terminal_telemetry_loop();
-    features::career::telemetry_debug::start_telemetry_debug_thread();
     let sqlite_pool = tauri::async_runtime::block_on(db::sqlite::init_sqlite())
         .expect("failed to initialize central sqlite pool");
     let sqlite_path = db::sqlite::app_db_path();
@@ -165,10 +163,6 @@ fn main() {
             }
             crate::dev_log!("[app] setup start telemetry bridge + background threads");
             crate::dev_log!("[trace] START telemetry_bridge_startup");
-            features::career::scs_sdk_telemetry::start_frontend_telemetry_bridge(
-                handle.clone(),
-                runtime.clone(),
-            );
             features::career::service::start_background(handle, runtime);
             let ets_db = app.state::<EtsDbState>();
             features::telemetry::scs_shared_mem::start(app.handle().clone(), ets_db.pool.clone());
