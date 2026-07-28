@@ -1179,6 +1179,15 @@
             "clone_failed": "Clone failed: {error}",
             "coming_soon": "Coming Soon",
             "no_trailer_assigned_error": "No trailer assigned to you",
+            "trailer_context_load_error": "Trailer data could not be loaded.",
+            "trailer_modal_load_error": "The trailer dialog could not be loaded.",
+            "trailer_no_active_job": "No active job was found.",
+            "trailer_license_plate_empty": "Enter a trailer license plate.",
+            "trailer_license_plate_invalid": "The trailer license plate contains unsupported characters.",
+            "trailer_license_plate_too_long": "The trailer license plate must not exceed {max} characters.",
+            "modify_job_weight_invalid": "Enter a job weight between 0 and {max} kg.",
+            "trailer_repair_fields_not_found": "No repairable wear values were found on the active trailer.",
+            "trailer_write_verification_error": "The trailer change could not be verified after writing. Restore the automatic backup before continuing.",
             "repair_truck_success": "Truck repaired successfully",
             "repair_truck_error": "Failed to repair truck!",
             "advanced_repair_success": "Advanced repair applied successfully",
@@ -1378,7 +1387,8 @@
                   "trailer_license_plate": {
                         "title": "Trailer License Plate",
                         "desc": "Edit your trailer license plate",
-                        "modalTextTitle": "Enter new license plate"
+                        "modalTextTitle": "Enter new license plate",
+                        "modalTextPlaceholder": "License plate (maximum 32 characters)"
                   },
                   "modify_job_weight": {
                         "title": "Modify Job Weight",

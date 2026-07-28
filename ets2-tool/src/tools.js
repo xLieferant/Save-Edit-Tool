@@ -13,12 +13,128 @@ import {
   openProfileSharingPage,
 } from "./app.js";
 
-// Helper function to guard trailer actions
-const trailerActionGuard = (actionFunction) => async (...args) => {
-  if (!window.playerTrailer) {
+const TRAILER_LICENSE_PLATE_MAX_LENGTH = 32;
+const JOB_WEIGHT_MAX_KG = 1000000;
+
+function extractTrailerPlateText(plate) {
+  if (!plate) return "";
+  return String(plate)
+    .replace(/^"|"$/g, "")
+    .split("|")[0]
+    .replace(/<[^>]*>/g, " ")
+    .replace(/[\u0000-\u001f\u007f]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function requireTrailerModal(selector, actionName) {
+  const modalElement = document.querySelector(selector);
+  console.debug(`[Trailer] ${actionName} modal lookup`, {
+    selector,
+    found: Boolean(modalElement),
+  });
+  if (!modalElement) {
+    throw new Error("trailer_modal_not_found");
+  }
+  return modalElement;
+}
+
+async function openJobWeightModal(currentValue) {
+  const modalInput = requireTrailerModal("#modalNumberInput", "job_weight");
+  const originalType = modalInput.getAttribute("type");
+  const originalInputMode = modalInput.getAttribute("inputmode");
+  modalInput.setAttribute("type", "text");
+  modalInput.setAttribute("inputmode", "decimal");
+
+  try {
+    const submittedValue = await openModalNumber(
+      "tools.trailer.modify_job_weight.modalNumberText",
+      currentValue
+    );
+    return {
+      submittedValue,
+      rawValue: modalInput.value.trim(),
+    };
+  } finally {
+    if (originalType === null) {
+      modalInput.removeAttribute("type");
+    } else {
+      modalInput.setAttribute("type", originalType);
+    }
+    if (originalInputMode === null) {
+      modalInput.removeAttribute("inputmode");
+    } else {
+      modalInput.setAttribute("inputmode", originalInputMode);
+    }
+  }
+}
+
+function showTrailerActionError(error, fallbackKey) {
+  const errorCode = String(error);
+  const mappings = [
+    ["no_active_job", "toasts.trailer_no_active_job"],
+    ["active_job_trailer_not_found", "toasts.no_trailer_assigned_error"],
+    ["active_trailer_not_found", "toasts.no_trailer_assigned_error"],
+    ["active_trailer_not_editable", "toasts.no_trailer_assigned_error"],
+    ["trailer_license_plate_empty", "toasts.trailer_license_plate_empty"],
+    ["trailer_license_plate_invalid", "toasts.trailer_license_plate_invalid"],
+    ["trailer_license_plate_too_long", "toasts.trailer_license_plate_too_long"],
+    ["job_weight_invalid", "toasts.modify_job_weight_invalid"],
+    ["trailer_repair_fields_not_found", "toasts.trailer_repair_fields_not_found"],
+    ["trailer_write_verification_failed", "toasts.trailer_write_verification_error"],
+    ["trailer_modal_not_found", "toasts.trailer_modal_load_error"],
+  ];
+  const match = mappings.find(([code]) => errorCode.includes(code));
+  const key = match?.[1] || fallbackKey;
+  const params = key === "toasts.trailer_license_plate_too_long"
+    ? { max: TRAILER_LICENSE_PLATE_MAX_LENGTH }
+    : key === "toasts.modify_job_weight_invalid"
+      ? { max: JOB_WEIGHT_MAX_KG }
+      : null;
+
+  if (params) {
+    showToast(key, params, "error");
+  } else {
+    showToast(key, "error");
+  }
+}
+
+// Helper function to refresh and guard trailer actions
+const trailerActionGuard = (actionName, actionFunction, options = {}) => async (...args) => {
+  const { requireActiveJob = false } = options;
+  console.debug(`[Trailer] ${actionName} clicked`, {
+    hasProfile: Boolean(window.selectedProfilePath),
+    hasSave: Boolean(window.selectedSavePath),
+    hasTrailer: Boolean(window.playerTrailer),
+    hasActiveJob: Boolean(window.playerTrailerHasActiveJob),
+  });
+
+  if (!window.selectedProfilePath || !window.selectedSavePath) {
+    showToast("toasts.trailer_change_save_required", "warning");
+    return;
+  }
+
+  console.debug(`[Trailer] ${actionName} refreshing trailer context`);
+  await window.loadAllTrailers?.();
+
+  if (window.playerTrailerLoadError) {
+    console.error(`[Trailer] ${actionName} context load failed`);
+    showToast("toasts.trailer_context_load_error", "error");
+    return;
+  }
+  if (!requireActiveJob && !window.playerTrailer) {
     showToast("toasts.no_trailer_assigned_error", "warning");
     return;
   }
+  if (requireActiveJob && !window.playerTrailerHasActiveJob) {
+    showToast("toasts.trailer_no_active_job", "warning");
+    return;
+  }
+  if (requireActiveJob && window.playerTrailerJobCargoMass === null) {
+    showToast("toasts.no_trailer_assigned_error", "warning");
+    return;
+  }
+
   await actionFunction(...args);
 };
 
@@ -241,17 +357,31 @@ export const tools = {
       title: "tools.trailer.repair_trailer.title",
       desc: "tools.trailer.repair_trailer.desc",
       img: "images/trailerRepair.jpg",
-      action: trailerActionGuard(async () => {
+      action: trailerActionGuard("repair", async () => {
         try {
+          requireTrailerModal("#modalSlider", "repair");
+          const wheelWear = Array.isArray(window.playerTrailer?.wheels_wear)
+            ? window.playerTrailer.wheels_wear.filter(Number.isFinite)
+            : [];
+          const currentWear = Math.max(
+            0,
+            Number(window.playerTrailer?.body_wear) || 0,
+            Number(window.playerTrailer?.chassis_wear) || 0,
+            ...wheelWear
+          );
+          console.debug("[Trailer] opening repair modal", { currentWear });
           const shouldRepair = await openModalSlider("tools.trailer.repair_trailer.modalSliderText", 0);
+          console.debug("[Trailer] repair modal result", { confirmed: Boolean(shouldRepair) });
           if (shouldRepair) {
-            await invoke("repair_player_trailer");
+            console.debug("[Trailer] invoking repair_player_trailer");
+            const result = await invoke("repair_player_trailer");
+            console.debug("[Trailer] repair_player_trailer completed", { result });
             await loadAllTrailers();
             showToast("toasts.repair_trailer_success", "success");
           }
         } catch (err) {
           console.error("Repair trailer error:", err);
-          showToast("toasts.repair_trailer_error", "error");
+          showTrailerActionError(err, "toasts.repair_trailer_error");
         }
       }),
       disabled: false,
@@ -260,20 +390,52 @@ export const tools = {
       title: "tools.trailer.trailer_license_plate.title",
       desc: "tools.trailer.trailer_license_plate.desc",
       img: "images/trailer_license.jpg",
-      action: trailerActionGuard(async () => {
+      action: trailerActionGuard("license_plate", async () => {
         try {
+          const currentPlate = window.playerTrailer?.display_license_plate
+            ?? extractTrailerPlateText(window.playerTrailer?.license_plate);
+          requireTrailerModal("#modalText", "license_plate");
+          console.debug("[Trailer] opening license plate modal", {
+            currentLength: Array.from(currentPlate).length,
+          });
           const newValue = await openModalText(
             "tools.trailer.trailer_license_plate.modalTextTitle",
-            window.extractPlateText(window.playerTrailer?.license_plate)
+            "tools.trailer.trailer_license_plate.modalTextPlaceholder",
+            currentPlate
           );
+          console.debug("[Trailer] license plate modal result", {
+            submitted: newValue !== null,
+            length: newValue === null ? 0 : String(newValue).trim().length,
+          });
           if (newValue !== null) {
-            await invoke("set_player_trailer_license_plate", { plate: newValue });
+            const plate = String(newValue).trim();
+            if (!plate) {
+              showToast("toasts.trailer_license_plate_empty", "warning");
+              return;
+            }
+            if (Array.from(plate).length > TRAILER_LICENSE_PLATE_MAX_LENGTH) {
+              showToast(
+                "toasts.trailer_license_plate_too_long",
+                { max: TRAILER_LICENSE_PLATE_MAX_LENGTH },
+                "warning"
+              );
+              return;
+            }
+            if (/["\\|\u0000-\u001f\u007f]/u.test(plate)) {
+              showToast("toasts.trailer_license_plate_invalid", "warning");
+              return;
+            }
+            console.debug("[Trailer] invoking set_player_trailer_license_plate", {
+              length: Array.from(plate).length,
+            });
+            const result = await invoke("set_player_trailer_license_plate", { plate });
+            console.debug("[Trailer] set_player_trailer_license_plate completed", { result });
             await loadAllTrailers();
-            showToast("toasts.trailer_license_plate_success", { newValue }, "success");
+            showToast("toasts.trailer_license_plate_success", { newValue: plate }, "success");
           }
         } catch (err) {
           console.error("Trailer license plate error:", err);
-          showToast("toasts.trailer_license_plate_error", "error");
+          showTrailerActionError(err, "toasts.trailer_license_plate_error");
         }
       }),
       disabled: false,
@@ -282,22 +444,38 @@ export const tools = {
       title: "tools.trailer.modify_job_weight.title",
       desc: "tools.trailer.modify_job_weight.desc",
       img: "images/comingsoon.png",
-      action: trailerActionGuard(async () => {
+      action: trailerActionGuard("job_weight", async () => {
         try {
-          const newValue = await openModalNumber(
-            "tools.trailer.modify_job_weight.modalNumberText",
-            window.playerTrailer?.cargo_mass || 0
+          console.debug("[Trailer] opening job weight modal", {
+            currentValue: window.playerTrailerJobCargoMass,
+          });
+          const { submittedValue, rawValue } = await openJobWeightModal(
+            window.playerTrailerJobCargoMass
           );
-          if (newValue !== null) {
-            await invoke("set_player_trailer_cargo_mass", { mass: newValue });
+          console.debug("[Trailer] job weight modal result", {
+            submitted: submittedValue !== null,
+          });
+          if (submittedValue !== null) {
+            const mass = Number(rawValue.replace(",", "."));
+            if (!rawValue || !Number.isFinite(mass) || mass < 0 || mass > JOB_WEIGHT_MAX_KG) {
+              showToast(
+                "toasts.modify_job_weight_invalid",
+                { max: JOB_WEIGHT_MAX_KG },
+                "warning"
+              );
+              return;
+            }
+            console.debug("[Trailer] invoking set_player_trailer_cargo_mass", { mass });
+            const result = await invoke("set_player_trailer_cargo_mass", { mass });
+            console.debug("[Trailer] set_player_trailer_cargo_mass completed", { result });
             await loadAllTrailers();
-            showToast("toasts.modify_job_weight_success", { newValue }, "success");
+            showToast("toasts.modify_job_weight_success", { newValue: mass }, "success");
           }
         } catch (err) {
           console.error("Cargo mass error:", err);
-          showToast("toasts.modify_job_weight_error", "error");
+          showTrailerActionError(err, "toasts.modify_job_weight_error");
         }
-      }),
+      }, { requireActiveJob: true }),
       disabled: false,
     },
   ],
