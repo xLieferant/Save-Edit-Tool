@@ -51,8 +51,10 @@ base64 = "0.22"
 rusqlite = { version = "0.31.0", features = ["bundled"] }
 sqlx = { version = "0.8.0", features = ["sqlite", "runtime-tokio-rustls", "macros", "chrono", "uuid"] }
 sha2 = "0.10.9"
-winreg = "0.55.0"
 windows-sys = { version = "0.59.0", features = ["Win32_Foundation", "Win32_Security", "Win32_System_Memory", "Win32_Storage_FileSystem"] }
-scs-sdk-telemetry = { version = "1.2.0", features = ["json"] }
 argon2 = "0.5.3"
 rand_core = { version = "0.6.4", features = ["getrandom"] }
+
+[target.'cfg(windows)'.dependencies]
+winreg = "0.55.0"
+scs-sdk-telemetry = { version = "1.2.0", features = ["json"] }
