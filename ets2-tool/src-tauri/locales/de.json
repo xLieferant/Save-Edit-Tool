@@ -953,6 +953,7 @@
       "truck": "Truck",
       "trailer": "Trailer",
       "profile": "Profil",
+      "garages": "[NEEDS TRANSLATION] Garages",
       "settings": "Einstellungen"
     },
     "stage_label": "Aktives Modul",
@@ -1314,7 +1315,9 @@
     "safety_restore_failed": "Backup-Wiederherstellung fehlgeschlagen.",
     "safety_copy_failed": "Kopieren in die Zwischenablage fehlgeschlagen.",
     "reset_values_applied": "Werte wurden erfolgreich angewendet.",
-    "reset_undo_restored": "Die letzte änderung wurde wiederhergestellt."
+    "reset_undo_restored": "Die letzte änderung wurde wiederhergestellt.",
+    "garage_action_not_implemented": "[NEEDS TRANSLATION] Garage editing is not implemented yet.",
+    "garage_action_failed": "[NEEDS TRANSLATION] The garage command could not be started."
   },
   "tools": {
     "truck": {
@@ -1420,6 +1423,24 @@
       "mod_profile_manager": {
         "title": "Mod-Profil-Manager",
         "desc": "Speichere, vergleiche und prüfe lokale sowie Steam-Workshop-Mod-Setups für ETS2 oder ATS."
+      }
+    },
+    "garages": {
+      "buy": {
+        "title": "[NEEDS TRANSLATION] Buy Garage",
+        "desc": "[NEEDS TRANSLATION] Prepare the purchase of a selected garage. No save data is changed yet."
+      },
+      "upgrade": {
+        "title": "[NEEDS TRANSLATION] Upgrade Garage",
+        "desc": "[NEEDS TRANSLATION] Prepare an upgrade for a selected owned garage. No save data is changed yet."
+      },
+      "buy_all": {
+        "title": "[NEEDS TRANSLATION] Buy All Garages",
+        "desc": "[NEEDS TRANSLATION] Prepare the purchase of every available garage. No save data is changed yet."
+      },
+      "relinquish": {
+        "title": "[NEEDS TRANSLATION] Relinquish Garage Ownership",
+        "desc": "[NEEDS TRANSLATION] Prepare removal of ownership without deleting the garage entry. No save data is changed yet."
       }
     },
     "settings": {

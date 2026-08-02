@@ -393,6 +393,11 @@ fn main() {
             features::companies::commands::company_join,
             features::companies::commands::company_get_current,
             features::companies::commands::company_get_for_user,
+            // Garages
+            features::garages::commands::buy_garage,
+            features::garages::commands::upgrade_garage,
+            features::garages::commands::buy_all_garages,
+            features::garages::commands::relinquish_garage_ownership,
             // VTC / Career Management
             features::vtc::commands::get_current_user_profile,
             features::vtc::commands::get_vtc_runtime_context,

@@ -23,7 +23,8 @@ const editorTabShortcuts = {
   F1: "truck",
   F2: "trailer",
   F3: "profile",
-  F4: "settings",
+  F4: "garages",
+  F5: "settings",
 };
 
 function setActiveEditorTabButton(tab) {
@@ -54,6 +55,7 @@ export async function loadTools(tab) {
     truck: "editor.tab.truck",
     trailer: "editor.tab.trailer",
     profile: "editor.tab.profile",
+    garages: "editor.tab.garages",
     settings: "editor.tab.settings",
   };
 

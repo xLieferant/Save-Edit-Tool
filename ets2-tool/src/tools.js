@@ -152,6 +152,16 @@ function resolveGameToolImage(baseImg, game) {
   return baseImg;
 }
 
+async function runGaragePlaceholder(command) {
+  try {
+    await invoke(command);
+    showToast("toasts.garage_action_not_implemented", "warning");
+  } catch (error) {
+    console.error("Garage command failed:", error);
+    showToast("toasts.garage_action_failed", "error");
+  }
+}
+
 // --------------------------------------------------------------
 // TOOL DEFINITIONS
 // --------------------------------------------------------------
@@ -716,6 +726,40 @@ export const tools = {
     },
   ],
 
+  garages: [
+    {
+      title: "tools.garages.buy.title",
+      desc: "tools.garages.buy.desc",
+      img: "images/comingsoon.png",
+      action: async () => {
+        await runGaragePlaceholder("buy_garage");
+      },
+    },
+    {
+      title: "tools.garages.upgrade.title",
+      desc: "tools.garages.upgrade.desc",
+      img: "images/comingsoon.png",
+      action: async () => {
+        await runGaragePlaceholder("upgrade_garage");
+      },
+    },
+    {
+      title: "tools.garages.buy_all.title",
+      desc: "tools.garages.buy_all.desc",
+      img: "images/comingsoon.png",
+      action: async () => {
+        await runGaragePlaceholder("buy_all_garages");
+      },
+    },
+    {
+      title: "tools.garages.relinquish.title",
+      desc: "tools.garages.relinquish.desc",
+      img: "images/comingsoon.png",
+      action: async () => {
+        await runGaragePlaceholder("relinquish_garage_ownership");
+      },
+    },
+  ],
   settings: [
     {
       title: "editor.recovery.nav_button",

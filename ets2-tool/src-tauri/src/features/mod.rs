@@ -10,6 +10,7 @@ pub mod employees;
 pub mod ets2save;
 pub mod events;
 pub mod fleet;
+pub mod garages;
 pub mod health_monitor;
 pub mod hub;
 pub mod language;

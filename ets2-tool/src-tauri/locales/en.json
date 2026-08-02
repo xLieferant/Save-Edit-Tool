@@ -970,6 +970,7 @@
                   "truck": "Truck",
                   "trailer": "Trailer",
                   "profile": "Profile",
+                  "garages": "Garages",
                   "settings": "Settings"
             },
             "stage_label": "Current Module",
@@ -1331,7 +1332,9 @@
             "safety_restore_failed": "Backup restore failed.",
             "safety_copy_failed": "Clipboard copy failed.",
             "reset_values_applied": "Values applied successfully.",
-            "reset_undo_restored": "Last change restored."
+            "reset_undo_restored": "Last change restored.",
+            "garage_action_not_implemented": "Garage editing is not implemented yet.",
+            "garage_action_failed": "The garage command could not be started."
       },
       "tools": {
             "truck": {
@@ -1437,6 +1440,24 @@
                   "mod_profile_manager": {
                         "title": "Mod Profile Manager",
                         "desc": "Save, compare and review local plus Steam Workshop mod setups for ETS2 or ATS."
+                  }
+            },
+            "garages": {
+                  "buy": {
+                        "title": "Buy Garage",
+                        "desc": "Prepare the purchase of a selected garage. No save data is changed yet."
+                  },
+                  "upgrade": {
+                        "title": "Upgrade Garage",
+                        "desc": "Prepare an upgrade for a selected owned garage. No save data is changed yet."
+                  },
+                  "buy_all": {
+                        "title": "Buy All Garages",
+                        "desc": "Prepare the purchase of every available garage. No save data is changed yet."
+                  },
+                  "relinquish": {
+                        "title": "Relinquish Garage Ownership",
+                        "desc": "Prepare removal of ownership without deleting the garage entry. No save data is changed yet."
                   }
             },
             "settings": {
