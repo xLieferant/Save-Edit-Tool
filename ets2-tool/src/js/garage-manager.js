@@ -5,6 +5,7 @@ const COPY_KEYS = {
   details: "garage_manager.actions.details",
   edit: "garage_manager.actions.edit",
   purchase: "garage_manager.actions.purchase",
+  purchaseAll: "garage_manager.actions.purchase_all",
   upgrade: "garage_manager.actions.upgrade",
   downgrade: "garage_manager.actions.downgrade",
   setHeadquarters: "garage_manager.actions.set_headquarters",

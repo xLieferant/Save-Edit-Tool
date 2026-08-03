@@ -218,6 +218,35 @@ pub fn purchase_garage(
     )
 }
 
+pub fn buy_all_garages (
+    selection: &ActiveSaveSelection,
+    selected_game: &str,
+    profile_state: &AppProfileState,
+    profile_cache: &ProfileCache,
+    decrypt_cache: &DecryptCache,
+    truck_change_cache: &TruckChangeSessionCache,
+    trailer_change_cache: &TrailerChangeSessionCache,
+    sqlite_path: &Path,
+    request: &GarageBuyAllRequest,
+) -> Result<GarageMutationResult, String> {
+    // Implementation for buying all garages
+    mutate_garage(
+        selection,
+        selected_game,
+        profile_state,
+        profile_cache,
+        decrypt_cache,
+        truck_change_cache,
+        trailer_change_cache,
+        sqlite_path,
+        &request.garage_id,
+        &request.expected_save_hash,
+        GarageOperation::PurchaseAll, // Assuming a new operation type for buying all garages
+        None, // No specific target size for buying all garages
+        false, // Not setting as headquarters
+    )
+}
+
 pub fn upgrade_owned_garage(
     selection: &ActiveSaveSelection,
     selected_game: &str,
@@ -869,10 +898,6 @@ pub fn buy_garage() -> GarageActionResult {
 
 pub fn upgrade_garage() -> GarageActionResult {
     placeholder("upgrade_garage")
-}
-
-pub fn buy_all_garages() -> GarageActionResult {
-    placeholder("buy_all_garages")
 }
 
 pub fn relinquish_garage_ownership() -> GarageActionResult {

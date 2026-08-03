@@ -26,6 +26,7 @@ const SAVE_MUTATION_COMMANDS = new Set([
   "apply_active_truck_switch",
   "apply_save_health_fix",
   "purchase_garage",
+  "buy_all_garages",
   "upgrade_owned_garage",
   "update_garage",
   "apply_setting",

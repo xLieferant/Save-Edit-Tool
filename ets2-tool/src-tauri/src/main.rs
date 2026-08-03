@@ -395,7 +395,6 @@ fn main() {
             features::companies::commands::company_get_current,
             features::companies::commands::company_get_for_user,
             // Garages
-            features::garages::commands::get_all_garages,
             features::garages::commands::purchase_garage,
             features::garages::commands::upgrade_owned_garage,
             features::garages::commands::update_garage,
