@@ -2708,9 +2708,11 @@ mod tests {
         ];
 
         assert_eq!(preset.title, "ETS2 Version 1.60 by xLieferant with ProMods");
-        assert!(!presets
-            .iter()
-            .any(|preset| preset.title == "Realistic Transport & Scania Pack"));
+        assert!(
+            !presets
+                .iter()
+                .any(|preset| preset.title == "Realistic Transport & Scania Pack")
+        );
         assert_eq!(preset.mods.len(), 40);
         assert_eq!(
             preset
@@ -2720,11 +2722,13 @@ mod tests {
                 .collect::<Vec<_>>(),
             expected_active_mods
         );
-        assert!(preset
-            .mods
-            .iter()
-            .enumerate()
-            .all(|(index, preset_mod)| preset_mod.load_order == index));
+        assert!(
+            preset
+                .mods
+                .iter()
+                .enumerate()
+                .all(|(index, preset_mod)| preset_mod.load_order == index)
+        );
 
         let expected_values = expected_active_mods
             .iter()
@@ -2882,7 +2886,9 @@ profile : profile.1 {
         assert_eq!(with_promods.title, "Real Economy with Promods!");
         assert_eq!(
             without_promods.description.as_deref(),
-            Some("Real Eco preset for the 100 Tage Challange profile with the exact active_mods load order.")
+            Some(
+                "Real Eco preset for the 100 Tage Challange profile with the exact active_mods load order."
+            )
         );
         assert_eq!(with_promods.description, without_promods.description);
         for preset in [without_promods, with_promods] {

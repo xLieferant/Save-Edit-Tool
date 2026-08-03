@@ -84,15 +84,9 @@ fn replace_file_impl(tmp_path: &Path, target_path: &Path) -> Result<(), AppError
 
 #[cfg(not(target_os = "windows"))]
 fn replace_file_impl(tmp_path: &Path, target_path: &Path) -> Result<(), AppError> {
-    if target_path.exists() {
-        fs::remove_file(target_path).map_err(|error| {
-            AppError::new(
-                AppErrorCode::WriteFailed,
-                format!("Failed to replace {}: {}", target_path.display(), error),
-            )
-        })?;
-    }
-
+    // Both paths are created in the same directory. On Unix-like targets,
+    // rename replaces an existing file atomically; removing it first creates
+    // a data-loss window and must therefore be avoided.
     fs::rename(tmp_path, target_path).map_err(|error| {
         AppError::new(
             AppErrorCode::WriteFailed,

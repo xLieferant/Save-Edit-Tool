@@ -160,7 +160,12 @@ pub fn decrypt_cached_with_cache(path: &Path, cache: &DecryptCache) -> Result<St
         InflightRole::Leader(entry) => {
             let result = decrypt_if_needed(path);
             if let Ok(content) = result.as_ref() {
-                insert_cached_content(cache, &path_buf, content.clone())?;
+                insert_cached_content_if_current(
+                    cache,
+                    &path_buf,
+                    content.clone(),
+                    entry.generation,
+                )?;
             }
             complete_inflight(cache, &path_buf, &entry, result.clone())?;
             result
@@ -248,19 +253,39 @@ fn cached_content(cache: &DecryptCache, path: &Path) -> Result<Option<String>, S
     Ok(guard.get(path).cloned())
 }
 
-fn insert_cached_content(cache: &DecryptCache, path: &Path, content: String) -> Result<(), String> {
-    let mut guard = lock_mutex("decrypt_cache.files", &cache.files)?;
-    guard.insert(path.to_path_buf(), content);
+fn insert_cached_content_if_current(
+    cache: &DecryptCache,
+    path: &Path,
+    content: String,
+    generation: u64,
+) -> Result<(), String> {
+    let generations = lock_mutex("decrypt_cache.generations", &cache.generations)?;
+    if generations.get(path).copied().unwrap_or(0) != generation {
+        return Ok(());
+    }
+    let mut files = lock_mutex("decrypt_cache.files", &cache.files)?;
+    files.insert(path.to_path_buf(), content);
     Ok(())
 }
 
+fn current_generation(cache: &DecryptCache, path: &Path) -> Result<u64, String> {
+    let generations = lock_mutex("decrypt_cache.generations", &cache.generations)?;
+    Ok(generations.get(path).copied().unwrap_or(0))
+}
+
 fn acquire_inflight_entry(cache: &DecryptCache, path: &PathBuf) -> Result<InflightRole, String> {
+    let generation = current_generation(cache, path)?;
     let mut guard = lock_mutex("decrypt_cache.inflight", &cache.inflight)?;
-    if let Some(entry) = guard.get(path).cloned() {
+    if let Some(entry) = guard.get(path).cloned()
+        && entry.generation == generation
+    {
         return Ok(InflightRole::Follower(entry));
     }
 
-    let entry = Arc::new(InFlightDecrypt::default());
+    let entry = Arc::new(InFlightDecrypt {
+        generation,
+        ..InFlightDecrypt::default()
+    });
     guard.insert(path.clone(), entry.clone());
     Ok(InflightRole::Leader(entry))
 }
@@ -322,7 +347,12 @@ fn complete_inflight(
     }
 
     let mut inflight = lock_mutex("decrypt_cache.inflight", &cache.inflight)?;
-    inflight.remove(path);
+    if inflight
+        .get(path)
+        .is_some_and(|current| Arc::ptr_eq(current, entry))
+    {
+        inflight.remove(path);
+    }
     Ok(())
 }
 
@@ -356,7 +386,13 @@ pub fn modify_block(
 
 #[cfg(test)]
 mod tests {
-    use super::{decode_text_bytes, detect_signature};
+    use std::path::PathBuf;
+
+    use crate::state::DecryptCache;
+
+    use super::{
+        cached_content, decode_text_bytes, detect_signature, insert_cached_content_if_current,
+    };
 
     #[test]
     fn detect_signature_for_plain_and_encrypted_fixtures() {
@@ -372,5 +408,27 @@ mod tests {
         let decoded = decode_text_bytes(encrypted, "encrypted_fixture", &[]).unwrap();
         assert!(decoded.starts_with("SiiNunit"));
         assert!(decoded.contains("company"));
+    }
+
+    #[test]
+    fn invalidated_generation_cannot_repopulate_stale_cached_content() {
+        let cache = DecryptCache::default();
+        let path = PathBuf::from("generation-test.sii");
+
+        insert_cached_content_if_current(&cache, &path, "old".to_string(), 0).unwrap();
+        assert_eq!(
+            cached_content(&cache, &path).unwrap().as_deref(),
+            Some("old")
+        );
+
+        cache.invalidate_path(&path);
+        insert_cached_content_if_current(&cache, &path, "stale".to_string(), 0).unwrap();
+        assert_eq!(cached_content(&cache, &path).unwrap(), None);
+
+        insert_cached_content_if_current(&cache, &path, "fresh".to_string(), 1).unwrap();
+        assert_eq!(
+            cached_content(&cache, &path).unwrap().as_deref(),
+            Some("fresh")
+        );
     }
 }

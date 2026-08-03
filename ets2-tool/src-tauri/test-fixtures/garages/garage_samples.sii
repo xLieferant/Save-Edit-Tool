@@ -1,0 +1,98 @@
+SiiNunit
+{
+economy : _economy {
+ player: _player
+ garages: 4
+ garages[0]: garage.berlin
+ garages[1]: garage.paris
+ garages[2]: garage.los_angeles
+ garages[3]: garage.unknown_city
+}
+
+player : _player {
+ hq_city: berlin
+}
+
+garage : garage.berlin {
+ vehicles: 5
+ vehicles[0]: truck.one
+ vehicles[1]: truck.two
+ vehicles[2]: null
+ vehicles[3]: null
+ vehicles[4]: null
+ drivers: 5
+ drivers[0]: driver.one
+ drivers[1]: null
+ drivers[2]: null
+ drivers[3]: null
+ drivers[4]: null
+ trailers: 1
+ trailers[0]: trailer.one
+ status: 3
+ profit_log: profit.berlin
+ productivity: &3f000000
+ future_garage_field: preserved_by_reader
+}
+
+vehicle : truck.one {
+}
+
+vehicle : truck.two {
+}
+
+driver_ai : driver.one {
+}
+
+trailer : trailer.one {
+}
+
+profit_log : profit.berlin {
+}
+
+garage : garage.paris {
+ vehicles: 3
+ vehicles[0]: null
+ vehicles[1]: null
+ vehicles[2]: null
+ drivers: 3
+ drivers[0]: null
+ drivers[1]: null
+ drivers[2]: null
+ trailers: 0
+ status: 2
+ profit_log: profit.paris
+ productivity: 0
+}
+
+profit_log : profit.paris {
+}
+
+garage : garage.los_angeles {
+ vehicles: 0
+ drivers: 0
+ trailers: 0
+ status: 0
+ profit_log: profit.los_angeles
+ productivity: 0
+}
+
+profit_log : profit.los_angeles {
+}
+
+garage : garage.unknown_city {
+ vehicles: 4
+ vehicles[0]: null
+ vehicles[1]: null
+ vehicles[2]: null
+ vehicles[3]: null
+ drivers: 4
+ drivers[0]: null
+ drivers[1]: null
+ drivers[2]: null
+ drivers[3]: null
+ trailers: 0
+ status: 7
+ profit_log: null
+ productivity: invalid
+}
+}

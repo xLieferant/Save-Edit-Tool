@@ -8,6 +8,7 @@ import {
   loadLevelTable,
 } from "./js/level-system.js";
 import { mountSkilltreeEditor } from "./js/skilltree.js";
+import { mountGarageManager } from "./js/garage-manager.js";
 
 /* --------------------------------------------------------------
    TOOL LOADER UND TAB HANDLING
@@ -60,6 +61,11 @@ export async function loadTools(tab) {
   };
 
   document.dispatchEvent(new CustomEvent("editor-tab-changed", { detail: { tab } }));
+
+  if (tab === "garages") {
+    await mountGarageManager(container);
+    return;
+  }
 
   if (hasSkilltreeLauncher) {
     const launcherCard = await createSkilltreeLauncherCard();
