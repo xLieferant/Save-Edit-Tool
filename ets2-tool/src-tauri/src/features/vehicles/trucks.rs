@@ -90,7 +90,7 @@ pub async fn get_player_truck(
             .ok_or("Player ID nicht im economy block gefunden".to_string())?;
         let (player_truck_id_opt, _) = get_vehicle_ids(&content, &player_id);
         let player_truck_id =
-            player_truck_id_opt.ok_or("my_truck nicht im player block gefunden".to_string())?;
+            player_truck_id_opt.ok_or("assigned_vehicles/player_vehicles.vehicle nicht gefunden".to_string())?;
         let id_clean = player_truck_id.trim().to_lowercase();
         let base_truck = trucks
             .iter()
@@ -110,36 +110,25 @@ pub async fn get_player_truck(
 #[cfg(test)]
 mod tests {
     use super::player_truck_from_content;
-    use crate::shared::sii_parser::{get_vehicle_ids, parse_trucks_from_sii};
+    use crate::shared::sii_parser::parse_trucks_from_sii;
 
     #[test]
-    fn vehicle_ids_returns_truck_then_trailer() {
+    fn get_all_trucks_player_resolution_uses_assigned_vehicles_chain() {
         let content = r#"SiiNunit
 {
 economy : _nameless.economy {
  player: _nameless.player
 }
 player : _nameless.player {
- my_truck: _nameless.truck.active
- my_trailer: _nameless.trailer.attached
+ my_vehicles_mode: truck
+ assigned_vehicles_mode: truck
+ assigned_vehicles: _nameless.pv1
+ my_truck: null
+ my_trailer: null
 }
-}
-"#;
-        let ids = get_vehicle_ids(content, "_nameless.player");
-        assert_eq!(ids.0.as_deref(), Some("_nameless.truck.active"));
-        assert_eq!(ids.1.as_deref(), Some("_nameless.trailer.attached"));
-    }
-
-    #[test]
-    fn get_all_trucks_player_resolution_uses_truck_id_not_trailer_id() {
-        let content = r#"SiiNunit
-{
-economy : _nameless.economy {
- player: _nameless.player
-}
-player : _nameless.player {
- my_truck: _nameless.truck.active
- my_trailer: _nameless.truck.trailer_like
+player_vehicles : _nameless.pv1 {
+ vehicle: _nameless.truck.active
+ trailer: _nameless.trailer.attached
 }
 vehicle : _nameless.truck.active {
  accessories: 1
@@ -147,13 +136,6 @@ vehicle : _nameless.truck.active {
 }
 vehicle_accessory : _nameless.acc.active {
  data_path: "/def/vehicle/truck/scania.s_2016/data.sii"
-}
-vehicle : _nameless.truck.trailer_like {
- accessories: 1
- accessories[0]: _nameless.acc.trailer_like
-}
-vehicle_accessory : _nameless.acc.trailer_like {
- data_path: "/def/vehicle/truck/man.tgx/data.sii"
 }
 }
 "#;
