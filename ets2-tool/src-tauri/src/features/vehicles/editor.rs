@@ -196,19 +196,63 @@ fn validate_job_weight(mass: f32) -> Result<f32, String> {
     Ok(mass)
 }
 
-fn get_player_vehicle_id(content: &str, vehicle_type: &str) -> Result<String, String> {
-    let regex_str = format!(
-        r"player\s*:\s*[A-Za-z0-9._]+\s*\{{\s*[^}}]*?{}\s*:\s*([A-Za-z0-9._]+)",
-        vehicle_type
-    );
-    let re = cragex(&regex_str).map_err(|e| format!("Regex Fehler: {}", e))?;
-    re.captures(content)
-        .and_then(|c| c.get(1))
-        .map(|m| m.as_str().to_string())
-        .ok_or_else(|| format!("{} nicht gefunden", vehicle_type))
+/// Liest die ID des `economy.player`-Verweises. Eigenständige, minimale Implementierung
+/// (statt eines Imports aus einem anderen Parser-Modul), damit dieses Modul unabhängig bleibt.
+fn get_player_id(content: &str) -> Option<String> {
+    let mut in_economy = false;
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("economy :") {
+            in_economy = true;
+        }
+        if in_economy && trimmed.starts_with("player:") {
+            return trimmed.split_whitespace().nth(1).map(|s| s.to_string());
+        }
+        if in_economy && trimmed.starts_with('}') {
+            in_economy = false;
+        }
+    }
+    None
 }
 
-// ← NEW: Extract complete vehicle/trailer block with proper brace matching
+/// Findet die ID des Spieler-Fahrzeugs (Truck oder Trailer).
+///
+/// WICHTIG: `player.my_truck` / `player.my_trailer` sind in aktuellen ETS2-Saves
+/// praktisch immer `null` (siehe Logs: `player_my_truck: null, player_my_trailer: null`).
+/// Die verlässliche Quelle ist stattdessen:
+///   player.assigned_vehicles → player_vehicles-Block → `vehicle:`-/`trailer:`-Feld
+///
+/// `player_field` bestimmt NUR noch, ob Truck ("vehicle") oder Trailer ("trailer")
+/// gewünscht ist – über die Werte "my_truck" / "my_trailer", wie an den Call-Sites üblich.
+fn get_player_vehicle_id(content: &str, player_field: &str) -> Result<String, String> {
+    let target_key = match player_field {
+        "my_truck" => "vehicle",
+        "my_trailer" => "trailer",
+        other => other, // Fallback: falls direkt "vehicle"/"trailer" übergeben wird
+    };
+
+    let player_id = get_player_id(content).ok_or_else(|| "player_not_found".to_string())?;
+
+    let (player_start, player_end) = extract_vehicle_block(content, "player", &player_id)
+        .map_err(|_| "player_block_not_found".to_string())?;
+    let player_block = &content[player_start..player_end];
+
+    let assigned_vehicles_id = extract_field_value(player_block, "assigned_vehicles")
+        .filter(|value| !is_null_ref(value))
+        .ok_or_else(|| "assigned_vehicles_not_found".to_string())?;
+
+    let (pv_start, pv_end) =
+        extract_vehicle_block(content, "player_vehicles", &assigned_vehicles_id)
+            .map_err(|_| "player_vehicles_block_not_found".to_string())?;
+    let pv_block = &content[pv_start..pv_end];
+
+    extract_field_value(pv_block, target_key)
+        .filter(|value| !is_null_ref(value))
+        .ok_or_else(|| format!("{} nicht gefunden", player_field))
+}
+
+// Extract complete vehicle/trailer/player/player_vehicles block with proper brace matching.
+// Generic über block_type, funktioniert daher auch für "player" und "player_vehicles".
 fn extract_vehicle_block(
     content: &str,
     block_type: &str,
@@ -275,7 +319,6 @@ where
     let (content, path) = read_save_content(profile_state.clone(), decrypt_cache.clone())?;
     let vehicle_id = get_player_vehicle_id(&content, player_vehicle_key)?;
 
-    // ← CHANGED: Use proper brace matching
     let (block_start, block_end) = extract_vehicle_block(&content, unit_type, &vehicle_id)?;
     let block = &content[block_start..block_end];
 
@@ -412,7 +455,6 @@ pub async fn repair_player_truck(
     let (content, path) = read_save_content(profile_state.clone(), decrypt_cache.clone())?;
     let truck_id = get_player_vehicle_id(&content, "my_truck")?;
 
-    // ← CHANGED: Use proper brace matching
     let (block_start, block_end) = extract_vehicle_block(&content, "vehicle", &truck_id)?;
     let mut block = content[block_start..block_end].to_string();
 
@@ -602,7 +644,6 @@ pub async fn repair_player_trailer(
 
     dev_log!("Found trailer ID: {}", trailer_id);
 
-    // ← CHANGED: Use proper brace matching to get complete block
     let (block_start, block_end) = extract_vehicle_block(&content, "trailer", &trailer_id)?;
     let mut block = content[block_start..block_end].to_string();
 
@@ -739,6 +780,61 @@ trailer : _nameless.trailer.company {
 }
 }
 "#
+    }
+
+    fn truck_fixture() -> &'static str {
+        r#"SiiNunit
+{
+economy : _nameless.economy {
+ player: _nameless.player
+}
+player : _nameless.player {
+ assigned_vehicles: _nameless.assigned.1
+ my_truck: null
+ my_trailer: null
+}
+player_vehicles : _nameless.assigned.1 {
+ vehicle: _nameless.truck.active
+ trailer: _nameless.trailer.active
+}
+vehicle : _nameless.truck.active {
+ fuel_relative: &3edf8ac0
+ engine_wear: &3be51ba8
+ odometer: 574021
+}
+trailer : _nameless.trailer.active {
+ license_plate: "ACTIVE|germany"
+}
+}
+"#
+    }
+
+    #[test]
+    fn resolves_player_truck_id_via_assigned_vehicles() {
+        assert_eq!(
+            get_player_vehicle_id(truck_fixture(), "my_truck").unwrap(),
+            "_nameless.truck.active"
+        );
+    }
+
+    #[test]
+    fn resolves_player_trailer_id_via_assigned_vehicles() {
+        assert_eq!(
+            get_player_vehicle_id(truck_fixture(), "my_trailer").unwrap(),
+            "_nameless.trailer.active"
+        );
+    }
+
+    #[test]
+    fn rejects_truck_id_when_assigned_vehicles_is_null() {
+        let fixture = truck_fixture().replace(
+            "assigned_vehicles: _nameless.assigned.1",
+            "assigned_vehicles: null",
+        );
+        assert_eq!(
+            get_player_vehicle_id(&fixture, "my_truck").unwrap_err(),
+            "assigned_vehicles_not_found"
+        );
     }
 
     #[test]

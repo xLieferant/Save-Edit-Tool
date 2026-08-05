@@ -126,7 +126,7 @@ fn extract_combined_float(block: &str, key_base: &str) -> f32 {
     val_base + val_float
 }
 
-// ← NEW: Helper function to extract blocks with proper brace matching
+// Helper function to extract blocks with proper brace matching
 fn extract_blocks_with_braces(content: &str, block_type: &str) -> Vec<(String, String)> {
     let mut blocks = Vec::new();
     let start_pattern = format!(r"{}\s*:\s*([a-zA-Z0-9._]+)\s*\{{", block_type);
@@ -158,6 +158,41 @@ fn extract_blocks_with_braces(content: &str, block_type: &str) -> Vec<(String, S
     }
 
     blocks
+}
+
+/// Extrahiert einen einzelnen, namentlich referenzierten Block (z.B. "player : _nameless.xyz { ... }")
+/// mittels korrektem Brace-Matching. Nötig, weil einzelne Blöcke (player, player_vehicles, vehicle)
+/// gezielt über ihre ID aufgelöst werden müssen, statt nur "irgendein Block dieses Typs".
+fn extract_named_block<'a>(content: &'a str, block_type: &str, id: &str) -> Option<&'a str> {
+    let start_pattern = format!(
+        r"{}\s*:\s*{}\s*\{{",
+        regex::escape(block_type),
+        regex::escape(id)
+    );
+    let re_start = compile_regex(&start_pattern, "extract_named_block")?;
+    let block_match = re_start.find(content)?;
+    let start_pos = block_match.end();
+    let end_pos = find_matching_block_end(content, start_pos)?;
+    Some(&content[start_pos..end_pos])
+}
+
+/// Liest den Wert eines simplen "key: value"-Feldes direkt im übergebenen Block
+/// (nicht rekursiv in Unterblöcke). Gibt None zurück, wenn der Key fehlt oder der Wert "null" ist.
+/// Nutzt Zeilen-Matching mit ":" direkt nach dem Key, damit z.B. "vehicle:" nicht mit
+/// "stored_vehicle_placement:" kollidiert.
+fn extract_field_value(block: &str, key: &str) -> Option<String> {
+    let prefix = format!("{}:", key);
+    for line in block.lines() {
+        let trimmed = line.trim();
+        if let Some(rest) = trimmed.strip_prefix(&prefix) {
+            let value = rest.trim().split_whitespace().next()?.to_string();
+            if value == "null" || value.is_empty() {
+                return None;
+            }
+            return Some(value);
+        }
+    }
+    None
 }
 
 /// Parsen von Trucks aus SII-Dateien
@@ -201,7 +236,6 @@ pub fn parse_trucks_from_sii(content: &str) -> Vec<ParsedTruck> {
         }
     }
 
-    // ← CHANGED: Use new brace-matching function
     let vehicle_blocks = extract_blocks_with_braces(content, "vehicle");
 
     for (truck_id, block) in vehicle_blocks {
@@ -289,7 +323,6 @@ pub fn parse_trucks_from_sii(content: &str) -> Vec<ParsedTruck> {
 pub fn parse_trailer_defs_from_sii(content: &str) -> HashMap<String, TrailerDefData> {
     let mut defs = HashMap::new();
 
-    // ← CHANGED: Use new brace-matching function
     let def_blocks = extract_blocks_with_braces(content, "trailer_def");
 
     for (id, block) in def_blocks {
@@ -346,7 +379,6 @@ pub fn parse_trailers_from_sii(text: &str) -> Vec<TrailerData> {
         return trailers;
     };
 
-    // ← CHANGED: Use new brace-matching function
     let trailer_blocks = extract_blocks_with_braces(text, "trailer");
 
     for (trailer_id, body) in trailer_blocks {
@@ -435,29 +467,39 @@ pub fn get_player_id(content: &str) -> Option<String> {
     None
 }
 
+/// Löst Truck- und Trailer-ID des Spielers auf.
+///
+/// WICHTIG: `player.assigned_vehicles` zeigt NICHT direkt auf einen `vehicle`-Block,
+/// sondern auf einen `player_vehicles`-Container. Der eigentliche Truck steckt erst
+/// in dessen `vehicle:`-Feld, der Trailer in dessen `trailer:`-Feld.
+/// `player.my_truck` / `player.my_trailer` sind in aktuellen Saves oft `null` und
+/// dürfen nicht als primäre Quelle verwendet werden.
 pub fn get_vehicle_ids(content: &str, player_id: &str) -> (Option<String>, Option<String>) {
-    let mut in_player = false;
-    let mut truck_id = None;
-    let mut trailer_id = None;
+    let Some(player_block) = extract_named_block(content, "player", player_id) else {
+        dev_log!(
+            "[sii_parser] player block for {} not found",
+            player_id
+        );
+        return (None, None);
+    };
 
-    let player_block_start = format!("player : {}", player_id);
+    let assigned_vehicles_ref = extract_field_value(player_block, "assigned_vehicles");
 
-    for line in content.lines() {
-        let trimmed = line.trim();
-        if trimmed.starts_with(&player_block_start) {
-            in_player = true;
-        }
-        if in_player {
-            if trimmed.starts_with("my_truck:") {
-                truck_id = trimmed.split_whitespace().nth(1).map(|s| s.to_string());
-            }
-            if trimmed.starts_with("my_trailer:") {
-                trailer_id = trimmed.split_whitespace().nth(1).map(|s| s.to_string());
-            }
-            if trimmed.starts_with("}") {
-                break;
-            }
-        }
-    }
+    let Some(pv_id) = assigned_vehicles_ref else {
+        dev_log!("[sii_parser] player {} has no assigned_vehicles", player_id);
+        return (None, None);
+    };
+
+    let Some(pv_block) = extract_named_block(content, "player_vehicles", &pv_id) else {
+        dev_log!(
+            "[sii_parser] player_vehicles block {} not found",
+            pv_id
+        );
+        return (None, None);
+    };
+
+    let truck_id = extract_field_value(pv_block, "vehicle");
+    let trailer_id = extract_field_value(pv_block, "trailer");
+
     (truck_id, trailer_id)
 }
