@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::features::truck_change::parser::{
-    UnitBlock, extract_array_entries, extract_field_value, parse_unit_blocks,
+    extract_array_entries, extract_field_value, parse_unit_blocks, UnitBlock,
 };
 
 use super::models::{GarageInfo, GarageOperation, GarageOwnership, GarageSize};
@@ -61,7 +61,7 @@ pub fn verify_garage_mutation(
         spec.set_as_headquarters,
     )?;
     verify_unit_blocks_unchanged(before_content, after_content, &target_garage_ids, spec)?;
-    verify_target_garage_metadata_unchanged(before_content, after_content, garage_id)?;
+    verify_target_garage_metadata_unchanged(before_content, after_content, garage_id, spec)?;
     verify_target_references(&previous_state, &updated_state, spec)?;
     verify_expected_state(&previous_state, &updated_state, spec)?;
     verify_raw_expected_state(after_content, garage_id, &updated_state, spec)?;
@@ -139,6 +139,7 @@ pub fn verify_garage_purchase_batch(
             &before_blocks,
             &after_blocks,
             garage_id,
+            &spec,
         )?;
         verify_target_references(&previous_state, &updated_state, &spec)?;
         verify_expected_state(&previous_state, &updated_state, &spec)?;
@@ -320,11 +321,13 @@ fn verify_target_garage_metadata_unchanged(
     before_content: &str,
     after_content: &str,
     garage_id: &str,
+    spec: &GarageVerificationSpec,
 ) -> Result<(), String> {
     verify_target_garage_metadata_unchanged_from_blocks(
         &parse_unit_blocks(before_content),
         &parse_unit_blocks(after_content),
         garage_id,
+        spec,
     )
 }
 
@@ -332,20 +335,27 @@ fn verify_target_garage_metadata_unchanged_from_blocks(
     before_blocks: &[UnitBlock],
     after_blocks: &[UnitBlock],
     garage_id: &str,
+    spec: &GarageVerificationSpec,
 ) -> Result<(), String> {
     let before = unique_garage_block_from_blocks(before_blocks, garage_id)?;
     let after = unique_garage_block_from_blocks(after_blocks, garage_id)?;
-    if immutable_garage_lines(&before) != immutable_garage_lines(&after) {
+    let allow_productivity_change = matches!(spec.operation, GarageOperation::Relinquish);
+    if immutable_garage_lines(&before, allow_productivity_change)
+        != immutable_garage_lines(&after, allow_productivity_change)
+    {
         return Err("save_verification_failed:garage_metadata_changed".to_string());
     }
     Ok(())
 }
 
-fn immutable_garage_lines(block: &UnitBlock) -> Vec<&str> {
+fn immutable_garage_lines(block: &UnitBlock, allow_productivity_change: bool) -> Vec<&str> {
     block
         .raw_block
         .lines()
-        .filter(|line| !is_mutable_garage_line(line))
+        .filter(|line| {
+            !is_mutable_garage_line(line)
+                && !(allow_productivity_change && line.trim_start().starts_with("productivity:"))
+        })
         .collect()
 }
 
@@ -384,9 +394,14 @@ fn verify_target_references(
     {
         return Err("save_verification_failed:trailer_references_changed".to_string());
     }
-    if previous.profit_log_id != updated.profit_log_id
-        || previous.productivity != updated.productivity
-    {
+    if previous.profit_log_id != updated.profit_log_id {
+        return Err("save_verification_failed:garage_metadata_changed".to_string());
+    }
+    if matches!(spec.operation, GarageOperation::Relinquish) {
+        if updated.productivity != Some(0.0) {
+            return Err("save_verification_failed:garage_productivity_not_reset".to_string());
+        }
+    } else if previous.productivity != updated.productivity {
         return Err("save_verification_failed:garage_metadata_changed".to_string());
     }
     for garage in [previous, updated] {
@@ -399,8 +414,9 @@ fn verify_target_references(
             return Err("save_verification_failed:profit_log_reference_invalid".to_string());
         }
     }
-    let allow_empty_slot_removal = matches!(spec.operation, GarageOperation::Update)
-        && spec.target_size == Some(GarageSize::Small);
+    let allow_empty_slot_removal = (matches!(spec.operation, GarageOperation::Update)
+        && spec.target_size == Some(GarageSize::Small))
+        || matches!(spec.operation, GarageOperation::Relinquish);
     for previous_slot in &previous.slots {
         let Some(updated_slot) = updated
             .slots
@@ -476,6 +492,19 @@ fn verify_raw_expected_state_from_blocks(
             ));
         }
     }
+    if matches!(spec.operation, GarageOperation::Relinquish) {
+        let trailer_count = extract_field_value(&block.raw_block, "trailers")
+            .and_then(|value| value.parse::<usize>().ok());
+        let trailer_entries = extract_array_entries(&block.raw_block, "trailers");
+        if trailer_count != Some(0) || !trailer_entries.is_empty() {
+            return Err("save_verification_failed:garage_trailers_not_empty".to_string());
+        }
+        let productivity = extract_field_value(&block.raw_block, "productivity")
+            .and_then(|value| crate::shared::hex_float::parse_value_auto(&value).ok());
+        if productivity != Some(0.0) {
+            return Err("save_verification_failed:garage_productivity_not_reset".to_string());
+        }
+    }
     Ok(())
 }
 
@@ -497,6 +526,25 @@ fn verify_expected_state(
             if previous.trailer_slot_count != 0 || updated.trailer_slot_count != 0 {
                 return Err("save_verification_failed:garage_trailers_changed".to_string());
             }
+        }
+        GarageOperation::Relinquish => {
+            if previous.ownership != GarageOwnership::Owned
+                || !matches!(previous.size, GarageSize::Small | GarageSize::Large)
+                || previous.assigned_truck_count != 0
+                || previous.assigned_driver_count != 0
+                || previous.assigned_trailer_count != 0
+                || previous.trailer_slot_count != 0
+                || previous.is_headquarters
+            {
+                return Err("garage_relinquish_not_safe".to_string());
+            }
+            require_state(
+                updated,
+                GarageOwnership::NotOwned,
+                GarageSize::Unowned,
+                0,
+                0,
+            )?;
         }
         GarageOperation::Upgrade => {
             require_state(previous, GarageOwnership::Owned, GarageSize::Small, 2, 3)?;
@@ -559,10 +607,12 @@ fn require_state(
 
 #[cfg(test)]
 mod tests {
-    use super::{GarageVerificationSpec, verify_garage_mutation, verify_garage_purchase_batch};
+    use super::{verify_garage_mutation, verify_garage_purchase_batch, GarageVerificationSpec};
     use crate::features::garages::models::{GarageOperation, GarageSize};
     use crate::features::garages::parser::parse_garages_from_sii;
-    use crate::features::garages::writer::{apply_garage_changes, apply_garage_purchase_batch};
+    use crate::features::garages::writer::{
+        apply_garage_changes, apply_garage_purchase_batch, apply_garage_relinquishment,
+    };
 
     const SAMPLE: &str = include_str!("../../../test-fixtures/garages/garage_samples.sii");
 
@@ -590,13 +640,54 @@ mod tests {
         assert_eq!(verified.updated_state.size, GarageSize::Large);
         assert_eq!(verified.updated_state.vehicle_slot_count, 5);
         assert_eq!(verified.updated_state.driver_slot_count, 5);
-        assert!(
-            verified
-                .updated_state
-                .slots
-                .iter()
-                .all(|slot| { slot.truck_id.is_none() && slot.driver_id.is_none() })
+        assert!(verified
+            .updated_state
+            .slots
+            .iter()
+            .all(|slot| { slot.truck_id.is_none() && slot.driver_id.is_none() }));
+    }
+
+    #[test]
+    fn verifies_relinquishment_preserves_hq_units_and_profit_log() {
+        let plan = apply_garage_relinquishment(SAMPLE, "garage.paris").unwrap();
+        let verified = verify_garage_mutation(
+            SAMPLE,
+            &plan.content,
+            "garage.paris",
+            &GarageVerificationSpec {
+                operation: GarageOperation::Relinquish,
+                target_size: Some(GarageSize::Unowned),
+                set_as_headquarters: false,
+            },
+        )
+        .unwrap();
+
+        assert_eq!(
+            verified.updated_state.ownership,
+            crate::features::garages::models::GarageOwnership::NotOwned
         );
+        assert_eq!(verified.updated_state.status, Some(0));
+        assert_eq!(verified.updated_state.vehicle_slot_count, 0);
+        assert_eq!(verified.updated_state.driver_slot_count, 0);
+        assert_eq!(verified.updated_state.trailer_slot_count, 0);
+        assert_eq!(verified.updated_state.productivity, Some(0.0));
+        assert_eq!(
+            verified.updated_state.profit_log_id.as_deref(),
+            Some("profit.paris")
+        );
+        let parsed = parse_garages_from_sii(&plan.content).unwrap();
+        let headquarters = parsed
+            .garages
+            .iter()
+            .find(|garage| garage.garage_id == "garage.berlin")
+            .unwrap();
+        assert!(headquarters.is_headquarters);
+        assert_eq!(headquarters.slots[0].truck_id.as_deref(), Some("truck.one"));
+        assert_eq!(
+            headquarters.slots[0].driver_id.as_deref(),
+            Some("driver.one")
+        );
+        assert_eq!(headquarters.trailer_ids, vec!["trailer.one"]);
     }
 
     #[test]
@@ -608,12 +699,10 @@ mod tests {
 
         assert_eq!(verified.previous_states.len(), 2);
         assert_eq!(verified.updated_states.len(), 2);
-        assert!(
-            verified
-                .updated_states
-                .iter()
-                .all(|garage| garage.status == Some(3) && garage.vehicle_slot_count == 5)
-        );
+        assert!(verified
+            .updated_states
+            .iter()
+            .all(|garage| garage.status == Some(3) && garage.vehicle_slot_count == 5));
         let parsed = parse_garages_from_sii(&plan.content).unwrap();
         let headquarters = parsed
             .garages

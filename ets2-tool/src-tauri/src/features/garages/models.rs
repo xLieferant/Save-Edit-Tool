@@ -80,6 +80,7 @@ pub struct GarageListResult {
 #[serde(rename_all = "snake_case")]
 pub enum GarageOperation {
     Purchase,
+    Relinquish,
     Upgrade,
     Update,
 }
@@ -140,11 +141,4 @@ pub struct GarageBuyAllResult {
     pub financial_transaction_applied: bool,
     pub save_hash: String,
     pub warnings: Vec<String>,
-}
-
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct GarageActionResult {
-    pub action: String,
-    pub implemented: bool,
 }

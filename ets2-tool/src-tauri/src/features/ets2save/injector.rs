@@ -6,9 +6,9 @@ use crate::features::ets2save::models::{
     PostWriteValidationResult, VtcDispatcherJob,
 };
 use crate::features::ets2save::parser::{
-    UnitRange, extract_field_value, extract_in_game_time, find_company_block,
-    find_job_offer_data_block, find_player_block_range, parse_job_info_data,
-    parse_player_job_state, patch_job_offer_data, sii_token,
+    extract_field_value, extract_in_game_time, find_company_block, find_job_offer_data_block,
+    find_player_block_range, parse_job_info_data, parse_player_job_state, patch_job_offer_data,
+    sii_token, UnitRange,
 };
 use crate::features::ets2save::post_write_validator::{select_offer_slot, validate_written_job};
 use crate::features::ets2save::sii_codec::{decode_sii_lines, write_lines_atomic};
@@ -260,6 +260,7 @@ enum JobInjectionMode {
         trailer_pointer: String,
     },
     OwnTruckCompanyTrailer {
+        truck_pointer: String,
         trailer_pointer: String,
     },
 }
@@ -268,7 +269,7 @@ impl JobInjectionMode {
     fn company_truck_value(&self) -> Option<&str> {
         match self {
             JobInjectionMode::QuickJob { truck_pointer, .. } => truck_pointer.as_deref(),
-            JobInjectionMode::OwnTruckCompanyTrailer { .. } => None,
+            JobInjectionMode::OwnTruckCompanyTrailer { truck_pointer, .. } => Some(truck_pointer),
         }
     }
 
@@ -277,7 +278,9 @@ impl JobInjectionMode {
             JobInjectionMode::QuickJob {
                 trailer_pointer, ..
             } => trailer_pointer,
-            JobInjectionMode::OwnTruckCompanyTrailer { trailer_pointer } => trailer_pointer,
+            JobInjectionMode::OwnTruckCompanyTrailer {
+                trailer_pointer, ..
+            } => trailer_pointer,
         }
     }
 }
@@ -318,7 +321,11 @@ fn insert_player_job_state(
             trailer_pointer: trailer_pointer.clone(),
         }
     } else {
+        let truck_pointer = resolve_player_truck(lines, player_range)
+            .or(truck_pointer)
+            .unwrap_or_else(|| "null".to_string());
         JobInjectionMode::OwnTruckCompanyTrailer {
+            truck_pointer,
             trailer_pointer: trailer_pointer.clone(),
         }
     };
@@ -378,6 +385,11 @@ fn resolve_player_trailer(lines: &[String], range: UnitRange) -> Option<String> 
     extract_player_field(lines, range, "assigned_trailer")
         .or_else(|| extract_player_field(lines, range, "my_trailer"))
         .or_else(|| extract_first_array_value(lines, range, "trailers["))
+}
+
+fn resolve_player_truck(lines: &[String], range: UnitRange) -> Option<String> {
+    extract_player_field(lines, range, "assigned_truck")
+        .or_else(|| extract_player_field(lines, range, "my_truck"))
 }
 
 fn extract_player_field(lines: &[String], range: UnitRange, field: &str) -> Option<String> {
@@ -564,5 +576,9 @@ mod tests {
         assert!(written.contains("player_job :"));
         assert!(written.contains("company_truck: _nameless.truck.1111.1111"));
         assert!(written.contains("company_trailer: _nameless.trailer.2222.2222"));
+        assert!(written.contains("assigned_truck: _nameless.truck.1111.1111"));
+        assert!(written.contains("my_truck: _nameless.truck.1111.1111"));
+        assert!(written.contains("assigned_trailer: _nameless.trailer.2222.2222"));
+        assert!(written.contains("my_trailer: _nameless.trailer.2222.2222"));
     }
 }

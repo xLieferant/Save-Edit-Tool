@@ -8,8 +8,8 @@ use crate::shared::current_profile::snapshot_active_save_selection;
 use crate::state::{AppProfileState, AppState, DecryptCache, ProfileCache};
 
 use super::models::{
-    GarageActionResult, GarageBuyAllRequest, GarageBuyAllResult, GarageListResult,
-    GarageMutationRequest, GarageMutationResult, GarageUpdateRequest,
+    GarageBuyAllRequest, GarageBuyAllResult, GarageListResult, GarageMutationRequest,
+    GarageMutationResult, GarageUpdateRequest,
 };
 use super::service;
 
@@ -169,8 +169,34 @@ pub fn buy_all_garages(
 }
 
 #[tauri::command]
-pub fn relinquish_garage_ownership() -> Result<GarageActionResult, String> {
-    Ok(service::relinquish_garage_ownership())
+pub fn relinquish_garage_ownership(
+    request: GarageMutationRequest,
+    profile_state: State<'_, AppProfileState>,
+    profile_cache: State<'_, ProfileCache>,
+    decrypt_cache: State<'_, DecryptCache>,
+    truck_change_cache: State<'_, TruckChangeSessionCache>,
+    trailer_change_cache: State<'_, TrailerChangeSessionCache>,
+    app_state: State<'_, AppState>,
+) -> Result<GarageMutationResult, String> {
+    let _mutation_guard = acquire_mutation_lock(&app_state.garage_mutation_lock)?;
+    let selection = snapshot_active_save_selection(profile_state.inner())
+        .map_err(|_| "garage_block_invalid:profile_state_unavailable".to_string())?;
+    let selected_game = profile_state
+        .selected_game
+        .lock()
+        .map_err(|_| "garage_block_invalid:selected_game_unavailable".to_string())?
+        .clone();
+    service::relinquish_garage_ownership(
+        &selection,
+        &selected_game,
+        profile_state.inner(),
+        profile_cache.inner(),
+        decrypt_cache.inner(),
+        truck_change_cache.inner(),
+        trailer_change_cache.inner(),
+        &app_state.sqlite_path,
+        &request,
+    )
 }
 
 #[cfg(test)]

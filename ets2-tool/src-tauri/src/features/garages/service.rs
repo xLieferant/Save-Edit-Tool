@@ -7,6 +7,7 @@ use rusqlite::Connection;
 use crate::features::backup::service as backup_service;
 use crate::features::trailer_change::cache::TrailerChangeSessionCache;
 use crate::features::truck_change::cache::TruckChangeSessionCache;
+use crate::features::truck_change::parser::parse_unit_blocks;
 use crate::shared::current_profile::snapshot_active_save_selection;
 use crate::shared::decrypt::decrypt_cached_with_cache;
 use crate::shared::ets2data::import;
@@ -18,15 +19,18 @@ use crate::shared::user_log;
 use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 
 use super::models::{
-    GarageActionResult, GarageBulkOperation, GarageBuyAllRequest, GarageBuyAllResult, GarageInfo,
-    GarageListResult, GarageMutationRequest, GarageMutationResult, GarageOperation,
-    GarageOwnership, GarageSize, GarageUpdateRequest,
+    GarageBulkOperation, GarageBuyAllRequest, GarageBuyAllResult, GarageInfo, GarageListResult,
+    GarageMutationRequest, GarageMutationResult, GarageOperation, GarageOwnership, GarageSize,
+    GarageUpdateRequest,
 };
 use super::parser::parse_garages_from_sii;
 use super::validator::{
-    GarageVerificationSpec, verify_garage_mutation, verify_garage_purchase_batch,
+    verify_garage_mutation, verify_garage_purchase_batch, GarageVerificationSpec,
 };
-use super::writer::{apply_garage_changes, apply_garage_purchase_batch, write_verified_content};
+use super::writer::{
+    apply_garage_changes, apply_garage_purchase_batch, apply_garage_relinquishment,
+    write_verified_content,
+};
 
 #[derive(Debug, Clone)]
 struct CityDetails {
@@ -452,6 +456,34 @@ pub fn upgrade_owned_garage(
     )
 }
 
+pub fn relinquish_garage_ownership(
+    selection: &ActiveSaveSelection,
+    selected_game: &str,
+    profile_state: &AppProfileState,
+    profile_cache: &ProfileCache,
+    decrypt_cache: &DecryptCache,
+    truck_change_cache: &TruckChangeSessionCache,
+    trailer_change_cache: &TrailerChangeSessionCache,
+    sqlite_path: &Path,
+    request: &GarageMutationRequest,
+) -> Result<GarageMutationResult, String> {
+    mutate_garage(
+        selection,
+        selected_game,
+        profile_state,
+        profile_cache,
+        decrypt_cache,
+        truck_change_cache,
+        trailer_change_cache,
+        sqlite_path,
+        &request.garage_id,
+        &request.expected_save_hash,
+        GarageOperation::Relinquish,
+        Some(GarageSize::Unowned),
+        false,
+    )
+}
+
 pub fn update_garage(
     selection: &ActiveSaveSelection,
     selected_game: &str,
@@ -528,6 +560,9 @@ fn mutate_garage(
     validate_mutation_target(current, &operation, target_size)?;
     let target_status_and_capacity =
         mutation_target(current, &operation, target_size, set_as_headquarters)?;
+    if matches!(operation, GarageOperation::Relinquish) {
+        validate_no_external_garage_references(&content, garage_id)?;
+    }
     let verification_spec = GarageVerificationSpec {
         operation: operation.clone(),
         target_size,
@@ -567,12 +602,16 @@ fn mutate_garage(
         ),
     );
 
-    let plan = apply_garage_changes(
-        &content,
-        garage_id,
-        target_status_and_capacity,
-        set_as_headquarters,
-    )?;
+    let plan = if matches!(operation, GarageOperation::Relinquish) {
+        apply_garage_relinquishment(&content, garage_id)?
+    } else {
+        apply_garage_changes(
+            &content,
+            garage_id,
+            target_status_and_capacity,
+            set_as_headquarters,
+        )?
+    };
     let predicted = verify_garage_mutation(&content, &plan.content, garage_id, &verification_spec)?;
     let _ = user_log::user_log_info(
         "Garages",
@@ -706,12 +745,13 @@ fn mutate_garage(
     let mut warnings = Vec::new();
     if matches!(
         operation,
-        GarageOperation::Purchase | GarageOperation::Upgrade
+        GarageOperation::Purchase | GarageOperation::Relinquish | GarageOperation::Upgrade
     ) {
         warnings.push(format!(
             "garage_{}_without_financial_transaction",
             match operation {
                 GarageOperation::Purchase => "purchase",
+                GarageOperation::Relinquish => "relinquish",
                 GarageOperation::Upgrade => "upgrade",
                 GarageOperation::Update => unreachable!(),
             }
@@ -773,6 +813,7 @@ fn mutation_action_label(
 ) -> &'static str {
     match (operation, target_size, set_as_headquarters) {
         (GarageOperation::Purchase, _, _) => "purchase",
+        (GarageOperation::Relinquish, _, _) => "relinquish",
         (GarageOperation::Upgrade, _, _) => "upgrade",
         (GarageOperation::Update, Some(GarageSize::Small), false) => "downgrade",
         (GarageOperation::Update, Some(GarageSize::Large), false) => "upgrade",
@@ -895,6 +936,31 @@ fn mutation_target(
             }
             Ok(Some((3, 5)))
         }
+        GarageOperation::Relinquish => {
+            if target_size != Some(GarageSize::Unowned) {
+                return Err("garage_size_invalid".to_string());
+            }
+            if garage.ownership != GarageOwnership::Owned {
+                return Err("garage_not_owned".to_string());
+            }
+            if garage.is_headquarters {
+                return Err("garage_relinquish_headquarters".to_string());
+            }
+            if garage.occupied_slots != 0
+                || garage.assigned_truck_count != 0
+                || garage.assigned_driver_count != 0
+                || garage.assigned_trailer_count != 0
+                || garage.trailer_slot_count != 0
+            {
+                return Err("garage_relinquish_not_empty".to_string());
+            }
+            if !matches!(garage.size, GarageSize::Small | GarageSize::Large)
+                || !matches!(garage.status, Some(2) | Some(3))
+            {
+                return Err("garage_state_invalid".to_string());
+            }
+            Ok(Some((0, 0)))
+        }
         GarageOperation::Upgrade => {
             if garage.ownership != GarageOwnership::Owned {
                 return Err("garage_not_owned".to_string());
@@ -937,6 +1003,29 @@ fn mutation_target(
             }
             Ok(size_change)
         }
+    }
+}
+
+fn validate_no_external_garage_references(content: &str, garage_id: &str) -> Result<(), String> {
+    let referenced_by = parse_unit_blocks(content)
+        .into_iter()
+        .filter(|block| block.unit_type != "economy" && block.id != garage_id)
+        .filter(|block| {
+            block.raw_block.lines().any(|line| {
+                line.split_once(':')
+                    .map(|(_, value)| value.trim() == garage_id)
+                    .unwrap_or(false)
+            })
+        })
+        .map(|block| block.id)
+        .collect::<Vec<_>>();
+    if referenced_by.is_empty() {
+        Ok(())
+    } else {
+        Err(format!(
+            "garage_relinquish_external_reference:{}",
+            referenced_by.join(",")
+        ))
     }
 }
 
@@ -1062,25 +1151,6 @@ fn invalidate_after_write(
     }
 }
 
-fn placeholder(action: &str) -> GarageActionResult {
-    GarageActionResult {
-        action: action.to_string(),
-        implemented: false,
-    }
-}
-
-pub fn buy_garage() -> GarageActionResult {
-    placeholder("buy_garage")
-}
-
-pub fn upgrade_garage() -> GarageActionResult {
-    placeholder("upgrade_garage")
-}
-
-pub fn relinquish_garage_ownership() -> GarageActionResult {
-    placeholder("relinquish_garage_ownership")
-}
-
 #[cfg(test)]
 mod tests {
     use std::fs;
@@ -1088,7 +1158,7 @@ mod tests {
 
     use super::{
         ensure_active_context, mutation_target, resolve_selected_game_sii,
-        validate_mutation_target, verify_restored_content,
+        validate_mutation_target, validate_no_external_garage_references, verify_restored_content,
     };
     use crate::features::garages::models::{GarageMutationRequest, GarageOperation, GarageSize};
     use crate::features::garages::parser::parse_garages_from_sii;
@@ -1166,6 +1236,23 @@ mod tests {
         .unwrap_err();
 
         assert_eq!(error, "garage_update_not_supported:ats");
+
+        let relinquish_error = super::relinquish_garage_ownership(
+            &ActiveSaveSelection::default(),
+            "ats",
+            &AppProfileState::default(),
+            &ProfileCache::default(),
+            &DecryptCache::default(),
+            &TruckChangeSessionCache::default(),
+            &TrailerChangeSessionCache::default(),
+            Path::new("unused"),
+            &GarageMutationRequest {
+                garage_id: "garage.paris".to_string(),
+                expected_save_hash: "unused".to_string(),
+            },
+        )
+        .unwrap_err();
+        assert_eq!(relinquish_error, "garage_update_not_supported:ats");
     }
 
     #[test]
@@ -1260,6 +1347,95 @@ mod tests {
         )
         .unwrap_err();
         assert_eq!(maximum_error, "garage_already_maximum_size");
+    }
+
+    #[test]
+    fn relinquishment_requires_empty_owned_non_headquarters_garage() {
+        let target = mutation_target(
+            &garage("garage.paris"),
+            &GarageOperation::Relinquish,
+            Some(GarageSize::Unowned),
+            false,
+        )
+        .unwrap();
+        assert_eq!(target, Some((0, 0)));
+
+        let headquarters_error = mutation_target(
+            &garage("garage.berlin"),
+            &GarageOperation::Relinquish,
+            Some(GarageSize::Unowned),
+            false,
+        )
+        .unwrap_err();
+        assert_eq!(headquarters_error, "garage_relinquish_headquarters");
+
+        let not_owned_error = mutation_target(
+            &garage("garage.los_angeles"),
+            &GarageOperation::Relinquish,
+            Some(GarageSize::Unowned),
+            false,
+        )
+        .unwrap_err();
+        assert_eq!(not_owned_error, "garage_not_owned");
+
+        let mut with_truck = garage("garage.paris");
+        with_truck.slots[0].truck_id = Some("truck.one".to_string());
+        with_truck.assigned_truck_count = 1;
+        with_truck.occupied_slots = 1;
+        assert_eq!(
+            mutation_target(
+                &with_truck,
+                &GarageOperation::Relinquish,
+                Some(GarageSize::Unowned),
+                false,
+            )
+            .unwrap_err(),
+            "garage_relinquish_not_empty"
+        );
+
+        let mut with_driver = garage("garage.paris");
+        with_driver.slots[0].driver_id = Some("driver.one".to_string());
+        with_driver.assigned_driver_count = 1;
+        with_driver.occupied_slots = 1;
+        assert_eq!(
+            mutation_target(
+                &with_driver,
+                &GarageOperation::Relinquish,
+                Some(GarageSize::Unowned),
+                false,
+            )
+            .unwrap_err(),
+            "garage_relinquish_not_empty"
+        );
+
+        let mut with_trailer = garage("garage.paris");
+        with_trailer.trailer_slot_count = 1;
+        with_trailer.assigned_trailer_count = 1;
+        with_trailer.trailer_ids = vec!["trailer.one".to_string()];
+        assert_eq!(
+            mutation_target(
+                &with_trailer,
+                &GarageOperation::Relinquish,
+                Some(GarageSize::Unowned),
+                false,
+            )
+            .unwrap_err(),
+            "garage_relinquish_not_empty"
+        );
+    }
+
+    #[test]
+    fn relinquishment_blocks_external_garage_references() {
+        assert!(validate_no_external_garage_references(SAMPLE, "garage.paris").is_ok());
+        let externally_referenced = SAMPLE.replace(
+            "vehicle : truck.one {\n}",
+            "vehicle : truck.one {\n assigned_garage: garage.paris\n}",
+        );
+        assert_eq!(
+            validate_no_external_garage_references(&externally_referenced, "garage.paris")
+                .unwrap_err(),
+            "garage_relinquish_external_reference:truck.one"
+        );
     }
 
     #[test]

@@ -6,6 +6,7 @@ const COPY_KEYS = {
   edit: "garage_manager.actions.edit",
   purchase: "garage_manager.actions.purchase",
   purchaseAll: "garage_manager.actions.purchase_all",
+  relinquish: "garage_manager.actions.relinquish",
   upgrade: "garage_manager.actions.upgrade",
   downgrade: "garage_manager.actions.downgrade",
   setHeadquarters: "garage_manager.actions.set_headquarters",
@@ -18,6 +19,7 @@ const COPY_KEYS = {
   refreshing: "garage_manager.actions.refreshing",
   purchasing: "garage_manager.actions.purchasing",
   purchasingAll: "garage_manager.actions.purchasing_all",
+  relinquishing: "garage_manager.actions.relinquishing",
   upgrading: "garage_manager.actions.upgrading",
   downgrading: "garage_manager.actions.downgrading",
   changingHeadquarters: "garage_manager.actions.changing_headquarters",
@@ -146,6 +148,8 @@ const COPY_KEYS = {
   saveWarning: "garage_manager.confirm.save_warning",
   purchaseChange: "garage_manager.confirm.purchase_change",
   purchaseAllChange: "garage_manager.confirm.purchase_all_change",
+  relinquishChange: "garage_manager.confirm.relinquish_change",
+  relinquishEffect: "garage_manager.confirm.relinquish_effect",
   upgradeChange: "garage_manager.confirm.upgrade_change",
   updateLargeChange: "garage_manager.confirm.update_large_change",
   updateSmallChange: "garage_manager.confirm.update_small_change",
@@ -161,11 +165,13 @@ const COPY_KEYS = {
   loadFailureTitle: "garage_manager.errors.load_failure_title",
   purchaseFailureTitle: "garage_manager.errors.purchase_failure_title",
   purchaseAllFailureTitle: "garage_manager.errors.purchase_all_failure_title",
+  relinquishFailureTitle: "garage_manager.errors.relinquish_failure_title",
   upgradeFailureTitle: "garage_manager.errors.upgrade_failure_title",
   downgradeFailureTitle: "garage_manager.errors.downgrade_failure_title",
   headquartersFailureTitle: "garage_manager.errors.headquarters_failure_title",
   purchaseDialogTitle: "garage_manager.dialogs.purchase_title",
   purchaseAllDialogTitle: "garage_manager.dialogs.purchase_all_title",
+  relinquishDialogTitle: "garage_manager.dialogs.relinquish_title",
   upgradeDialogTitle: "garage_manager.dialogs.upgrade_title",
   downgradeDialogTitle: "garage_manager.dialogs.downgrade_title",
   headquartersDialogTitle: "garage_manager.dialogs.headquarters_title",
@@ -175,6 +181,7 @@ const COPY_KEYS = {
   currentHeadquarters: "garage_manager.dialogs.current_headquarters",
   newHeadquarters: "garage_manager.dialogs.new_headquarters",
   downgradeBlocked: "garage_manager.dialogs.downgrade_blocked",
+  relinquishBlocked: "garage_manager.dialogs.relinquish_blocked",
   optionalExtensions: "garage_manager.dialogs.optional_extensions",
   addTrucks: "garage_manager.dialogs.add_trucks",
   assignDrivers: "garage_manager.dialogs.assign_drivers",
@@ -188,6 +195,7 @@ const COPY_KEYS = {
   purchaseSuccess: "garage_manager.success.purchase",
   purchaseAllSuccess: "garage_manager.success.purchase_all",
   purchaseAllNone: "garage_manager.success.purchase_all_none",
+  relinquishSuccess: "garage_manager.success.relinquish",
   upgradeSuccess: "garage_manager.success.upgrade",
   downgradeSuccess: "garage_manager.success.downgrade",
   headquartersSuccess: "garage_manager.success.headquarters",
@@ -217,6 +225,9 @@ const ERROR_KEYS = [
   ["garage_not_found", "garage_manager.errors.garage_not_found"],
   ["garage_already_owned", "garage_manager.errors.garage_already_owned"],
   ["garage_not_owned", "garage_manager.errors.garage_not_owned"],
+  ["garage_relinquish_headquarters", "garage_manager.errors.garage_relinquish_headquarters"],
+  ["garage_relinquish_not_empty", "garage_manager.errors.garage_relinquish_not_empty"],
+  ["garage_relinquish_external_reference", "garage_manager.errors.garage_relinquish_external_reference"],
   ["garage_already_maximum_size", "garage_manager.errors.garage_already_maximum_size"],
   ["garage_capacity_mismatch", "garage_manager.errors.garage_capacity_mismatch"],
   ["garage_has_unresolved_references", "garage_manager.errors.garage_has_unresolved_references"],
@@ -311,6 +322,17 @@ function canDowngradeGarage(garage) {
     && !garageIsBlocked(garage)
     && Number(garage.occupiedSlots || 0) <= 3
     && !removedSlotOccupied;
+}
+
+function canRelinquishGarage(garage) {
+  return garage.ownership === "owned"
+    && !garage.isHeadquarters
+    && !garageIsBlocked(garage)
+    && Number(garage.occupiedSlots || 0) === 0
+    && Number(garage.assignedTruckCount || 0) === 0
+    && Number(garage.assignedDriverCount || 0) === 0
+    && Number(garage.assignedTrailerCount || 0) === 0
+    && Number(garage.trailerSlotCount || 0) === 0;
 }
 
 function technicalMessage(error, copy) {
@@ -992,6 +1014,12 @@ export async function mountGarageManager(container) {
   function mutationSuccessKey(result) {
     const previous = result.previousState;
     const updated = result.updatedState;
+    if (result.operation === "relinquish"
+      && previous?.ownership === "owned"
+      && updated?.ownership === "not_owned"
+      && updated?.status === 0) {
+      return "garage_manager.success.relinquish";
+    }
     if (previous?.ownership === "not_owned"
       && updated?.ownership === "owned"
       && updated?.status === 3
@@ -1022,6 +1050,7 @@ export async function mountGarageManager(container) {
   function mutationSuccessText(result) {
     const key = mutationSuccessKey(result);
     if (key === "garage_manager.success.purchase") return copy.purchaseSuccess;
+    if (key === "garage_manager.success.relinquish") return copy.relinquishSuccess;
     if (key === "garage_manager.success.upgrade") return copy.upgradeSuccess;
     if (key === "garage_manager.success.downgrade") return copy.downgradeSuccess;
     if (key === "garage_manager.success.headquarters") return copy.headquartersSuccess;
@@ -1069,7 +1098,7 @@ export async function mountGarageManager(container) {
         + garage.warnings.map((warning) => "<li><code>" + escapeHtml(warning) + "</code></li>").join("")
         + "</ul>"
       : "<p class='garage-reference-empty'>" + escapeHtml(copy.noWarnings) + "</p>";
-    const actionBlockedMessage = garage.size === "large" && !canDowngradeGarage(garage)
+    const downgradeBlockedMessage = garage.size === "large" && !canDowngradeGarage(garage)
       ? "<p class='garage-mutation-blocked'>"
         + escapeHtml(formatCopy(copy.downgradeBlocked, {
           occupied: garage.occupiedSlots,
@@ -1079,6 +1108,12 @@ export async function mountGarageManager(container) {
       : blocked
         ? "<p class='garage-mutation-blocked'>" + escapeHtml(copy.mutationBlocked) + "</p>"
         : "";
+    const relinquishBlockedMessage = garage.ownership === "owned"
+      && !garage.isHeadquarters
+      && !canRelinquishGarage(garage)
+      ? "<p class='garage-mutation-blocked'>" + escapeHtml(copy.relinquishBlocked) + "</p>"
+      : "";
+    const actionBlockedMessage = downgradeBlockedMessage + relinquishBlockedMessage;
     const body = "<section class='garage-detail-section'><h3>"
       + escapeHtml(copy.generalInformation)
       + "</h3><dl class='garage-detail-list'>"
@@ -1158,6 +1193,11 @@ export async function mountGarageManager(container) {
         + (mutationDisabled ? " disabled" : "")
         + ">"
         + escapeHtml(copy.setHeadquarters)
+        + "</button>";
+      actionMarkup += "<button type='button' data-garage-detail-operation='relinquish'"
+        + (readOnly || !canRelinquishGarage(garage) || state.mutationPending ? " disabled" : "")
+        + ">"
+        + escapeHtml(copy.relinquish)
         + "</button>";
     }
     const footer = "<button type='button' class='button-secondary' data-garage-detail-close>"
@@ -1321,6 +1361,19 @@ export async function mountGarageManager(container) {
         loadingLabel: copy.upgrading,
         failureTitle: copy.upgradeFailureTitle,
         command: "upgrade_owned_garage",
+        request: {},
+      };
+    }
+    if (operation === "relinquish" && canRelinquishGarage(garage)) {
+      return {
+        title: copy.relinquishDialogTitle,
+        currentState: ownershipLabel(garage.ownership, copy) + " · " + currentSize,
+        futureState: copy.relinquishChange,
+        effect: copy.relinquishEffect,
+        buttonLabel: copy.relinquish,
+        loadingLabel: copy.relinquishing,
+        failureTitle: copy.relinquishFailureTitle,
+        command: "relinquish_garage_ownership",
         request: {},
       };
     }

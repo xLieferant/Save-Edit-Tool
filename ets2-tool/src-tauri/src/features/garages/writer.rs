@@ -7,7 +7,7 @@ use uuid::Uuid;
 
 use crate::features::ets2save::sii_codec::replace_file_atomic;
 use crate::features::truck_change::parser::{
-    UnitBlock, extract_array_entries, extract_field_value, is_null_ref, parse_unit_blocks,
+    extract_array_entries, extract_field_value, is_null_ref, parse_unit_blocks, UnitBlock,
 };
 
 use super::parser::city_token_from_garage_id;
@@ -76,6 +76,21 @@ pub fn apply_garage_purchase_batch(
     Ok(GarageWritePlan {
         content: updated,
         changed_unit_ids,
+    })
+}
+
+pub fn apply_garage_relinquishment(
+    content: &str,
+    garage_id: &str,
+) -> Result<GarageWritePlan, String> {
+    let block = unique_unit_block(content, "garage", garage_id)?;
+    validate_reusable_profit_log(content, &block)?;
+    ensure_garage_empty_for_relinquishment(&block)?;
+    let resized = rewrite_garage_capacity(&block.raw_block, 0, 0)?;
+    let rewritten_block = replace_scalar_field(&resized, "productivity", "0")?;
+    Ok(GarageWritePlan {
+        content: replace_unit_block(content, &block, &rewritten_block)?,
+        changed_unit_ids: vec![garage_id.to_string()],
     })
 }
 
@@ -165,6 +180,28 @@ fn validate_reusable_profit_log_in_blocks(
             garage_block.id
         )),
     }
+}
+
+fn ensure_garage_empty_for_relinquishment(garage_block: &UnitBlock) -> Result<(), String> {
+    for field in ["vehicles", "drivers"] {
+        if extract_array_entries(&garage_block.raw_block, field)
+            .iter()
+            .any(|(_, value)| !is_null_ref(value))
+        {
+            return Err("garage_relinquish_not_empty".to_string());
+        }
+    }
+    let trailer_count = extract_field_value(&garage_block.raw_block, "trailers")
+        .and_then(|value| value.parse::<usize>().ok())
+        .ok_or_else(|| "garage_block_invalid:trailers_invalid".to_string())?;
+    if trailer_count != 0
+        || extract_array_entries(&garage_block.raw_block, "trailers")
+            .iter()
+            .any(|(_, value)| !is_null_ref(value))
+    {
+        return Err("garage_relinquish_not_empty".to_string());
+    }
+    Ok(())
 }
 
 fn set_headquarters(content: &str, garage_id: &str) -> Result<(String, String), String> {
@@ -348,11 +385,14 @@ fn temporary_path_for(target_path: &Path) -> PathBuf {
 mod tests {
     use std::fs;
 
-    use super::{apply_garage_changes, apply_garage_purchase_batch, write_verified_content};
+    use super::{
+        apply_garage_changes, apply_garage_purchase_batch, apply_garage_relinquishment,
+        write_verified_content,
+    };
     use crate::features::garages::models::{GarageOperation, GarageOwnership, GarageSize};
     use crate::features::garages::parser::parse_garages_from_sii;
     use crate::features::garages::validator::{
-        GarageVerificationSpec, verify_garage_mutation, verify_garage_purchase_batch,
+        verify_garage_mutation, verify_garage_purchase_batch, GarageVerificationSpec,
     };
     use crate::features::truck_change::parser::parse_unit_blocks;
     use crate::shared::ets2data::validate::sha256_hex_bytes;
@@ -381,20 +421,17 @@ mod tests {
         assert_eq!(purchased.vehicle_slot_count, 5);
         assert_eq!(purchased.driver_slot_count, 5);
         assert_eq!(purchased.trailer_slot_count, 0);
-        assert!(
-            purchased
-                .slots
-                .iter()
-                .all(|slot| { slot.truck_id.is_none() && slot.driver_id.is_none() })
-        );
+        assert!(purchased
+            .slots
+            .iter()
+            .all(|slot| { slot.truck_id.is_none() && slot.driver_id.is_none() }));
         assert_eq!(
             purchased.profit_log_id.as_deref(),
             Some("profit.los_angeles")
         );
-        assert!(
-            plan.content
-                .contains("future_garage_field: preserved_by_reader")
-        );
+        assert!(plan
+            .content
+            .contains("future_garage_field: preserved_by_reader"));
     }
 
     #[test]
@@ -413,12 +450,10 @@ mod tests {
             assert_eq!(garage.status, Some(3));
             assert_eq!(garage.vehicle_slot_count, 5);
             assert_eq!(garage.driver_slot_count, 5);
-            assert!(
-                garage
-                    .slots
-                    .iter()
-                    .all(|slot| slot.truck_id.is_none() && slot.driver_id.is_none())
-            );
+            assert!(garage
+                .slots
+                .iter()
+                .all(|slot| slot.truck_id.is_none() && slot.driver_id.is_none()));
         }
         let headquarters = parsed
             .garages
@@ -435,6 +470,54 @@ mod tests {
         assert_eq!(
             plan.changed_unit_ids,
             vec!["garage.los_angeles".to_string(), "garage.paris".to_string()]
+        );
+    }
+
+    #[test]
+    fn relinquishment_resets_empty_owned_garage_to_fixture_unowned_shape() {
+        let plan = apply_garage_relinquishment(SAMPLE, "garage.paris").unwrap();
+        let parsed = parse_garages_from_sii(&plan.content).unwrap();
+        let relinquished = parsed
+            .garages
+            .iter()
+            .find(|garage| garage.garage_id == "garage.paris")
+            .unwrap();
+
+        assert_eq!(relinquished.ownership, GarageOwnership::NotOwned);
+        assert_eq!(relinquished.size, GarageSize::Unowned);
+        assert_eq!(relinquished.status, Some(0));
+        assert_eq!(relinquished.vehicle_slot_count, 0);
+        assert_eq!(relinquished.driver_slot_count, 0);
+        assert_eq!(relinquished.trailer_slot_count, 0);
+        assert_eq!(relinquished.productivity, Some(0.0));
+        assert_eq!(relinquished.profit_log_id.as_deref(), Some("profit.paris"));
+        assert_eq!(
+            parsed.headquarters_garage_id.as_deref(),
+            Some("garage.berlin")
+        );
+    }
+
+    #[test]
+    fn relinquishment_rejects_truck_driver_or_trailer_references() {
+        let truck = SAMPLE.replace(
+            "garage : garage.paris {\n vehicles: 3\n vehicles[0]: null",
+            "garage : garage.paris {\n vehicles: 3\n vehicles[0]: truck.one",
+        );
+        assert_eq!(
+            apply_garage_relinquishment(&truck, "garage.paris").unwrap_err(),
+            "garage_relinquish_not_empty"
+        );
+
+        let driver = SAMPLE.replace("garage : garage.paris {\n vehicles: 3\n vehicles[0]: null\n vehicles[1]: null\n vehicles[2]: null\n drivers: 3\n drivers[0]: null", "garage : garage.paris {\n vehicles: 3\n vehicles[0]: null\n vehicles[1]: null\n vehicles[2]: null\n drivers: 3\n drivers[0]: driver.one");
+        assert_eq!(
+            apply_garage_relinquishment(&driver, "garage.paris").unwrap_err(),
+            "garage_relinquish_not_empty"
+        );
+
+        let trailer = SAMPLE.replace("garage : garage.paris {\n vehicles: 3\n vehicles[0]: null\n vehicles[1]: null\n vehicles[2]: null\n drivers: 3\n drivers[0]: null\n drivers[1]: null\n drivers[2]: null\n trailers: 0", "garage : garage.paris {\n vehicles: 3\n vehicles[0]: null\n vehicles[1]: null\n vehicles[2]: null\n drivers: 3\n drivers[0]: null\n drivers[1]: null\n drivers[2]: null\n trailers: 1\n trailers[0]: trailer.one");
+        assert_eq!(
+            apply_garage_relinquishment(&trailer, "garage.paris").unwrap_err(),
+            "garage_relinquish_not_empty"
         );
     }
 
@@ -484,10 +567,9 @@ mod tests {
         assert_eq!(garage.slots[1].truck_id.as_deref(), Some("truck.two"));
         assert_eq!(garage.slots[0].driver_id.as_deref(), Some("driver.one"));
         assert_eq!(garage.trailer_ids, vec!["trailer.one"]);
-        assert!(
-            plan.content
-                .contains("future_garage_field: preserved_by_reader")
-        );
+        assert!(plan
+            .content
+            .contains("future_garage_field: preserved_by_reader"));
     }
 
     #[test]
@@ -568,13 +650,38 @@ mod tests {
         assert_eq!(verified.updated_state.size, GarageSize::Large);
         assert_eq!(verified.updated_state.vehicle_slot_count, 5);
         assert_eq!(verified.updated_state.driver_slot_count, 5);
-        assert!(
-            verified
-                .updated_state
-                .slots
-                .iter()
-                .all(|slot| { slot.truck_id.is_none() && slot.driver_id.is_none() })
-        );
+        assert!(verified
+            .updated_state
+            .slots
+            .iter()
+            .all(|slot| { slot.truck_id.is_none() && slot.driver_id.is_none() }));
+        fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn atomic_write_roundtrip_verifies_relinquishment_after_reload() {
+        let path = std::env::temp_dir().join(format!(
+            "ets2-garage-relinquish-roundtrip-{}.sii",
+            Uuid::new_v4()
+        ));
+        fs::write(&path, SAMPLE).unwrap();
+        let plan = apply_garage_relinquishment(SAMPLE, "garage.paris").unwrap();
+        let spec = GarageVerificationSpec {
+            operation: GarageOperation::Relinquish,
+            target_size: Some(GarageSize::Unowned),
+            set_as_headquarters: false,
+        };
+
+        write_verified_content(&path, &plan.content, |candidate| {
+            verify_garage_mutation(SAMPLE, candidate, "garage.paris", &spec).map(|_| ())
+        })
+        .unwrap();
+
+        let written = fs::read_to_string(&path).unwrap();
+        let verified = verify_garage_mutation(SAMPLE, &written, "garage.paris", &spec).unwrap();
+        assert_eq!(verified.updated_state.ownership, GarageOwnership::NotOwned);
+        assert_eq!(verified.updated_state.status, Some(0));
+        assert_eq!(verified.updated_state.productivity, Some(0.0));
         fs::remove_file(path).unwrap();
     }
 
