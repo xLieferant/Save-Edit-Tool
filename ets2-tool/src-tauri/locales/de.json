@@ -2472,6 +2472,7 @@
       "details": "[NEEDS TRANSLATION] Open details",
       "edit": "[NEEDS TRANSLATION] Edit garage",
       "purchase": "[NEEDS TRANSLATION] Purchase garage",
+      "purchase_all": "[NEEDS TRANSLATION] Purchase all garages",
       "upgrade": "[NEEDS TRANSLATION] Upgrade to 5 slots",
       "downgrade": "[NEEDS TRANSLATION] Downsize to 3 slots",
       "set_headquarters": "[NEEDS TRANSLATION] Set as headquarters",
@@ -2483,6 +2484,7 @@
       "apply": "[NEEDS TRANSLATION] Continue",
       "refreshing": "[NEEDS TRANSLATION] Refreshing...",
       "purchasing": "[NEEDS TRANSLATION] Purchasing garage...",
+      "purchasing_all": "[NEEDS TRANSLATION] Purchasing all garages...",
       "upgrading": "[NEEDS TRANSLATION] Upgrading garage...",
       "downgrading": "[NEEDS TRANSLATION] Downsizing garage...",
       "changing_headquarters": "[NEEDS TRANSLATION] Changing headquarters..."
@@ -2617,6 +2619,7 @@
     },
     "dialogs": {
       "purchase_title": "[NEEDS TRANSLATION] Purchase garage",
+      "purchase_all_title": "[NEEDS TRANSLATION] Purchase all garages",
       "upgrade_title": "[NEEDS TRANSLATION] Upgrade garage",
       "downgrade_title": "[NEEDS TRANSLATION] Downsize garage",
       "headquarters_title": "[NEEDS TRANSLATION] Change headquarters",
@@ -2656,6 +2659,7 @@
       "backup_automatic": "[NEEDS TRANSLATION] Created automatically before writing",
       "save_warning": "[NEEDS TRANSLATION] This action changes the selected save file. The new state is written atomically, read again and verified.",
         "purchase_change": "[NEEDS TRANSLATION] Purchase as a large garage with 5 empty slots",
+        "purchase_all_change": "[NEEDS TRANSLATION] Purchase all {count} currently unowned garages as large garages with 5 empty slots",
         "upgrade_change": "[NEEDS TRANSLATION] Upgrade to a large garage with 5 slots",
         "update_large_change": "[NEEDS TRANSLATION] Upgrade to a large garage with 5 slots",
         "update_small_change": "[NEEDS TRANSLATION] Downsize to a small garage with 3 slots",
@@ -2672,6 +2676,7 @@
       "verification_not_completed": "[NEEDS TRANSLATION] Not completed",
       "load_failure_title": "[NEEDS TRANSLATION] The garage data could not be loaded.",
       "purchase_failure_title": "[NEEDS TRANSLATION] The garage could not be purchased.",
+      "purchase_all_failure_title": "[NEEDS TRANSLATION] The garages could not be purchased.",
       "upgrade_failure_title": "[NEEDS TRANSLATION] The garage could not be upgraded.",
       "downgrade_failure_title": "[NEEDS TRANSLATION] The garage could not be downsized.",
       "headquarters_failure_title": "[NEEDS TRANSLATION] The headquarters could not be changed.",
@@ -2706,6 +2711,8 @@
     },
     "success": {
         "purchase": "[NEEDS TRANSLATION] The garage in {city} was purchased.",
+        "purchase_all": "[NEEDS TRANSLATION] {count} garages were purchased successfully.",
+        "purchase_all_none": "[NEEDS TRANSLATION] All available garages are already owned.",
         "upgrade": "[NEEDS TRANSLATION] The garage in {city} was upgraded to 5 slots.",
         "downgrade": "[NEEDS TRANSLATION] The garage in {city} was downsized to 3 slots.",
         "headquarters": "[NEEDS TRANSLATION] {city} was set as the new headquarters.",

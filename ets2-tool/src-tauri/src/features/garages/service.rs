@@ -18,12 +18,15 @@ use crate::shared::user_log;
 use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 
 use super::models::{
-    GarageActionResult, GarageInfo, GarageListResult, GarageMutationRequest, GarageMutationResult,
-    GarageOperation, GarageOwnership, GarageSize, GarageUpdateRequest,
+    GarageActionResult, GarageBulkOperation, GarageBuyAllRequest, GarageBuyAllResult, GarageInfo,
+    GarageListResult, GarageMutationRequest, GarageMutationResult, GarageOperation,
+    GarageOwnership, GarageSize, GarageUpdateRequest,
 };
 use super::parser::parse_garages_from_sii;
-use super::validator::{GarageVerificationSpec, verify_garage_mutation};
-use super::writer::{apply_garage_changes, write_verified_content};
+use super::validator::{
+    GarageVerificationSpec, verify_garage_mutation, verify_garage_purchase_batch,
+};
+use super::writer::{apply_garage_changes, apply_garage_purchase_batch, write_verified_content};
 
 #[derive(Debug, Clone)]
 struct CityDetails {
@@ -218,7 +221,7 @@ pub fn purchase_garage(
     )
 }
 
-pub fn buy_all_garages (
+pub fn buy_all_garages(
     selection: &ActiveSaveSelection,
     selected_game: &str,
     profile_state: &AppProfileState,
@@ -226,25 +229,199 @@ pub fn buy_all_garages (
     decrypt_cache: &DecryptCache,
     truck_change_cache: &TruckChangeSessionCache,
     trailer_change_cache: &TrailerChangeSessionCache,
-    sqlite_path: &Path,
+    _sqlite_path: &Path,
     request: &GarageBuyAllRequest,
-) -> Result<GarageMutationResult, String> {
-    // Implementation for buying all garages
-    mutate_garage(
-        selection,
-        selected_game,
+) -> Result<GarageBuyAllResult, String> {
+    if !selected_game.eq_ignore_ascii_case("ets2") {
+        return Err(format!(
+            "garage_update_not_supported:{}",
+            selected_game.to_ascii_lowercase()
+        ));
+    }
+    if request.expected_save_hash.trim().is_empty() {
+        return Err("save_hash_missing".to_string());
+    }
+
+    let game_sii_path = resolve_selected_game_sii(selection)?;
+    let profile_id = selection_component_id(selection.profile_path.as_deref());
+    let save_id = selection_component_id(selection.save_path.as_deref());
+    let content = read_fresh_content(&game_sii_path, decrypt_cache)?;
+    let actual_hash = sha256_hex_bytes(content.as_bytes());
+    if actual_hash != request.expected_save_hash {
+        return Err("save_changed_since_load".to_string());
+    }
+
+    let parsed = parse_garages_from_sii(&content)?;
+    let targets = parsed
+        .garages
+        .iter()
+        .filter(|garage| garage.ownership == GarageOwnership::NotOwned)
+        .collect::<Vec<_>>();
+    for garage in &targets {
+        validate_mutation_target(garage, &GarageOperation::Purchase, Some(GarageSize::Large))?;
+        mutation_target(
+            garage,
+            &GarageOperation::Purchase,
+            Some(GarageSize::Large),
+            false,
+        )?;
+    }
+    let garage_ids = targets
+        .iter()
+        .map(|garage| garage.garage_id.clone())
+        .collect::<Vec<_>>();
+
+    if garage_ids.is_empty() {
+        ensure_active_context(profile_state, selection, selected_game)?;
+        let unchanged = read_fresh_content(&game_sii_path, decrypt_cache)?;
+        if sha256_hex_bytes(unchanged.as_bytes()) != actual_hash {
+            return Err("save_changed_since_load".to_string());
+        }
+        verify_garage_purchase_batch(&content, &unchanged, &garage_ids)?;
+        return Ok(GarageBuyAllResult {
+            operation: GarageBulkOperation::PurchaseAll,
+            purchased_garage_ids: garage_ids,
+            purchased_count: 0,
+            backup_id: None,
+            backup_created: false,
+            verified: true,
+            financial_transaction_applied: false,
+            save_hash: actual_hash,
+            warnings: Vec::new(),
+        });
+    }
+
+    let _ = user_log::user_log_info(
+        "Garages",
+        format!(
+            "Garage batch purchase started: profile={profile_id}, save={save_id}, targets={}",
+            garage_ids.len()
+        ),
+    );
+    ensure_active_context(profile_state, selection, selected_game)?;
+    let backup = match backup_service::create_backup_for_targets(
         profile_state,
+        &format!("garage purchase_all {} garages", garage_ids.len()),
+        &backup_service::recommended_targets(&game_sii_path),
+    ) {
+        Ok(backup) => backup,
+        Err(_) => return Err("backup_failed".to_string()),
+    };
+
+    let plan = apply_garage_purchase_batch(&content, &garage_ids)?;
+    verify_garage_purchase_batch(&content, &plan.content, &garage_ids)?;
+
+    ensure_active_context(profile_state, selection, selected_game)?;
+    let pre_write_content = read_fresh_content(&game_sii_path, decrypt_cache)?;
+    if sha256_hex_bytes(pre_write_content.as_bytes()) != actual_hash {
+        return Err("save_changed_since_load".to_string());
+    }
+    let verify_candidate = |candidate: &str| {
+        verify_garage_purchase_batch(&content, candidate, &garage_ids).map(|_| ())
+    };
+    if let Err(error) = write_verified_content(&game_sii_path, &plan.content, verify_candidate) {
+        invalidate_after_write(
+            selection,
+            &game_sii_path,
+            profile_cache,
+            decrypt_cache,
+            truck_change_cache,
+            trailer_change_cache,
+        );
+        let target_changed = decrypt_cached_with_cache(&game_sii_path, decrypt_cache)
+            .map(|current| sha256_hex_bytes(current.as_bytes()) != actual_hash)
+            .unwrap_or(true);
+        if target_changed {
+            return rollback_after_failure(
+                profile_state,
+                selection,
+                &game_sii_path,
+                profile_cache,
+                decrypt_cache,
+                truck_change_cache,
+                trailer_change_cache,
+                &backup.backup_id,
+                &actual_hash,
+                "save_write_failed",
+                error,
+                "<batch>",
+                "purchase_all",
+                &profile_id,
+                &save_id,
+            );
+        }
+        return Err(error);
+    }
+
+    invalidate_after_write(
+        selection,
+        &game_sii_path,
         profile_cache,
         decrypt_cache,
         truck_change_cache,
         trailer_change_cache,
-        sqlite_path,
-        &request.garage_id,
-        &request.expected_save_hash,
-        GarageOperation::PurchaseAll, // Assuming a new operation type for buying all garages
-        None, // No specific target size for buying all garages
-        false, // Not setting as headquarters
-    )
+    );
+    let reloaded = match decrypt_cached_with_cache(&game_sii_path, decrypt_cache) {
+        Ok(content) => content,
+        Err(_) => {
+            return rollback_after_failure(
+                profile_state,
+                selection,
+                &game_sii_path,
+                profile_cache,
+                decrypt_cache,
+                truck_change_cache,
+                trailer_change_cache,
+                &backup.backup_id,
+                &actual_hash,
+                "save_verification_failed",
+                "game_sii_not_decrypted".to_string(),
+                "<batch>",
+                "purchase_all",
+                &profile_id,
+                &save_id,
+            );
+        }
+    };
+    if let Err(error) = verify_garage_purchase_batch(&content, &reloaded, &garage_ids) {
+        return rollback_after_failure(
+            profile_state,
+            selection,
+            &game_sii_path,
+            profile_cache,
+            decrypt_cache,
+            truck_change_cache,
+            trailer_change_cache,
+            &backup.backup_id,
+            &actual_hash,
+            "save_verification_failed",
+            error,
+            "<batch>",
+            "purchase_all",
+            &profile_id,
+            &save_id,
+        );
+    }
+
+    let _ = user_log::user_log_info(
+        "Garages",
+        format!(
+            "Garage batch purchase verified: profile={profile_id}, save={save_id}, purchased={}, backup_id={}",
+            garage_ids.len(),
+            backup.backup_id
+        ),
+    );
+    Ok(GarageBuyAllResult {
+        operation: GarageBulkOperation::PurchaseAll,
+        purchased_count: garage_ids.len(),
+        purchased_garage_ids: garage_ids,
+        backup_id: Some(backup.backup_id),
+        backup_created: true,
+        verified: true,
+        financial_transaction_applied: false,
+        save_hash: sha256_hex_bytes(reloaded.as_bytes()),
+        warnings: vec!["garage_purchase_all_without_financial_transaction".to_string()],
+    })
 }
 
 pub fn upgrade_owned_garage(
@@ -784,7 +961,7 @@ fn validate_downgrade_capacity(garage: &GarageInfo) -> Result<(), String> {
 }
 
 #[allow(clippy::too_many_arguments)]
-fn rollback_after_failure(
+fn rollback_after_failure<T>(
     profile_state: &AppProfileState,
     selection: &ActiveSaveSelection,
     game_sii_path: &Path,
@@ -800,7 +977,7 @@ fn rollback_after_failure(
     action: &str,
     profile_id: &str,
     save_id: &str,
-) -> Result<GarageMutationResult, String> {
+) -> Result<T, String> {
     let _ = user_log::user_log_error(
         "Garages",
         format!(

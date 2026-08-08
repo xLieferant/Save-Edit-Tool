@@ -2566,6 +2566,7 @@
                   "details": "Open details",
                   "edit": "Edit garage",
                   "purchase": "Purchase garage",
+                  "purchase_all": "Purchase all garages",
                   "upgrade": "Upgrade to 5 slots",
                   "downgrade": "Downsize to 3 slots",
                   "set_headquarters": "Set as headquarters",
@@ -2577,6 +2578,7 @@
                   "apply": "Continue",
                   "refreshing": "Refreshing...",
                   "purchasing": "Purchasing garage...",
+                  "purchasing_all": "Purchasing all garages...",
                   "upgrading": "Upgrading garage...",
                   "downgrading": "Downsizing garage...",
                   "changing_headquarters": "Changing headquarters..."
@@ -2711,6 +2713,7 @@
             },
             "dialogs": {
                   "purchase_title": "Purchase garage",
+                  "purchase_all_title": "Purchase all garages",
                   "upgrade_title": "Upgrade garage",
                   "downgrade_title": "Downsize garage",
                   "headquarters_title": "Change headquarters",
@@ -2750,6 +2753,7 @@
                   "backup_automatic": "Created automatically before writing",
                   "save_warning": "This action changes the selected save file. The new state is written atomically, read again and verified.",
                     "purchase_change": "Purchase as a large garage with 5 empty slots",
+                    "purchase_all_change": "Purchase all {count} currently unowned garages as large garages with 5 empty slots",
                     "upgrade_change": "Upgrade to a large garage with 5 slots",
                     "update_large_change": "Upgrade to a large garage with 5 slots",
                     "update_small_change": "Downsize to a small garage with 3 slots",
@@ -2766,6 +2770,7 @@
                   "verification_not_completed": "Not completed",
                   "load_failure_title": "The garage data could not be loaded.",
                   "purchase_failure_title": "The garage could not be purchased.",
+                  "purchase_all_failure_title": "The garages could not be purchased.",
                   "upgrade_failure_title": "The garage could not be upgraded.",
                   "downgrade_failure_title": "The garage could not be downsized.",
                   "headquarters_failure_title": "The headquarters could not be changed.",
@@ -2800,6 +2805,8 @@
             },
             "success": {
                     "purchase": "The garage in {city} was purchased.",
+                    "purchase_all": "{count} garages were purchased successfully.",
+                    "purchase_all_none": "All available garages are already owned.",
                     "upgrade": "The garage in {city} was upgraded to 5 slots.",
                     "downgrade": "The garage in {city} was downsized to 3 slots.",
                     "headquarters": "{city} was set as the new headquarters.",

@@ -17,6 +17,7 @@ const COPY_KEYS = {
   apply: "garage_manager.actions.apply",
   refreshing: "garage_manager.actions.refreshing",
   purchasing: "garage_manager.actions.purchasing",
+  purchasingAll: "garage_manager.actions.purchasing_all",
   upgrading: "garage_manager.actions.upgrading",
   downgrading: "garage_manager.actions.downgrading",
   changingHeadquarters: "garage_manager.actions.changing_headquarters",
@@ -144,6 +145,7 @@ const COPY_KEYS = {
   backupAutomatic: "garage_manager.confirm.backup_automatic",
   saveWarning: "garage_manager.confirm.save_warning",
   purchaseChange: "garage_manager.confirm.purchase_change",
+  purchaseAllChange: "garage_manager.confirm.purchase_all_change",
   upgradeChange: "garage_manager.confirm.upgrade_change",
   updateLargeChange: "garage_manager.confirm.update_large_change",
   updateSmallChange: "garage_manager.confirm.update_small_change",
@@ -158,10 +160,12 @@ const COPY_KEYS = {
   verificationNotCompleted: "garage_manager.errors.verification_not_completed",
   loadFailureTitle: "garage_manager.errors.load_failure_title",
   purchaseFailureTitle: "garage_manager.errors.purchase_failure_title",
+  purchaseAllFailureTitle: "garage_manager.errors.purchase_all_failure_title",
   upgradeFailureTitle: "garage_manager.errors.upgrade_failure_title",
   downgradeFailureTitle: "garage_manager.errors.downgrade_failure_title",
   headquartersFailureTitle: "garage_manager.errors.headquarters_failure_title",
   purchaseDialogTitle: "garage_manager.dialogs.purchase_title",
+  purchaseAllDialogTitle: "garage_manager.dialogs.purchase_all_title",
   upgradeDialogTitle: "garage_manager.dialogs.upgrade_title",
   downgradeDialogTitle: "garage_manager.dialogs.downgrade_title",
   headquartersDialogTitle: "garage_manager.dialogs.headquarters_title",
@@ -182,6 +186,8 @@ const COPY_KEYS = {
   notVerified: "garage_manager.results.not_verified",
   noOperationResult: "garage_manager.results.no_operation",
   purchaseSuccess: "garage_manager.success.purchase",
+  purchaseAllSuccess: "garage_manager.success.purchase_all",
+  purchaseAllNone: "garage_manager.success.purchase_all_none",
   upgradeSuccess: "garage_manager.success.upgrade",
   downgradeSuccess: "garage_manager.success.downgrade",
   headquartersSuccess: "garage_manager.success.headquarters",
@@ -485,6 +491,7 @@ export async function mountGarageManager(container) {
     result: null,
     loading: false,
     mutationPending: false,
+    bulkMutationPending: false,
     error: null,
     refreshError: null,
     lastMutationResult: null,
@@ -507,9 +514,11 @@ export async function mountGarageManager(container) {
     + "</p><dl class='garage-context'>"
     + detailRow(copy.profileLabel, profileName)
     + detailRow(copy.saveLabel, saveName)
-    + "</dl></div><button type='button' class='garage-refresh-button' data-garage-refresh>"
+    + "</dl></div><div class='garage-manager-actions'><button type='button' data-garage-buy-all>"
+    + escapeHtml(copy.purchaseAll)
+    + "</button><button type='button' class='garage-refresh-button' data-garage-refresh>"
     + escapeHtml(copy.refresh)
-    + "</button></header><div class='garage-summary-grid' data-garage-summary></div>"
+    + "</button></div></header><div class='garage-summary-grid' data-garage-summary></div>"
     + "<section class='garage-filter-panel'><div class='garage-toolbar'>"
     + "<label class='garage-filter garage-filter--city'><span>"
     + escapeHtml(copy.citySearchLabel)
@@ -565,6 +574,7 @@ export async function mountGarageManager(container) {
   const noticeElement = root.querySelector("[data-garage-notice]");
   const resultElement = root.querySelector("[data-garage-result]");
   const refreshButton = root.querySelector("[data-garage-refresh]");
+  const buyAllButton = root.querySelector("[data-garage-buy-all]");
   const filterStatusElement = root.querySelector("[data-garage-filter-status]");
   const resetFiltersButton = root.querySelector("[data-garage-filter-reset]");
 
@@ -719,8 +729,14 @@ export async function mountGarageManager(container) {
       resultElement.innerHTML = "";
       return;
     }
-    const city = garageCity(result.updatedState, copy);
-    const successText = formatCopy(mutationSuccessText(result), { city });
+    const isBulkPurchase = result.operation === "purchase_all"
+      && Number.isInteger(result.purchasedCount);
+    const city = isBulkPurchase ? "" : garageCity(result.updatedState, copy);
+    const successText = isBulkPurchase
+      ? result.purchasedCount > 0
+        ? formatCopy(copy.purchaseAllSuccess, { count: result.purchasedCount })
+        : copy.purchaseAllNone
+      : formatCopy(mutationSuccessText(result), { city });
     resultElement.innerHTML = "<strong>"
       + escapeHtml(successText)
       + "</strong><span>"
@@ -888,6 +904,11 @@ export async function mountGarageManager(container) {
     root.setAttribute("aria-busy", state.loading || state.mutationPending ? "true" : "false");
     refreshButton.disabled = state.loading || state.mutationPending;
     refreshButton.textContent = state.loading ? copy.refreshing : copy.refresh;
+    buyAllButton.disabled = state.loading
+      || state.mutationPending
+      || !state.result
+      || state.result.game !== "ets2";
+    buyAllButton.textContent = state.bulkMutationPending ? copy.purchasingAll : copy.purchaseAll;
   }
 
   async function loadGarages({
@@ -949,6 +970,21 @@ export async function mountGarageManager(container) {
     }
     const garages = allGarages();
     if (!garages.some((garage) => garage.garageId === result.garageId)) {
+      throw new Error("garage_size_change_not_verified:garage_missing");
+    }
+  }
+
+  function validateBulkMutationResult(result) {
+    if (result?.operation !== "purchase_all"
+      || !result.verified
+      || !result.saveHash
+      || !Number.isInteger(result.purchasedCount)
+      || !Array.isArray(result.purchasedGarageIds)
+      || result.purchasedGarageIds.length !== result.purchasedCount) {
+      throw new Error("garage_size_change_not_verified:batch_response");
+    }
+    const knownGarageIds = new Set(allGarages().map((garage) => garage.garageId));
+    if (result.purchasedGarageIds.some((garageId) => !knownGarageIds.has(garageId))) {
       throw new Error("garage_size_change_not_verified:garage_missing");
     }
   }
@@ -1168,6 +1204,94 @@ export async function mountGarageManager(container) {
     if (focusActions) {
       modal.overlay.querySelector("[data-garage-detail-operation]:not([disabled])")?.focus();
     }
+  }
+
+  function openBuyAllDialog() {
+    if (!state.result || state.result.game !== "ets2" || state.mutationPending) return;
+    const purchaseCount = allGarages()
+      .filter((garage) => garage.ownership === "not_owned")
+      .length;
+    const configuration = {
+      failureTitle: copy.purchaseAllFailureTitle,
+      command: "buy_all_garages",
+    };
+    const body = "<section class='garage-dialog-effects'><h3>"
+      + escapeHtml(copy.effects)
+      + "</h3><dl class='garage-confirm-list'>"
+      + detailRow(
+        copy.desiredChange,
+        formatCopy(copy.purchaseAllChange, { count: purchaseCount }),
+      )
+      + detailRow(copy.cost, copy.costNone)
+      + detailRow(copy.backup, copy.backupAutomatic)
+      + "</dl><p>"
+      + escapeHtml(copy.purchaseNoExtras)
+      + "</p></section><p class='garage-save-warning'>"
+      + escapeHtml(copy.saveWarning)
+      + "</p><div class='garage-mutation-error' data-garage-mutation-error hidden></div>";
+    const footer = "<button type='button' class='button-secondary' data-garage-dialog-cancel>"
+      + escapeHtml(copy.cancel)
+      + "</button><div class='garage-modal-primary-actions'><button type='button' "
+      + "data-garage-dialog-apply>"
+      + escapeHtml(copy.purchaseAll)
+      + "</button></div>";
+    const modal = createModal(root, {
+      title: copy.purchaseAllDialogTitle,
+      bodyMarkup: body,
+      footerMarkup: footer,
+      copy,
+      className: "garage-action-modal",
+      returnFocus: () => buyAllButton.focus(),
+    });
+    const applyButton = modal.overlay.querySelector("[data-garage-dialog-apply]");
+    const cancelButton = modal.overlay.querySelector("[data-garage-dialog-cancel]");
+    const errorElement = modal.overlay.querySelector("[data-garage-mutation-error]");
+    cancelButton.addEventListener("click", modal.close);
+    applyButton.addEventListener("click", async () => {
+      if (state.mutationPending) return;
+      state.mutationPending = true;
+      state.bulkMutationPending = true;
+      applyButton.disabled = true;
+      applyButton.innerHTML = "<span class='garage-spinner' aria-hidden='true'></span>"
+        + escapeHtml(copy.purchasingAll);
+      errorElement.hidden = true;
+      render();
+      try {
+        const request = { expectedSaveHash: state.result.saveHash };
+        const result = await window.invoke("buy_all_garages", { request });
+        validateBulkMutationResult(result);
+        state.lastMutationResult = result;
+        state.highlightedGarageId = null;
+        modal.close({ restoreFocus: false });
+        await loadGarages({
+          toastOnError: true,
+          expectedSaveHash: result.saveHash,
+          preserveOnError: true,
+        });
+        const successKey = result.purchasedCount > 0
+          ? "garage_manager.success.purchase_all"
+          : "garage_manager.success.purchase_all_none";
+        window.showToast(successKey, { count: result.purchasedCount }, "success");
+        await Promise.allSettled([
+          window.loadAllTrucks?.(),
+          window.loadAllTrailers?.(),
+          window.loadProfileData?.(),
+          window.refreshOperationalOverview?.(),
+        ]);
+        buyAllButton.focus();
+      } catch (error) {
+        console.error("Garage batch purchase failed:", error);
+        await showMutationError(errorElement, error, configuration);
+      } finally {
+        state.bulkMutationPending = false;
+        state.mutationPending = false;
+        if (root.isConnected) render();
+        if (applyButton.isConnected) {
+          applyButton.disabled = false;
+          applyButton.textContent = copy.purchaseAll;
+        }
+      }
+    });
   }
 
   function operationConfiguration(garage, operation) {
@@ -1408,6 +1532,10 @@ export async function mountGarageManager(container) {
     renderList();
   });
   root.addEventListener("click", async (event) => {
+    if (event.target.closest("[data-garage-buy-all]")) {
+      openBuyAllDialog();
+      return;
+    }
     if (event.target.closest("[data-garage-refresh], [data-garage-retry]")) {
       if (state.mutationPending) return;
       await loadGarages({ toastOnError: true, preserveOnError: Boolean(state.result) });

@@ -80,15 +80,26 @@ pub struct GarageListResult {
 #[serde(rename_all = "snake_case")]
 pub enum GarageOperation {
     Purchase,
-    PurchaseAll,
     Upgrade,
     Update,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum GarageBulkOperation {
+    PurchaseAll,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct GarageMutationRequest {
     pub garage_id: String,
+    pub expected_save_hash: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct GarageBuyAllRequest {
     pub expected_save_hash: String,
 }
 
@@ -110,6 +121,20 @@ pub struct GarageMutationResult {
     pub previous_state: GarageInfo,
     pub updated_state: GarageInfo,
     pub backup_id: String,
+    pub backup_created: bool,
+    pub verified: bool,
+    pub financial_transaction_applied: bool,
+    pub save_hash: String,
+    pub warnings: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct GarageBuyAllResult {
+    pub operation: GarageBulkOperation,
+    pub purchased_garage_ids: Vec<String>,
+    pub purchased_count: usize,
+    pub backup_id: Option<String>,
     pub backup_created: bool,
     pub verified: bool,
     pub financial_transaction_applied: bool,

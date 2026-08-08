@@ -13772,6 +13772,17 @@ body.mode-editor .truck-change-box {
   min-width: 150px;
 }
 
+.garage-manager-actions {
+  flex: 0 0 auto;
+  display: grid;
+  gap: 8px;
+  min-width: 190px;
+}
+
+.garage-manager-actions button {
+  width: 100%;
+}
+
 .garage-summary-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
@@ -14454,7 +14465,8 @@ body.mode-editor .truck-change-box {
     flex-direction: column;
   }
 
-  .garage-refresh-button {
+  .garage-refresh-button,
+  .garage-manager-actions {
     width: 100%;
   }
 

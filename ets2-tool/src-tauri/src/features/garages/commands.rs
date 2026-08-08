@@ -8,8 +8,8 @@ use crate::shared::current_profile::snapshot_active_save_selection;
 use crate::state::{AppProfileState, AppState, DecryptCache, ProfileCache};
 
 use super::models::{
-    GarageActionResult, GarageListResult, GarageMutationRequest, GarageMutationResult,
-    GarageUpdateRequest,
+    GarageActionResult, GarageBuyAllRequest, GarageBuyAllResult, GarageListResult,
+    GarageMutationRequest, GarageMutationResult, GarageUpdateRequest,
 };
 use super::service;
 
@@ -146,7 +146,7 @@ pub fn buy_all_garages(
     truck_change_cache: State<'_, TruckChangeSessionCache>,
     trailer_change_cache: State<'_, TrailerChangeSessionCache>,
     app_state: State<'_, AppState>,
-) -> Result<GarageMutationResult, String> {
+) -> Result<GarageBuyAllResult, String> {
     let _mutation_guard = acquire_mutation_lock(&app_state.garage_mutation_lock)?;
     let selection = snapshot_active_save_selection(profile_state.inner())
         .map_err(|_| "garage_block_invalid:profile_state_unavailable".to_string())?;

@@ -48,6 +48,37 @@ pub fn apply_garage_changes(
     })
 }
 
+pub fn apply_garage_purchase_batch(
+    content: &str,
+    garage_ids: &[String],
+) -> Result<GarageWritePlan, String> {
+    let unit_blocks = parse_unit_blocks(content);
+    let mut replacements = Vec::with_capacity(garage_ids.len());
+    let mut seen = HashSet::with_capacity(garage_ids.len());
+
+    for garage_id in garage_ids {
+        if !seen.insert(garage_id.as_str()) {
+            return Err(format!("garage_reference_ambiguous:{garage_id}"));
+        }
+        let block = unique_unit_block_from_blocks(&unit_blocks, "garage", garage_id)?;
+        validate_reusable_profit_log_in_blocks(&unit_blocks, &block)?;
+        let rewritten_block = rewrite_garage_capacity(&block.raw_block, 3, 5)?;
+        replacements.push((block, rewritten_block));
+    }
+
+    replacements.sort_by(|(left, _), (right, _)| right.start_line.cmp(&left.start_line));
+    let mut updated = content.to_string();
+    for (block, rewritten_block) in replacements {
+        updated = replace_unit_block(&updated, &block, &rewritten_block)?;
+    }
+    let mut changed_unit_ids = garage_ids.to_vec();
+    changed_unit_ids.sort();
+    Ok(GarageWritePlan {
+        content: updated,
+        changed_unit_ids,
+    })
+}
+
 pub fn write_verified_content(
     target_path: &Path,
     content: &str,
@@ -93,19 +124,34 @@ fn resize_garage_capacity(
 ) -> Result<String, String> {
     let block = unique_unit_block(content, "garage", garage_id)?;
     validate_reusable_profit_log(content, &block)?;
-    let with_vehicles = resize_array_field(&block.raw_block, "vehicles", target_capacity)?;
-    let with_drivers = resize_array_field(&with_vehicles, "drivers", target_capacity)?;
     let rewritten_block =
-        replace_scalar_field(&with_drivers, "status", &target_status.to_string())?;
+        rewrite_garage_capacity(&block.raw_block, target_status, target_capacity)?;
     replace_unit_block(content, &block, &rewritten_block)
 }
 
+fn rewrite_garage_capacity(
+    raw_block: &str,
+    target_status: i32,
+    target_capacity: usize,
+) -> Result<String, String> {
+    let with_vehicles = resize_array_field(raw_block, "vehicles", target_capacity)?;
+    let with_drivers = resize_array_field(&with_vehicles, "drivers", target_capacity)?;
+    replace_scalar_field(&with_drivers, "status", &target_status.to_string())
+}
+
 fn validate_reusable_profit_log(content: &str, garage_block: &UnitBlock) -> Result<(), String> {
+    validate_reusable_profit_log_in_blocks(&parse_unit_blocks(content), garage_block)
+}
+
+fn validate_reusable_profit_log_in_blocks(
+    unit_blocks: &[UnitBlock],
+    garage_block: &UnitBlock,
+) -> Result<(), String> {
     let profit_log_id = extract_field_value(&garage_block.raw_block, "profit_log")
         .filter(|value| !is_null_ref(value))
         .ok_or_else(|| format!("garage_profit_log_reference_unresolved:{}", garage_block.id))?;
-    let matching = parse_unit_blocks(content)
-        .into_iter()
+    let matching = unit_blocks
+        .iter()
         .filter(|block| block.id == profit_log_id)
         .collect::<Vec<_>>();
     match matching.as_slice() {
@@ -144,14 +190,22 @@ fn set_headquarters(content: &str, garage_id: &str) -> Result<(String, String), 
 }
 
 fn unique_unit_block(content: &str, unit_type: &str, unit_id: &str) -> Result<UnitBlock, String> {
-    let matching = parse_unit_blocks(content)
-        .into_iter()
+    unique_unit_block_from_blocks(&parse_unit_blocks(content), unit_type, unit_id)
+}
+
+fn unique_unit_block_from_blocks(
+    unit_blocks: &[UnitBlock],
+    unit_type: &str,
+    unit_id: &str,
+) -> Result<UnitBlock, String> {
+    let matching = unit_blocks
+        .iter()
         .filter(|block| block.unit_type == unit_type && block.id == unit_id)
         .collect::<Vec<_>>();
     match matching.as_slice() {
         [] if unit_type == "garage" => Err(format!("garage_not_found:{unit_id}")),
         [] => Err(format!("garage_block_invalid:{unit_type}_missing")),
-        [block] => Ok(block.clone()),
+        [block] => Ok((**block).clone()),
         _ => Err(format!("garage_reference_ambiguous:{unit_id}")),
     }
 }
@@ -294,16 +348,25 @@ fn temporary_path_for(target_path: &Path) -> PathBuf {
 mod tests {
     use std::fs;
 
-    use super::{apply_garage_changes, write_verified_content};
-    use crate::features::garages::models::{GarageOperation, GarageSize};
+    use super::{apply_garage_changes, apply_garage_purchase_batch, write_verified_content};
+    use crate::features::garages::models::{GarageOperation, GarageOwnership, GarageSize};
     use crate::features::garages::parser::parse_garages_from_sii;
-    use crate::features::garages::validator::{GarageVerificationSpec, verify_garage_mutation};
+    use crate::features::garages::validator::{
+        GarageVerificationSpec, verify_garage_mutation, verify_garage_purchase_batch,
+    };
     use crate::features::truck_change::parser::parse_unit_blocks;
     use crate::shared::ets2data::validate::sha256_hex_bytes;
     use uuid::Uuid;
 
     const SAMPLE: &str = include_str!("../../../test-fixtures/garages/garage_samples.sii");
     const REAL_SAMPLE: &str = include_str!("../../../test-fixtures/decrypt/plain_game.sii");
+
+    fn sample_with_two_unowned_garages() -> String {
+        SAMPLE.replace(
+            "garage : garage.paris {\n vehicles: 3\n vehicles[0]: null\n vehicles[1]: null\n vehicles[2]: null\n drivers: 3\n drivers[0]: null\n drivers[1]: null\n drivers[2]: null\n trailers: 0\n status: 2\n profit_log: profit.paris\n productivity: 0\n}",
+            "garage : garage.paris {\n vehicles: 0\n drivers: 0\n trailers: 0\n status: 0\n profit_log: profit.paris\n productivity: 0\n}",
+        )
+    }
 
     #[test]
     fn purchase_expands_only_the_selected_garage() {
@@ -331,6 +394,47 @@ mod tests {
         assert!(
             plan.content
                 .contains("future_garage_field: preserved_by_reader")
+        );
+    }
+
+    #[test]
+    fn purchase_batch_reuses_single_garage_writer_for_every_target() {
+        let before = sample_with_two_unowned_garages();
+        let targets = vec!["garage.paris".to_string(), "garage.los_angeles".to_string()];
+        let plan = apply_garage_purchase_batch(&before, &targets).unwrap();
+        let parsed = parse_garages_from_sii(&plan.content).unwrap();
+
+        for garage_id in &targets {
+            let garage = parsed
+                .garages
+                .iter()
+                .find(|garage| &garage.garage_id == garage_id)
+                .unwrap();
+            assert_eq!(garage.status, Some(3));
+            assert_eq!(garage.vehicle_slot_count, 5);
+            assert_eq!(garage.driver_slot_count, 5);
+            assert!(
+                garage
+                    .slots
+                    .iter()
+                    .all(|slot| slot.truck_id.is_none() && slot.driver_id.is_none())
+            );
+        }
+        let headquarters = parsed
+            .garages
+            .iter()
+            .find(|garage| garage.garage_id == "garage.berlin")
+            .unwrap();
+        assert!(headquarters.is_headquarters);
+        assert_eq!(headquarters.slots[0].truck_id.as_deref(), Some("truck.one"));
+        assert_eq!(
+            headquarters.slots[0].driver_id.as_deref(),
+            Some("driver.one")
+        );
+        assert_eq!(headquarters.trailer_ids, vec!["trailer.one"]);
+        assert_eq!(
+            plan.changed_unit_ids,
+            vec!["garage.los_angeles".to_string(), "garage.paris".to_string()]
         );
     }
 
@@ -617,6 +721,30 @@ mod tests {
         }
         assert_eq!(save_unit_counts(&final_content), unit_counts_before);
         fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn real_fixture_batch_purchases_every_unowned_garage() {
+        let before = parse_garages_from_sii(REAL_SAMPLE).unwrap();
+        let garage_ids = before
+            .garages
+            .iter()
+            .filter(|garage| garage.ownership == GarageOwnership::NotOwned)
+            .map(|garage| garage.garage_id.clone())
+            .collect::<Vec<_>>();
+        assert!(garage_ids.len() > 100);
+        let headquarters_before = before.headquarters_garage_id.clone();
+        let unit_counts_before = save_unit_counts(REAL_SAMPLE);
+
+        let plan = apply_garage_purchase_batch(REAL_SAMPLE, &garage_ids).unwrap();
+        let verified =
+            verify_garage_purchase_batch(REAL_SAMPLE, &plan.content, &garage_ids).unwrap();
+        let after = parse_garages_from_sii(&plan.content).unwrap();
+
+        assert_eq!(verified.updated_states.len(), garage_ids.len());
+        assert_eq!(after.headquarters_garage_id, headquarters_before);
+        assert_eq!(after.diagnostics.not_owned_garage_count, 0);
+        assert_eq!(save_unit_counts(&plan.content), unit_counts_before);
     }
 
     #[test]

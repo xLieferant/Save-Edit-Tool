@@ -14,19 +14,21 @@ details, automatic list refresh and a highlighted result card.
 
 For ETS2 saves, the tool can purchase an existing unowned garage directly as a
 five-slot large garage, change an owned garage between three and five slots,
-and set an owned garage as headquarters. Purchasing a small garage remains
-disabled until its save structure is confirmed independently. Downsizing is
-allowed only when the removed slots contain no truck or driver references.
-Each write checks the loaded save hash, creates an automatic backup, preserves
-unknown fields and existing assignments, replaces game.sii atomically, and
-verifies the resulting save after reading it again.
+purchase all currently unowned garages in one operation, and set an owned
+garage as headquarters. Purchasing a small garage remains disabled until its
+save structure is confirmed independently. Downsizing is allowed only when the
+removed slots contain no truck or driver references. Each write checks the
+loaded save hash, creates an automatic backup, preserves unknown fields and
+existing assignments, replaces game.sii atomically, and verifies the resulting
+save after reading it again. A bulk purchase creates one backup and performs
+one atomic write; if every garage is already owned, the save is left unchanged.
 
 Garage purchase and upgrade do not apply a financial transaction because no
 unambiguous money/cost link was established in the supported save structure.
 Garage purchase does not create trucks, drivers, or trailers. Optional truck
 creation and AI-driver assignment remain unavailable because the project has no
-verified creation workflow for those save units. Relinquishing ownership, bulk
-purchase, and garage writes for ATS remain unsupported.
+verified creation workflow for those save units. Relinquishing ownership and
+garage writes for ATS remain unsupported.
 
 ### Manual garage save verification
 
@@ -47,6 +49,8 @@ garage, and one five-slot garage with an assignment in slot 3 or 4.
 | Purchase 1 | Purchase unowned garage A | A has status 3 and five empty truck and driver slots |
 | Purchase 2 | Purchase B immediately, without reopening the app, profile, save, or modal | A and B are owned |
 | Purchase 3 | Purchase C immediately | A, B, and C are owned |
+| Purchase all | Start from a copy where A, B, and C are unowned, then purchase all garages | Every unowned garage is owned, the HQ and existing assignments are unchanged, and one backup is reported |
+| Purchase all no-op | Run purchase all again | No save change or backup is made and the tool reports that all garages are already owned |
 | Upgrade | Change an owned three-slot garage from 3 to 5 | Status is 3 and slots 0 through 4 exist |
 | Safe downgrade | Change an empty five-slot garage from 5 to 3 | Status is 2 and only slots 0 through 2 remain |
 | Blocked downgrade | Try to downsize a garage with a truck or driver in slot 3 or 4 | The command is rejected and the save hash does not change |
