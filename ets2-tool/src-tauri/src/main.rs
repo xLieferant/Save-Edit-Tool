@@ -400,6 +400,8 @@ fn main() {
             features::garages::commands::upgrade_owned_garage,
             features::garages::commands::update_garage,
             features::garages::commands::buy_all_garages,
+            features::garages::commands::relinquish_empty_garages,
+            features::garages::commands::assign_random_garage_resources,
             features::garages::commands::relinquish_garage_ownership,
             // VTC / Career Management
             features::vtc::commands::get_current_user_profile,

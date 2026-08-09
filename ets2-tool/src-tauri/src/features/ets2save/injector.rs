@@ -6,9 +6,9 @@ use crate::features::ets2save::models::{
     PostWriteValidationResult, VtcDispatcherJob,
 };
 use crate::features::ets2save::parser::{
-    extract_field_value, extract_in_game_time, find_company_block, find_job_offer_data_block,
-    find_player_block_range, parse_job_info_data, parse_player_job_state, patch_job_offer_data,
-    sii_token, UnitRange,
+    UnitRange, extract_field_value, extract_in_game_time, find_company_block,
+    find_job_offer_data_block, find_player_block_range, parse_job_info_data,
+    parse_player_job_state, patch_job_offer_data, sii_token,
 };
 use crate::features::ets2save::post_write_validator::{select_offer_slot, validate_written_job};
 use crate::features::ets2save::sii_codec::{decode_sii_lines, write_lines_atomic};

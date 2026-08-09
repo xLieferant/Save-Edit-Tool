@@ -20,16 +20,20 @@ use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 
 use super::models::{
     GarageBulkOperation, GarageBuyAllRequest, GarageBuyAllResult, GarageInfo, GarageListResult,
-    GarageMutationRequest, GarageMutationResult, GarageOperation, GarageOwnership, GarageSize,
-    GarageUpdateRequest,
+    GarageMutationRequest, GarageMutationResult, GarageOperation, GarageOwnership,
+    GarageRelinquishEmptyRequest, GarageRelinquishEmptyResult, GarageResourceAssignmentRequest,
+    GarageSize, GarageUpdateRequest,
 };
 use super::parser::parse_garages_from_sii;
 use super::validator::{
-    verify_garage_mutation, verify_garage_purchase_batch, GarageVerificationSpec,
+    GarageAssignmentVerificationSpec, GarageVerificationSpec, verify_garage_mutation,
+    verify_garage_purchase_batch, verify_garage_relinquishment_batch,
+    verify_garage_resource_assignment,
 };
 use super::writer::{
-    apply_garage_changes, apply_garage_purchase_batch, apply_garage_relinquishment,
-    write_verified_content,
+    GarageResourceAssignmentOptions, apply_garage_changes, apply_garage_purchase_batch,
+    apply_garage_relinquishment, apply_garage_relinquishment_batch,
+    apply_random_resource_assignment, write_verified_content,
 };
 
 #[derive(Debug, Clone)]
@@ -428,6 +432,215 @@ pub fn buy_all_garages(
     })
 }
 
+pub fn relinquish_empty_garages(
+    selection: &ActiveSaveSelection,
+    selected_game: &str,
+    profile_state: &AppProfileState,
+    profile_cache: &ProfileCache,
+    decrypt_cache: &DecryptCache,
+    truck_change_cache: &TruckChangeSessionCache,
+    trailer_change_cache: &TrailerChangeSessionCache,
+    _sqlite_path: &Path,
+    request: &GarageRelinquishEmptyRequest,
+) -> Result<GarageRelinquishEmptyResult, String> {
+    if !selected_game.eq_ignore_ascii_case("ets2") {
+        return Err(format!(
+            "garage_update_not_supported:{}",
+            selected_game.to_ascii_lowercase()
+        ));
+    }
+    if request.expected_save_hash.trim().is_empty() {
+        return Err("save_hash_missing".to_string());
+    }
+
+    let game_sii_path = resolve_selected_game_sii(selection)?;
+    let profile_id = selection_component_id(selection.profile_path.as_deref());
+    let save_id = selection_component_id(selection.save_path.as_deref());
+    let content = read_fresh_content(&game_sii_path, decrypt_cache)?;
+    let actual_hash = sha256_hex_bytes(content.as_bytes());
+    if actual_hash != request.expected_save_hash {
+        return Err("save_changed_since_load".to_string());
+    }
+
+    let parsed = parse_garages_from_sii(&content)?;
+    let mut garage_ids = Vec::new();
+    for garage in parsed.garages.iter().filter(|garage| {
+        garage.ownership == GarageOwnership::Owned
+            && !garage.is_headquarters
+            && garage.occupied_slots == 0
+            && garage.assigned_truck_count == 0
+            && garage.assigned_driver_count == 0
+            && garage.assigned_trailer_count == 0
+            && garage.trailer_slot_count == 0
+    }) {
+        validate_mutation_target(
+            garage,
+            &GarageOperation::Relinquish,
+            Some(GarageSize::Unowned),
+        )?;
+        mutation_target(
+            garage,
+            &GarageOperation::Relinquish,
+            Some(GarageSize::Unowned),
+            false,
+        )?;
+        validate_no_external_garage_references(&content, &garage.garage_id)?;
+        garage_ids.push(garage.garage_id.clone());
+    }
+
+    if garage_ids.is_empty() {
+        ensure_active_context(profile_state, selection, selected_game)?;
+        let unchanged = read_fresh_content(&game_sii_path, decrypt_cache)?;
+        if sha256_hex_bytes(unchanged.as_bytes()) != actual_hash {
+            return Err("save_changed_since_load".to_string());
+        }
+        verify_garage_relinquishment_batch(&content, &unchanged, &garage_ids)?;
+        return Ok(GarageRelinquishEmptyResult {
+            operation: GarageBulkOperation::RelinquishEmpty,
+            relinquished_garage_ids: garage_ids,
+            relinquished_count: 0,
+            backup_id: None,
+            backup_created: false,
+            verified: true,
+            financial_transaction_applied: false,
+            save_hash: actual_hash,
+            warnings: Vec::new(),
+        });
+    }
+
+    let _ = user_log::user_log_info(
+        "Garages",
+        format!(
+            "Garage empty batch relinquish started: profile={profile_id}, save={save_id}, targets={}",
+            garage_ids.len()
+        ),
+    );
+    ensure_active_context(profile_state, selection, selected_game)?;
+    let backup = match backup_service::create_backup_for_targets(
+        profile_state,
+        &format!("garage relinquish_empty {} garages", garage_ids.len()),
+        &backup_service::recommended_targets(&game_sii_path),
+    ) {
+        Ok(backup) => backup,
+        Err(_) => return Err("backup_failed".to_string()),
+    };
+
+    let plan = apply_garage_relinquishment_batch(&content, &garage_ids)?;
+    verify_garage_relinquishment_batch(&content, &plan.content, &garage_ids)?;
+
+    ensure_active_context(profile_state, selection, selected_game)?;
+    let pre_write_content = read_fresh_content(&game_sii_path, decrypt_cache)?;
+    if sha256_hex_bytes(pre_write_content.as_bytes()) != actual_hash {
+        return Err("save_changed_since_load".to_string());
+    }
+    let verify_candidate = |candidate: &str| {
+        verify_garage_relinquishment_batch(&content, candidate, &garage_ids).map(|_| ())
+    };
+    if let Err(error) = write_verified_content(&game_sii_path, &plan.content, verify_candidate) {
+        invalidate_after_write(
+            selection,
+            &game_sii_path,
+            profile_cache,
+            decrypt_cache,
+            truck_change_cache,
+            trailer_change_cache,
+        );
+        let target_changed = decrypt_cached_with_cache(&game_sii_path, decrypt_cache)
+            .map(|current| sha256_hex_bytes(current.as_bytes()) != actual_hash)
+            .unwrap_or(true);
+        if target_changed {
+            return rollback_after_failure(
+                profile_state,
+                selection,
+                &game_sii_path,
+                profile_cache,
+                decrypt_cache,
+                truck_change_cache,
+                trailer_change_cache,
+                &backup.backup_id,
+                &actual_hash,
+                "save_write_failed",
+                error,
+                "<batch>",
+                "relinquish_empty",
+                &profile_id,
+                &save_id,
+            );
+        }
+        return Err(error);
+    }
+
+    invalidate_after_write(
+        selection,
+        &game_sii_path,
+        profile_cache,
+        decrypt_cache,
+        truck_change_cache,
+        trailer_change_cache,
+    );
+    let reloaded = match decrypt_cached_with_cache(&game_sii_path, decrypt_cache) {
+        Ok(content) => content,
+        Err(_) => {
+            return rollback_after_failure(
+                profile_state,
+                selection,
+                &game_sii_path,
+                profile_cache,
+                decrypt_cache,
+                truck_change_cache,
+                trailer_change_cache,
+                &backup.backup_id,
+                &actual_hash,
+                "save_verification_failed",
+                "game_sii_not_decrypted".to_string(),
+                "<batch>",
+                "relinquish_empty",
+                &profile_id,
+                &save_id,
+            );
+        }
+    };
+    if let Err(error) = verify_garage_relinquishment_batch(&content, &reloaded, &garage_ids) {
+        return rollback_after_failure(
+            profile_state,
+            selection,
+            &game_sii_path,
+            profile_cache,
+            decrypt_cache,
+            truck_change_cache,
+            trailer_change_cache,
+            &backup.backup_id,
+            &actual_hash,
+            "save_verification_failed",
+            error,
+            "<batch>",
+            "relinquish_empty",
+            &profile_id,
+            &save_id,
+        );
+    }
+
+    let _ = user_log::user_log_info(
+        "Garages",
+        format!(
+            "Garage empty batch relinquish verified: profile={profile_id}, save={save_id}, relinquished={}, backup_id={}",
+            garage_ids.len(),
+            backup.backup_id
+        ),
+    );
+    Ok(GarageRelinquishEmptyResult {
+        operation: GarageBulkOperation::RelinquishEmpty,
+        relinquished_count: garage_ids.len(),
+        relinquished_garage_ids: garage_ids,
+        backup_id: Some(backup.backup_id),
+        backup_created: true,
+        verified: true,
+        financial_transaction_applied: false,
+        save_hash: sha256_hex_bytes(reloaded.as_bytes()),
+        warnings: vec!["garage_relinquish_empty_without_financial_transaction".to_string()],
+    })
+}
+
 pub fn upgrade_owned_garage(
     selection: &ActiveSaveSelection,
     selected_game: &str,
@@ -510,6 +723,222 @@ pub fn update_garage(
         request.target_size,
         request.set_as_headquarters,
     )
+}
+
+pub fn assign_random_garage_resources(
+    selection: &ActiveSaveSelection,
+    selected_game: &str,
+    profile_state: &AppProfileState,
+    profile_cache: &ProfileCache,
+    decrypt_cache: &DecryptCache,
+    truck_change_cache: &TruckChangeSessionCache,
+    trailer_change_cache: &TrailerChangeSessionCache,
+    sqlite_path: &Path,
+    request: &GarageResourceAssignmentRequest,
+) -> Result<GarageMutationResult, String> {
+    if !selected_game.eq_ignore_ascii_case("ets2") {
+        return Err(format!(
+            "garage_update_not_supported:{}",
+            selected_game.to_ascii_lowercase()
+        ));
+    }
+    if request.garage_id.trim().is_empty() {
+        return Err("garage_not_found".to_string());
+    }
+    if request.expected_save_hash.trim().is_empty() {
+        return Err("save_hash_missing".to_string());
+    }
+    if !request.assign_random_driver && !request.assign_random_truck {
+        return Err("garage_assignment_empty".to_string());
+    }
+
+    let game_sii_path = resolve_selected_game_sii(selection)?;
+    let profile_id = selection_component_id(selection.profile_path.as_deref());
+    let save_id = selection_component_id(selection.save_path.as_deref());
+    let garage_id = request.garage_id.as_str();
+    let content = read_fresh_content(&game_sii_path, decrypt_cache)?;
+    let actual_hash = sha256_hex_bytes(content.as_bytes());
+    if actual_hash != request.expected_save_hash {
+        return Err("save_changed_since_load".to_string());
+    }
+
+    let parsed = parse_garages_from_sii(&content)?;
+    let current = parsed
+        .garages
+        .iter()
+        .find(|garage| garage.garage_id == garage_id)
+        .ok_or_else(|| format!("garage_not_found:{garage_id}"))?;
+    validate_mutation_target(current, &GarageOperation::AssignResources, None)?;
+    mutation_target(current, &GarageOperation::AssignResources, None, false)?;
+
+    let _ = user_log::user_log_info(
+        "Garages",
+        format!(
+            "Garage random assignment started: profile={profile_id}, save={save_id}, garage={garage_id}, driver={}, truck={}, before={}",
+            request.assign_random_driver,
+            request.assign_random_truck,
+            garage_state_summary(current)
+        ),
+    );
+    ensure_active_context(profile_state, selection, selected_game)?;
+    let backup = match backup_service::create_backup_for_targets(
+        profile_state,
+        &format!("garage assign_resources {garage_id}"),
+        &backup_service::recommended_targets(&game_sii_path),
+    ) {
+        Ok(backup) => backup,
+        Err(_) => return Err("backup_failed".to_string()),
+    };
+
+    let assignment_options = GarageResourceAssignmentOptions {
+        assign_random_driver: request.assign_random_driver,
+        assign_random_truck: request.assign_random_truck,
+    };
+    let plan = apply_random_resource_assignment(&content, garage_id, assignment_options)?;
+    let verification_spec = GarageAssignmentVerificationSpec {
+        assigned_driver_id: plan.assigned_driver_id.clone(),
+        assigned_truck_id: plan.assigned_truck_id.clone(),
+        assigned_driver_slot_index: plan.assigned_driver_slot_index,
+        assigned_truck_slot_index: plan.assigned_truck_slot_index,
+    };
+    let _predicted =
+        verify_garage_resource_assignment(&content, &plan.content, garage_id, &verification_spec)?;
+
+    ensure_active_context(profile_state, selection, selected_game)?;
+    let pre_write_content = read_fresh_content(&game_sii_path, decrypt_cache)?;
+    if sha256_hex_bytes(pre_write_content.as_bytes()) != actual_hash {
+        return Err("save_changed_since_load".to_string());
+    }
+    let verify_candidate = |candidate: &str| {
+        verify_garage_resource_assignment(&content, candidate, garage_id, &verification_spec)
+            .map(|_| ())
+    };
+    if let Err(error) = write_verified_content(&game_sii_path, &plan.content, verify_candidate) {
+        invalidate_after_write(
+            selection,
+            &game_sii_path,
+            profile_cache,
+            decrypt_cache,
+            truck_change_cache,
+            trailer_change_cache,
+        );
+        let target_changed = decrypt_cached_with_cache(&game_sii_path, decrypt_cache)
+            .map(|current| sha256_hex_bytes(current.as_bytes()) != actual_hash)
+            .unwrap_or(true);
+        if target_changed {
+            return rollback_after_failure(
+                profile_state,
+                selection,
+                &game_sii_path,
+                profile_cache,
+                decrypt_cache,
+                truck_change_cache,
+                trailer_change_cache,
+                &backup.backup_id,
+                &actual_hash,
+                "save_write_failed",
+                error,
+                garage_id,
+                "assign_resources",
+                &profile_id,
+                &save_id,
+            );
+        }
+        return Err(error);
+    }
+
+    invalidate_after_write(
+        selection,
+        &game_sii_path,
+        profile_cache,
+        decrypt_cache,
+        truck_change_cache,
+        trailer_change_cache,
+    );
+    let reloaded = match decrypt_cached_with_cache(&game_sii_path, decrypt_cache) {
+        Ok(content) => content,
+        Err(_) => {
+            return rollback_after_failure(
+                profile_state,
+                selection,
+                &game_sii_path,
+                profile_cache,
+                decrypt_cache,
+                truck_change_cache,
+                trailer_change_cache,
+                &backup.backup_id,
+                &actual_hash,
+                "save_verification_failed",
+                "game_sii_not_decrypted".to_string(),
+                garage_id,
+                "assign_resources",
+                &profile_id,
+                &save_id,
+            );
+        }
+    };
+    let verified_after =
+        match verify_garage_resource_assignment(&content, &reloaded, garage_id, &verification_spec)
+        {
+            Ok(verified) => verified,
+            Err(error) => {
+                return rollback_after_failure(
+                    profile_state,
+                    selection,
+                    &game_sii_path,
+                    profile_cache,
+                    decrypt_cache,
+                    truck_change_cache,
+                    trailer_change_cache,
+                    &backup.backup_id,
+                    &actual_hash,
+                    "save_verification_failed",
+                    error,
+                    garage_id,
+                    "assign_resources",
+                    &profile_id,
+                    &save_id,
+                );
+            }
+        };
+
+    let mut previous_state = verified_after.previous_state;
+    let mut updated_state = verified_after.updated_state;
+    if enrich_city_data(std::slice::from_mut(&mut previous_state), sqlite_path).is_err()
+        || enrich_city_data(std::slice::from_mut(&mut updated_state), sqlite_path).is_err()
+    {
+        previous_state
+            .warnings
+            .push("garage_city_dataset_unavailable:ets2".to_string());
+        updated_state
+            .warnings
+            .push("garage_city_dataset_unavailable:ets2".to_string());
+    }
+
+    let _ = user_log::user_log_info(
+        "Garages",
+        format!(
+            "Garage random assignment verified: profile={profile_id}, save={save_id}, garage={garage_id}, assigned_driver={:?}, assigned_truck={:?}, backup_id={}",
+            plan.assigned_driver_id, plan.assigned_truck_id, backup.backup_id
+        ),
+    );
+
+    Ok(GarageMutationResult {
+        garage_id: garage_id.to_string(),
+        operation: GarageOperation::AssignResources,
+        previous_state,
+        updated_state,
+        backup_id: backup.backup_id,
+        backup_created: true,
+        verified: true,
+        financial_transaction_applied: false,
+        save_hash: sha256_hex_bytes(reloaded.as_bytes()),
+        assigned_driver_id: plan.assigned_driver_id,
+        assigned_truck_id: plan.assigned_truck_id,
+        assigned_driver_slot_index: plan.assigned_driver_slot_index,
+        assigned_truck_slot_index: plan.assigned_truck_slot_index,
+        warnings: Vec::new(),
+    })
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -753,7 +1182,7 @@ fn mutate_garage(
                 GarageOperation::Purchase => "purchase",
                 GarageOperation::Relinquish => "relinquish",
                 GarageOperation::Upgrade => "upgrade",
-                GarageOperation::Update => unreachable!(),
+                GarageOperation::Update | GarageOperation::AssignResources => unreachable!(),
             }
         ));
     }
@@ -776,6 +1205,10 @@ fn mutate_garage(
         verified: true,
         financial_transaction_applied: false,
         save_hash: sha256_hex_bytes(reloaded.as_bytes()),
+        assigned_driver_id: None,
+        assigned_truck_id: None,
+        assigned_driver_slot_index: None,
+        assigned_truck_slot_index: None,
         warnings,
     })
 }
@@ -815,6 +1248,7 @@ fn mutation_action_label(
         (GarageOperation::Purchase, _, _) => "purchase",
         (GarageOperation::Relinquish, _, _) => "relinquish",
         (GarageOperation::Upgrade, _, _) => "upgrade",
+        (GarageOperation::AssignResources, _, _) => "assign_resources",
         (GarageOperation::Update, Some(GarageSize::Small), false) => "downgrade",
         (GarageOperation::Update, Some(GarageSize::Large), false) => "upgrade",
         (GarageOperation::Update, None, true) => "headquarters",
@@ -976,6 +1410,17 @@ fn mutation_target(
                 return Err("garage_state_invalid".to_string());
             }
             Ok(Some((3, 5)))
+        }
+        GarageOperation::AssignResources => {
+            if garage.ownership != GarageOwnership::Owned {
+                return Err("garage_not_owned".to_string());
+            }
+            if !matches!(garage.size, GarageSize::Small | GarageSize::Large)
+                || !matches!(garage.status, Some(2) | Some(3))
+            {
+                return Err("garage_state_invalid".to_string());
+            }
+            Ok(None)
         }
         GarageOperation::Update => {
             if garage.ownership != GarageOwnership::Owned {

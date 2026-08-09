@@ -83,12 +83,14 @@ pub enum GarageOperation {
     Relinquish,
     Upgrade,
     Update,
+    AssignResources,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum GarageBulkOperation {
     PurchaseAll,
+    RelinquishEmpty,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -100,7 +102,24 @@ pub struct GarageMutationRequest {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
+pub struct GarageResourceAssignmentRequest {
+    pub garage_id: String,
+    pub expected_save_hash: String,
+    #[serde(default)]
+    pub assign_random_driver: bool,
+    #[serde(default)]
+    pub assign_random_truck: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct GarageBuyAllRequest {
+    pub expected_save_hash: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct GarageRelinquishEmptyRequest {
     pub expected_save_hash: String,
 }
 
@@ -126,6 +145,10 @@ pub struct GarageMutationResult {
     pub verified: bool,
     pub financial_transaction_applied: bool,
     pub save_hash: String,
+    pub assigned_driver_id: Option<String>,
+    pub assigned_truck_id: Option<String>,
+    pub assigned_driver_slot_index: Option<usize>,
+    pub assigned_truck_slot_index: Option<usize>,
     pub warnings: Vec<String>,
 }
 
@@ -135,6 +158,20 @@ pub struct GarageBuyAllResult {
     pub operation: GarageBulkOperation,
     pub purchased_garage_ids: Vec<String>,
     pub purchased_count: usize,
+    pub backup_id: Option<String>,
+    pub backup_created: bool,
+    pub verified: bool,
+    pub financial_transaction_applied: bool,
+    pub save_hash: String,
+    pub warnings: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct GarageRelinquishEmptyResult {
+    pub operation: GarageBulkOperation,
+    pub relinquished_garage_ids: Vec<String>,
+    pub relinquished_count: usize,
     pub backup_id: Option<String>,
     pub backup_created: bool,
     pub verified: bool,

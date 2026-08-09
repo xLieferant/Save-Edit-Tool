@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -7,7 +7,8 @@ use uuid::Uuid;
 
 use crate::features::ets2save::sii_codec::replace_file_atomic;
 use crate::features::truck_change::parser::{
-    extract_array_entries, extract_field_value, is_null_ref, parse_unit_blocks, UnitBlock,
+    UnitBlock, extract_array_entries, extract_field_value, is_null_ref, normalize_sii_unit_id,
+    parse_unit_blocks,
 };
 
 use super::parser::city_token_from_garage_id;
@@ -18,6 +19,22 @@ const LINE_FEED: char = 10 as char;
 pub struct GarageWritePlan {
     pub content: String,
     pub changed_unit_ids: Vec<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct GarageResourceAssignmentOptions {
+    pub assign_random_driver: bool,
+    pub assign_random_truck: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GarageResourceAssignmentWritePlan {
+    pub content: String,
+    pub changed_unit_ids: Vec<String>,
+    pub assigned_driver_id: Option<String>,
+    pub assigned_truck_id: Option<String>,
+    pub assigned_driver_slot_index: Option<usize>,
+    pub assigned_truck_slot_index: Option<usize>,
 }
 
 pub fn apply_garage_changes(
@@ -83,14 +100,130 @@ pub fn apply_garage_relinquishment(
     content: &str,
     garage_id: &str,
 ) -> Result<GarageWritePlan, String> {
-    let block = unique_unit_block(content, "garage", garage_id)?;
-    validate_reusable_profit_log(content, &block)?;
-    ensure_garage_empty_for_relinquishment(&block)?;
-    let resized = rewrite_garage_capacity(&block.raw_block, 0, 0)?;
-    let rewritten_block = replace_scalar_field(&resized, "productivity", "0")?;
+    let plan = apply_garage_relinquishment_batch(content, &[garage_id.to_string()])?;
+    Ok(plan)
+}
+
+pub fn apply_garage_relinquishment_batch(
+    content: &str,
+    garage_ids: &[String],
+) -> Result<GarageWritePlan, String> {
+    let unit_blocks = parse_unit_blocks(content);
+    let mut replacements = Vec::with_capacity(garage_ids.len());
+    let mut seen = HashSet::with_capacity(garage_ids.len());
+
+    for garage_id in garage_ids {
+        if !seen.insert(garage_id.as_str()) {
+            return Err(format!("garage_reference_ambiguous:{garage_id}"));
+        }
+        let block = unique_unit_block_from_blocks(&unit_blocks, "garage", garage_id)?;
+        validate_reusable_profit_log_in_blocks(&unit_blocks, &block)?;
+        ensure_garage_empty_for_relinquishment(&block)?;
+        let resized = rewrite_garage_capacity(&block.raw_block, 0, 0)?;
+        let rewritten_block = replace_scalar_field(&resized, "productivity", "0")?;
+        replacements.push((block, rewritten_block));
+    }
+
+    replacements.sort_by(|(left, _), (right, _)| right.start_line.cmp(&left.start_line));
+    let mut updated = content.to_string();
+    for (block, rewritten_block) in replacements {
+        updated = replace_unit_block(&updated, &block, &rewritten_block)?;
+    }
+    let mut changed_unit_ids = garage_ids.to_vec();
+    changed_unit_ids.sort();
     Ok(GarageWritePlan {
-        content: replace_unit_block(content, &block, &rewritten_block)?,
-        changed_unit_ids: vec![garage_id.to_string()],
+        content: updated,
+        changed_unit_ids,
+    })
+}
+
+pub fn apply_random_resource_assignment(
+    content: &str,
+    garage_id: &str,
+    options: GarageResourceAssignmentOptions,
+) -> Result<GarageResourceAssignmentWritePlan, String> {
+    if !options.assign_random_driver && !options.assign_random_truck {
+        return Err("garage_assignment_empty".to_string());
+    }
+
+    let unit_blocks = parse_unit_blocks(content);
+    let garage_block = unique_unit_block_from_blocks(&unit_blocks, "garage", garage_id)?;
+    let vehicle_count = parse_array_count(&garage_block, "vehicles")?;
+    let driver_count = parse_array_count(&garage_block, "drivers")?;
+    let mut vehicles = array_map(&garage_block.raw_block, "vehicles", vehicle_count)?;
+    let mut drivers = array_map(&garage_block.raw_block, "drivers", driver_count)?;
+    let mut garage_raw = garage_block.raw_block.clone();
+    let mut replacements = Vec::new();
+    let mut changed_unit_ids = vec![garage_id.to_string()];
+    let mut assigned_truck_id = None;
+    let mut assigned_truck_slot_index = None;
+    let mut assigned_driver_id = None;
+    let mut assigned_driver_slot_index = None;
+
+    if options.assign_random_truck {
+        let truck_slots = (0..vehicle_count)
+            .filter(|index| vehicles.get(index).is_none_or(|value| is_null_ref(value)))
+            .collect::<Vec<_>>();
+        if truck_slots.is_empty() {
+            return Err("garage_assignment_no_free_vehicle_slot".to_string());
+        }
+        let available_trucks = available_owned_truck_ids(&unit_blocks)?;
+        if available_trucks.is_empty() {
+            return Err("garage_assignment_no_available_truck".to_string());
+        }
+        let slot_index = choose_random_usize(&truck_slots);
+        let truck_id = choose_random_string(&available_trucks);
+        garage_raw = replace_array_value(&garage_raw, "vehicles", slot_index, &truck_id)?;
+        vehicles.insert(slot_index, truck_id.clone());
+        assigned_truck_id = Some(truck_id);
+        assigned_truck_slot_index = Some(slot_index);
+    }
+
+    if options.assign_random_driver {
+        let driver_slots = (0..driver_count)
+            .filter(|index| drivers.get(index).is_none_or(|value| is_null_ref(value)))
+            .filter(|index| vehicles.get(index).is_some_and(|value| !is_null_ref(value)))
+            .collect::<Vec<_>>();
+        if driver_slots.is_empty() {
+            return Err("garage_assignment_no_free_driver_slot".to_string());
+        }
+        let available_drivers = available_ai_driver_ids(&unit_blocks)?;
+        if available_drivers.is_empty() {
+            return Err("garage_assignment_no_available_driver".to_string());
+        }
+        let slot_index = choose_random_usize(&driver_slots);
+        let driver_id = choose_random_string(&available_drivers);
+        let truck_id = vehicles
+            .get(&slot_index)
+            .filter(|value| !is_null_ref(value))
+            .cloned()
+            .ok_or_else(|| "garage_assignment_no_free_driver_slot".to_string())?;
+        let driver_block = unique_unit_block_from_blocks(&unit_blocks, "driver_ai", &driver_id)?;
+        garage_raw = replace_array_value(&garage_raw, "drivers", slot_index, &driver_id)?;
+        let rewritten_driver_block =
+            replace_scalar_field(&driver_block.raw_block, "assigned_truck", &truck_id)?;
+        replacements.push((driver_block, rewritten_driver_block));
+        changed_unit_ids.push(driver_id.clone());
+        assigned_driver_id = Some(driver_id);
+        assigned_driver_slot_index = Some(slot_index);
+    }
+
+    replacements.push((garage_block, garage_raw));
+    replacements.sort_by(|(left, _), (right, _)| right.start_line.cmp(&left.start_line));
+    let mut updated = content.to_string();
+    for (block, rewritten_block) in replacements {
+        updated = replace_unit_block(&updated, &block, &rewritten_block)?;
+    }
+    changed_unit_ids.sort();
+    changed_unit_ids.dedup();
+
+    Ok(GarageResourceAssignmentWritePlan {
+        content: updated,
+        changed_unit_ids,
+        assigned_driver_id,
+        assigned_truck_id,
+        assigned_driver_slot_index,
+        assigned_truck_slot_index,
     })
 }
 
@@ -129,6 +262,179 @@ pub fn write_verified_content(
         let _ = fs::remove_file(&temporary_path);
     }
     write_result
+}
+
+fn parse_array_count(block: &UnitBlock, field: &str) -> Result<usize, String> {
+    extract_field_value(&block.raw_block, field)
+        .ok_or_else(|| format!("garage_block_invalid:{}:{field}_missing", block.id))?
+        .parse::<usize>()
+        .map_err(|_| format!("garage_block_invalid:{}:{field}_invalid", block.id))
+}
+
+fn array_map(
+    raw_block: &str,
+    field: &str,
+    expected_count: usize,
+) -> Result<BTreeMap<usize, String>, String> {
+    let entries = extract_array_entries(raw_block, field);
+    let map = entries.iter().cloned().collect::<BTreeMap<_, _>>();
+    if entries.len() != expected_count
+        || map.len() != expected_count
+        || (0..expected_count).any(|index| !map.contains_key(&index))
+    {
+        return Err(format!("garage_block_invalid:{field}_indices_invalid"));
+    }
+    Ok(map)
+}
+
+fn available_owned_truck_ids(unit_blocks: &[UnitBlock]) -> Result<Vec<String>, String> {
+    let Some(player_block) = player_block_from_blocks(unit_blocks)? else {
+        return Err("garage_block_invalid:player_missing".to_string());
+    };
+    let used_trucks = used_truck_ids(unit_blocks);
+    let mut seen = HashSet::new();
+    let mut candidates = Vec::new();
+    for (_, truck_id) in extract_array_entries(&player_block.raw_block, "trucks") {
+        if is_null_ref(&truck_id) {
+            continue;
+        }
+        let normalized = normalize_sii_unit_id(&truck_id);
+        if normalized.is_empty()
+            || used_trucks.contains(&normalized)
+            || !seen.insert(normalized.clone())
+        {
+            continue;
+        }
+        let Some(block) = optional_unique_unit_block(unit_blocks, "vehicle", &truck_id)? else {
+            continue;
+        };
+        candidates.push(block.id);
+    }
+    candidates.sort();
+    Ok(candidates)
+}
+
+fn available_ai_driver_ids(unit_blocks: &[UnitBlock]) -> Result<Vec<String>, String> {
+    let used_drivers = used_driver_ids(unit_blocks);
+    let mut candidates = Vec::new();
+    for block in unit_blocks
+        .iter()
+        .filter(|block| block.unit_type == "driver_ai")
+    {
+        let normalized = normalize_sii_unit_id(&block.id);
+        if normalized.is_empty() || used_drivers.contains(&normalized) {
+            continue;
+        }
+        if extract_field_value(&block.raw_block, "assigned_truck")
+            .is_some_and(|value| !is_null_ref(&value))
+        {
+            continue;
+        }
+        candidates.push(block.id.clone());
+    }
+    candidates.sort();
+    candidates.dedup();
+    Ok(candidates)
+}
+
+fn used_truck_ids(unit_blocks: &[UnitBlock]) -> HashSet<String> {
+    let mut used = HashSet::new();
+    for block in unit_blocks
+        .iter()
+        .filter(|block| block.unit_type == "garage")
+    {
+        for (_, truck_id) in extract_array_entries(&block.raw_block, "vehicles") {
+            if !is_null_ref(&truck_id) {
+                used.insert(normalize_sii_unit_id(&truck_id));
+            }
+        }
+    }
+    for block in unit_blocks
+        .iter()
+        .filter(|block| block.unit_type == "driver_ai")
+    {
+        if let Some(truck_id) = extract_field_value(&block.raw_block, "assigned_truck") {
+            if !is_null_ref(&truck_id) {
+                used.insert(normalize_sii_unit_id(&truck_id));
+            }
+        }
+    }
+    if let Ok(Some(player_block)) = player_block_from_blocks(unit_blocks) {
+        for field in ["assigned_truck", "my_truck"] {
+            if let Some(truck_id) = extract_field_value(&player_block.raw_block, field) {
+                if !is_null_ref(&truck_id) {
+                    used.insert(normalize_sii_unit_id(&truck_id));
+                }
+            }
+        }
+    }
+    used.retain(|value| !value.is_empty());
+    used
+}
+
+fn used_driver_ids(unit_blocks: &[UnitBlock]) -> HashSet<String> {
+    let mut used = HashSet::new();
+    for block in unit_blocks
+        .iter()
+        .filter(|block| block.unit_type == "garage")
+    {
+        for (_, driver_id) in extract_array_entries(&block.raw_block, "drivers") {
+            if !is_null_ref(&driver_id) {
+                used.insert(normalize_sii_unit_id(&driver_id));
+            }
+        }
+    }
+    for block in unit_blocks
+        .iter()
+        .filter(|block| block.unit_type == "driver_ai")
+    {
+        if extract_field_value(&block.raw_block, "assigned_truck")
+            .is_some_and(|truck_id| !is_null_ref(&truck_id))
+        {
+            used.insert(normalize_sii_unit_id(&block.id));
+        }
+    }
+    used.retain(|value| !value.is_empty());
+    used
+}
+
+fn player_block_from_blocks(unit_blocks: &[UnitBlock]) -> Result<Option<UnitBlock>, String> {
+    let economy_blocks = unit_blocks
+        .iter()
+        .filter(|block| block.unit_type == "economy")
+        .collect::<Vec<_>>();
+    let economy_block = match economy_blocks.as_slice() {
+        [] => return Ok(None),
+        [block] => *block,
+        _ => return Err("garage_reference_ambiguous:economy".to_string()),
+    };
+    let player_id = extract_field_value(&economy_block.raw_block, "player")
+        .ok_or_else(|| "garage_block_invalid:player_reference_missing".to_string())?;
+    optional_unique_unit_block(unit_blocks, "player", &player_id)
+}
+
+fn optional_unique_unit_block(
+    unit_blocks: &[UnitBlock],
+    unit_type: &str,
+    unit_id: &str,
+) -> Result<Option<UnitBlock>, String> {
+    let matching = unit_blocks
+        .iter()
+        .filter(|block| block.unit_type == unit_type && block.id.eq_ignore_ascii_case(unit_id))
+        .collect::<Vec<_>>();
+    match matching.as_slice() {
+        [] => Ok(None),
+        [block] => Ok(Some((**block).clone())),
+        _ => Err(format!("garage_reference_ambiguous:{unit_id}")),
+    }
+}
+
+fn choose_random_usize(values: &[usize]) -> usize {
+    values[(Uuid::new_v4().as_u128() as usize) % values.len()]
+}
+
+fn choose_random_string(values: &[String]) -> String {
+    values[(Uuid::new_v4().as_u128() as usize) % values.len()].clone()
 }
 
 fn resize_garage_capacity(
@@ -324,6 +630,30 @@ fn array_index_for_line(line: &str, field: &str) -> Option<usize> {
     index.parse::<usize>().ok()
 }
 
+fn replace_array_value(
+    raw_block: &str,
+    field: &str,
+    array_index: usize,
+    value: &str,
+) -> Result<String, String> {
+    let mut lines = raw_block.lines().map(str::to_string).collect::<Vec<_>>();
+    let prefix = format!("{field}[{array_index}]:");
+    let matching = lines
+        .iter()
+        .enumerate()
+        .filter(|(_, line)| line.trim_start().starts_with(&prefix))
+        .map(|(index, _)| index)
+        .collect::<Vec<_>>();
+    let line_index = match matching.as_slice() {
+        [index] => *index,
+        [] => return Err(format!("garage_block_invalid:{field}_slot_missing")),
+        _ => return Err(format!("garage_block_invalid:{field}_slot_ambiguous")),
+    };
+    let indent = line_indent(&lines[line_index]);
+    lines[line_index] = format!("{indent}{field}[{array_index}]: {value}");
+    Ok(join_lines(&lines))
+}
+
 fn replace_scalar_field(raw_block: &str, field: &str, value: &str) -> Result<String, String> {
     let mut lines = raw_block.lines().map(str::to_string).collect::<Vec<_>>();
     let prefix = format!("{field}:");
@@ -386,13 +716,17 @@ mod tests {
     use std::fs;
 
     use super::{
-        apply_garage_changes, apply_garage_purchase_batch, apply_garage_relinquishment,
+        GarageResourceAssignmentOptions, GarageResourceAssignmentWritePlan, apply_garage_changes,
+        apply_garage_purchase_batch, apply_garage_relinquishment,
+        apply_garage_relinquishment_batch, apply_random_resource_assignment,
         write_verified_content,
     };
     use crate::features::garages::models::{GarageOperation, GarageOwnership, GarageSize};
     use crate::features::garages::parser::parse_garages_from_sii;
     use crate::features::garages::validator::{
-        verify_garage_mutation, verify_garage_purchase_batch, GarageVerificationSpec,
+        GarageAssignmentVerificationSpec, GarageVerificationSpec, verify_garage_mutation,
+        verify_garage_purchase_batch, verify_garage_relinquishment_batch,
+        verify_garage_resource_assignment,
     };
     use crate::features::truck_change::parser::parse_unit_blocks;
     use crate::shared::ets2data::validate::sha256_hex_bytes;
@@ -400,6 +734,9 @@ mod tests {
 
     const SAMPLE: &str = include_str!("../../../test-fixtures/garages/garage_samples.sii");
     const REAL_SAMPLE: &str = include_str!("../../../test-fixtures/decrypt/plain_game.sii");
+    const PARIS_EMPTY_SMALL: &str = "garage : garage.paris {\n vehicles: 3\n vehicles[0]: null\n vehicles[1]: null\n vehicles[2]: null\n drivers: 3\n drivers[0]: null\n drivers[1]: null\n drivers[2]: null\n trailers: 0\n status: 2\n profit_log: profit.paris\n productivity: 0\n}";
+    const PARIS_WITH_TRUCK: &str = "garage : garage.paris {\n vehicles: 3\n vehicles[0]: truck.paris\n vehicles[1]: null\n vehicles[2]: null\n drivers: 3\n drivers[0]: null\n drivers[1]: null\n drivers[2]: null\n trailers: 0\n status: 2\n profit_log: profit.paris\n productivity: 0\n}";
+    const PARIS_FULL: &str = "garage : garage.paris {\n vehicles: 3\n vehicles[0]: truck.paris\n vehicles[1]: truck.free_a\n vehicles[2]: truck.free_b\n drivers: 3\n drivers[0]: driver.free_a\n drivers[1]: driver.free_b\n drivers[2]: driver.free_c\n trailers: 0\n status: 2\n profit_log: profit.paris\n productivity: 0\n}";
 
     fn sample_with_two_unowned_garages() -> String {
         SAMPLE.replace(
@@ -421,17 +758,20 @@ mod tests {
         assert_eq!(purchased.vehicle_slot_count, 5);
         assert_eq!(purchased.driver_slot_count, 5);
         assert_eq!(purchased.trailer_slot_count, 0);
-        assert!(purchased
-            .slots
-            .iter()
-            .all(|slot| { slot.truck_id.is_none() && slot.driver_id.is_none() }));
+        assert!(
+            purchased
+                .slots
+                .iter()
+                .all(|slot| { slot.truck_id.is_none() && slot.driver_id.is_none() })
+        );
         assert_eq!(
             purchased.profit_log_id.as_deref(),
             Some("profit.los_angeles")
         );
-        assert!(plan
-            .content
-            .contains("future_garage_field: preserved_by_reader"));
+        assert!(
+            plan.content
+                .contains("future_garage_field: preserved_by_reader")
+        );
     }
 
     #[test]
@@ -450,10 +790,12 @@ mod tests {
             assert_eq!(garage.status, Some(3));
             assert_eq!(garage.vehicle_slot_count, 5);
             assert_eq!(garage.driver_slot_count, 5);
-            assert!(garage
-                .slots
-                .iter()
-                .all(|slot| slot.truck_id.is_none() && slot.driver_id.is_none()));
+            assert!(
+                garage
+                    .slots
+                    .iter()
+                    .all(|slot| slot.truck_id.is_none() && slot.driver_id.is_none())
+            );
         }
         let headquarters = parsed
             .garages
@@ -567,9 +909,10 @@ mod tests {
         assert_eq!(garage.slots[1].truck_id.as_deref(), Some("truck.two"));
         assert_eq!(garage.slots[0].driver_id.as_deref(), Some("driver.one"));
         assert_eq!(garage.trailer_ids, vec!["trailer.one"]);
-        assert!(plan
-            .content
-            .contains("future_garage_field: preserved_by_reader"));
+        assert!(
+            plan.content
+                .contains("future_garage_field: preserved_by_reader")
+        );
     }
 
     #[test]
@@ -650,11 +993,13 @@ mod tests {
         assert_eq!(verified.updated_state.size, GarageSize::Large);
         assert_eq!(verified.updated_state.vehicle_slot_count, 5);
         assert_eq!(verified.updated_state.driver_slot_count, 5);
-        assert!(verified
-            .updated_state
-            .slots
-            .iter()
-            .all(|slot| { slot.truck_id.is_none() && slot.driver_id.is_none() }));
+        assert!(
+            verified
+                .updated_state
+                .slots
+                .iter()
+                .all(|slot| { slot.truck_id.is_none() && slot.driver_id.is_none() })
+        );
         fs::remove_file(path).unwrap();
     }
 
@@ -906,6 +1251,291 @@ mod tests {
         let error =
             apply_garage_changes(REAL_SAMPLE, "garage.lille", Some((2, 3)), false).unwrap_err();
         assert!(error.starts_with("garage_downgrade_capacity_exceeded:vehicles:slot="));
+    }
+
+    fn assignment_sample() -> String {
+        let mut content = SAMPLE
+            .replace(
+                "player : _player {\n hq_city: berlin\n}",
+                "player : _player {\n hq_city: berlin\n assigned_truck: null\n my_truck: null\n trucks: 6\n trucks[0]: truck.one\n trucks[1]: truck.two\n trucks[2]: truck.paris\n trucks[3]: truck.free_a\n trucks[4]: truck.free_b\n trucks[5]: truck.free_c\n}",
+            )
+            .replace("driver_ai : driver.one {\n}", "driver_ai : driver.one {\n assigned_truck: truck.one\n}")
+            .replace(PARIS_EMPTY_SMALL, PARIS_WITH_TRUCK);
+        let insert_at = content.rfind("\n}").unwrap();
+        content.insert_str(
+            insert_at,
+            "\n\nvehicle : truck.paris {\n}\n\nvehicle : truck.free_a {\n}\n\nvehicle : truck.free_b {\n}\n\nvehicle : truck.free_c {\n}\n\ndriver_ai : driver.free_a {\n assigned_truck: null\n}\n\ndriver_ai : driver.free_b {\n assigned_truck: null\n}\n\ndriver_ai : driver.free_c {\n assigned_truck: null\n}",
+        );
+        content
+    }
+
+    fn assignment_sample_without_paris_truck() -> String {
+        assignment_sample().replace(PARIS_WITH_TRUCK, PARIS_EMPTY_SMALL)
+    }
+
+    fn assignment_sample_without_available_trucks() -> String {
+        assignment_sample().replace(
+            " trucks: 6\n trucks[0]: truck.one\n trucks[1]: truck.two\n trucks[2]: truck.paris\n trucks[3]: truck.free_a\n trucks[4]: truck.free_b\n trucks[5]: truck.free_c",
+            " trucks: 3\n trucks[0]: truck.one\n trucks[1]: truck.two\n trucks[2]: truck.paris",
+        )
+    }
+
+    fn assignment_sample_without_available_drivers() -> String {
+        assignment_sample()
+            .replace(
+                "driver_ai : driver.free_a {\n assigned_truck: null\n}",
+                "driver_ai : driver.free_a {\n assigned_truck: truck.free_a\n}",
+            )
+            .replace(
+                "driver_ai : driver.free_b {\n assigned_truck: null\n}",
+                "driver_ai : driver.free_b {\n assigned_truck: truck.free_b\n}",
+            )
+            .replace(
+                "driver_ai : driver.free_c {\n assigned_truck: null\n}",
+                "driver_ai : driver.free_c {\n assigned_truck: truck.free_c\n}",
+            )
+    }
+
+    fn assignment_sample_with_full_paris() -> String {
+        assignment_sample().replace(PARIS_WITH_TRUCK, PARIS_FULL)
+    }
+
+    fn assignment_options(
+        assign_random_driver: bool,
+        assign_random_truck: bool,
+    ) -> GarageResourceAssignmentOptions {
+        GarageResourceAssignmentOptions {
+            assign_random_driver,
+            assign_random_truck,
+        }
+    }
+
+    fn assignment_spec(
+        plan: &GarageResourceAssignmentWritePlan,
+    ) -> GarageAssignmentVerificationSpec {
+        GarageAssignmentVerificationSpec {
+            assigned_driver_id: plan.assigned_driver_id.clone(),
+            assigned_truck_id: plan.assigned_truck_id.clone(),
+            assigned_driver_slot_index: plan.assigned_driver_slot_index,
+            assigned_truck_slot_index: plan.assigned_truck_slot_index,
+        }
+    }
+
+    fn verify_assignment_plan(
+        before: &str,
+        plan: &GarageResourceAssignmentWritePlan,
+        garage_id: &str,
+    ) {
+        verify_garage_resource_assignment(before, &plan.content, garage_id, &assignment_spec(plan))
+            .unwrap();
+    }
+
+    #[test]
+    fn batch_relinquishment_resets_empty_owned_garages_and_keeps_hq() {
+        let targets = vec!["garage.paris".to_string()];
+        let plan = apply_garage_relinquishment_batch(SAMPLE, &targets).unwrap();
+        let verified = verify_garage_relinquishment_batch(SAMPLE, &plan.content, &targets).unwrap();
+        let parsed = parse_garages_from_sii(&plan.content).unwrap();
+        let relinquished = parsed
+            .garages
+            .iter()
+            .find(|garage| garage.garage_id == "garage.paris")
+            .unwrap();
+        let headquarters = parsed
+            .garages
+            .iter()
+            .find(|garage| garage.garage_id == "garage.berlin")
+            .unwrap();
+
+        assert_eq!(verified.updated_states.len(), 1);
+        assert_eq!(relinquished.ownership, GarageOwnership::NotOwned);
+        assert_eq!(relinquished.status, Some(0));
+        assert_eq!(relinquished.vehicle_slot_count, 0);
+        assert_eq!(relinquished.driver_slot_count, 0);
+        assert!(headquarters.is_headquarters);
+        assert_eq!(headquarters.slots[0].truck_id.as_deref(), Some("truck.one"));
+    }
+
+    #[test]
+    fn random_assignment_driver_only_uses_existing_truck_slot() {
+        let before = assignment_sample();
+        let plan = apply_random_resource_assignment(
+            &before,
+            "garage.paris",
+            assignment_options(true, false),
+        )
+        .unwrap();
+        verify_assignment_plan(&before, &plan, "garage.paris");
+        let parsed = parse_garages_from_sii(&plan.content).unwrap();
+        let paris = parsed
+            .garages
+            .iter()
+            .find(|garage| garage.garage_id == "garage.paris")
+            .unwrap();
+
+        assert!(plan.assigned_driver_id.is_some());
+        assert_eq!(plan.assigned_truck_id, None);
+        assert_eq!(plan.assigned_driver_slot_index, Some(0));
+        assert_eq!(paris.assigned_driver_count, 1);
+        assert_eq!(paris.assigned_truck_count, 1);
+        assert_eq!(paris.slots[0].truck_id.as_deref(), Some("truck.paris"));
+        assert_eq!(paris.slots[0].driver_id, plan.assigned_driver_id);
+    }
+
+    #[test]
+    fn random_assignment_truck_only_uses_free_vehicle_slot() {
+        let before = assignment_sample();
+        let plan = apply_random_resource_assignment(
+            &before,
+            "garage.paris",
+            assignment_options(false, true),
+        )
+        .unwrap();
+        verify_assignment_plan(&before, &plan, "garage.paris");
+        let parsed = parse_garages_from_sii(&plan.content).unwrap();
+        let paris = parsed
+            .garages
+            .iter()
+            .find(|garage| garage.garage_id == "garage.paris")
+            .unwrap();
+
+        assert_eq!(plan.assigned_driver_id, None);
+        assert!(plan.assigned_truck_id.is_some());
+        assert!(matches!(plan.assigned_truck_slot_index, Some(1 | 2)));
+        assert_eq!(paris.assigned_driver_count, 0);
+        assert_eq!(paris.assigned_truck_count, 2);
+    }
+
+    #[test]
+    fn random_assignment_driver_and_truck_can_use_new_truck_slot() {
+        let before = assignment_sample_without_paris_truck();
+        let plan = apply_random_resource_assignment(
+            &before,
+            "garage.paris",
+            assignment_options(true, true),
+        )
+        .unwrap();
+        verify_assignment_plan(&before, &plan, "garage.paris");
+
+        assert!(plan.assigned_driver_id.is_some());
+        assert!(plan.assigned_truck_id.is_some());
+        assert_eq!(
+            plan.assigned_driver_slot_index,
+            plan.assigned_truck_slot_index
+        );
+    }
+
+    #[test]
+    fn random_assignment_rejects_disabled_options_without_write() {
+        let error = apply_random_resource_assignment(
+            &assignment_sample(),
+            "garage.paris",
+            assignment_options(false, false),
+        )
+        .unwrap_err();
+        assert_eq!(error, "garage_assignment_empty");
+    }
+
+    #[test]
+    fn random_assignment_rejects_garage_without_free_slots() {
+        let before = assignment_sample_with_full_paris();
+        let truck_error = apply_random_resource_assignment(
+            &before,
+            "garage.paris",
+            assignment_options(false, true),
+        )
+        .unwrap_err();
+        let driver_error = apply_random_resource_assignment(
+            &before,
+            "garage.paris",
+            assignment_options(true, false),
+        )
+        .unwrap_err();
+
+        assert_eq!(truck_error, "garage_assignment_no_free_vehicle_slot");
+        assert_eq!(driver_error, "garage_assignment_no_free_driver_slot");
+    }
+
+    #[test]
+    fn random_assignment_rejects_missing_available_driver_or_truck() {
+        let truck_error = apply_random_resource_assignment(
+            &assignment_sample_without_available_trucks(),
+            "garage.paris",
+            assignment_options(false, true),
+        )
+        .unwrap_err();
+        let driver_error = apply_random_resource_assignment(
+            &assignment_sample_without_available_drivers(),
+            "garage.paris",
+            assignment_options(true, false),
+        )
+        .unwrap_err();
+
+        assert_eq!(truck_error, "garage_assignment_no_available_truck");
+        assert_eq!(driver_error, "garage_assignment_no_available_driver");
+    }
+
+    #[test]
+    fn random_assignment_supports_multiple_garages_sequentially() {
+        let before = assignment_sample();
+        let first = apply_random_resource_assignment(
+            &before,
+            "garage.paris",
+            assignment_options(false, true),
+        )
+        .unwrap();
+        verify_assignment_plan(&before, &first, "garage.paris");
+        let second = apply_random_resource_assignment(
+            &first.content,
+            "garage.berlin",
+            assignment_options(true, false),
+        )
+        .unwrap();
+        verify_assignment_plan(&first.content, &second, "garage.berlin");
+        let parsed = parse_garages_from_sii(&second.content).unwrap();
+        let paris = parsed
+            .garages
+            .iter()
+            .find(|garage| garage.garage_id == "garage.paris")
+            .unwrap();
+        let berlin = parsed
+            .garages
+            .iter()
+            .find(|garage| garage.garage_id == "garage.berlin")
+            .unwrap();
+
+        assert_eq!(paris.assigned_truck_count, 2);
+        assert_eq!(berlin.assigned_driver_count, 2);
+        assert_ne!(first.content, second.content);
+    }
+
+    #[test]
+    fn atomic_write_roundtrip_verifies_random_assignment_after_reload() {
+        let before = assignment_sample_without_paris_truck();
+        let path = std::env::temp_dir().join(format!(
+            "ets2-garage-assignment-roundtrip-{}.sii",
+            Uuid::new_v4()
+        ));
+        fs::write(&path, &before).unwrap();
+        let plan = apply_random_resource_assignment(
+            &before,
+            "garage.paris",
+            assignment_options(true, true),
+        )
+        .unwrap();
+        let spec = assignment_spec(&plan);
+
+        write_verified_content(&path, &plan.content, |candidate| {
+            verify_garage_resource_assignment(&before, candidate, "garage.paris", &spec).map(|_| ())
+        })
+        .unwrap();
+
+        let written = fs::read_to_string(&path).unwrap();
+        let verified =
+            verify_garage_resource_assignment(&before, &written, "garage.paris", &spec).unwrap();
+        assert_eq!(verified.updated_state.assigned_truck_count, 1);
+        assert_eq!(verified.updated_state.assigned_driver_count, 1);
+        fs::remove_file(path).unwrap();
     }
 
     fn save_unit_counts(content: &str) -> (usize, usize, usize, usize) {

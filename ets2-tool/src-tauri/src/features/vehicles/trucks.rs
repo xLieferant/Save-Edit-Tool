@@ -89,8 +89,8 @@ pub async fn get_player_truck(
         let player_id = get_player_id(&content)
             .ok_or("Player ID nicht im economy block gefunden".to_string())?;
         let (player_truck_id_opt, _) = get_vehicle_ids(&content, &player_id);
-        let player_truck_id =
-            player_truck_id_opt.ok_or("assigned_vehicles/player_vehicles.vehicle nicht gefunden".to_string())?;
+        let player_truck_id = player_truck_id_opt
+            .ok_or("assigned_vehicles/player_vehicles.vehicle nicht gefunden".to_string())?;
         let id_clean = player_truck_id.trim().to_lowercase();
         let base_truck = trucks
             .iter()

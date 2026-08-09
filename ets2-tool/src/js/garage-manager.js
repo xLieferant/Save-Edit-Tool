@@ -6,7 +6,9 @@ const COPY_KEYS = {
   edit: "garage_manager.actions.edit",
   purchase: "garage_manager.actions.purchase",
   purchaseAll: "garage_manager.actions.purchase_all",
+  relinquishEmpty: "garage_manager.actions.relinquish_empty",
   relinquish: "garage_manager.actions.relinquish",
+  assignResources: "garage_manager.actions.assign_resources",
   upgrade: "garage_manager.actions.upgrade",
   downgrade: "garage_manager.actions.downgrade",
   setHeadquarters: "garage_manager.actions.set_headquarters",
@@ -19,7 +21,9 @@ const COPY_KEYS = {
   refreshing: "garage_manager.actions.refreshing",
   purchasing: "garage_manager.actions.purchasing",
   purchasingAll: "garage_manager.actions.purchasing_all",
+  relinquishingEmpty: "garage_manager.actions.relinquishing_empty",
   relinquishing: "garage_manager.actions.relinquishing",
+  assigningResources: "garage_manager.actions.assigning_resources",
   upgrading: "garage_manager.actions.upgrading",
   downgrading: "garage_manager.actions.downgrading",
   changingHeadquarters: "garage_manager.actions.changing_headquarters",
@@ -148,8 +152,12 @@ const COPY_KEYS = {
   saveWarning: "garage_manager.confirm.save_warning",
   purchaseChange: "garage_manager.confirm.purchase_change",
   purchaseAllChange: "garage_manager.confirm.purchase_all_change",
+  relinquishEmptyChange: "garage_manager.confirm.relinquish_empty_change",
+  relinquishEmptyEffect: "garage_manager.confirm.relinquish_empty_effect",
   relinquishChange: "garage_manager.confirm.relinquish_change",
   relinquishEffect: "garage_manager.confirm.relinquish_effect",
+  assignResourcesChange: "garage_manager.confirm.assign_resources_change",
+  assignResourcesEffect: "garage_manager.confirm.assign_resources_effect",
   upgradeChange: "garage_manager.confirm.upgrade_change",
   updateLargeChange: "garage_manager.confirm.update_large_change",
   updateSmallChange: "garage_manager.confirm.update_small_change",
@@ -165,13 +173,17 @@ const COPY_KEYS = {
   loadFailureTitle: "garage_manager.errors.load_failure_title",
   purchaseFailureTitle: "garage_manager.errors.purchase_failure_title",
   purchaseAllFailureTitle: "garage_manager.errors.purchase_all_failure_title",
+  relinquishEmptyFailureTitle: "garage_manager.errors.relinquish_empty_failure_title",
   relinquishFailureTitle: "garage_manager.errors.relinquish_failure_title",
+  assignResourcesFailureTitle: "garage_manager.errors.assign_resources_failure_title",
   upgradeFailureTitle: "garage_manager.errors.upgrade_failure_title",
   downgradeFailureTitle: "garage_manager.errors.downgrade_failure_title",
   headquartersFailureTitle: "garage_manager.errors.headquarters_failure_title",
   purchaseDialogTitle: "garage_manager.dialogs.purchase_title",
   purchaseAllDialogTitle: "garage_manager.dialogs.purchase_all_title",
+  relinquishEmptyDialogTitle: "garage_manager.dialogs.relinquish_empty_title",
   relinquishDialogTitle: "garage_manager.dialogs.relinquish_title",
+  assignResourcesDialogTitle: "garage_manager.dialogs.assign_resources_title",
   upgradeDialogTitle: "garage_manager.dialogs.upgrade_title",
   downgradeDialogTitle: "garage_manager.dialogs.downgrade_title",
   headquartersDialogTitle: "garage_manager.dialogs.headquarters_title",
@@ -187,6 +199,8 @@ const COPY_KEYS = {
   assignDrivers: "garage_manager.dialogs.assign_drivers",
   optionDisabledDefault: "garage_manager.dialogs.option_disabled_default",
   optionUnavailable: "garage_manager.dialogs.option_unavailable",
+  randomDriver: "garage_manager.dialogs.random_driver",
+  randomTruck: "garage_manager.dialogs.random_truck",
   backupCreated: "garage_manager.results.backup_created",
   backupNotCreated: "garage_manager.results.backup_not_created",
   verified: "garage_manager.results.verified",
@@ -195,7 +209,10 @@ const COPY_KEYS = {
   purchaseSuccess: "garage_manager.success.purchase",
   purchaseAllSuccess: "garage_manager.success.purchase_all",
   purchaseAllNone: "garage_manager.success.purchase_all_none",
+  relinquishEmptySuccess: "garage_manager.success.relinquish_empty",
+  relinquishEmptyNone: "garage_manager.success.relinquish_empty_none",
   relinquishSuccess: "garage_manager.success.relinquish",
+  assignResourcesSuccess: "garage_manager.success.assign_resources",
   upgradeSuccess: "garage_manager.success.upgrade",
   downgradeSuccess: "garage_manager.success.downgrade",
   headquartersSuccess: "garage_manager.success.headquarters",
@@ -239,6 +256,11 @@ const ERROR_KEYS = [
   ["garage_size_change_not_verified", "garage_manager.errors.garage_size_change_not_verified"],
   ["garage_mutation_in_progress", "garage_manager.errors.garage_mutation_in_progress"],
   ["garage_mutation_lock_unavailable", "garage_manager.errors.garage_mutation_lock_unavailable"],
+  ["garage_assignment_empty", "garage_manager.errors.garage_assignment_empty"],
+  ["garage_assignment_no_free_vehicle_slot", "garage_manager.errors.garage_assignment_no_free_vehicle_slot"],
+  ["garage_assignment_no_available_truck", "garage_manager.errors.garage_assignment_no_available_truck"],
+  ["garage_assignment_no_free_driver_slot", "garage_manager.errors.garage_assignment_no_free_driver_slot"],
+  ["garage_assignment_no_available_driver", "garage_manager.errors.garage_assignment_no_available_driver"],
   ["garage_update_empty", "garage_manager.errors.garage_update_empty"],
   ["save_changed_since_load", "garage_manager.errors.save_changed_since_load"],
   ["backup_failed", "garage_manager.errors.backup_failed"],
@@ -514,6 +536,7 @@ export async function mountGarageManager(container) {
     loading: false,
     mutationPending: false,
     bulkMutationPending: false,
+    bulkMutationOperation: null,
     error: null,
     refreshError: null,
     lastMutationResult: null,
@@ -536,7 +559,9 @@ export async function mountGarageManager(container) {
     + "</p><dl class='garage-context'>"
     + detailRow(copy.profileLabel, profileName)
     + detailRow(copy.saveLabel, saveName)
-    + "</dl></div><div class='garage-manager-actions'><button type='button' data-garage-buy-all>"
+    + "</dl></div><div class='garage-manager-actions'><button type='button' data-garage-sell-empty>"
+    + escapeHtml(copy.relinquishEmpty)
+    + "</button><button type='button' data-garage-buy-all>"
     + escapeHtml(copy.purchaseAll)
     + "</button><button type='button' class='garage-refresh-button' data-garage-refresh>"
     + escapeHtml(copy.refresh)
@@ -596,6 +621,7 @@ export async function mountGarageManager(container) {
   const noticeElement = root.querySelector("[data-garage-notice]");
   const resultElement = root.querySelector("[data-garage-result]");
   const refreshButton = root.querySelector("[data-garage-refresh]");
+  const sellEmptyButton = root.querySelector("[data-garage-sell-empty]");
   const buyAllButton = root.querySelector("[data-garage-buy-all]");
   const filterStatusElement = root.querySelector("[data-garage-filter-status]");
   const resetFiltersButton = root.querySelector("[data-garage-filter-reset]");
@@ -753,16 +779,27 @@ export async function mountGarageManager(container) {
     }
     const isBulkPurchase = result.operation === "purchase_all"
       && Number.isInteger(result.purchasedCount);
-    const city = isBulkPurchase ? "" : garageCity(result.updatedState, copy);
+    const isBulkRelinquish = result.operation === "relinquish_empty"
+      && Number.isInteger(result.relinquishedCount);
+    const city = isBulkPurchase || isBulkRelinquish ? "" : garageCity(result.updatedState, copy);
     const successText = isBulkPurchase
       ? result.purchasedCount > 0
         ? formatCopy(copy.purchaseAllSuccess, { count: result.purchasedCount })
         : copy.purchaseAllNone
-      : formatCopy(mutationSuccessText(result), { city });
+      : isBulkRelinquish
+        ? result.relinquishedCount > 0
+          ? formatCopy(copy.relinquishEmptySuccess, { count: result.relinquishedCount })
+          : copy.relinquishEmptyNone
+        : formatCopy(mutationSuccessText(result), { city });
+    const detailText = isBulkRelinquish
+      ? copy.relinquishEmptyEffect
+      : result.operation === "assign_resources"
+        ? copy.assignResourcesEffect
+        : copy.noExtrasSuccess;
     resultElement.innerHTML = "<strong>"
       + escapeHtml(successText)
       + "</strong><span>"
-      + escapeHtml(copy.noExtrasSuccess)
+      + escapeHtml(detailText)
       + "</span><span>"
       + escapeHtml(result.backupCreated ? copy.backupCreated : copy.backupNotCreated)
       + "</span><span>"
@@ -926,11 +963,20 @@ export async function mountGarageManager(container) {
     root.setAttribute("aria-busy", state.loading || state.mutationPending ? "true" : "false");
     refreshButton.disabled = state.loading || state.mutationPending;
     refreshButton.textContent = state.loading ? copy.refreshing : copy.refresh;
+    sellEmptyButton.disabled = state.loading
+      || state.mutationPending
+      || !state.result
+      || state.result.game !== "ets2";
+    sellEmptyButton.textContent = state.bulkMutationOperation === "relinquish_empty"
+      ? copy.relinquishingEmpty
+      : copy.relinquishEmpty;
     buyAllButton.disabled = state.loading
       || state.mutationPending
       || !state.result
       || state.result.game !== "ets2";
-    buyAllButton.textContent = state.bulkMutationPending ? copy.purchasingAll : copy.purchaseAll;
+    buyAllButton.textContent = state.bulkMutationOperation === "purchase_all"
+      ? copy.purchasingAll
+      : copy.purchaseAll;
   }
 
   async function loadGarages({
@@ -996,17 +1042,19 @@ export async function mountGarageManager(container) {
     }
   }
 
-  function validateBulkMutationResult(result) {
-    if (result?.operation !== "purchase_all"
+  function validateBulkMutationResult(result, operation) {
+    const idField = operation === "purchase_all" ? "purchasedGarageIds" : "relinquishedGarageIds";
+    const countField = operation === "purchase_all" ? "purchasedCount" : "relinquishedCount";
+    if (result?.operation !== operation
       || !result.verified
       || !result.saveHash
-      || !Number.isInteger(result.purchasedCount)
-      || !Array.isArray(result.purchasedGarageIds)
-      || result.purchasedGarageIds.length !== result.purchasedCount) {
+      || !Number.isInteger(result[countField])
+      || !Array.isArray(result[idField])
+      || result[idField].length !== result[countField]) {
       throw new Error("garage_size_change_not_verified:batch_response");
     }
     const knownGarageIds = new Set(allGarages().map((garage) => garage.garageId));
-    if (result.purchasedGarageIds.some((garageId) => !knownGarageIds.has(garageId))) {
+    if (result[idField].some((garageId) => !knownGarageIds.has(garageId))) {
       throw new Error("garage_size_change_not_verified:garage_missing");
     }
   }
@@ -1014,6 +1062,9 @@ export async function mountGarageManager(container) {
   function mutationSuccessKey(result) {
     const previous = result.previousState;
     const updated = result.updatedState;
+    if (result.operation === "assign_resources") {
+      return "garage_manager.success.assign_resources";
+    }
     if (result.operation === "relinquish"
       && previous?.ownership === "owned"
       && updated?.ownership === "not_owned"
@@ -1051,6 +1102,7 @@ export async function mountGarageManager(container) {
     const key = mutationSuccessKey(result);
     if (key === "garage_manager.success.purchase") return copy.purchaseSuccess;
     if (key === "garage_manager.success.relinquish") return copy.relinquishSuccess;
+    if (key === "garage_manager.success.assign_resources") return copy.assignResourcesSuccess;
     if (key === "garage_manager.success.upgrade") return copy.upgradeSuccess;
     if (key === "garage_manager.success.downgrade") return copy.downgradeSuccess;
     if (key === "garage_manager.success.headquarters") return copy.headquartersSuccess;
@@ -1188,6 +1240,13 @@ export async function mountGarageManager(container) {
         + escapeHtml(copy.downgrade)
         + "</button>";
     }
+    if (garage.ownership === "owned") {
+      actionMarkup += "<button type='button' data-garage-detail-operation='assign-resources'"
+        + (mutationDisabled ? " disabled" : "")
+        + ">"
+        + escapeHtml(copy.assignResources)
+        + "</button>";
+    }
     if (garage.ownership === "owned" && !garage.isHeadquarters) {
       actionMarkup += "<button type='button' data-garage-detail-operation='headquarters'"
         + (mutationDisabled ? " disabled" : "")
@@ -1234,10 +1293,15 @@ export async function mountGarageManager(container) {
       button.addEventListener("click", () => {
         const operation = button.dataset.garageDetailOperation;
         modal.close({ restoreFocus: false });
+        const reopenDetails = () => openDetails(garage.garageId, { returnFocus: focusTarget });
+        if (operation === "assign-resources") {
+          openAssignmentDialog(garage.garageId, reopenDetails);
+          return;
+        }
         openActionDialog(
           garage.garageId,
           operation,
-          () => openDetails(garage.garageId, { returnFocus: focusTarget }),
+          reopenDetails,
         );
       });
     });
@@ -1246,6 +1310,93 @@ export async function mountGarageManager(container) {
     }
   }
 
+  function openSellEmptyDialog() {
+    if (!state.result || state.result.game !== "ets2" || state.mutationPending) return;
+    const relinquishCount = allGarages().filter(canRelinquishGarage).length;
+    const configuration = {
+      failureTitle: copy.relinquishEmptyFailureTitle,
+      command: "relinquish_empty_garages",
+    };
+    const body = "<section class='garage-dialog-effects'><h3>"
+      + escapeHtml(copy.effects)
+      + "</h3><dl class='garage-confirm-list'>"
+      + detailRow(
+        copy.desiredChange,
+        formatCopy(copy.relinquishEmptyChange, { count: relinquishCount }),
+      )
+      + detailRow(copy.cost, copy.costNone)
+      + detailRow(copy.backup, copy.backupAutomatic)
+      + "</dl><p>"
+      + escapeHtml(copy.relinquishEmptyEffect)
+      + "</p></section><p class='garage-save-warning'>"
+      + escapeHtml(copy.saveWarning)
+      + "</p><div class='garage-mutation-error' data-garage-mutation-error hidden></div>";
+    const footer = "<button type='button' class='button-secondary' data-garage-dialog-cancel>"
+      + escapeHtml(copy.cancel)
+      + "</button><div class='garage-modal-primary-actions'><button type='button' "
+      + "data-garage-dialog-apply>"
+      + escapeHtml(copy.relinquishEmpty)
+      + "</button></div>";
+    const modal = createModal(root, {
+      title: copy.relinquishEmptyDialogTitle,
+      bodyMarkup: body,
+      footerMarkup: footer,
+      copy,
+      className: "garage-action-modal",
+      returnFocus: () => sellEmptyButton.focus(),
+    });
+    const applyButton = modal.overlay.querySelector("[data-garage-dialog-apply]");
+    const cancelButton = modal.overlay.querySelector("[data-garage-dialog-cancel]");
+    const errorElement = modal.overlay.querySelector("[data-garage-mutation-error]");
+    cancelButton.addEventListener("click", modal.close);
+    applyButton.addEventListener("click", async () => {
+      if (state.mutationPending) return;
+      state.mutationPending = true;
+      state.bulkMutationPending = true;
+      state.bulkMutationOperation = "relinquish_empty";
+      applyButton.disabled = true;
+      applyButton.innerHTML = "<span class='garage-spinner' aria-hidden='true'></span>"
+        + escapeHtml(copy.relinquishingEmpty);
+      errorElement.hidden = true;
+      render();
+      try {
+        const request = { expectedSaveHash: state.result.saveHash };
+        const result = await window.invoke("relinquish_empty_garages", { request });
+        validateBulkMutationResult(result, "relinquish_empty");
+        state.lastMutationResult = result;
+        state.highlightedGarageId = null;
+        modal.close({ restoreFocus: false });
+        await loadGarages({
+          toastOnError: true,
+          expectedSaveHash: result.saveHash,
+          preserveOnError: true,
+        });
+        const successKey = result.relinquishedCount > 0
+          ? "garage_manager.success.relinquish_empty"
+          : "garage_manager.success.relinquish_empty_none";
+        window.showToast(successKey, { count: result.relinquishedCount }, "success");
+        await Promise.allSettled([
+          window.loadAllTrucks?.(),
+          window.loadAllTrailers?.(),
+          window.loadProfileData?.(),
+          window.refreshOperationalOverview?.(),
+        ]);
+        sellEmptyButton.focus();
+      } catch (error) {
+        console.error("Garage empty batch sale failed:", error);
+        await showMutationError(errorElement, error, configuration);
+      } finally {
+        state.bulkMutationPending = false;
+        state.bulkMutationOperation = null;
+        state.mutationPending = false;
+        if (root.isConnected) render();
+        if (applyButton.isConnected) {
+          applyButton.disabled = false;
+          applyButton.textContent = copy.relinquishEmpty;
+        }
+      }
+    });
+  }
   function openBuyAllDialog() {
     if (!state.result || state.result.game !== "ets2" || state.mutationPending) return;
     const purchaseCount = allGarages()
@@ -1291,6 +1442,7 @@ export async function mountGarageManager(container) {
       if (state.mutationPending) return;
       state.mutationPending = true;
       state.bulkMutationPending = true;
+      state.bulkMutationOperation = "purchase_all";
       applyButton.disabled = true;
       applyButton.innerHTML = "<span class='garage-spinner' aria-hidden='true'></span>"
         + escapeHtml(copy.purchasingAll);
@@ -1299,7 +1451,7 @@ export async function mountGarageManager(container) {
       try {
         const request = { expectedSaveHash: state.result.saveHash };
         const result = await window.invoke("buy_all_garages", { request });
-        validateBulkMutationResult(result);
+        validateBulkMutationResult(result, "purchase_all");
         state.lastMutationResult = result;
         state.highlightedGarageId = null;
         modal.close({ restoreFocus: false });
@@ -1324,6 +1476,7 @@ export async function mountGarageManager(container) {
         await showMutationError(errorElement, error, configuration);
       } finally {
         state.bulkMutationPending = false;
+        state.bulkMutationOperation = null;
         state.mutationPending = false;
         if (root.isConnected) render();
         if (applyButton.isConnected) {
@@ -1447,6 +1600,121 @@ export async function mountGarageManager(container) {
     window.showToast(key, {}, "error");
   }
 
+  function openAssignmentDialog(garageId, returnFocus = null) {
+    const garage = findGarage(garageId);
+    if (!garage || state.result?.game !== "ets2" || garageIsBlocked(garage)) return;
+    const configuration = {
+      failureTitle: copy.assignResourcesFailureTitle,
+      command: "assign_random_garage_resources",
+    };
+    const currentState = sizeLabel(garage.size, copy)
+      + " / "
+      + formatCopy(copy.occupancyValue, {
+        occupied: garage.occupiedSlots,
+        capacity: garage.vehicleSlotCount,
+      });
+    const comparison = "<div class='garage-state-comparison'><article><span>"
+      + escapeHtml(copy.currentState)
+      + "</span><strong>"
+      + escapeHtml(currentState)
+      + "</strong></article><article class='is-future'><span>"
+      + escapeHtml(copy.futureState)
+      + "</span><strong>"
+      + escapeHtml(copy.assignResourcesChange)
+      + "</strong></article></div>";
+    const body = comparison
+      + "<section class='garage-dialog-effects'><h3>"
+      + escapeHtml(copy.effects)
+      + "</h3><p>"
+      + escapeHtml(copy.assignResourcesEffect)
+      + "</p><label class='garage-checkbox'><input type='checkbox' data-garage-random-driver><span>"
+      + escapeHtml(copy.randomDriver)
+      + "</span></label><label class='garage-checkbox'><input type='checkbox' data-garage-random-truck><span>"
+      + escapeHtml(copy.randomTruck)
+      + "</span></label><dl class='garage-confirm-list'>"
+      + detailRow(copy.cost, copy.costNone)
+      + detailRow(copy.backup, copy.backupAutomatic)
+      + "</dl></section><p class='garage-save-warning'>"
+      + escapeHtml(copy.saveWarning)
+      + "</p><div class='garage-mutation-error' data-garage-mutation-error hidden></div>";
+    const footer = "<button type='button' class='button-secondary' data-garage-dialog-cancel>"
+      + escapeHtml(copy.cancel)
+      + "</button><div class='garage-modal-primary-actions'><button type='button' "
+      + "data-garage-dialog-apply>"
+      + escapeHtml(copy.assignResources)
+      + "</button></div>";
+    const focusTarget = returnFocus || (() => focusGarageAction(garage.garageId, "details"));
+    const modal = createModal(root, {
+      title: copy.assignResourcesDialogTitle,
+      subtitle: garageCity(garage, copy),
+      bodyMarkup: body,
+      footerMarkup: footer,
+      copy,
+      className: "garage-action-modal",
+      returnFocus: focusTarget,
+    });
+    const applyButton = modal.overlay.querySelector("[data-garage-dialog-apply]");
+    const cancelButton = modal.overlay.querySelector("[data-garage-dialog-cancel]");
+    const errorElement = modal.overlay.querySelector("[data-garage-mutation-error]");
+    cancelButton.addEventListener("click", modal.close);
+    applyButton.addEventListener("click", async () => {
+      if (state.mutationPending) return;
+      const assignRandomDriver = Boolean(modal.overlay.querySelector("[data-garage-random-driver]")?.checked);
+      const assignRandomTruck = Boolean(modal.overlay.querySelector("[data-garage-random-truck]")?.checked);
+      errorElement.hidden = true;
+      if (!assignRandomDriver && !assignRandomTruck) {
+        await showMutationError(errorElement, new Error("garage_assignment_empty"), configuration);
+        return;
+      }
+      state.mutationPending = true;
+      applyButton.disabled = true;
+      applyButton.innerHTML = "<span class='garage-spinner' aria-hidden='true'></span>"
+        + escapeHtml(copy.assigningResources);
+      render();
+      try {
+        const request = {
+          garageId,
+          expectedSaveHash: state.result.saveHash,
+          assignRandomDriver,
+          assignRandomTruck,
+        };
+        const result = await window.invoke("assign_random_garage_resources", { request });
+        validateMutationResult(result);
+        state.lastMutationResult = result;
+        state.highlightedGarageId = result.garageId;
+        state.selectedGarageId = result.garageId;
+        persistViewState();
+        modal.close({ restoreFocus: false });
+        await loadGarages({
+          toastOnError: true,
+          expectedSaveHash: result.saveHash,
+          preserveOnError: true,
+        });
+        window.showToast(
+          mutationSuccessKey(result),
+          { city: garageCity(result.updatedState, copy) },
+          "success",
+        );
+        await Promise.allSettled([
+          window.loadAllTrucks?.(),
+          window.loadAllTrailers?.(),
+          window.loadProfileData?.(),
+          window.refreshOperationalOverview?.(),
+        ]);
+        focusGarageAction(result.garageId, "details");
+      } catch (error) {
+        console.error("Garage random assignment failed:", error);
+        await showMutationError(errorElement, error, configuration);
+      } finally {
+        state.mutationPending = false;
+        if (root.isConnected) render();
+        if (applyButton.isConnected) {
+          applyButton.disabled = false;
+          applyButton.textContent = copy.assignResources;
+        }
+      }
+    });
+  }
   function openActionDialog(garageId, operation, returnFocus = null) {
     const garage = findGarage(garageId);
     if (!garage || state.result?.game !== "ets2" || garageIsBlocked(garage)) return;
@@ -1461,19 +1729,7 @@ export async function mountGarageManager(container) {
       + "</span><strong>"
       + escapeHtml(configuration.futureState)
       + "</strong></article></div>";
-    const optionalExtensions = operation === "purchase"
-      ? "<section class='garage-optional-extensions'><h3>"
-        + escapeHtml(copy.optionalExtensions)
-        + "</h3><p>"
-        + escapeHtml(copy.optionDisabledDefault)
-        + "</p><label class='garage-checkbox is-disabled'><input type='checkbox' disabled><span>"
-        + escapeHtml(copy.addTrucks)
-        + "</span></label><label class='garage-checkbox is-disabled'><input type='checkbox' disabled><span>"
-        + escapeHtml(copy.assignDrivers)
-        + "</span></label><p class='garage-option-unavailable'>"
-        + escapeHtml(copy.optionUnavailable)
-        + "</p></section>"
-      : "";
+    const optionalExtensions = "";
     const downgradeNotice = operation === "downgrade"
       ? "<p class='garage-downgrade-warning'>" + escapeHtml(copy.downgradeWarning) + "</p>"
       : "";
@@ -1585,6 +1841,10 @@ export async function mountGarageManager(container) {
     renderList();
   });
   root.addEventListener("click", async (event) => {
+    if (event.target.closest("[data-garage-sell-empty]")) {
+      openSellEmptyDialog();
+      return;
+    }
     if (event.target.closest("[data-garage-buy-all]")) {
       openBuyAllDialog();
       return;

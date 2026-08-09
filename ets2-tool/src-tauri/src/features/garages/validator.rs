@@ -1,7 +1,8 @@
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 
 use crate::features::truck_change::parser::{
-    extract_array_entries, extract_field_value, parse_unit_blocks, UnitBlock,
+    UnitBlock, extract_array_entries, extract_field_value, is_null_ref, normalize_sii_unit_id,
+    parse_unit_blocks,
 };
 
 use super::models::{GarageInfo, GarageOperation, GarageOwnership, GarageSize};
@@ -26,6 +27,14 @@ pub struct VerifiedGarageBatch {
     pub updated_states: Vec<GarageInfo>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GarageAssignmentVerificationSpec {
+    pub assigned_driver_id: Option<String>,
+    pub assigned_truck_id: Option<String>,
+    pub assigned_driver_slot_index: Option<usize>,
+    pub assigned_truck_slot_index: Option<usize>,
+}
+
 pub fn verify_garage_mutation(
     before_content: &str,
     after_content: &str,
@@ -39,19 +48,7 @@ pub fn verify_garage_mutation(
     let previous_state = find_garage(&before.garages, garage_id)?;
     let updated_state = find_garage(&after.garages, garage_id)?;
 
-    let before_ids = before
-        .garages
-        .iter()
-        .map(|garage| garage.garage_id.as_str())
-        .collect::<Vec<_>>();
-    let after_ids = after
-        .garages
-        .iter()
-        .map(|garage| garage.garage_id.as_str())
-        .collect::<Vec<_>>();
-    if before_ids != after_ids {
-        return Err("save_verification_failed:garage_inventory_changed".to_string());
-    }
+    verify_garage_order_unchanged(&before.garages, &after.garages)?;
 
     let target_garage_ids = HashSet::from([garage_id]);
     verify_untouched_garages(
@@ -90,19 +87,7 @@ pub fn verify_garage_purchase_batch(
         .map_err(|error| format!("save_verification_failed:{error}"))?;
     let after = parse_garages_from_sii(after_content)
         .map_err(|error| format!("save_verification_failed:{error}"))?;
-    let before_ids = before
-        .garages
-        .iter()
-        .map(|garage| garage.garage_id.as_str())
-        .collect::<Vec<_>>();
-    let after_ids = after
-        .garages
-        .iter()
-        .map(|garage| garage.garage_id.as_str())
-        .collect::<Vec<_>>();
-    if before_ids != after_ids {
-        return Err("save_verification_failed:garage_inventory_changed".to_string());
-    }
+    verify_garage_order_unchanged(&before.garages, &after.garages)?;
     if garage_ids.is_empty() {
         if before_content != after_content {
             return Err("save_verification_failed:unexpected_noop_change".to_string());
@@ -151,6 +136,140 @@ pub fn verify_garage_purchase_batch(
     Ok(VerifiedGarageBatch {
         previous_states,
         updated_states,
+    })
+}
+
+pub fn verify_garage_relinquishment_batch(
+    before_content: &str,
+    after_content: &str,
+    garage_ids: &[String],
+) -> Result<VerifiedGarageBatch, String> {
+    let target_garage_ids = garage_ids
+        .iter()
+        .map(String::as_str)
+        .collect::<HashSet<_>>();
+    if target_garage_ids.len() != garage_ids.len() {
+        return Err("save_verification_failed:duplicate_batch_target".to_string());
+    }
+
+    let before = parse_garages_from_sii(before_content)
+        .map_err(|error| format!("save_verification_failed:{error}"))?;
+    let after = parse_garages_from_sii(after_content)
+        .map_err(|error| format!("save_verification_failed:{error}"))?;
+    verify_garage_order_unchanged(&before.garages, &after.garages)?;
+    if garage_ids.is_empty() {
+        if before_content != after_content {
+            return Err("save_verification_failed:unexpected_noop_change".to_string());
+        }
+        return Ok(VerifiedGarageBatch {
+            previous_states: Vec::new(),
+            updated_states: Vec::new(),
+        });
+    }
+
+    let spec = GarageVerificationSpec {
+        operation: GarageOperation::Relinquish,
+        target_size: Some(GarageSize::Unowned),
+        set_as_headquarters: false,
+    };
+    let before_blocks = parse_unit_blocks(before_content);
+    let after_blocks = parse_unit_blocks(after_content);
+    verify_untouched_garages(&before.garages, &after.garages, &target_garage_ids, false)?;
+    verify_unit_blocks_unchanged_from_blocks(
+        &before_blocks,
+        &after_blocks,
+        &target_garage_ids,
+        &spec,
+        before_content,
+    )?;
+    verify_headquarters_transition(&before.garages, &after.garages, &garage_ids[0], &spec)?;
+
+    let mut previous_states = Vec::with_capacity(garage_ids.len());
+    let mut updated_states = Vec::with_capacity(garage_ids.len());
+    for garage_id in garage_ids {
+        let previous_state = find_garage(&before.garages, garage_id)?;
+        let updated_state = find_garage(&after.garages, garage_id)?;
+        verify_target_garage_metadata_unchanged_from_blocks(
+            &before_blocks,
+            &after_blocks,
+            garage_id,
+            &spec,
+        )?;
+        verify_target_references(&previous_state, &updated_state, &spec)?;
+        verify_expected_state(&previous_state, &updated_state, &spec)?;
+        verify_raw_expected_state_from_blocks(&after_blocks, garage_id, &updated_state, &spec)?;
+        previous_states.push(previous_state);
+        updated_states.push(updated_state);
+    }
+
+    Ok(VerifiedGarageBatch {
+        previous_states,
+        updated_states,
+    })
+}
+
+pub fn verify_garage_resource_assignment(
+    before_content: &str,
+    after_content: &str,
+    garage_id: &str,
+    spec: &GarageAssignmentVerificationSpec,
+) -> Result<VerifiedGarageMutation, String> {
+    if spec.assigned_driver_id.is_none() && spec.assigned_truck_id.is_none() {
+        return Err("save_verification_failed:assignment_empty".to_string());
+    }
+    let before = parse_garages_from_sii(before_content)
+        .map_err(|error| format!("save_verification_failed:{error}"))?;
+    let after = parse_garages_from_sii(after_content)
+        .map_err(|error| format!("save_verification_failed:{error}"))?;
+    verify_garage_order_unchanged(&before.garages, &after.garages)?;
+
+    let previous_state = find_garage(&before.garages, garage_id)?;
+    let updated_state = find_garage(&after.garages, garage_id)?;
+    if previous_state.ownership != GarageOwnership::Owned
+        || updated_state.ownership != GarageOwnership::Owned
+        || previous_state.size != updated_state.size
+        || previous_state.status != updated_state.status
+        || previous_state.vehicle_slot_count != updated_state.vehicle_slot_count
+        || previous_state.driver_slot_count != updated_state.driver_slot_count
+        || previous_state.trailer_slot_count != updated_state.trailer_slot_count
+        || previous_state.trailer_ids != updated_state.trailer_ids
+        || previous_state.is_headquarters != updated_state.is_headquarters
+        || previous_state.profit_log_id != updated_state.profit_log_id
+        || previous_state.productivity != updated_state.productivity
+    {
+        return Err("save_verification_failed:garage_metadata_changed".to_string());
+    }
+
+    let before_blocks = parse_unit_blocks(before_content);
+    let after_blocks = parse_unit_blocks(after_content);
+    let target_garage_ids = HashSet::from([garage_id]);
+    verify_untouched_garages(&before.garages, &after.garages, &target_garage_ids, false)?;
+    verify_assignment_unit_changes(&before_blocks, &after_blocks, garage_id, spec)?;
+    verify_target_assignment_slots(&previous_state, &updated_state, spec)?;
+    verify_assignment_objects(&before_blocks, &after_blocks, garage_id, spec)?;
+    verify_headquarters_transition(
+        &before.garages,
+        &after.garages,
+        garage_id,
+        &GarageVerificationSpec {
+            operation: GarageOperation::Update,
+            target_size: None,
+            set_as_headquarters: false,
+        },
+    )?;
+
+    if updated_state.warnings.iter().any(|warning| {
+        warning.contains("_reference_unresolved")
+            || warning.contains("_reference_ambiguous")
+            || warning.contains("_reference_duplicate")
+            || warning.starts_with("garage_slot_assignment_inconsistent")
+    }) {
+        return Err("save_verification_failed:assignment_warnings".to_string());
+    }
+
+    Ok(VerifiedGarageMutation {
+        previous_state,
+        updated_state,
     })
 }
 
@@ -206,6 +325,217 @@ fn verify_headquarters_transition(
         }
     }
     Ok(())
+}
+
+fn verify_garage_order_unchanged(
+    before: &[GarageInfo],
+    after: &[GarageInfo],
+) -> Result<(), String> {
+    let before_ids = before
+        .iter()
+        .map(|garage| garage.garage_id.as_str())
+        .collect::<Vec<_>>();
+    let after_ids = after
+        .iter()
+        .map(|garage| garage.garage_id.as_str())
+        .collect::<Vec<_>>();
+    if before_ids != after_ids {
+        return Err("save_verification_failed:garage_inventory_changed".to_string());
+    }
+    Ok(())
+}
+
+fn verify_assignment_unit_changes(
+    before_blocks: &[UnitBlock],
+    after_blocks: &[UnitBlock],
+    garage_id: &str,
+    spec: &GarageAssignmentVerificationSpec,
+) -> Result<(), String> {
+    if before_blocks.len() != after_blocks.len() {
+        return Err("save_verification_failed:unit_inventory_changed".to_string());
+    }
+    let allowed_driver_id = spec.assigned_driver_id.as_deref();
+    for (previous, updated) in before_blocks.iter().zip(after_blocks.iter()) {
+        if previous.unit_type != updated.unit_type || previous.id != updated.id {
+            return Err("save_verification_failed:unit_order_changed".to_string());
+        }
+        let allowed_garage_change = previous.unit_type == "garage" && previous.id == garage_id;
+        let allowed_driver_change = previous.unit_type == "driver_ai"
+            && allowed_driver_id.is_some_and(|driver_id| previous.id == driver_id);
+        if !allowed_garage_change
+            && !allowed_driver_change
+            && previous.raw_block != updated.raw_block
+        {
+            return Err(format!(
+                "save_verification_failed:unrelated_unit_changed:{}",
+                previous.id
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn verify_target_assignment_slots(
+    previous: &GarageInfo,
+    updated: &GarageInfo,
+    spec: &GarageAssignmentVerificationSpec,
+) -> Result<(), String> {
+    if previous.slots.len() != updated.slots.len() {
+        return Err("save_verification_failed:garage_slot_count_changed".to_string());
+    }
+    for previous_slot in &previous.slots {
+        let updated_slot = updated
+            .slots
+            .iter()
+            .find(|slot| slot.index == previous_slot.index)
+            .ok_or_else(|| "save_verification_failed:garage_slot_removed".to_string())?;
+        let expected_truck = if spec.assigned_truck_slot_index == Some(previous_slot.index) {
+            if previous_slot.truck_id.is_some() {
+                return Err("save_verification_failed:truck_slot_overwritten".to_string());
+            }
+            spec.assigned_truck_id.clone()
+        } else {
+            previous_slot.truck_id.clone()
+        };
+        let expected_driver = if spec.assigned_driver_slot_index == Some(previous_slot.index) {
+            if previous_slot.driver_id.is_some() {
+                return Err("save_verification_failed:driver_slot_overwritten".to_string());
+            }
+            spec.assigned_driver_id.clone()
+        } else {
+            previous_slot.driver_id.clone()
+        };
+        if updated_slot.truck_id != expected_truck {
+            return Err("save_verification_failed:truck_references_changed".to_string());
+        }
+        if updated_slot.driver_id != expected_driver {
+            return Err("save_verification_failed:driver_references_changed".to_string());
+        }
+        if updated_slot.driver_id.is_some() && updated_slot.truck_id.is_none() {
+            return Err("save_verification_failed:driver_without_truck".to_string());
+        }
+    }
+    let expected_truck_delta = usize::from(spec.assigned_truck_id.is_some());
+    let expected_driver_delta = usize::from(spec.assigned_driver_id.is_some());
+    if updated.assigned_truck_count != previous.assigned_truck_count + expected_truck_delta
+        || updated.assigned_driver_count != previous.assigned_driver_count + expected_driver_delta
+    {
+        return Err("save_verification_failed:assignment_counts_changed".to_string());
+    }
+    Ok(())
+}
+
+fn verify_assignment_objects(
+    before_blocks: &[UnitBlock],
+    after_blocks: &[UnitBlock],
+    garage_id: &str,
+    spec: &GarageAssignmentVerificationSpec,
+) -> Result<(), String> {
+    if let Some(truck_id) = spec.assigned_truck_id.as_deref() {
+        if spec.assigned_truck_slot_index.is_none() {
+            return Err("save_verification_failed:assignment_slot_missing".to_string());
+        }
+        if !player_array_contains(before_blocks, "trucks", truck_id)? {
+            return Err("save_verification_failed:truck_not_owned".to_string());
+        }
+        unique_block_from_blocks(before_blocks, "vehicle", truck_id)?;
+        unique_block_from_blocks(after_blocks, "vehicle", truck_id)?;
+        ensure_reference_was_unassigned_before(before_blocks, "vehicles", truck_id)?;
+    }
+
+    if let Some(driver_id) = spec.assigned_driver_id.as_deref() {
+        let slot_index = spec
+            .assigned_driver_slot_index
+            .ok_or_else(|| "save_verification_failed:assignment_slot_missing".to_string())?;
+        let before_driver = unique_block_from_blocks(before_blocks, "driver_ai", driver_id)?;
+        let after_driver = unique_block_from_blocks(after_blocks, "driver_ai", driver_id)?;
+        if !extract_field_value(&before_driver.raw_block, "assigned_truck")
+            .is_some_and(|value| is_null_ref(&value))
+        {
+            return Err("save_verification_failed:driver_already_assigned".to_string());
+        }
+        ensure_reference_was_unassigned_before(before_blocks, "drivers", driver_id)?;
+        let updated_garage = unique_garage_block_from_blocks(after_blocks, garage_id)?;
+        let vehicles = extract_array_entries(&updated_garage.raw_block, "vehicles")
+            .into_iter()
+            .collect::<BTreeMap<_, _>>();
+        let assigned_truck = vehicles
+            .get(&slot_index)
+            .filter(|value| !is_null_ref(value))
+            .ok_or_else(|| "save_verification_failed:driver_without_truck".to_string())?;
+        let driver_assigned_truck = extract_field_value(&after_driver.raw_block, "assigned_truck")
+            .ok_or_else(|| "save_verification_failed:driver_assigned_truck_missing".to_string())?;
+        if normalize_sii_unit_id(&driver_assigned_truck) != normalize_sii_unit_id(assigned_truck) {
+            return Err("save_verification_failed:driver_assigned_truck_mismatch".to_string());
+        }
+    }
+    Ok(())
+}
+
+fn player_array_contains(
+    unit_blocks: &[UnitBlock],
+    field: &str,
+    expected_id: &str,
+) -> Result<bool, String> {
+    let player_id = resolve_player_id_from_blocks(unit_blocks)?;
+    let player_block = unique_block_from_blocks(unit_blocks, "player", &player_id)?;
+    let expected = normalize_sii_unit_id(expected_id);
+    Ok(extract_array_entries(&player_block.raw_block, field)
+        .iter()
+        .any(|(_, value)| normalize_sii_unit_id(value) == expected))
+}
+
+fn resolve_player_id_from_blocks(unit_blocks: &[UnitBlock]) -> Result<String, String> {
+    let economy_blocks = unit_blocks
+        .iter()
+        .filter(|block| block.unit_type == "economy")
+        .collect::<Vec<_>>();
+    let economy = match economy_blocks.as_slice() {
+        [block] => *block,
+        [] => return Err("save_verification_failed:economy_missing".to_string()),
+        _ => return Err("save_verification_failed:economy_ambiguous".to_string()),
+    };
+    extract_field_value(&economy.raw_block, "player")
+        .ok_or_else(|| "save_verification_failed:player_reference_missing".to_string())
+}
+
+fn ensure_reference_was_unassigned_before(
+    unit_blocks: &[UnitBlock],
+    field: &str,
+    expected_id: &str,
+) -> Result<(), String> {
+    let expected = normalize_sii_unit_id(expected_id);
+    let mut matches = 0usize;
+    for block in unit_blocks
+        .iter()
+        .filter(|block| block.unit_type == "garage")
+    {
+        matches += extract_array_entries(&block.raw_block, field)
+            .iter()
+            .filter(|(_, value)| !is_null_ref(value) && normalize_sii_unit_id(value) == expected)
+            .count();
+    }
+    if matches == 0 {
+        Ok(())
+    } else {
+        Err("save_verification_failed:assignment_duplicate".to_string())
+    }
+}
+
+fn unique_block_from_blocks(
+    unit_blocks: &[UnitBlock],
+    unit_type: &str,
+    unit_id: &str,
+) -> Result<UnitBlock, String> {
+    let matching = unit_blocks
+        .iter()
+        .filter(|block| block.unit_type == unit_type && block.id.eq_ignore_ascii_case(unit_id))
+        .collect::<Vec<_>>();
+    match matching.as_slice() {
+        [block] => Ok((**block).clone()),
+        [] => Err(format!("save_verification_failed:unit_missing:{unit_id}")),
+        _ => Err(format!("save_verification_failed:unit_ambiguous:{unit_id}")),
+    }
 }
 
 fn find_garage(garages: &[GarageInfo], garage_id: &str) -> Result<GarageInfo, String> {
@@ -550,11 +880,23 @@ fn verify_expected_state(
             require_state(previous, GarageOwnership::Owned, GarageSize::Small, 2, 3)?;
             require_state(updated, GarageOwnership::Owned, GarageSize::Large, 3, 5)?;
         }
-        GarageOperation::Update => {
+        GarageOperation::Update | GarageOperation::AssignResources => {
             if previous.ownership != GarageOwnership::Owned
                 || updated.ownership != GarageOwnership::Owned
             {
                 return Err("garage_not_owned".to_string());
+            }
+            if matches!(spec.operation, GarageOperation::AssignResources) {
+                if previous.size != updated.size
+                    || previous.status != updated.status
+                    || previous.vehicle_slot_count != updated.vehicle_slot_count
+                    || previous.driver_slot_count != updated.driver_slot_count
+                {
+                    return Err(
+                        "save_verification_failed:garage_size_changed_unexpectedly".to_string()
+                    );
+                }
+                return Ok(());
             }
             match spec.target_size {
                 Some(GarageSize::Large) => {
@@ -607,7 +949,7 @@ fn require_state(
 
 #[cfg(test)]
 mod tests {
-    use super::{verify_garage_mutation, verify_garage_purchase_batch, GarageVerificationSpec};
+    use super::{GarageVerificationSpec, verify_garage_mutation, verify_garage_purchase_batch};
     use crate::features::garages::models::{GarageOperation, GarageSize};
     use crate::features::garages::parser::parse_garages_from_sii;
     use crate::features::garages::writer::{
@@ -640,11 +982,13 @@ mod tests {
         assert_eq!(verified.updated_state.size, GarageSize::Large);
         assert_eq!(verified.updated_state.vehicle_slot_count, 5);
         assert_eq!(verified.updated_state.driver_slot_count, 5);
-        assert!(verified
-            .updated_state
-            .slots
-            .iter()
-            .all(|slot| { slot.truck_id.is_none() && slot.driver_id.is_none() }));
+        assert!(
+            verified
+                .updated_state
+                .slots
+                .iter()
+                .all(|slot| { slot.truck_id.is_none() && slot.driver_id.is_none() })
+        );
     }
 
     #[test]
@@ -699,10 +1043,12 @@ mod tests {
 
         assert_eq!(verified.previous_states.len(), 2);
         assert_eq!(verified.updated_states.len(), 2);
-        assert!(verified
-            .updated_states
-            .iter()
-            .all(|garage| garage.status == Some(3) && garage.vehicle_slot_count == 5));
+        assert!(
+            verified
+                .updated_states
+                .iter()
+                .all(|garage| garage.status == Some(3) && garage.vehicle_slot_count == 5)
+        );
         let parsed = parse_garages_from_sii(&plan.content).unwrap();
         let headquarters = parsed
             .garages
