@@ -8,6 +8,7 @@ import {
   loadLevelTable,
 } from "./js/level-system.js";
 import { mountSkilltreeEditor } from "./js/skilltree.js";
+import { mountGarageManager } from "./js/garage-manager.js";
 
 /* --------------------------------------------------------------
    TOOL LOADER UND TAB HANDLING
@@ -23,7 +24,8 @@ const editorTabShortcuts = {
   F1: "truck",
   F2: "trailer",
   F3: "profile",
-  F4: "settings",
+  F4: "garages",
+  F5: "settings",
 };
 
 function setActiveEditorTabButton(tab) {
@@ -54,10 +56,16 @@ export async function loadTools(tab) {
     truck: "editor.tab.truck",
     trailer: "editor.tab.trailer",
     profile: "editor.tab.profile",
+    garages: "editor.tab.garages",
     settings: "editor.tab.settings",
   };
 
   document.dispatchEvent(new CustomEvent("editor-tab-changed", { detail: { tab } }));
+
+  if (tab === "garages") {
+    await mountGarageManager(container);
+    return;
+  }
 
   if (hasSkilltreeLauncher) {
     const launcherCard = await createSkilltreeLauncherCard();

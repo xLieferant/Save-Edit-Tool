@@ -716,6 +716,7 @@ export const tools = {
     },
   ],
 
+  garages: [],
   settings: [
     {
       title: "editor.recovery.nav_button",

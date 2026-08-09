@@ -476,10 +476,7 @@ pub fn get_player_id(content: &str) -> Option<String> {
 /// dürfen nicht als primäre Quelle verwendet werden.
 pub fn get_vehicle_ids(content: &str, player_id: &str) -> (Option<String>, Option<String>) {
     let Some(player_block) = extract_named_block(content, "player", player_id) else {
-        dev_log!(
-            "[sii_parser] player block for {} not found",
-            player_id
-        );
+        dev_log!("[sii_parser] player block for {} not found", player_id);
         return (None, None);
     };
 
@@ -491,10 +488,7 @@ pub fn get_vehicle_ids(content: &str, player_id: &str) -> (Option<String>, Optio
     };
 
     let Some(pv_block) = extract_named_block(content, "player_vehicles", &pv_id) else {
-        dev_log!(
-            "[sii_parser] player_vehicles block {} not found",
-            pv_id
-        );
+        dev_log!("[sii_parser] player_vehicles block {} not found", pv_id);
         return (None, None);
     };
 

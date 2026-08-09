@@ -49,6 +49,7 @@ fn main() {
         .manage(AppState {
             sqlite: sqlite_pool.clone(),
             sqlite_path: sqlite_path.clone(),
+            garage_mutation_lock: std::sync::Mutex::new(()),
         })
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_process::init())
@@ -393,6 +394,15 @@ fn main() {
             features::companies::commands::company_join,
             features::companies::commands::company_get_current,
             features::companies::commands::company_get_for_user,
+            // Garages
+            features::garages::commands::get_all_garages,
+            features::garages::commands::purchase_garage,
+            features::garages::commands::upgrade_owned_garage,
+            features::garages::commands::update_garage,
+            features::garages::commands::buy_all_garages,
+            features::garages::commands::relinquish_empty_garages,
+            features::garages::commands::assign_random_garage_resources,
+            features::garages::commands::relinquish_garage_ownership,
             // VTC / Career Management
             features::vtc::commands::get_current_user_profile,
             features::vtc::commands::get_vtc_runtime_context,

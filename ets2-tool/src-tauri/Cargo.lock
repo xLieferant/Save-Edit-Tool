@@ -1253,7 +1253,7 @@ dependencies = [
 
 [[package]]
 name = "ets2-tool"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "anyhow",
  "argon2",

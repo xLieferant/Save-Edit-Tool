@@ -17,10 +17,12 @@ use crate::models::trucks::ParsedTruck;
 pub struct DecryptCache {
     pub files: Arc<Mutex<HashMap<PathBuf, String>>>,
     pub inflight: Arc<Mutex<HashMap<PathBuf, Arc<InFlightDecrypt>>>>,
+    pub generations: Arc<Mutex<HashMap<PathBuf, u64>>>,
 }
 
 #[derive(Default)]
 pub struct InFlightDecrypt {
+    pub generation: u64,
     pub state: Mutex<InFlightState>,
     pub condvar: Condvar,
 }
@@ -34,7 +36,11 @@ pub enum InFlightState {
 
 impl DecryptCache {
     pub fn invalidate_path(&self, path: &Path) {
+        let mut generations = self.generations.lock().unwrap();
+        let generation = generations.entry(path.to_path_buf()).or_insert(0);
+        *generation = generation.saturating_add(1);
         self.files.lock().unwrap().remove(path);
+        self.inflight.lock().unwrap().remove(path);
     }
 }
 
@@ -403,6 +409,7 @@ pub struct EtsDbState {
 pub struct AppState {
     pub sqlite: SqlitePool,
     pub sqlite_path: PathBuf,
+    pub garage_mutation_lock: Mutex<()>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
