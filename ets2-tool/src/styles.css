@@ -54,6 +54,18 @@
   --dropdown-hover: rgba(var(--accent-rgb), 0.18);
   --dropdown-active: rgba(var(--accent-rgb), 0.24);
   --dropdown-shadow: 0 18px 40px rgba(0, 0, 0, 0.38);
+  --nav-height: 42px;
+  --nav-gap: 8px;
+  --nav-padding-x: 16px;
+  --nav-radius: 12px;
+  --nav-font-size: 14px;
+  --nav-font-weight: 600;
+  --z-content: 0;
+  --z-header: 10;
+  --z-dropdown: 100;
+  --z-modal-backdrop: 1000;
+  --z-modal: 1010;
+  --z-toast: 1100;
 }
 
 body.theme-dark {
@@ -674,7 +686,7 @@ select option:disabled {
   width: min(320px, 75vw);
   padding: 12px 12px;
   border-radius: var(--radius-xl);
-  z-index: 4600;
+  z-index: var(--z-dropdown);
 }
 
 .user-menu-head {
@@ -1680,7 +1692,7 @@ body.mode-editor #careerView {
   position: fixed;
   right: clamp(16px, 2vw, 28px);
   bottom: clamp(16px, 2vw, 28px);
-  z-index: 9500;
+  z-index: var(--z-dropdown);
   display: inline-flex;
   align-items: center;
   gap: 12px;
@@ -3641,7 +3653,7 @@ body.mode-editor.profile-share-page-body .app-shell {
 }
 
 .sandbox-preset-details-backdrop {
-  z-index: 1200;
+  z-index: var(--z-modal-backdrop);
 }
 
 .sandbox-preset-details-modal {
@@ -4174,7 +4186,7 @@ body.mode-editor.profile-share-page-body .app-shell {
   opacity: 0;
   transform: translateY(12px);
   transition: 180ms ease;
-  z-index: 1000;
+  z-index: var(--z-toast);
 }
 
 .toast.show {
@@ -6950,7 +6962,7 @@ body.mode-editor .editor-picker.is-open {
     var(--focus-ring),
     0 20px 36px rgba(0, 0, 0, 0.22);
   isolation: isolate;
-  z-index: 1002;
+  z-index: var(--z-dropdown);
 }
 
 body.mode-editor .picker-leading {
@@ -7026,7 +7038,7 @@ body.mode-editor .picker-backdrop {
   visibility: hidden;
   pointer-events: none;
   transition: opacity 180ms ease, visibility 180ms ease;
-  z-index: 900;
+  z-index: calc(var(--z-dropdown) - 1);
 }
 
 body.mode-editor .picker-backdrop.is-visible {
@@ -7041,7 +7053,7 @@ body.mode-editor .picker-overlay-root {
   isolation: isolate;
   visibility: hidden;
   pointer-events: none;
-  z-index: 1000;
+  z-index: var(--z-dropdown);
 }
 
 body.mode-editor .picker-overlay-root.is-active {
@@ -7089,7 +7101,7 @@ body.mode-editor .picker-menu {
     opacity 160ms ease,
     transform 180ms ease,
     visibility 180ms ease;
-  z-index: 1005;
+  z-index: var(--z-dropdown);
 }
 
 body.mode-editor .picker-menu--save {
@@ -7277,7 +7289,7 @@ body.mode-editor .user-menu-dropdown {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  z-index: 9999;
+  z-index: var(--z-dropdown);
 }
 
 body.mode-editor .nav-btn:hover,
@@ -8118,7 +8130,7 @@ body.mode-editor .user-menu-item {
 }
 
 body.mode-editor .modal-backdrop {
-  z-index: 9999;
+  z-index: var(--z-modal-backdrop);
   padding: var(--space-sm);
 }
 
@@ -10261,73 +10273,13 @@ body.mode-editor .save-reset-field input {
   }
 }
 
-/* Editor content sizing and bottom tabs. Scroll layout is centralized in the final block. */
+/* Editor content sizing and module navigation. Scroll layout is centralized in the final block. */
 body.mode-editor .save-hero,
 body.mode-editor .save-overview-grid,
 body.mode-editor .save-tool-stage,
 body.mode-editor .tool-stage-shell,
 body.mode-editor #tool-container {
   width: 100%;
-}
-
-.editor-bottom-tabs {
-  display: none;
-}
-
-body.mode-editor .editor-bottom-tabs {
-  display: block;
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  transform: translateX(-50%);
-  z-index: 120;
-  width: fit-content;
-  min-width: 320px;
-  max-width: min(720px, calc(100% - 24px));
-  pointer-events: none;
-}
-
-body.mode-editor .editor-bottom-tabs-inner {
-  pointer-events: auto;
-  width: 100%;
-  max-width: 100%;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  align-items: center;
-  gap: 8px;
-  padding: 10px 12px 12px;
-  border-radius: 20px 20px 0 0;
-  border: 1px solid rgba(var(--accent-rgb), 0.2);
-  border-bottom: 0;
-  background:
-    linear-gradient(180deg, rgba(18, 22, 31, 0.92), rgba(8, 10, 15, 0.96));
-  box-shadow:
-    0 -8px 24px rgba(0, 0, 0, 0.28),
-    0 0 0 1px rgba(255, 255, 255, 0.02);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  box-sizing: border-box;
-}
-
-body.mode-editor .editor-bottom-tabs .nav-btn {
-  width: 100%;
-  min-width: 0;
-  min-height: 42px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 14px;
-  border-radius: 16px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-align: center;
-}
-
-body.mode-editor .editor-bottom-tabs .nav-btn.active {
-  box-shadow:
-    0 12px 24px rgba(0, 0, 0, 0.24),
-    0 0 18px rgba(var(--accent-rgb), 0.14);
 }
 
 body.mode-editor .save-overview-grid {
@@ -10351,37 +10303,6 @@ body.mode-editor #tool-container {
 body.mode-editor .tool-card {
   min-width: 0;
   height: 100%;
-}
-
-@media (max-width: 900px) {
-  body.mode-editor .editor-bottom-tabs {
-    left: 50%;
-    bottom: 0;
-    min-width: 280px;
-    width: fit-content;
-    max-width: calc(100% - 16px);
-    transform: translateX(-50%);
-  }
-
-  body.mode-editor .editor-bottom-tabs-inner {
-    padding: 8px 10px 10px;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    max-width: none;
-  }
-}
-
-@media (max-width: 720px) {
-  body.mode-editor .editor-bottom-tabs-inner {
-    grid-template-columns: repeat(4, minmax(88px, 1fr));
-    overflow-x: auto;
-    scrollbar-width: thin;
-  }
-}
-
-@media (max-height: 720px) {
-  body.mode-editor .editor-bottom-tabs {
-    min-width: 260px;
-  }
 }
 
 @media (min-width: 1800px) {
@@ -10490,7 +10411,7 @@ body {
 body.mode-editor {
   --modal-viewport-gap: clamp(12px, 2vw, 24px);
   --editor-sidebar-width: clamp(340px, 24vw, 376px);
-  --editor-bottom-tabs-height: 72px;
+  --editor-module-nav-height: 72px;
 }
 
 #app,
@@ -10605,7 +10526,7 @@ body.mode-editor .save-content-scroll {
   margin: 0 auto;
   gap: 18px;
   padding-right: 4px;
-  padding-bottom: max(104px, calc(var(--editor-bottom-tabs-height, 72px) + 32px));
+  padding-bottom: 0;
   overflow-y: auto;
   overflow-x: hidden;
   box-sizing: border-box;
@@ -10614,16 +10535,12 @@ body.mode-editor .save-content-scroll {
   mask-image: none;
 }
 
-body.mode-editor .editor-bottom-tabs {
-  flex: 0 0 auto;
-}
-
 body.mode-editor .modal-backdrop {
   position: fixed;
   inset: 0;
   width: 100%;
   height: 100dvh;
-  z-index: 9999;
+  z-index: var(--z-modal-backdrop);
   align-items: flex-start;
   justify-content: center;
   padding: var(--modal-viewport-gap);
@@ -10815,7 +10732,7 @@ body.mode-editor .diagnostics-page-frame .diagnostics-modal-scroll {
   }
 
   body.mode-editor .save-content-scroll {
-    padding-bottom: 96px;
+    padding-bottom: 0;
   }
 }
 
@@ -10825,7 +10742,7 @@ body.mode-editor .diagnostics-page-frame .diagnostics-modal-scroll {
   }
 
   body.mode-editor .save-content-scroll {
-    padding-bottom: 136px;
+    padding-bottom: 0;
   }
 }
 
@@ -10871,7 +10788,7 @@ body.mode-editor .diagnostics-page-frame .diagnostics-modal-scroll {
   }
 
   body.mode-editor .save-content-scroll {
-    padding-bottom: 148px;
+    padding-bottom: 0;
   }
 }
 
@@ -11508,7 +11425,7 @@ body.mode-editor .game-switch button.active,
 body.mode-editor .preset-btn.active,
 body.mode-editor .editor-sidebar .nav-btn.active,
 body.mode-editor .editor-sidebar .nav-action.active,
-body.mode-editor .editor-bottom-tabs .nav-btn.active,
+body.mode-editor .editor-module-nav .nav-btn.active,
 body.mode-editor #modalLevelSystem .level-system-mode-card.is-active,
 body.mode-editor #modalLevelSystem .level-system-input-card.is-active,
 body.mode-editor .level-system-badge--accent {
@@ -11520,7 +11437,7 @@ body.mode-editor .level-system-badge--accent {
     var(--accent-glow) !important;
 }
 
-body.mode-editor .editor-bottom-tabs-inner,
+body.mode-editor .editor-module-nav-inner,
 body.mode-editor .editor-sidebar-block,
 body.mode-editor .editor-session-panel,
 body.mode-editor .overview-card,
@@ -11534,7 +11451,7 @@ body.mode-editor .game-switch button:hover,
 body.mode-editor .preset-btn:hover,
 body.mode-editor .editor-sidebar .nav-btn:hover,
 body.mode-editor .editor-sidebar .nav-action:hover,
-body.mode-editor .editor-bottom-tabs .nav-btn:hover,
+body.mode-editor .editor-module-nav .nav-btn:hover,
 body.mode-editor .tool-card:hover,
 body.mode-editor #modalLevelSystem .level-system-mode-card:hover,
 body.mode-editor #modalLevelSystem .level-system-input-card:hover {
@@ -12210,7 +12127,7 @@ body {
 
 body.mode-editor {
   --editor-sidebar-width: clamp(320px, 23vw, 376px);
-  --editor-bottom-tabs-height: 72px;
+  --editor-module-nav-height: 72px;
 }
 
 body.mode-editor .app-shell,
@@ -12308,7 +12225,7 @@ body.mode-editor .save-content-scroll {
   max-width: 1680px;
   margin: 0 auto;
   gap: clamp(10px, 1.2vw, 18px);
-  padding: 0 4px max(92px, calc(var(--editor-bottom-tabs-height) + 28px)) 0;
+  padding: 0 4px 0 0;
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
@@ -12346,8 +12263,7 @@ body.mode-editor .save-hero-actions {
   margin-top: 0;
 }
 
-body.mode-editor .save-hero-actions > *,
-body.mode-editor .editor-bottom-tabs .nav-btn {
+body.mode-editor .save-hero-actions > * {
   min-height: clamp(36px, 4.5vh, 42px);
 }
 
@@ -12749,7 +12665,7 @@ body.mode-editor .diagnostics-page-frame .diagnostics-modal-scroll {
 @media (max-width: 1366px), (max-height: 760px) {
   body.mode-editor {
     --editor-sidebar-width: clamp(286px, 24vw, 330px);
-    --editor-bottom-tabs-height: 64px;
+    --editor-module-nav-height: 64px;
     --modal-viewport-gap: 10px;
   }
 
@@ -12786,7 +12702,7 @@ body.mode-editor .diagnostics-page-frame .diagnostics-modal-scroll {
 
   body.mode-editor .save-content-scroll {
     gap: 10px;
-    padding-bottom: max(84px, calc(var(--editor-bottom-tabs-height) + 22px));
+    padding-bottom: 0;
   }
 
   body.mode-editor .save-hero {
@@ -12997,7 +12913,7 @@ body.mode-editor .diagnostics-page-frame .diagnostics-modal-scroll {
 }
 
 .truck-change-modal {
-  z-index: 1000;
+  z-index: var(--z-modal-backdrop);
   align-items: center !important;
   overflow: hidden !important;
   padding: 16px !important;
@@ -14195,7 +14111,7 @@ body.mode-editor .truck-change-box {
 
 .garage-modal {
   position: fixed;
-  z-index: 2400;
+  z-index: var(--z-modal-backdrop);
   inset: 0;
   display: grid;
   place-items: center;
@@ -14557,5 +14473,173 @@ body.mode-editor .truck-change-box {
   .garage-summary-card.is-skeleton,
   .garage-card.is-skeleton {
     animation: none;
+  }
+}
+/* Header module navigation and UI layer hierarchy. */
+body.mode-editor {
+  --editor-module-nav-height: var(--nav-height);
+}
+
+body.mode-editor .app-shell {
+  z-index: var(--z-content);
+}
+
+body.mode-editor .command-header {
+  z-index: var(--z-header);
+}
+
+body:not(.mode-editor) .editor-module-nav {
+  display: none !important;
+}
+
+body.mode-editor .editor-module-nav {
+  display: flex !important;
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  pointer-events: auto !important;
+  z-index: var(--z-header);
+}
+
+body.mode-editor .editor-module-nav-inner {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--nav-gap) !important;
+  width: 100%;
+  max-width: 100%;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  overflow: visible !important;
+  box-sizing: border-box;
+}
+
+body.mode-editor .mode-switch {
+  gap: var(--nav-gap);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body.mode-editor .hub-home-btn,
+body.mode-editor .mode-btn,
+body.mode-editor .editor-module-nav .nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--nav-gap);
+  min-height: var(--nav-height);
+  height: var(--nav-height);
+  padding-block: 0;
+  padding-inline: var(--nav-padding-x);
+  border-radius: var(--nav-radius);
+  font-size: var(--nav-font-size);
+  font-weight: var(--nav-font-weight);
+  line-height: 1;
+  letter-spacing: 0;
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+body.mode-editor .hub-home-btn,
+body.mode-editor .editor-module-nav .nav-btn {
+  width: auto !important;
+  min-width: max-content;
+}
+
+body.mode-editor .hub-home-copy {
+  display: none;
+}
+
+body.mode-editor .editor-module-nav .nav-btn {
+  flex: 0 0 auto !important;
+  text-align: center;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+body.mode-editor .save-content-scroll {
+  padding-bottom: 0 !important;
+}
+
+body.mode-editor .nav-drawer-scrim {
+  z-index: calc(var(--z-header) - 1);
+}
+
+body.mode-editor .editor-sidebar {
+  z-index: var(--z-header);
+}
+
+body.mode-editor .user-menu-dropdown,
+body.mode-editor .picker-menu,
+body.mode-editor .picker-overlay-root,
+body.mode-editor .editor-picker.is-open {
+  z-index: var(--z-dropdown) !important;
+}
+
+body.mode-editor .picker-backdrop {
+  z-index: calc(var(--z-dropdown) - 1) !important;
+}
+
+.modal-backdrop,
+.modal-overlay,
+.dialog-backdrop,
+.dialog-overlay,
+.settings-backdrop,
+.overlay,
+[class*="modal-backdrop"],
+[class*="modal-overlay"],
+[class*="dialog-backdrop"],
+[class*="dialog-overlay"],
+.truck-change-modal,
+.garage-modal {
+  z-index: var(--z-modal-backdrop) !important;
+}
+
+.modal-box,
+.modal-content,
+.modal-card,
+.modal-panel,
+.dialog,
+.dialog-content,
+.settings-modal,
+.language-modal,
+[class*="modal-box"],
+[class*="modal-content"],
+[class*="modal-panel"],
+[class*="dialog-content"],
+.sandbox-preset-details-modal,
+.garage-modal-box {
+  position: relative;
+  z-index: var(--z-modal) !important;
+}
+
+.toast,
+.career-toast {
+  z-index: var(--z-toast) !important;
+}
+
+@media (max-width: 1366px), (max-height: 760px) {
+  body.mode-editor .save-content-scroll {
+    padding-bottom: 0 !important;
+  }
+}
+
+@media (max-width: 720px) {
+  body.mode-editor .editor-module-nav-inner {
+    flex-wrap: wrap;
+    justify-content: flex-start;
   }
 }
