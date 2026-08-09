@@ -1,4 +1,5 @@
 pub mod editor;
+pub mod license_plate;
 pub mod trailers;
 pub mod trucks;
 

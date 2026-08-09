@@ -4,8 +4,9 @@ use serde_json::json;
 
 use crate::features::truck_change::parser::{
     UnitBlock, extract_array_entries, extract_array_values, extract_field_value, is_null_ref,
-    normalize_sii_unit_id, parse_unit_blocks, sanitize_sii_display_text,
+    normalize_sii_unit_id, parse_unit_blocks,
 };
+use crate::features::vehicles::license_plate::license_plate_display_text;
 use crate::models::trailers::TrailerData;
 use crate::shared::sii_parser::{
     get_player_id, parse_trailer_defs_from_sii, parse_trailers_from_sii,
@@ -695,8 +696,7 @@ fn trailer_family_from_definition(definition: &str) -> (Option<String>, Option<S
 }
 
 fn license_plate_display_value(raw: &str) -> String {
-    let visible = raw.split('|').next().unwrap_or(raw);
-    sanitize_sii_display_text(visible)
+    license_plate_display_text(raw)
 }
 
 fn license_plate_country_code(raw: &str) -> Option<String> {

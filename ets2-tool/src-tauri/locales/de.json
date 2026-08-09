@@ -1151,6 +1151,17 @@
     "profiles_found": "{count} Profile gefunden",
     "scan_failed": "Scan fehlgeschlagen."
   },
+  "common": {
+    "cancel": "[NEEDS TRANSLATION] Cancel",
+    "apply": "[NEEDS TRANSLATION] Apply"
+  },
+  "license_plate_editor": {
+    "plate_text": "[NEEDS TRANSLATION] Plate Text",
+    "text_color": "[NEEDS TRANSLATION] Text Color",
+    "background_color": "[NEEDS TRANSLATION] Background Color",
+    "saved_colors": "[NEEDS TRANSLATION] Saved Colors",
+    "save_slot": "[NEEDS TRANSLATION] Save Slot"
+  },
   "toasts": {
     "language_updated": "Sprache auf Englisch geändert",
     "language_loaded": "Sprache geladen: Englisch",
@@ -1184,6 +1195,12 @@
     "truck_mileage_error": "Truck-Kilometerstand konnte nicht gesetzt werden",
     "truck_license_plate_success": "Truck-Kennzeichen auf {newValue} geändert!",
     "truck_license_plate_error": "Truck-Kennzeichen konnte nicht geändert werden",
+    "truck_license_plate_empty": "[NEEDS TRANSLATION] Enter a truck license plate.",
+    "truck_license_plate_invalid": "[NEEDS TRANSLATION] The truck license plate contains unsupported characters.",
+    "truck_license_plate_too_long": "[NEEDS TRANSLATION] The truck license plate must not exceed {max} characters.",
+    "license_plate_color_invalid": "[NEEDS TRANSLATION] Enter colors as #RRGGBB or RGB values from 0 to 255.",
+    "license_plate_color_unsupported": "[NEEDS TRANSLATION] This plate format does not expose editable colors.",
+    "license_plate_unsupported": "[NEEDS TRANSLATION] This plate format could not be edited safely.",
     "truck_change_apply_success": "Truckwechsel erfolgreich verifiziert.",
     "truck_change_apply_failed": "Truckwechsel fehlgeschlagen.",
     "trailer_change_apply_success": "Trailer-Wechsel erfolgreich verifiziert.",

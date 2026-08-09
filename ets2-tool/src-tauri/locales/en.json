@@ -1168,6 +1168,17 @@
             "profiles_found": "{count} profiles found",
             "scan_failed": "Scan failed."
       },
+      "common": {
+            "cancel": "Cancel",
+            "apply": "Apply"
+      },
+      "license_plate_editor": {
+            "plate_text": "Plate Text",
+            "text_color": "Text Color",
+            "background_color": "Background Color",
+            "saved_colors": "Saved Colors",
+            "save_slot": "Save Slot"
+      },
       "toasts": {
             "language_updated": "Language changed to English",
             "language_loaded": "Language loaded: English",
@@ -1201,6 +1212,12 @@
             "truck_mileage_error": "Failed to set truck odometer",
             "truck_license_plate_success": "Truck license plate changed to {newValue}!",
             "truck_license_plate_error": "Failed to change truck license plate",
+            "truck_license_plate_empty": "Enter a truck license plate.",
+            "truck_license_plate_invalid": "The truck license plate contains unsupported characters.",
+            "truck_license_plate_too_long": "The truck license plate must not exceed {max} characters.",
+            "license_plate_color_invalid": "Enter colors as #RRGGBB or RGB values from 0 to 255.",
+            "license_plate_color_unsupported": "This plate format does not expose editable colors.",
+            "license_plate_unsupported": "This plate format could not be edited safely.",
             "truck_change_apply_success": "Truck switch verified successfully.",
             "truck_change_apply_failed": "Truck switch failed.",
             "truck_change_save_required": "Select a profile and save first.",

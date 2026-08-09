@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use regex::Regex;
 
+use crate::features::vehicles::license_plate::license_plate_display_text;
 use crate::models::trucks::ParsedTruck;
 use crate::shared::sii_parser::{get_player_id, parse_trucks_from_sii};
 
@@ -1566,8 +1567,7 @@ fn truck_wear(parsed: &ParsedTruck) -> Option<f32> {
 }
 
 fn license_plate_display_value(raw: &str) -> String {
-    let visible = raw.split('|').next().unwrap_or(raw);
-    sanitize_sii_display_text(visible)
+    license_plate_display_text(raw)
 }
 
 fn license_plate_country_code(raw: &str) -> Option<String> {

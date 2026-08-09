@@ -6,18 +6,19 @@ use crate::features::trailer_change::parser::{
     resolve_current_trailer_pointer,
 };
 use crate::features::truck_change::parser::{extract_field_value, is_null_ref};
+use crate::features::vehicles::license_plate::{
+    LicensePlateError, edit_license_plate, validate_license_plate_text,
+};
 use crate::shared::current_profile::{require_current_profile, require_current_save};
 use crate::shared::decrypt::decrypt_cached;
 use crate::shared::hex_float::float_to_hex;
 use crate::shared::paths::game_sii_from_save;
-use crate::shared::regex_helper::cragex;
 use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 use regex::{Captures, Regex};
 use std::fs;
 use std::path::{Path, PathBuf};
 use tauri::command;
 
-const MAX_TRAILER_LICENSE_PLATE_CHARS: usize = 32;
 const MAX_JOB_WEIGHT_KG: f32 = 1_000_000.0;
 
 // ---------
@@ -170,22 +171,29 @@ fn resolve_active_job_trailer_id(content: &str) -> Result<String, String> {
     editable_active_trailer_id(&parsed)
 }
 
-fn validate_trailer_license_plate(plate: &str) -> Result<String, String> {
-    let trimmed = plate.trim();
-    if trimmed.is_empty() {
-        return Err("trailer_license_plate_empty".to_string());
+fn map_license_plate_error(error: LicensePlateError, is_trailer: bool) -> String {
+    match error {
+        LicensePlateError::Empty if is_trailer => "trailer_license_plate_empty".to_string(),
+        LicensePlateError::Empty => "truck_license_plate_empty".to_string(),
+        LicensePlateError::TooLong if is_trailer => "trailer_license_plate_too_long".to_string(),
+        LicensePlateError::TooLong => "truck_license_plate_too_long".to_string(),
+        LicensePlateError::InvalidText if is_trailer => "trailer_license_plate_invalid".to_string(),
+        LicensePlateError::InvalidText => "truck_license_plate_invalid".to_string(),
+        LicensePlateError::InvalidColor => "license_plate_color_invalid".to_string(),
+        LicensePlateError::MalformedFormat | LicensePlateError::UnsupportedFormat => {
+            "license_plate_unsupported".to_string()
+        }
+        LicensePlateError::UnsupportedColor => "license_plate_color_unsupported".to_string(),
     }
-    if trimmed.chars().count() > MAX_TRAILER_LICENSE_PLATE_CHARS {
-        return Err("trailer_license_plate_too_long".to_string());
-    }
-    if trimmed
-        .chars()
-        .any(|character| character.is_control() || matches!(character, '"' | '\\' | '|'))
-    {
-        return Err("trailer_license_plate_invalid".to_string());
-    }
+}
 
-    Ok(trimmed.to_string())
+fn validate_license_plate_input(plate: &str, is_trailer: bool) -> Result<String, String> {
+    validate_license_plate_text(plate).map_err(|error| map_license_plate_error(error, is_trailer))
+}
+
+#[cfg(test)]
+fn validate_trailer_license_plate(plate: &str) -> Result<String, String> {
+    validate_license_plate_input(plate, true)
 }
 
 fn validate_job_weight(mass: f32) -> Result<f32, String> {
@@ -410,6 +418,84 @@ where
     Ok(())
 }
 
+fn edit_license_plate_attribute<F>(
+    profile_state: tauri::State<'_, AppProfileState>,
+    decrypt_cache: tauri::State<'_, DecryptCache>,
+    profile_cache: tauri::State<'_, ProfileCache>,
+    action: &str,
+    action_reason: &str,
+    success_message: &str,
+    unit_type: &str,
+    attribute_key: &str,
+    is_trailer: bool,
+    resolve_unit_id: F,
+    plate: String,
+    text_color: Option<String>,
+    background_color: Option<String>,
+) -> Result<(), String>
+where
+    F: Fn(&str) -> Result<String, String>,
+{
+    let plate = validate_license_plate_input(&plate, is_trailer)?;
+    let (content, path) = read_save_content(profile_state.clone(), decrypt_cache.clone())?;
+    let unit_id = resolve_unit_id(&content)?;
+    let (block_start, block_end) = extract_vehicle_block(&content, unit_type, &unit_id)?;
+    let block = &content[block_start..block_end];
+    let regex_str = format!(r"({}:\s*)([^\r\n]+)", attribute_key);
+    let re = Regex::new(&regex_str).map_err(|error| error.to_string())?;
+    let captures = re.captures(block).ok_or_else(|| {
+        if is_trailer {
+            format!("trailer_attribute_not_found:{}", attribute_key)
+        } else {
+            format!("vehicle_attribute_not_found:{}", attribute_key)
+        }
+    })?;
+    let full_match = captures
+        .get(0)
+        .ok_or_else(|| "license_plate_attribute_match_failed".to_string())?;
+    let prefix = captures
+        .get(1)
+        .ok_or_else(|| "license_plate_attribute_prefix_failed".to_string())?
+        .as_str();
+    let old_value = captures
+        .get(2)
+        .ok_or_else(|| "license_plate_attribute_value_failed".to_string())?
+        .as_str();
+    let new_raw = edit_license_plate(
+        old_value,
+        &plate,
+        text_color.as_deref(),
+        background_color.as_deref(),
+    )
+    .map_err(|error| map_license_plate_error(error, is_trailer))?;
+    let replacement = format!("{}\"{}\"", prefix, new_raw);
+    let mut new_block = String::with_capacity(block.len() + replacement.len());
+    new_block.push_str(&block[..full_match.start()]);
+    new_block.push_str(&replacement);
+    new_block.push_str(&block[full_match.end()..]);
+
+    let new_content = format!(
+        "{}{}{}",
+        &content[..block_start],
+        new_block,
+        &content[block_end..]
+    );
+    write_save_content(
+        profile_state.inner(),
+        &path,
+        &new_content,
+        action,
+        action_reason,
+        success_message,
+    )?;
+    verify_written_content(profile_state.inner(), &path, &new_content, action)?;
+
+    decrypt_cache.invalidate_path(Path::new(&path));
+    profile_cache.invalidate_save_data();
+    profile_cache.invalidate_vehicle_data();
+
+    Ok(())
+}
 // ---------------------
 // Truck Commands
 // ---------------------
@@ -417,12 +503,17 @@ where
 #[command]
 pub async fn set_player_truck_license_plate(
     plate: String,
+    text_color: Option<String>,
+    background_color: Option<String>,
     profile_state: tauri::State<'_, AppProfileState>,
     decrypt_cache: tauri::State<'_, DecryptCache>,
     profile_cache: tauri::State<'_, ProfileCache>,
 ) -> Result<(), String> {
-    dev_log!("Setting truck license plate to: {}", plate);
-    generic_vehicle_attribute_edit(
+    dev_log!(
+        "Setting truck license plate ({} characters)",
+        plate.trim().chars().count()
+    );
+    edit_license_plate_attribute(
         profile_state,
         decrypt_cache,
         profile_cache,
@@ -430,18 +521,12 @@ pub async fn set_player_truck_license_plate(
         "before truck license plate edit",
         "The player truck license plate was updated.",
         "vehicle",
-        "my_truck",
         "license_plate",
-        |caps: &Captures| {
-            let old_value = &caps[2];
-            let old_value_unquoted = old_value.trim_matches('"');
-            if let Some(pipe_index) = old_value_unquoted.rfind('|') {
-                let country_part = &old_value_unquoted[pipe_index + 1..];
-                format!(r#""{}|{}""#, &plate, country_part)
-            } else {
-                format!(r#""{}""#, &plate)
-            }
-        },
+        false,
+        |content| get_player_vehicle_id(content, "my_truck"),
+        plate,
+        text_color,
+        background_color,
     )
 }
 
@@ -579,34 +664,30 @@ pub async fn set_player_truck_wear(
 #[command]
 pub async fn set_player_trailer_license_plate(
     plate: String,
+    text_color: Option<String>,
+    background_color: Option<String>,
     profile_state: tauri::State<'_, AppProfileState>,
     decrypt_cache: tauri::State<'_, DecryptCache>,
     profile_cache: tauri::State<'_, ProfileCache>,
 ) -> Result<(), String> {
-    let plate = validate_trailer_license_plate(&plate)?;
     dev_log!(
         "Setting trailer license plate ({} characters)",
-        plate.chars().count()
+        plate.trim().chars().count()
     );
-    edit_resolved_trailer_attribute(
+    edit_license_plate_attribute(
         profile_state,
         decrypt_cache,
         profile_cache,
         "set_player_trailer_license_plate",
         "before trailer license plate edit",
         "The player trailer license plate was updated.",
+        "trailer",
         "license_plate",
+        true,
         resolve_editable_active_trailer_id,
-        |caps: &Captures| {
-            let old_value = &caps[2];
-            let old_value_unquoted = old_value.trim_matches('"');
-            if let Some(pipe_index) = old_value_unquoted.rfind('|') {
-                let country_part = &old_value_unquoted[pipe_index + 1..];
-                format!(r#""{}|{}""#, &plate, country_part)
-            } else {
-                format!(r#""{}""#, &plate)
-            }
-        },
+        plate,
+        text_color,
+        background_color,
     )
 }
 

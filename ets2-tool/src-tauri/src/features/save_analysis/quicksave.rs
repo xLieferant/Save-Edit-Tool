@@ -1,4 +1,5 @@
 use crate::dev_log;
+use crate::features::vehicles::license_plate::license_plate_display_text;
 use crate::models::quicksave_game_info::{CurrentTruckSummary, GameDataQuicksave};
 use crate::shared::decrypt::decrypt_cached_with_cache;
 use crate::shared::paths::game_sii_from_save;
@@ -162,7 +163,8 @@ fn parse_current_truck_summary_from_content(
 
     let odometer_km = extract_integer_field(&vehicle_block, "odometer");
     let cleaned_plate = extract_quoted_field(&vehicle_block, "license_plate")
-        .and_then(|plate| sanitize_license_plate(&plate));
+        .map(|plate| license_plate_display_text(&plate))
+        .filter(|plate| !plate.is_empty());
 
     let accessory_ids = extract_array_references(&vehicle_block, "accessories")?;
     let (brand_token, model_token) =
@@ -347,42 +349,6 @@ fn parse_truck_tokens_from_data_path(data_path: &str) -> Option<(Option<String>,
     }
 
     Some((non_empty_option(cleaned_key.to_string()), None))
-}
-
-fn sanitize_license_plate(raw: &str) -> Option<String> {
-    if raw.trim().is_empty() {
-        return None;
-    }
-
-    let without_tags = cragex(r"<[^>]*>").ok()?.replace_all(raw, " ").to_string();
-    let without_country = cragex(r"\s*\|[A-Za-z0-9._-]+$")
-        .ok()?
-        .replace(&without_tags, "")
-        .to_string();
-    let without_controls = cragex(r"[\r\n\t]+")
-        .ok()?
-        .replace_all(&without_country, " ")
-        .to_string();
-    let collapsed = cragex(r"\s+")
-        .ok()?
-        .replace_all(&without_controls, " ")
-        .to_string();
-
-    let cleaned = collapsed
-        .trim()
-        .trim_matches(|character: char| character == '.' || character == '|' || character == '"')
-        .trim()
-        .to_string();
-
-    if cleaned.is_empty()
-        || cleaned.contains('<')
-        || cleaned.contains('>')
-        || cleaned.contains("/material/")
-    {
-        None
-    } else {
-        Some(cleaned)
-    }
 }
 
 fn build_display_name(brand_label: Option<&str>, model_label: Option<&str>) -> Option<String> {

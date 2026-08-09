@@ -6,9 +6,8 @@ use crate::features::trailer_change::parser::{
     ParsedTrailerSave, find_trailer_block_by_id, find_unit_block_by_id, parse_trailer_save,
     resolve_current_trailer_pointer,
 };
-use crate::features::truck_change::parser::{
-    extract_field_value, is_null_ref, sanitize_sii_display_text,
-};
+use crate::features::truck_change::parser::{extract_field_value, is_null_ref};
+use crate::features::vehicles::license_plate::license_plate_display_text;
 use crate::models::trailers::{ParsedTrailer, PlayerTrailerResult, TrailerData, TrailerDefData};
 use crate::shared::paths::game_sii_from_save;
 use crate::shared::sii_parser::{
@@ -359,8 +358,7 @@ fn parsed_trailer_from_data(
     let display_license_plate = tr
         .license_plate
         .as_deref()
-        .map(|plate| plate.split('|').next().unwrap_or(plate))
-        .map(sanitize_sii_display_text)
+        .map(license_plate_display_text)
         .filter(|plate| !plate.is_empty());
 
     ParsedTrailer {

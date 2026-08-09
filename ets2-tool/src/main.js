@@ -124,8 +124,9 @@ async function safeInvoke(command, args = {}, options = {}) {
 
   try {
     const shouldRedact = ["auth_login", "auth_register", "auth_reset_password_with_recovery_code"].includes(command);
-    const shouldRedactTrailerPlate = command === "set_player_trailer_license_plate";
-    if (shouldRedact || shouldRedactTrailerPlate) {
+    const shouldRedactPlate = command === "set_player_trailer_license_plate"
+      || command === "set_player_truck_license_plate";
+    if (shouldRedact || shouldRedactPlate) {
       const safeArgs = { ...(args || {}) };
       for (const key of ["password", "passwordConfirm", "password_confirm"]) {
         if (key in safeArgs) safeArgs[key] = "[REDACTED]";
@@ -3667,7 +3668,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   window.playerTrailerHasActiveJob = false;
   window.playerTrailerJobCargoMass = null;
   window.playerTrailerLoadError = null;
-  window.extractPlateText = (plate) => (plate ? plate.replace(/^"|"$/g, "") : "");
+  window.extractPlateText = (plate) => {
+    if (!plate) return "";
+    const raw = String(plate).trim().replace(/^"|"$/g, "");
+    const separator = raw.lastIndexOf("|");
+    const content = separator >= 0 ? raw.slice(0, separator) : raw;
+    return content
+      .replace(/<[^>]*>/g, " ")
+      .replace(/[\u0000-\u001f\u007f]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  };
 
   const dropdownCheckIcon = `
     <svg viewBox="0 0 20 20" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
