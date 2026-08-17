@@ -9,6 +9,10 @@ const COPY_KEYS = {
   relinquishEmpty: "garage_manager.actions.relinquish_empty",
   relinquish: "garage_manager.actions.relinquish",
   assignResources: "garage_manager.actions.assign_resources",
+  assignRandomDrivers: "garage_manager.actions.assign_drivers",
+  assignDriver: "garage_manager.actions.assign_driver",
+  manageDrivers: "garage_manager.actions.manage_drivers",
+  done: "garage_manager.actions.done",
   upgrade: "garage_manager.actions.upgrade",
   downgrade: "garage_manager.actions.downgrade",
   setHeadquarters: "garage_manager.actions.set_headquarters",
@@ -24,6 +28,7 @@ const COPY_KEYS = {
   relinquishingEmpty: "garage_manager.actions.relinquishing_empty",
   relinquishing: "garage_manager.actions.relinquishing",
   assigningResources: "garage_manager.actions.assigning_resources",
+  assigningDrivers: "garage_manager.actions.assigning_drivers",
   upgrading: "garage_manager.actions.upgrading",
   downgrading: "garage_manager.actions.downgrading",
   changingHeadquarters: "garage_manager.actions.changing_headquarters",
@@ -90,6 +95,10 @@ const COPY_KEYS = {
   occupiedSlots: "garage_manager.fields.occupied_slots",
   availableSlots: "garage_manager.fields.available_slots",
   assignedDrivers: "garage_manager.fields.assigned_drivers",
+  freeDriverPositions: "garage_manager.fields.free_driver_positions",
+  availableAiDrivers: "garage_manager.fields.available_ai_drivers",
+  aiDriverPool: "garage_manager.fields.ai_driver_pool",
+  remainingDriverPool: "garage_manager.fields.remaining_driver_pool",
   assignedTrucks: "garage_manager.fields.assigned_trucks",
   assignedTrailers: "garage_manager.fields.assigned_trailers",
   productivity: "garage_manager.fields.productivity",
@@ -157,7 +166,9 @@ const COPY_KEYS = {
   relinquishChange: "garage_manager.confirm.relinquish_change",
   relinquishEffect: "garage_manager.confirm.relinquish_effect",
   assignResourcesChange: "garage_manager.confirm.assign_resources_change",
+  assignDriversChange: "garage_manager.confirm.assign_drivers_change",
   assignResourcesEffect: "garage_manager.confirm.assign_resources_effect",
+  assignDriversEffect: "garage_manager.confirm.assign_drivers_effect",
   upgradeChange: "garage_manager.confirm.upgrade_change",
   updateLargeChange: "garage_manager.confirm.update_large_change",
   updateSmallChange: "garage_manager.confirm.update_small_change",
@@ -176,6 +187,8 @@ const COPY_KEYS = {
   relinquishEmptyFailureTitle: "garage_manager.errors.relinquish_empty_failure_title",
   relinquishFailureTitle: "garage_manager.errors.relinquish_failure_title",
   assignResourcesFailureTitle: "garage_manager.errors.assign_resources_failure_title",
+  assignDriversFailureTitle: "garage_manager.errors.assign_drivers_failure_title",
+  garageAssignmentDriverCountInvalid: "garage_manager.errors.garage_assignment_driver_count_invalid",
   upgradeFailureTitle: "garage_manager.errors.upgrade_failure_title",
   downgradeFailureTitle: "garage_manager.errors.downgrade_failure_title",
   headquartersFailureTitle: "garage_manager.errors.headquarters_failure_title",
@@ -201,6 +214,39 @@ const COPY_KEYS = {
   optionUnavailable: "garage_manager.dialogs.option_unavailable",
   randomDriver: "garage_manager.dialogs.random_driver",
   randomTruck: "garage_manager.dialogs.random_truck",
+  driverManagerTitle: "garage_manager.drivers.title",
+  driverManagerSectionTitle: "garage_manager.drivers.section_title",
+  driverPositions: "garage_manager.drivers.positions",
+  driverPositionStatus: "garage_manager.drivers.position_status",
+  freeDriverPositionsStatus: "garage_manager.drivers.free_positions_status",
+  howManyDrivers: "garage_manager.drivers.select_count",
+  selectedDrivers: "garage_manager.drivers.selected_count",
+  maximumAvailableDrivers: "garage_manager.drivers.maximum_available",
+  fillAllDriverPositions: "garage_manager.drivers.fill_all",
+  currentDrivers: "garage_manager.drivers.current",
+  garageFullyStaffed: "garage_manager.drivers.full",
+  garageFullyStaffedMessage: "garage_manager.drivers.full_message",
+  driverPoolEmpty: "garage_manager.drivers.pool_empty",
+  driverPoolEmptyMessage: "garage_manager.drivers.pool_empty_message",
+  driverGarageNotOwned: "garage_manager.drivers.not_owned",
+  assignOneDriver: "garage_manager.drivers.assign_one",
+  assignManyDrivers: "garage_manager.drivers.assign_many",
+  driverAssignSuccess: "garage_manager.drivers.success",
+  driverNoTruckWarning: "garage_manager.drivers.no_truck_warning",
+  increaseDriverCount: "garage_manager.drivers.increase_count",
+  decreaseDriverCount: "garage_manager.drivers.decrease_count",
+  aiDriver: "garage_manager.drivers.ai_driver",
+  driverSlot: "garage_manager.drivers.slot",
+  emptyDriverSlot: "garage_manager.drivers.empty_slot",
+  assignedStatus: "garage_manager.drivers.assigned",
+  availableStatus: "garage_manager.drivers.available",
+  assignedInGarageStatus: "garage_manager.drivers.assigned_in",
+  selectAiDriver: "garage_manager.drivers.select_driver",
+  searchDriversPlaceholder: "garage_manager.drivers.search_placeholder",
+  availableDriversCount: "garage_manager.drivers.available_count",
+  driverReference: "garage_manager.drivers.driver_reference",
+  noDriverMatches: "garage_manager.drivers.no_matches",
+  manualDriverAssignSuccess: "garage_manager.drivers.manual_success",
   backupCreated: "garage_manager.results.backup_created",
   backupNotCreated: "garage_manager.results.backup_not_created",
   verified: "garage_manager.results.verified",
@@ -213,6 +259,7 @@ const COPY_KEYS = {
   relinquishEmptyNone: "garage_manager.success.relinquish_empty_none",
   relinquishSuccess: "garage_manager.success.relinquish",
   assignResourcesSuccess: "garage_manager.success.assign_resources",
+  assignDriversSuccess: "garage_manager.success.assign_drivers",
   upgradeSuccess: "garage_manager.success.upgrade",
   downgradeSuccess: "garage_manager.success.downgrade",
   headquartersSuccess: "garage_manager.success.headquarters",
@@ -261,6 +308,8 @@ const ERROR_KEYS = [
   ["garage_assignment_no_available_truck", "garage_manager.errors.garage_assignment_no_available_truck"],
   ["garage_assignment_no_free_driver_slot", "garage_manager.errors.garage_assignment_no_free_driver_slot"],
   ["garage_assignment_no_available_driver", "garage_manager.errors.garage_assignment_no_available_driver"],
+  ["garage_assignment_driver_count_invalid", "garage_manager.errors.garage_assignment_driver_count_invalid"],
+  ["driver_pool_invalid", "garage_manager.errors.driver_pool_invalid"],
   ["garage_update_empty", "garage_manager.errors.garage_update_empty"],
   ["save_changed_since_load", "garage_manager.errors.save_changed_since_load"],
   ["backup_failed", "garage_manager.errors.backup_failed"],
@@ -357,6 +406,130 @@ function canRelinquishGarage(garage) {
     && Number(garage.trailerSlotCount || 0) === 0;
 }
 
+function freeDriverSlotCount(garage) {
+  return Math.max(0, Number(garage?.driverSlotCount || 0) - Number(garage?.assignedDriverCount || 0));
+}
+function driverAssignmentLimit(garage, driverPool) {
+  return Math.min(
+    freeDriverSlotCount(garage),
+    Math.max(0, Number(driverPool?.availableDriverCount || 0)),
+  );
+}
+
+function clampDriverSelection(value, maximum) {
+  if (maximum <= 0) return 0;
+  return Math.min(maximum, Math.max(1, Number(value || 1)));
+}
+
+function driverAssignButtonLabel(count, copy) {
+  return count === 1
+    ? copy.assignOneDriver
+    : formatCopy(copy.assignManyDrivers, { count });
+}
+
+function driversWithoutTruckCount(garage) {
+  return Math.max(
+    0,
+    Number(garage?.assignedDriverCount || 0) - Number(garage?.assignedTruckCount || 0),
+  );
+}
+
+function formatDriverPoolAvailability(driverPool, copy) {
+  if (!driverPool) return copy.notAvailable;
+  return formatCopy(copy.occupancyValue, {
+    occupied: Number(driverPool.availableDriverCount || 0),
+    capacity: Number(driverPool.driverPoolCount || 0),
+  });
+}
+
+function garageForDriver(driverId, garages) {
+  const normalized = String(driverId || "");
+  return (garages || []).find((garage) => (garage.slots || []).some(
+    (slot) => slot.driverId === normalized,
+  ));
+}
+
+function driverPoolEntries(driverPool, garages, copy) {
+  const available = new Set(driverPool?.availableDriverIds || []);
+  const assigned = new Set(driverPool?.assignedDriverIds || []);
+  const entries = new Map();
+  (driverPool?.drivers || []).forEach((driver) => {
+    if (driver?.driverId) {
+      entries.set(driver.driverId, {
+        driverId: driver.driverId,
+        index: driver.index,
+      });
+    }
+  });
+  assigned.forEach((driverId) => {
+    if (!entries.has(driverId)) {
+      entries.set(driverId, { driverId, index: null });
+    }
+  });
+  return Array.from(entries.values()).map((entry) => {
+    const assignedGarage = garageForDriver(entry.driverId, garages);
+    const isAvailable = available.has(entry.driverId);
+    const isAssigned = assigned.has(entry.driverId);
+    const status = isAvailable
+      ? copy.availableStatus
+      : assignedGarage
+        ? formatCopy(copy.assignedInGarageStatus, { city: garageCity(assignedGarage, copy) })
+        : isAssigned
+          ? copy.assignedStatus
+          : copy.notAvailable;
+    return {
+      ...entry,
+      isAvailable,
+      isAssigned,
+      status,
+      searchText: [entry.driverId, status].join(" ").toLowerCase(),
+    };
+  }).sort((left, right) => {
+    if (left.isAvailable !== right.isAvailable) return left.isAvailable ? -1 : 1;
+    if (left.isAssigned !== right.isAssigned) return left.isAssigned ? 1 : -1;
+    return left.driverId.localeCompare(right.driverId);
+  });
+}
+
+function garageDriverSlotListMarkup(garage, copy, assignDisabled) {
+  const slotCount = Math.max(
+    Number(garage?.driverSlotCount || 0),
+    (garage?.slots || []).length,
+  );
+  const slots = new Map((garage?.slots || []).map((slot) => [Number(slot.index), slot]));
+  if (slotCount <= 0) {
+    return "<p class='garage-reference-empty'>" + escapeHtml(copy.noDrivers) + "</p>";
+  }
+  return "<div class='garage-driver-slot-list'>"
+    + Array.from({ length: slotCount }, (_, index) => {
+      const slot = slots.get(index) || { index, driverId: null, truckId: null };
+      const driverId = slot.driverId;
+      const title = driverId ? copy.aiDriver : copy.emptyDriverSlot;
+      const ref = driverId || formatCopy(copy.driverSlot, { index });
+      const status = driverId ? copy.assignedStatus : copy.availableStatus;
+      const action = driverId
+        ? ""
+        : "<button type='button' class='button-secondary' data-garage-driver-slot-assign data-garage-driver-slot-index='"
+          + escapeHtml(index)
+          + "'"
+          + (assignDisabled ? " disabled" : "")
+          + ">"
+          + escapeHtml(copy.assignDriver)
+          + "</button>";
+      return "<article class='garage-driver-slot-card"
+        + (driverId ? " is-assigned" : " is-empty")
+        + "'><div><strong>"
+        + escapeHtml(title)
+        + "</strong><code>"
+        + escapeHtml(ref)
+        + "</code><span>"
+        + escapeHtml(status)
+        + "</span></div>"
+        + action
+        + "</article>";
+    }).join("")
+    + "</div>";
+}
 function technicalMessage(error, copy) {
   let message = errorCode(error);
   [window.selectedProfilePath, window.selectedSavePath, window.currentSavePath]
@@ -413,8 +586,9 @@ function createModal(root, {
   copy,
   className = "",
   returnFocus = null,
+  canClose = null,
 }) {
-  ACTIVE_MODALS.get(root)?.close({ restoreFocus: false });
+  ACTIVE_MODALS.get(root)?.close({ restoreFocus: false, force: true });
   const previouslyFocused = returnFocus || (
     document.activeElement instanceof HTMLElement ? document.activeElement : null
   );
@@ -453,11 +627,12 @@ function createModal(root, {
   let closed = false;
   const host = root.parentElement;
   const observer = new MutationObserver(() => {
-    if (!root.isConnected) close({ restoreFocus: false });
+    if (!root.isConnected) close({ restoreFocus: false, force: true });
   });
   if (host) observer.observe(host, { childList: true });
-  const close = ({ restoreFocus = true } = {}) => {
+  const close = ({ restoreFocus = true, force = false } = {}) => {
     if (closed) return;
+    if (!force && typeof canClose === "function" && !canClose()) return;
     closed = true;
     document.removeEventListener("keydown", handleKeydown);
     observer.disconnect();
@@ -533,6 +708,8 @@ export async function mountGarageManager(container) {
 
   const state = {
     result: null,
+    driverPool: null,
+    driverPoolError: null,
     loading: false,
     mutationPending: false,
     bulkMutationPending: false,
@@ -540,6 +717,7 @@ export async function mountGarageManager(container) {
     error: null,
     refreshError: null,
     lastMutationResult: null,
+    lastDriverAssignmentResult: null,
     highlightedGarageId: null,
     ...PERSISTED_VIEW_STATE,
   };
@@ -706,6 +884,7 @@ export async function mountGarageManager(container) {
         owned.reduce((sum, garage) => sum + Number(garage.occupiedSlots || 0), 0),
       ],
       [copy.drivers, owned.reduce((sum, garage) => sum + Number(garage.assignedDriverCount || 0), 0)],
+      [copy.aiDriverPool, formatDriverPoolAvailability(state.driverPool, copy)],
       [copy.trucks, owned.reduce((sum, garage) => sum + Number(garage.assignedTruckCount || 0), 0)],
       [copy.trailers, owned.reduce((sum, garage) => sum + Number(garage.assignedTrailerCount || 0), 0)],
     ];
@@ -989,8 +1168,10 @@ export async function mountGarageManager(container) {
     const previousScrollTop = scrollContainer?.scrollTop;
     state.error = null;
     state.refreshError = null;
+    state.driverPoolError = null;
     if (!window.selectedProfilePath || !window.selectedSavePath) {
       state.result = null;
+      state.driverPool = null;
       render();
       return null;
     }
@@ -998,10 +1179,20 @@ export async function mountGarageManager(container) {
     render();
     try {
       const result = await window.invoke("get_all_garages");
+      let driverPool = null;
+      if (result?.game === "ets2") {
+        try {
+          driverPool = await window.invoke("get_ai_driver_pool");
+        } catch (poolError) {
+          console.warn("AI driver pool load failed:", poolError);
+          state.driverPoolError = poolError;
+        }
+      }
       if (expectedSaveHash && result?.saveHash !== expectedSaveHash) {
         throw new Error("garage_size_change_not_verified:save_hash");
       }
       state.result = result;
+      state.driverPool = driverPool;
       if (state.selectedGarageId && !findGarage(state.selectedGarageId)) {
         state.selectedGarageId = null;
         persistViewState();
@@ -1012,6 +1203,7 @@ export async function mountGarageManager(container) {
       state.error = preserveOnError ? null : error;
       state.refreshError = preserveOnError ? error : null;
       state.result = preserveOnError ? previousResult : null;
+      state.driverPool = preserveOnError ? state.driverPool : null;
       if (toastOnError) {
         window.showToast(errorTranslationKey(error), {}, "error");
       }
@@ -1166,6 +1358,58 @@ export async function mountGarageManager(container) {
       ? "<p class='garage-mutation-blocked'>" + escapeHtml(copy.relinquishBlocked) + "</p>"
       : "";
     const actionBlockedMessage = downgradeBlockedMessage + relinquishBlockedMessage;
+    const freeDriverSlots = freeDriverSlotCount(garage);
+    const availableAiDrivers = Math.max(0, Number(state.driverPool?.availableDriverCount || 0));
+    const driverManagerDisabled = readOnly
+      || blocked
+      || state.mutationPending
+      || garage.ownership !== "owned";
+    const driverPreviewState = garage.ownership !== "owned"
+      ? copy.driverGarageNotOwned
+      : freeDriverSlots <= 0
+        ? copy.garageFullyStaffed
+        : availableAiDrivers <= 0
+          ? copy.driverPoolEmpty
+          : formatCopy(copy.freeDriverPositionsStatus, { count: freeDriverSlots });
+    const driverNoTruckCount = driversWithoutTruckCount(garage);
+    const driverNoTruckNotice = driverNoTruckCount > 0
+      ? "<p class='garage-driver-note'>"
+        + escapeHtml(formatCopy(copy.driverNoTruckWarning, { count: driverNoTruckCount }))
+        + "</p>"
+      : "";
+    const randomDriverDisabled = driverManagerDisabled
+      || freeDriverSlots <= 0
+      || availableAiDrivers <= 0;
+    const driverSlotList = garageDriverSlotListMarkup(garage, copy, randomDriverDisabled);
+    const driverPreviewSection = "<section class='garage-detail-section garage-driver-preview'><div class='garage-driver-preview-head'><div><h3>"
+      + escapeHtml(copy.driverManagerSectionTitle)
+      + "</h3><p>"
+      + escapeHtml(formatCopy(copy.driverPositionStatus, {
+        assigned: garage.assignedDriverCount,
+        capacity: garage.driverSlotCount,
+      }))
+      + "</p></div><div class='garage-driver-preview-actions'><button type='button' class='button-secondary' data-garage-detail-assign-random-drivers"
+      + (randomDriverDisabled ? " disabled" : "")
+      + ">"
+      + escapeHtml(copy.assignRandomDrivers)
+      + "</button><button type='button' class='button-secondary' data-garage-detail-driver-manager"
+      + (driverManagerDisabled ? " disabled" : "")
+      + ">"
+      + escapeHtml(copy.manageDrivers)
+      + "</button></div></div><dl class='garage-detail-list'>"
+      + detailRow(copy.assignedDrivers, formatCopy(copy.occupancyValue, {
+        occupied: garage.assignedDriverCount,
+        capacity: garage.driverSlotCount,
+      }))
+      + detailRow(copy.freeDriverPositions, freeDriverSlots)
+      + detailRow(copy.availableAiDrivers, availableAiDrivers)
+      + "</dl>"
+      + driverSlotList
+      + "<p class='garage-reference-empty'>"
+      + escapeHtml(driverPreviewState)
+      + "</p>"
+      + driverNoTruckNotice
+      + "</section>";
     const body = "<section class='garage-detail-section'><h3>"
       + escapeHtml(copy.generalInformation)
       + "</h3><dl class='garage-detail-list'>"
@@ -1177,6 +1421,11 @@ export async function mountGarageManager(container) {
       + detailRow(copy.capacity, slotCountLabel(garage.vehicleSlotCount, copy))
       + detailRow(copy.occupiedSlots, garage.occupiedSlots)
       + detailRow(copy.availableSlots, garage.availableSlots)
+      + detailRow(copy.assignedDrivers, formatCopy(copy.occupancyValue, {
+        occupied: garage.assignedDriverCount,
+        capacity: garage.driverSlotCount,
+      }))
+      + detailRow(copy.aiDriverPool, formatDriverPoolAvailability(state.driverPool, copy))
       + detailRow(copy.writeStatus, writeStatus)
       + detailRow(
         copy.backupStatus,
@@ -1190,7 +1439,9 @@ export async function mountGarageManager(container) {
       )
       + detailRow(copy.backendStatus, garage.status ?? copy.notAvailable)
       + detailRow(copy.productivity, garage.productivity ?? copy.notAvailable)
-      + "</dl></section><section class='garage-detail-section'><h3>"
+      + "</dl></section>"
+      + driverPreviewSection
+      + "<section class='garage-detail-section'><h3>"
       + escapeHtml(copy.assignments)
       + "</h3><div class='garage-assignment-list'>"
       + assignmentSection(
@@ -1289,11 +1540,26 @@ export async function mountGarageManager(container) {
         focusGarageAction(garage.garageId, "details");
       },
     );
+    const reopenDetails = () => openDetails(garage.garageId, { returnFocus: focusTarget });
+    const openDriverManager = (mode = "manual") => {
+      modal.close({ restoreFocus: false });
+      openDriverAssignmentDialog(garage.garageId, reopenDetails, { mode });
+    };
+    modal.overlay.querySelector("[data-garage-detail-driver-manager]")?.addEventListener(
+      "click",
+      () => openDriverManager("manual"),
+    );
+    modal.overlay.querySelector("[data-garage-detail-assign-random-drivers]")?.addEventListener(
+      "click",
+      () => openDriverManager("random"),
+    );
+    modal.overlay.querySelectorAll("[data-garage-driver-slot-assign]").forEach((button) => {
+      button.addEventListener("click", () => openDriverManager("manual"));
+    });
     modal.overlay.querySelectorAll("[data-garage-detail-operation]").forEach((button) => {
       button.addEventListener("click", () => {
         const operation = button.dataset.garageDetailOperation;
         modal.close({ restoreFocus: false });
-        const reopenDetails = () => openDetails(garage.garageId, { returnFocus: focusTarget });
         if (operation === "assign-resources") {
           openAssignmentDialog(garage.garageId, reopenDetails);
           return;
@@ -1600,7 +1866,342 @@ export async function mountGarageManager(container) {
     window.showToast(key, {}, "error");
   }
 
-  function openAssignmentDialog(garageId, returnFocus = null) {
+  function validateDriverAssignmentResult(result, garageId, expectedCount = null) {
+    if (!result?.verified
+      || result.garageId !== garageId
+      || !result.saveHash
+      || !Array.isArray(result.assignedDriverIds)
+      || result.assignedDriverIds.length !== Number(result.assignedCount || 0)
+      || (Number.isInteger(expectedCount) && Number(result.assignedCount || 0) !== expectedCount)) {
+      throw new Error("garage_size_change_not_verified:driver_assignment_response");
+    }
+  }
+
+  function openDriverAssignmentDialog(garageId, returnFocus = null, options = {}) {
+    let garage = findGarage(garageId);
+    if (!garage || state.result?.game !== "ets2") return;
+
+    const focusTarget = returnFocus || (() => focusGarageAction(garage.garageId, "details"));
+    let selectedCount = driverAssignmentLimit(garage, state.driverPool);
+    let isAssigningDrivers = false;
+    let successResult = null;
+    let driverAssignmentError = null;
+    let searchQuery = "";
+
+    const modal = createModal(root, {
+      title: copy.driverManagerTitle,
+      subtitle: garageCity(garage, copy),
+      bodyMarkup: "<div data-garage-driver-manager-body></div>",
+      footerMarkup: "<button type='button' class='button-secondary' data-garage-driver-action='cancel'>"
+        + escapeHtml(copy.cancel)
+        + "</button>",
+      copy,
+      className: "garage-driver-manager-modal",
+      returnFocus: focusTarget,
+      canClose: () => !isAssigningDrivers,
+    });
+    const bodyElement = modal.overlay.querySelector("[data-garage-driver-manager-body]");
+    const footerElement = modal.overlay.querySelector(".garage-modal-footer");
+    const closeButton = modal.overlay.querySelector("[data-garage-modal-close]");
+
+    function currentDriverIds(currentGarage) {
+      return (currentGarage?.slots || []).map((slot) => slot.driverId).filter(Boolean);
+    }
+
+    function renderDriverCards(entries, canAssignManual) {
+      const normalizedSearch = searchQuery.trim().toLowerCase();
+      const filtered = normalizedSearch
+        ? entries.filter((entry) => entry.searchText.includes(normalizedSearch))
+        : entries;
+      if (!filtered.length) {
+        return "<p class='garage-reference-empty'>" + escapeHtml(copy.noDriverMatches) + "</p>";
+      }
+      return "<div class='garage-driver-pool-list'>"
+        + filtered.map((entry) => "<article class='garage-driver-pool-card"
+          + (entry.isAvailable ? " is-available" : " is-disabled")
+          + "'><div><strong>"
+          + escapeHtml(copy.aiDriver)
+          + "</strong><code>"
+          + escapeHtml(entry.driverId)
+          + "</code><span>"
+          + escapeHtml(entry.status)
+          + "</span></div><button type='button' data-garage-driver-action='assign-manual' data-driver-id='"
+          + escapeHtml(entry.driverId)
+          + "'"
+          + (!entry.isAvailable || !canAssignManual || isAssigningDrivers ? " disabled" : "")
+          + ">"
+          + escapeHtml(copy.assignDriver)
+          + "</button></article>").join("")
+        + "</div>";
+    }
+
+    function renderDriverManager() {
+      const currentGarage = findGarage(garageId) || garage;
+      garage = currentGarage;
+      const owned = currentGarage.ownership === "owned";
+      const blockedNow = garageIsBlocked(currentGarage);
+      const capacity = Math.max(0, Number(currentGarage.driverSlotCount || 0));
+      const assigned = Math.max(0, Number(currentGarage.assignedDriverCount || 0));
+      const freeSlots = freeDriverSlotCount(currentGarage);
+      const availableDrivers = Math.max(0, Number(state.driverPool?.availableDriverCount || 0));
+      const maximum = owned && !blockedNow ? Math.min(freeSlots, availableDrivers) : 0;
+      selectedCount = clampDriverSelection(selectedCount, maximum);
+      const progress = capacity > 0 ? Math.min(100, Math.round((assigned / capacity) * 100)) : 0;
+      const driverIds = currentDriverIds(currentGarage);
+      const driverItems = driverIds.length
+        ? "<ul class='garage-driver-current-list'>"
+          + driverIds.map((driverId) => "<li><code>" + escapeHtml(driverId) + "</code></li>").join("")
+          + "</ul>"
+        : "<p class='garage-reference-empty'>" + escapeHtml(copy.noDrivers) + "</p>";
+      const noTruckCount = driversWithoutTruckCount(currentGarage);
+      const noTruckNotice = noTruckCount > 0
+        ? "<p class='garage-driver-note'>"
+          + escapeHtml(formatCopy(copy.driverNoTruckWarning, { count: noTruckCount }))
+          + "</p>"
+        : "";
+      const statusMessage = !owned
+        ? copy.driverGarageNotOwned
+        : blockedNow
+          ? copy.mutationBlocked
+          : freeSlots <= 0
+          ? copy.garageFullyStaffedMessage
+          : availableDrivers <= 0
+            ? copy.driverPoolEmptyMessage
+            : "";
+      const statusTitle = !owned
+        ? copy.driverGarageNotOwned
+        : blockedNow
+          ? copy.writeBlocked
+          : freeSlots <= 0
+          ? copy.garageFullyStaffed
+          : availableDrivers <= 0
+            ? copy.driverPoolEmpty
+            : "";
+      const statusNote = statusMessage
+        ? "<section class='garage-driver-state-note'><strong>"
+          + escapeHtml(statusTitle)
+          + "</strong><span>"
+          + escapeHtml(statusMessage)
+          + "</span></section>"
+        : "";
+      const canAssignManual = owned && !blockedNow && freeSlots > 0 && !state.mutationPending;
+      const entries = driverPoolEntries(state.driverPool, allGarages(), copy);
+      const poolMarkup = "<section class='garage-driver-panel garage-driver-pool-panel'><div class='garage-driver-pool-head'><h3>"
+        + escapeHtml(copy.selectAiDriver)
+        + "</h3><span>"
+        + escapeHtml(formatCopy(copy.availableDriversCount, { count: availableDrivers }))
+        + "</span></div><input type='search' class='garage-driver-search' data-garage-driver-search aria-label='"
+        + escapeHtml(copy.searchDriversPlaceholder)
+        + "' placeholder='"
+        + escapeHtml(copy.searchDriversPlaceholder)
+        + "' value='"
+        + escapeHtml(searchQuery)
+        + "'>"
+        + renderDriverCards(entries, canAssignManual)
+        + "</section>";
+      const randomMarkup = maximum > 0 && !successResult
+        ? "<section class='garage-driver-panel'><h3>"
+          + escapeHtml(copy.assignRandomDrivers)
+          + "</h3><div class='garage-driver-stepper' role='group' aria-label='"
+          + escapeHtml(copy.howManyDrivers)
+          + "'><button type='button' data-garage-driver-action='decrease' aria-label='"
+          + escapeHtml(copy.decreaseDriverCount)
+          + "'"
+          + (selectedCount <= 1 || isAssigningDrivers ? " disabled" : "")
+          + "><span aria-hidden='true'>-</span></button><strong>"
+          + escapeHtml(selectedCount)
+          + "</strong><button type='button' data-garage-driver-action='increase' aria-label='"
+          + escapeHtml(copy.increaseDriverCount)
+          + "'"
+          + (selectedCount >= maximum || isAssigningDrivers ? " disabled" : "")
+          + "><span aria-hidden='true'>+</span></button></div><p class='garage-reference-empty'>"
+          + escapeHtml(formatCopy(copy.maximumAvailableDrivers, { count: maximum }))
+          + "</p><button type='button' class='button-secondary' data-garage-driver-action='fill'"
+          + (isAssigningDrivers ? " disabled" : "")
+          + ">"
+          + escapeHtml(copy.fillAllDriverPositions)
+          + "</button><button type='button' data-garage-driver-action='assign-random'"
+          + (isAssigningDrivers ? " disabled" : "")
+          + ">"
+          + (isAssigningDrivers
+            ? "<span class='garage-spinner' aria-hidden='true'></span>" + escapeHtml(copy.assigningDrivers)
+            : escapeHtml(driverAssignButtonLabel(selectedCount, copy)))
+          + "</button></section>"
+        : "";
+      const successMarkup = successResult
+        ? "<section class='garage-driver-feedback is-success'><strong>"
+          + escapeHtml(formatCopy(copy.driverAssignSuccess, { count: successResult.assignedCount }))
+          + "</strong><ul class='garage-driver-current-list'>"
+          + successResult.assignedDriverIds.map((driverId) => "<li><code>" + escapeHtml(driverId) + "</code></li>").join("")
+          + "</ul></section>"
+        : "";
+      const errorMarkup = driverAssignmentError
+        ? "<section class='garage-mutation-error'><h3>"
+          + escapeHtml(driverAssignmentError.failureTitle)
+          + "</h3><p>"
+          + escapeHtml(driverAssignmentError.localized)
+          + "</p><details><summary>"
+          + escapeHtml(copy.technicalDetails)
+          + "</summary><dl class='garage-error-details'>"
+          + detailRow(copy.errorCode, driverAssignmentError.code)
+          + detailRow(copy.backendMessage, driverAssignmentError.detail)
+          + detailRow(copy.command, driverAssignmentError.command)
+          + detailRow(copy.verificationStatus, copy.verificationNotCompleted)
+          + "</dl></details></section>"
+        : "";
+
+      bodyElement.innerHTML = successMarkup
+        + errorMarkup
+        + "<section class='garage-driver-panel'><h3>"
+        + escapeHtml(copy.driverPositions)
+        + "</h3><div class='garage-driver-capacity'><strong>"
+        + escapeHtml(formatCopy(copy.driverPositionStatus, { assigned, capacity }))
+        + "</strong><span>"
+        + escapeHtml(formatCopy(copy.freeDriverPositionsStatus, { count: freeSlots }))
+        + "</span></div><div class='garage-driver-progress' aria-hidden='true'><span style='width: "
+        + progress
+        + "%'></span></div><dl class='garage-confirm-list'>"
+        + detailRow(copy.assignedDrivers, assigned)
+        + detailRow(copy.freeDriverPositions, freeSlots)
+        + detailRow(copy.availableAiDrivers, availableDrivers)
+        + "</dl>"
+        + noTruckNotice
+        + statusNote
+        + "</section>"
+        + (options.mode === "random" ? randomMarkup + poolMarkup : poolMarkup + randomMarkup)
+        + "<section class='garage-driver-panel'><h3>"
+        + escapeHtml(copy.currentDrivers)
+        + "</h3>"
+        + driverItems
+        + "</section>";
+
+      footerElement.innerHTML = "<button type='button' class='button-secondary' data-garage-driver-action='cancel'"
+        + (isAssigningDrivers ? " disabled" : "")
+        + ">"
+        + escapeHtml(successResult ? copy.done : copy.cancel)
+        + "</button>";
+      closeButton.disabled = isAssigningDrivers;
+    }
+
+    async function applyDriverAssignment(command, request, expectedCount) {
+      if (isAssigningDrivers || state.mutationPending) return;
+      isAssigningDrivers = true;
+      state.mutationPending = true;
+      driverAssignmentError = null;
+      successResult = null;
+      renderDriverManager();
+      render();
+      try {
+        const result = await window.invoke(command, { request });
+        validateDriverAssignmentResult(result, garageId, expectedCount);
+        state.lastMutationResult = null;
+        state.lastDriverAssignmentResult = result;
+        state.highlightedGarageId = result.garageId;
+        state.selectedGarageId = result.garageId;
+        persistViewState();
+        await loadGarages({
+          toastOnError: true,
+          expectedSaveHash: result.saveHash,
+          preserveOnError: true,
+        });
+        garage = findGarage(result.garageId) || garage;
+        successResult = result;
+        selectedCount = driverAssignmentLimit(garage, state.driverPool);
+        window.showToast(
+          "garage_manager.success.assign_drivers",
+          {
+            city: garageCity(garage, copy),
+            count: result.assignedCount,
+            drivers: result.assignedDriverIds.join(", "),
+          },
+          "success",
+        );
+        await Promise.allSettled([
+          window.loadAllTrucks?.(),
+          window.loadAllTrailers?.(),
+          window.loadProfileData?.(),
+          window.refreshOperationalOverview?.(),
+        ]);
+      } catch (error) {
+        console.error("AI driver assignment failed:", error);
+        const key = errorTranslationKey(error);
+        driverAssignmentError = {
+          failureTitle: copy.assignDriversFailureTitle,
+          localized: await window.t(key),
+          code: errorCode(error).split(":")[0] || copy.unknown,
+          detail: technicalMessage(error, copy),
+          command,
+        };
+        window.showToast(key, {}, "error");
+      } finally {
+        isAssigningDrivers = false;
+        state.mutationPending = false;
+        if (root.isConnected) render();
+        if (bodyElement.isConnected) renderDriverManager();
+      }
+    }
+
+    async function assignRandomDrivers() {
+      if (selectedCount <= 0) return;
+      const expectedCount = selectedCount;
+      await applyDriverAssignment("assign_random_ai_drivers_to_garage", {
+        garageId,
+        expectedSaveHash: state.result.saveHash,
+        count: expectedCount,
+      }, expectedCount);
+    }
+
+    async function assignManualDriver(driverRef) {
+      if (!driverRef) return;
+      await applyDriverAssignment("assign_ai_driver_to_garage", {
+        garageId,
+        expectedSaveHash: state.result.saveHash,
+        driverRef,
+      }, 1);
+    }
+
+    modal.overlay.addEventListener("input", (event) => {
+      const input = event.target instanceof HTMLInputElement
+        ? event.target.closest("[data-garage-driver-search]")
+        : null;
+      if (!input) return;
+      searchQuery = input.value;
+      driverAssignmentError = null;
+      renderDriverManager();
+      const nextInput = modal.overlay.querySelector("[data-garage-driver-search]");
+      nextInput?.focus();
+      nextInput?.setSelectionRange(searchQuery.length, searchQuery.length);
+    });
+
+    modal.overlay.addEventListener("click", (event) => {
+      const button = event.target instanceof Element
+        ? event.target.closest("[data-garage-driver-action]")
+        : null;
+      if (!button || !modal.overlay.contains(button) || button.disabled) return;
+      const action = button.dataset.garageDriverAction;
+      if (action === "cancel") {
+        modal.close();
+      } else if (action === "decrease") {
+        selectedCount = clampDriverSelection(selectedCount - 1, driverAssignmentLimit(garage, state.driverPool));
+        driverAssignmentError = null;
+        renderDriverManager();
+      } else if (action === "increase") {
+        selectedCount = clampDriverSelection(selectedCount + 1, driverAssignmentLimit(garage, state.driverPool));
+        driverAssignmentError = null;
+        renderDriverManager();
+      } else if (action === "fill") {
+        selectedCount = driverAssignmentLimit(garage, state.driverPool);
+        driverAssignmentError = null;
+        renderDriverManager();
+      } else if (action === "assign-random") {
+        void assignRandomDrivers();
+      } else if (action === "assign-manual") {
+        void assignManualDriver(button.dataset.driverId);
+      }
+    });
+
+    renderDriverManager();
+  }  function openAssignmentDialog(garageId, returnFocus = null) {
     const garage = findGarage(garageId);
     if (!garage || state.result?.game !== "ets2" || garageIsBlocked(garage)) return;
     const configuration = {

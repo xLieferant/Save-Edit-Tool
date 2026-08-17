@@ -14,21 +14,6 @@ import {
 
 const LICENSE_PLATE_MAX_LENGTH = 32;
 const TRAILER_LICENSE_PLATE_MAX_LENGTH = LICENSE_PLATE_MAX_LENGTH;
-const LICENSE_PLATE_COLOR_SLOTS_KEY = "ets2_license_plate_color_slots";
-const DEFAULT_LICENSE_PLATE_COLOR_SLOTS = [
-  "#FFFFFF",
-  "#000000",
-  "#FF0000",
-  "#00FF00",
-  "#0000FF",
-  "#FFFF00",
-  "#FF00FF",
-  "#00FFFF",
-  "#2222BF",
-  "#DE71FF",
-];
-const DEFAULT_PLATE_TEXT_COLOR = "#000000";
-const DEFAULT_PLATE_BACKGROUND_COLOR = "#FFFFFF";
 const JOB_WEIGHT_MAX_KG = 1000000;
 
 function stripPlateQuotes(value) {
@@ -98,103 +83,6 @@ function extractTrailerPlateText(plate) {
   return extractLicensePlateText(plate);
 }
 
-function normalizeHexColor(value, fallback = DEFAULT_PLATE_TEXT_COLOR) {
-  const raw = String(value ?? "").trim();
-  const hex = raw.startsWith("#") ? raw.slice(1) : raw;
-  if (/^[0-9a-fA-F]{6}$/u.test(hex)) {
-    return `#${hex.toUpperCase()}`;
-  }
-  return fallback;
-}
-
-function scsArgbToHex(value, fallback) {
-  const raw = String(value ?? "").trim();
-  if (/^[0-9a-fA-F]{8}$/u.test(raw)) {
-    return `#${raw.slice(2).toUpperCase()}`;
-  }
-  return fallback;
-}
-
-function findTagHexAttribute(tag, attrName) {
-  const pattern = new RegExp(`\\b${attrName}\\s*=\\s*"?([0-9a-fA-F]{8})"?`, "u");
-  const match = String(tag).match(pattern);
-  return match?.[1] || null;
-}
-
-function isNamedPlateTag(tag, name) {
-  const inner = String(tag).replace(/^</u, "").replace(/>$/u, "").trim();
-  if (inner.startsWith("/")) return false;
-  return inner.split(/\s+/u)[0]?.toLowerCase() === name;
-}
-
-function extractPlateColorState(rawPlate) {
-  const content = plateContent(rawPlate);
-  const tokens = tokenizePlateContent(content);
-  const segments = editablePlateTextSegments(content, tokens);
-  const firstTextStart = segments[0]?.start ?? content.length;
-  const beforeText = tokens
-    .map((token, index) => ({ ...token, index }))
-    .filter((token) => token.type === "tag" && token.end <= firstTextStart);
-
-  const whiteImage = [...beforeText]
-    .reverse()
-    .find((token) => isNamedPlateTag(token.value, "img") && token.value.toLowerCase().includes("/material/ui/white.mat"));
-  let backgroundTarget = null;
-  let backgroundColor = null;
-
-  if (whiteImage) {
-    const imageColor = findTagHexAttribute(whiteImage.value, "color");
-    if (imageColor) {
-      backgroundTarget = `${whiteImage.index}:color`;
-      backgroundColor = scsArgbToHex(imageColor, null);
-    } else {
-      const colorTag = [...beforeText]
-        .filter((token) => token.index < whiteImage.index)
-        .reverse()
-        .find((token) => isNamedPlateTag(token.value, "color") && findTagHexAttribute(token.value, "value"));
-      if (colorTag) {
-        backgroundTarget = `${colorTag.index}:value`;
-        backgroundColor = scsArgbToHex(findTagHexAttribute(colorTag.value, "value"), null);
-      }
-    }
-  }
-
-  const textColorTag = [...beforeText]
-    .reverse()
-    .find((token) => {
-      if (!isNamedPlateTag(token.value, "color")) return false;
-      if (!findTagHexAttribute(token.value, "value")) return false;
-      return `${token.index}:value` !== backgroundTarget;
-    });
-  const textColor = textColorTag
-    ? scsArgbToHex(findTagHexAttribute(textColorTag.value, "value"), null)
-    : null;
-
-  return {
-    textColor,
-    backgroundColor,
-  };
-}
-
-function loadLicensePlateColorSlots() {
-  try {
-    const stored = JSON.parse(localStorage.getItem(LICENSE_PLATE_COLOR_SLOTS_KEY) || "[]");
-    if (Array.isArray(stored)) {
-      return DEFAULT_LICENSE_PLATE_COLOR_SLOTS.map((fallback, index) => normalizeHexColor(stored[index], fallback));
-    }
-  } catch (error) {
-    console.warn("Failed to load license plate color slots", error);
-  }
-  return [...DEFAULT_LICENSE_PLATE_COLOR_SLOTS];
-}
-
-function saveLicensePlateColorSlots(slots) {
-  localStorage.setItem(
-    LICENSE_PLATE_COLOR_SLOTS_KEY,
-    JSON.stringify(slots.slice(0, 10).map((slot) => normalizeHexColor(slot)))
-  );
-}
-
 function licensePlateToastKey(error, targetType = "truck") {
   const code = String(error);
   const mappings = [
@@ -244,29 +132,6 @@ function ensureLicensePlateEditorModal() {
         <span data-role="text-label"></span>
         <input data-role="plate-text" type="text" maxlength="${LICENSE_PLATE_MAX_LENGTH}" />
       </label>
-      <div class="license-plate-color-grid">
-        <label class="license-plate-field license-plate-color-field" data-target="text">
-          <span data-role="text-color-label"></span>
-          <div class="license-plate-color-control">
-            <input data-role="text-color-picker" type="color" />
-            <input data-role="text-color-hex" type="text" maxlength="7" />
-          </div>
-        </label>
-        <label class="license-plate-field license-plate-color-field" data-target="background">
-          <span data-role="background-color-label"></span>
-          <div class="license-plate-color-control">
-            <input data-role="background-color-picker" type="color" />
-            <input data-role="background-color-hex" type="text" maxlength="7" />
-          </div>
-        </label>
-      </div>
-      <div class="license-plate-saved-colors">
-        <div class="license-plate-saved-colors-head">
-          <span data-role="saved-colors-label"></span>
-          <button class="secondary-action" type="button" data-role="save-slot"></button>
-        </div>
-        <div class="license-plate-color-slots" data-role="color-slots"></div>
-      </div>
       <div class="modal-actions modal-actions--end">
         <button id="licensePlateEditorCancel" class="modal-cancel-btn" type="button" data-role="cancel"></button>
         <button id="licensePlateEditorApply" class="apply" type="button" data-role="apply"></button>
@@ -282,119 +147,23 @@ async function openLicensePlateEditor({ titleKey, rawPlate, fallbackText = "", t
   const preview = modal.querySelector("[data-role='preview']");
   const textLabel = modal.querySelector("[data-role='text-label']");
   const textInput = modal.querySelector("[data-role='plate-text']");
-  const textColorLabel = modal.querySelector("[data-role='text-color-label']");
-  const backgroundColorLabel = modal.querySelector("[data-role='background-color-label']");
-  const savedColorsLabel = modal.querySelector("[data-role='saved-colors-label']");
-  const saveSlotButton = modal.querySelector("[data-role='save-slot']");
-  const slotsContainer = modal.querySelector("[data-role='color-slots']");
   const cancelButton = modal.querySelector("[data-role='cancel']");
   const applyButton = modal.querySelector("[data-role='apply']");
-  const textColorPicker = modal.querySelector("[data-role='text-color-picker']");
-  const textColorHex = modal.querySelector("[data-role='text-color-hex']");
-  const backgroundColorPicker = modal.querySelector("[data-role='background-color-picker']");
-  const backgroundColorHex = modal.querySelector("[data-role='background-color-hex']");
 
   title.textContent = await translatePlateEditor(titleKey);
   textLabel.textContent = await translatePlateEditor("license_plate_editor.plate_text");
-  textColorLabel.textContent = await translatePlateEditor("license_plate_editor.text_color");
-  backgroundColorLabel.textContent = await translatePlateEditor("license_plate_editor.background_color");
-  savedColorsLabel.textContent = await translatePlateEditor("license_plate_editor.saved_colors");
-  saveSlotButton.textContent = await translatePlateEditor("license_plate_editor.save_slot");
   cancelButton.textContent = await translatePlateEditor("common.cancel");
   applyButton.textContent = await translatePlateEditor("common.apply");
 
-  const colorState = extractPlateColorState(rawPlate);
-  let activeTarget = "text";
-  let selectedSlot = 0;
-  let textColorDirty = false;
-  let backgroundColorDirty = false;
-  let slots = loadLicensePlateColorSlots();
-
-  function currentColor(target) {
-    return target === "text" ? textColorPicker.value : backgroundColorPicker.value;
-  }
-
-  function setActiveTarget(target) {
-    activeTarget = target;
-    modal.querySelectorAll(".license-plate-color-field").forEach((field) => {
-      field.classList.toggle("is-active", field.dataset.target === target);
-    });
-  }
-
   function updatePreview() {
-    const plateText = textInput.value.trim() || " ";
-    preview.textContent = plateText;
-    preview.style.color = textColorPicker.value;
-    preview.style.backgroundColor = backgroundColorPicker.value;
-  }
-
-  function setColor(target, value, dirty = false) {
-    const color = normalizeHexColor(
-      value,
-      target === "text" ? DEFAULT_PLATE_TEXT_COLOR : DEFAULT_PLATE_BACKGROUND_COLOR
-    );
-    if (target === "text") {
-      textColorPicker.value = color;
-      textColorHex.value = color;
-      textColorDirty = textColorDirty || dirty;
-    } else {
-      backgroundColorPicker.value = color;
-      backgroundColorHex.value = color;
-      backgroundColorDirty = backgroundColorDirty || dirty;
-    }
-    updatePreview();
-  }
-
-  function renderSlots() {
-    slotsContainer.innerHTML = "";
-    slots.slice(0, 10).forEach((slot, index) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "license-plate-color-slot";
-      button.style.backgroundColor = slot;
-      button.setAttribute("aria-label", `Color slot ${index + 1}`);
-      button.classList.toggle("is-selected", index === selectedSlot);
-      button.addEventListener("click", () => {
-        selectedSlot = index;
-        setColor(activeTarget, slot, true);
-        renderSlots();
-      });
-      slotsContainer.appendChild(button);
-    });
-  }
-
-  function bindColorInputs(target, picker, hexInput) {
-    picker.addEventListener("input", () => {
-      setActiveTarget(target);
-      setColor(target, picker.value, true);
-    });
-    hexInput.addEventListener("focus", () => setActiveTarget(target));
-    hexInput.addEventListener("input", () => {
-      setActiveTarget(target);
-      if (/^#?[0-9a-fA-F]{6}$/u.test(hexInput.value.trim())) {
-        setColor(target, hexInput.value, true);
-      }
-    });
+    preview.textContent = textInput.value.trim() || " ";
   }
 
   const initialText = extractLicensePlateText(rawPlate) || fallbackText || "";
   textInput.value = initialText;
-  setColor("text", colorState.textColor || DEFAULT_PLATE_TEXT_COLOR);
-  setColor("background", colorState.backgroundColor || DEFAULT_PLATE_BACKGROUND_COLOR);
-  setActiveTarget("text");
-  renderSlots();
   updatePreview();
 
   textInput.addEventListener("input", updatePreview);
-  modal.querySelector("[data-target='text']").addEventListener("click", () => setActiveTarget("text"));
-  modal.querySelector("[data-target='background']").addEventListener("click", () => setActiveTarget("background"));
-  bindColorInputs("text", textColorPicker, textColorHex);
-  bindColorInputs("background", backgroundColorPicker, backgroundColorHex);
-  saveSlotButton.addEventListener("click", () => {
-    slots[selectedSlot] = normalizeHexColor(currentColor(activeTarget));
-    saveLicensePlateColorSlots(slots);
-    renderSlots();
-  });
 
   modal.style.display = "flex";
   textInput.focus();
@@ -422,11 +191,7 @@ async function openLicensePlateEditor({ titleKey, rawPlate, fallbackText = "", t
         showLicensePlateActionError("license_plate_invalid", targetType, "toasts.truck_license_plate_error");
         return;
       }
-      cleanup({
-        plate,
-        textColor: textColorDirty ? textColorPicker.value : null,
-        backgroundColor: backgroundColorDirty ? backgroundColorPicker.value : null,
-      });
+      cleanup({ plate });
     });
   });
 }
@@ -740,10 +505,7 @@ export const tools = {
             targetType: "truck",
           });
           if (result !== null) {
-            const args = { plate: result.plate };
-            if (result.textColor) args.textColor = result.textColor;
-            if (result.backgroundColor) args.backgroundColor = result.backgroundColor;
-            await invoke("set_player_truck_license_plate", args);
+            await invoke("set_player_truck_license_plate", { plate: result.plate });
             await loadAllTrucks();
             showToast("toasts.truck_license_plate_success", { newValue: result.plate }, "success");
           }
@@ -819,19 +581,12 @@ export const tools = {
           console.debug("[Trailer] license plate editor result", {
             submitted: result !== null,
             length: result === null ? 0 : result.plate.length,
-            textColorChanged: Boolean(result?.textColor),
-            backgroundColorChanged: Boolean(result?.backgroundColor),
           });
           if (result !== null) {
-            const args = { plate: result.plate };
-            if (result.textColor) args.textColor = result.textColor;
-            if (result.backgroundColor) args.backgroundColor = result.backgroundColor;
             console.debug("[Trailer] invoking set_player_trailer_license_plate", {
               length: Array.from(result.plate).length,
-              textColorChanged: Boolean(result.textColor),
-              backgroundColorChanged: Boolean(result.backgroundColor),
             });
-            const writeResult = await invoke("set_player_trailer_license_plate", args);
+            const writeResult = await invoke("set_player_trailer_license_plate", { plate: result.plate });
             console.debug("[Trailer] set_player_trailer_license_plate completed", { result: writeResult });
             await loadAllTrailers();
             showToast("toasts.trailer_license_plate_success", { newValue: result.plate }, "success");

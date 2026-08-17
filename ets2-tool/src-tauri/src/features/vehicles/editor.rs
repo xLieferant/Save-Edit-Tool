@@ -513,6 +513,9 @@ pub async fn set_player_truck_license_plate(
         "Setting truck license plate ({} characters)",
         plate.trim().chars().count()
     );
+    if text_color.is_some() || background_color.is_some() {
+        return Err("license_plate_color_unsupported".to_string());
+    }
     edit_license_plate_attribute(
         profile_state,
         decrypt_cache,
@@ -674,6 +677,9 @@ pub async fn set_player_trailer_license_plate(
         "Setting trailer license plate ({} characters)",
         plate.trim().chars().count()
     );
+    if text_color.is_some() || background_color.is_some() {
+        return Err("license_plate_color_unsupported".to_string());
+    }
     edit_license_plate_attribute(
         profile_state,
         decrypt_cache,

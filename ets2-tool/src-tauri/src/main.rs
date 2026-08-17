@@ -40,6 +40,7 @@ fn main() {
         .manage(ProfileCache::default())
         .manage(features::truck_change::cache::TruckChangeSessionCache::default())
         .manage(features::trailer_change::cache::TrailerChangeSessionCache::default())
+        .manage(features::drivers::cache::AiDriverPoolCache::default())
         .manage(HubState::default())
         .manage(CareerState::default())
         .manage(AuthState::default())
@@ -394,6 +395,11 @@ fn main() {
             features::companies::commands::company_join,
             features::companies::commands::company_get_current,
             features::companies::commands::company_get_for_user,
+            // AI Drivers
+            features::drivers::commands::get_ai_driver_pool,
+            features::drivers::commands::refresh_ai_driver_pool,
+            features::drivers::commands::assign_random_ai_drivers_to_garage,
+            features::drivers::commands::assign_ai_driver_to_garage,
             // Garages
             features::garages::commands::get_all_garages,
             features::garages::commands::purchase_garage,

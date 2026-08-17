@@ -4137,6 +4137,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       recoveryDataDirty = true;
       recoveryHasLoaded = false;
       await loadProfileData();
+      try {
+        await invoke("refresh_ai_driver_pool");
+      } catch (driverPoolError) {
+        console.warn("AI driver pool refresh failed:", driverPoolError);
+      }
       await loadQuicksave();
       await loadProfileSaveConfig();
       await loadBaseConfig();

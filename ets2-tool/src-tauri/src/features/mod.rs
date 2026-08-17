@@ -5,6 +5,7 @@ pub mod career;
 pub mod career_onboarding;
 pub mod companies;
 pub mod contracts;
+pub mod drivers;
 pub mod economy;
 pub mod employees;
 pub mod ets2save;

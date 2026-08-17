@@ -1,4 +1,5 @@
 use crate::dev_log;
+use crate::features::drivers::cache::AiDriverPoolCache;
 use crate::models::cached_profile::CachedProfile;
 use crate::models::profile_info::ProfileInfo;
 use crate::models::profile_info::SaveKind;
@@ -41,9 +42,11 @@ fn app_cache_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
 pub fn set_selected_game(
     game: String,
     state: State<'_, AppProfileState>,
+    driver_pool_cache: State<'_, AiDriverPoolCache>,
 ) -> Result<String, String> {
     let mut g = state.selected_game.lock().unwrap();
     *g = game.clone();
+    driver_pool_cache.invalidate_all();
     dev_log!("Game changed to: {}", game);
     Ok(game)
 }
@@ -113,6 +116,7 @@ pub fn set_active_profile(
     profile_state: State<'_, AppProfileState>,
     cache: State<'_, DecryptCache>,
     profile_cache: State<'_, ProfileCache>,
+    driver_pool_cache: State<'_, AiDriverPoolCache>,
 ) -> Result<(), String> {
     let mut trace =
         TraceScope::with_fields("set_active_profile", &[("path", profile_path.clone())]);
@@ -125,6 +129,7 @@ pub fn set_active_profile(
     clear_decrypt_cache(cache.inner())?;
     profile_cache.reset_profile(Some(profile_path.clone()));
 
+    driver_pool_cache.invalidate_all();
     dev_log!(
         "Aktives Profil gesetzt & DecryptCache geleert: {}",
         profile_path
@@ -143,11 +148,13 @@ pub fn set_current_save(
     state: State<'_, AppProfileState>,
     cache: State<'_, DecryptCache>,
     profile_cache: State<'_, ProfileCache>,
+    driver_pool_cache: State<'_, AiDriverPoolCache>,
 ) -> Result<(), String> {
     let mut trace = TraceScope::with_fields("set_current_save", &[("path", save_path.clone())]);
     *lock_mutex("profile_state.current_save", &state.current_save)? = Some(save_path.clone());
     clear_decrypt_cache(cache.inner())?;
     profile_cache.set_save_path(Some(save_path.clone()));
+    driver_pool_cache.invalidate_all();
     dev_log!("Aktiver Save gesetzt: {}", save_path);
     let _ = user_log::user_log_info("SaveEditor", format!("Active save set: {}", save_path));
     trace.finish_ok();
@@ -159,6 +166,7 @@ pub fn switch_profile(
     cache: State<DecryptCache>,
     new_profile_path: String,
     profile_cache: State<'_, ProfileCache>,
+    driver_pool_cache: State<'_, AiDriverPoolCache>,
 ) -> Result<(), String> {
     // 🔥 Cache vollständig leeren
     clear_decrypt_cache(cache.inner())?;
@@ -166,6 +174,7 @@ pub fn switch_profile(
         TraceScope::with_fields("switch_profile", &[("path", new_profile_path.clone())]);
     profile_cache.reset_profile(Some(new_profile_path.clone()));
 
+    driver_pool_cache.invalidate_all();
     dev_log!("Profil gewechselt: {} → Cache geleert", new_profile_path);
 
     trace.finish_ok();
@@ -387,6 +396,7 @@ pub fn load_profile(
     profile_state: State<'_, AppProfileState>,
     cache: State<'_, DecryptCache>,
     profile_cache: State<'_, ProfileCache>,
+    driver_pool_cache: State<'_, AiDriverPoolCache>,
 ) -> Result<String, String> {
     let mut trace = TraceScope::with_fields("load_profile", &[("path", profile_path.clone())]);
     let save_path_str = save_path.ok_or_else(|| "Kein Save angegeben".to_string())?;
@@ -404,6 +414,7 @@ pub fn load_profile(
         profile_state.clone(),
         cache.clone(),
         profile_cache.clone(),
+        driver_pool_cache.clone(),
     )?;
 
     // 🔥 SAVE SETZEN (Entweder übergeben oder Autosave)
@@ -412,6 +423,7 @@ pub fn load_profile(
         profile_state,
         cache,
         profile_cache,
+        driver_pool_cache,
     )?;
 
     dev_log!(

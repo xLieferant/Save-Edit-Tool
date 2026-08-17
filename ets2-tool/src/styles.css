@@ -1707,85 +1707,6 @@ body.mode-editor #careerView {
   text-transform: uppercase;
 }
 
-.license-plate-color-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.license-plate-color-control {
-  display: grid;
-  grid-template-columns: 46px minmax(0, 1fr);
-  gap: 8px;
-  align-items: center;
-}
-
-.license-plate-color-control input[type="color"] {
-  min-height: 42px;
-  height: 42px;
-  padding: 0;
-  border: 1px solid var(--card-border);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
-  cursor: pointer;
-}
-
-.license-plate-color-control input[type="text"] {
-  min-width: 0;
-}
-
-.license-plate-field.is-active {
-  color: var(--accent);
-}
-
-.license-plate-saved-colors {
-  display: grid;
-  gap: 10px;
-}
-
-.license-plate-saved-colors-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.license-plate-save-slot {
-  flex: 0 0 auto;
-  min-height: 34px;
-  padding: 7px 12px;
-  border: 1px solid rgba(var(--accent-rgb), 0.28);
-  border-radius: 8px;
-  background: rgba(var(--accent-rgb), 0.12);
-  color: var(--accent);
-  font: inherit;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.license-plate-color-slots {
-  display: grid;
-  grid-template-columns: repeat(10, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.license-plate-color-slot {
-  aspect-ratio: 1;
-  min-width: 0;
-  border: 2px solid rgba(255, 255, 255, 0.16);
-  border-radius: 8px;
-  cursor: pointer;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
-}
-
-.license-plate-color-slot.is-selected {
-  border-color: var(--accent);
-  box-shadow:
-    0 0 0 2px rgba(var(--accent-rgb), 0.18),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.2);
-}
-
 .modal-actions {
   display: flex;
   justify-content: space-between;
@@ -2026,13 +1947,6 @@ body.mode-editor #careerView {
 }
 
 @media (max-width: 640px) {
-  .license-plate-color-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .license-plate-color-slots {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-  }
 
   .wiki-modal-head {
     flex-direction: column;
@@ -14473,6 +14387,205 @@ body.mode-editor .truck-change-box {
   background: rgba(0, 0, 0, 0.2);
 }
 
+
+.garage-driver-manager-modal {
+  width: min(620px, calc(100vw - 36px));
+}
+
+.garage-driver-preview-head,
+.garage-driver-capacity {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.garage-driver-preview-head h3,
+.garage-driver-preview-head p,
+.garage-driver-panel h3,
+.garage-driver-capacity strong,
+.garage-driver-capacity span,
+.garage-driver-note,
+.garage-driver-state-note strong,
+.garage-driver-state-note span,
+.garage-driver-feedback strong {
+  margin: 0;
+}
+
+.garage-driver-preview-head p,
+.garage-driver-capacity span,
+.garage-driver-note,
+.garage-driver-state-note span {
+  color: var(--text-muted);
+}
+
+.garage-driver-panel,
+.garage-driver-feedback,
+.garage-driver-state-note {
+  min-width: 0;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--card-border);
+  border-radius: 13px;
+  background: var(--card-bg);
+}
+
+.garage-driver-feedback.is-success {
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.garage-driver-state-note {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.garage-driver-progress {
+  width: 100%;
+  height: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.garage-driver-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), rgba(var(--accent-rgb), 0.62));
+}
+
+.garage-driver-stepper {
+  display: grid;
+  grid-template-columns: 44px minmax(64px, 1fr) 44px;
+  align-items: center;
+  gap: 10px;
+}
+
+.garage-driver-stepper button {
+  min-height: 44px;
+  padding: 0;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.garage-driver-stepper strong {
+  min-height: 44px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.garage-driver-current-list {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.garage-driver-current-list li {
+  overflow-wrap: anywhere;
+}
+
+.garage-driver-current-list code {
+  white-space: normal;
+}
+
+.garage-driver-preview-actions,
+.garage-driver-pool-head {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.garage-driver-pool-head {
+  justify-content: space-between;
+}
+
+.garage-driver-pool-head span,
+.garage-driver-slot-card span,
+.garage-driver-pool-card span {
+  color: var(--text-muted);
+}
+
+.garage-driver-slot-list,
+.garage-driver-pool-list {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.garage-driver-slot-card,
+.garage-driver-pool-card {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.garage-driver-slot-card div,
+.garage-driver-pool-card div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.garage-driver-slot-card strong,
+.garage-driver-slot-card code,
+.garage-driver-slot-card span,
+.garage-driver-pool-card strong,
+.garage-driver-pool-card code,
+.garage-driver-pool-card span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.garage-driver-slot-card.is-empty,
+.garage-driver-pool-card.is-available {
+  border-color: rgba(var(--accent-rgb), 0.24);
+}
+
+.garage-driver-pool-card.is-disabled {
+  opacity: 0.72;
+}
+
+.garage-driver-search {
+  width: 100%;
+}
+
+@media (max-width: 720px) {
+  .garage-driver-preview-head,
+  .garage-driver-capacity {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .garage-driver-preview-head button,
+  .garage-driver-preview-actions,
+  .garage-driver-preview-actions button,
+  .garage-driver-panel > .button-secondary,
+  .garage-driver-pool-card,
+  .garage-driver-slot-card {
+    width: 100%;
+  }
+
+  .garage-driver-pool-card,
+  .garage-driver-slot-card {
+    grid-template-columns: 1fr;
+  }
+}
 @media (max-width: 1180px) {
   .garage-summary-grid {
     grid-template-columns: repeat(4, minmax(110px, 1fr));
