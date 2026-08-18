@@ -53,6 +53,7 @@ sqlx = { version = "0.8.0", features = ["sqlite", "runtime-tokio-rustls", "macro
 sha2 = "0.10.9"
 windows-sys = { version = "0.59.0", features = ["Win32_Foundation", "Win32_Security", "Win32_System_Memory", "Win32_Storage_FileSystem"] }
 argon2 = "0.5.3"
+rand = "0.8.7"
 rand_core = { version = "0.6.4", features = ["getrandom"] }
 
 [target.'cfg(windows)'.dependencies]

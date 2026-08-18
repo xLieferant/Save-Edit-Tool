@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, HashSet};
 
-use uuid::Uuid;
+use rand::seq::SliceRandom;
 
 use crate::features::garages::parser::parse_garages_from_sii;
 use crate::features::truck_change::parser::{
@@ -114,9 +114,10 @@ fn assignment_context(
     let garage_block = unique_unit_block_from_blocks(unit_blocks, "garage", garage_id)?;
     let driver_count = parse_array_count(&garage_block, "drivers")?;
     let drivers = array_map(&garage_block.raw_block, "drivers", driver_count)?;
-    let free_slots = (0..driver_count)
+    let mut free_slots = (0..driver_count)
         .filter(|index| drivers.get(index).is_none_or(|value| is_null_ref(value)))
         .collect::<Vec<_>>();
+    free_slots.sort_unstable();
     let parsed_pool = parse_ai_driver_pool_from_blocks(unit_blocks)?;
     let assigned_driver_ids = super::parser::assigned_driver_ids(unit_blocks)
         .into_iter()
@@ -136,13 +137,18 @@ fn available_pool_driver_ids(
     assigned_driver_ids: &HashSet<String>,
 ) -> Vec<String> {
     let driver_block_counts = driver_ai_block_counts(unit_blocks);
-    parsed_pool
-        .drivers
-        .iter()
-        .filter(|entry| !assigned_driver_ids.contains(&entry.driver_id))
-        .filter(|entry| driver_block_counts.get(&entry.driver_id).copied() == Some(1))
-        .map(|entry| entry.driver_id.clone())
-        .collect::<Vec<_>>()
+    let mut seen = HashSet::new();
+    let mut candidates = Vec::new();
+    for entry in &parsed_pool.drivers {
+        if assigned_driver_ids.contains(&entry.driver_id)
+            || driver_block_counts.get(&entry.driver_id).copied() != Some(1)
+            || !seen.insert(entry.driver_id.clone())
+        {
+            continue;
+        }
+        candidates.push(entry.driver_id.clone());
+    }
+    candidates
 }
 
 fn validate_requested_driver(
@@ -655,7 +661,8 @@ fn join_lines(lines: &[String]) -> String {
 }
 
 fn shuffle_driver_ids(values: &mut [String]) {
-    values.sort_by_key(|_| Uuid::new_v4());
+    let mut rng = rand::thread_rng();
+    values.shuffle(&mut rng);
 }
 
 #[cfg(test)]
@@ -746,6 +753,30 @@ driver_ai : driver.free_c {
 }
 }
 "#;
+
+    const SAMPLE_DRIVER_POOL: &str = " driver_pool: 4\n driver_pool[0]: driver.free_a\n driver_pool[1]: driver.free_b\n driver_pool[2]: driver.free_c\n driver_pool[3]: driver.hired_elsewhere";
+
+    fn sample_with_driver_pool(driver_ids: &[&str]) -> String {
+        let replacement = if driver_ids.is_empty() {
+            " driver_pool: 0".to_string()
+        } else {
+            let entries = driver_ids
+                .iter()
+                .enumerate()
+                .map(|(index, driver_id)| format!(" driver_pool[{index}]: {driver_id}"))
+                .collect::<Vec<_>>()
+                .join("\n");
+            format!(" driver_pool: {}\n{entries}", driver_ids.len())
+        };
+        SAMPLE.replace(SAMPLE_DRIVER_POOL, &replacement)
+    }
+
+    fn sample_with_full_berlin_garage() -> String {
+        SAMPLE.replace(
+            " drivers[0]: null\n drivers[1]: driver.keep\n drivers[2]: null",
+            " drivers[0]: driver.free_a\n drivers[1]: driver.keep\n drivers[2]: driver.free_b",
+        )
+    }
 
     #[test]
     fn assign_ai_driver_e2e_writes_reload_and_verifies_specific_slot() {
@@ -897,6 +928,111 @@ driver_ai : driver.free_c {
         let error =
             apply_ai_driver_assignment(&full, "garage.berlin", "driver.free_c").unwrap_err();
         assert_eq!(error, "garage_assignment_no_free_driver_slot");
+    }
+    #[test]
+    fn random_assignment_regression_repeats_shuffle_write_reload() {
+        let path = std::env::temp_dir().join(format!(
+            "ets2-driver-random-assignment-regression-{}.sii",
+            Uuid::new_v4()
+        ));
+
+        for _ in 0..100 {
+            fs::write(&path, SAMPLE).unwrap();
+            let before_content = fs::read_to_string(&path).unwrap();
+            let plan =
+                apply_random_ai_driver_assignment(&before_content, "garage.berlin", 2).unwrap();
+            assert_eq!(plan.assigned_driver_ids.len(), 2);
+            assert_eq!(plan.assigned_driver_slot_indices, vec![0, 2]);
+            let assigned_unique = plan
+                .assigned_driver_ids
+                .iter()
+                .collect::<std::collections::HashSet<_>>();
+            assert_eq!(assigned_unique.len(), plan.assigned_driver_ids.len());
+
+            verify_ai_driver_assignment(&before_content, &plan.content, "garage.berlin", &plan)
+                .unwrap();
+            write_verified_content(&path, &plan.content, |candidate| {
+                verify_ai_driver_assignment(&before_content, candidate, "garage.berlin", &plan)
+            })
+            .unwrap();
+
+            let reloaded = fs::read_to_string(&path).unwrap();
+            verify_ai_driver_assignment(&before_content, &reloaded, "garage.berlin", &plan)
+                .unwrap();
+            let parsed = parse_garages_from_sii(&reloaded).unwrap();
+            let berlin = parsed
+                .garages
+                .iter()
+                .find(|garage| garage.garage_id == "garage.berlin")
+                .unwrap();
+            assert_eq!(berlin.slots[1].driver_id.as_deref(), Some("driver.keep"));
+            assert!(berlin.slots[0].driver_id.is_some());
+            assert!(berlin.slots[2].driver_id.is_some());
+            assert_ne!(berlin.slots[0].driver_id, berlin.slots[2].driver_id);
+        }
+
+        fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn random_assignment_handles_available_driver_count_edges() {
+        let no_available = sample_with_driver_pool(&[]);
+        assert_eq!(
+            apply_random_ai_driver_assignment(&no_available, "garage.berlin", 1).unwrap_err(),
+            "garage_assignment_no_available_driver"
+        );
+
+        let one_available = sample_with_driver_pool(&["driver.free_a"]);
+        let one_plan =
+            apply_random_ai_driver_assignment(&one_available, "garage.berlin", 1).unwrap();
+        assert_eq!(one_plan.assigned_driver_ids, vec!["driver.free_a"]);
+        assert_eq!(one_plan.assigned_driver_slot_indices, vec![0]);
+        verify_ai_driver_assignment(
+            &one_available,
+            &one_plan.content,
+            "garage.berlin",
+            &one_plan,
+        )
+        .unwrap();
+
+        let too_many_available =
+            apply_random_ai_driver_assignment(&one_available, "garage.berlin", 2).unwrap_err();
+        assert_eq!(
+            too_many_available,
+            "garage_assignment_driver_count_invalid:available_drivers"
+        );
+
+        let duplicated_pool =
+            sample_with_driver_pool(&["driver.free_a", "driver.free_a", "driver.free_b"]);
+        let duplicate_plan =
+            apply_random_ai_driver_assignment(&duplicated_pool, "garage.berlin", 2).unwrap();
+        let selected = duplicate_plan
+            .assigned_driver_ids
+            .iter()
+            .collect::<std::collections::HashSet<_>>();
+        assert_eq!(selected.len(), duplicate_plan.assigned_driver_ids.len());
+        assert_eq!(selected.len(), 2);
+        verify_ai_driver_assignment(
+            &duplicated_pool,
+            &duplicate_plan.content,
+            "garage.berlin",
+            &duplicate_plan,
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn random_assignment_rejects_requested_count_over_slots_and_full_garage() {
+        let too_many_slots =
+            apply_random_ai_driver_assignment(SAMPLE, "garage.berlin", 3).unwrap_err();
+        assert_eq!(
+            too_many_slots,
+            "garage_assignment_driver_count_invalid:free_slots"
+        );
+
+        let full = sample_with_full_berlin_garage();
+        let full_error = apply_random_ai_driver_assignment(&full, "garage.berlin", 1).unwrap_err();
+        assert_eq!(full_error, "garage_assignment_no_free_driver_slot");
     }
     #[test]
     fn assigns_only_free_driver_slots_and_preserves_existing_driver() {
