@@ -1,4 +1,4 @@
-import { tools } from "./tools.js";
+﻿import { tools } from "./tools.js";
 import {
   clampLevel,
   clampXp,
@@ -44,7 +44,7 @@ async function activateEditorTab(tab) {
 }
 
 export async function loadTools(tab) {
-  console.log(`[app.js] Lade Tools für Tab: ${tab}`);
+  console.log(`[app.js] Lade Tools fÃ¼r Tab: ${tab}`);
 
   activeTab = tab;
   if (!container) return;
@@ -87,7 +87,7 @@ export async function loadTools(tab) {
   }
 
   for (const t of toolList) {
-    if (t.hidden) continue; // unsichtbare Tools überspringen
+    if (t.hidden) continue; // unsichtbare Tools Ã¼berspringen
 
     const card = document.createElement("div");
     card.classList.add("tool-card");
@@ -313,6 +313,8 @@ const modalRestorePreview = document.getElementById("modalRestorePreview");
 const modalRestorePreviewClose = document.getElementById("modalRestorePreviewClose");
 const modalSafeValueReset = document.getElementById("modalSafeValueReset");
 const modalSafeValueResetClose = document.getElementById("modalSafeValueResetClose");
+const modalEts2DataLocation = document.getElementById("modalEts2DataLocation");
+const modalEts2DataLocationClose = document.getElementById("modalEts2DataLocationClose");
 const modalUserLogs = document.getElementById("modalUserLogs");
 const modalUserLogsClose = document.getElementById("modalUserLogsClose");
 const modalModProfileManager = document.getElementById("modalModProfileManager");
@@ -375,6 +377,7 @@ const editorModalDescriptors = [
   { element: modalRecoveryCenter, closeButton: modalRecoveryCenterClose },
   { element: modalRestorePreview, closeButton: modalRestorePreviewClose },
   { element: modalSafeValueReset, closeButton: modalSafeValueResetClose },
+  { element: modalEts2DataLocation, closeButton: modalEts2DataLocationClose },
   { element: modalUserLogs, closeButton: modalUserLogsClose },
   { element: modalModProfileManager, closeButton: modalModProfileManagerClose },
   { element: modalProfileShare, closeButton: modalProfileShareClose },
@@ -1213,7 +1216,7 @@ export async function openModalText(titleKey, placeholderKey, initialValue = "")
   modalTextInput.value = initialValue;
   modalText.style.display = "flex";
 
-  console.log(`[app.js] Öffne Text-Modal: "${titleKey}"`);
+  console.log(`[app.js] Ã–ffne Text-Modal: "${titleKey}"`);
   return new Promise((resolve) => {
     function apply() {
       const val = modalTextInput.value;
@@ -1243,7 +1246,7 @@ export async function openModalNumber(titleKey, value = 0) {
   modalNumberInput.value = value;
   modalNumber.style.display = "flex";
 
-  console.log(`[app.js] Öffne Number-Modal: "${titleKey}" mit Wert ${value}`);
+  console.log(`[app.js] Ã–ffne Number-Modal: "${titleKey}" mit Wert ${value}`);
   return new Promise((resolve) => {
     function apply() {
       const val = Number(modalNumberInput.value);
@@ -1289,7 +1292,7 @@ export async function openModalSlider(titleKey, isChecked = 0) {
   syncSliderState();
   modalSlider.style.display = "flex";
 
-  console.log(`[app.js] Öffne Slider-Modal: "${titleKey}" mit Wert ${isChecked}`);
+  console.log(`[app.js] Ã–ffne Slider-Modal: "${titleKey}" mit Wert ${isChecked}`);
   return new Promise((resolve) => {
     function apply() {
       const val = modalSliderInput.checked ? 1 : 0;
@@ -1320,7 +1323,7 @@ export async function openModalMulti(titleKey, config = []) {
   modalMultiTitle.textContent = await window.t(titleKey);
   modalMultiContent.innerHTML = "";
 
-  console.log(`[app.js] Öffne Multi-Modal: "${titleKey}"`);
+  console.log(`[app.js] Ã–ffne Multi-Modal: "${titleKey}"`);
   const adrLevels = [1, 3, 7, 15, 31, 63];
   const toggleOnLabel = await window.t("label.toggle_on");
   const toggleOffLabel = await window.t("label.toggle_off");
@@ -2275,7 +2278,7 @@ export async function openTruckChangeModal() {
         </div>
         <div class="truck-change-head-actions">
           <span class="modal-status-pill" data-state="loading" id="truckChangeStatus">${escapeHtml(copy.statusLoading)}</span>
-          <button type="button" class="modal-close truck-change-close" aria-label="${escapeHtml(copy.close)}">×</button>
+          <button type="button" class="modal-close truck-change-close" aria-label="${escapeHtml(copy.close)}">Ã—</button>
         </div>
       </div>
       <div class="truck-change-tabs" role="tablist">
@@ -4681,8 +4684,8 @@ async function updateModProfileContextLabels() {
 async function translateSandboxProgressEntry(entry) {
   const mapping = {
     "Preset geladen": "modals.mod_profile_manager.sandbox.progress.preset_loaded",
-    "Mods geprüft": "modals.mod_profile_manager.sandbox.progress.mods_checked",
-    "Profil geöffnet": "modals.mod_profile_manager.sandbox.progress.profile_opened",
+    "Mods geprÃ¼ft": "modals.mod_profile_manager.sandbox.progress.mods_checked",
+    "Profil geÃ¶ffnet": "modals.mod_profile_manager.sandbox.progress.profile_opened",
     "actived_mods gelesen": "modals.mod_profile_manager.sandbox.progress.active_mods_read",
     "Backup erstellt": "modals.mod_profile_manager.sandbox.progress.backup_created",
     "actived_mods geschrieben": "modals.mod_profile_manager.sandbox.progress.active_mods_written",
@@ -5719,7 +5722,7 @@ async function activateSandboxPreset(presetId) {
   }
 
   modProfileManagerState.activatingPresetId = presetId;
-  await renderSandboxProgressList(["Preset geladen", "Mods geprüft"]);
+  await renderSandboxProgressList(["Preset geladen", "Mods geprÃ¼ft"]);
   await setModProfileStatus("modals.mod_profile_manager.sandbox.preset_status.activating", "warning");
   await renderSandboxResult(null);
   await renderSandboxPresetCards();
@@ -5832,6 +5835,7 @@ modalModProfileManager?.addEventListener("click", (event) => {
 });
 
 window.openModProfileManagerModal = openModProfileManagerModal;
+window.loadSandboxPresetsIntoModal = loadSandboxPresetsIntoModal;
 
 if (saveImportSavesBtn) {
   saveImportSavesBtn.addEventListener("click", () => {
@@ -5844,3 +5848,4 @@ if (saveExportSavesBtn) {
     openProfileSharingPage("export");
   });
 }
+

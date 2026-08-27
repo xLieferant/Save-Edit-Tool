@@ -14818,3 +14818,112 @@ body.mode-editor .picker-backdrop {
     justify-content: flex-start;
   }
 }
+
+/* ETS2 data location modal */
+.modal-box--ets2-location {
+  gap: 0;
+}
+
+.modal-box--ets2-location .ets2-location-mode-grid,
+.modal-box--ets2-location .ets2-location-summary-card,
+.modal-box--ets2-location .ets2-location-detail-grid,
+.modal-box--ets2-location .ets2-location-files-card {
+  margin-inline: clamp(16px, 1.7vw, 20px);
+  min-width: 0;
+}
+
+.ets2-location-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: clamp(14px, 1.4vw, 18px);
+}
+
+.ets2-location-mode-btn {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-main);
+  padding: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ets2-location-mode-btn small {
+  color: var(--text-soft);
+  line-height: 1.45;
+}
+
+.ets2-location-mode-btn.is-active {
+  border-color: rgba(var(--accent-rgb), 0.55);
+  background: rgba(var(--accent-rgb), 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.ets2-location-mode-btn:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
+.ets2-location-mode-btn:not(:disabled):hover,
+.ets2-location-mode-btn:focus-visible {
+  border-color: rgba(var(--accent-rgb), 0.68);
+  outline: none;
+}
+
+.ets2-location-summary-card,
+.ets2-location-detail-grid,
+.ets2-location-files-card {
+  margin-top: 12px;
+}
+
+.ets2-location-status-line {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ets2-location-path-grid,
+.ets2-location-files-card {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  min-width: 0;
+}
+
+.ets2-location-files-card {
+  grid-template-columns: 1fr;
+}
+
+.ets2-location-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ets2-location-actions {
+  flex-wrap: wrap;
+}
+
+.modal-box--ets2-location .detail-card-value--mono,
+.modal-box--ets2-location .detail-card strong,
+.modal-box--ets2-location .detail-card p {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (max-width: 760px) {
+  .ets2-location-mode-grid,
+  .ets2-location-path-grid,
+  .ets2-location-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ets2-location-actions button {
+    flex: 1 1 100%;
+  }
+}

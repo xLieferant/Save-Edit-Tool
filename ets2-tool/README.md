@@ -14,6 +14,10 @@ cargo tauri android init
 For Desktop development, run:
 cargo tauri dev
 
+## ETS2 Data Location
+
+The Settings tools include an ETS2 Data Location modal for switching between the default Documents folder and a custom `-homedir` root. Changing the location refreshes profile and save discovery and uses the selected folder for profiles, Steam profiles, local mods, config files and logs.
+
 ## Garage Management
 
 The Garage tab reads every garage from the active save and keeps the loaded

@@ -1237,6 +1237,9 @@
             "user_logs_load_error": "Could not load user logs.",
             "user_logs_export_error": "Could not export user logs.",
             "user_logs_clear_error": "Could not clear user logs.",
+            "ets2_data_location_updated": "ETS2 data location updated.",
+            "ets2_data_location_load_error": "Could not load ETS2 data location.",
+            "ets2_data_location_update_error": "Could not update ETS2 data location: {error}",
             "profile_loaded_select_save": "Profile loaded. Please select a save game.",
             "profile_load_error": "Profile could not be loaded!",
             "scan_saves_error": "Could not scan saves",
@@ -1494,6 +1497,10 @@
                   "user_logs": {
                         "title": "User Logs",
                         "desc": "View, export and clear user-facing logs."
+                  },
+                  "ets2_data_location": {
+                        "title": "ETS2 Data Location",
+                        "desc": "Choose the ETS2 user data folder used for profiles, saves, local mods and logs."
                   }
             },
             "language_picker": {
@@ -2062,6 +2069,48 @@
                         "warnings": "Warnings",
                         "errors": "Errors",
                         "updated": "Updated"
+                  }
+            },
+            "ets2_data_location": {
+                  "kicker": "ETS2 data root",
+                  "title": "ETS2 Data Location",
+                  "description": "Choose the ETS2 user data folder used for profiles, saves, local mods, config files and logs.",
+                  "dialog_title": "Select ETS2 data location",
+                  "status": {
+                        "ready": "Ready",
+                        "loading": "Loading",
+                        "saving": "Saving",
+                        "rescanning": "Rescanning"
+                  },
+                  "mode": {
+                        "group_label": "ETS2 data location mode",
+                        "default_title": "Default",
+                        "default_desc": "Use the standard Documents ETS2 folder.",
+                        "custom_title": "Custom -homedir",
+                        "custom_desc": "Use a custom homedir root or an existing ETS2 data folder."
+                  },
+                  "fields": {
+                        "validation": "Validation",
+                        "homedir_root": "Homedir Root",
+                        "game_data_dir": "Resolved ETS2 Folder",
+                        "profiles": "Profiles",
+                        "steam_profiles": "Steam Profiles",
+                        "local_mods": "Local Mods",
+                        "config_file": "Config",
+                        "game_log": "Game Log",
+                        "game_crash": "Crash Log"
+                  },
+                  "actions": {
+                        "refresh": "Refresh",
+                        "browse": "Choose Folder",
+                        "reset": "Reset to Default"
+                  },
+                  "validation": {
+                        "ok": "ETS2 data folder looks valid.",
+                        "homedir_missing": "The selected homedir root does not exist.",
+                        "game_data_missing": "The resolved Euro Truck Simulator 2 folder does not exist yet.",
+                        "markers_missing": "The folder exists, but no ETS2 profiles, local mods, config or logs were found.",
+                        "unresolved": "The ETS2 data folder could not be resolved."
                   }
             },
             "mod_conflict_diagnostics": {

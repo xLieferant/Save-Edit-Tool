@@ -8,9 +8,7 @@ use crate::shared::decrypt::{clear_decrypt_cache, decrypt_if_needed};
 use crate::shared::extract::extract_profile_name;
 use crate::shared::extract_save_name::extract_save_name;
 use crate::shared::hex_float::decode_hex_folder_name;
-use crate::shared::paths::ats_base_path;
-use crate::shared::paths::ets2_base_path;
-use crate::shared::paths::get_base_path;
+use crate::shared::paths::profile_search_roots;
 use crate::shared::trace::{TraceScope, lock_mutex};
 use crate::shared::user_log;
 use crate::state::{AppProfileState, DecryptCache, ProfileCache};
@@ -27,7 +25,7 @@ use std::path::PathBuf;
 fn app_cache_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     // tauri::api::path::config_dir() liefert Option<PathBuf> -> v2: app.path().config_dir()
     if let Ok(mut dir) = app.path().config_dir() {
-        dir.push("save-edit-tool"); // eigener Ordner für die App
+        dir.push("save-edit-tool"); // eigener Ordner fÃ¼r die App
         if let Err(e) = fs::create_dir_all(&dir) {
             return Err(format!("Failed to create config dir: {}", e));
         }
@@ -121,7 +119,7 @@ pub fn set_active_profile(
         &profile_state.current_profile,
     )? = Some(profile_path.clone());
 
-    // 🔥 Cache vollständig leeren
+    // ðŸ”¥ Cache vollstÃ¤ndig leeren
     clear_decrypt_cache(cache.inner())?;
     profile_cache.reset_profile(Some(profile_path.clone()));
 
@@ -160,13 +158,13 @@ pub fn switch_profile(
     new_profile_path: String,
     profile_cache: State<'_, ProfileCache>,
 ) -> Result<(), String> {
-    // 🔥 Cache vollständig leeren
+    // ðŸ”¥ Cache vollstÃ¤ndig leeren
     clear_decrypt_cache(cache.inner())?;
     let mut trace =
         TraceScope::with_fields("switch_profile", &[("path", new_profile_path.clone())]);
     profile_cache.reset_profile(Some(new_profile_path.clone()));
 
-    dev_log!("Profil gewechselt: {} → Cache geleert", new_profile_path);
+    dev_log!("Profil gewechselt: {} â†’ Cache geleert", new_profile_path);
 
     trace.finish_ok();
     Ok(())
@@ -203,7 +201,7 @@ pub async fn find_profile_saves(profile_path: String) -> Result<Vec<SaveInfo>, S
     for entry in entries.flatten() {
         let path = entry.path();
 
-        // 🔒 Invariante: Save MUSS ein Ordner sein
+        // ðŸ”’ Invariante: Save MUSS ein Ordner sein
         if !path.is_dir() {
             continue;
         }
@@ -213,7 +211,7 @@ pub async fn find_profile_saves(profile_path: String) -> Result<Vec<SaveInfo>, S
             None => continue,
         };
 
-        // 🔹 Nur erlaubte Save-Ordner
+        // ðŸ”¹ Nur erlaubte Save-Ordner
         let kind = classify_save_folder(&folder);
         if kind == SaveKind::Invalid {
             continue;
@@ -230,7 +228,7 @@ pub async fn find_profile_saves(profile_path: String) -> Result<Vec<SaveInfo>, S
             kind,
         };
 
-        // 🔹 info.sii ist optional – aber wichtig für Name/Status
+        // ðŸ”¹ info.sii ist optional â€“ aber wichtig fÃ¼r Name/Status
         if info_sii.is_file() {
             match decrypt_if_needed(&info_sii) {
                 Ok(text) => {
@@ -271,97 +269,87 @@ fn classify_save_folder(folder: &str) -> SaveKind {
 #[command]
 pub fn find_ets2_profiles(state: State<'_, AppProfileState>) -> Vec<ProfileInfo> {
     let _ = user_log::user_log_info("ProfileManager", "Profile search started.");
-    dev_log!("Starte Profil-Suche…");
+    dev_log!("Starte Profil-Sucheâ€¦");
     let mut found_profiles = Vec::new();
 
     let game_key = state.selected_game.lock().unwrap().clone();
-    let base_opt = get_base_path(&game_key);
-
-    if let Some(base) = base_opt {
-        let folders = vec![
-            base.join("profiles"),
-            base.join("profiles.backup"),
-            base.clone(),
-        ];
-
-        for folder in folders {
-            if !folder.exists() {
-                continue;
-            }
-            if let Ok(entries) = fs::read_dir(folder) {
-                for entry in entries.flatten() {
-                    let path = entry.path();
-                    if !path.is_dir() {
-                        continue;
-                    }
-
-                    let sii = path.join("profile.sii");
-                    if !sii.exists() {
-                        continue;
-                    }
-
-                    // Check for online avatar
-                    let avatar_path = path.join("online_avatar.png");
-                    let avatar = if avatar_path.exists() {
-                        if let Ok(bytes) = std::fs::read(&avatar_path) {
-                            use base64::{Engine as _, engine::general_purpose};
-                            let b64 = general_purpose::STANDARD.encode(&bytes);
-                            Some(format!("data:image/png;base64,{}", b64))
-                        } else {
-                            None
-                        }
-                    } else {
-                        None
-                    };
-
-                    let text = decrypt_if_needed(&sii).ok();
-                    let mut info = ProfileInfo {
-                        path: path.display().to_string(),
-                        name: None,
-                        avatar,
-                        success: false,
-                        message: None,
-                    };
-
-                    let from_sii = text.as_ref().and_then(|t| extract_profile_name(t));
-
-                    let from_bak = if from_sii.is_none() {
-                        let bak = path.join("profile.bak.sii");
-                        if bak.exists() {
-                            decrypt_if_needed(&bak)
-                                .ok()
-                                .and_then(|t| extract_profile_name(&t))
-                        } else {
-                            None
-                        }
-                    } else {
-                        None
-                    };
-
-                    let from_folder = if from_sii.is_none() && from_bak.is_none() {
-                        path.file_name()
-                            .and_then(|os| os.to_str())
-                            .and_then(|s| decode_hex_folder_name(s))
-                    } else {
-                        None
-                    };
-
-                    if let Some(name) = from_sii.or(from_bak).or(from_folder) {
-                        info.name = Some(name);
-                        info.success = true;
-                        info.message = Some("OK".into());
-                        dev_log!(
-                            "Profil gefunden: {} ({})",
-                            info.path,
-                            info.name.as_ref().unwrap()
-                        );
-                    } else {
-                        info.message = Some("profile_name nicht gefunden".into());
-                        dev_log!("profile_name nicht gefunden in {}", info.path);
-                    }
-
-                    found_profiles.push(info);
+    for folder in profile_search_roots(&game_key) {
+        if !folder.exists() {
+            continue;
+        }
+        if let Ok(entries) = fs::read_dir(folder) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if !path.is_dir() {
+                    continue;
                 }
+
+                let sii = path.join("profile.sii");
+                if !sii.exists() {
+                    continue;
+                }
+
+                // Check for online avatar
+                let avatar_path = path.join("online_avatar.png");
+                let avatar = if avatar_path.exists() {
+                    if let Ok(bytes) = std::fs::read(&avatar_path) {
+                        use base64::{Engine as _, engine::general_purpose};
+                        let b64 = general_purpose::STANDARD.encode(&bytes);
+                        Some(format!("data:image/png;base64,{}", b64))
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                };
+
+                let text = decrypt_if_needed(&sii).ok();
+                let mut info = ProfileInfo {
+                    path: path.display().to_string(),
+                    name: None,
+                    avatar,
+                    success: false,
+                    message: None,
+                };
+
+                let from_sii = text.as_ref().and_then(|t| extract_profile_name(t));
+
+                let from_bak = if from_sii.is_none() {
+                    let bak = path.join("profile.bak.sii");
+                    if bak.exists() {
+                        decrypt_if_needed(&bak)
+                            .ok()
+                            .and_then(|t| extract_profile_name(&t))
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                };
+
+                let from_folder = if from_sii.is_none() && from_bak.is_none() {
+                    path.file_name()
+                        .and_then(|os| os.to_str())
+                        .and_then(|s| decode_hex_folder_name(s))
+                } else {
+                    None
+                };
+
+                if let Some(name) = from_sii.or(from_bak).or(from_folder) {
+                    info.name = Some(name);
+                    info.success = true;
+                    info.message = Some("OK".into());
+                    dev_log!(
+                        "Profil gefunden: {} ({})",
+                        info.path,
+                        info.name.as_ref().unwrap()
+                    );
+                } else {
+                    info.message = Some("profile_name nicht gefunden".into());
+                    dev_log!("profile_name nicht gefunden in {}", info.path);
+                }
+
+                found_profiles.push(info);
             }
         }
     }
@@ -406,7 +394,7 @@ pub fn load_profile(
         profile_cache.clone(),
     )?;
 
-    // 🔥 SAVE SETZEN (Entweder übergeben oder Autosave)
+    // ðŸ”¥ SAVE SETZEN (Entweder Ã¼bergeben oder Autosave)
     set_current_save(
         save_to_load.to_string_lossy().to_string(),
         profile_state,

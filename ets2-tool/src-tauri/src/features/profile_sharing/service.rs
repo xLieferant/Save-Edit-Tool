@@ -6,7 +6,7 @@ use crate::dev_log;
 use crate::shared::decrypt::decrypt_if_needed;
 use crate::shared::extract::extract_profile_name;
 use crate::shared::hex_float::{decode_hex_folder_name, text_to_hex};
-use crate::shared::paths::get_base_path;
+use crate::shared::paths::{get_base_path, profiles_directory_path};
 use crate::state::AppProfileState;
 use chrono::Local;
 use std::fs::{self, File};
@@ -386,9 +386,8 @@ fn resolve_requested_export_dir(
 }
 
 fn resolve_import_root(selected_game: &str) -> Result<PathBuf, String> {
-    let base_path = get_base_path(selected_game)
-        .ok_or("Das Spielbasisverzeichnis konnte nicht aufgeloest werden.".to_string())?;
-    Ok(base_path.join("profiles"))
+    profiles_directory_path(selected_game)
+        .ok_or("Das Spielbasisverzeichnis konnte nicht aufgeloest werden.".to_string())
 }
 
 fn resolve_import_archive_start_dir(selected_game: &str) -> Option<PathBuf> {
