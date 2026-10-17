@@ -19,20 +19,23 @@ use crate::shared::user_log;
 use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 
 use super::models::{
+    AiDriverGenerateRequest, AiDriverManagementResult, AiDriverMutationOperation,
+    AiDriverMutationResult, AiDriverRemoveRequest, AiDriverTruckAssignmentRequest,
     GarageBulkOperation, GarageBuyAllRequest, GarageBuyAllResult, GarageInfo, GarageListResult,
     GarageMutationRequest, GarageMutationResult, GarageOperation, GarageOwnership,
     GarageRelinquishEmptyRequest, GarageRelinquishEmptyResult, GarageResourceAssignmentRequest,
     GarageSize, GarageUpdateRequest,
 };
-use super::parser::parse_garages_from_sii;
+use super::parser::{parse_ai_driver_management_from_sii, parse_garages_from_sii};
 use super::validator::{
-    GarageAssignmentVerificationSpec, GarageVerificationSpec, verify_garage_mutation,
-    verify_garage_purchase_batch, verify_garage_relinquishment_batch,
-    verify_garage_resource_assignment,
+    GarageAssignmentVerificationSpec, GarageVerificationSpec, verify_ai_driver_consistency,
+    verify_ai_driver_mutation, verify_garage_mutation, verify_garage_purchase_batch,
+    verify_garage_relinquishment_batch, verify_garage_resource_assignment,
 };
 use super::writer::{
-    GarageResourceAssignmentOptions, apply_garage_changes, apply_garage_purchase_batch,
-    apply_garage_relinquishment, apply_garage_relinquishment_batch,
+    AiDriverWritePlan, GarageResourceAssignmentOptions, apply_ai_driver_generation,
+    apply_ai_driver_removal, apply_ai_driver_truck_update, apply_garage_changes,
+    apply_garage_purchase_batch, apply_garage_relinquishment, apply_garage_relinquishment_batch,
     apply_random_resource_assignment, write_verified_content,
 };
 
@@ -64,6 +67,27 @@ pub fn get_all_garages(
         }
     }
     result
+}
+
+pub fn get_ai_driver_management(
+    selection: &ActiveSaveSelection,
+    selected_game: &str,
+    decrypt_cache: &DecryptCache,
+    sqlite_path: &Path,
+) -> Result<AiDriverManagementResult, String> {
+    if !selected_game.eq_ignore_ascii_case("ets2") {
+        return Err(format!(
+            "ai_driver_not_supported:{}",
+            selected_game.to_ascii_lowercase()
+        ));
+    }
+    let game_sii_path = resolve_selected_game_sii(selection)?;
+    let content = read_fresh_content(&game_sii_path, decrypt_cache)?;
+    verify_ai_driver_consistency(&content)?;
+    let save_hash = sha256_hex_bytes(content.as_bytes());
+    let mut management = parse_ai_driver_management_from_sii(&content, selected_game, &save_hash)?;
+    enrich_ai_driver_city_data(&content, &mut management, sqlite_path);
+    Ok(management)
 }
 
 fn read_all_garages(
@@ -199,6 +223,301 @@ fn enrich_city_data(
         }
     }
     Ok(())
+}
+
+fn enrich_ai_driver_city_data(
+    content: &str,
+    management: &mut AiDriverManagementResult,
+    sqlite_path: &Path,
+) {
+    let Ok(mut garages) = parse_garages_from_sii(content).map(|parsed| parsed.garages) else {
+        return;
+    };
+    if enrich_city_data(&mut garages, sqlite_path).is_err() {
+        management
+            .warnings
+            .push("garage_city_dataset_unavailable:ets2".to_string());
+        return;
+    }
+    let names = garages
+        .into_iter()
+        .map(|garage| (garage.garage_id, garage.city_name))
+        .collect::<HashMap<_, _>>();
+    for driver in &mut management.drivers {
+        driver.garage_name = names.get(&driver.garage_id).cloned().flatten();
+    }
+    for truck in &mut management.available_trucks {
+        truck.garage_name = names.get(&truck.garage_id).cloned().flatten();
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn generate_ai_drivers(
+    selection: &ActiveSaveSelection,
+    selected_game: &str,
+    profile_state: &AppProfileState,
+    profile_cache: &ProfileCache,
+    decrypt_cache: &DecryptCache,
+    truck_change_cache: &TruckChangeSessionCache,
+    trailer_change_cache: &TrailerChangeSessionCache,
+    sqlite_path: &Path,
+    request: &AiDriverGenerateRequest,
+) -> Result<AiDriverMutationResult, String> {
+    if request.garage_id.trim().is_empty() {
+        return Err("garage_not_found".to_string());
+    }
+    if request.count == 0 {
+        return Err("ai_driver_count_invalid".to_string());
+    }
+    mutate_ai_drivers(
+        selection,
+        selected_game,
+        profile_state,
+        profile_cache,
+        decrypt_cache,
+        truck_change_cache,
+        trailer_change_cache,
+        sqlite_path,
+        &request.expected_save_hash,
+        AiDriverMutationOperation::Generate,
+        "generate",
+        |content| {
+            apply_ai_driver_generation(
+                content,
+                &request.garage_id,
+                request.count,
+                request.assign_trucks,
+            )
+        },
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn update_ai_driver_truck(
+    selection: &ActiveSaveSelection,
+    selected_game: &str,
+    profile_state: &AppProfileState,
+    profile_cache: &ProfileCache,
+    decrypt_cache: &DecryptCache,
+    truck_change_cache: &TruckChangeSessionCache,
+    trailer_change_cache: &TrailerChangeSessionCache,
+    sqlite_path: &Path,
+    request: &AiDriverTruckAssignmentRequest,
+) -> Result<AiDriverMutationResult, String> {
+    if request.driver_id.trim().is_empty() {
+        return Err("ai_driver_not_hired".to_string());
+    }
+    let operation = if request
+        .truck_id
+        .as_deref()
+        .is_some_and(|value| !value.trim().is_empty())
+    {
+        AiDriverMutationOperation::AssignTruck
+    } else {
+        AiDriverMutationOperation::UnassignTruck
+    };
+    mutate_ai_drivers(
+        selection,
+        selected_game,
+        profile_state,
+        profile_cache,
+        decrypt_cache,
+        truck_change_cache,
+        trailer_change_cache,
+        sqlite_path,
+        &request.expected_save_hash,
+        operation,
+        "update_truck",
+        |content| {
+            apply_ai_driver_truck_update(content, &request.driver_id, request.truck_id.as_deref())
+        },
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn remove_ai_drivers(
+    selection: &ActiveSaveSelection,
+    selected_game: &str,
+    profile_state: &AppProfileState,
+    profile_cache: &ProfileCache,
+    decrypt_cache: &DecryptCache,
+    truck_change_cache: &TruckChangeSessionCache,
+    trailer_change_cache: &TrailerChangeSessionCache,
+    sqlite_path: &Path,
+    request: &AiDriverRemoveRequest,
+) -> Result<AiDriverMutationResult, String> {
+    if request.driver_ids.is_empty() {
+        return Err("ai_driver_selection_empty".to_string());
+    }
+    mutate_ai_drivers(
+        selection,
+        selected_game,
+        profile_state,
+        profile_cache,
+        decrypt_cache,
+        truck_change_cache,
+        trailer_change_cache,
+        sqlite_path,
+        &request.expected_save_hash,
+        AiDriverMutationOperation::Remove,
+        "remove",
+        |content| apply_ai_driver_removal(content, &request.driver_ids),
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn mutate_ai_drivers(
+    selection: &ActiveSaveSelection,
+    selected_game: &str,
+    profile_state: &AppProfileState,
+    profile_cache: &ProfileCache,
+    decrypt_cache: &DecryptCache,
+    truck_change_cache: &TruckChangeSessionCache,
+    trailer_change_cache: &TrailerChangeSessionCache,
+    sqlite_path: &Path,
+    expected_save_hash: &str,
+    operation: AiDriverMutationOperation,
+    action: &str,
+    build_plan: impl FnOnce(&str) -> Result<AiDriverWritePlan, String>,
+) -> Result<AiDriverMutationResult, String> {
+    if !selected_game.eq_ignore_ascii_case("ets2") {
+        return Err(format!(
+            "ai_driver_not_supported:{}",
+            selected_game.to_ascii_lowercase()
+        ));
+    }
+    if expected_save_hash.trim().is_empty() {
+        return Err("save_hash_missing".to_string());
+    }
+    let game_sii_path = resolve_selected_game_sii(selection)?;
+    let profile_id = selection_component_id(selection.profile_path.as_deref());
+    let save_id = selection_component_id(selection.save_path.as_deref());
+    let content = read_fresh_content(&game_sii_path, decrypt_cache)?;
+    let actual_hash = sha256_hex_bytes(content.as_bytes());
+    if actual_hash != expected_save_hash {
+        return Err("save_changed_since_load".to_string());
+    }
+    verify_ai_driver_consistency(&content)?;
+    let plan = build_plan(&content)?;
+    verify_ai_driver_mutation(
+        &content,
+        &plan.content,
+        &operation,
+        &plan.affected_driver_ids,
+    )?;
+
+    ensure_active_context(profile_state, selection, selected_game)?;
+    let backup = backup_service::create_backup_for_targets(
+        profile_state,
+        &format!("ai_driver {action}"),
+        &backup_service::recommended_targets(&game_sii_path),
+    )
+    .map_err(|_| "backup_failed".to_string())?;
+    let pre_write_content = read_fresh_content(&game_sii_path, decrypt_cache)?;
+    if sha256_hex_bytes(pre_write_content.as_bytes()) != actual_hash {
+        return Err("save_changed_since_load".to_string());
+    }
+    let verify_candidate = |candidate: &str| {
+        verify_ai_driver_mutation(&content, candidate, &operation, &plan.affected_driver_ids)
+    };
+    if let Err(error) = write_verified_content(&game_sii_path, &plan.content, verify_candidate) {
+        invalidate_after_write(
+            selection,
+            &game_sii_path,
+            profile_cache,
+            decrypt_cache,
+            truck_change_cache,
+            trailer_change_cache,
+        );
+        let target_changed = decrypt_cached_with_cache(&game_sii_path, decrypt_cache)
+            .map(|current| sha256_hex_bytes(current.as_bytes()) != actual_hash)
+            .unwrap_or(true);
+        if target_changed {
+            return rollback_after_failure(
+                profile_state,
+                selection,
+                &game_sii_path,
+                profile_cache,
+                decrypt_cache,
+                truck_change_cache,
+                trailer_change_cache,
+                &backup.backup_id,
+                &actual_hash,
+                "save_write_failed",
+                error,
+                "<ai-drivers>",
+                action,
+                &profile_id,
+                &save_id,
+            );
+        }
+        return Err(error);
+    }
+
+    invalidate_after_write(
+        selection,
+        &game_sii_path,
+        profile_cache,
+        decrypt_cache,
+        truck_change_cache,
+        trailer_change_cache,
+    );
+    let reloaded = match decrypt_cached_with_cache(&game_sii_path, decrypt_cache) {
+        Ok(content) => content,
+        Err(_) => {
+            return rollback_after_failure(
+                profile_state,
+                selection,
+                &game_sii_path,
+                profile_cache,
+                decrypt_cache,
+                truck_change_cache,
+                trailer_change_cache,
+                &backup.backup_id,
+                &actual_hash,
+                "save_verification_failed",
+                "game_sii_not_decrypted_after_write".to_string(),
+                "<ai-drivers>",
+                action,
+                &profile_id,
+                &save_id,
+            );
+        }
+    };
+    if let Err(error) =
+        verify_ai_driver_mutation(&content, &reloaded, &operation, &plan.affected_driver_ids)
+    {
+        return rollback_after_failure(
+            profile_state,
+            selection,
+            &game_sii_path,
+            profile_cache,
+            decrypt_cache,
+            truck_change_cache,
+            trailer_change_cache,
+            &backup.backup_id,
+            &actual_hash,
+            "save_verification_failed",
+            error,
+            "<ai-drivers>",
+            action,
+            &profile_id,
+            &save_id,
+        );
+    }
+    let save_hash = sha256_hex_bytes(reloaded.as_bytes());
+    let mut management = parse_ai_driver_management_from_sii(&reloaded, selected_game, &save_hash)?;
+    enrich_ai_driver_city_data(&reloaded, &mut management, sqlite_path);
+    Ok(AiDriverMutationResult {
+        operation,
+        affected_driver_ids: plan.affected_driver_ids,
+        backup_id: backup.backup_id,
+        backup_created: true,
+        verified: true,
+        save_hash,
+        management,
+        warnings: Vec::new(),
+    })
 }
 
 pub fn purchase_garage(
@@ -1872,7 +2191,7 @@ mod tests {
     #[test]
     fn relinquishment_blocks_external_garage_references() {
         assert!(validate_no_external_garage_references(SAMPLE, "garage.paris").is_ok());
-        let externally_referenced = SAMPLE.replace(
+        let externally_referenced = SAMPLE.replace("\r\n", "\n").replace(
             "vehicle : truck.one {\n}",
             "vehicle : truck.one {\n assigned_garage: garage.paris\n}",
         );

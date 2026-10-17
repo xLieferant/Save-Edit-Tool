@@ -400,6 +400,10 @@ fn main() {
             features::companies::commands::company_get_for_user,
             // Garages
             features::garages::commands::get_all_garages,
+            features::garages::commands::get_ai_driver_management,
+            features::garages::commands::generate_ai_drivers,
+            features::garages::commands::update_ai_driver_truck,
+            features::garages::commands::remove_ai_drivers,
             features::garages::commands::purchase_garage,
             features::garages::commands::upgrade_owned_garage,
             features::garages::commands::update_garage,
