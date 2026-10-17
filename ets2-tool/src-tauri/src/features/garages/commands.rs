@@ -8,9 +8,10 @@ use crate::shared::current_profile::snapshot_active_save_selection;
 use crate::state::{AppProfileState, AppState, DecryptCache, ProfileCache};
 
 use super::models::{
-    GarageBuyAllRequest, GarageBuyAllResult, GarageListResult, GarageMutationRequest,
-    GarageMutationResult, GarageRelinquishEmptyRequest, GarageRelinquishEmptyResult,
-    GarageResourceAssignmentRequest, GarageUpdateRequest,
+    AiDriverGenerateRequest, AiDriverManagementResult, AiDriverMutationResult,
+    AiDriverRemoveRequest, AiDriverTruckAssignmentRequest, GarageBuyAllRequest, GarageBuyAllResult,
+    GarageListResult, GarageMutationRequest, GarageMutationResult, GarageRelinquishEmptyRequest,
+    GarageRelinquishEmptyResult, GarageResourceAssignmentRequest, GarageUpdateRequest,
 };
 use super::service;
 
@@ -43,6 +44,121 @@ pub async fn get_all_garages(
     })
     .await
     .map_err(|error| format!("garage_block_invalid:task_failed:{error}"))?
+}
+
+#[tauri::command]
+pub async fn get_ai_driver_management(
+    profile_state: State<'_, AppProfileState>,
+    decrypt_cache: State<'_, DecryptCache>,
+    app_state: State<'_, AppState>,
+) -> Result<AiDriverManagementResult, String> {
+    let selection = snapshot_active_save_selection(profile_state.inner())
+        .map_err(|_| "garage_block_invalid:profile_state_unavailable".to_string())?;
+    let selected_game = profile_state
+        .selected_game
+        .lock()
+        .map_err(|_| "garage_block_invalid:selected_game_unavailable".to_string())?
+        .clone();
+    let decrypt_cache = decrypt_cache.inner().clone();
+    let sqlite_path = app_state.sqlite_path.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        service::get_ai_driver_management(&selection, &selected_game, &decrypt_cache, &sqlite_path)
+    })
+    .await
+    .map_err(|error| format!("garage_block_invalid:task_failed:{error}"))?
+}
+
+#[tauri::command]
+pub fn generate_ai_drivers(
+    request: AiDriverGenerateRequest,
+    profile_state: State<'_, AppProfileState>,
+    profile_cache: State<'_, ProfileCache>,
+    decrypt_cache: State<'_, DecryptCache>,
+    truck_change_cache: State<'_, TruckChangeSessionCache>,
+    trailer_change_cache: State<'_, TrailerChangeSessionCache>,
+    app_state: State<'_, AppState>,
+) -> Result<AiDriverMutationResult, String> {
+    let _mutation_guard = acquire_mutation_lock(&app_state.garage_mutation_lock)?;
+    let selection = snapshot_active_save_selection(profile_state.inner())
+        .map_err(|_| "garage_block_invalid:profile_state_unavailable".to_string())?;
+    let selected_game = profile_state
+        .selected_game
+        .lock()
+        .map_err(|_| "garage_block_invalid:selected_game_unavailable".to_string())?
+        .clone();
+    service::generate_ai_drivers(
+        &selection,
+        &selected_game,
+        profile_state.inner(),
+        profile_cache.inner(),
+        decrypt_cache.inner(),
+        truck_change_cache.inner(),
+        trailer_change_cache.inner(),
+        &app_state.sqlite_path,
+        &request,
+    )
+}
+
+#[tauri::command]
+pub fn update_ai_driver_truck(
+    request: AiDriverTruckAssignmentRequest,
+    profile_state: State<'_, AppProfileState>,
+    profile_cache: State<'_, ProfileCache>,
+    decrypt_cache: State<'_, DecryptCache>,
+    truck_change_cache: State<'_, TruckChangeSessionCache>,
+    trailer_change_cache: State<'_, TrailerChangeSessionCache>,
+    app_state: State<'_, AppState>,
+) -> Result<AiDriverMutationResult, String> {
+    let _mutation_guard = acquire_mutation_lock(&app_state.garage_mutation_lock)?;
+    let selection = snapshot_active_save_selection(profile_state.inner())
+        .map_err(|_| "garage_block_invalid:profile_state_unavailable".to_string())?;
+    let selected_game = profile_state
+        .selected_game
+        .lock()
+        .map_err(|_| "garage_block_invalid:selected_game_unavailable".to_string())?
+        .clone();
+    service::update_ai_driver_truck(
+        &selection,
+        &selected_game,
+        profile_state.inner(),
+        profile_cache.inner(),
+        decrypt_cache.inner(),
+        truck_change_cache.inner(),
+        trailer_change_cache.inner(),
+        &app_state.sqlite_path,
+        &request,
+    )
+}
+
+#[tauri::command]
+pub fn remove_ai_drivers(
+    request: AiDriverRemoveRequest,
+    profile_state: State<'_, AppProfileState>,
+    profile_cache: State<'_, ProfileCache>,
+    decrypt_cache: State<'_, DecryptCache>,
+    truck_change_cache: State<'_, TruckChangeSessionCache>,
+    trailer_change_cache: State<'_, TrailerChangeSessionCache>,
+    app_state: State<'_, AppState>,
+) -> Result<AiDriverMutationResult, String> {
+    let _mutation_guard = acquire_mutation_lock(&app_state.garage_mutation_lock)?;
+    let selection = snapshot_active_save_selection(profile_state.inner())
+        .map_err(|_| "garage_block_invalid:profile_state_unavailable".to_string())?;
+    let selected_game = profile_state
+        .selected_game
+        .lock()
+        .map_err(|_| "garage_block_invalid:selected_game_unavailable".to_string())?
+        .clone();
+    service::remove_ai_drivers(
+        &selection,
+        &selected_game,
+        profile_state.inner(),
+        profile_cache.inner(),
+        decrypt_cache.inner(),
+        truck_change_cache.inner(),
+        trailer_change_cache.inner(),
+        &app_state.sqlite_path,
+        &request,
+    )
 }
 
 #[tauri::command]

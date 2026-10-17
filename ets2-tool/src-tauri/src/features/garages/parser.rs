@@ -6,7 +6,8 @@ use crate::features::truck_change::parser::{
 use crate::shared::hex_float::parse_value_auto;
 
 use super::models::{
-    GarageInfo, GarageOwnership, GarageParseDiagnostics, GarageSize, GarageSlotInfo,
+    AiDriverInfo, AiDriverManagementResult, AiDriverSkills, AiDriverTruckInfo, GarageInfo,
+    GarageOwnership, GarageParseDiagnostics, GarageSize, GarageSlotInfo,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -14,6 +15,145 @@ pub struct ParsedGarageList {
     pub headquarters_garage_id: Option<String>,
     pub garages: Vec<GarageInfo>,
     pub diagnostics: GarageParseDiagnostics,
+}
+
+pub fn parse_ai_driver_management_from_sii(
+    content: &str,
+    game: &str,
+    save_hash: &str,
+) -> Result<AiDriverManagementResult, String> {
+    let blocks = parse_unit_blocks(content);
+    let economy = resolve_economy_block(&blocks)?;
+    let player = resolve_player_block(&blocks)?;
+    let garages = parse_garages_from_sii(content)?.garages;
+    let hired = parse_strict_array(player, "drivers", "ai_driver_player_array_invalid")?;
+    for field in [
+        "driver_flags",
+        "driver_readiness_timer",
+        "driver_undrivable_truck_timers",
+    ] {
+        let values = parse_strict_array(player, field, "ai_driver_player_array_invalid")?;
+        if values.len() != hired.len() {
+            return Err(format!("ai_driver_player_array_mismatch:{field}"));
+        }
+    }
+
+    let mut locations: HashMap<String, Vec<(&GarageInfo, &GarageSlotInfo)>> = HashMap::new();
+    for garage in &garages {
+        for slot in &garage.slots {
+            if let Some(driver_id) = slot.driver_id.as_deref() {
+                locations
+                    .entry(normalize_reference(driver_id))
+                    .or_default()
+                    .push((garage, slot));
+            }
+        }
+    }
+
+    let mut warnings = Vec::new();
+    let mut drivers = Vec::with_capacity(hired.len());
+    for driver_id in &hired {
+        let normalized = normalize_reference(driver_id);
+        let driver_locations = locations.get(&normalized).cloned().unwrap_or_default();
+        let (garage, slot) = match driver_locations.as_slice() {
+            [] => {
+                warnings.push(format!("ai_driver_garage_missing:{driver_id}"));
+                continue;
+            }
+            [location] => *location,
+            _ => return Err(format!("ai_driver_garage_ambiguous:{driver_id}")),
+        };
+        let driver_block = optional_unique_typed_block(&blocks, "driver_ai", driver_id)?;
+        let mut driver_warnings = Vec::new();
+        let (display_name, experience_points, level, skills, state, training_policy, active_job) =
+            if let Some(block) = driver_block {
+                let experience_points = optional_u64_field(block, "experience_points");
+                let display_name = driver_display_name(block);
+                let active_job = driver_has_active_job(block, &blocks);
+                (
+                    display_name,
+                    experience_points,
+                    experience_points.map(|xp| crate::xp::command::calculate_level(xp).level),
+                    parse_driver_skills(block),
+                    optional_i32_field(block, "state"),
+                    optional_i32_field(block, "training_policy"),
+                    active_job,
+                )
+            } else {
+                driver_warnings.push(format!("ai_driver_block_missing:{driver_id}"));
+                (None, None, None, None, None, None, false)
+            };
+        drivers.push(AiDriverInfo {
+            driver_id: driver_id.clone(),
+            display_name,
+            experience_points,
+            level,
+            skills,
+            state,
+            training_policy,
+            garage_id: garage.garage_id.clone(),
+            garage_name: garage.city_name.clone(),
+            garage_slot_index: slot.index,
+            truck_id: slot.truck_id.clone(),
+            active_job,
+            removable: !active_job,
+            warnings: driver_warnings,
+        });
+    }
+
+    let hired_set = hired
+        .iter()
+        .map(|value| normalize_reference(value))
+        .collect::<HashSet<_>>();
+    let mut available_driver_ids = HashSet::new();
+    for field in ["drivers_offer", "driver_pool"] {
+        for driver_id in parse_strict_array(economy, field, "ai_driver_economy_array_invalid")? {
+            let normalized = normalize_reference(&driver_id);
+            if !normalized.is_empty() && !hired_set.contains(&normalized) {
+                available_driver_ids.insert(normalized);
+            }
+        }
+    }
+
+    let active_player_trucks = ["assigned_truck", "my_truck"]
+        .into_iter()
+        .filter_map(|field| extract_field_value(&player.raw_block, field))
+        .filter(|value| !is_null_ref(value))
+        .map(|value| normalize_reference(&value))
+        .collect::<HashSet<_>>();
+    let mut available_trucks = Vec::new();
+    for garage in garages
+        .iter()
+        .filter(|garage| garage.ownership == GarageOwnership::Owned)
+    {
+        for slot in &garage.slots {
+            let Some(truck_id) = slot.truck_id.as_deref() else {
+                continue;
+            };
+            if slot.driver_id.is_some()
+                || active_player_trucks.contains(&normalize_reference(truck_id))
+            {
+                continue;
+            }
+            available_trucks.push(AiDriverTruckInfo {
+                truck_id: truck_id.to_string(),
+                garage_id: garage.garage_id.clone(),
+                garage_name: garage.city_name.clone(),
+                garage_slot_index: slot.index,
+            });
+        }
+    }
+    available_trucks.sort_by(|left, right| left.truck_id.cmp(&right.truck_id));
+    drivers.sort_by(|left, right| left.driver_id.cmp(&right.driver_id));
+
+    Ok(AiDriverManagementResult {
+        game: game.to_ascii_lowercase(),
+        save_hash: save_hash.to_string(),
+        drivers,
+        available_driver_count: available_driver_ids.len(),
+        available_trucks,
+        warnings,
+    })
 }
 
 pub fn parse_garages_from_sii(content: &str) -> Result<ParsedGarageList, String> {
@@ -76,6 +216,13 @@ pub fn parse_garages_from_sii(content: &str) -> Result<ParsedGarageList, String>
             .push(block);
     }
 
+    let hired_driver_ids = resolve_player_block(&blocks)
+        .ok()
+        .and_then(|player| parse_strict_array(player, "drivers", "garage_block_invalid").ok())
+        .unwrap_or_default()
+        .into_iter()
+        .map(|value| normalize_reference(&value))
+        .collect::<HashSet<_>>();
     let mut garages = Vec::with_capacity(referenced_ids.len());
     for garage_id in &referenced_ids {
         if city_token_from_garage_id(garage_id).is_none() {
@@ -96,7 +243,7 @@ pub fn parse_garages_from_sii(content: &str) -> Result<ParsedGarageList, String>
             garage_block,
             headquarters_garage_id.as_deref() == Some(garage_id.as_str()),
         )?;
-        validate_assignment_targets(&mut garage, &blocks_by_id);
+        validate_assignment_targets(&mut garage, &blocks_by_id, &hired_driver_ids);
         garages.push(garage);
     }
     validate_duplicate_assignments(&mut garages);
@@ -348,6 +495,7 @@ fn resolve_headquarters_garage_id(
 fn validate_assignment_targets(
     garage: &mut GarageInfo,
     blocks_by_id: &HashMap<&str, Vec<&UnitBlock>>,
+    hired_driver_ids: &HashSet<String>,
 ) {
     match garage.profit_log_id.as_deref() {
         Some(profit_log_id) if reference_is_ambiguous(blocks_by_id, profit_log_id) => {
@@ -392,18 +540,13 @@ fn validate_assignment_targets(
                     garage.garage_id, slot.index
                 ));
             } else if !reference_has_type(blocks_by_id, driver_id, &["driver_ai", "driver_player"])
+                && !hired_driver_ids.contains(&normalize_reference(driver_id))
             {
                 garage.warnings.push(format!(
                     "garage_driver_reference_unresolved:{}:{}",
                     garage.garage_id, slot.index
                 ));
             }
-        }
-        if slot.driver_id.is_some() && slot.truck_id.is_none() {
-            garage.warnings.push(format!(
-                "garage_slot_assignment_inconsistent:{}:{}:driver_without_truck",
-                garage.garage_id, slot.index
-            ));
         }
     }
     for (index, trailer_id) in garage.trailer_ids.iter().enumerate() {
@@ -419,6 +562,141 @@ fn validate_assignment_targets(
             ));
         }
     }
+}
+
+fn resolve_player_block<'a>(blocks: &'a [UnitBlock]) -> Result<&'a UnitBlock, String> {
+    let economy = resolve_economy_block(blocks)?;
+    let player_id = extract_field_value(&economy.raw_block, "player")
+        .ok_or_else(|| "garage_block_invalid:player_reference_missing".to_string())?;
+    let players = blocks
+        .iter()
+        .filter(|block| block.unit_type == "player" && block.id == player_id)
+        .collect::<Vec<_>>();
+    match players.as_slice() {
+        [block] => Ok(*block),
+        [] => Err("garage_block_invalid:player_missing".to_string()),
+        _ => Err(format!("garage_reference_ambiguous:{player_id}")),
+    }
+}
+
+fn resolve_economy_block(blocks: &[UnitBlock]) -> Result<&UnitBlock, String> {
+    let economies = blocks
+        .iter()
+        .filter(|block| block.unit_type == "economy")
+        .collect::<Vec<_>>();
+    match economies.as_slice() {
+        [block] => Ok(*block),
+        [] => return Err("garage_block_invalid:economy_missing".to_string()),
+        _ => return Err("garage_reference_ambiguous:economy".to_string()),
+    }
+}
+
+fn parse_strict_array(
+    block: &UnitBlock,
+    field: &str,
+    error_prefix: &str,
+) -> Result<Vec<String>, String> {
+    let count = extract_field_value(&block.raw_block, field)
+        .ok_or_else(|| format!("{error_prefix}:{field}_missing"))?
+        .parse::<usize>()
+        .map_err(|_| format!("{error_prefix}:{field}_invalid"))?;
+    let entries = extract_array_entries(&block.raw_block, field);
+    let values = entries.iter().cloned().collect::<BTreeMap<_, _>>();
+    if entries.len() != count
+        || values.len() != count
+        || (0..count).any(|index| !values.contains_key(&index))
+    {
+        return Err(format!("{error_prefix}:{field}_indices_invalid"));
+    }
+    Ok((0..count)
+        .filter_map(|index| values.get(&index).cloned())
+        .collect())
+}
+
+fn optional_unique_typed_block<'a>(
+    blocks: &'a [UnitBlock],
+    unit_type: &str,
+    unit_id: &str,
+) -> Result<Option<&'a UnitBlock>, String> {
+    let normalized_id = normalize_reference(unit_id);
+    let matches = blocks
+        .iter()
+        .filter(|block| {
+            block.unit_type == unit_type && normalize_reference(&block.id) == normalized_id
+        })
+        .collect::<Vec<_>>();
+    match matches.as_slice() {
+        [] => Ok(None),
+        [block] => Ok(Some(*block)),
+        _ => Err(format!("garage_reference_ambiguous:{unit_id}")),
+    }
+}
+
+fn normalize_reference(value: &str) -> String {
+    value.trim().trim_matches('"').to_ascii_lowercase()
+}
+
+fn optional_u64_field(block: &UnitBlock, field: &str) -> Option<u64> {
+    extract_field_value(&block.raw_block, field)?
+        .parse::<u64>()
+        .ok()
+}
+
+fn optional_i32_field(block: &UnitBlock, field: &str) -> Option<i32> {
+    extract_field_value(&block.raw_block, field)?
+        .parse::<i32>()
+        .ok()
+}
+
+fn parse_driver_skills(block: &UnitBlock) -> Option<AiDriverSkills> {
+    Some(AiDriverSkills {
+        adr: optional_u64_field(block, "adr")?.try_into().ok()?,
+        long_dist: optional_u64_field(block, "long_dist")?.try_into().ok()?,
+        heavy: optional_u64_field(block, "heavy")?.try_into().ok()?,
+        fragile: optional_u64_field(block, "fragile")?.try_into().ok()?,
+        urgent: optional_u64_field(block, "urgent")?.try_into().ok()?,
+        mechanical: optional_u64_field(block, "mechanical")?.try_into().ok()?,
+    })
+}
+
+fn driver_display_name(block: &UnitBlock) -> Option<String> {
+    for field in ["name", "driver_name"] {
+        if let Some(value) = extract_field_value(&block.raw_block, field) {
+            let value = value.trim_matches('"').trim();
+            if !value.is_empty() {
+                return Some(value.to_string());
+            }
+        }
+    }
+    let first = extract_field_value(&block.raw_block, "first_name")
+        .map(|value| value.trim_matches('"').trim().to_string())
+        .unwrap_or_default();
+    let last = extract_field_value(&block.raw_block, "last_name")
+        .map(|value| value.trim_matches('"').trim().to_string())
+        .unwrap_or_default();
+    let combined = format!("{first} {last}").trim().to_string();
+    (!combined.is_empty()).then_some(combined)
+}
+
+fn driver_has_active_job(driver: &UnitBlock, blocks: &[UnitBlock]) -> bool {
+    if optional_i32_field(driver, "state").is_some_and(|state| state == 2) {
+        return true;
+    }
+    let Some(job_id) = extract_field_value(&driver.raw_block, "driver_job") else {
+        return false;
+    };
+    if is_null_ref(&job_id) {
+        return false;
+    }
+    blocks
+        .iter()
+        .find(|block| block.unit_type == "job_info" && block.id == job_id)
+        .is_some_and(|job| {
+            ["cargo", "source_company", "target_company"]
+                .into_iter()
+                .filter_map(|field| extract_field_value(&job.raw_block, field))
+                .any(|value| !is_null_ref(&value))
+        })
 }
 
 fn reference_is_ambiguous(blocks_by_id: &HashMap<&str, Vec<&UnitBlock>>, reference: &str) -> bool {
@@ -744,12 +1022,14 @@ garage : garage.paris {{
     }
 
     #[test]
-    fn reports_driver_assignment_without_truck() {
+    fn accepts_driver_assignment_without_truck() {
         let inconsistent = SAMPLE.replace("drivers[2]: null", "drivers[2]: driver.one");
         let parsed = parse_garages_from_sii(&inconsistent).unwrap();
         let garage = &parsed.garages[0];
+        assert_eq!(garage.slots[2].driver_id.as_deref(), Some("driver.one"));
+        assert!(garage.slots[2].truck_id.is_none());
         assert!(
-            garage
+            !garage
                 .warnings
                 .iter()
                 .any(|warning| { warning.starts_with("garage_slot_assignment_inconsistent") })

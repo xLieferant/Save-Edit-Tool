@@ -1220,6 +1220,9 @@
     "user_logs_load_error": "Benutzerprotokolle konnten nicht geladen werden.",
     "user_logs_export_error": "Benutzerprotokolle konnten nicht exportiert werden.",
     "user_logs_clear_error": "Benutzerprotokolle konnten nicht geleert werden.",
+    "ets2_data_location_updated": "[NEEDS TRANSLATION] ETS2 data location updated.",
+    "ets2_data_location_load_error": "[NEEDS TRANSLATION] Could not load ETS2 data location.",
+    "ets2_data_location_update_error": "[NEEDS TRANSLATION] Could not update ETS2 data location: {error}",
     "profile_loaded_select_save": "Profil geladen. Bitte wähle einen Spielstand aus.",
     "profile_load_error": "Profil konnte nicht geladen werden!",
     "scan_saves_error": "Spielstände konnten nicht gescannt werden",
@@ -1477,6 +1480,10 @@
       "user_logs": {
         "title": "Benutzerprotokolle",
         "desc": "Nutzerprotokolle ansehen, exportieren und leeren."
+      },
+      "ets2_data_location": {
+        "title": "[NEEDS TRANSLATION] ETS2 Data Location",
+        "desc": "[NEEDS TRANSLATION] Choose the ETS2 user data folder used for profiles, saves, local mods and logs."
       }
     },
     "language_picker": {
@@ -1968,6 +1975,48 @@
         "warnings": "Warnungen",
         "errors": "Fehler",
         "updated": "Aktualisiert"
+      }
+    },
+    "ets2_data_location": {
+      "kicker": "[NEEDS TRANSLATION] ETS2 data root",
+      "title": "[NEEDS TRANSLATION] ETS2 Data Location",
+      "description": "[NEEDS TRANSLATION] Choose the ETS2 user data folder used for profiles, saves, local mods, config files and logs.",
+      "dialog_title": "[NEEDS TRANSLATION] Select ETS2 data location",
+      "status": {
+        "ready": "[NEEDS TRANSLATION] Ready",
+        "loading": "[NEEDS TRANSLATION] Loading",
+        "saving": "[NEEDS TRANSLATION] Saving",
+        "rescanning": "[NEEDS TRANSLATION] Rescanning"
+      },
+      "mode": {
+        "group_label": "[NEEDS TRANSLATION] ETS2 data location mode",
+        "default_title": "[NEEDS TRANSLATION] Default",
+        "default_desc": "[NEEDS TRANSLATION] Use the standard Documents ETS2 folder.",
+        "custom_title": "[NEEDS TRANSLATION] Custom -homedir",
+        "custom_desc": "[NEEDS TRANSLATION] Use a custom homedir root or an existing ETS2 data folder."
+      },
+      "fields": {
+        "validation": "[NEEDS TRANSLATION] Validation",
+        "homedir_root": "[NEEDS TRANSLATION] Homedir Root",
+        "game_data_dir": "[NEEDS TRANSLATION] Resolved ETS2 Folder",
+        "profiles": "[NEEDS TRANSLATION] Profiles",
+        "steam_profiles": "[NEEDS TRANSLATION] Steam Profiles",
+        "local_mods": "[NEEDS TRANSLATION] Local Mods",
+        "config_file": "[NEEDS TRANSLATION] Config",
+        "game_log": "[NEEDS TRANSLATION] Game Log",
+        "game_crash": "[NEEDS TRANSLATION] Crash Log"
+      },
+      "actions": {
+        "refresh": "[NEEDS TRANSLATION] Refresh",
+        "browse": "[NEEDS TRANSLATION] Choose Folder",
+        "reset": "[NEEDS TRANSLATION] Reset to Default"
+      },
+      "validation": {
+        "ok": "[NEEDS TRANSLATION] ETS2 data folder looks valid.",
+        "homedir_missing": "[NEEDS TRANSLATION] The selected homedir root does not exist.",
+        "game_data_missing": "[NEEDS TRANSLATION] The resolved Euro Truck Simulator 2 folder does not exist yet.",
+        "markers_missing": "[NEEDS TRANSLATION] The folder exists, but no ETS2 profiles, local mods, config or logs were found.",
+        "unresolved": "[NEEDS TRANSLATION] The ETS2 data folder could not be resolved."
       }
     },
     "mod_conflict_diagnostics": {
@@ -2647,6 +2696,44 @@
       "random_driver": "Random KI-Fahrer zuweisen",
       "random_truck": "Random LKW zuweisen"
     },
+    "ai_drivers": {
+      "title": "[NEEDS TRANSLATION] AI Driver Management",
+      "description": "[NEEDS TRANSLATION] Generate hired drivers, review skills and assignments, assign company trucks, or remove idle drivers.",
+      "count": "[NEEDS TRANSLATION] Number of drivers",
+      "available": "[NEEDS TRANSLATION] {count} candidates available",
+      "garage": "[NEEDS TRANSLATION] Garage",
+      "truck": "[NEEDS TRANSLATION] Assigned truck",
+      "level": "[NEEDS TRANSLATION] Level",
+      "skills": "[NEEDS TRANSLATION] Skills",
+      "skill_adr": "[NEEDS TRANSLATION] ADR",
+      "skill_long_distance": "[NEEDS TRANSLATION] Long distance",
+      "skill_heavy": "[NEEDS TRANSLATION] Heavy cargo",
+      "skill_fragile": "[NEEDS TRANSLATION] Fragile cargo",
+      "skill_urgent": "[NEEDS TRANSLATION] Urgent deliveries",
+      "skill_eco": "[NEEDS TRANSLATION] Eco driving",
+      "status": "[NEEDS TRANSLATION] Status",
+      "idle": "[NEEDS TRANSLATION] Idle",
+      "active": "[NEEDS TRANSLATION] Active job",
+      "no_truck": "[NEEDS TRANSLATION] No truck assigned",
+      "generate": "[NEEDS TRANSLATION] Generate drivers",
+      "generating": "[NEEDS TRANSLATION] Generating drivers...",
+      "assign_trucks": "[NEEDS TRANSLATION] Assign available company trucks",
+      "select_truck": "[NEEDS TRANSLATION] Select an available truck",
+      "assign_truck": "[NEEDS TRANSLATION] Assign or change truck",
+      "unassign_truck": "[NEEDS TRANSLATION] Unassign truck",
+      "remove": "[NEEDS TRANSLATION] Remove selected drivers",
+      "removing": "[NEEDS TRANSLATION] Removing drivers...",
+      "selected": "[NEEDS TRANSLATION] {count} drivers selected",
+      "no_drivers": "[NEEDS TRANSLATION] No hired AI drivers were found.",
+      "no_available_trucks": "[NEEDS TRANSLATION] No unassigned company truck is available.",
+      "internal_name": "[NEEDS TRANSLATION] Internal driver ID",
+      "generate_confirm": "[NEEDS TRANSLATION] Generate {count} AI drivers and write the verified change to this save?",
+      "remove_confirm": "[NEEDS TRANSLATION] Remove {count} selected idle drivers from this save? Assigned trucks remain in their garages.",
+      "truck_confirm": "[NEEDS TRANSLATION] Apply this truck assignment change to the selected save?",
+      "mutation_success": "[NEEDS TRANSLATION] The AI driver change was backed up, written, and verified.",
+      "load_failure": "[NEEDS TRANSLATION] AI driver data could not be loaded safely.",
+      "mutation_failure": "[NEEDS TRANSLATION] The AI driver change could not be completed."
+    },
     "results": {
       "backup_created": "[NEEDS TRANSLATION] Backup created",
       "backup_not_created": "[NEEDS TRANSLATION] No backup was reported",
@@ -2728,6 +2815,14 @@
         "garage_assignment_no_available_truck": "Es ist kein besessener, freier LKW verfuegbar.",
         "garage_assignment_no_free_driver_slot": "In dieser Garage ist kein freier Driver-Slot mit LKW verfuegbar.",
         "garage_assignment_no_available_driver": "Es ist kein freier KI-Fahrer verfuegbar.",
+      "ai_driver_active_job": "[NEEDS TRANSLATION] A selected driver has an active job and cannot be removed safely.",
+      "ai_driver_insufficient_garage_capacity": "[NEEDS TRANSLATION] The selected garage does not have enough compatible free slots.",
+      "ai_driver_insufficient_candidates": "[NEEDS TRANSLATION] There are not enough available recruitment candidates.",
+      "ai_driver_insufficient_trucks": "[NEEDS TRANSLATION] There are not enough unassigned company trucks.",
+      "ai_driver_no_truck_storage_slot": "[NEEDS TRANSLATION] No empty garage slot is available to store the unassigned truck.",
+      "ai_driver_truck_not_available": "[NEEDS TRANSLATION] The selected truck is not available for this driver.",
+      "ai_driver_not_hired": "[NEEDS TRANSLATION] The selected driver is not in the hired-driver list.",
+      "ai_driver_generic": "[NEEDS TRANSLATION] The AI driver data is inconsistent or the requested change is unsafe.",
       "save_changed_since_load": "[NEEDS TRANSLATION] The save changed after the garage list was loaded. Refresh the data and try again.",
       "backup_failed": "[NEEDS TRANSLATION] The automatic backup could not be created. The save was not changed.",
       "save_write_failed": "[NEEDS TRANSLATION] The garage change could not be written safely.",

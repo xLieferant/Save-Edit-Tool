@@ -6,7 +6,7 @@ use sqlx::SqlitePool;
 
 use crate::features::ets2save::errors::{AppError, AppErrorCode};
 use crate::features::ets2save::models::{EtsProfile, EtsSaveSlot};
-use crate::shared::paths::{ats_base_path, ets2_base_path, quicksave_game_path};
+use crate::shared::paths::{profile_search_roots, quicksave_game_path};
 use crate::state::AppProfileState;
 
 fn normalize_profile_id(profile_id: &str) -> String {
@@ -51,9 +51,21 @@ fn resolve_profile_candidate(profile_id: &str, state: &AppProfileState) -> Optio
         }
     }
 
-    let bases = [ets2_base_path(), ats_base_path()];
-    for base in bases.into_iter().flatten() {
-        for root in [base.join("profiles"), base.join("profiles.backup")] {
+    let selected_game = state
+        .selected_game
+        .lock()
+        .ok()
+        .map(|guard| guard.clone())
+        .unwrap_or_else(|| "ets2".to_string());
+    let mut games = vec![selected_game.clone()];
+    for game in ["ets2", "ats"] {
+        if !games.iter().any(|value| value == game) {
+            games.push(game.to_string());
+        }
+    }
+
+    for game in games {
+        for root in profile_search_roots(&game) {
             if !root.exists() {
                 continue;
             }

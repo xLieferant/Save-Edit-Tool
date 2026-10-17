@@ -507,6 +507,26 @@ document.addEventListener("DOMContentLoaded", async () => {
     undoLastChangeBtn: document.getElementById("undoLastChangeBtn"),
     modalSafeValueReset: document.getElementById("modalSafeValueReset"),
     modalSafeValueResetClose: document.getElementById("modalSafeValueResetClose"),
+    modalEts2DataLocation: document.getElementById("modalEts2DataLocation"),
+    modalEts2DataLocationClose: document.getElementById("modalEts2DataLocationClose"),
+    ets2DataLocationStatusPill: document.getElementById("ets2DataLocationStatusPill"),
+    ets2DataLocationDefaultBtn: document.getElementById("ets2DataLocationDefaultBtn"),
+    ets2DataLocationCustomBtn: document.getElementById("ets2DataLocationCustomBtn"),
+    ets2DataLocationBrowseBtn: document.getElementById("ets2DataLocationBrowseBtn"),
+    ets2DataLocationResetBtn: document.getElementById("ets2DataLocationResetBtn"),
+    ets2DataLocationRefreshBtn: document.getElementById("ets2DataLocationRefreshBtn"),
+    ets2DataLocationValidation: document.getElementById("ets2DataLocationValidation"),
+    ets2DataLocationHomedir: document.getElementById("ets2DataLocationHomedir"),
+    ets2DataLocationGameDir: document.getElementById("ets2DataLocationGameDir"),
+    ets2DataLocationProfilesCount: document.getElementById("ets2DataLocationProfilesCount"),
+    ets2DataLocationProfilesPath: document.getElementById("ets2DataLocationProfilesPath"),
+    ets2DataLocationSteamProfilesCount: document.getElementById("ets2DataLocationSteamProfilesCount"),
+    ets2DataLocationSteamProfilesPath: document.getElementById("ets2DataLocationSteamProfilesPath"),
+    ets2DataLocationLocalModsCount: document.getElementById("ets2DataLocationLocalModsCount"),
+    ets2DataLocationLocalModsPath: document.getElementById("ets2DataLocationLocalModsPath"),
+    ets2DataLocationConfigPath: document.getElementById("ets2DataLocationConfigPath"),
+    ets2DataLocationLogPath: document.getElementById("ets2DataLocationLogPath"),
+    ets2DataLocationCrashPath: document.getElementById("ets2DataLocationCrashPath"),
     modalUserLogs: document.getElementById("modalUserLogs"),
     modalUserLogsClose: document.getElementById("modalUserLogsClose"),
     userLogsStatusPill: document.getElementById("userLogsStatusPill"),
@@ -748,6 +768,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     userLogsLoading: await t("modals.user_logs.status.loading"),
     userLogsEmpty: await t("modals.user_logs.empty"),
     userLogsClearConfirm: await t("modals.user_logs.confirm_clear"),
+    ets2DataLocationReady: await t("modals.ets2_data_location.status.ready"),
+    ets2DataLocationLoading: await t("modals.ets2_data_location.status.loading"),
+    ets2DataLocationSaving: await t("modals.ets2_data_location.status.saving"),
+    ets2DataLocationRescanning: await t("modals.ets2_data_location.status.rescanning"),
+    ets2DataLocationUnknown: await t("modals.ets2_data_location.validation.unresolved"),
+    ets2DataLocationLoadError: await t("toasts.ets2_data_location_load_error"),
   };
   const careerUi = {
     noActiveTrip: await t("career.dashboard.no_active_trip"),
@@ -795,6 +821,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   let userLogsExporting = false;
   let userLogsClearing = false;
   let activeUserLogsFilter = "all";
+  let ets2DataLocationLoading = false;
+  let ets2DataLocationChanging = false;
+  let activeEts2DataLocation = null;
   let activeUndoStatus = {
     canUndo: false,
     lastUndoLabel: null,
@@ -1775,7 +1804,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                         <span>${escapeHtml(createdAt)}</span>
                         <span>${escapeHtml(lastUsedAt)}</span>
                         <span>${escapeHtml(expiresAt)}</span>
-                        <span>${isCurrent ? "✓" : ""}</span>
+                        <span>${isCurrent ? "âœ“" : ""}</span>
                       </div>
                     `;
                   }).join("")}
@@ -1897,7 +1926,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                   ${users.map((user) => {
                     const createdAt = formatDateTime(user.createdAt);
                     const lastLogin = user.lastLoginAt ? formatDateTime(user.lastLoginAt) : "-";
-                    const sessionLabel = user.hasActiveSession ? "✓" : "";
+                    const sessionLabel = user.hasActiveSession ? "âœ“" : "";
                     return `
                       <div class="table-row">
                         <span>${escapeHtml(String(user.id))}</span>
@@ -2430,6 +2459,118 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   };
 
+
+  const formatEts2PathValue = (value) => String(value || "-");
+
+  const setEts2DataLocationStatus = (state, label) => {
+    setModalStatus(refs.ets2DataLocationStatusPill, state, label);
+  };
+
+  const syncEts2DataLocationControls = () => {
+    const busy = ets2DataLocationLoading || ets2DataLocationChanging;
+    const mode = activeEts2DataLocation?.mode || "default";
+    refs.ets2DataLocationDefaultBtn?.classList.toggle("is-active", mode === "default");
+    refs.ets2DataLocationCustomBtn?.classList.toggle("is-active", mode === "custom");
+    [
+      refs.ets2DataLocationDefaultBtn,
+      refs.ets2DataLocationCustomBtn,
+      refs.ets2DataLocationBrowseBtn,
+      refs.ets2DataLocationResetBtn,
+      refs.ets2DataLocationRefreshBtn,
+    ].forEach((button) => {
+      if (button) button.disabled = busy;
+    });
+    if (busy) {
+      setEts2DataLocationStatus("loading", uiText.ets2DataLocationLoading);
+    }
+  };
+
+  const renderEts2DataLocation = async (data) => {
+    activeEts2DataLocation = data || null;
+    const validation = data?.validation || {};
+    const validationLabel = validation.messageKey
+      ? await t(validation.messageKey)
+      : uiText.ets2DataLocationUnknown;
+
+    if (refs.ets2DataLocationValidation) refs.ets2DataLocationValidation.textContent = validationLabel;
+    if (refs.ets2DataLocationHomedir) refs.ets2DataLocationHomedir.textContent = formatEts2PathValue(data?.homedirRoot);
+    if (refs.ets2DataLocationGameDir) refs.ets2DataLocationGameDir.textContent = formatEts2PathValue(data?.gameDataDir);
+    if (refs.ets2DataLocationProfilesCount) refs.ets2DataLocationProfilesCount.textContent = String(validation.profilesCount ?? 0);
+    if (refs.ets2DataLocationProfilesPath) refs.ets2DataLocationProfilesPath.textContent = formatEts2PathValue(data?.profilesDir);
+    if (refs.ets2DataLocationSteamProfilesCount) refs.ets2DataLocationSteamProfilesCount.textContent = String(validation.steamProfilesCount ?? 0);
+    if (refs.ets2DataLocationSteamProfilesPath) refs.ets2DataLocationSteamProfilesPath.textContent = formatEts2PathValue(data?.steamProfilesDir);
+    if (refs.ets2DataLocationLocalModsCount) refs.ets2DataLocationLocalModsCount.textContent = String(validation.localModsCount ?? 0);
+    if (refs.ets2DataLocationLocalModsPath) refs.ets2DataLocationLocalModsPath.textContent = formatEts2PathValue(data?.localModDir);
+    if (refs.ets2DataLocationConfigPath) refs.ets2DataLocationConfigPath.textContent = formatEts2PathValue(data?.configFile);
+    if (refs.ets2DataLocationLogPath) refs.ets2DataLocationLogPath.textContent = formatEts2PathValue(data?.gameLogFile);
+    if (refs.ets2DataLocationCrashPath) refs.ets2DataLocationCrashPath.textContent = formatEts2PathValue(data?.gameCrashFile);
+
+    const statusState = validation.status === "ok"
+      ? "success"
+      : validation.status === "unresolved"
+        ? "error"
+        : "warning";
+    setEts2DataLocationStatus(statusState, validationLabel);
+    syncEts2DataLocationControls();
+  };
+
+  const refreshEts2DataLocation = async () => {
+    if (ets2DataLocationLoading) return;
+    ets2DataLocationLoading = true;
+    syncEts2DataLocationControls();
+    try {
+      const data = await invoke("get_ets2_data_location");
+      await renderEts2DataLocation(data);
+    } catch (error) {
+      console.error("ETS2 data location load failed:", error);
+      setEts2DataLocationStatus("error", uiText.ets2DataLocationLoadError);
+      window.showToast("toasts.ets2_data_location_load_error", {}, "error");
+    } finally {
+      ets2DataLocationLoading = false;
+      syncEts2DataLocationControls();
+    }
+  };
+
+  const refreshEditorAfterEts2DataLocationChange = async () => {
+    setEts2DataLocationStatus("loading", uiText.ets2DataLocationRescanning);
+    if (typeof window.refreshAfterEts2DataLocationChange === "function") {
+      await window.refreshAfterEts2DataLocationChange();
+    }
+    if (refs.modalModProfileManager && window.getComputedStyle(refs.modalModProfileManager).display !== "none") {
+      await window.loadSandboxPresetsIntoModal?.({ refreshSteamMods: false });
+    }
+  };
+
+  const applyEts2DataLocationChange = async (action) => {
+    if (ets2DataLocationChanging) return;
+    ets2DataLocationChanging = true;
+    setEts2DataLocationStatus("loading", uiText.ets2DataLocationSaving);
+    syncEts2DataLocationControls();
+    try {
+      const data = await action();
+      if (!data) return;
+      await renderEts2DataLocation(data);
+      await refreshEditorAfterEts2DataLocationChange();
+      await refreshEts2DataLocation();
+      window.showToast("toasts.ets2_data_location_updated", {}, "success");
+    } catch (error) {
+      console.error("ETS2 data location update failed:", error);
+      window.showToast("toasts.ets2_data_location_update_error", { error: error.toString() }, "error");
+    } finally {
+      ets2DataLocationChanging = false;
+      syncEts2DataLocationControls();
+    }
+  };
+
+  const closeEts2DataLocationModal = () => {
+    if (refs.modalEts2DataLocation) refs.modalEts2DataLocation.style.display = "none";
+  };
+
+  const openEts2DataLocationModal = async () => {
+    closeNavDrawer();
+    if (refs.modalEts2DataLocation) refs.modalEts2DataLocation.style.display = "flex";
+    await refreshEts2DataLocation();
+  };
   const parseOptionalIntegerInput = (element, errorMessage, { min = null } = {}) => {
     const raw = String(element?.value ?? "").trim();
     if (!raw) return null;
@@ -4087,6 +4228,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   window.openRecoveryCenterModal = openRecoveryCenterModal;
   window.openSafeValueResetModal = openSafeValueResetModal;
   window.openUserLogsModal = openUserLogsModal;
+  window.openEts2DataLocationModal = openEts2DataLocationModal;
   syncSafeResetCard();
   syncUserLogsControls();
 
@@ -4298,6 +4440,46 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   };
 
+
+  window.refreshAfterEts2DataLocationChange = async function () {
+    localStorage.removeItem("ets2_profiles_cache");
+    localStorage.removeItem("ets2_last_profile");
+    window.selectedProfilePath = null;
+    window.selectedSavePath = null;
+    window.currentSavePath = null;
+    window.currentProfileData = {};
+    window.currentQuicksaveData = {};
+    window.readSaveGameConfig = {};
+    window.baseConfig = {};
+    window.allTrucks = [];
+    window.playerTruck = null;
+    window.allTrailers = [];
+    window.playerTrailer = null;
+    window.playerTrailerHasActiveJob = false;
+    window.playerTrailerJobCargoMass = null;
+    window.playerTrailerLoadError = null;
+    window.selectedProfileHasAvatar = false;
+
+    refs.profileDropdownList.innerHTML = "";
+    refs.saveDropdownList.innerHTML = "";
+    refs.profileNameDisplay.textContent = uiText.noProfile;
+    refs.saveNameDisplay.textContent = uiText.noSave;
+    refs.openSaveModalBtn.disabled = true;
+
+    clearSafeResetInputs();
+    activeUndoStatus = {
+      canUndo: false,
+      lastUndoLabel: null,
+      lastUndoTimestamp: null,
+    };
+    syncSafeResetCard();
+    recoveryDataDirty = true;
+    recoveryHasLoaded = false;
+    await resetSaveSafetyUi();
+    await updateOperationalOverview();
+    await scanProfiles({ saveToBackend: true, showToasts: false });
+    loadTools(activeTab);
+  };
   refs.applyResetValuesBtn?.addEventListener("click", async () => {
     await applySafeResetValues();
   });
@@ -4322,6 +4504,44 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
+
+  refs.modalEts2DataLocationClose?.addEventListener("click", closeEts2DataLocationModal);
+
+  refs.modalEts2DataLocation?.addEventListener("click", (event) => {
+    if (event.target === refs.modalEts2DataLocation) {
+      closeEts2DataLocationModal();
+    }
+  });
+
+  refs.ets2DataLocationRefreshBtn?.addEventListener("click", refreshEts2DataLocation);
+
+  refs.ets2DataLocationDefaultBtn?.addEventListener("click", async () => {
+    await applyEts2DataLocationChange(() => invoke("set_ets2_data_location_mode", {
+      mode: "default",
+      customHomedir: null,
+    }));
+  });
+
+  refs.ets2DataLocationCustomBtn?.addEventListener("click", async () => {
+    if (!activeEts2DataLocation?.customHomedir) {
+      const dialogTitle = await t("modals.ets2_data_location.dialog_title");
+      await applyEts2DataLocationChange(() => invoke("choose_ets2_data_location", { dialogTitle }));
+      return;
+    }
+    await applyEts2DataLocationChange(() => invoke("set_ets2_data_location_mode", {
+      mode: "custom",
+      customHomedir: activeEts2DataLocation.customHomedir,
+    }));
+  });
+
+  refs.ets2DataLocationBrowseBtn?.addEventListener("click", async () => {
+    const dialogTitle = await t("modals.ets2_data_location.dialog_title");
+    await applyEts2DataLocationChange(() => invoke("choose_ets2_data_location", { dialogTitle }));
+  });
+
+  refs.ets2DataLocationResetBtn?.addEventListener("click", async () => {
+    await applyEts2DataLocationChange(() => invoke("reset_ets2_data_location"));
+  });
   refs.modalUserLogsClose?.addEventListener("click", closeUserLogsModal);
 
   refs.modalUserLogs?.addEventListener("click", (event) => {
@@ -4600,4 +4820,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     showCareerLoadFailure(error);
   }
 });
+
+
+
+
+
+
 

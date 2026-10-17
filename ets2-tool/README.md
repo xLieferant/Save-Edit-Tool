@@ -14,6 +14,10 @@ cargo tauri android init
 For Desktop development, run:
 cargo tauri dev
 
+## ETS2 Data Location
+
+The Settings tools include an ETS2 Data Location modal for switching between the default Documents folder and a custom `-homedir` root. Changing the location refreshes profile and save discovery and uses the selected folder for profiles, Steam profiles, local mods, config files and logs.
+
 ## Garage Management
 
 The Garage tab reads every garage from the active save and keeps the loaded
@@ -41,9 +45,12 @@ save is left unchanged.
 
 Garage purchase, upgrade, and relinquishment do not apply a financial transaction because no
 unambiguous money/cost link was established in the supported save structure.
-Garage purchase does not create trucks, drivers, or trailers. Optional truck
-creation and AI-driver assignment remain unavailable because the project has no
-verified creation workflow for those save units. Garage writes for ATS remain
+Garage purchase does not create trucks, drivers, or trailers. The AI driver
+manager can hire one or more existing recruitment candidates, optionally assign
+available company trucks, change or remove truck assignments, and remove one or
+more idle drivers. Drivers with an active job cannot be removed. Every driver
+mutation uses the same backup, atomic-write, save-hash, reload, and rollback
+safeguards as garage mutations. Garage and AI-driver writes for ATS remain
 unsupported.
 
 ### Manual garage save verification
@@ -73,6 +80,10 @@ garage, and one five-slot garage with an assignment in slot 3 or 4.
 | Safe downgrade | Change an empty five-slot garage from 5 to 3 | Status is 2 and only slots 0 through 2 remain |
 | Blocked downgrade | Try to downsize a garage with a truck or driver in slot 3 or 4 | The command is rejected and the save hash does not change |
 | Headquarters | Change headquarters to another owned garage | Exactly one garage is HQ and the old HQ stays owned |
+| Generate drivers | Generate multiple drivers for an owned garage, once without trucks and once with available trucks | Hired-driver arrays remain parallel, candidates leave the offer/pool lists, and each new driver occupies one garage slot |
+| Truck assignment | Assign, change, and unassign a company truck for an idle driver | The truck reference moves between garage slots without duplication; unassignment is rejected if no empty storage slot exists |
+| Remove drivers | Remove one idle driver and then multiple idle drivers | Driver references leave the hired and garage lists, return to the driver pool, and assigned trucks remain in their garage slots |
+| Block active removal | Try to remove a driver with an active job | The command is rejected and the save hash does not change |
 | Restart | Close and reopen the tool, then reload the copied save | All preceding changes remain visible |
 | ETS2 load | Start ETS2 with the copied test profile | The profile and dedicated save load without an error |
 | In-game check | Inspect A, B, C, their sizes, and headquarters | The game state matches the tool and inspected save |
@@ -101,6 +112,10 @@ Inspect these structures in the decrypted before/after copies of `game.sii`:
   units must match the before copy after every garage action.
 - After every successful action, confirm that a new automatic backup exists and
   that the freshly reported save hash matches a new backend reload.
+- After every driver action, confirm that `player.drivers`, `driver_flags`,
+  `driver_readiness_timer`, and `driver_undrivable_truck_timers` have identical
+  counts and contiguous indices. Hired drivers must occur in exactly one garage
+  driver slot and in neither `drivers_offer` nor `driver_pool`.
 
 If post-write verification fails, stop the test. Confirm that the automatic
 rollback restored the original hash and garage state before performing another

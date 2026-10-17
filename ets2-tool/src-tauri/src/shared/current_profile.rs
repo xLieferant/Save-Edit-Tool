@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 
 use crate::shared::models::profile::ActiveSaveSelection;
 use crate::shared::models::save_context::SaveContext;
-use crate::shared::paths::get_base_path;
+use crate::shared::paths::profile_search_roots;
 use crate::state::AppProfileState;
 use tauri::State;
 
@@ -158,10 +158,6 @@ fn infer_profile_and_save_from_disk(
     selected_game: &str,
     preferred_profile: Option<&str>,
 ) -> (Option<String>, Option<String>) {
-    let Some(base_path) = get_base_path(selected_game) else {
-        return (None, None);
-    };
-
     if let Some(preferred_profile) = preferred_profile {
         if let Some(save_path) = latest_save_for_profile(Path::new(preferred_profile)) {
             return (Some(preferred_profile.replace('\\', "/")), Some(save_path));
@@ -169,7 +165,7 @@ fn infer_profile_and_save_from_disk(
     }
 
     let mut best_match: Option<(String, String, u128)> = None;
-    for profile_dir in collect_profile_directories(&base_path) {
+    for profile_dir in collect_profile_directories(selected_game) {
         let Some(save_path) = latest_save_for_profile(&profile_dir) else {
             continue;
         };
@@ -189,13 +185,9 @@ fn infer_profile_and_save_from_disk(
     }
 }
 
-fn collect_profile_directories(base_path: &Path) -> Vec<PathBuf> {
+fn collect_profile_directories(selected_game: &str) -> Vec<PathBuf> {
     let mut profiles = Vec::new();
-    for root in [
-        base_path.join("profiles"),
-        base_path.join("profiles.backup"),
-        base_path.to_path_buf(),
-    ] {
+    for root in profile_search_roots(selected_game) {
         if !root.exists() {
             continue;
         }

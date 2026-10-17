@@ -1521,6 +1521,89 @@
       </div>
     </div>
 
+
+    <div class="modal-backdrop" id="modalEts2DataLocation">
+      <div class="modal-box modal-box--xl modal-box--sheet modal-box--ets2-location" role="dialog" aria-modal="true">
+        <div class="detail-modal-head">
+          <div>
+            <span class="modal-kicker" data-translate="modals.ets2_data_location.kicker">ETS2 Data Location</span>
+            <h2 data-translate="modals.ets2_data_location.title">ETS2 Data Location</h2>
+            <p class="modal-description" data-translate="modals.ets2_data_location.description">
+              Choose the ETS2 user data folder used for profiles, saves, local mods, config files and logs.
+            </p>
+          </div>
+          <div id="ets2DataLocationStatusPill" class="modal-status-pill" data-state="neutral" data-translate="modals.ets2_data_location.status.ready">Ready</div>
+        </div>
+
+        <div class="ets2-location-mode-grid" role="group" aria-label="ETS2 data location mode" data-translate-aria-label="modals.ets2_data_location.mode.group_label">
+          <button id="ets2DataLocationDefaultBtn" class="ets2-location-mode-btn" type="button">
+            <span data-translate="modals.ets2_data_location.mode.default_title">Default</span>
+            <small data-translate="modals.ets2_data_location.mode.default_desc">Use the standard Documents ETS2 folder.</small>
+          </button>
+          <button id="ets2DataLocationCustomBtn" class="ets2-location-mode-btn" type="button">
+            <span data-translate="modals.ets2_data_location.mode.custom_title">Custom -homedir</span>
+            <small data-translate="modals.ets2_data_location.mode.custom_desc">Use a custom homedir root or an existing ETS2 data folder.</small>
+          </button>
+        </div>
+
+        <section class="detail-card ets2-location-summary-card">
+          <div class="ets2-location-status-line">
+            <span class="detail-card-label" data-translate="modals.ets2_data_location.fields.validation">Validation</span>
+            <strong id="ets2DataLocationValidation">-</strong>
+          </div>
+          <div class="ets2-location-path-grid">
+            <div>
+              <span class="detail-card-label" data-translate="modals.ets2_data_location.fields.homedir_root">Homedir Root</span>
+              <strong id="ets2DataLocationHomedir" class="detail-card-value--mono">-</strong>
+            </div>
+            <div>
+              <span class="detail-card-label" data-translate="modals.ets2_data_location.fields.game_data_dir">Resolved ETS2 Folder</span>
+              <strong id="ets2DataLocationGameDir" class="detail-card-value--mono">-</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="ets2-location-detail-grid">
+          <article class="detail-card">
+            <span class="detail-card-label" data-translate="modals.ets2_data_location.fields.profiles">Profiles</span>
+            <strong id="ets2DataLocationProfilesCount">0</strong>
+            <p id="ets2DataLocationProfilesPath" class="detail-card-value--mono">-</p>
+          </article>
+          <article class="detail-card">
+            <span class="detail-card-label" data-translate="modals.ets2_data_location.fields.steam_profiles">Steam Profiles</span>
+            <strong id="ets2DataLocationSteamProfilesCount">0</strong>
+            <p id="ets2DataLocationSteamProfilesPath" class="detail-card-value--mono">-</p>
+          </article>
+          <article class="detail-card">
+            <span class="detail-card-label" data-translate="modals.ets2_data_location.fields.local_mods">Local Mods</span>
+            <strong id="ets2DataLocationLocalModsCount">0</strong>
+            <p id="ets2DataLocationLocalModsPath" class="detail-card-value--mono">-</p>
+          </article>
+        </section>
+
+        <section class="detail-card ets2-location-files-card">
+          <div>
+            <span class="detail-card-label" data-translate="modals.ets2_data_location.fields.config_file">Config</span>
+            <strong id="ets2DataLocationConfigPath" class="detail-card-value--mono">-</strong>
+          </div>
+          <div>
+            <span class="detail-card-label" data-translate="modals.ets2_data_location.fields.game_log">Game Log</span>
+            <strong id="ets2DataLocationLogPath" class="detail-card-value--mono">-</strong>
+          </div>
+          <div>
+            <span class="detail-card-label" data-translate="modals.ets2_data_location.fields.game_crash">Crash Log</span>
+            <strong id="ets2DataLocationCrashPath" class="detail-card-value--mono">-</strong>
+          </div>
+        </section>
+
+        <div class="modal-actions modal-actions--end ets2-location-actions">
+          <button id="ets2DataLocationRefreshBtn" type="button" data-translate="modals.ets2_data_location.actions.refresh">Refresh</button>
+          <button id="ets2DataLocationBrowseBtn" type="button" data-translate="modals.ets2_data_location.actions.browse">Choose Folder</button>
+          <button id="ets2DataLocationResetBtn" type="button" data-translate="modals.ets2_data_location.actions.reset">Reset to Default</button>
+          <button id="modalEts2DataLocationClose" type="button" data-translate="modals.close">Close</button>
+        </div>
+      </div>
+    </div>
     <div class="modal-backdrop" id="modalUserLogs">
       <div class="modal-box modal-box--xl modal-box--sheet modal-box--user-logs">
         <div class="detail-modal-head">
@@ -1801,3 +1884,4 @@
     <script type="module" src="/main.js" defer></script>
   </body>
 </html>
+

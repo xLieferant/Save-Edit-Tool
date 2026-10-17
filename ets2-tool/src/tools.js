@@ -1,4 +1,4 @@
-import {
+﻿import {
   openModalNumber,
   openModalText,
   openModalSlider,
@@ -529,7 +529,7 @@ export const tools = {
 
             const moneyDisplay = document.querySelector("#moneyShow");
             if (moneyDisplay) {
-              moneyDisplay.textContent = `Geld: ${newValue.toLocaleString()} €`;
+              moneyDisplay.textContent = `Geld: ${newValue.toLocaleString()} â‚¬`;
             }
 
             showToast("toasts.change_money_success", { newValue }, "success");
@@ -746,6 +746,15 @@ export const tools = {
       disabled: false,
     },
     {
+      title: "tools.settings.ets2_data_location.title",
+      desc: "tools.settings.ets2_data_location.desc",
+      img: "images/dev.jpg",
+      action: async () => {
+        await window.openEts2DataLocationModal?.();
+      },
+      disabled: false,
+    },
+    {
       title: "tools.settings.color_theme.title",
       desc: "tools.settings.color_theme.desc",
       img: "images/themeChooser.png",
@@ -866,7 +875,7 @@ export const tools = {
 
           showToast(message, "success");
 
-          // OPTIONAL (empfohlen, wenn UI statisch übersetzt ist)
+          // OPTIONAL (empfohlen, wenn UI statisch Ã¼bersetzt ist)
           location.reload();
 
         } catch (err) {
@@ -971,3 +980,8 @@ export function updateToolImagesForGame(game) {
     });
   });
 }
+
+
+
+
+

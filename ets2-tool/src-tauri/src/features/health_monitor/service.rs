@@ -1456,6 +1456,13 @@ fn tokenize(value: &str) -> Vec<String> {
         .collect()
 }
 
+pub fn clear_mod_scan_cache() {
+    if let Some(cache) = MOD_SCAN_CACHE.get() {
+        if let Ok(mut guard) = cache.lock() {
+            guard.clear();
+        }
+    }
+}
 fn mod_scan_cache() -> &'static Mutex<BTreeMap<PathBuf, ModScanCacheEntry>> {
     MOD_SCAN_CACHE.get_or_init(|| Mutex::new(BTreeMap::new()))
 }

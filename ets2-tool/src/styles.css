@@ -14348,6 +14348,108 @@ body.mode-editor .truck-change-box {
   background: rgba(0, 0, 0, 0.2);
 }
 
+.ai-driver-modal {
+  width: min(1040px, calc(100vw - 36px));
+}
+
+.ai-driver-generate {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.4fr) minmax(120px, 0.6fr) minmax(220px, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--card-border);
+  border-radius: 13px;
+  background: var(--card-bg);
+}
+
+.ai-driver-generate h3,
+.ai-driver-generate > span {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.ai-driver-generate label:not(.garage-checkbox) {
+  display: grid;
+  gap: 7px;
+}
+
+.ai-driver-generate label > span,
+.ai-driver-generate > span {
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.ai-driver-generate input,
+.ai-driver-generate select,
+.ai-driver-actions select {
+  width: 100%;
+  min-width: 0;
+}
+
+.ai-driver-generate .garage-checkbox {
+  min-height: var(--input-height);
+}
+
+.ai-driver-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ai-driver-card {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--card-border);
+  border-radius: 13px;
+  background: var(--card-bg);
+}
+
+.ai-driver-card > header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
+}
+
+.ai-driver-card > header > div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.ai-driver-card code,
+.ai-driver-card dd {
+  overflow-wrap: anywhere;
+}
+
+.ai-driver-card .garage-badge.has-warning {
+  border-color: rgba(255, 165, 0, 0.38);
+  background: rgba(255, 165, 0, 0.09);
+}
+
+.ai-driver-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.ai-driver-actions select,
+.ai-driver-empty {
+  grid-column: 1 / -1;
+}
+
+.ai-driver-empty {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
 @media (max-width: 1180px) {
   .garage-summary-grid {
     grid-template-columns: repeat(4, minmax(110px, 1fr));
@@ -14432,9 +14534,20 @@ body.mode-editor .truck-change-box {
   }
 
   .garage-modal-box,
-  .garage-detail-modal {
+  .garage-detail-modal,
+  .ai-driver-modal {
     width: calc(100vw - 20px);
     max-height: calc(100dvh - 20px);
+  }
+
+  .ai-driver-generate,
+  .ai-driver-list,
+  .ai-driver-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-driver-actions button {
+    width: 100%;
   }
 }
 
@@ -14816,5 +14929,114 @@ body.mode-editor .picker-backdrop {
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: flex-start;
+  }
+}
+
+/* ETS2 data location modal */
+.modal-box--ets2-location {
+  gap: 0;
+}
+
+.modal-box--ets2-location .ets2-location-mode-grid,
+.modal-box--ets2-location .ets2-location-summary-card,
+.modal-box--ets2-location .ets2-location-detail-grid,
+.modal-box--ets2-location .ets2-location-files-card {
+  margin-inline: clamp(16px, 1.7vw, 20px);
+  min-width: 0;
+}
+
+.ets2-location-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: clamp(14px, 1.4vw, 18px);
+}
+
+.ets2-location-mode-btn {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-main);
+  padding: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ets2-location-mode-btn small {
+  color: var(--text-soft);
+  line-height: 1.45;
+}
+
+.ets2-location-mode-btn.is-active {
+  border-color: rgba(var(--accent-rgb), 0.55);
+  background: rgba(var(--accent-rgb), 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.ets2-location-mode-btn:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
+.ets2-location-mode-btn:not(:disabled):hover,
+.ets2-location-mode-btn:focus-visible {
+  border-color: rgba(var(--accent-rgb), 0.68);
+  outline: none;
+}
+
+.ets2-location-summary-card,
+.ets2-location-detail-grid,
+.ets2-location-files-card {
+  margin-top: 12px;
+}
+
+.ets2-location-status-line {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ets2-location-path-grid,
+.ets2-location-files-card {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  min-width: 0;
+}
+
+.ets2-location-files-card {
+  grid-template-columns: 1fr;
+}
+
+.ets2-location-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ets2-location-actions {
+  flex-wrap: wrap;
+}
+
+.modal-box--ets2-location .detail-card-value--mono,
+.modal-box--ets2-location .detail-card strong,
+.modal-box--ets2-location .detail-card p {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+@media (max-width: 760px) {
+  .ets2-location-mode-grid,
+  .ets2-location-path-grid,
+  .ets2-location-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ets2-location-actions button {
+    flex: 1 1 100%;
   }
 }

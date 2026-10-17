@@ -12,7 +12,7 @@ use super::workshop_api;
 use crate::features::backup::service as backup_service;
 use crate::shared::current_profile::snapshot_active_save_selection;
 use crate::shared::decrypt::decrypt_if_needed;
-use crate::shared::paths::{game_sii_from_save, get_base_path, mod_directory_path};
+use crate::shared::paths::{game_sii_from_save, mod_directory_path, profile_search_roots};
 use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 use std::collections::BTreeSet;
 use std::fs;
@@ -263,7 +263,7 @@ pub fn apply_sandbox_to_active_profile_with_force(
     }
     let save_path = selection
         .save_path
-        .ok_or_else(|| "Bitte zuerst einen ETS2-Speicherstand auswählen.".to_string())?;
+        .ok_or_else(|| "Bitte zuerst einen ETS2-Speicherstand auswÃ¤hlen.".to_string())?;
     let game_sii = game_sii_from_save(Path::new(&save_path));
     if !game_sii.is_file() {
         return Err(format!("game.sii not found: {}", game_sii.display()));
@@ -676,7 +676,7 @@ pub fn check_sandbox_mod_preset(
             None
         }
     };
-    progress_log.push("Mods geprüft".to_string());
+    progress_log.push("Mods geprÃ¼ft".to_string());
     let (found_mods, missing_mods) = split_mod_statuses(&statuses);
     let missing_required_mods = statuses
         .iter()
@@ -776,7 +776,7 @@ pub fn activate_sandbox_mod_preset(
     )
     .map(|path| path.display().to_string())
     .ok();
-    progress_log.push("Mods geprüft".to_string());
+    progress_log.push("Mods geprÃ¼ft".to_string());
 
     let required_missing = statuses
         .iter()
@@ -806,7 +806,7 @@ pub fn activate_sandbox_mod_preset(
         ));
     }
 
-    progress_log.push("Profil geöffnet".to_string());
+    progress_log.push("Profil geÃ¶ffnet".to_string());
     let save_path = selection.save_path.unwrap_or_default();
     let game_sii = game_sii_from_save(Path::new(&save_path));
     crate::dev_log!("[SandboxPreset] active save dir={}", save_path);
@@ -915,7 +915,7 @@ pub fn activate_sandbox_mod_preset(
             &preset.id,
             &preset.title,
             "no_mods_to_write",
-            "Es wurden keine lokal verfügbaren Mods gefunden, die geschrieben werden konnten."
+            "Es wurden keine lokal verfÃ¼gbaren Mods gefunden, die geschrieben werden konnten."
                 .to_string(),
             progress_log,
             mod_cache_path.clone(),
@@ -999,7 +999,7 @@ pub fn activate_sandbox_mod_preset(
                 mod_cache_path: mod_cache_path.clone(),
                 save_path: Some(game_sii.display().to_string()),
                 message: format!(
-                    "Die Datei wurde geschrieben, aber die Mod-ID konnte nach dem erneuten Auslesen nicht korrekt bestätigt werden. {}",
+                    "Die Datei wurde geschrieben, aber die Mod-ID konnte nach dem erneuten Auslesen nicht korrekt bestÃ¤tigt werden. {}",
                     error
                 ),
                 progress_log,
@@ -1024,7 +1024,7 @@ pub fn activate_sandbox_mod_preset(
             cache_path: Some(sandbox_cache_path.display().to_string()),
             mod_cache_path: mod_cache_path.clone(),
             save_path: Some(game_sii.display().to_string()),
-            message: "Die Datei wurde geschrieben, aber die Mod-ID konnte nach dem erneuten Auslesen nicht korrekt bestätigt werden.".to_string(),
+            message: "Die Datei wurde geschrieben, aber die Mod-ID konnte nach dem erneuten Auslesen nicht korrekt bestÃ¤tigt werden.".to_string(),
             progress_log,
             app_id: preset.app_id.unwrap_or(227300),
             target_profile_sii_path: game_sii.display().to_string(),
@@ -1156,7 +1156,7 @@ pub fn activate_sandbox_mod_preset_profile_sii(
     )
     .map(|path| path.display().to_string())
     .ok();
-    progress_log.push("Mods geprÃ¼ft".to_string());
+    progress_log.push("Mods geprÃƒÂ¼ft".to_string());
 
     let required_missing = statuses
         .iter()
@@ -1222,7 +1222,7 @@ pub fn activate_sandbox_mod_preset_profile_sii(
         ));
     }
 
-    progress_log.push("Profil geÃ¶ffnet".to_string());
+    progress_log.push("Profil geÃƒÂ¶ffnet".to_string());
     let resolved_profile_id = profile_id
         .filter(|value| !value.trim().is_empty())
         .or_else(|| derive_profile_id_from_path(&active_profile_path))
@@ -2327,25 +2327,13 @@ fn collect_profile_sii_candidates(profile_id: &str, game: &str, app_id: u32) -> 
         return candidates;
     }
 
-    if let Some(base_path) = get_base_path(game) {
+    for root in profile_search_roots(game) {
         push_profile_sii_candidate(
             &mut candidates,
             &mut seen,
-            base_path
-                .join("profiles")
-                .join(profile_id)
-                .join("profile.sii"),
-        );
-        push_profile_sii_candidate(
-            &mut candidates,
-            &mut seen,
-            base_path
-                .join("steam_profiles")
-                .join(profile_id)
-                .join("profile.sii"),
+            root.join(profile_id).join("profile.sii"),
         );
     }
-
     let app_id_string = app_id.to_string();
     let mut steam_roots = Vec::new();
     if let Some(steam_root) = steam_paths::find_steam_install_dir() {
