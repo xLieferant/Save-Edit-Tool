@@ -18,7 +18,7 @@
 .analytics-local-hint {
   margin: 0;
   border: 1px solid rgba(200, 80, 102, 0.26);
-  border-radius: 14px;
+  border-radius: 10px;
   background: rgba(88, 20, 33, 0.2);
   color: #f2d4da;
   padding: 12px 14px;
@@ -40,12 +40,12 @@
 
 .analytics-summary-card {
   border: 1px solid rgba(190, 70, 90, 0.26);
-  border-radius: 16px;
-  background: linear-gradient(160deg, rgba(34, 10, 16, 0.94), rgba(20, 8, 12, 0.92));
+  border-radius: 10px;
+  background: var(--bg-elevated);
   padding: 16px;
   display: grid;
   gap: 6px;
-  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.2);
+  box-shadow: none;
 }
 
 .analytics-summary-card span {
@@ -106,8 +106,8 @@
 
 .analytics-card {
   border: 1px solid rgba(190, 70, 90, 0.22);
-  border-radius: 16px;
-  background: linear-gradient(160deg, rgba(24, 8, 12, 0.95), rgba(15, 7, 10, 0.93));
+  border-radius: 10px;
+  background: var(--bg-elevated);
   padding: 16px;
   display: grid;
   gap: 10px;
@@ -128,7 +128,7 @@
   display: grid;
   place-items: center;
   border: 1px dashed rgba(190, 70, 90, 0.2);
-  border-radius: 14px;
+  border-radius: 10px;
   color: #c5a5ad;
   background: rgba(255, 255, 255, 0.02);
 }
@@ -165,14 +165,14 @@
 .analytics-bar-fill {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #ff355f, #c61d46);
-  box-shadow: 0 0 18px rgba(255, 53, 95, 0.26);
+  background: var(--bg-elevated);
+  box-shadow: none;
 }
 
 .analytics-table-wrap {
   margin-top: 16px;
   overflow-x: auto;
-  border-radius: 14px;
+  border-radius: 10px;
   border: 1px solid rgba(190, 70, 90, 0.18);
   background: rgba(10, 6, 8, 0.72);
 }
@@ -219,13 +219,13 @@
   background: rgba(88, 20, 33, 0.26);
   color: #ffd8e0;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .analytics-empty-state {
   margin-top: 16px;
   border: 1px dashed rgba(190, 70, 90, 0.24);
-  border-radius: 16px;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.02);
   padding: 18px;
   display: grid;

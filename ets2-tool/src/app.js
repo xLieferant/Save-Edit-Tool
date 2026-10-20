@@ -1,3 +1,4 @@
+import { localizeError } from "./modules/shared/i18n.js";
 ﻿import { tools } from "./tools.js";
 import {
   clampLevel,
@@ -192,7 +193,7 @@ if (defaultTabBtn) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  const savedTheme = localStorage.getItem("theme") || "neon-red";
+  const savedTheme = localStorage.getItem("theme") || "dark";
   document.body.classList.remove("theme-dark", "theme-light", "theme-neon", "theme-neon-red");
   document.body.classList.add(`theme-${savedTheme}`);
 });
@@ -816,8 +817,8 @@ function diagnosticsLabel(map, value) {
   return map?.[value] || safeValue(value, "-");
 }
 
-function formatDiagnosticsCategory(value) {
-  return safeValue(String(value ?? "").replace(/([a-z])([A-Z])/g, "$1 $2"), "-");
+function formatDiagnosticsCategory(value, copy) {
+  return copy?.categories?.[value] || safeValue(value, "-");
 }
 
 function diagnosticsLine(message) {
@@ -891,7 +892,7 @@ function buildDiagnosticsSummaryText(report, copy) {
     "",
     `Crash Summary: ${safeValue(report.crash_summary.headline)}`,
     safeValue(report.crash_summary.summary),
-    `Primary category: ${formatDiagnosticsCategory(report.crash_summary.primary_category || "UnknownReference")}`,
+    `Primary category: ${formatDiagnosticsCategory(report.crash_summary.primary_category || "UnknownReference", copy)}`,
     `Errors: ${report.crash_summary.error_count} | Warnings: ${report.crash_summary.warning_count}`,
   ];
 
@@ -904,7 +905,7 @@ function buildDiagnosticsSummaryText(report, copy) {
   if ((report.missing_references || []).length) {
     lines.push("", "Missing / Removed References:");
     for (const item of report.missing_references.slice(0, 5)) {
-      lines.push(`- [${formatDiagnosticsCategory(item.category)}] ${item.path}`);
+      lines.push(`- [${formatDiagnosticsCategory(item.category, copy)}] ${item.path}`);
     }
   }
 
@@ -934,7 +935,7 @@ function buildDiagnosticsModsText(report, copy) {
       if (item.package_name) lines.push(`   ${copy.fieldPackage}: ${item.package_name}`);
       if (item.file_path) lines.push(`   ${copy.fieldFile}: ${item.file_path}`);
       if (Array.isArray(item.category_hints) && item.category_hints.length) {
-        lines.push(`   ${copy.fieldCategories}: ${item.category_hints.map(formatDiagnosticsCategory).join(", ")}`);
+        lines.push(`   ${copy.fieldCategories}: ${item.category_hints.map((value) => formatDiagnosticsCategory(value, copy)).join(", ")}`);
       }
 
       for (const reason of item.reasons || []) {
@@ -982,7 +983,7 @@ function renderDiagnosticsErrorList(report, copy) {
           item.explanation || item.raw_line,
           [
             diagnosticsBadge(diagnosticsLabel(copy.severity, item.severity), diagnosticsBadgeTone(item.severity)),
-            diagnosticsBadge(formatDiagnosticsCategory(item.category), "neutral"),
+            diagnosticsBadge(formatDiagnosticsCategory(item.category, copy), "neutral"),
             diagnosticsBadge(item.source, "neutral"),
             item.in_last_context ? diagnosticsBadge(copy.lastContextLabel, "warning") : "",
           ].filter(Boolean),
@@ -997,7 +998,7 @@ function renderDiagnosticsErrorList(report, copy) {
       return `
         <section class="diagnostics-group">
           <div class="diagnostics-group-head">
-            <strong>${escapeHtml(formatDiagnosticsCategory(category))}</strong>
+            <strong>${escapeHtml(formatDiagnosticsCategory(category, copy))}</strong>
             ${diagnosticsBadge(String(items.length), "neutral")}
           </div>
           <div class="diagnostics-list diagnostics-list--compact">${renderedItems}</div>
@@ -1051,7 +1052,7 @@ function renderDiagnosticsReport(report, copy) {
       diagnosticsMetaLine(copy.sourceGameLog, `${diagnosticsLabel(copy.availability, sources.game_log_found ? "found" : "missing")} | ${safeValue(sources.game_log_path, "-")}`, true),
       diagnosticsMetaLine(copy.sourceGameCrash, `${diagnosticsLabel(copy.availability, sources.game_crash_found ? "found" : "missing")} | ${safeValue(sources.game_crash_path, "-")}`, true),
       diagnosticsMetaLine(copy.sourceModFolder, `${diagnosticsLabel(copy.availability, sources.mod_folder_found ? "found" : "missing")} | ${safeValue(sources.mod_folder_path, "-")}`, true),
-      diagnosticsMetaLine(copy.sourceIndexedMods, `${sources.indexed_mods_count ?? 0} | readable ${sources.readable_mods_count ?? 0} | unreadable ${sources.unreadable_mods_count ?? 0}`),
+      diagnosticsMetaLine(copy.sourceIndexedMods, `${sources.indexed_mods_count ?? 0} | ${copy.fieldReadable}: ${sources.readable_mods_count ?? 0} | ${copy.availabilityMissing}: ${sources.unreadable_mods_count ?? 0}`),
       diagnosticsMetaLine(copy.sourceActiveMods, `${sources.active_mods_count ?? 0} | ${sources.active_mods_reliably_known ? diagnosticsLabel(copy.availability, "found") : diagnosticsLabel(copy.availability, "missing")}`),
       diagnosticsMetaLine(copy.sourceExtractedErrors, String(sources.extracted_errors_count ?? 0)),
     ].join("");
@@ -1070,7 +1071,7 @@ function renderDiagnosticsReport(report, copy) {
 
   if (diagnosticsCrashPrimary) {
     diagnosticsCrashPrimary.textContent = safeValue(
-      formatDiagnosticsCategory(crashSummary.primary_category || "UnknownReference"),
+      formatDiagnosticsCategory(crashSummary.primary_category || "UnknownReference", copy),
       "-"
     );
   }
@@ -1117,7 +1118,7 @@ function renderDiagnosticsReport(report, copy) {
           diagnosticsMetaLine(copy.fieldReadable, item.readable ? copy.availabilityFound : copy.availabilityMissing),
           diagnosticsMetaLine(copy.fieldManifest, String(Boolean(item.manifest_present))),
           Array.isArray(item.category_hints) && item.category_hints.length
-            ? diagnosticsMetaLine(copy.fieldCategories, item.category_hints.map((value) => formatDiagnosticsCategory(value)).join(", "))
+            ? diagnosticsMetaLine(copy.fieldCategories, item.category_hints.map((value) => formatDiagnosticsCategory(value, copy)).join(", "))
             : "",
           (item.matched_paths || []).length
             ? `<div class="diagnostics-chip-row">${item.matched_paths.slice(0, 5).map((asset) => diagnosticsBadge(asset, "neutral")).join("")}</div>`
@@ -1133,7 +1134,7 @@ function renderDiagnosticsReport(report, copy) {
         item.path,
         item.reason,
         [
-          diagnosticsBadge(formatDiagnosticsCategory(item.category), "neutral"),
+          diagnosticsBadge(formatDiagnosticsCategory(item.category, copy), "neutral"),
           diagnosticsBadge(item.source, "neutral"),
         ],
         [
@@ -1530,8 +1531,8 @@ export async function openCloneProfileModal() {
   modalCloneApply.disabled = true;
   modalCloneApply.textContent = await window.t("modals.clone_profile.clone_button");
   
-  const profileName = document.querySelector("#profileNameDisplay")?.textContent || "Unknown";
-  cloneSourceDisplay.textContent = (await window.t("modals.clone_profile.source")).replace('{profileName}', profileName);
+  const profileName = document.querySelector("#profileNameDisplay")?.textContent || await window.t("ui.unknown_profile");
+  cloneSourceDisplay.textContent = await window.t("modals.clone_profile.source", { profileName });
 
   modalClone.style.display = "flex";
   cloneNameInput.focus();
@@ -1558,15 +1559,15 @@ export async function openCloneProfileModal() {
         });
 
         if (status.valid) {
-          cloneValidationMsg.textContent = (await window.t("modals.clone_profile.validation_valid")).replace('{message}', status.message);
+          cloneValidationMsg.textContent = await window.t("modals.clone_profile.validation_valid", { message: status.message });
           cloneValidationMsg.style.color = "#4caf50";
           modalCloneApply.disabled = false;
         } else {
-          cloneValidationMsg.textContent = (await window.t("modals.clone_profile.validation_invalid")).replace('{message}', status.message);
+          cloneValidationMsg.textContent = await window.t("modals.clone_profile.validation_invalid", { message: status.message });
           cloneValidationMsg.style.color = "#f44336";
         }
       } catch (e) {
-        cloneValidationMsg.textContent = `Error: ${e}`;
+        cloneValidationMsg.textContent = await localizeError(e);
         cloneValidationMsg.style.color = "#f44336";
       }
     }, 300);
@@ -1599,7 +1600,7 @@ export async function openCloneProfileModal() {
       cleanup();
     } catch (e) {
       if (window.logUserAction) window.logUserAction("clone_profile", "error");
-      window.showToast((await window.t("toasts.clone_failed")).replace('{error}', e), "error");
+      window.showToast(await window.t("toasts.clone_failed", { error: await localizeError(e) }), "error");
       console.error(e);
       modalCloneApply.disabled = false;
       modalCloneApply.textContent = await window.t("modals.clone_profile.clone_button");
@@ -1933,7 +1934,7 @@ export async function openLevelSystemModal() {
       console.error("Level system apply failed:", error);
       window.showToast("toasts.level_system_apply_error", "error");
       state.applying = false;
-      state.hint = String(error?.message || error || copy.feedbackApplyError);
+      state.hint = await localizeError(error, "toasts.level_system_apply_error");
       render();
     }
   }
@@ -2467,7 +2468,7 @@ export async function openTruckChangeModal() {
     const key = Object.keys(errorLabels).find((candidate) => raw.includes(candidate));
     return {
       code: key || raw || "unknown_error",
-      message: key ? errorLabels[key] : safeValue(raw),
+      message: key ? errorLabels[key] : copy.previewFailed,
     };
   }
 
@@ -3301,7 +3302,7 @@ export async function openTrailerChangeModal() {
     const key = Object.keys(errorLabels).find((candidate) => raw.includes(candidate));
     return {
       code: key || raw || "unknown_error",
-      message: key ? errorLabels[key] : safeValue(raw),
+      message: key ? errorLabels[key] : copy.previewFailed,
     };
   }
 
@@ -3702,7 +3703,7 @@ export async function openTrailerChangeModal() {
 export async function openModConflictDiagnosticsModal(options = {}) {
   if (!modalConflictDiagnostics) return;
   if (isModAnalysisRunning) {
-    window.showToast("Mod analysis already running", "warning");
+    window.showToast("ui.analysis_running", "warning");
     return;
   }
 
@@ -3862,6 +3863,23 @@ export async function openModConflictDiagnosticsModal(options = {}) {
 
   async function loadDiagnosticsCopy() {
     return createDiagnosticsCopyMap({
+      categories: Object.fromEntries(await Promise.all([
+        ["TruckReference", "diagnostics.categories.TruckReference"],
+        ["TrailerReference", "diagnostics.categories.TrailerReference"],
+        ["AccessoryReference", "diagnostics.categories.AccessoryReference"],
+        ["CargoReference", "diagnostics.categories.CargoReference"],
+        ["MapReference", "diagnostics.categories.MapReference"],
+        ["PrefabReference", "diagnostics.categories.PrefabReference"],
+        ["MaterialReference", "diagnostics.categories.MaterialReference"],
+        ["TextureReference", "diagnostics.categories.TextureReference"],
+        ["UiReference", "diagnostics.categories.UiReference"],
+        ["SoundReference", "diagnostics.categories.SoundReference"],
+        ["DefinitionReference", "diagnostics.categories.DefinitionReference"],
+        ["FileOpenError", "diagnostics.categories.FileOpenError"],
+        ["ParseError", "diagnostics.categories.ParseError"],
+        ["CrashContext", "diagnostics.categories.CrashContext"],
+        ["UnknownReference", "diagnostics.categories.UnknownReference"],
+      ].map(async ([code, key]) => [code, await window.t(key)]))),
       statusClean: await window.t("modals.mod_conflict_diagnostics.status.clean"),
       statusWarnings: await window.t("modals.mod_conflict_diagnostics.status.warnings"),
       statusIssuesFound: await window.t("modals.mod_conflict_diagnostics.status.issues_found"),
@@ -3998,7 +4016,7 @@ export async function openModConflictDiagnosticsModal(options = {}) {
       resetDiagnosticsModalPanels();
       if (modalConflictDiagnosticsError) modalConflictDiagnosticsError.hidden = false;
       if (modalConflictDiagnosticsErrorText) {
-        modalConflictDiagnosticsErrorText.textContent = `${copy.errorBody} ${errorMessage}`.trim();
+        modalConflictDiagnosticsErrorText.textContent = copy.errorBody;
       }
       setModalPillState(modalConflictDiagnosticsConfidence, "error", copy.severityError);
       setModalPillState(modalConflictDiagnosticsHealth, "error", copy.statusIssuesFound);
@@ -4006,7 +4024,7 @@ export async function openModConflictDiagnosticsModal(options = {}) {
       if (window.logUserAction) window.logUserAction("mod_conflict_analyzer", "error");
       window.showToast(
         errorMessage === "Mod analysis already running"
-          ? errorMessage
+          ? "ui.analysis_running"
           : "toasts.diagnostics_analysis_failed",
         errorMessage === "Mod analysis already running" ? "warning" : "error"
       );
@@ -4227,7 +4245,7 @@ export async function openProfileSharingModal(mode = "export", options = {}) {
         setProfileShareStatus("success", copy.readyTitle, currentReadyMessage(), preview.targetProfilePath);
       }
     } catch (error) {
-      const errorMessage = error?.message || String(error);
+      const errorMessage = await localizeError(error);
       console.error("Profile archive inspection failed:", error);
       renderPreviewContent(errorMessage, true);
       setProfileShareStatus("error", copy.errorTitle, errorMessage, selectedImportArchivePath);
@@ -4263,7 +4281,7 @@ export async function openProfileSharingModal(mode = "export", options = {}) {
       setProfileShareStatus("neutral", copy.readyTitle, currentReadyMessage(), exportDir);
       syncActionState();
     } catch (error) {
-      const errorMessage = error?.message || String(error);
+      const errorMessage = await localizeError(error);
       console.error("Profile share picker failed:", error);
       setProfileShareStatus("error", copy.errorTitle, errorMessage);
       window.showToast("toasts.profile_share_action_failed", { error: errorMessage }, "error");
@@ -4301,7 +4319,7 @@ export async function openProfileSharingModal(mode = "export", options = {}) {
         document.querySelector("#refreshBtn")?.click();
         if (window.logUserAction) window.logUserAction("profile_share_import", "success");
       } catch (error) {
-        const errorMessage = error?.message || String(error);
+        const errorMessage = await localizeError(error);
         console.error("Profile import failed:", error);
         setProfileShareStatus("error", copy.errorTitle, errorMessage);
         window.showToast("toasts.profile_share_action_failed", { error: errorMessage }, "error");
@@ -4353,7 +4371,7 @@ export async function openProfileSharingModal(mode = "export", options = {}) {
       window.showToast("toasts.profile_share_export_success", { profileName: result.profileName }, "success");
       if (window.logUserAction) window.logUserAction("profile_share_export", "success");
     } catch (error) {
-      const errorMessage = error?.message || String(error);
+      const errorMessage = await localizeError(error);
       console.error("Profile export failed:", error);
       setProfileShareStatus("error", copy.errorTitle, errorMessage);
       window.showToast("toasts.profile_share_action_failed", { error: errorMessage }, "error");
@@ -4419,7 +4437,7 @@ export async function openProfileSharingModal(mode = "export", options = {}) {
       setProfileShareStatus("neutral", copy.readyTitle, currentReadyMessage(), currentSelectedPath());
     }
   } catch (error) {
-    const errorMessage = error?.message || String(error);
+    const errorMessage = await localizeError(error);
     console.error("Profile share context failed:", error);
     setProfileShareStatus("error", copy.errorTitle, errorMessage);
   }
@@ -4771,7 +4789,7 @@ async function renderSandboxInlineMessage(state, title, message) {
 async function sandboxErrorMessage(result) {
   switch (String(result?.error_code || "")) {
     case "mod_not_found":
-      return String(result?.message || "");
+      return window.t("modals.mod_profile_manager.sandbox.popup.mod_missing_message");
     case "save_write_failed":
       return await window.t("modals.mod_profile_manager.sandbox.popup.save_failed_message");
     case "verification_failed":
@@ -4784,7 +4802,7 @@ async function sandboxErrorMessage(result) {
     case "actived_mods_missing":
       return await window.t("modals.mod_profile_manager.sandbox.popup.active_mods_missing_message");
     default:
-      return String(result?.message || "");
+      return localizeError(result?.message);
   }
 }
 

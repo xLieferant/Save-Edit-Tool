@@ -6,6 +6,7 @@
     <title data-translate="career_mode.title">Career Mode Dashboard</title>
     <link rel="stylesheet" href="/styles/career.css" />
     <link rel="stylesheet" href="/styles/analytics.css" />
+    <link rel="stylesheet" href="/styles/design_system.css" />
   </head>
   <body class="career-page">
     <script>
@@ -30,7 +31,7 @@
           </svg>
         </label>
         <button id="refreshCareerBtn" type="button" class="career-topbar-btn" data-translate="career_mode.refresh">Refresh</button>
-        <button id="openSaveEditorBtn" type="button" class="career-topbar-btn" data-translate="launcher.editor.title">Save Edit Tool</button>
+        <button id="openSaveEditorBtn" type="button" class="career-topbar-btn" data-translate="launcher.editor.title">Save editor</button>
         <button id="openLauncherBtn" type="button" class="career-topbar-btn" data-translate="career_mode.open_launcher">Open Launcher</button>
         <div class="career-user-menu" id="userMenuButton">
           <button id="careerUserMenuBtn" class="career-user-menu-btn" type="button" aria-haspopup="true" aria-expanded="false">
@@ -52,7 +53,7 @@
                   <strong id="careerUserMenuIdentity">-</strong>
                   <span id="careerUserMenuState">-</span>
                 </div>
-                <button id="careerUserMenuClose" class="career-icon-btn" type="button" aria-label="Close">
+                <button id="careerUserMenuClose" class="career-icon-btn" type="button" aria-label="" data-translate-aria-label="ui.aria_close">
                   <svg viewBox="0 0 20 20" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                   </svg>
@@ -101,7 +102,7 @@
 
               <div id="userDropdownActions" class="career-user-dropdown-actions">
                 <button id="careerUserMenuProfile" class="career-user-menu-item" type="button" data-translate="career.user_menu.account">Account</button>
-                <button id="careerUserMenuSettings" class="career-user-menu-item" type="button" data-translate="career.nav.dashboard">Career Panel</button>
+                <button id="careerUserMenuSettings" class="career-user-menu-item" type="button" data-translate="career.nav.dashboard">Dashboard</button>
                 <button id="careerUserMenuLogout" class="career-user-menu-item" type="button" data-translate="career.user_menu.logout" hidden>Logout</button>
               </div>
             </div>
@@ -160,7 +161,7 @@
         <nav class="career-nav">
           <button class="career-nav-btn is-active" data-panel="dashboard" data-translate="career.nav.dashboard">Dashboard</button>
           <button class="career-nav-btn" data-panel="members" data-translate="career.nav.members">Members</button>
-          <button class="career-nav-btn" data-panel="orders" data-translate="career.nav.orders">Orders</button>
+          <button class="career-nav-btn" data-panel="orders" data-translate="career.nav.orders">Jobs</button>
           <button class="career-nav-btn" data-panel="dispatcher" data-translate="career_mode.dispatcher.nav_title">Dispatcher</button>
           <button class="career-nav-btn" data-panel="finances" data-translate="career.nav.balance">Balance</button>
           <button class="career-nav-btn" data-panel="fleet" data-translate="career.nav.fleet">Fleet</button>
@@ -264,19 +265,19 @@
                 </div>
                 <div class="career-stat-list">
                   <div class="career-stat-row">
-                    <span data-translate="career.dashboard.live_income">Live revenue</span>
+                    <span data-translate="career.dashboard.live_income">Live Income</span>
                     <strong id="careerDashboardIncome">EUR 0</strong>
                   </div>
                   <div class="career-stat-row">
-                    <span data-translate="career.dashboard.fuel_cost">Fuel costs</span>
+                    <span data-translate="career.dashboard.fuel_cost">Diesel</span>
                     <strong id="careerDashboardFuel">EUR 0</strong>
                   </div>
                   <div class="career-stat-row">
-                    <span data-translate="career.dashboard.repair_cost">Repair costs</span>
+                    <span data-translate="career.dashboard.repair_cost">Repairs</span>
                     <strong id="careerDashboardRepair">EUR 0</strong>
                   </div>
                   <div class="career-stat-row">
-                    <span data-translate="career.dashboard.toll_cost">Toll costs</span>
+                    <span data-translate="career.dashboard.toll_cost">Tolls</span>
                     <strong id="careerDashboardToll">EUR 0</strong>
                   </div>
                 </div>
@@ -284,7 +285,7 @@
 
               <section class="career-card">
                 <div class="career-card-head">
-                  <h3 data-translate="career.jobs.active.title">Current job</h3>
+                  <h3 data-translate="career.jobs.active.title">Active Job</h3>
                 </div>
                 <div id="careerActiveJobEmpty" class="career-empty" data-translate="career.jobs.active.none">No active job</div>
                 <div id="careerActiveJobCard" class="career-active-job" hidden>
@@ -297,11 +298,11 @@
                     <strong id="careerActiveJobCargo">-</strong>
                   </div>
                   <div class="career-active-job-row">
-                    <span data-translate="career.jobs.fields.distance">Planned Distance</span>
+                    <span data-translate="career.jobs.fields.distance">Planned distance</span>
                     <strong id="careerActiveJobDistance">-</strong>
                   </div>
                   <div class="career-active-job-row">
-                    <span data-translate="career.jobs.fields.income">Expected Income</span>
+                    <span data-translate="career.jobs.fields.income">Expected income</span>
                     <strong id="careerActiveJobIncome">-</strong>
                   </div>
                   <div class="career-active-job-row">
@@ -349,11 +350,11 @@
 
         <section id="panel-orders" class="career-panel">
           <div class="career-panel-head">
-            <h2 data-translate="career.nav.orders">Orders</h2>
+            <h2 data-translate="career.nav.orders">Jobs</h2>
             <p data-translate="career_mode.orders_summary">Active dispatch jobs and completed records.</p>
           </div>
 
-          <h3 class="career-subtitle" data-translate="career.jobs.active.title">Current job</h3>
+          <h3 class="career-subtitle" data-translate="career.jobs.active.title">Active Job</h3>
           <div class="career-table-wrap">
             <table class="career-table">
               <thead>
@@ -361,9 +362,9 @@
                   <th data-translate="career.jobs.fields.job_id">Job ID</th>
                   <th data-translate="career.jobs_logbook.route">Route</th>
                   <th data-translate="career.jobs.fields.cargo">Cargo</th>
-                  <th data-translate="career.jobs.fields.distance">Planned Distance</th>
-                  <th data-translate="career.jobs.fields.income">Expected Income</th>
-                  <th data-translate="career.jobs.fields.ingame_income">Ingame Reward</th>
+                  <th data-translate="career.jobs.fields.distance">Planned distance</th>
+                  <th data-translate="career.jobs.fields.income">Expected income</th>
+                  <th data-translate="career.jobs.fields.ingame_income">Ingame reward</th>
                   <th data-translate="career.jobs.fields.result">Result</th>
                 </tr>
               </thead>
@@ -371,17 +372,17 @@
             </table>
           </div>
 
-          <h3 class="career-subtitle" data-translate="career.jobs_logbook.title">Job History</h3>
+          <h3 class="career-subtitle" data-translate="career.jobs_logbook.title">Job Logbook</h3>
           <div class="career-table-wrap">
             <table class="career-table">
               <thead>
                 <tr>
-                  <th data-translate="career.jobs_logbook.started">Date</th>
+                  <th data-translate="career.jobs_logbook.started">Started</th>
                   <th data-translate="career.jobs_logbook.cargo">Cargo</th>
                   <th data-translate="career.jobs_logbook.route">Route</th>
-                  <th data-translate="career.jobs_logbook.distance">Distance</th>
-                  <th data-translate="career.jobs.fields.income">Expected Income</th>
-                  <th data-translate="career.jobs.fields.ingame_income">Ingame Reward</th>
+                  <th data-translate="career.jobs_logbook.distance">Planned distance</th>
+                  <th data-translate="career.jobs.fields.income">Expected income</th>
+                  <th data-translate="career.jobs.fields.ingame_income">Ingame reward</th>
                   <th data-translate="career.jobs_logbook.status">Status</th>
                 </tr>
               </thead>
@@ -457,11 +458,11 @@
                 <span data-translate="career_mode.dispatcher.filter_job_type">Job Type</span>
                 <select id="cmDispatcherFilterJobType">
                   <option value="" data-translate="career_mode.dispatcher.filter_any">Any</option>
-                  <option value="quick_job">Quick Job</option>
-                  <option value="freight_market">Freight Market</option>
-                  <option value="cargo_market">Cargo Market</option>
-                  <option value="company_contract">Company Contract</option>
-                  <option value="premium_special">Premium Special</option>
+                  <option value="quick_job" data-translate="ui.quick_job">Quick job</option>
+                  <option value="freight_market" data-translate="ui.freight_market">Freight market</option>
+                  <option value="cargo_market" data-translate="ui.cargo_market">Cargo market</option>
+                  <option value="company_contract" data-translate="ui.company_contract">Company contract</option>
+                  <option value="premium_special" data-translate="ui.premium_special">Special transport</option>
                 </select>
               </label>
               <label class="career-field">
@@ -561,7 +562,7 @@
                     <input id="cmDispatcherUseAutosaveFallback" type="checkbox" />
                   </label>
                   <p data-translate="career_mode.dispatcher.hint_accept">Accept Job: Dispatcher-only state change.</p>
-                  <p data-translate="career_mode.dispatcher.hint_assign">Inject into Active Save: runs Assign -> Prepare -> Write in one action.</p>
+                  <p data-translate="career_mode.dispatcher.hint_assign">Inject into Active Save: runs Assign -&gt; Prepare -&gt; Write in one action.</p>
                   <p data-translate="career_mode.dispatcher.hint_prepare">Prepare ETS2: internal metadata phase before write.</p>
                   <p data-translate="career_mode.dispatcher.hint_write">Only Write modifies game.sii / quicksave.</p>
                   <p data-translate="career_mode.dispatcher.hint_synced">Mark Synced: updates tool sync status only.</p>
@@ -591,11 +592,11 @@
               <label class="career-field">
                 <span data-translate="career_mode.dispatcher.offer_job_type">Requested Job Type</span>
                 <select id="cmDispatcherOfferJobTypeInput">
-                  <option value="quick_job">Quick Job</option>
-                  <option value="freight_market">Freight Market</option>
-                  <option value="cargo_market">Cargo Market</option>
-                  <option value="company_contract">Company Contract</option>
-                  <option value="premium_special">Premium Special</option>
+                  <option value="quick_job" data-translate="ui.quick_job">Quick job</option>
+                  <option value="freight_market" data-translate="ui.freight_market">Freight market</option>
+                  <option value="cargo_market" data-translate="ui.cargo_market">Cargo market</option>
+                  <option value="company_contract" data-translate="ui.company_contract">Company contract</option>
+                  <option value="premium_special" data-translate="ui.premium_special">Special transport</option>
                 </select>
               </label>
               <label class="career-field">
@@ -609,17 +610,17 @@
               <label class="career-field">
                 <span data-translate="career_mode.dispatcher.offer_equipment">Equipment</span>
                 <select id="cmDispatcherOfferEquipmentInput">
-                  <option value="quick_job">Quick Job</option>
-                  <option value="own_truck">Own Truck</option>
-                  <option value="own_truck_trailer">Own Truck + Trailer</option>
+                  <option value="quick_job" data-translate="ui.quick_job">Quick job</option>
+                  <option value="own_truck" data-translate="ui.own_truck">Own truck</option>
+                  <option value="own_truck_trailer" data-translate="ui.own_truck_trailer">Own truck and trailer</option>
                 </select>
               </label>
               <label class="career-field">
                 <span data-translate="career_mode.dispatcher.offer_scope">Scope</span>
                 <select id="cmDispatcherOfferScopeInput">
-                  <option value="one_time">One-time</option>
-                  <option value="recurring">Recurring</option>
-                  <option value="contract">Contract</option>
+                  <option value="one_time" data-translate="ui.one_time">One-time</option>
+                  <option value="recurring" data-translate="ui.recurring">Recurring</option>
+                  <option value="contract" data-translate="ui.contract">Contract</option>
                 </select>
               </label>
               <label class="career-field career-field-wide">
@@ -638,7 +639,7 @@
                     <th data-translate="career_mode.dispatcher.col_offer_id">Offer ID</th>
                     <th data-translate="career_mode.dispatcher.col_company">Company</th>
                     <th data-translate="career_mode.dispatcher.col_type">Type</th>
-                    <th data-translate="career_mode.dispatcher.col_rate">Rate</th>
+                    <th data-translate="career_mode.dispatcher.col_rate">EUR/km</th>
                     <th data-translate="career_mode.dispatcher.col_status">Status</th>
                     <th data-translate="career_mode.dispatcher.col_actions">Actions</th>
                   </tr>
@@ -717,10 +718,10 @@
           </div>
 
           <div class="career-card-grid">
-            <article class="career-metric-card"><span data-translate="career.dashboard.live_income">Live revenue</span><strong id="cmFinanceIncome">EUR 0</strong></article>
-            <article class="career-metric-card"><span data-translate="career.dashboard.fuel_cost">Fuel costs</span><strong id="cmFinanceFuel">EUR 0</strong></article>
-            <article class="career-metric-card"><span data-translate="career.dashboard.repair_cost">Repair costs</span><strong id="cmFinanceRepair">EUR 0</strong></article>
-            <article class="career-metric-card"><span data-translate="career.dashboard.toll_cost">Toll costs</span><strong id="cmFinanceToll">EUR 0</strong></article>
+            <article class="career-metric-card"><span data-translate="career.dashboard.live_income">Live Income</span><strong id="cmFinanceIncome">EUR 0</strong></article>
+            <article class="career-metric-card"><span data-translate="career.dashboard.fuel_cost">Diesel</span><strong id="cmFinanceFuel">EUR 0</strong></article>
+            <article class="career-metric-card"><span data-translate="career.dashboard.repair_cost">Repairs</span><strong id="cmFinanceRepair">EUR 0</strong></article>
+            <article class="career-metric-card"><span data-translate="career.dashboard.toll_cost">Tolls</span><strong id="cmFinanceToll">EUR 0</strong></article>
           </div>
 
           <div class="career-table-wrap">
@@ -797,7 +798,7 @@
               <input id="cmCompanySloganInput" type="text" />
             </label>
             <label class="career-field">
-              <span data-translate="career_mode.company_accent">Accent Color</span>
+              <span data-translate="career_mode.company_accent">Accent color</span>
               <input id="cmCompanyAccentInput" type="text" placeholder="#3B82F6" />
             </label>
             <label class="career-field career-field-wide">
@@ -805,7 +806,7 @@
               <textarea id="cmCompanyDescriptionInput"></textarea>
             </label>
             <label class="career-toggle-field">
-              <span data-translate="career_mode.company_public_visibility">Public Visibility</span>
+              <span data-translate="career_mode.company_public_visibility">Public visibility</span>
               <input id="cmCompanyPublicVisibilityInput" type="checkbox" />
             </label>
             <div class="career-field-action">
@@ -815,23 +816,23 @@
 
           <div class="career-form-grid">
             <label class="career-field">
-              <span data-translate="career_mode.company_default_role">Default Member Role</span>
+              <span data-translate="career_mode.company_default_role">Default member role</span>
               <select id="cmCompanyDefaultRoleInput"></select>
             </label>
             <label class="career-toggle-field">
-              <span data-translate="career_mode.company_allow_join_requests">Allow Public Join Requests</span>
+              <span data-translate="career_mode.company_allow_join_requests">Allow public join requests</span>
               <input id="cmCompanyAllowJoinRequestsInput" type="checkbox" />
             </label>
             <label class="career-toggle-field">
-              <span data-translate="career_mode.company_dispatcher_manage_jobs">Dispatcher Can Manage Jobs</span>
+              <span data-translate="career_mode.company_dispatcher_manage_jobs">Dispatcher can manage jobs</span>
               <input id="cmCompanyDispatcherManageJobsInput" type="checkbox" />
             </label>
             <label class="career-toggle-field">
-              <span data-translate="career_mode.company_show_trainee">Show Trainees In Roster</span>
+              <span data-translate="career_mode.company_show_trainee">Show trainees in roster</span>
               <input id="cmCompanyShowTraineeInput" type="checkbox" />
             </label>
             <label class="career-toggle-field">
-              <span data-translate="career_mode.company_allow_custom_profiles">Allow Member Custom Profiles</span>
+              <span data-translate="career_mode.company_allow_custom_profiles">Allow member custom profiles</span>
               <input id="cmCompanyAllowCustomProfilesInput" type="checkbox" />
             </label>
             <div class="career-field-action">
@@ -870,14 +871,14 @@
           <div class="analytics-toolbar">
             <div class="analytics-toolbar-actions">
               <button id="analyticsRefreshBtn" class="career-topbar-btn" type="button" aria-label="" data-translate="career_mode.refresh" data-translate-aria-label="career_mode.analytics.aria.refresh_button">Refresh</button>
-              <button id="analyticsExportBtn" class="career-action-btn" type="button" aria-label="" data-translate="career_mode.analytics.export" data-translate-aria-label="career_mode.analytics.aria.export_button">Excel exportieren</button>
-              <button id="analyticsScanBtn" class="career-topbar-btn" type="button" aria-label="" data-translate="career_mode.analytics.scan_save_data" data-translate-aria-label="career_mode.analytics.aria.scan_button">Save-Daten analysieren</button>
-              <button id="analyticsEnableTrackingBtn" class="career-topbar-btn" type="button" aria-label="" data-translate="career_mode.analytics.enable_tracking" data-translate-aria-label="career_mode.analytics.aria.enable_tracking_button">Tracking aktivieren</button>
+              <button id="analyticsExportBtn" class="career-action-btn" type="button" aria-label="" data-translate="career_mode.analytics.export" data-translate-aria-label="career_mode.analytics.aria.export_button">Export to Excel (CSV)</button>
+              <button id="analyticsScanBtn" class="career-topbar-btn" type="button" aria-label="" data-translate="career_mode.analytics.scan_save_data" data-translate-aria-label="career_mode.analytics.aria.scan_button">Analyze Save Data</button>
+              <button id="analyticsEnableTrackingBtn" class="career-topbar-btn" type="button" aria-label="" data-translate="career_mode.analytics.enable_tracking" data-translate-aria-label="career_mode.analytics.aria.enable_tracking_button">Enable Tracking</button>
             </div>
           </div>
 
           <p class="analytics-note" data-translate="career_mode.analytics.note">
-            Hinweis: ETS2/ATS speichern nicht zwingend eine vollständige historische Auftragsliste. Das Tool importiert nur Daten, die im Save/Profil noch vorhanden sind. Für vollständiges Tracking werden neue Aufträge ab Aktivierung des Trackings in der lokalen Datenbank protokolliert.
+            Note: ETS2/ATS do not necessarily store a complete historical job list. The tool only imports data that is still present in the save/profile. For complete tracking, new jobs are logged in the local database after tracking is enabled.
           </p>
           <p id="analyticsDataHint" class="analytics-partial-note"></p>
           <p id="analyticsLocalHint" class="analytics-local-hint"></p>
@@ -887,23 +888,23 @@
 
           <div class="career-form-grid analytics-filter-grid">
             <label class="career-field">
-              <span data-translate="career_mode.analytics.filters.from">Von</span>
+              <span data-translate="career_mode.analytics.filters.from">From</span>
               <input id="analyticsFilterFrom" type="date" />
             </label>
             <label class="career-field">
-              <span data-translate="career_mode.analytics.filters.to">Bis</span>
+              <span data-translate="career_mode.analytics.filters.to">To</span>
               <input id="analyticsFilterTo" type="date" />
             </label>
             <label class="career-field">
-              <span data-translate="career_mode.analytics.filters.profile">Profil</span>
+              <span data-translate="career_mode.analytics.filters.profile">Profile</span>
               <select id="analyticsFilterProfile">
-                <option value="all" data-translate="career_mode.analytics.filters.all">Alle</option>
+                <option value="all" data-translate="career_mode.analytics.filters.all">All</option>
               </select>
             </label>
             <label class="career-field">
               <span data-translate="career_mode.analytics.filters.game">Game</span>
               <select id="analyticsFilterGame">
-                <option value="all" data-translate="career_mode.analytics.filters.all">Alle</option>
+                <option value="all" data-translate="career_mode.analytics.filters.all">All</option>
                 <option value="ETS2">ETS2</option>
                 <option value="ATS">ATS</option>
               </select>
@@ -911,79 +912,79 @@
             <label class="career-field">
               <span data-translate="career_mode.analytics.filters.status">Status</span>
               <select id="analyticsFilterStatus">
-                <option value="all" data-translate="career_mode.analytics.filters.all">Alle</option>
-                <option value="completed" data-translate="career_mode.analytics.status.completed">abgeschlossen</option>
-                <option value="active" data-translate="career_mode.analytics.status.active">aktiv</option>
-                <option value="failed" data-translate="career_mode.analytics.status.failed">fehlgeschlagen</option>
-                <option value="cancelled" data-translate="career_mode.analytics.status.cancelled">abgebrochen</option>
-                <option value="unknown" data-translate="career_mode.analytics.status.unknown">unbekannt</option>
+                <option value="all" data-translate="career_mode.analytics.filters.all">All</option>
+                <option value="completed" data-translate="career_mode.analytics.status.completed">Completed</option>
+                <option value="active" data-translate="career_mode.analytics.status.active">Active</option>
+                <option value="failed" data-translate="career_mode.analytics.status.failed">Failed</option>
+                <option value="cancelled" data-translate="career_mode.analytics.status.cancelled">Cancelled</option>
+                <option value="unknown" data-translate="career_mode.analytics.status.unknown">Unknown</option>
               </select>
             </label>
             <label class="career-field">
-              <span data-translate="career_mode.analytics.filters.cargo">Fracht</span>
+              <span data-translate="career_mode.analytics.filters.cargo">Cargo</span>
               <input id="analyticsFilterCargo" type="text" data-translate-placeholder="career_mode.analytics.filters.cargo_placeholder" placeholder="Fracht suchen" />
             </label>
             <label class="career-field">
-              <span data-translate="career_mode.analytics.filters.source_city">Start-Stadt</span>
+              <span data-translate="career_mode.analytics.filters.source_city">Source City</span>
               <select id="analyticsFilterSourceCity">
-                <option value="all" data-translate="career_mode.analytics.filters.all">Alle</option>
+                <option value="all" data-translate="career_mode.analytics.filters.all">All</option>
               </select>
             </label>
             <label class="career-field">
-              <span data-translate="career_mode.analytics.filters.destination_city">Ziel-Stadt</span>
+              <span data-translate="career_mode.analytics.filters.destination_city">Destination City</span>
               <select id="analyticsFilterDestinationCity">
-                <option value="all" data-translate="career_mode.analytics.filters.all">Alle</option>
+                <option value="all" data-translate="career_mode.analytics.filters.all">All</option>
               </select>
             </label>
             <div class="analytics-filter-actions">
-              <button id="analyticsApplyBtn" class="career-action-btn" type="button" data-translate="career_mode.analytics.apply_filters">Filter anwenden</button>
-              <button id="analyticsResetBtn" class="career-topbar-btn" type="button" data-translate="career_mode.analytics.reset_filters">Filter zurücksetzen</button>
+              <button id="analyticsApplyBtn" class="career-action-btn" type="button" data-translate="career_mode.analytics.apply_filters">Apply Filters</button>
+              <button id="analyticsResetBtn" class="career-topbar-btn" type="button" data-translate="career_mode.analytics.reset_filters">Reset Filters</button>
             </div>
           </div>
 
           <div id="analyticsLoading" class="analytics-empty-state" hidden>
-            <strong data-translate="career_mode.analytics.loading_title">Analytics werden geladen</strong>
-            <p data-translate="career_mode.analytics.loading_body">Job-Historie, Diagramme und Filteroptionen werden aus der lokalen Datenbank aufgebaut.</p>
+            <strong data-translate="career_mode.analytics.loading_title">Loading analytics</strong>
+            <p data-translate="career_mode.analytics.loading_body">Building job history, charts and filter options from the local database.</p>
           </div>
 
           <div id="analyticsError" class="analytics-empty-state" hidden>
-            <strong data-translate="career_mode.analytics.error_title">Analytics konnten nicht geladen werden</strong>
+            <strong data-translate="career_mode.analytics.error_title">Analytics could not be loaded</strong>
             <p id="analyticsErrorText"></p>
           </div>
 
           <div id="analyticsEmpty" class="analytics-empty-state" hidden>
-            <strong data-translate="career_mode.analytics.empty.title">Noch keine Auftragsdaten vorhanden.</strong>
-            <p data-translate="career_mode.analytics.empty.body">Das Tool kann vorhandene Save-Daten analysieren, sofern diese Informationen im Profil gespeichert sind. Für vollständiges Tracking werden neue Aufträge ab jetzt automatisch in der lokalen Datenbank protokolliert.</p>
+            <strong data-translate="career_mode.analytics.empty.title">No job data available yet.</strong>
+            <p data-translate="career_mode.analytics.empty.body">The tool can analyze existing save data when those details are still stored in the profile. For complete tracking, new jobs are logged automatically in the local database from now on.</p>
             <div class="analytics-empty-actions">
-              <button class="career-action-btn" type="button" id="analyticsEmptyScanBtn" data-translate="career_mode.analytics.scan_save_data">Save-Daten analysieren</button>
-              <button class="career-topbar-btn" type="button" id="analyticsEmptyEnableBtn" data-translate="career_mode.analytics.enable_tracking">Tracking aktivieren</button>
+              <button class="career-action-btn" type="button" id="analyticsEmptyScanBtn" data-translate="career_mode.analytics.scan_save_data">Analyze Save Data</button>
+              <button class="career-topbar-btn" type="button" id="analyticsEmptyEnableBtn" data-translate="career_mode.analytics.enable_tracking">Enable Tracking</button>
             </div>
           </div>
 
           <div id="analyticsContent" hidden>
             <div class="analytics-grid">
               <section class="analytics-card">
-                <h3 data-translate="career_mode.analytics.charts.revenue_over_time">Umsatz über Zeit</h3>
+                <h3 data-translate="career_mode.analytics.charts.revenue_over_time">Revenue Over Time</h3>
                 <div id="analyticsRevenueChart" class="analytics-chart-list"></div>
               </section>
               <section class="analytics-card">
-                <h3 data-translate="career_mode.analytics.charts.profit_over_time">Gewinn über Zeit</h3>
+                <h3 data-translate="career_mode.analytics.charts.profit_over_time">Profit Over Time</h3>
                 <div id="analyticsProfitChart" class="analytics-chart-list"></div>
               </section>
               <section class="analytics-card">
-                <h3 data-translate="career_mode.analytics.charts.jobs_per_day">Aufträge pro Tag</h3>
+                <h3 data-translate="career_mode.analytics.charts.jobs_per_day">Jobs Per Day</h3>
                 <div id="analyticsJobsChart" class="analytics-chart-list"></div>
               </section>
               <section class="analytics-card">
-                <h3 data-translate="career_mode.analytics.charts.top_cargo">Top Frachten</h3>
+                <h3 data-translate="career_mode.analytics.charts.top_cargo">Top Cargo</h3>
                 <div id="analyticsCargoChart" class="analytics-chart-list"></div>
               </section>
               <section class="analytics-card">
-                <h3 data-translate="career_mode.analytics.charts.top_routes">Top Routen</h3>
+                <h3 data-translate="career_mode.analytics.charts.top_routes">Top Routes</h3>
                 <div id="analyticsRoutesChart" class="analytics-chart-list"></div>
               </section>
               <section class="analytics-card">
-                <h3 data-translate="career_mode.analytics.charts.damage_cost">Schaden/Kosten-Analyse</h3>
+                <h3 data-translate="career_mode.analytics.charts.damage_cost">Damage / Cost Analysis</h3>
                 <div id="analyticsDamageChart" class="analytics-chart-list"></div>
               </section>
             </div>
@@ -992,28 +993,28 @@
               <table class="analytics-table" aria-label="" data-translate-aria-label="career_mode.analytics.aria.job_history_table">
                 <thead>
                   <tr>
-                    <th data-translate="career_mode.analytics.table.date">Datum</th>
-                    <th data-translate="career_mode.analytics.table.profile">Spielprofil</th>
+                    <th data-translate="career_mode.analytics.table.date">Date</th>
+                    <th data-translate="career_mode.analytics.table.profile">Profile</th>
                     <th data-translate="career_mode.analytics.table.game">Game</th>
-                    <th data-translate="career_mode.analytics.table.job_uid">Auftrag-ID</th>
+                    <th data-translate="career_mode.analytics.table.job_uid">Job ID</th>
                     <th data-translate="career_mode.analytics.table.status">Status</th>
-                    <th data-translate="career_mode.analytics.table.cargo">Fracht</th>
-                    <th data-translate="career_mode.analytics.table.source_city">Start-Stadt</th>
-                    <th data-translate="career_mode.analytics.table.destination_city">Ziel-Stadt</th>
-                    <th data-translate="career_mode.analytics.table.source_company">Firma Start</th>
-                    <th data-translate="career_mode.analytics.table.destination_company">Firma Ziel</th>
-                    <th data-translate="career_mode.analytics.table.distance">Distanz</th>
-                    <th data-translate="career_mode.analytics.table.revenue">Umsatz</th>
-                    <th data-translate="career_mode.analytics.table.costs">Kosten</th>
-                    <th data-translate="career_mode.analytics.table.damage">Schaden</th>
-                    <th data-translate="career_mode.analytics.table.penalties">Strafe</th>
-                    <th data-translate="career_mode.analytics.table.profit">Gewinn</th>
+                    <th data-translate="career_mode.analytics.table.cargo">Cargo</th>
+                    <th data-translate="career_mode.analytics.table.source_city">Source City</th>
+                    <th data-translate="career_mode.analytics.table.destination_city">Destination City</th>
+                    <th data-translate="career_mode.analytics.table.source_company">Source Company</th>
+                    <th data-translate="career_mode.analytics.table.destination_company">Destination Company</th>
+                    <th data-translate="career_mode.analytics.table.distance">Distance</th>
+                    <th data-translate="career_mode.analytics.table.revenue">Revenue</th>
+                    <th data-translate="career_mode.analytics.table.costs">Costs</th>
+                    <th data-translate="career_mode.analytics.table.damage">Damage</th>
+                    <th data-translate="career_mode.analytics.table.penalties">Penalties</th>
+                    <th data-translate="career_mode.analytics.table.profit">Profit</th>
                     <th data-translate="career_mode.analytics.table.xp">XP</th>
                     <th data-translate="career_mode.analytics.table.level">Level</th>
                     <th data-translate="career_mode.analytics.table.truck">Truck</th>
                     <th data-translate="career_mode.analytics.table.trailer">Trailer</th>
-                    <th data-translate="career_mode.analytics.table.driven_with_truck">Gefahren mit Truck</th>
-                    <th data-translate="career_mode.analytics.table.source">Quelle</th>
+                    <th data-translate="career_mode.analytics.table.driven_with_truck">Driven with Truck</th>
+                    <th data-translate="career_mode.analytics.table.source">Source</th>
                   </tr>
                 </thead>
                 <tbody id="analyticsHistoryBody"></tbody>
@@ -1048,7 +1049,7 @@
               </select>
             </label>
             <label class="career-field">
-              <span data-translate="career_mode.user_preferred_game">Preferred Game</span>
+              <span data-translate="career_mode.user_preferred_game">Preferred game</span>
               <select id="cmUserPreferredGameInput">
                 <option value="ETS2">ETS2</option>
                 <option value="ATS">ATS</option>
@@ -1059,11 +1060,11 @@
               <input id="cmUserAvatarInput" type="text" />
             </label>
             <label class="career-field">
-              <span data-translate="career_mode.user_visibility">Profile Visibility</span>
+              <span data-translate="career_mode.user_visibility">Profile visibility</span>
               <select id="cmUserVisibilityInput">
-                <option value="private">private</option>
-                <option value="company">company</option>
-                <option value="public">public</option>
+                <option value="private" data-translate="ui.private">Private</option>
+                <option value="company" data-translate="ui.company">Company</option>
+                <option value="public" data-translate="ui.public">Public</option>
               </select>
             </label>
             <label class="career-field career-field-wide">
@@ -1071,11 +1072,11 @@
               <textarea id="cmUserBioInput"></textarea>
             </label>
             <label class="career-field">
-              <span data-translate="career_mode.user_theme">Theme Preference</span>
+              <span data-translate="career_mode.user_theme">Theme preference</span>
               <input id="cmUserThemeInput" type="text" />
             </label>
             <label class="career-toggle-field">
-              <span data-translate="career_mode.user_notifications">Notifications Enabled</span>
+              <span data-translate="career_mode.user_notifications">Notifications enabled</span>
               <input id="cmUserNotificationsInput" type="checkbox" />
             </label>
             <div class="career-field-action">
@@ -1085,31 +1086,31 @@
 
           <div class="career-settings-list">
             <label class="career-setting-row">
-              <span data-translate="career_mode.setting_telemetry_enabled">Telemetry Enabled</span>
+              <span data-translate="career_mode.setting_telemetry_enabled">Telemetry enabled</span>
               <input id="cmCareerTelemetryEnabledInput" type="checkbox" />
             </label>
             <label class="career-setting-row">
-              <span data-translate="career_mode.setting_local_stats_tracking">Local Stats Tracking</span>
+              <span data-translate="career_mode.setting_local_stats_tracking">Local stats tracking</span>
               <input id="cmCareerLocalStatsTrackingInput" type="checkbox" />
             </label>
             <label class="career-setting-row">
-              <span data-translate="career_mode.setting_auto_job_logging">Auto Job Logging</span>
+              <span data-translate="career_mode.setting_auto_job_logging">Auto job logging</span>
               <input id="cmCareerAutoJobLoggingInput" type="checkbox" />
             </label>
             <label class="career-setting-row">
-              <span data-translate="career_mode.setting_auto_finance_tracking">Auto Finance Tracking</span>
+              <span data-translate="career_mode.setting_auto_finance_tracking">Auto finance tracking</span>
               <input id="cmCareerAutoFinanceTrackingInput" type="checkbox" />
             </label>
             <label class="career-setting-row">
-              <span data-translate="career_mode.setting_metric_units">Use Metric Units</span>
+              <span data-translate="career_mode.setting_metric_units">Use metric units</span>
               <input id="cmCareerMetricUnitsInput" type="checkbox" />
             </label>
             <label class="career-setting-row">
-              <span data-translate="career_mode.setting_24h_time">Use 24h Time</span>
+              <span data-translate="career_mode.setting_24h_time">Use 24h time</span>
               <input id="cmCareer24hTimeInput" type="checkbox" />
             </label>
             <label class="career-setting-row">
-              <span data-translate="career_mode.setting_autosave_career_data">Autosave Career Data</span>
+              <span data-translate="career_mode.setting_autosave_career_data">Autosave career data</span>
               <input id="cmCareerAutosaveInput" type="checkbox" />
             </label>
             <label class="career-setting-row">

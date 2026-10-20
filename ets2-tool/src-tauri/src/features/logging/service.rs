@@ -399,7 +399,9 @@ pub fn export_logs_bundle(
         .dialog()
         .file()
         .add_filter("Text file", &["txt"])
-        .set_title("Export logs")
+        .set_title(crate::features::language::translator::t(
+            "ui.dialog_export_logs",
+        ))
         .set_file_name(REPORT_EXPORT_NAME)
         .blocking_save_file();
 

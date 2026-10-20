@@ -837,7 +837,7 @@ export const tools = {
           const currentLang = await invoke("get_current_language_command");
 
           if (!languages || languages.length === 0) {
-            showToast("No languages available!", "error");
+            showToast("ui.no_languages", "error");
             return;
           }
 
@@ -864,7 +864,7 @@ export const tools = {
           if (!res || !res.language) return;
 
           if (res.language === currentLang) {
-            showToast("Language already active.", "info");
+            showToast("ui.language_active", "info");
             return;
           }
 
@@ -873,7 +873,7 @@ export const tools = {
             language: res.language,
           });
 
-          showToast(message, "success");
+          showToast("toasts.language_updated", "success");
 
           // OPTIONAL (empfohlen, wenn UI statisch Ã¼bersetzt ist)
           location.reload();
@@ -898,7 +898,7 @@ export const tools = {
 
           const numericValue = Number(newValue);
           if (Number.isNaN(numericValue)) {
-            showToast("Invalid value!", "warning");
+            showToast("ui.invalid_value", "warning");
             return;
           }
 
@@ -926,7 +926,7 @@ export const tools = {
           if (newValue !== null) {
             await invoke("edit_parking_doubles_value", { value: newValue });
             await loadProfileSaveConfig();
-            showToast("toasts.parking_doubles_success", { newValue: newValue ? "enabled" : "disabled" }, "success");
+            showToast("toasts.parking_doubles_success", { newValue: await window.t(newValue ? "ui.enabled" : "ui.disabled") }, "success");
           }
         } catch (err) {
           console.error("Parking doubles error:", err);

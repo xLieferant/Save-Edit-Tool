@@ -74,7 +74,9 @@ pub fn export_preset(app: &AppHandle, preset_id: &str) -> Result<Option<String>,
         .dialog()
         .file()
         .add_filter("JSON", &["json"])
-        .set_title("Export mod preset")
+        .set_title(crate::features::language::translator::t(
+            "ui.dialog_export_preset",
+        ))
         .set_file_name(&format!("{}.json", sanitized_file_name(&preset.name)))
         .blocking_save_file();
 
@@ -95,7 +97,9 @@ pub fn import_preset(app: &AppHandle) -> Result<Option<ModPreset>, String> {
         .dialog()
         .file()
         .add_filter("JSON", &["json"])
-        .set_title("Import mod preset")
+        .set_title(crate::features::language::translator::t(
+            "ui.dialog_import_preset",
+        ))
         .blocking_pick_file();
 
     let Some(file_path) = file_path else {
@@ -168,7 +172,9 @@ pub fn pick_workshop_directory(app: &AppHandle) -> Result<Option<String>, String
     let folder = app
         .dialog()
         .file()
-        .set_title("Select Steam Workshop folder")
+        .set_title(crate::features::language::translator::t(
+            "ui.dialog_workshop",
+        ))
         .blocking_pick_folder();
 
     let Some(folder) = folder else {

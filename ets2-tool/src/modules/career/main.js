@@ -362,11 +362,11 @@ function formatDispatcherActionGuide(job, diagnostics) {
   const errorCode = String(job?.lastErrorCode || "").toLowerCase();
   if (errorCode === "company_has_no_job_offers_in_city" || errorCode === "company_has_no_job_offers") {
     return [
-      "Recovery steps:",
-      "1. Load the active save in ETS2.",
-      "2. Sleep, quick travel, or use an economy reset to refresh depot jobs.",
-      "3. Create a new quicksave.",
-      "4. Return here and run the inject action again.",
+      uiText.recoverySteps,
+      uiText.recoveryLoad,
+      uiText.recoveryRefresh,
+      uiText.recoveryQuicksave,
+      uiText.recoveryRetry,
       "",
       `city: ${diagnostics?.city || "-"}`,
       `depot_count: ${diagnostics?.depot_count || "-"}`,
@@ -479,18 +479,21 @@ async function resolveErrorMessage(rawError) {
   const code = normalizeErrorCode(rawError);
   if (!code) {
     if (rawError && typeof rawError === "object" && rawError.message) {
-      return `${uiText.errorPrefix}: ${rawError.message}`;
+      console.error("[career] operation failed", rawError);
+      return t("ui.operation_failed");
     }
-    return `${uiText.errorPrefix}: ${String(rawError || "unknown")}`;
+    console.error("[career] operation failed", rawError);
+    return t("ui.operation_failed");
   }
 
   const translationKey = `career_mode.errors.${code}`;
   const translated = await t(translationKey);
   if (translated === translationKey) {
     if (rawError && typeof rawError === "object" && rawError.message) {
-      return `${uiText.errorPrefix}: ${rawError.message}`;
+      console.error("[career] operation failed", rawError);
+      return t("ui.operation_failed");
     }
-    return `${uiText.errorPrefix}: ${code}`;
+    return t("ui.operation_failed");
   }
   return translated;
 }
@@ -1636,7 +1639,7 @@ async function handleDispatcherInjectToActiveSave() {
     await refreshDispatcherData();
     renderDispatcher();
     showToast(
-      `Injected: ${jobId} | dispatcher=${result.dispatcherStatus} | link=${result.ets2JobLinkStatus || "-"}`,
+      await t("ui.job_injected", { jobId }),
       "success"
     );
   } catch (error) {
@@ -1656,7 +1659,7 @@ async function handleDispatcherInjectToActiveSave() {
     await refreshDispatcherData();
     renderDispatcher();
     const resolved = await resolveErrorMessage(error);
-    showToast(`${resolved} (${raw})`, "error");
+    showToast(resolved, "error");
   } finally {
     state.dispatcher.actionBusy = false;
     renderDispatcherDetails();
@@ -1928,10 +1931,10 @@ function renderFinances() {
   setCellText("cmFinanceToll", formatCurrency(dashboard.tollCost || 0));
 
   const rows = [
-    ["Cash Balance", formatCurrency(overview.bank?.cashBalance || 0)],
-    ["Insurance / Day", formatCurrency(overview.economy?.insuranceDailyCost || 0)],
-    ["Total Jobs", formatNumber(stats.totalJobs || 0, 0)],
-    ["Success Rate", `${Math.round(Number(stats.successRate || 0) * 100)}%`],
+    [uiText.cashBalance, formatCurrency(overview.bank?.cashBalance || 0)],
+    [uiText.insuranceDay, formatCurrency(overview.economy?.insuranceDailyCost || 0)],
+    [uiText.totalJobs, formatNumber(stats.totalJobs || 0, 0)],
+    [uiText.successRate, `${Math.round(Number(stats.successRate || 0) * 100)}%`],
   ].map(([label, value]) => `<tr><td>${label}</td><td>${value}</td></tr>`);
 
   setTableRows("cmFinanceSummaryBody", rows, uiText.noData, 2);
@@ -1973,7 +1976,7 @@ function renderCompany() {
 
   const button = document.getElementById("cmCompanyProfileSaveBtn");
   if (button) {
-    button.textContent = company ? "Save Company Profile" : "Create Company";
+    button.textContent = company ? uiText.companySave : uiText.companyCreate;
   }
 
   const settings = state.companySettings;
@@ -2140,8 +2143,8 @@ function renderUserSettings() {
   const cooldownHint = document.getElementById("cmUsernameCooldownHint");
   if (cooldownHint) {
     cooldownHint.textContent = profile?.usernameNextChangeAt
-      ? `Next change: ${formatDate(profile.usernameNextChangeAt)}`
-      : "Username can be changed now";
+      ? uiText.usernameNextChange.replaceAll("{date}", formatDate(profile.usernameNextChangeAt))
+      : uiText.usernameChangeNow;
   }
 }
 
@@ -2316,7 +2319,7 @@ function registerDispatcherEventHandlers() {
       await refreshSelectedDispatcherDetails();
       renderDispatcherDetails();
       renderDispatcherMarket();
-      showToast(`Assign: ${payload.stage || "running"} (${jobId})`, "info");
+      showToast(await t("ui.progress_assign", { jobId }), "info");
     }
   }).catch(console.error);
   listen("vtc://dispatcher/prepare_progress", async (event) => {
@@ -2332,7 +2335,7 @@ function registerDispatcherEventHandlers() {
       await refreshSelectedDispatcherDetails();
       renderDispatcherDetails();
       renderDispatcherMarket();
-      showToast(`Prepare: ${payload.stage || "running"} (${jobId})`, "info");
+      showToast(await t("ui.progress_prepare", { jobId }), "info");
     }
   }).catch(console.error);
   listen("vtc://dispatcher/write_progress", async (event) => {
@@ -2349,7 +2352,7 @@ function registerDispatcherEventHandlers() {
       renderDispatcherDetails();
       renderDispatcherMarket();
       renderDispatcherActive();
-      showToast(`Write: ${payload.stage || "running"} (${jobId})`, "info");
+      showToast(await t("ui.progress_write", { jobId }), "info");
     }
   }).catch(console.error);
   listen("vtc://dispatcher/job_error", async (event) => {
@@ -2366,7 +2369,7 @@ function registerDispatcherEventHandlers() {
       await refreshSelectedDispatcherDetails();
       renderDispatcherDetails();
     }
-    showToast(String(payload.error || "Dispatcher error"), "error");
+    showToast(await resolveErrorMessage(payload.error || "ui.dispatcher_error"), "error");
   }).catch(console.error);
 }
 
@@ -2401,6 +2404,21 @@ function registerCareerEventHandlers() {
 }
 
 async function loadUiText() {
+  uiText.cashBalance = await t("ui.cash_balance");
+  uiText.insuranceDay = await t("ui.insurance_day");
+  uiText.totalJobs = await t("ui.total_jobs");
+  uiText.successRate = await t("ui.success_rate");
+  uiText.usernameNextChange = await t("ui.username_next_change");
+  uiText.usernameChangeNow = await t("ui.username_change_now");
+  uiText.recoverySteps = await t("ui.recovery_steps");
+  uiText.recoveryLoad = await t("ui.recovery_load");
+  uiText.recoveryRefresh = await t("ui.recovery_refresh");
+  uiText.recoveryQuicksave = await t("ui.recovery_quicksave");
+  uiText.recoveryRetry = await t("ui.recovery_retry");
+  uiText.dispatcherAssigned = await t("ui.assigned_to_save");
+
+  uiText.companySave = await t("ui.company_save");
+  uiText.companyCreate = await t("ui.company_create");
   uiText.online = await t("career_mode.online");
   uiText.offline = await t("career_mode.offline");
   uiText.noData = await t("career.shared.none");
@@ -2544,6 +2562,7 @@ async function handleSaveUserSettings() {
     const notificationsEnabled = getInputChecked("cmUserNotificationsInput");
 
     await invokeStrict("update_user_language", { language });
+    await invokeStrict("set_language_command", { language });
     await invokeStrict("update_user_profile_meta", {
       input: {
         avatarPath,
@@ -2561,8 +2580,11 @@ async function handleSaveUserSettings() {
       },
     });
 
+    await translateDocument(document);
+    await loadUiText();
     await refreshAllData();
     showToast(await t("career_mode.user_saved"), "success");
+    location.reload();
   } catch (error) {
     showToast(await resolveErrorMessage(error), "error");
   }

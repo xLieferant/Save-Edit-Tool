@@ -1,3 +1,4 @@
+use crate::features::language::translator::t;
 use crate::features::profile_clone::logic as profile_clone;
 use crate::models::clone_profiles_info::{CloneOptions, CloneTargetStatus};
 use std::path::Path;
@@ -18,7 +19,7 @@ pub fn clone_profile_command(
     };
 
     profile_clone::clone_profile(Path::new(&source_profile), &new_name, options)
-        .map(|p| format!("Profil erfolgreich geklont nach: {}", p.display()))
+        .map(|p| t("ui.clone_success").replace("{path}", &p.display().to_string()))
         .map_err(|e| e.to_string())
 }
 
@@ -32,26 +33,26 @@ pub fn validate_clone_target(
     if !source.exists() {
         return Ok(CloneTargetStatus {
             valid: false,
-            message: "Quellprofil existiert nicht.".into(),
+            message: t("ui.clone_source_missing"),
             target_path: None,
         });
     }
 
-    let parent = source.parent().ok_or("Ungültiger Profilpfad")?;
+    let parent = source.parent().ok_or_else(|| t("ui.clone_path_invalid"))?;
     let hex_name = crate::shared::hex_float::text_to_hex(&new_name);
     let target_path = parent.join(&hex_name);
 
     if target_path.exists() {
         return Ok(CloneTargetStatus {
             valid: false,
-            message: "Profilname existiert bereits.".into(),
+            message: t("ui.clone_name_taken"),
             target_path: Some(target_path.to_string_lossy().to_string()),
         });
     }
 
     Ok(CloneTargetStatus {
         valid: true,
-        message: "Name verfügbar.".into(),
+        message: t("ui.clone_name_available"),
         target_path: Some(target_path.to_string_lossy().to_string()),
     })
 }

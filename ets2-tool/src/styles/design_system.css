@@ -1,0 +1,367 @@
+/* Shared desktop design system. Loaded after each module's layout stylesheet. */
+:root,
+body {
+  color-scheme: dark;
+  --font-ui: "Segoe UI Variable Text", "Segoe UI", sans-serif;
+  --font-mono: "Cascadia Mono", "Consolas", monospace;
+  --bg-main: #17191c;
+  --bg-elevated: #1e2125;
+  --bg-panel: rgba(34, 37, 41, 0.88);
+  --bg-panel-strong: rgba(29, 32, 36, 0.96);
+  --bg-card: #22252a;
+  --bg-card-soft: rgba(255, 255, 255, 0.025);
+  --bg-soft: var(--bg-card-soft);
+  --bg-input: var(--bg-elevated);
+  --text-main: #e6e8eb;
+  --text-muted: #b2b7bf;
+  --text-soft: #a7adb6;
+  --text: var(--text-main);
+  --text-info: var(--accent);
+  --accent: #8fb8cd;
+  --accent-rgb: 143, 184, 205;
+  --accent-secondary: #597e91;
+  --accent-secondary-rgb: 89, 126, 145;
+  --accent-contrast: #14232b;
+  --accent-soft: rgba(var(--accent-rgb), 0.12);
+  --accent-surface: rgba(var(--accent-rgb), 0.09);
+  --accent-strong: var(--accent);
+  --accent-hover: rgba(var(--accent-rgb), 0.18);
+  --accent-border: rgba(var(--accent-rgb), 0.35);
+  --accent-glow: none;
+  --panel-border: rgba(220, 226, 235, 0.14);
+  --card-border: rgba(220, 226, 235, 0.1);
+  --border: var(--panel-border);
+  --border-soft: var(--card-border);
+  --border-subtle: var(--card-border);
+  --border-strong: var(--panel-border);
+  --danger: #ee9793;
+  --warning: #dfbf80;
+  --success: #9ec5a4;
+  --surface-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  --surface-shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.12);
+  --surface-glow: none;
+  --status-glow: none;
+  --status-glow-soft: none;
+  --focus-ring: 0 0 0 2px var(--bg-main), 0 0 0 4px var(--accent);
+  --radius-xl: 12px;
+  --radius-lg: 10px;
+  --radius-md: 8px;
+  --radius-sm: 6px;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --title-lg: 22px;
+  --title-xl: 28px;
+  --body-md: 13px;
+  --body-lg: 14px;
+  --dropdown-surface: #272b30;
+  --dropdown-surface-strong: #202328;
+  --dropdown-border: var(--panel-border);
+  --dropdown-text: var(--text-main);
+  --dropdown-text-muted: var(--text-muted);
+  --dropdown-hover: var(--accent-soft);
+  --dropdown-active: rgba(var(--accent-rgb), 0.18);
+  --dropdown-shadow: var(--surface-shadow);
+  --header-control-height: 36px;
+  --nav-radius: 6px;
+  --nav-font-size: 13px;
+  --launcher-shadow: var(--surface-shadow-soft);
+  --launcher-shadow-strong: var(--surface-shadow-soft);
+  --launcher-focus: var(--focus-ring);
+  --career-shadow: var(--surface-shadow-soft);
+  --career-shadow-strong: var(--surface-shadow);
+  --career-focus: var(--focus-ring);
+  --career-dropdown-surface: var(--dropdown-surface);
+  --career-dropdown-surface-strong: var(--dropdown-surface-strong);
+  --career-dropdown-border: var(--dropdown-border);
+  --career-dropdown-text: var(--text-main);
+  --career-dropdown-hover: var(--accent-soft);
+  --career-dropdown-active: var(--dropdown-active);
+}
+
+/* Keep the theme choices, with quiet accents and the same component geometry. */
+body.theme-light {
+  color-scheme: light;
+  --bg-main: #eef0f2;
+  --bg-elevated: #f8f9fa;
+  --bg-panel: rgba(255, 255, 255, 0.88);
+  --bg-panel-strong: rgba(255, 255, 255, 0.97);
+  --bg-card: #ffffff;
+  --bg-card-soft: rgba(0, 0, 0, 0.025);
+  --text-main: #242930;
+  --text-muted: #525d69;
+  --text-soft: #596471;
+  --accent: #2c617b;
+  --accent-rgb: 44, 97, 123;
+  --accent-contrast: #ffffff;
+  --panel-border: rgba(30, 40, 50, 0.2);
+  --card-border: rgba(30, 40, 50, 0.14);
+  --dropdown-surface: #ffffff;
+  --dropdown-surface-strong: #f4f5f6;
+}
+body.theme-neon { --accent: #9acbb3; --accent-rgb: 154, 203, 179; }
+body.theme-neon-red { --accent: #d4a0a5; --accent-rgb: 212, 160, 165; }
+
+html { scrollbar-gutter: stable; }
+[hidden] { display: none !important; }
+body, body.mode-editor, body.career-page {
+  font-family: var(--font-ui);
+  font-size: var(--body-lg);
+  line-height: 1.5;
+  color: var(--text-main);
+  background: var(--bg-main) !important;
+  letter-spacing: normal;
+}
+body::before, body::after { display: none; }
+button, input, select, textarea { font: inherit; }
+button, input, select, textarea, a { -webkit-tap-highlight-color: transparent; }
+button, select { min-height: 34px; }
+button {
+  white-space: normal;
+  line-height: 1.35;
+  background: var(--bg-elevated) !important;
+  color: var(--text-main) !important;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-sm) !important;
+}
+button:not(:disabled):hover { border-color: var(--accent); }
+input, select, textarea {
+  color: var(--text-main);
+  background: var(--bg-elevated);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  min-width: 0;
+}
+input[type="checkbox"], input[type="radio"], input[type="range"] {
+  accent-color: var(--accent);
+}
+input::placeholder, textarea::placeholder { color: var(--text-soft); opacity: 1; }
+select option { background: var(--dropdown-surface); color: var(--text-main); }
+:is(button, input, select, textarea, a, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 3px;
+}
+button:disabled { cursor: not-allowed; opacity: 0.5; }
+h1, h2, h3, h4 {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.3;
+  text-shadow: none !important;
+  -webkit-text-fill-color: currentColor;
+}
+h1 { font-size: var(--title-xl); }
+h2 { font-size: var(--title-lg); }
+h3 { font-size: 16px; }
+code, pre, .detail-card-value--mono { font-family: var(--font-mono); }
+th, td { font-variant-numeric: tabular-nums; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; color: var(--text-muted); font-weight: 600; }
+th, td { padding: 10px 12px; border-bottom: 1px solid var(--card-border); }
+thead th { background: var(--bg-elevated); }
+tbody tr:hover { background: var(--accent-surface); }
+
+/* Surface roles are shared across the editor, auxiliary pages and Career. */
+:is(.panel-surface, .command-header, .career-sidebar, .cm-sidebar, .launcher-hero,
+    .modal-box, .garage-modal-box, .cm-modal-box) {
+  color: var(--text-main);
+  background: var(--bg-panel) !important;
+  border-color: var(--panel-border) !important;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--surface-shadow);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+body.mode-editor :is(.command-header, .editor-sidebar, .sidebar-card, .editor-intro,
+    .overview-card, .tool-stage-shell, .modal-box),
+body.career-page :is(.career-topbar, .career-sidebar, .career-panel, .career-widget,
+    .career-status-card, .career-metric-card, .career-card, .dispatcher-detail-card,
+    .dispatcher-generation-card, .career-setting-row, .career-toggle-field,
+    .career-table-wrap, .career-empty, .career-definition-grid div) {
+  border-color: var(--card-border) !important;
+  border-radius: var(--radius-md);
+  color: var(--text-main);
+  background: var(--bg-panel) !important;
+  box-shadow: none !important;
+}
+body.mode-editor :is(.nav-btn, .nav-action, .secondary-action, .hub-home-btn,
+    .theme-toggle-btn, .profile-select, .save-select),
+body.career-page :is(.career-nav-btn, .career-action-btn, .career-mini-btn,
+    .career-topbar-btn, .career-user-menu-btn, .dispatcher-tab-btn) {
+  font-family: var(--font-ui);
+  border-radius: var(--radius-sm);
+  letter-spacing: normal;
+  text-transform: none;
+}
+body.mode-editor :is(.nav-btn.active, .mode-btn.active),
+body.career-page :is(.career-nav-btn.is-active, .dispatcher-tab-btn.is-active) {
+  background: var(--accent-soft) !important;
+  color: var(--text-main) !important;
+  border-color: var(--accent-border) !important;
+}
+:is(.detail-card, .launcher-card, .hub-mode-card, .hub-metric-card,
+    .analytics-summary-card, .analytics-chart-card, .analytics-note,
+    .analytics-partial-note, .analytics-local-hint, .cm-card, .career-card) {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--card-border) !important;
+  color: var(--text-main);
+  border-radius: var(--radius-md);
+  box-shadow: none;
+}
+:is(.detail-card-label, .modal-description, .launcher-card p, .launcher-hero p,
+    .analytics-summary-card span, .analytics-local-hint) { color: var(--text-muted); }
+.analytics-summary-card strong { color: var(--text-main); }
+:is(.launcher-btn, .launcher-btn-career, button.apply, .cm-btn-primary, .primary-btn,
+    .career-action-btn, .career-auth-submit, .nav-scan-btn) {
+  background: var(--accent) !important;
+  color: var(--accent-contrast) !important;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  box-shadow: none !important;
+  letter-spacing: normal;
+}
+:is(.launcher-btn, button.apply, .cm-btn-primary):not(:disabled):hover { filter: brightness(1.12); }
+.status-pill { background: var(--bg-elevated) !important; box-shadow: none !important; }
+.status-lamp { box-shadow: none !important; }
+.status-lamp::before, .status-lamp::after { display: none; }
+
+/* Remove redundant labels, retaining functional status and warning badges. */
+.launcher-kicker, .launcher-tag, .hub-copy > .eyebrow, .hub-mode-tag,
+.modal-kicker, .tool-content > .overview-label { display: none; }
+.hub-metric-grid { display: none; }
+.launcher-shell { width: min(960px, 100%); gap: var(--space-md); }
+.launcher-hero { padding: 28px; }
+.launcher-hero h1 { font-size: 28px; margin: 0 0 12px; }
+.launcher-logo { width: 48px; height: 48px; }
+.launcher-grid { grid-template-columns: 1fr; gap: 12px; }
+.launcher-card { padding: 20px 24px; gap: 8px; }
+.launcher-card h2 { font-size: 20px; }
+.launcher-btn { width: fit-content; min-width: 100px; min-height: 36px; }
+
+/* Tool selection is a compact action list; every existing action remains mounted. */
+body.mode-editor #tool-container {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+body.mode-editor .tool-card {
+  display: block;
+  min-height: 0;
+  height: auto;
+  border: 0;
+  border-bottom: 1px solid var(--card-border);
+  border-radius: 0;
+  background: var(--bg-card) !important;
+  box-shadow: none !important;
+  padding: 0;
+}
+body.mode-editor .tool-card:last-child { border-bottom: 0; }
+body.mode-editor .tool-card:hover { background: var(--bg-elevated) !important; }
+body.mode-editor .tool-card > img,
+body.mode-editor .skilltree-launch-visual,
+body.mode-editor .tool-card::before,
+body.mode-editor .tool-card::after { display: none; }
+body.mode-editor .tool-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 4px 20px;
+  padding: 16px;
+}
+body.mode-editor .tool-content h3 { margin: 0; font-size: 15px; }
+body.mode-editor .tool-content p {
+  display: block;
+  grid-column: 1;
+  margin: 0;
+  max-width: 72ch;
+  color: var(--text-muted);
+  font-size: 13px;
+  overflow: visible;
+  -webkit-line-clamp: unset;
+}
+body.mode-editor .tool-content button {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  width: auto;
+  min-width: 86px;
+  min-height: 34px;
+  margin: 0;
+  padding: 7px 14px;
+  background: var(--accent-soft) !important;
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-sm);
+  color: var(--text-main) !important;
+  box-shadow: none;
+}
+body.mode-editor .save-hero { padding: 20px; gap: 20px; }
+body.mode-editor .save-hero h1 { font-size: 22px; }
+body.mode-editor .save-hero-copy > .eyebrow,
+body.mode-editor .save-stage-head .eyebrow { display: none; }
+body.mode-editor .save-warning-card {
+  background: var(--bg-elevated);
+  border-color: var(--panel-border);
+  border-left: 2px solid var(--warning);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+}
+body.mode-editor .save-warning-card h2 { font-size: 14px; line-height: 1.4; }
+body.mode-editor .save-warning-card p { display: block; overflow: visible; -webkit-line-clamp: unset; }
+body.mode-editor .save-overview-grid { gap: 0; }
+body.mode-editor .save-overview-grid .overview-card {
+  border: 0 !important;
+  border-right: 1px solid var(--card-border) !important;
+  border-radius: 0;
+  padding: 12px;
+  min-height: 76px;
+}
+body.mode-editor .save-overview-grid .overview-card:last-child { border-right: 0 !important; }
+body.career-page :is(.career-user-menu-dropdown, .career-user-dropdown-meta,
+    .career-nav-btn, .career-user-menu-item, .career-user-dropdown-login input) {
+  background: var(--bg-elevated);
+  border-color: var(--panel-border);
+  color: var(--text-main);
+}
+body.career-page :is(.career-status-card span, .career-metric-card span,
+    .career-card p, .career-panel p, .career-definition-grid dt) { color: var(--text-muted); }
+body.mode-editor :is(.mod-profile-page-topbar, .diagnostics-page-topbar,
+    .mod-profile-page-actions, .diagnostics-page-actions) {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+body.mode-editor :is(.mod-profile-page-topbar, .diagnostics-page-topbar) { justify-content: space-between; }
+body.mode-editor :is(.mod-profile-page-back, .diagnostics-page-back,
+    .mod-profile-page-actions button, .diagnostics-page-actions button) {
+  width: auto !important;
+  min-width: 0;
+  min-height: 34px;
+  height: auto;
+  padding: 8px 12px;
+}
+.modal-actions, .garage-modal-actions, .analytics-toolbar-actions { flex-wrap: wrap; gap: 8px; }
+.modal-actions button { min-height: 36px; padding: 8px 14px; }
+.toast { background: var(--dropdown-surface); color: var(--text-main); border-color: var(--panel-border); }
+@media (max-width: 1000px) {
+  .header-row, .header-right { flex-wrap: wrap; }
+  .modal-actions button { flex: 1 1 auto; }
+}
+@media (max-width: 640px) {
+  body.mode-editor .tool-content { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  body.mode-editor .tool-content button { grid-column: 1; grid-row: auto; justify-self: start; }
+  .launcher-hero, .launcher-card { padding: 20px; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  :is(.panel-surface, .command-header, .modal-box, .garage-modal-box, .launcher-hero) {
+    background: var(--bg-elevated) !important;
+    backdrop-filter: none;
+  }
+}

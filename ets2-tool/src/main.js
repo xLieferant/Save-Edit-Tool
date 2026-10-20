@@ -1,3 +1,4 @@
+import { localizeError, translateDocument } from "./modules/shared/i18n.js";
 import { loadTools, activeTab, openCloneProfileModal, openModalMulti, openModalText } from "./app.js";
 import { updateToolImagesForGame } from "./tools.js";
 import { getLevelForXp, getLevelProgress, loadLevelTable } from "./js/level-system.js";
@@ -57,7 +58,7 @@ const SAVE_MUTATION_COMMANDS = new Set([
 ]);
 
 let lastSelectedGame = null;
-const CAREER_LOAD_ERROR = "Career Mode failed to load";
+const CAREER_LOAD_ERROR = "ui.career_load_failed";
 const isStandaloneEditorPage = Boolean(window.__ETS2_STANDALONE_EDITOR__);
 const GITHUB_PUBLIC_LOCK = true; // TEMP_GITHUB_BUILD
 
@@ -88,16 +89,17 @@ function showCareerLoadFailure(error) {
   console.error("[career] fallback activated", error);
   const banner = ensureUiErrorBanner();
   if (banner) {
-    banner.textContent = CAREER_LOAD_ERROR;
+    banner.dataset.translate = CAREER_LOAD_ERROR;
+    void t(CAREER_LOAD_ERROR).then((text) => { banner.textContent = text; });
     banner.style.display = "block";
   }
   document.body?.classList.remove("mode-career");
   document.body?.classList.add("mode-editor");
   document.getElementById("hubScreen")?.classList.add("is-hidden");
   const profileStatus = document.getElementById("profile-status");
-  if (profileStatus) profileStatus.textContent = CAREER_LOAD_ERROR;
+  if (profileStatus) void t(CAREER_LOAD_ERROR).then((text) => { profileStatus.textContent = text; });
   const careerConnectionNote = document.getElementById("careerConnectionNote");
-  if (careerConnectionNote) careerConnectionNote.textContent = CAREER_LOAD_ERROR;
+  if (careerConnectionNote) void t(CAREER_LOAD_ERROR).then((text) => { careerConnectionNote.textContent = text; });
 }
 
 function clearCareerLoadFailure() {
@@ -106,11 +108,11 @@ function clearCareerLoadFailure() {
     banner.style.display = "none";
   }
   const profileStatus = document.getElementById("profile-status");
-  if (profileStatus?.textContent === CAREER_LOAD_ERROR) {
+  if (profileStatus?.textContent === banner?.textContent) {
     profileStatus.textContent = "";
   }
   const careerConnectionNote = document.getElementById("careerConnectionNote");
-  if (careerConnectionNote?.textContent === CAREER_LOAD_ERROR) {
+  if (careerConnectionNote?.textContent === banner?.textContent) {
     careerConnectionNote.textContent = "";
   }
 }
@@ -365,37 +367,7 @@ async function t(key, params = {}) {
 }
 
 async function translateUI() {
-  console.log("[i18n] loading language for save editor");
-  const elements = document.querySelectorAll("[data-translate]");
-  for (const el of elements) {
-    const key = el.getAttribute("data-translate");
-    const translated = await t(key);
-    if (translated === key) {
-      console.warn("[i18n] missing translation", key);
-    }
-    el.textContent = translated;
-  }
-
-  const placeholders = document.querySelectorAll("[data-translate-placeholder]");
-  for (const el of placeholders) {
-    const key = el.getAttribute("data-translate-placeholder");
-    const translated = await t(key);
-    if (translated === key) {
-      console.warn("[i18n] missing placeholder translation", key);
-    }
-    el.setAttribute("placeholder", translated);
-  }
-
-  const ariaLabels = document.querySelectorAll("[data-translate-aria-label]");
-  for (const el of ariaLabels) {
-    const key = el.getAttribute("data-translate-aria-label");
-    const translated = await t(key);
-    if (translated === key) {
-      console.warn("[i18n] missing aria translation", key);
-    }
-    el.setAttribute("aria-label", translated);
-  }
-  console.log("[i18n] loaded language for save editor");
+  await translateDocument(document);
 }
 
 window.t = t;
@@ -1687,7 +1659,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           `
             <div class="detail-grid three-up">
               <article class="plan-card"><span>${await t("career.insurance.basic")}</span><strong>EUR 280 / month</strong><p>${await t("career.insurance.feature_damage")}</p></article>
-              <article class="plan-card featured"><span>${await t("career.insurance.basic_pro")}</span><strong>EUR 520 / month</strong><p>${await t("career.insurance.feature_repair")}</p></article>
+              <article class="plan-card featured"><span>${await t("career.insurance.basic_pro")}</span><strong>${await t("ui.monthly_price", { amount: 520 })}</strong><p>${await t("career.insurance.feature_repair")}</p></article>
               <article class="plan-card"><span>${await t("career.insurance.supporter")}</span><strong>Invite only</strong><p>${await t("career.insurance.feature_bonus")}</p></article>
             </div>
           `
@@ -1732,10 +1704,10 @@ document.addEventListener("DOMContentLoaded", async () => {
           "career.store.title",
           "career.store.summary",
           buildDetailCards([
-            { label: await t("career.store.phone"), value: "Dispatch sync", copy: await t("career.store.efficiency_bonus") },
-            { label: await t("career.store.care"), value: "Cabin care pack", copy: await t("career.store.comfort_bonus") },
-            { label: await t("career.store.food"), value: "Meal stock", copy: await t("career.store.fatigue_bonus") },
-            { label: await t("career.store.accessories"), value: "Driver setup", copy: await t("career.store.efficiency_bonus") },
+            { label: await t("career.store.phone"), value: await t("ui.store_phone"), copy: await t("career.store.efficiency_bonus") },
+            { label: await t("career.store.care"), value: await t("ui.store_care"), copy: await t("career.store.comfort_bonus") },
+            { label: await t("career.store.food"), value: await t("ui.store_food"), copy: await t("career.store.fatigue_bonus") },
+            { label: await t("career.store.accessories"), value: await t("ui.store_accessories"), copy: await t("career.store.efficiency_bonus") },
           ], "four-up")
         );
       case "plugin":
@@ -1965,7 +1937,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           "career.settings.title",
           "career.settings.summary",
           buildDetailCards([
-            { label: await t("career.settings.theme"), value: localStorage.getItem("theme") || "neon-red" },
+            { label: await t("career.settings.theme"), value: localStorage.getItem("theme") || "dark" },
             { label: await t("career.settings.language"), value: careerUi.systemControlled },
             { label: await t("career.settings.modules"), value: careerUi.modulesValue },
           ])
@@ -2555,7 +2527,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       window.showToast("toasts.ets2_data_location_updated", {}, "success");
     } catch (error) {
       console.error("ETS2 data location update failed:", error);
-      window.showToast("toasts.ets2_data_location_update_error", { error: error.toString() }, "error");
+      window.showToast("toasts.ets2_data_location_update_error", { error: await localizeError(error) }, "error");
     } finally {
       ets2DataLocationChanging = false;
       syncEts2DataLocationControls();
@@ -3026,7 +2998,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         console.error("Save safety refresh failed:", error);
         setStatusDotTone(refs.saveHealthStatusDot, "broken");
         if (refs.saveHealthStatusText) refs.saveHealthStatusText.textContent = await t("editor.safety.status.broken");
-        if (refs.saveHealthSummary) refs.saveHealthSummary.textContent = error?.toString?.() || "Save safety refresh failed.";
+        if (refs.saveHealthSummary) refs.saveHealthSummary.textContent = await t("ui.save_safety_failed");
         await syncRecoveryPresentation();
       } finally {
         recoveryLoading = false;
@@ -3168,7 +3140,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const openColorSchemeModal = async () => {
     try {
-      const currentTheme = localStorage.getItem("theme") || "neon-red";
+      const currentTheme = localStorage.getItem("theme") || "dark";
       const themeMap = {
         "label.label_color_theme_dark": "dark",
         "label.label_color_theme_light": "light",
@@ -3787,7 +3759,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       localStorage.setItem("ets2_force_profile_picker_open", "1");
       location.reload();
     } catch (error) {
-      showToast("toasts.generic_error_prefix", { error: error.toString() }, "error");
+      showToast("toasts.generic_error_prefix", { error: await localizeError(error) }, "error");
     }
   };
 
@@ -4424,7 +4396,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const matched = profiles.find((profile) => profile.path === last && profile.success);
         if (matched) {
           window.selectedProfilePath = matched.path;
-          refs.profileNameDisplay.textContent = matched.name ?? "Unknown";
+          refs.profileNameDisplay.textContent = matched.name ?? await t("ui.unknown_profile");
           updateDropdownSelectionState(refs.profileDropdownList, matched.path);
           await loadSelectedProfile();
           return;
@@ -4667,17 +4639,18 @@ document.addEventListener("DOMContentLoaded", async () => {
       showToast("toasts.no_profile_selected", {}, "warning");
       return;
     }
-    const choice = await openModalMulti("Manage Profile", [{
+    const choice = await openModalMulti("ui.manage_profile", [{
       type: "dropdown",
       id: "action",
-      label: "Action",
+      label: "ui.action",
       value: "Duplicate",
       options: ["Duplicate", "Rename"],
+      optionLabels: { Duplicate: await t("ui.duplicate"), Rename: await t("ui.rename") },
     }]);
     if (!choice) return;
     if (choice.action === "Duplicate") return openCloneProfileModal();
     const currentName = refs.profileNameDisplay.textContent;
-    const newName = await openModalText("Rename Profile", "New Name", currentName);
+    const newName = await openModalText("ui.rename_profile", "ui.new_name", currentName);
     if (newName && newName.trim() !== "" && newName !== currentName) {
       try {
         window.selectedProfilePath = await invoke("profile_rename", { newName: newName.trim() });
@@ -4686,7 +4659,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         await scanProfiles({ saveToBackend: true, showToasts: false });
         await loadSelectedProfile();
       } catch (error) {
-        showToast("toasts.profile_rename_error", { error: error.toString() }, "error");
+        showToast("toasts.profile_rename_error", { error: await localizeError(error) }, "error");
       }
     }
   });
@@ -4702,10 +4675,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       showToast("toasts.no_other_profiles", {}, "warning");
       return;
     }
-    const result = await openModalMulti("Copy Controls", [{
+    const result = await openModalMulti("ui.copy_controls", [{
       type: "dropdown",
       id: "target",
-      label: "Target Profile",
+      label: "ui.target_profile",
       value: `${targets[0].name} [${targets[0].path}]`,
       options: targets.map((profile) => `${profile.name} [${profile.path}]`),
     }]);
@@ -4730,10 +4703,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       showToast("toasts.no_other_valid_profiles", {}, "warning");
       return;
     }
-    const result = await openModalMulti("Move Mods", [{
+    const result = await openModalMulti("ui.move_mods", [{
       type: "dropdown",
       id: "target",
-      label: "Target Profile",
+      label: "ui.target_profile",
       value: `${targets[0].name} [${targets[0].path}]`,
       options: targets.map((profile) => `${profile.name} [${profile.path}]`),
     }]);
@@ -4751,7 +4724,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const currentLanguage = await invoke("get_current_language_command");
 
       if (!languages?.length) {
-        showToast("toasts.load_languages_error", { error: "No languages available" }, "error");
+        showToast("ui.no_languages", {}, "error");
         return;
       }
 
@@ -4780,7 +4753,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       location.reload();
     } catch (error) {
       console.error("Language picker failed:", error);
-      showToast("toasts.load_languages_error", { error: error.toString() }, "error");
+      showToast("toasts.load_languages_error", { error: await localizeError(error) }, "error");
     }
   };
 

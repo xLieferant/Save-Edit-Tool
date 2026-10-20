@@ -2,6 +2,7 @@ use super::models::{
     AnalysisSources, AnalyzedError, AnalyzerLogPaths, AnalyzerOverview, CrashSummary,
     DiagnosticsContext, MissingReference, ModConflictAnalysisReport, SuspectedMod,
 };
+use crate::features::language::translator::t;
 use crate::shared::current_profile::ResolvedSaveContext;
 use crate::shared::current_profile::snapshot_resolved_save_context;
 use crate::shared::decrypt::decrypt_if_needed;
@@ -262,11 +263,7 @@ fn resolve_profile_sii_path(
     limitations: &mut Vec<String>,
 ) -> Option<PathBuf> {
     let Some(profile_path) = profile_path else {
-        record_limitation(
-            limitations,
-            "No active profile path is available for the Mod Conflict Analyzer.",
-            false,
-        );
+        record_limitation(limitations, t("diagnostics.profile_missing"), false);
         return None;
     };
 
@@ -291,11 +288,7 @@ fn resolve_save_sii_path(
     limitations: &mut Vec<String>,
 ) -> Option<PathBuf> {
     let Some(save_path) = save_path else {
-        record_limitation(
-            limitations,
-            "No active save is available for the Mod Conflict Analyzer.",
-            false,
-        );
+        record_limitation(limitations, t("diagnostics.save_missing"), false);
         return None;
     };
 
@@ -412,11 +405,7 @@ fn mark_analysis_timed_out(
         return;
     }
     *timed_out = true;
-    record_limitation(
-        limitations,
-        "Analysis timed out. Partial results shown.".to_string(),
-        false,
-    );
+    record_limitation(limitations, t("diagnostics.partial"), false);
     crate::dev_log!(
         "[diagnostics] timeout after_ms={}",
         started_at.elapsed().as_millis()
@@ -453,8 +442,9 @@ pub fn analyze_mod_conflict_diagnostics(
         .lock()
         .map_err(|_| "selected_game lock poisoned".to_string())?
         .clone();
-    let resolved_context = snapshot_resolved_save_context(profile_state)
-        .map_err(|error| format!("Failed to resolve active save context: {}", error))?;
+    let resolved_context = snapshot_resolved_save_context(profile_state).map_err(|error| {
+        t("diagnostics.context_error").replace("{value}", &format!("{}", error))
+    })?;
     analyze_mod_conflict_diagnostics_from_snapshot(
         selected_game,
         resolved_context,
@@ -472,8 +462,9 @@ pub fn analyze_mod_conflict_diagnostics_deep(
         .lock()
         .map_err(|_| "selected_game lock poisoned".to_string())?
         .clone();
-    let resolved_context = snapshot_resolved_save_context(profile_state)
-        .map_err(|error| format!("Failed to resolve active save context: {}", error))?;
+    let resolved_context = snapshot_resolved_save_context(profile_state).map_err(|error| {
+        t("diagnostics.context_error").replace("{value}", &format!("{}", error))
+    })?;
     analyze_mod_conflict_diagnostics_from_snapshot(
         selected_game,
         resolved_context,
@@ -672,10 +663,7 @@ pub fn analyze_mod_conflict_diagnostics_from_snapshot(
             .iter()
             .any(|item| item.category != "ActiveModList");
     let removed_mod_reason = if removed_mod_suspected {
-        Some(
-            "The log references assets that are not provided by any indexed local mod. This can happen when a mod was removed but the save still references truck, trailer, accessory or map content."
-                .to_string(),
-        )
+        Some(t("diagnostics.removed_assets"))
     } else {
         None
     };
@@ -814,11 +802,19 @@ fn read_optional_text(
     crate::dev_log!("[diagnostics] reading {} from {}", label, path.display());
     if !path.exists() {
         let message = match label {
-            "game.log.txt" => format!("No game.log.txt found at {}", path.display()),
-            "game.crash.txt" => format!("No game.crash.txt found at {}", path.display()),
-            "profile.sii" => format!("No profile.sii found at {}", path.display()),
-            "game.sii" => format!("No game.sii found at {}", path.display()),
-            _ => format!("Required file is missing: {}", path.display()),
+            "game.log.txt" => {
+                t("diagnostics.missing_log").replace("{value}", &format!("{}", path.display()))
+            }
+            "game.crash.txt" => {
+                t("diagnostics.missing_crash").replace("{value}", &format!("{}", path.display()))
+            }
+            "profile.sii" => {
+                t("diagnostics.missing_profile").replace("{value}", &format!("{}", path.display()))
+            }
+            "game.sii" => {
+                t("diagnostics.missing_save").replace("{value}", &format!("{}", path.display()))
+            }
+            _ => t("diagnostics.missing_file").replace("{value}", &format!("{}", path.display())),
         };
         record_limitation(limitations, message, user_visible);
         return OptionalText::missing(Some(path));
@@ -860,11 +856,21 @@ fn read_optional_text(
         }
         Err(error) => {
             let message = match label {
-                "game.log.txt" => format!("Could not read game.log.txt: {}", error),
-                "game.crash.txt" => format!("Could not read game.crash.txt: {}", error),
-                "profile.sii" => format!("Could not decode profile.sii: {}", error),
-                "game.sii" => format!("Could not decode game.sii: {}", error),
-                _ => format!("Could not decode {}: {}", path.display(), error),
+                "game.log.txt" => {
+                    t("diagnostics.read_log").replace("{value}", &format!("{}", error))
+                }
+                "game.crash.txt" => {
+                    t("diagnostics.read_crash").replace("{value}", &format!("{}", error))
+                }
+                "profile.sii" => {
+                    t("diagnostics.decode_profile").replace("{value}", &format!("{}", error))
+                }
+                "game.sii" => {
+                    t("diagnostics.decode_save").replace("{value}", &format!("{}", error))
+                }
+                _ => t("diagnostics.decode_file")
+                    .replace("{value}", &format!("{}", path.display()))
+                    .replace("{detail}", &format!("{}", error)),
             };
             record_limitation(limitations, message, user_visible);
             OptionalText::missing(Some(path))
@@ -919,8 +925,7 @@ fn extract_crash_errors(
                     line_number: Some(*line_number),
                     raw_line: trimmed.to_string(),
                     extracted_path: extract_path_from_line(trimmed),
-                    explanation: "This line comes directly from game.crash.txt and provides crash context, but not proof of a single culprit mod."
-                        .to_string(),
+                    explanation: t("diagnostics.crash_context"),
                     in_last_context: false,
                 })
             })
@@ -1005,7 +1010,7 @@ fn build_missing_active_mod_references(
             path: active_mod.display_name.clone(),
             category: "ActiveModList".to_string(),
             source: "profile.sii".to_string(),
-            reason: "The active profile still references this mod, but no indexed local mod entry matched it.".to_string(),
+            reason: t("diagnostics.active_missing"),
         });
     }
     references
@@ -1067,8 +1072,7 @@ fn build_unmatched_path_references(
             continue;
         }
 
-        let reason = "The log references assets that are not provided by any indexed local mod. This can happen when a mod was removed but the save still references truck, trailer, accessory or map content."
-            .to_string();
+        let reason = t("diagnostics.removed_assets");
         refs.push(MissingReference {
             path: path.to_string(),
             category: item.category.clone(),
@@ -1213,46 +1217,37 @@ fn score_candidate(
 
     if signals.exact_path_match {
         score += 60;
-        reasons.push("Exact log path match found inside the indexed local mod.".to_string());
+        reasons.push(t("diagnostics.exact_path"));
     } else if signals.partial_path_match {
         score += 35;
-        reasons.push(
-            "A path suffix or filename from the log matched a file inside the indexed local mod."
-                .to_string(),
-        );
+        reasons.push(t("diagnostics.filename_match"));
     }
 
     if signals.category_match {
         score += 25;
-        reasons.push(
-            "The mod category inferred from local files matches the extracted error category."
-                .to_string(),
-        );
+        reasons.push(t("diagnostics.category_match"));
     }
 
     if signals.active_match
         && (signals.exact_path_match || signals.partial_path_match || signals.category_match)
     {
         score += 20;
-        reasons.push("The mod appears to be active in the current profile.".to_string());
+        reasons.push(t("diagnostics.active_mod"));
     }
 
     if signals.crash_context_match && (signals.exact_path_match || signals.partial_path_match) {
         score += 15;
-        reasons.push("The matched path appeared in the last relevant crash context.".to_string());
+        reasons.push(t("diagnostics.last_context"));
     }
 
     if signals.label_hint_match && signals.category_match {
         score += 10;
-        reasons
-            .push("The manifest or file name also hints at the same problem category.".to_string());
+        reasons.push(t("diagnostics.manifest_hint"));
     }
 
     if !indexed_mod.readable && indexed_mod.active_state == "Active" {
         score += 10;
-        reasons.push(
-            "The mod could not be indexed cleanly and also appears to be active.".to_string(),
-        );
+        reasons.push(t("diagnostics.unreadable_active"));
     }
 
     if active_mods_reliably_known
@@ -1260,10 +1255,7 @@ fn score_candidate(
         && (signals.exact_path_match || signals.partial_path_match || signals.category_match)
     {
         score -= 15;
-        reasons.push(
-            "The mod matched locally, but it does not appear in the current active mod list."
-                .to_string(),
-        );
+        reasons.push(t("diagnostics.inactive_match"));
     }
 
     if signals.exact_path_match || signals.partial_path_match {
@@ -1306,24 +1298,19 @@ fn build_crash_summary(errors: &[AnalyzedError], crash_log_found: bool) -> Crash
         .map(|item| item.0);
 
     let headline = if crash_log_found {
-        "game.crash.txt was found and correlated with the most recent relevant error chain."
-            .to_string()
+        t("diagnostics.crash_found")
     } else if error_count > 0 || warning_count > 0 {
-        "Relevant issues were extracted from game.log.txt, but no game.crash.txt was found."
-            .to_string()
+        t("diagnostics.log_only")
     } else {
-        "No relevant crash pattern could be extracted from the available logs.".to_string()
+        t("diagnostics.no_pattern")
     };
 
     let summary = if let Some(last_line) = last_relevant_context.last() {
-        format!(
-            "The analyzer uses the last relevant error context instead of trusting a single final line. Latest context item: {}",
-            last_line
-        )
+        t("diagnostics.summary_context").replace("{value}", &format!("{}", last_line))
     } else if crash_log_found {
-        "A crash log exists, but it did not contain enough structured hints to assign a strong error category.".to_string()
+        t("diagnostics.weak_crash")
     } else {
-        "Not enough log evidence was available to build a detailed crash context.".to_string()
+        t("diagnostics.no_evidence")
     };
 
     CrashSummary {
@@ -1365,31 +1352,39 @@ fn build_overview(
     .to_string();
 
     let summary = if let Some(top_mod) = suspected_mods.first() {
-        format!(
-            "Top local suspect: {} ({}, {}/100). Review the matched paths and raw log lines before disabling anything.",
-            top_mod.name, top_mod.confidence, top_mod.score
-        )
+        t("diagnostics.top_suspect")
+            .replace("{value}", &format!("{}", top_mod.name))
+            .replace(
+                "{detail}",
+                &t(&format!(
+                    "modals.mod_conflict_diagnostics.status.{}",
+                    top_mod.confidence.to_lowercase()
+                )),
+            )
+            .replace("{score}", &format!("{}", top_mod.score))
     } else if removed_mod_suspected {
-        "No local mod could be matched with confidence. A removed mod or stale save reference is more likely than a currently installed culprit.".to_string()
+        t("diagnostics.removed_likely")
     } else if !sources.game_log_found && !sources.game_crash_found {
-        "No crash logs were found. The analyzer needs at least game.log.txt or game.crash.txt for a useful result.".to_string()
+        t("diagnostics.no_logs")
     } else {
-        "No suspicious local mod could be assigned from the current evidence.".to_string()
+        t("diagnostics.no_suspect")
     };
 
     let confidence_note = if let Some(top_mod) = suspected_mods.first() {
-        format!(
-            "{} confidence means heuristic suspicion, not proof. Exact path matches are stronger than category-only matches.",
-            top_mod.confidence
+        t("diagnostics.confidence").replace(
+            "{value}",
+            &t(&format!(
+                "modals.mod_conflict_diagnostics.status.{}",
+                top_mod.confidence.to_lowercase()
+            )),
         )
     } else if removed_mod_suspected {
-        "Not enough data to assign a local mod. Unknown / Removed Mod Suspected is based on unmatched asset references.".to_string()
+        t("diagnostics.removed_confidence")
     } else {
-        "Not enough data to assign a mod.".to_string()
+        t("diagnostics.no_confidence")
     };
 
-    let disclaimer = "The analyzer only scores indexed local mods. It does not prove a single culprit and may miss workshop items or references from mods that are no longer installed."
-        .to_string();
+    let disclaimer = t("diagnostics.disclaimer");
 
     AnalyzerOverview {
         status_badge,
@@ -1445,7 +1440,8 @@ fn scan_installed_mods(
     if !mod_dir.exists() {
         record_limitation(
             limitations,
-            format!("The mod folder does not exist: {}", mod_dir.display()),
+            t("diagnostics.mod_folder_missing")
+                .replace("{value}", &format!("{}", mod_dir.display())),
             false,
         );
         return (Vec::new(), false);
@@ -1454,7 +1450,7 @@ fn scan_installed_mods(
     let Ok(entries) = fs::read_dir(mod_dir) else {
         record_limitation(
             limitations,
-            format!("The mod folder could not be read: {}", mod_dir.display()),
+            t("diagnostics.mod_folder_read").replace("{value}", &format!("{}", mod_dir.display())),
             false,
         );
         return (Vec::new(), false);
@@ -1474,11 +1470,7 @@ fn scan_installed_mods(
 
     for entry in entries {
         if started_at.elapsed() > mode.timeout() {
-            record_limitation(
-                limitations,
-                "Mod analysis timed out. Some files were skipped.".to_string(),
-                false,
-            );
+            record_limitation(limitations, t("diagnostics.timeout"), false);
             crate::dev_log!(
                 "[diagnostics] timeout after_ms={}",
                 started_at.elapsed().as_millis()
@@ -1575,10 +1567,8 @@ fn scan_installed_mods(
                 );
                 record_limitation(
                     limitations,
-                    format!(
-                        "A mod entry was skipped after an internal analyzer failure: {}",
-                        path.display()
-                    ),
+                    t("diagnostics.entry_skipped")
+                        .replace("{value}", &format!("{}", path.display())),
                     false,
                 );
                 crate::dev_log!("[diagnostics] panic caught in analyzer: {}", message);
@@ -1687,10 +1677,7 @@ fn inspect_archive_mod_entry(
         .map_err(|error| format!("archive_metadata_failed: {}", error))?
         .len();
     if archive_size > ANALYZER_MAX_DEEP_ARCHIVE_BYTES {
-        return Err(format!(
-            "archive size limit exceeded ({} bytes)",
-            archive_size
-        ));
+        return Err(t("diagnostics.archive_limit").replace("{value}", &format!("{}", archive_size)));
     }
     let file = File::open(path).map_err(|error| error.to_string())?;
     let mut archive = ZipArchive::new(file).map_err(|error| error.to_string())?;
@@ -2250,71 +2237,36 @@ fn classify_path_category(path: &str, line: Option<&str>, crash_mode: bool) -> S
 }
 
 fn explanation_for_category(category: &str, path: Option<&str>, crash_mode: bool) -> String {
-    let subject = path.unwrap_or("the referenced asset");
+    let fallback_subject = t("diagnostics.asset");
+    let subject = path.unwrap_or(&fallback_subject);
     match category {
-        "TruckReference" => format!(
-            "The logs point at truck-related content. Review truck definitions, owned truck mods and any truck upgrades that reference {}.",
-            subject
-        ),
-        "TrailerReference" => format!(
-            "The logs point at trailer-related content. Review trailer definitions, cargo packs and trailer accessories linked to {}.",
-            subject
-        ),
-        "AccessoryReference" => format!(
-            "The logs point at accessory content. Removed or outdated tuning and accessory mods often leave references like {} behind.",
-            subject
-        ),
-        "CargoReference" => format!(
-            "The logs point at cargo-related content. Cargo packs and trailer economy mods should be checked for {}.",
-            subject
-        ),
-        "MapReference" => format!(
-            "The logs point at map content. Broken load order or removed map packages can leave missing references such as {}.",
-            subject
-        ),
-        "PrefabReference" => format!(
-            "The logs point at a prefab reference. Prefab issues are commonly tied to map mods or removed map dependencies such as {}.",
-            subject
-        ),
-        "MaterialReference" => format!(
-            "The logs point at a material file. Visual, vehicle or map mods may be missing material resources like {}.",
-            subject
-        ),
-        "TextureReference" => format!(
-            "The logs point at a texture resource. Texture, UI or visual mods should be checked for {}.",
-            subject
-        ),
-        "UiReference" => format!(
-            "The logs point at UI content. Route advisor, HUD and UI mods should be checked for {}.",
-            subject
-        ),
-        "SoundReference" => format!(
-            "The logs point at sound content. Sound packs and audio-related mods should be checked for {}.",
-            subject
-        ),
-        "DefinitionReference" => format!(
-            "The logs point at a definition or unit file. Missing definitions such as {} often come from removed or incompatible mods.",
-            subject
-        ),
-        "FileOpenError" => format!(
-            "The game could not open {}. That usually means the referenced asset is missing or unreadable.",
-            subject
-        ),
-        "ParseError" => format!(
-            "The game reported invalid or incorrect data around {}. That often points to malformed definitions or incompatible mod data.",
-            subject
-        ),
+        "TruckReference" => t("diagnostics.truck").replace("{value}", &format!("{}", subject)),
+        "TrailerReference" => t("diagnostics.trailer").replace("{value}", &format!("{}", subject)),
+        "AccessoryReference" => {
+            t("diagnostics.accessory").replace("{value}", &format!("{}", subject))
+        }
+        "CargoReference" => t("diagnostics.cargo").replace("{value}", &format!("{}", subject)),
+        "MapReference" => t("diagnostics.map").replace("{value}", &format!("{}", subject)),
+        "PrefabReference" => t("diagnostics.prefab").replace("{value}", &format!("{}", subject)),
+        "MaterialReference" => {
+            t("diagnostics.material").replace("{value}", &format!("{}", subject))
+        }
+        "TextureReference" => t("diagnostics.texture").replace("{value}", &format!("{}", subject)),
+        "UiReference" => t("diagnostics.ui").replace("{value}", &format!("{}", subject)),
+        "SoundReference" => t("diagnostics.sound").replace("{value}", &format!("{}", subject)),
+        "DefinitionReference" => {
+            t("diagnostics.definition").replace("{value}", &format!("{}", subject))
+        }
+        "FileOpenError" => t("diagnostics.file_open").replace("{value}", &format!("{}", subject)),
+        "ParseError" => t("diagnostics.parse").replace("{value}", &format!("{}", subject)),
         "CrashContext" => {
             if crash_mode {
-                "This line comes directly from game.crash.txt and provides crash context, but not proof of a single culprit mod.".to_string()
+                t("diagnostics.crash_context")
             } else {
-                "This line contributes crash context but does not identify a single culprit on its own.".to_string()
+                t("diagnostics.context_only")
             }
         }
-        _ => format!(
-            "The analyzer captured {} as a relevant reference, but could not classify it more precisely.",
-            subject
-        ),
+        _ => t("diagnostics.unknown").replace("{value}", &format!("{}", subject)),
     }
 }
 

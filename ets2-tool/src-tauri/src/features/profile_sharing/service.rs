@@ -78,8 +78,11 @@ pub fn pick_shared_profile_import_archive(
     let mut dialog = app
         .dialog()
         .file()
-        .add_filter("ZIP Archive", &["zip"])
-        .set_title("ZIP archive");
+        .add_filter(
+            crate::features::language::translator::t("ui.dialog_zip"),
+            &["zip"],
+        )
+        .set_title(crate::features::language::translator::t("ui.dialog_zip"));
 
     if let Some(start_dir) = resolve_import_archive_start_dir(&selected_game) {
         dialog = dialog.set_directory(start_dir);
@@ -96,7 +99,12 @@ pub fn pick_shared_profile_export_directory(
     profile_state: &AppProfileState,
 ) -> Result<Option<String>, String> {
     let selected_game = selected_game(profile_state)?;
-    let mut dialog = app.dialog().file().set_title("Export folder");
+    let mut dialog = app
+        .dialog()
+        .file()
+        .set_title(crate::features::language::translator::t(
+            "ui.dialog_export_folder",
+        ));
 
     if let Ok(default_export_dir) = resolve_export_dir(&selected_game) {
         dialog = dialog.set_directory(default_export_dir);

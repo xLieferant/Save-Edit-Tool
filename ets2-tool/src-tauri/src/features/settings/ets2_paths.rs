@@ -1,4 +1,4 @@
-﻿use crate::features::health_monitor::service as health_service;
+use crate::features::health_monitor::service as health_service;
 use crate::shared::decrypt::clear_decrypt_cache;
 use crate::shared::paths::{
     Ets2DataLocationDto, Ets2PathMode, Ets2PathSettings, ets2_data_location_dto,
@@ -26,7 +26,9 @@ pub fn choose_ets2_data_location(
 ) -> Result<Option<Ets2DataLocationDto>, String> {
     let title = dialog_title
         .filter(|value| !value.trim().is_empty())
-        .unwrap_or_else(|| "Select ETS2 data location".to_string());
+        .unwrap_or_else(|| {
+            crate::features::language::translator::t("modals.ets2_data_location.dialog_title")
+        });
     let Some(picked) = app.dialog().file().set_title(title).blocking_pick_folder() else {
         return Ok(None);
     };
