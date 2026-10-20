@@ -3143,5 +3143,14 @@
       "CrashContext": "Absturzkontext",
       "UnknownReference": "Nicht zugeordneter Verweis"
     }
+  },
+  "ui_refinement": {
+    "accent_label": "Akzentfarbe",
+    "accent_default": "Standard",
+    "accent_green": "Grün",
+    "appearance_saved": "Darstellung gespeichert.",
+    "workspace_failed": "Der Arbeitsbereich konnte nicht geöffnet werden. Bitte versuche es erneut.",
+    "creator_credit": "Created by xLieferant",
+    "unsaved_changes": "Änderungen wurden noch nicht gespeichert."
   }
 }

@@ -1,3 +1,4 @@
+import { bindSwitch, booleanValue } from "./modules/shared/controls.js";
 import { localizeError } from "./modules/shared/i18n.js";
 ﻿import { tools } from "./tools.js";
 import {
@@ -49,6 +50,7 @@ export async function loadTools(tab) {
 
   activeTab = tab;
   if (!container) return;
+  container.dataset.view = tab;
   container.innerHTML = "";
   const renderId = ++loadToolsRenderId;
   const toolList = tools[tab] || [];
@@ -191,13 +193,6 @@ if (defaultTabBtn) {
     );
   }
 }
-
-document.addEventListener("DOMContentLoaded", () => {
-  const savedTheme = localStorage.getItem("theme") || "dark";
-  document.body.classList.remove("theme-dark", "theme-light", "theme-neon", "theme-neon-red");
-  document.body.classList.add(`theme-${savedTheme}`);
-});
-
 
 /* --------------------------------------------------------------
    MODAL REFERENCES
@@ -1275,22 +1270,9 @@ export async function openModalNumber(titleKey, value = 0) {
 -------------------------------------------------------------- */
 export async function openModalSlider(titleKey, isChecked = 0) {
   modalSliderTitle.textContent = await window.t(titleKey);
-  modalSliderInput.checked = Boolean(isChecked);
-  const modalSliderToggle = modalSlider.querySelector(".toggle-switch");
-  const modalSliderState = modalSlider.querySelector(".toggle-switch__state");
-  const sliderOnLabel = await window.t("label.toggle_on");
-  const sliderOffLabel = await window.t("label.toggle_off");
-
-  const syncSliderState = () => {
-    const isActive = Boolean(modalSliderInput.checked);
-    modalSliderToggle?.classList.toggle("toggle-switch--active", isActive);
-    if (modalSliderState) {
-      modalSliderState.textContent = isActive ? sliderOnLabel : sliderOffLabel;
-    }
-  };
-
-  modalSliderInput.addEventListener("change", syncSliderState);
-  syncSliderState();
+  modalSliderInput.checked = booleanValue(isChecked);
+  modalSliderInput.setAttribute("aria-labelledby", "modalSliderTitle");
+  const unbindSwitch = await bindSwitch(modalSliderInput);
   modalSlider.style.display = "flex";
 
   console.log(`[app.js] Ã–ffne Slider-Modal: "${titleKey}" mit Wert ${isChecked}`);
@@ -1308,7 +1290,7 @@ export async function openModalSlider(titleKey, isChecked = 0) {
     function cleanup() {
       modalSliderApply.removeEventListener("click", apply);
       modalSliderCancel.removeEventListener("click", cancel);
-      modalSliderInput.removeEventListener("change", syncSliderState);
+      unbindSwitch();
       modalSlider.style.display = "none";
     }
 
@@ -1326,8 +1308,7 @@ export async function openModalMulti(titleKey, config = []) {
 
   console.log(`[app.js] Ã–ffne Multi-Modal: "${titleKey}"`);
   const adrLevels = [1, 3, 7, 15, 31, 63];
-  const toggleOnLabel = await window.t("label.toggle_on");
-  const toggleOffLabel = await window.t("label.toggle_off");
+  const switchCleanups = [];
 
   const inputs = [];
 
@@ -1438,7 +1419,7 @@ export async function openModalMulti(titleKey, config = []) {
       const input = document.createElement("input");
       input.type = "checkbox";
       input.id = item.id;
-      input.checked = Boolean(item.value ?? 0);
+      input.checked = booleanValue(item.value);
       input.className = "toggle-switch__input";
       input.setAttribute("aria-label", await window.t(item.label));
 
@@ -1449,18 +1430,10 @@ export async function openModalMulti(titleKey, config = []) {
       const state = document.createElement("span");
       state.className = "toggle-switch__state";
 
-      const syncToggleState = () => {
-        const isActive = Boolean(input.checked);
-        toggleSwitch.classList.toggle("toggle-switch--active", isActive);
-        state.textContent = isActive ? toggleOnLabel : toggleOffLabel;
-      };
-
-      input.addEventListener("change", syncToggleState);
-      syncToggleState();
-
       toggleSwitch.appendChild(input);
       toggleSwitch.appendChild(slider);
       toggleSwitch.appendChild(state);
+      switchCleanups.push(await bindSwitch(input));
 
       switchRow.appendChild(copy);
       switchRow.appendChild(toggleSwitch);
@@ -1504,6 +1477,7 @@ export async function openModalMulti(titleKey, config = []) {
     }
 
     function cleanup() {
+      switchCleanups.forEach((cleanupSwitch) => cleanupSwitch());
       modalMultiApplyBtn.removeEventListener("click", apply);
       modalMultiCancelBtn.removeEventListener("click", cancel);
       modalMulti.style.display = "none";

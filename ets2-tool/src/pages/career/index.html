@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script src="/modules/shared/theme.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title data-translate="career_mode.title">Career Mode Dashboard</title>
     <link rel="stylesheet" href="/styles/career.css" />
@@ -10,9 +11,6 @@
   </head>
   <body class="career-page">
     <script>
-      const savedTheme = localStorage.getItem("theme") || "neon";
-      document.body.classList.remove("theme-dark", "theme-light", "theme-neon", "theme-neon-red");
-      document.body.classList.add(`theme-${savedTheme}`);
     </script>
     <input id="careerNavToggle" class="career-nav-toggle" type="checkbox" />
     <header class="career-topbar">
@@ -170,6 +168,7 @@
           <button class="career-nav-btn" data-panel="analytics" data-translate="career.nav.analytics">Analytics</button>
           <button class="career-nav-btn" data-panel="settings" data-translate="career.nav.settings">Settings</button>
         </nav>
+        <footer class="creator-credit" data-translate="ui_refinement.creator_credit">Created by xLieferant</footer>
       </aside>
 
       <main class="career-content">
@@ -1073,7 +1072,17 @@
             </label>
             <label class="career-field">
               <span data-translate="career_mode.user_theme">Theme preference</span>
-              <input id="cmUserThemeInput" type="text" />
+              <select id="cmUserThemeInput">
+                <option value="dark" data-translate="label.label_color_theme_dark"></option>
+                <option value="light" data-translate="label.label_color_theme_light"></option>
+              </select>
+            </label>
+            <label class="career-field">
+              <span data-translate="ui_refinement.accent_label"></span>
+              <select id="cmUserAccentInput">
+                <option value="default" data-translate="ui_refinement.accent_default"></option>
+                <option value="green" data-translate="ui_refinement.accent_green"></option>
+              </select>
             </label>
             <label class="career-toggle-field">
               <span data-translate="career_mode.user_notifications">Notifications enabled</span>

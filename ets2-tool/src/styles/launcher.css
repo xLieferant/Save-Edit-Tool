@@ -14,7 +14,7 @@ body {
   min-height: 100vh;
   font-family: "Bahnschrift", "Segoe UI", sans-serif;
   background: var(--bg-elevated);
-  color: #e7edf9;
+  color: var(--text-main);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -32,7 +32,7 @@ body {
 .launcher-hero {
   padding: clamp(24px, 2.4vw, 32px);
   border-radius: 10px;
-  border: 1px solid #2a3347;
+  border: 1px solid var(--panel-border);
   background: var(--bg-elevated);
   box-shadow: none;
 }
@@ -48,7 +48,7 @@ body {
   font-size: 12px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #8aa0c9;
+  color: var(--text-main);
   line-height: 1.4;
 }
 
@@ -60,7 +60,7 @@ body {
 
 .launcher-hero p {
   margin: 0;
-  color: #b3c0da;
+  color: var(--text-main);
   max-width: 760px;
   line-height: 1.65;
 }
@@ -74,7 +74,7 @@ body {
 .launcher-card {
   border-radius: 10px;
   padding: clamp(22px, 2.1vw, 28px);
-  border: 1px solid #2b3344;
+  border: 1px solid var(--panel-border);
   background: var(--bg-elevated);
   display: grid;
   gap: 14px;
@@ -84,12 +84,12 @@ body {
 
 .launcher-card:hover {
   transform: none;
-  border-color: #3a4861;
+  border-color: var(--panel-border);
   box-shadow: none;
 }
 
 .launcher-card-career {
-  border-color: #28507a;
+  border-color: var(--panel-border);
   background: var(--bg-elevated);
 }
 
@@ -99,8 +99,8 @@ body {
   min-height: 26px;
   padding: 4px 10px;
   border-radius: 999px;
-  background: rgba(92, 113, 147, 0.18);
-  color: #abc0e8;
+  background: var(--bg-elevated);
+  color: var(--text-main);
   font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -115,15 +115,15 @@ body {
 
 .launcher-card p {
   margin: 0;
-  color: #adbad6;
+  color: var(--text-main);
   line-height: 1.6;
 }
 
 .launcher-btn {
   margin-top: 8px;
-  border: 1px solid #4b6aa0;
+  border: 1px solid var(--panel-border);
   background: var(--accent);
-  color: #f0f5ff;
+  color: var(--text-main);
   border-radius: 10px;
   min-height: 46px;
   padding: 0 18px;
@@ -138,7 +138,7 @@ body {
 .launcher-btn:hover {
   filter: brightness(1.06);
   transform: none;
-  border-color: #5d83c5;
+  border-color: var(--panel-border);
   box-shadow: none;
 }
 
@@ -148,19 +148,19 @@ body {
 
 .launcher-btn:focus-visible {
   outline: none;
-  border-color: #76a0eb;
+  border-color: var(--panel-border);
   box-shadow: none;
 }
 
 .launcher-btn-career {
-  border-color: #3d7ebf;
+  border-color: var(--panel-border);
   background: var(--accent);
   box-shadow: none;
 }
 
 .launcher-btn-career:hover,
 .launcher-btn-career:focus-visible {
-  border-color: #57a0f0;
+  border-color: var(--panel-border);
   box-shadow: none;
 }
 
@@ -173,14 +173,14 @@ body {
 }
 
 .github-public-lock .launcher-card.github-lock-disabled {
-  border-color: #2b3344;
+  border-color: var(--panel-border);
   background: var(--bg-elevated);
 }
 
 .github-public-lock .launcher-card.github-lock-disabled .launcher-btn {
-  border-color: #2b3344;
+  border-color: var(--panel-border);
   background: var(--accent);
-  color: #7f8fae;
+  color: var(--text-main);
   box-shadow: none;
 }
 

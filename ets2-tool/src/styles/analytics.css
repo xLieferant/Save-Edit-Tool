@@ -17,18 +17,18 @@
 .analytics-partial-note,
 .analytics-local-hint {
   margin: 0;
-  border: 1px solid rgba(200, 80, 102, 0.26);
+  border: 1px solid var(--panel-border);
   border-radius: 10px;
-  background: rgba(88, 20, 33, 0.2);
-  color: #f2d4da;
+  background: var(--bg-elevated);
+  color: var(--text-main);
   padding: 12px 14px;
   line-height: 1.6;
 }
 
 .analytics-local-hint {
   border-style: dashed;
-  background: rgba(255, 255, 255, 0.025);
-  color: #d7c2c8;
+  background: var(--bg-elevated);
+  color: var(--text-main);
 }
 
 .analytics-summary-grid {
@@ -39,7 +39,7 @@
 }
 
 .analytics-summary-card {
-  border: 1px solid rgba(190, 70, 90, 0.26);
+  border: 1px solid var(--panel-border);
   border-radius: 10px;
   background: var(--bg-elevated);
   padding: 16px;
@@ -49,13 +49,13 @@
 }
 
 .analytics-summary-card span {
-  color: #c89ba5;
+  color: var(--text-main);
   font-size: 12px;
   line-height: 1.45;
 }
 
 .analytics-summary-card strong {
-  color: #fff4f6;
+  color: var(--text-main);
   font-size: 20px;
 }
 
@@ -73,14 +73,14 @@
   min-height: 32px;
   padding: 0 12px;
   border-radius: 999px;
-  border: 1px solid rgba(200, 80, 102, 0.22);
-  background: rgba(255, 255, 255, 0.03);
-  color: #efccd4;
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
+  color: var(--text-main);
   font-size: 12px;
 }
 
 .analytics-source-pill strong {
-  color: #fff5f7;
+  color: var(--text-main);
 }
 
 .analytics-filter-grid {
@@ -105,7 +105,7 @@
 }
 
 .analytics-card {
-  border: 1px solid rgba(190, 70, 90, 0.22);
+  border: 1px solid var(--panel-border);
   border-radius: 10px;
   background: var(--bg-elevated);
   padding: 16px;
@@ -127,7 +127,7 @@
   min-height: 120px;
   display: grid;
   place-items: center;
-  border: 1px dashed rgba(190, 70, 90, 0.2);
+  border: 1px dashed var(--panel-border);
   border-radius: 10px;
   color: #c5a5ad;
   background: rgba(255, 255, 255, 0.02);
@@ -144,21 +144,21 @@
 }
 
 .analytics-bar-copy strong {
-  color: #fff5f7;
+  color: var(--text-main);
   font-size: 13px;
 }
 
 .analytics-bar-copy span,
 .analytics-bar-copy small {
-  color: #c7a1aa;
+  color: var(--text-main);
   font-size: 12px;
 }
 
 .analytics-bar-track {
   height: 10px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(200, 80, 102, 0.18);
+  background: var(--bg-elevated);
+  border: 1px solid var(--panel-border);
   overflow: hidden;
 }
 
@@ -173,8 +173,8 @@
   margin-top: 16px;
   overflow-x: auto;
   border-radius: 10px;
-  border: 1px solid rgba(190, 70, 90, 0.18);
-  background: rgba(10, 6, 8, 0.72);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
 }
 
 .analytics-table {
@@ -186,26 +186,26 @@
 .analytics-table th,
 .analytics-table td {
   padding: 11px 12px;
-  border-bottom: 1px solid rgba(190, 70, 90, 0.12);
+  border-bottom: 1px solid var(--panel-border);
   text-align: left;
   font-size: 13px;
   line-height: 1.45;
 }
 
 .analytics-table th {
-  color: #cdabb4;
+  color: var(--text-main);
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
 .analytics-table td {
-  color: #f6e8eb;
+  color: var(--text-main);
 }
 
 .analytics-table-empty {
   text-align: center;
-  color: #c3a4ac;
+  color: var(--text-main);
   padding: 18px 12px;
 }
 
@@ -215,31 +215,31 @@
   min-height: 24px;
   padding: 0 9px;
   border-radius: 999px;
-  border: 1px solid rgba(201, 77, 102, 0.34);
-  background: rgba(88, 20, 33, 0.26);
-  color: #ffd8e0;
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
+  color: var(--text-main);
   font-size: 11px;
   font-weight: 600;
 }
 
 .analytics-empty-state {
   margin-top: 16px;
-  border: 1px dashed rgba(190, 70, 90, 0.24);
+  border: 1px dashed var(--panel-border);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-elevated);
   padding: 18px;
   display: grid;
   gap: 10px;
 }
 
 .analytics-empty-state strong {
-  color: #fff5f7;
+  color: var(--text-main);
   font-size: 18px;
 }
 
 .analytics-empty-state p {
   margin: 0;
-  color: #c9adb4;
+  color: var(--text-main);
   line-height: 1.6;
 }
 
@@ -266,7 +266,7 @@
 
 .analytics-standalone-header p {
   margin: 0;
-  color: #c7a6af;
+  color: var(--text-main);
 }
 
 @media (max-width: 1080px) {

@@ -3160,5 +3160,14 @@
                   "CrashContext": "Crash context",
                   "UnknownReference": "Unclassified reference"
             }
+      },
+      "ui_refinement": {
+            "accent_label": "Accent color",
+            "accent_default": "Default",
+            "accent_green": "Green",
+            "appearance_saved": "Appearance saved.",
+            "workspace_failed": "The workspace could not be opened. Please try again.",
+            "creator_credit": "Created by xLieferant",
+            "unsaved_changes": "Changes have not been saved yet."
       }
 }

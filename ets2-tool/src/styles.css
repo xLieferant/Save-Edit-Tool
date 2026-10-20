@@ -30,28 +30,6 @@
   --interactive-base: 190ms;
   --scroll-mask-size: 18px;
   --scrollbar-size: 10px;
-  --scrollbar-track: rgba(255, 255, 255, 0.03);
-  --scrollbar-thumb: rgba(255, 255, 255, 0.18);
-  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.3);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -99,26 +77,6 @@ body.theme-light {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  --scrollbar-track: rgba(15, 23, 42, 0.05);
-  --scrollbar-thumb: rgba(15, 23, 42, 0.18);
-  --scrollbar-thumb-hover: rgba(15, 23, 42, 0.28);
 }
 
 body.theme-neon {
@@ -177,9 +135,8 @@ body.theme-neon-red {
 
 
 
-  --scrollbar-track: rgba(255, 54, 90, 0.055);
-  --scrollbar-thumb: rgba(255, 88, 118, 0.34);
-  --scrollbar-thumb-hover: rgba(255, 112, 140, 0.56);
+
+
 }
 
 * {
@@ -422,7 +379,7 @@ select option[selected] {
 }
 
 select option:disabled {
-  color: rgba(248, 250, 252, 0.52);
+  color: var(--text-main);
 }
 
 .command-header {
@@ -470,7 +427,7 @@ select option:disabled {
   gap: var(--space-xs);
   padding: 10px var(--space-md);
   border-radius: var(--radius-lg);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--panel-border);
   background: var(--bg-elevated);
   box-shadow: none;
 }
@@ -504,7 +461,7 @@ select option:disabled {
   height: 42px;
   border-radius: 10px;
   border: 1px solid var(--card-border);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-elevated);
   color: var(--text-main);
   align-items: center;
   justify-content: center;
@@ -566,7 +523,7 @@ select option:disabled {
   align-items: center;
   padding: 6px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-elevated);
   border: 1px solid var(--card-border);
   box-shadow: none;
 }
@@ -636,7 +593,7 @@ select option:disabled {
   padding: 8px 10px;
   border-radius: 999px;
   border: 1px solid var(--card-border);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-elevated);
   color: var(--text-soft);
   font: inherit;
   cursor: pointer;
@@ -660,8 +617,8 @@ select option:disabled {
   width: 34px;
   height: 34px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--bg-elevated);
+  border: 1px solid var(--panel-border);
   color: var(--accent);
 }
 
@@ -694,8 +651,8 @@ select option:disabled {
   justify-content: flex-start;
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
   color: var(--text-soft);
   font: inherit;
   cursor: pointer;
@@ -720,8 +677,8 @@ select option:disabled {
   padding: 8px 12px;
   min-width: clamp(140px, 18vw, 180px);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--bg-elevated);
+  border: 1px solid var(--panel-border);
   transition: none;
   font-size: 12px;
   line-height: 1.2;
@@ -738,7 +695,7 @@ select option:disabled {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.22);
+  background: var(--bg-elevated);
   box-shadow: none;
   transition: none;
 }
@@ -769,47 +726,47 @@ select option:disabled {
 
 #statusGameRunning.is-active {
   background: var(--accent);
-  border-color: rgba(34, 197, 94, 0.55);
-  color: #d7fbe6;
+  border-color: var(--panel-border);
+  color: var(--text-main);
 }
 
 #statusGameRunning.is-active .status-lamp {
-  background: #22c55e;
+  background: var(--bg-elevated);
   box-shadow: none;
 }
 
 #statusPluginInstalled.is-active {
   background: var(--accent);
-  border-color: rgba(56, 189, 248, 0.55);
-  color: #e0f5ff;
+  border-color: var(--panel-border);
+  color: var(--text-main);
 }
 
 #statusPluginInstalled.is-active .status-lamp {
-  background: #38bdf8;
+  background: var(--bg-elevated);
   box-shadow: none;
 }
 
 body.theme-neon-red #statusPluginInstalled.is-active,
 body.theme-neon-red #statusSdkConnected.is-active {
   background: var(--accent);
-  border-color: rgba(255, 104, 132, 0.5);
-  color: #ffe5ea;
+  border-color: var(--panel-border);
+  color: var(--text-main);
 }
 
 body.theme-neon-red #statusPluginInstalled.is-active .status-lamp,
 body.theme-neon-red #statusSdkConnected.is-active .status-lamp {
-  background: #ff355f;
+  background: var(--bg-elevated);
   box-shadow: none;
 }
 
 #statusSdkConnected.is-active {
   background: var(--accent);
-  border-color: rgba(168, 85, 247, 0.6);
-  color: #f2e7ff;
+  border-color: var(--panel-border);
+  color: var(--text-main);
 }
 
 #statusSdkConnected.is-active .status-lamp {
-  background: #a855f7;
+  background: var(--bg-elevated);
   box-shadow: none;
 }
 
@@ -949,7 +906,7 @@ body.mode-career .nav-wrapper {
   min-height: 42px;
   border-radius: 10px;
   border: 1px solid var(--card-border);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-elevated);
   color: var(--text-main);
   padding: 11px 14px;
   line-height: 1.4;
@@ -964,19 +921,19 @@ body.mode-career .nav-wrapper {
 }
 
 .nav-action.website {
-  color: #4fc3ff;
+  color: var(--text-main);
 }
 
 .nav-action.youtube {
-  color: #ff4d4f;
+  color: var(--text-main);
 }
 
 .nav-action.patreon {
-  color: #ffa500;
+  color: var(--text-main);
 }
 
 .nav-action.github {
-  color: #66bb6a;
+  color: var(--text-main);
 }
 
 .workspace-main {
@@ -1040,7 +997,7 @@ body.mode-career .nav-wrapper {
 .hero-stat {
   border-radius: 10px;
   padding: 16px 18px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-elevated);
   border: 1px solid var(--card-border);
 }
 
@@ -1105,8 +1062,8 @@ body.mode-career .telemetry-grid {
 
 .job-metric {
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
   padding: 14px 16px;
   display: grid;
   gap: 6px;
@@ -1127,7 +1084,7 @@ body.mode-career .telemetry-grid {
   justify-content: space-between;
   gap: 12px;
   padding-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--panel-border);
 }
 
 .job-id {
@@ -1145,8 +1102,8 @@ body.mode-career .telemetry-grid {
 
 .job-history-item {
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
   padding: 14px 16px;
   display: grid;
   gap: 6px;
@@ -1270,8 +1227,8 @@ body.mode-career .telemetry-grid {
   height: 18px;
   border-radius: 999px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--bg-elevated);
+  border: 1px solid var(--panel-border);
 }
 
 .fuel-bar-fill {
@@ -1369,8 +1326,8 @@ body.mode-editor #careerView {
 }
 
 .tool-card button.modal-disabled {
-  background: rgba(255, 77, 79, 0.18);
-  color: #ffffff;
+  background: var(--bg-elevated);
+  color: var(--text-main);
   cursor: not-allowed;
 }
 
@@ -1391,7 +1348,7 @@ body.mode-editor #careerView {
   gap: var(--space-sm);
   padding: 8px var(--space-md);
   border-radius: var(--radius-xl);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--panel-border);
   background: var(--bg-elevated);
   box-shadow: none;
 }
@@ -1411,7 +1368,7 @@ body.mode-editor #careerView {
   padding: 0 12px;
   border-radius: 10px;
   border: 1px solid var(--card-border);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-elevated);
   color: var(--text-main);
   cursor: pointer;
   font-size: 12px;
@@ -1447,7 +1404,7 @@ body.mode-editor #careerView {
   border-radius: 8px;
   display: inline-grid;
   place-items: center;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--bg-elevated);
   color: var(--accent);
   cursor: pointer;
 }
@@ -1459,7 +1416,7 @@ body.mode-editor #careerView {
   place-items: center;
   border-radius: 50%;
   border: 1px solid rgba(var(--accent-rgb), 0.28);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-elevated);
   color: var(--accent);
   cursor: pointer;
   transition: none;
@@ -1594,7 +1551,7 @@ body.mode-editor #careerView {
 
 .modal-box input {
   border: 1px solid var(--card-border);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-elevated);
   color: var(--text-main);
 }
 
@@ -1634,7 +1591,7 @@ body.mode-editor #careerView {
   flex-wrap: wrap;
   margin-top: 8px;
   padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--panel-border);
 }
 
 .modal-actions button {
@@ -1806,7 +1763,7 @@ body.mode-editor #careerView {
   padding: 12px 14px;
   border-radius: 10px;
   border: 1px solid rgba(var(--accent-rgb), 0.14);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-elevated);
 }
 
 .wiki-shortcut-item kbd {
@@ -1878,8 +1835,8 @@ body.mode-editor #careerView {
 #modalCloneCancel,
 #modalTruckInfoClose,
 #modalProfileShareClose {
-  background: rgba(255, 77, 79, 0.18);
-  color: #ffffff;
+  background: var(--bg-elevated);
+  color: var(--text-main);
 }
 
 #modalTextApply,
@@ -1888,8 +1845,8 @@ body.mode-editor #careerView {
 #modalMultiApply,
 #modalCloneApply,
 #modalProfileSharePrimary {
-  background: rgba(99, 199, 104, 0.9);
-  color: #041014;
+  background: var(--bg-elevated);
+  color: var(--text-main);
 }
 
 #modalProfileSharePrimary:disabled,
@@ -1909,7 +1866,7 @@ input[type="checkbox"].toggle-checkbox {
   height: 34px;
   margin: 6px 0 16px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--bg-elevated);
   cursor: pointer;
   transition: none;
 }
@@ -1941,7 +1898,7 @@ input[type="checkbox"]:checked + .checkboxSlider::before {
   align-items: center;
   padding: 16px 18px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--panel-border);
   background: var(--bg-elevated);
 }
 
@@ -1999,8 +1956,8 @@ input[type="checkbox"]:checked + .checkboxSlider::before {
   width: 64px;
   height: 36px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
   box-shadow: none;
   transition: none;
 }
@@ -2078,7 +2035,7 @@ input[type="checkbox"]:checked + .checkboxSlider::before {
   padding: 10px 14px;
   border-radius: 999px;
   border: 1px solid var(--card-border);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-elevated);
   color: var(--text-main);
   font-size: 12px;
   font-weight: 600;
@@ -2093,21 +2050,21 @@ input[type="checkbox"]:checked + .checkboxSlider::before {
 }
 
 .modal-status-pill[data-state="success"] {
-  border-color: rgba(99, 199, 104, 0.4);
+  border-color: var(--success);
   color: var(--success);
-  background: rgba(99, 199, 104, 0.12);
+  background: var(--success-surface);
 }
 
 .modal-status-pill[data-state="warning"] {
-  border-color: rgba(255, 165, 0, 0.42);
+  border-color: var(--warning);
   color: var(--warning);
-  background: rgba(255, 165, 0, 0.12);
+  background: var(--warning-surface);
 }
 
 .modal-status-pill[data-state="error"] {
-  border-color: rgba(255, 77, 79, 0.4);
+  border-color: var(--danger);
   color: var(--danger);
-  background: rgba(255, 77, 79, 0.12);
+  background: var(--danger-surface);
 }
 
 .modal-box--update {
@@ -2181,14 +2138,14 @@ input[type="checkbox"]:checked + .checkboxSlider::before {
 }
 
 .update-modal-note[data-tone="warning"] {
-  border-color: rgba(255, 165, 0, 0.26);
-  background: rgba(255, 165, 0, 0.1);
+  border-color: var(--warning);
+  background: var(--warning-surface);
   color: var(--warning);
 }
 
 .update-modal-note[data-tone="error"] {
-  border-color: rgba(255, 77, 79, 0.28);
-  background: rgba(255, 77, 79, 0.1);
+  border-color: var(--danger);
+  background: var(--danger-surface);
   color: var(--danger);
 }
 
@@ -2198,8 +2155,8 @@ input[type="checkbox"]:checked + .checkboxSlider::before {
   overflow: auto;
   padding: 14px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
   color: var(--text-soft);
   white-space: pre-wrap;
   word-break: break-word;
@@ -2223,7 +2180,7 @@ input[type="checkbox"]:checked + .checkboxSlider::before {
 .share-preview {
   border-radius: 10px;
   border: 1px solid var(--card-border);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-elevated);
   box-shadow: var(--surface-shadow-soft);
 }
 
@@ -2243,8 +2200,8 @@ input[type="checkbox"]:checked + .checkboxSlider::before {
 }
 
 .modal-empty-state--error {
-  border-color: rgba(255, 77, 79, 0.22);
-  background: rgba(255, 77, 79, 0.08);
+  border-color: var(--danger);
+  background: var(--danger-surface);
 }
 
 .detail-hero-card {
@@ -2413,8 +2370,8 @@ input[type="checkbox"]:checked + .checkboxSlider::before {
   gap: 10px;
   padding: 14px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
 }
 
 .diagnostics-item-head {
@@ -2442,8 +2399,8 @@ input[type="checkbox"]:checked + .checkboxSlider::before {
   min-height: 28px;
   padding: 6px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
   color: var(--text-main);
   font-size: 11px;
   font-weight: 600;
@@ -2452,20 +2409,20 @@ input[type="checkbox"]:checked + .checkboxSlider::before {
 }
 
 .diagnostics-badge[data-tone="success"] {
-  border-color: rgba(99, 199, 104, 0.34);
-  background: rgba(99, 199, 104, 0.12);
+  border-color: var(--success);
+  background: var(--success-surface);
   color: var(--success);
 }
 
 .diagnostics-badge[data-tone="warning"] {
-  border-color: rgba(255, 165, 0, 0.34);
-  background: rgba(255, 165, 0, 0.12);
+  border-color: var(--warning);
+  background: var(--warning-surface);
   color: var(--warning);
 }
 
 .diagnostics-badge[data-tone="danger"] {
-  border-color: rgba(255, 77, 79, 0.34);
-  background: rgba(255, 77, 79, 0.12);
+  border-color: var(--danger);
+  background: var(--danger-surface);
   color: var(--danger);
 }
 
@@ -2508,8 +2465,8 @@ input[type="checkbox"]:checked + .checkboxSlider::before {
 
 .diagnostics-raw-details {
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
   padding: 10px 12px;
 }
 
@@ -2590,8 +2547,8 @@ input[type="checkbox"]:checked + .checkboxSlider::before {
   min-height: 88px;
   padding: 16px 22px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
   color: var(--text-main);
   font-size: clamp(32px, 4vw, 48px);
   font-weight: 600;
@@ -2647,14 +2604,14 @@ input[type="checkbox"]:checked + .checkboxSlider::before {
   padding: 6px;
   border-radius: 999px;
   border: 1px solid var(--card-border);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-elevated);
 }
 
 .level-system-mode-btn,
 .level-system-step-btn,
 .level-system-quick-actions button {
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
   color: var(--text-main);
   font: inherit;
   cursor: pointer;
@@ -2697,7 +2654,7 @@ input[type="checkbox"]:checked + .checkboxSlider::before {
   width: 100%;
   height: 10px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--bg-elevated);
   outline: none;
   appearance: none;
   -webkit-appearance: none;
@@ -2822,9 +2779,9 @@ input[type="checkbox"]:checked + .checkboxSlider::before {
   justify-content: center;
   padding: 8px 12px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 165, 0, 0.32);
-  background: rgba(255, 165, 0, 0.12);
-  color: #ffd48f;
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
+  color: var(--text-main);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -2876,7 +2833,7 @@ input[type="checkbox"]:checked + .checkboxSlider::before {
   padding: 24px;
   border-radius: 10px;
   border: 1px solid var(--card-border);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-elevated);
 }
 
 .share-picker-row {
@@ -2893,8 +2850,8 @@ input[type="checkbox"]:checked + .checkboxSlider::before {
   min-height: 124px;
   padding: 18px 20px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
   box-shadow: none;
 }
 
@@ -2938,7 +2895,7 @@ input[type="checkbox"]:checked + .checkboxSlider::before {
 }
 
 .share-preview-copy--error {
-  color: #ffb3b4;
+  color: var(--danger);
 }
 
 .share-preview-grid {
@@ -3087,8 +3044,8 @@ body.mode-editor.profile-share-page-body .app-shell {
   gap: 8px;
   padding: 14px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
 }
 
 .mod-profile-meta-card span {
@@ -3146,8 +3103,8 @@ body.mode-editor.profile-share-page-body .app-shell {
   gap: 12px;
   padding: 16px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
 }
 
 .mod-profile-item.is-active,
@@ -3209,8 +3166,8 @@ body.mode-editor.profile-share-page-body .app-shell {
   gap: 8px;
   padding: 14px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
 }
 
 .mod-profile-link {
@@ -3399,7 +3356,7 @@ body.mode-editor.profile-share-page-body .app-shell {
   padding: 12px;
   border: 1px solid var(--card-border);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.035);
+  background: var(--bg-elevated);
   cursor: pointer;
   transition: none;
 }
@@ -3521,7 +3478,7 @@ body.mode-editor.profile-share-page-body .app-shell {
 .sandbox-status-active,
 .sandbox-preset-icon[data-state="ready"],
 .sandbox-preset-icon[data-state="active"] {
-  border-color: rgba(99, 199, 104, 0.36);
+  border-color: var(--success);
   color: var(--success);
 }
 
@@ -3532,7 +3489,7 @@ body.mode-editor.profile-share-page-body .app-shell {
 
 .sandbox-status-needs-check,
 .sandbox-preset-icon[data-state="needs-check"] {
-  border-color: rgba(255, 165, 0, 0.36);
+  border-color: var(--panel-border);
   color: var(--warning);
 }
 
@@ -3544,7 +3501,7 @@ body.mode-editor.profile-share-page-body .app-shell {
 .sandbox-status-error,
 .sandbox-preset-icon[data-state="missing"],
 .sandbox-preset-icon[data-state="error"] {
-  border-color: rgba(255, 77, 79, 0.4);
+  border-color: var(--danger);
   color: var(--danger);
 }
 
@@ -3712,32 +3669,32 @@ body.mode-editor.profile-share-page-body .app-shell {
 }
 
 .mod-status-badge[data-state="found"] {
-  border-color: rgba(99, 199, 104, 0.36);
+  border-color: var(--panel-border);
   color: var(--success);
 }
 
 .mod-status-badge[data-state="missing"] {
-  border-color: rgba(255, 165, 0, 0.36);
+  border-color: var(--panel-border);
   color: var(--warning);
 }
 
 .mod-status-badge[data-state="path-missing"] {
-  border-color: rgba(255, 165, 0, 0.36);
+  border-color: var(--panel-border);
   color: var(--warning);
 }
 
 .mod-status-badge[data-state="success"] {
-  border-color: rgba(99, 199, 104, 0.36);
+  border-color: var(--success);
   color: var(--success);
 }
 
 .mod-status-badge[data-state="warning"] {
-  border-color: rgba(255, 165, 0, 0.36);
+  border-color: var(--warning);
   color: var(--warning);
 }
 
 .mod-status-badge[data-state="error"] {
-  border-color: rgba(255, 107, 107, 0.36);
+  border-color: var(--danger);
   color: var(--danger, #ff6b6b);
 }
 
@@ -4125,7 +4082,7 @@ body.mode-editor.profile-share-page-body .app-shell {
 
 .toast-success .toast-icon {
   color: var(--success);
-  background: rgba(99, 199, 104, 0.14);
+  background: var(--success-surface);
 }
 
 .toast-error {
@@ -4134,7 +4091,7 @@ body.mode-editor.profile-share-page-body .app-shell {
 
 .toast-error .toast-icon {
   color: var(--danger);
-  background: rgba(255, 77, 79, 0.14);
+  background: var(--danger-surface);
 }
 
 .toast-warning {
@@ -4143,7 +4100,7 @@ body.mode-editor.profile-share-page-body .app-shell {
 
 .toast-warning .toast-icon {
   color: var(--warning);
-  background: rgba(255, 165, 0, 0.14);
+  background: var(--warning-surface);
 }
 
 .toast-info {
@@ -4509,7 +4466,7 @@ body {
 .save-warning-card {
   border-radius: var(--radius-lg);
   border: 1px solid var(--panel-border);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--warning-surface);
   box-shadow: none;
 }
 
@@ -4610,7 +4567,7 @@ body.theme-neon-red .plan-card.featured {
 }
 
 .hub-mode-tag {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--bg-elevated);
   color: var(--text-muted);
 }
 
@@ -4647,7 +4604,7 @@ body.theme-neon-red .plan-card.featured {
   padding: 10px 14px;
   border: 1px solid var(--panel-border);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-elevated);
   color: var(--text-main);
   text-align: left;
   cursor: pointer;
@@ -4687,7 +4644,7 @@ body.theme-neon-red .plan-card.featured {
   display: grid;
   gap: 6px;
   padding-bottom: var(--space-xs);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--panel-border);
 }
 
 .career-sidebar-head h2 {
@@ -4738,7 +4695,7 @@ body.theme-neon-red .plan-card.featured {
   padding: var(--space-sm);
   display: grid;
   gap: 4px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--panel-border);
 }
 
 .career-sidebar-footer strong {
@@ -4805,7 +4762,7 @@ body.theme-neon-red .plan-card.featured {
   border: 1px solid var(--panel-border);
   border-radius: 10px;
   padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-elevated);
   color: var(--text-main);
   font: inherit;
   font-size: var(--body-md);
@@ -4814,7 +4771,7 @@ body.theme-neon-red .plan-card.featured {
 
 .preset-btn.active {
   background: var(--accent);
-  color: #041014;
+  color: var(--text-main);
   box-shadow: none;
 }
 
@@ -4833,7 +4790,7 @@ body.theme-neon-red .plan-card.featured {
 }
 
 .warning-label {
-  color: #f59e0b;
+  color: var(--warning);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.14em;
@@ -4878,7 +4835,7 @@ body.theme-neon-red .plan-card.featured {
 
 .editor-sidebar-block:not(:last-child) {
   padding-bottom: var(--space-sm);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--panel-border);
 }
 
 .editor-quick-actions {
@@ -4996,8 +4953,8 @@ body.theme-neon-red .plan-card.featured {
 
 /* TEMP_GITHUB_BUILD: fleet assets locked visuals */
 .github-public-lock #editorFleetCard {
-  border-color: rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--panel-border);
+  background: var(--bg-elevated);
 }
 
 .github-public-lock #editorFleetCard strong {
@@ -5112,18 +5069,18 @@ body.theme-neon-red .plan-card.featured {
 }
 
 .priority.high {
-  background: rgba(56, 189, 248, 0.14);
-  color: #67e8f9;
+  background: var(--bg-elevated);
+  color: var(--text-main);
 }
 
 body.theme-neon-red .priority.high {
-  background: rgba(255, 53, 95, 0.14);
-  color: #ffc8d3;
+  background: var(--bg-elevated);
+  color: var(--text-main);
 }
 
 .priority.medium {
-  background: rgba(245, 158, 11, 0.16);
-  color: #fbbf24;
+  background: var(--bg-elevated);
+  color: var(--text-main);
 }
 
 .table-shell {
@@ -5138,8 +5095,8 @@ body.theme-neon-red .priority.high {
   align-items: center;
   padding: 14px 16px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
 }
 
 .career-orders-table .table-row {
@@ -5199,9 +5156,9 @@ body.theme-neon-red .priority.high {
   align-items: center;
   border-radius: 999px;
   padding: 9px 14px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-elevated);
   color: var(--text-muted);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--panel-border);
 }
 
 .stack-list,
@@ -5216,7 +5173,7 @@ body.theme-neon-red .priority.high {
   gap: 12px;
   padding: 14px 16px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--warning-surface);
 }
 
 .warning-item p,
@@ -5238,12 +5195,12 @@ body.theme-neon-red .priority.high {
 }
 
 .warning-dot.warning {
-  background: #f59e0b;
+  background: var(--warning-surface);
   box-shadow: none;
 }
 
 .warning-dot.danger {
-  background: #fb7185;
+  background: var(--danger-surface);
   box-shadow: none;
 }
 
@@ -5273,7 +5230,7 @@ body.theme-neon-red .priority.high {
 
 .map-preview {
   min-height: 280px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--panel-border);
   background: var(--bg-elevated);
   overflow: hidden;
 }
@@ -5530,7 +5487,7 @@ body.mode-career .career-view {
   padding: 12px 14px;
   border-radius: 10px;
   border: 1px solid var(--card-border);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-elevated);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -5568,8 +5525,8 @@ body.mode-career .career-view {
 
 .career-activity-item {
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
   padding: 14px 16px;
   display: grid;
   gap: 6px;
@@ -5632,7 +5589,7 @@ body.mode-career .career-view {
   padding: 6px 10px;
   border-radius: 999px;
   border: 1px solid var(--card-border);
-  background: rgba(0, 0, 0, 0.14);
+  background: var(--bg-elevated);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.12em;
@@ -5662,7 +5619,7 @@ body.mode-career .career-view {
   padding: 12px 14px;
   border-radius: 10px;
   border: 1px solid var(--card-border);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-elevated);
   display: grid;
   gap: 6px;
 }
@@ -5804,7 +5761,7 @@ body.mode-career .career-view {
   border: 1px solid var(--card-border);
   border-radius: 10px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-elevated);
 }
 
 .career-logbook-table {
@@ -5812,7 +5769,7 @@ body.mode-career .career-view {
   border: 1px solid var(--card-border);
   border-radius: 10px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-elevated);
 }
 
 .career-tripbook-head,
@@ -5826,7 +5783,7 @@ body.mode-career .career-view {
 
 .career-logbook-head {
   padding: 10px 14px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-elevated);
   border-bottom: 1px solid rgba(var(--accent-rgb), 0.12);
   color: var(--text-soft);
   font-size: 12px;
@@ -5873,7 +5830,7 @@ body.mode-career .career-view {
   text-transform: uppercase;
   border: 1px solid rgba(var(--accent-rgb), 0.18);
   color: var(--text-soft);
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-elevated);
 }
 
 .status-badge.status-active {
@@ -5882,18 +5839,18 @@ body.mode-career .career-view {
 }
 
 .status-badge.status-completed {
-  border-color: rgba(34, 197, 94, 0.35);
-  color: rgba(34, 197, 94, 0.9);
+  border-color: var(--panel-border);
+  color: var(--text-main);
 }
 
 .status-badge.status-cancelled {
-  border-color: rgba(239, 68, 68, 0.35);
-  color: rgba(239, 68, 68, 0.9);
+  border-color: var(--panel-border);
+  color: var(--text-main);
 }
 
 .status-badge.status-unknown {
-  border-color: rgba(148, 163, 184, 0.3);
-  color: rgba(148, 163, 184, 0.95);
+  border-color: var(--panel-border);
+  color: var(--text-main);
 }
 
 @media (max-width: 1100px) {
@@ -5938,7 +5895,7 @@ body.mode-career .career-view {
   align-items: center;
   justify-content: center;
   padding: 22px;
-  background: rgba(0, 0, 0, 0.62);
+  background: var(--bg-elevated);
   backdrop-filter: blur(10px);
   overflow-x: hidden;
   overflow-y: auto;
@@ -5987,8 +5944,8 @@ body.mode-career {
   width: 100%;
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
   color: var(--text);
   font: inherit;
 }
@@ -6015,8 +5972,8 @@ body.mode-career {
   gap: 10px;
   padding: 8px 10px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
 }
 
 .career-consent input {
@@ -6031,7 +5988,7 @@ body.mode-career {
 
 .career-auth-error {
   margin: 0;
-  color: rgba(239, 68, 68, 0.92);
+  color: var(--danger);
   font-size: 13px;
 }
 
@@ -6101,7 +6058,7 @@ body.mode-career {
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid var(--card-border);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-elevated);
   color: var(--text-soft);
   font: inherit;
   cursor: pointer;
@@ -6122,8 +6079,8 @@ body.mode-career {
 .career-company-item {
   padding: 12px 14px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
   display: grid;
   gap: 6px;
 }
@@ -6181,7 +6138,7 @@ body.mode-career {
   height: 66px;
   border-radius: 10px;
   border: 1px solid rgba(var(--accent-rgb), 0.22);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-elevated);
   box-shadow: none;
   overflow: hidden;
   flex: 0 0 auto;
@@ -6225,7 +6182,7 @@ body.mode-career {
   width: 4px;
   height: 4px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.22);
+  background: var(--bg-elevated);
 }
 
 .role-badge,
@@ -6241,7 +6198,7 @@ body.mode-career {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   border: 1px solid rgba(var(--accent-rgb), 0.18);
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-elevated);
   color: var(--text-soft);
 }
 
@@ -6267,8 +6224,8 @@ body.mode-career {
   align-items: center;
   padding: 4px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
   color: var(--text-soft);
   font-size: 12px;
   letter-spacing: 0.06em;
@@ -6285,7 +6242,7 @@ body.mode-career {
   padding: 12px 14px;
   border-radius: 10px;
   border: 1px solid var(--card-border);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-elevated);
   display: grid;
   gap: 6px;
 }
@@ -6371,8 +6328,8 @@ body.mode-career {
   justify-content: center;
   padding: 6px 10px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
   color: var(--text-soft);
   font-size: 12px;
   letter-spacing: 0.06em;
@@ -6420,12 +6377,6 @@ body.mode-editor {
   --font-md: clamp(14px, 1vw, 16px);
   --font-lg: clamp(18px, 1.5vw, 24px);
   --glass-bg: rgba(255, 255, 255, 0.05);
-
-
-  --scrollbar-track: rgba(255, 255, 255, 0.04);
-  --scrollbar-thumb: rgba(255, 255, 255, 0.18);
-  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.3);
-
 
 
 
@@ -6568,7 +6519,7 @@ body.mode-editor .hub-home-btn {
   padding: 10px 14px;
   border-radius: 999px;
   border: 1px solid var(--border-subtle);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-elevated);
   color: var(--text-main);
 }
 
@@ -6580,7 +6531,7 @@ body.mode-editor .mode-switch {
   padding: 5px;
   border-radius: 999px;
   border: 1px solid var(--border-subtle);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-elevated);
 }
 
 body.mode-editor .mode-btn {
@@ -6605,7 +6556,7 @@ body.mode-editor .status-pill {
   padding: 10px 14px;
   border-radius: 999px;
   border: 1px solid var(--border-subtle);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-elevated);
 }
 
 body.mode-editor .status-pill.is-active {
@@ -6624,7 +6575,7 @@ body.mode-editor .nav-burger {
   height: clamp(42px, 4vw, 48px);
   border-radius: 10px;
   border: 1px solid var(--border-subtle);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-elevated);
 }
 
 body.mode-editor .nav-drawer-scrim {
@@ -6670,12 +6621,12 @@ body.mode-editor .editor-sidebar-block {
   gap: var(--space-sm);
   padding: var(--space-md);
   border-radius: var(--radius-lg);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
 }
 
 body.mode-editor .editor-sidebar-block:not(:last-child) {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--panel-border);
 }
 
 body.mode-editor .editor-sidebar-block-head {
@@ -6705,7 +6656,7 @@ body.mode-editor .editor-session-panel {
   --picker-control-padding: 17px 18px;
   --picker-control-radius: 20px;
   --picker-control-gap: 14px;
-  --picker-control-border: 1px solid rgba(255, 255, 255, 0.08);
+  --picker-control-border: 1px solid var(--panel-border);
   --picker-control-background: var(--bg-elevated);
   --picker-menu-width: min(720px, calc(100vw - 40px));
   --picker-menu-width-narrow: min(640px, calc(100vw - 40px));
@@ -6750,7 +6701,7 @@ body.mode-editor .modal-actions button {
   width: 100%;
   border-radius: 10px;
   border: 1px solid var(--border-subtle);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-elevated);
   color: var(--text-main);
   font: inherit;
   line-height: 1.35;
@@ -6827,8 +6778,8 @@ body.mode-editor .picker-leading {
   width: 50px;
   height: 50px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
   box-shadow: none;
   overflow: hidden;
 }
@@ -6866,8 +6817,8 @@ body.mode-editor .picker-toggle {
   height: 40px;
   padding: 0;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
   color: var(--accent);
   display: inline-grid;
   place-items: center;
@@ -6940,7 +6891,7 @@ body.mode-editor .picker-menu {
   list-style: none;
   border-radius: 10px;
   background: var(--bg-elevated);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--panel-border);
   box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -6973,12 +6924,12 @@ body.mode-editor .dropdown-section {
 body.mode-editor .dropdown-section + .dropdown-section {
   margin-top: 8px;
   padding-top: 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--panel-border);
 }
 
 body.mode-editor .dropdown-section-label {
   padding: 0 4px;
-  color: rgba(255, 255, 255, 0.46);
+  color: var(--text-main);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.16em;
@@ -6999,9 +6950,9 @@ body.mode-editor .dropdown-item {
   min-height: var(--picker-item-min-height);
   padding: var(--picker-item-padding);
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.02);
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--panel-border);
+  color: var(--text-main);
+  background: var(--bg-elevated);
   cursor: pointer;
   outline: none;
   transition: none;
@@ -7009,8 +6960,8 @@ body.mode-editor .dropdown-item {
 
 body.mode-editor .dropdown-item:hover,
 body.mode-editor .dropdown-item:focus-visible {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: var(--bg-elevated);
+  border-color: var(--panel-border);
   box-shadow: var(--surface-shadow-soft);
 }
 
@@ -7032,8 +6983,8 @@ body.mode-editor .dropdown-item-media {
   overflow: hidden;
   flex: 0 0 auto;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
 }
 
 body.mode-editor .dropdown-item-media img {
@@ -7050,8 +7001,8 @@ body.mode-editor .dropdown-item-badge {
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.7);
+  background: var(--bg-elevated);
+  color: var(--text-main);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.14em;
@@ -7072,7 +7023,7 @@ body.mode-editor .dropdown-item-title {
   font-size: 15px;
   font-weight: 600;
   line-height: 1.5;
-  color: #ffffff;
+  color: var(--text-main);
   word-break: break-word;
 }
 
@@ -7085,7 +7036,7 @@ body.mode-editor .dropdown-item-meta {
   white-space: normal;
   font-size: 12px;
   line-height: 1.45;
-  color: rgba(255, 255, 255, 0.52);
+  color: var(--text-main);
 }
 
 body.mode-editor .dropdown-item-status {
@@ -7107,8 +7058,8 @@ body.mode-editor .dropdown-item.is-selected .dropdown-item-status {
 }
 
 body.mode-editor .dropdown-item.is-selected .dropdown-item-badge {
-  background: rgba(2, 6, 12, 0.18);
-  color: #ffffff;
+  background: var(--bg-elevated);
+  color: var(--text-main);
 }
 
 body.mode-editor .dropdown-empty {
@@ -7117,15 +7068,15 @@ body.mode-editor .dropdown-empty {
   display: grid;
   align-items: center;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.03);
-  color: rgba(255, 255, 255, 0.56);
+  background: var(--bg-elevated);
+  color: var(--text-main);
   font-size: 13px;
   line-height: 1.5;
 }
 
 body.mode-editor .user-menu-dropdown {
-  background: #141922;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-elevated);
+  border: 1px solid var(--panel-border);
   box-shadow: var(--surface-shadow-soft);
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
@@ -7247,12 +7198,12 @@ body.mode-editor .save-warning-card {
   align-content: start;
   padding: clamp(18px, 2vw, 24px);
   border-radius: var(--radius-lg);
-  border: 1px solid rgba(255, 176, 79, 0.22);
+  border: 1px solid var(--warning);
   background: var(--bg-elevated);
 }
 
 body.mode-editor .warning-label {
-  color: #ffcc87;
+  color: var(--warning);
 }
 
 body.mode-editor .save-warning-card h2,
@@ -7353,8 +7304,8 @@ body.mode-editor .save-reset-field input {
   min-height: 46px;
   padding: 12px 14px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
   color: var(--text-main);
   font: inherit;
 }
@@ -7546,8 +7497,8 @@ body.mode-editor .utility-more-menu__trigger {
   min-height: 38px;
   padding: 8px 12px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
   color: var(--text-soft);
   font: inherit;
   font-size: 12px;
@@ -7635,27 +7586,27 @@ body.mode-editor .status-dot {
   height: 10px;
   margin-top: 5px;
   border-radius: 50%;
-  background: rgba(148, 163, 184, 0.7);
+  background: var(--bg-elevated);
   box-shadow: none;
 }
 
 body.mode-editor .status-dot--clean {
-  background: #22c55e;
+  background: var(--bg-elevated);
   box-shadow: none;
 }
 
 body.mode-editor .status-dot--risky {
-  background: #f59e0b;
+  background: var(--bg-elevated);
   box-shadow: none;
 }
 
 body.mode-editor .status-dot--broken {
-  background: #ef4444;
+  background: var(--bg-elevated);
   box-shadow: none;
 }
 
 body.mode-editor .status-dot--idle {
-  background: rgba(148, 163, 184, 0.7);
+  background: var(--bg-elevated);
   box-shadow: none;
 }
 
@@ -7696,8 +7647,8 @@ body.mode-editor .save-restore-file {
   gap: 10px;
   padding: 14px 15px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
 }
 
 body.mode-editor .save-problem-head,
@@ -7729,26 +7680,26 @@ body.mode-editor .save-backup-tag {
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-elevated);
   color: var(--text-soft);
 }
 
 body.mode-editor .save-problem-badge[data-severity="critical"],
 body.mode-editor .save-restore-badge[data-status="changed"] {
-  background: rgba(239, 68, 68, 0.16);
-  color: #ffd6d6;
+  background: var(--danger-surface);
+  color: var(--danger);
 }
 
 body.mode-editor .save-problem-badge[data-severity="warning"],
 body.mode-editor .save-restore-badge[data-status="missing_current"] {
-  background: rgba(245, 158, 11, 0.16);
-  color: #ffe6b0;
+  background: var(--warning-surface);
+  color: var(--warning);
 }
 
 body.mode-editor .save-problem-badge[data-severity="info"],
 body.mode-editor .save-restore-badge[data-status="identical"] {
-  background: rgba(34, 197, 94, 0.16);
-  color: #d8ffe1;
+  background: var(--bg-elevated);
+  color: var(--text-main);
 }
 
 body.mode-editor .save-problem-actions,
@@ -7799,8 +7750,8 @@ body.mode-editor .restore-preview-meta {
 body.mode-editor .save-restore-note {
   padding: 12px 14px;
   border-radius: 10px;
-  border: 1px solid rgba(245, 158, 11, 0.2);
-  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
 }
 
 body.mode-editor .save-restore-file-copy code,
@@ -7917,14 +7868,14 @@ body.mode-editor .tool-card button {
 
 body.mode-editor .tool-card button.modal-disabled {
   color: var(--text-muted);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-elevated);
 }
 
 body.mode-editor .user-menu-btn {
   min-height: 46px;
   padding: 8px 12px;
   border: 1px solid var(--border-subtle);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-elevated);
 }
 
 body.mode-editor .user-menu-dropdown {
@@ -7935,8 +7886,8 @@ body.mode-editor .user-menu-dropdown {
 
 body.mode-editor .user-menu-item {
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
 }
 
 body.mode-editor .modal-backdrop {
@@ -8050,7 +8001,7 @@ body.mode-editor .user-logs-filter {
   padding: 0 14px;
   border-radius: 999px;
   border: 1px solid rgba(var(--accent-rgb), 0.22);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-elevated);
   color: var(--text-muted);
   font: inherit;
   cursor: pointer;
@@ -8103,7 +8054,7 @@ body.mode-editor .modal-box textarea {
   width: 100%;
   border-radius: 10px;
   border: 1px solid var(--border-subtle);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-elevated);
   color: var(--text-main);
   font: inherit;
   min-height: 46px;
@@ -8129,7 +8080,7 @@ body.mode-editor .modal-actions {
   margin-top: 2px;
   flex-wrap: wrap;
   padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--panel-border);
 }
 
 body.mode-editor .modal-actions .apply,
@@ -8165,7 +8116,7 @@ body.mode-editor .checkbox-row {
 }
 
 body.mode-editor .github-public-lock #editorFleetCard {
-  border-color: rgba(255, 255, 255, 0.05);
+  border-color: var(--panel-border);
   background: var(--bg-elevated);
 }
 
@@ -8445,7 +8396,7 @@ body.mode-editor.theme-neon-red .save-hero,
 body.mode-editor.theme-neon-red .user-menu-dropdown,
 body.mode-editor.theme-neon-red .modal-box {
   background: var(--bg-elevated);
-  border-color: rgba(255, 112, 141, 0.15);
+  border-color: var(--panel-border);
   box-shadow: var(--surface-shadow-soft);
 }
 
@@ -8465,7 +8416,7 @@ body.mode-editor .command-header::after {
 body.mode-editor .editor-sidebar-block {
   position: relative;
   overflow: hidden;
-  border-color: rgba(255, 255, 255, 0.04);
+  border-color: var(--panel-border);
   background: var(--bg-elevated);
 }
 
@@ -8671,7 +8622,7 @@ body.mode-editor .editor-sidebar .nav-action.active {
 
 body.mode-editor.theme-neon-red .editor-sidebar-block {
   background: var(--bg-elevated);
-  border-color: rgba(255, 116, 142, 0.11);
+  border-color: var(--panel-border);
 }
 
 body.mode-editor.theme-neon-red .editor-picker,
@@ -8680,7 +8631,7 @@ body.mode-editor.theme-neon-red .editor-sidebar .nav-action,
 body.mode-editor.theme-neon-red .editor-sidebar .version-btn,
 body.mode-editor.theme-neon-red .game-switch button {
   background: var(--accent);
-  border-color: rgba(255, 116, 142, 0.12);
+  border-color: var(--panel-border);
 }
 
 body.mode-editor.theme-neon-red .editor-sidebar .nav-btn:hover,
@@ -8696,7 +8647,7 @@ body.mode-editor.theme-neon-red .editor-picker:hover {
 body.mode-editor.theme-neon-red .editor-sidebar .nav-btn.active,
 body.mode-editor.theme-neon-red .game-switch button.active,
 body.mode-editor.theme-neon-red .editor-sidebar .nav-action.active {
-  color: #fff8fa;
+  color: var(--text-main);
   border-color: rgba(var(--accent-rgb), 0.44);
   background: var(--accent);
 }
@@ -8713,7 +8664,7 @@ body.mode-editor .user-logs-meta-card {
 
 body.mode-editor .overview-card {
   background: var(--bg-elevated);
-  border-color: rgba(255, 118, 143, 0.14);
+  border-color: var(--panel-border);
 }
 
 body.mode-editor .overview-card strong {
@@ -8896,7 +8847,7 @@ body.mode-editor .skilltree-summary-card {
   gap: 10px;
   padding: 18px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--panel-border);
   background: var(--bg-elevated);
 }
 
@@ -8975,7 +8926,7 @@ body.mode-editor .skilltree-card {
   min-height: 220px;
   padding: 18px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--panel-border);
   background: var(--bg-elevated);
   cursor: pointer;
   transition: none;
@@ -8996,7 +8947,7 @@ body.mode-editor .skilltree-card.is-selected {
 }
 
 body.mode-editor .skilltree-card.is-maxed {
-  border-color: rgba(255, 136, 74, 0.34);
+  border-color: var(--panel-border);
 }
 
 body.mode-editor .skilltree-card-head,
@@ -9067,8 +9018,8 @@ body.mode-editor .skilltree-node,
 body.mode-editor .skilltree-level-btn {
   min-height: 40px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
   color: var(--text-soft);
   font: inherit;
   font-weight: 600;
@@ -9115,7 +9066,7 @@ body.mode-editor .skilltree-detail {
   gap: 16px;
   padding: 18px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--panel-border);
   background: var(--bg-elevated);
 }
 
@@ -9128,8 +9079,8 @@ body.mode-editor .skilltree-detail-card {
   gap: 8px;
   padding: 16px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
 }
 
 body.mode-editor .skilltree-detail-card strong {
@@ -9149,8 +9100,8 @@ body.mode-editor .skilltree-stepper-btn {
   min-width: 42px;
   min-height: 42px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
   color: var(--text-main);
   font: inherit;
   font-size: 20px;
@@ -9200,7 +9151,7 @@ body.mode-editor .skilltree-empty-state {
 body.mode-editor .tool-card {
   min-height: 336px;
   border-radius: 10px;
-  border-color: rgba(255, 255, 255, 0.06);
+  border-color: var(--panel-border);
   background: var(--bg-elevated);
 }
 
@@ -9219,7 +9170,7 @@ body.mode-editor .modal-box textarea,
 body.mode-editor .modal-box select,
 body.mode-editor .save-reset-field input {
   border-radius: 10px;
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: var(--panel-border);
   background: var(--bg-elevated);
   color: var(--text-main);
   box-shadow: var(--surface-shadow-soft);
@@ -9243,7 +9194,7 @@ body.mode-editor .modal-actions {
 body.mode-editor .modal-empty-state,
 body.mode-editor .detail-card,
 body.mode-editor .user-logs-meta-card {
-  border-color: rgba(255, 255, 255, 0.06);
+  border-color: var(--panel-border);
   background: var(--bg-elevated);
 }
 
@@ -9310,30 +9261,6 @@ body.mode-editor.theme-neon-red {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  --scrollbar-track: rgba(148, 163, 184, 0.055);
-  --scrollbar-thumb: rgba(255, 74, 110, 0.34);
-  --scrollbar-thumb-hover: rgba(255, 96, 128, 0.55);
 }
 
 body.mode-editor {
@@ -9444,7 +9371,7 @@ body.mode-editor .mode-btn {
 }
 
 body.mode-editor .mode-btn.active {
-  color: #fff8fa;
+  color: var(--text-main);
   background: var(--accent);
   box-shadow: none;
 }
@@ -9497,7 +9424,7 @@ body.mode-editor .editor-sidebar-block {
   padding: 12px;
   gap: 9px;
   border-radius: var(--editor-radius-lg);
-  border-color: rgba(148, 163, 184, 0.1);
+  border-color: var(--panel-border);
 }
 
 body.mode-editor.theme-neon-red .editor-sidebar-block {
@@ -9506,7 +9433,7 @@ body.mode-editor.theme-neon-red .editor-sidebar-block {
 
 body.mode-editor .editor-sidebar-block:not(:last-child) {
   padding-bottom: 12px;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+  border-bottom: 1px solid var(--panel-border);
 }
 
 body.mode-editor .editor-section-label,
@@ -9543,7 +9470,7 @@ body.mode-editor .game-switch {
 }
 
 body.mode-editor .editor-picker {
-  border-color: rgba(148, 163, 184, 0.12);
+  border-color: var(--panel-border);
   background: var(--bg-elevated);
 }
 
@@ -9588,14 +9515,14 @@ body.mode-editor .editor-sidebar .version-btn {
   min-height: 34px;
   font-size: 12px;
   color: var(--text-muted);
-  background: rgba(255, 255, 255, 0.014);
+  background: var(--bg-elevated);
 }
 
 body.mode-editor .game-switch button.active,
 body.mode-editor .editor-sidebar .nav-btn.active,
 body.mode-editor .editor-sidebar .nav-action.active,
 body.mode-editor .preset-btn.active {
-  color: #fff8fa;
+  color: var(--text-main);
   border-color: var(--border-strong);
   background: var(--accent);
   box-shadow: none;
@@ -9649,7 +9576,7 @@ body.mode-editor .save-hero-actions {
 body.mode-editor .save-warning-card {
   padding: 16px;
   border-radius: var(--editor-radius-lg);
-  border-color: rgba(245, 158, 11, 0.2);
+  border-color: var(--warning);
   background: var(--bg-elevated);
 }
 
@@ -9740,7 +9667,7 @@ body.mode-editor .tool-card button {
   min-height: 38px;
   padding: 8px 14px;
   border-radius: var(--editor-radius-md);
-  color: #fff8fa;
+  color: var(--text-main);
 }
 
 body.mode-editor .modal-backdrop {
@@ -9783,7 +9710,7 @@ body.mode-editor .modal-box > h2,
 body.mode-editor .detail-modal-head {
   padding: 18px 20px 14px;
   margin: 0;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  border-bottom: 1px solid var(--panel-border);
 }
 
 body.mode-editor .modal-box > h2 {
@@ -9803,8 +9730,8 @@ body.mode-editor .modal-description {
 body.mode-editor .modal-actions {
   margin-top: auto;
   padding: 14px 20px 18px;
-  border-top-color: rgba(148, 163, 184, 0.1);
-  background: rgba(255, 255, 255, 0.012);
+  border-top-color: var(--text-main);
+  background: var(--bg-elevated);
 }
 
 body.mode-editor .modal-box--safe-reset,
@@ -9847,7 +9774,7 @@ body.mode-editor .modal-box select,
 body.mode-editor .save-reset-field input {
   min-height: 42px;
   border-radius: var(--editor-radius-md);
-  border-color: rgba(148, 163, 184, 0.14);
+  border-color: var(--panel-border);
   background: var(--bg-elevated);
 }
 
@@ -10004,8 +9931,8 @@ body.mode-editor .profile-status {
   padding: 10px 12px;
   border-radius: 10px;
 
-  border: 1px solid rgba(148, 163, 184, 0.12);
-  background: rgba(255, 255, 255, 0.022);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
 
   font-size: 12.75px;
   line-height: 1.45;
@@ -10847,42 +10774,6 @@ body.mode-career.theme-dark {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  --scrollbar-track: rgba(56, 189, 248, 0.05);
-  --scrollbar-thumb: rgba(56, 189, 248, 0.28);
-  --scrollbar-thumb-hover: rgba(56, 189, 248, 0.46);
   --bg-text-info: var(--text-info);
   --bg-textinfo: var(--text-info);
   --textinfo: var(--text-info);
@@ -10901,47 +10792,6 @@ body.mode-career.theme-light {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  --scrollbar-track: rgba(124, 58, 237, 0.06);
-  --scrollbar-thumb: rgba(124, 58, 237, 0.28);
-  --scrollbar-thumb-hover: rgba(124, 58, 237, 0.44);
   --bg-text-info: var(--text-info);
   --bg-textinfo: var(--text-info);
   --textinfo: var(--text-info);
@@ -10960,42 +10810,6 @@ body.mode-career.theme-neon {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  --scrollbar-track: rgba(16, 243, 154, 0.05);
-  --scrollbar-thumb: rgba(16, 243, 154, 0.28);
-  --scrollbar-thumb-hover: rgba(16, 243, 154, 0.46);
   --bg-text-info: var(--text-info);
   --bg-textinfo: var(--text-info);
   --textinfo: var(--text-info);
@@ -11014,47 +10828,6 @@ body.mode-career.theme-neon-red {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  --scrollbar-track: rgba(255, 49, 88, 0.055);
-  --scrollbar-thumb: rgba(255, 49, 88, 0.34);
-  --scrollbar-thumb-hover: rgba(255, 49, 88, 0.56);
   --bg-text-info: var(--text-info);
   --bg-textinfo: var(--text-info);
   --textinfo: var(--text-info);
@@ -11264,8 +11037,8 @@ body.mode-editor #modalLevelSystem .modal-box--level {
   gap: 9px;
   padding: 16px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
 }
 
 #modalLevelSystem .level-system-badge {
@@ -11282,8 +11055,8 @@ body.mode-editor #modalLevelSystem .modal-box--level {
   justify-self: start;
   padding: 5px 9px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
   color: var(--text-muted);
   font-size: 11px;
   font-style: normal;
@@ -11317,8 +11090,8 @@ body.mode-editor #modalLevelSystem .modal-box--level {
   min-height: 54px;
   box-sizing: border-box;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
   color: var(--text-main);
   padding: 0 16px;
   font: inherit;
@@ -11419,7 +11192,7 @@ body.mode-editor #modalLevelSystem .level-system-scroll {
   position: relative;
   min-width: 0;
   opacity: 0.72;
-  border-color: rgba(255, 255, 255, 0.09);
+  border-color: var(--panel-border);
   background: var(--bg-elevated);
   transition: none;
 }
@@ -12604,9 +12377,9 @@ body.mode-editor .truck-change-box {
   align-items: center;
   min-height: 24px;
   padding: 3px 8px;
-  border: 1px solid rgba(255, 165, 0, 0.34);
+  border: 1px solid var(--panel-border);
   border-radius: 999px;
-  background: rgba(255, 165, 0, 0.12);
+  background: var(--bg-elevated);
   color: var(--warning);
   font-size: 11px;
   font-weight: 600;
@@ -12632,7 +12405,7 @@ body.mode-editor .truck-change-box {
   height: 42px;
   border-radius: 8px;
   border: 1px solid var(--card-border);
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-elevated);
   color: var(--text-main);
   font-size: 24px;
   line-height: 1;
@@ -12647,7 +12420,7 @@ body.mode-editor .truck-change-box {
   padding: 4px;
   border: 1px solid var(--card-border);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.035);
+  background: var(--bg-elevated);
 }
 
 .truck-change-tab {
@@ -12763,28 +12536,28 @@ body.mode-editor .truck-change-box {
 
 .truck-change-status-card[data-state="success"] strong,
 .truck-change-status-card[data-state="ready"] strong {
-  background: rgba(99, 199, 104, 0.14);
+  background: var(--success-surface);
   color: var(--success);
 }
 
 .truck-change-status-card[data-state="warning"],
 .truck-change-status-card[data-state="blocked"] {
-  border-color: rgba(255, 165, 0, 0.28);
+  border-color: var(--warning);
 }
 
 .truck-change-status-card[data-state="warning"] strong,
 .truck-change-status-card[data-state="blocked"] strong,
 .truck-change-status-card[data-state="loading"] strong {
-  background: rgba(255, 165, 0, 0.13);
+  background: var(--warning-surface);
   color: var(--warning);
 }
 
 .truck-change-status-card[data-state="error"] {
-  border-color: rgba(255, 77, 79, 0.32);
+  border-color: var(--danger);
 }
 
 .truck-change-status-card[data-state="error"] strong {
-  background: rgba(255, 77, 79, 0.14);
+  background: var(--danger-surface);
   color: var(--danger);
 }
 
@@ -12802,7 +12575,7 @@ body.mode-editor .truck-change-box {
   padding: 10px;
   border: 1px solid var(--card-border);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.045);
+  background: var(--bg-elevated);
 }
 
 .truck-change-swap-flow span,
@@ -12901,9 +12674,9 @@ body.mode-editor .truck-change-box {
 
 .truck-change-blocked-reason {
   padding: 10px 12px;
-  border: 1px solid rgba(255, 165, 0, 0.28);
+  border: 1px solid var(--warning);
   border-radius: 8px;
-  background: rgba(255, 165, 0, 0.08);
+  background: var(--warning-surface);
   color: var(--text-main);
 }
 
@@ -12919,7 +12692,7 @@ body.mode-editor .truck-change-box {
   margin: 0;
   padding: 10px;
   border-radius: 8px;
-  background: rgba(0, 0, 0, 0.22);
+  background: var(--bg-elevated);
   color: var(--text-soft);
   font-size: 12px;
   white-space: pre-wrap;
@@ -12939,7 +12712,7 @@ body.mode-editor .truck-change-box {
   padding: 12px;
   border: 1px solid var(--card-border);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.045);
+  background: var(--danger-surface);
 }
 
 .truck-change-status-card--simple h3,
@@ -12976,16 +12749,16 @@ body.mode-editor .truck-change-box {
 }
 
 .truck-change-simple-error {
-  border-color: rgba(255, 77, 79, 0.32);
-  background: rgba(255, 77, 79, 0.08);
+  border-color: var(--danger);
+  background: var(--danger-surface);
 }
 
 .truck-change-simple-success {
   margin: 0;
   padding: 10px 12px;
-  border: 1px solid rgba(99, 199, 104, 0.34);
+  border: 1px solid var(--success);
   border-radius: 8px;
-  background: rgba(99, 199, 104, 0.1);
+  background: var(--success-surface);
   color: var(--success);
   font-weight: 600;
 }
@@ -12996,7 +12769,7 @@ body.mode-editor .truck-change-box {
   border: 1px solid var(--card-border);
   border-radius: 8px;
   padding: 0 12px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--bg-elevated);
   color: var(--text-main);
 }
 
@@ -13031,7 +12804,7 @@ body.mode-editor .truck-change-box {
   padding: 10px 12px;
   border: 1px solid var(--card-border);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.035);
+  background: var(--bg-elevated);
   color: var(--text-main);
   text-align: left;
   cursor: pointer;
@@ -13044,7 +12817,7 @@ body.mode-editor .truck-change-box {
 }
 
 .truck-change-row.is-active {
-  border-color: rgba(99, 199, 104, 0.38);
+  border-color: var(--panel-border);
 }
 
 .truck-change-row:disabled {
@@ -13059,7 +12832,7 @@ body.mode-editor .truck-change-box {
   width: 34px;
   height: 34px;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--bg-elevated);
   font-weight: 600;
 }
 
@@ -13119,9 +12892,9 @@ body.mode-editor .truck-change-box {
   display: grid;
   gap: 8px;
   padding: 12px;
-  border: 1px solid rgba(255, 165, 0, 0.24);
+  border: 1px solid var(--warning);
   border-radius: 8px;
-  background: rgba(255, 165, 0, 0.08);
+  background: var(--warning-surface);
 }
 
 .truck-change-backup-toggle {
@@ -13139,9 +12912,9 @@ body.mode-editor .truck-change-box {
 
 .truck-change-backup-note {
   padding: 10px 12px;
-  border: 1px solid rgba(255, 165, 0, 0.24);
+  border: 1px solid var(--panel-border);
   border-radius: 8px;
-  background: rgba(255, 165, 0, 0.08);
+  background: var(--bg-elevated);
 }
 
 .truck-change-warning-box ul {
@@ -13166,13 +12939,13 @@ body.mode-editor .truck-change-box {
 }
 
 .truck-change-result {
-  border: 1px solid rgba(99, 199, 104, 0.34);
-  background: rgba(99, 199, 104, 0.1);
+  border: 1px solid var(--panel-border);
+  background: var(--bg-elevated);
 }
 
 .truck-change-error {
-  border: 1px solid rgba(255, 77, 79, 0.34);
-  background: rgba(255, 77, 79, 0.1);
+  border: 1px solid var(--danger);
+  background: var(--danger-surface);
   color: var(--danger);
 }
 
@@ -13405,7 +13178,7 @@ body.mode-editor .truck-change-box {
   gap: 12px;
   padding: 11px 14px;
   border-top: 1px solid var(--card-border);
-  background: rgba(255, 255, 255, 0.018);
+  background: var(--bg-elevated);
 }
 
 .garage-filter-footer strong {
@@ -13449,8 +13222,8 @@ body.mode-editor .truck-change-box {
 .garage-save-warning,
 .garage-downgrade-warning,
 .garage-option-unavailable {
-  border: 1px solid rgba(255, 165, 0, 0.3);
-  background: rgba(255, 165, 0, 0.09);
+  border: 1px solid var(--warning);
+  background: var(--warning-surface);
   color: var(--text-main);
 }
 
@@ -13460,8 +13233,8 @@ body.mode-editor .truck-change-box {
 }
 
 .garage-notice.is-error {
-  border-color: rgba(255, 77, 79, 0.32);
-  background: rgba(255, 77, 79, 0.09);
+  border-color: var(--danger);
+  background: var(--danger-surface);
 }
 
 .garage-inline-notice {
@@ -13476,8 +13249,8 @@ body.mode-editor .truck-change-box {
   align-items: center;
   flex-wrap: wrap;
   gap: 8px 14px;
-  border: 1px solid rgba(46, 204, 113, 0.32);
-  background: rgba(46, 204, 113, 0.09);
+  border: 1px solid var(--warning);
+  background: var(--warning-surface);
   color: var(--text-main);
 }
 
@@ -13499,8 +13272,8 @@ body.mode-editor .truck-change-box {
 .garage-mutation-blocked,
 .garage-mutation-error,
 .garage-form-error {
-  border: 1px solid rgba(255, 77, 79, 0.32);
-  background: rgba(255, 77, 79, 0.09);
+  border: 1px solid var(--danger);
+  background: var(--danger-surface);
   color: var(--danger);
 }
 
@@ -13534,7 +13307,7 @@ body.mode-editor .truck-change-box {
 }
 
 .garage-state-card.is-error {
-  border-color: rgba(255, 77, 79, 0.36);
+  border-color: var(--danger);
   color: var(--danger);
 }
 
@@ -13607,7 +13380,7 @@ body.mode-editor .truck-change-box {
 }
 
 .garage-card.has-warning {
-  border-color: rgba(255, 165, 0, 0.38);
+  border-color: var(--warning);
 }
 
 .garage-card.is-selected {
@@ -13648,7 +13421,7 @@ body.mode-editor .truck-change-box {
   padding: 5px 8px;
   border: 1px solid var(--card-border);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-elevated);
   color: var(--text-soft);
   font-size: 11px;
   font-weight: 600;
@@ -13698,7 +13471,7 @@ body.mode-editor .truck-change-box {
   padding: 10px;
   border: 1px solid var(--card-border);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.025);
+  background: var(--bg-elevated);
 }
 
 .garage-metric strong {
@@ -13757,7 +13530,7 @@ body.mode-editor .truck-change-box {
   padding: 20px;
   overflow: hidden;
   overscroll-behavior: contain;
-  background: rgba(4, 8, 16, 0.76);
+  background: var(--bg-elevated);
   backdrop-filter: blur(7px);
 }
 
@@ -13873,7 +13646,7 @@ body.mode-editor .truck-change-box {
   padding: 11px 12px;
   border: 1px solid var(--card-border);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.025);
+  background: var(--bg-elevated);
 }
 
 .garage-assignment-section[open] > summary {
@@ -13995,7 +13768,7 @@ body.mode-editor .truck-change-box {
   margin-top: 9px;
   padding: 10px;
   border-radius: 8px;
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--danger-surface);
 }
 
 .ai-driver-modal {
@@ -14080,8 +13853,8 @@ body.mode-editor .truck-change-box {
 }
 
 .ai-driver-card .garage-badge.has-warning {
-  border-color: rgba(255, 165, 0, 0.38);
-  background: rgba(255, 165, 0, 0.09);
+  border-color: var(--warning);
+  background: var(--warning-surface);
 }
 
 .ai-driver-actions {
@@ -14347,7 +14120,7 @@ body.mode-editor .editor-module-nav {
   min-width: 0 !important;
   max-width: none !important;
   padding-top: 6px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--panel-border);
   pointer-events: auto !important;
   z-index: var(--z-header);
 }
@@ -14414,8 +14187,8 @@ body.mode-editor .editor-module-nav .nav-btn {
 }
 
 body.mode-editor .hub-home-btn {
-  border-color: rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.025);
+  border-color: var(--panel-border);
+  background: var(--bg-elevated);
   color: var(--text-soft);
 }
 
@@ -14427,7 +14200,7 @@ body.mode-editor .editor-module-nav .nav-btn {
   text-align: center;
   overflow: visible;
   text-overflow: clip;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-elevated);
 }
 
 body.mode-editor .editor-module-nav .nav-btn.active {
@@ -14447,8 +14220,8 @@ body.mode-editor .status-pill {
   height: var(--status-chip-height);
   padding: 0 10px;
   border-radius: var(--nav-radius);
-  border-color: rgba(255, 255, 255, 0.075);
-  background: rgba(255, 255, 255, 0.022);
+  border-color: var(--panel-border);
+  background: var(--bg-elevated);
   box-shadow: none;
   color: var(--text-soft);
 }
@@ -14608,7 +14381,7 @@ body.mode-editor .picker-backdrop {
   min-width: 0;
   border: 1px solid var(--card-border);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-elevated);
   color: var(--text-main);
   padding: 14px;
   text-align: left;

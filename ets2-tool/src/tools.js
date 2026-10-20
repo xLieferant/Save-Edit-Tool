@@ -1,3 +1,4 @@
+import { openThemeSettings } from "./modules/shared/theme_settings.js";
 ﻿import {
   openModalNumber,
   openModalText,
@@ -758,50 +759,7 @@ export const tools = {
       title: "tools.settings.color_theme.title",
       desc: "tools.settings.color_theme.desc",
       img: "images/themeChooser.png",
-      action: async () => {
-        try {
-          const currentTheme = localStorage.getItem("theme") || "neon-red";
-          
-          // Internal values map
-          const themeMap = {
-            "label.label_color_theme_dark": "dark",
-            "label.label_color_theme_light": "light",
-            "label.label_color_theme_neon": "neon",
-            "label.label_color_theme_neon_red": "neon-red"
-          };
-          
-          // Reverse map to find key for current theme
-          const currentKey = Object.keys(themeMap).find(key => themeMap[key] === currentTheme) || "label.label_color_theme_dark";
-
-          const res = await openModalMulti("tools.settings.color_theme.modalTextTitle", [
-            {
-              type: "dropdown",
-              id: "theme",
-              label: "label.label_theme",
-              value: currentKey,
-              options: Object.keys(themeMap),
-            },
-          ]);
-
-          if (!res) return;
-
-          // Lookup internal value from selected key
-          const newTheme = themeMap[res.theme];
-
-          if (newTheme) {
-            document.body.classList.remove("theme-dark", "theme-light", "theme-neon", "theme-neon-red");
-            document.body.classList.add(`theme-${newTheme}`);
-            localStorage.setItem("theme", newTheme);
-            showToast("toasts.color_theme_success", { newTheme }, "success");
-          } else {
-             console.error("Unknown theme selected:", res.theme);
-             showToast("toasts.color_theme_error", "error");
-          }
-        } catch (err) {
-          console.error("Theme change error:", err);
-          showToast("toasts.color_theme_error", "error");
-        }
-      },
+      action: () => openThemeSettings(openModalMulti),
       disabled: false,
     },
     {

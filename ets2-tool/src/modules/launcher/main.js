@@ -1,8 +1,6 @@
 import { attachI18nToWindow, translateDocument } from "../shared/i18n.js";
-import { safeInvoke } from "../shared/runtime.js";
+import { savedWorkspace, selectWorkspace, workspacePath } from "../shared/workspace.js";
 
-const SAVE_EDITOR_PATH = "/pages/save-editor/index.html";
-const CAREER_PATH = "/pages/career/index.html";
 const GITHUB_PUBLIC_LOCK = true; // TEMP_GITHUB_BUILD
 const UPDATE_START_DELAY_MS = 2500;
 
@@ -26,6 +24,19 @@ function navigateTo(path) {
 
 document.addEventListener("DOMContentLoaded", async () => {
   attachI18nToWindow();
+  const shell = document.querySelector(".launcher-shell");
+  if (!new URL(window.location.href).searchParams.has("choose")) {
+    try {
+      const saved = await savedWorkspace(GITHUB_PUBLIC_LOCK ? ["editor"] : ["editor", "career"]);
+      if (saved) {
+        window.location.replace(workspacePath(saved));
+        return;
+      }
+    } catch (error) {
+      console.error("[launcher] workspace lookup failed", error);
+    }
+  }
+  if (shell) shell.hidden = false;
   await translateDocument(document);
   setTimeout(async () => {
     try {
@@ -46,14 +57,24 @@ document.addEventListener("DOMContentLoaded", async () => {
     toggleGithubLockState(careerCard, true);
   }
 
-  saveEditorButton?.addEventListener("click", async () => {
-    await safeInvoke("hub_set_mode", { mode: "editor" }, { silent: true });
-    navigateTo(SAVE_EDITOR_PATH);
-  });
+  const openWorkspace = async (mode, button) => {
+    button.disabled = true;
+    button.setAttribute("aria-busy", "true");
+    try {
+      navigateTo(await selectWorkspace(mode));
+    } catch (error) {
+      console.error("[launcher] workspace selection failed", error);
+      const message = document.getElementById("launcherWorkspaceError");
+      if (message) message.hidden = false;
+      button.disabled = false;
+      button.removeAttribute("aria-busy");
+    }
+  };
+
+  saveEditorButton?.addEventListener("click", () => openWorkspace("editor", saveEditorButton));
 
   careerButton?.addEventListener("click", async () => {
     if (GITHUB_PUBLIC_LOCK) return; // TEMP_GITHUB_BUILD
-    await safeInvoke("hub_set_mode", { mode: "career" }, { silent: true });
-    navigateTo(CAREER_PATH);
+    await openWorkspace("career", careerButton);
   });
 });

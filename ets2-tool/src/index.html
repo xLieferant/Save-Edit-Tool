@@ -2,13 +2,14 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script src="/modules/shared/theme.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title data-translate="launcher.title">ETS2 TOOLBOX</title>
     <link rel="stylesheet" href="/styles/launcher.css" />
     <link rel="stylesheet" href="/styles/design_system.css" />
   </head>
   <body>
-    <main class="launcher-shell">
+    <main class="launcher-shell" hidden>
       <section class="launcher-hero">
         <img src="/images/xlLogo.png" alt="ETS2 Tool" class="launcher-logo" />
         <span class="launcher-kicker" data-translate="launcher.kicker">Workspace Launcher</span>
@@ -41,6 +42,7 @@
           </button>
         </article>
       </section>
+      <p id="launcherWorkspaceError" role="alert" data-translate="ui_refinement.workspace_failed" hidden></p>
     </main>
 
     <script type="module" src="/modules/launcher/main.js"></script>

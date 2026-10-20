@@ -103,3 +103,9 @@ writes screenshots to a temporary directory. Native file dialogs and real savega
 writes require separate desktop testing.
 
 The implementation report and file list are in [UI_REVIEW.md](ets2-tool/UI_REVIEW.md).
+
+The UI check also covers independent Dark/Light and green accent preferences,
+switch and checkbox interaction, garage lists with up to 125 entries, sidebar
+accessibility and workspace selection. Run `node scripts/check_ui.mjs --refinement-only`
+from `ets2-tool/` for these targeted workflows. See
+[UI_REFINEMENT_REVIEW.md](ets2-tool/UI_REFINEMENT_REVIEW.md) for results and limitations.

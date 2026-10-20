@@ -1,3 +1,6 @@
+import { beginSettingsSave, protectSettingsForms } from "../shared/settings_form.js";
+import { booleanValue, mountSwitches, syncSwitch } from "../shared/controls.js";
+import { selectWorkspace } from "../shared/workspace.js";
 import { attachI18nToWindow, t, translateDocument } from "../shared/i18n.js";
 import { hasTauri, invoke, listen, safeInvoke } from "../shared/runtime.js";
 import { createAnalyticsController } from "../../js/analytics.js";
@@ -391,13 +394,16 @@ function setCellText(id, value) {
 function setInputValue(id, value) {
   const element = document.getElementById(id);
   if (!element) return;
+  if (element.dataset.dirty === "true") return;
   element.value = value ?? "";
 }
 
 function setInputChecked(id, value) {
   const element = document.getElementById(id);
   if (!element) return;
-  element.checked = Boolean(value);
+  if (element.dataset.dirty === "true") return;
+  element.checked = booleanValue(value);
+  syncSwitch(element);
 }
 
 function getInputValue(id) {
@@ -2137,7 +2143,8 @@ function renderUserSettings() {
   setInputValue("cmUserAvatarInput", settings?.avatarPath || profile?.avatarPath || "");
   setInputValue("cmUserVisibilityInput", settings?.profileVisibility || "private");
   setInputValue("cmUserBioInput", settings?.bio || profile?.bio || "");
-  setInputValue("cmUserThemeInput", settings?.themePreference || "");
+  setInputValue("cmUserThemeInput", window.themePreferences.get().theme);
+  setInputValue("cmUserAccentInput", window.themePreferences.get().accent);
   setInputChecked("cmUserNotificationsInput", settings?.notificationsEnabled ?? true);
 
   const cooldownHint = document.getElementById("cmUsernameCooldownHint");
@@ -2552,13 +2559,16 @@ async function handleUpdateUsername() {
 }
 
 async function handleSaveUserSettings() {
+  const submission = beginSettingsSave("cmSaveUserSettingsBtn", ["cmUserLanguageInput", "cmUserPreferredGameInput", "cmUserAvatarInput", "cmUserVisibilityInput", "cmUserBioInput", "cmUserThemeInput", "cmUserAccentInput", "cmUserNotificationsInput"], renderUserSettings);
+  if (!submission) return;
   try {
     const language = getInputValue("cmUserLanguageInput");
     const preferredGame = getInputValue("cmUserPreferredGameInput");
     const avatarPath = getInputValue("cmUserAvatarInput").trim() || null;
     const profileVisibility = getInputValue("cmUserVisibilityInput");
     const bio = getInputValue("cmUserBioInput").trim() || null;
-    const themePreference = getInputValue("cmUserThemeInput").trim() || null;
+    const themePreference = getInputValue("cmUserThemeInput");
+    const accentPreference = getInputValue("cmUserAccentInput");
     const notificationsEnabled = getInputChecked("cmUserNotificationsInput");
 
     await invokeStrict("update_user_language", { language });
@@ -2580,17 +2590,24 @@ async function handleSaveUserSettings() {
       },
     });
 
+    window.themePreferences.apply({ theme: themePreference, accent: accentPreference });
     await translateDocument(document);
     await loadUiText();
     await refreshAllData();
+    submission.commit();
     showToast(await t("career_mode.user_saved"), "success");
     location.reload();
   } catch (error) {
+    submission.rollback();
     showToast(await resolveErrorMessage(error), "error");
+  } finally {
+    submission.finish();
   }
 }
 
 async function handleSaveCompanyProfile() {
+  const submission = beginSettingsSave("cmCompanyProfileSaveBtn", ["cmCompanyNameInput", "cmCompanyLocationInput", "cmCompanyLanguageInput", "cmCompanyGameInput", "cmCompanyDescriptionInput", "cmCompanyLogoInput", "cmCompanyHeaderInput", "cmCompanySloganInput", "cmCompanyAccentInput", "cmCompanyPublicVisibilityInput"], renderCompany);
+  if (!submission) return;
   try {
     const payload = {
       name: getInputValue("cmCompanyNameInput").trim(),
@@ -2612,13 +2629,19 @@ async function handleSaveCompanyProfile() {
     }
 
     await refreshAllData();
+    submission.commit();
     showToast(await t("career_mode.company_saved"), "success");
   } catch (error) {
+    submission.rollback();
     showToast(await resolveErrorMessage(error), "error");
+  } finally {
+    submission.finish();
   }
 }
 
 async function handleSaveCompanySettings() {
+  const submission = beginSettingsSave("cmCompanySettingsSaveBtn", ["cmCompanyDefaultRoleInput", "cmCompanyAllowJoinRequestsInput", "cmCompanyDispatcherManageJobsInput", "cmCompanyShowTraineeInput", "cmCompanyAllowCustomProfilesInput", "cmCompanyPublicVisibilityInput", "cmCompanyLanguageInput", "cmCompanyGameInput"], renderCompany);
+  if (!submission) return;
   try {
     await invokeStrict("update_company_settings", {
       input: {
@@ -2634,13 +2657,19 @@ async function handleSaveCompanySettings() {
     });
 
     await refreshAllData();
+    submission.commit();
     showToast(await t("career_mode.company_settings_saved"), "success");
   } catch (error) {
+    submission.rollback();
     showToast(await resolveErrorMessage(error), "error");
+  } finally {
+    submission.finish();
   }
 }
 
 async function handleSaveCareerSettings() {
+  const submission = beginSettingsSave("cmSaveCareerSettingsBtn", ["cmCareerTelemetryEnabledInput", "cmCareerLocalStatsTrackingInput", "cmCareerAutoJobLoggingInput", "cmCareerAutoFinanceTrackingInput", "cmCareerMetricUnitsInput", "cmCareer24hTimeInput", "cmCareerAutosaveInput"], renderCareerSettings);
+  if (!submission) return;
   try {
     await invokeStrict("update_career_settings", {
       input: {
@@ -2655,9 +2684,13 @@ async function handleSaveCareerSettings() {
     });
 
     await refreshAllData();
+    submission.commit();
     showToast(await t("career_mode.career_settings_saved"), "success");
   } catch (error) {
+    submission.rollback();
     showToast(await resolveErrorMessage(error), "error");
+  } finally {
+    submission.finish();
   }
 }
 
@@ -2709,8 +2742,8 @@ async function initNavigation() {
   const refreshButton = document.getElementById("refreshCareerBtn");
 
   openLauncherButton?.addEventListener("click", async () => {
-    await safeInvoke("hub_set_mode", { mode: "career" }, { silent: true });
-    window.location.href = "/index.html";
+    await selectWorkspace("career").catch((error) => console.error("[career] workspace persistence failed", error));
+    window.location.href = "/index.html?choose=1";
   });
 
   openSaveEditorButton?.addEventListener("click", async () => {
@@ -2739,8 +2772,8 @@ function registerUserMenuHandlers() {
 
   document.getElementById("careerUserMenuLogin")?.addEventListener("click", async () => {
     setUserMenuOpen(false);
-    await safeInvoke("hub_set_mode", { mode: "career" }, { silent: true });
-    window.location.href = "/index.html";
+    await selectWorkspace("career").catch((error) => console.error("[career] workspace persistence failed", error));
+    window.location.href = "/index.html?choose=1";
   });
 
   document.getElementById("careerUserLoginCancel")?.addEventListener("click", () => {
@@ -2860,9 +2893,11 @@ function registerActionHandlers() {
 document.addEventListener("DOMContentLoaded", async () => {
   attachI18nToWindow();
   await translateDocument(document);
+  await mountSwitches();
+  await protectSettingsForms();
   await loadUiText();
 
-  await safeInvoke("hub_set_mode", { mode: "career" }, { silent: true });
+  await selectWorkspace("career").catch((error) => console.error("[career] workspace persistence failed", error));
 
   applyNavHandlers();
   applyDispatcherHandlers();

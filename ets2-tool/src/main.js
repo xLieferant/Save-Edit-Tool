@@ -1,3 +1,4 @@
+import { openThemeSettings } from "./modules/shared/theme_settings.js";
 import { localizeError, translateDocument } from "./modules/shared/i18n.js";
 import { loadTools, activeTab, openCloneProfileModal, openModalMulti, openModalText } from "./app.js";
 import { updateToolImagesForGame } from "./tools.js";
@@ -59,7 +60,8 @@ const SAVE_MUTATION_COMMANDS = new Set([
 
 let lastSelectedGame = null;
 const CAREER_LOAD_ERROR = "ui.career_load_failed";
-const isStandaloneEditorPage = Boolean(window.__ETS2_STANDALONE_EDITOR__);
+const isStandaloneEditorPage = Boolean(window.__ETS2_STANDALONE_EDITOR__)
+  || window.location.pathname === "/pages/save-editor/index.html";
 const GITHUB_PUBLIC_LOCK = true; // TEMP_GITHUB_BUILD
 
 function ensureUiErrorBanner() {
@@ -1956,6 +1958,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   let activeCareerPanel = "dashboard";
 
   const setHubVisibility = (visible) => {
+    if (isStandaloneEditorPage && visible) {
+      window.location.href = "/index.html?choose=1";
+      return;
+    }
+    if (refs.hubScreen) refs.hubScreen.hidden = !visible;
     refs.hubScreen?.classList.toggle("is-hidden", !visible);
   };
 
@@ -3138,42 +3145,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     localStorage.setItem("ets2_editor_mode", isAdvanced ? "advanced" : "safe");
   };
 
-  const openColorSchemeModal = async () => {
-    try {
-      const currentTheme = localStorage.getItem("theme") || "dark";
-      const themeMap = {
-        "label.label_color_theme_dark": "dark",
-        "label.label_color_theme_light": "light",
-        "label.label_color_theme_neon": "neon",
-        "label.label_color_theme_neon_red": "neon-red",
-      };
-      const currentKey =
-        Object.keys(themeMap).find((key) => themeMap[key] === currentTheme) || "label.label_color_theme_dark";
-      const res = await openModalMulti("tools.settings.color_theme.modalTextTitle", [
-        {
-          type: "dropdown",
-          id: "theme",
-          label: "label.label_theme",
-          value: currentKey,
-          options: Object.keys(themeMap),
-        },
-      ]);
-      if (!res) return;
-      const newTheme = themeMap[res.theme];
-      if (newTheme) {
-        document.body.classList.remove("theme-dark", "theme-light", "theme-neon", "theme-neon-red");
-        document.body.classList.add(`theme-${newTheme}`);
-        localStorage.setItem("theme", newTheme);
-        window.showToast("toasts.color_theme_success", { newTheme }, "success");
-      } else {
-        console.error("Unknown theme selected:", res.theme);
-        window.showToast("toasts.color_theme_error", "error");
-      }
-    } catch (error) {
-      console.error("Theme change error:", error);
-      window.showToast("toasts.color_theme_error", "error");
-    }
-  };
+  const openColorSchemeModal = () => openThemeSettings(openModalMulti);
 
   const renderTelemetry = (data) => {
     const speed = Number(data?.speed ?? data?.speed_kph ?? 0);
@@ -3705,7 +3677,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     await updateUserMenu();
   } else {
     applyHubMode("editor");
-    setHubVisibility(true);
+    setHubVisibility(!isStandaloneEditorPage);
     window.careerAuthUser = null;
     await updateUserMenu();
   }

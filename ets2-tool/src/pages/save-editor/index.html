@@ -2,16 +2,17 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script src="/modules/shared/theme.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
     <title data-translate="app.name">ETS2 Save Editor - Alex Edition</title>
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="/styles/design_system.css" />
   </head>
-  <body>
+  <body class="mode-editor">
     <div class="app-shell">
       <input id="appNavToggle" class="nav-toggle" type="checkbox" />
-      <section id="hubScreen" class="hub-screen is-active">
+      <section id="hubScreen" class="hub-screen is-active is-hidden" hidden>
         <div class="hub-panel panel-surface">
           <div class="hub-copy">
             <span class="eyebrow" data-translate="hub.eyebrow">ETS2 and ATS tools</span>
@@ -235,6 +236,7 @@
               </div>
             </section>
           </div>
+          <footer class="creator-credit" data-translate="ui_refinement.creator_credit">Created by xLieferant</footer>
         </aside>
 
         <aside id="careerSidebar" class="career-sidebar panel-surface">
