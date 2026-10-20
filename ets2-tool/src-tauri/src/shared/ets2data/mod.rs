@@ -25,7 +25,7 @@ use crate::shared::ets2data::validate::{
     checksum_city_record, checksum_company_record, checksum_country_record, finalize_dataset_meta,
     sha256_hex_bytes, validate_cities, validate_companies, validate_countries,
 };
-use crate::shared::paths::ets2_base_path;
+use crate::shared::paths::mod_directory_path;
 
 #[derive(Debug, Clone)]
 struct SourceInput {
@@ -304,9 +304,7 @@ fn discover_sources() -> Result<Vec<SourceInput>, String> {
         });
     }
 
-    let mod_dir = ets2_base_path()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join("mod");
+    let mod_dir = mod_directory_path("ets2").unwrap_or_else(|| PathBuf::from("."));
     if mod_dir.exists() {
         let mod_paths = fs::read_dir(&mod_dir)
             .map_err(|error| error.to_string())?
@@ -1325,17 +1323,17 @@ fn canonical_id_component(value: &str) -> String {
     let lowered = value.trim().to_ascii_lowercase();
     for ch in lowered.chars() {
         let mapped = match ch {
-            'ä' => "ae",
-            'ö' => "oe",
-            'ü' => "ue",
-            'ß' => "ss",
-            'à' | 'á' | 'â' | 'ã' | 'å' => "a",
-            'ç' => "c",
-            'è' | 'é' | 'ê' | 'ë' => "e",
-            'ì' | 'í' | 'î' | 'ï' => "i",
-            'ñ' => "n",
-            'ò' | 'ó' | 'ô' | 'õ' => "o",
-            'ù' | 'ú' | 'û' => "u",
+            '\u{e4}' => "ae",
+            '\u{f6}' => "oe",
+            '\u{fc}' => "ue",
+            '\u{df}' => "ss",
+            '\u{e0}' | '\u{e1}' | '\u{e2}' | '\u{e3}' | '\u{e5}' => "a",
+            '\u{e7}' => "c",
+            '\u{e8}' | '\u{e9}' | '\u{ea}' | '\u{eb}' => "e",
+            '\u{ec}' | '\u{ed}' | '\u{ee}' | '\u{ef}' => "i",
+            '\u{f1}' => "n",
+            '\u{f2}' | '\u{f3}' | '\u{f4}' | '\u{f5}' => "o",
+            '\u{f9}' | '\u{fa}' | '\u{fb}' => "u",
             _ => "",
         };
         if !mapped.is_empty() {

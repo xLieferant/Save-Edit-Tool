@@ -2,10 +2,12 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script src="/modules/shared/theme.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
     <title data-translate="modals.mod_conflict_diagnostics.title">Mod Conflict Analyzer</title>
     <link rel="stylesheet" href="/styles.css" />
+    <link rel="stylesheet" href="/styles/design_system.css" />
   </head>
   <body class="mode-editor diagnostics-page-body">
     <div class="app-shell diagnostics-page-shell">
@@ -44,7 +46,7 @@
             <span class="modal-kicker" data-translate="modals.mod_conflict_diagnostics.kicker">Crash diagnostics</span>
             <h2 data-translate="modals.mod_conflict_diagnostics.title">Mod Conflict Analyzer</h2>
             <p class="modal-description" data-translate="modals.mod_conflict_diagnostics.description">
-              Analyze crash logs, broken save references and suspicious mods without pretending to prove every culprit.
+              Analyze crash logs, missing references and local mods without pretending to prove every culprit.
             </p>
           </div>
           <div class="diagnostics-head-aside">
@@ -150,6 +152,7 @@
     </div>
 
     <script type="module">
+      import { t, translateDocument } from "/modules/shared/i18n.js";
       const tauri = window.__TAURI__;
       const invokeRaw = tauri?.core?.invoke;
 
@@ -160,30 +163,7 @@
         return invokeRaw(command, args);
       };
 
-      async function t(key, params = {}) {
-        if (!invokeRaw) {
-          let text = String(key ?? "");
-          for (const [name, value] of Object.entries(params)) {
-            text = text.replaceAll(`{${name}}`, String(value));
-          }
-          return text;
-        }
-
-        const translated = await invokeRaw("translate_command", { key });
-        let text = String(translated ?? key);
-        for (const [name, value] of Object.entries(params)) {
-          text = text.replaceAll(`{${name}}`, String(value));
-        }
-        return text;
-      }
-
-      async function translateUi() {
-        const textNodes = document.querySelectorAll("[data-translate]");
-        for (const element of textNodes) {
-          const key = element.getAttribute("data-translate");
-          element.textContent = await t(key);
-        }
-      }
+      const translateUi = () => translateDocument(document);
 
       window.t = t;
       window.translateUI = translateUi;
@@ -211,10 +191,6 @@
           setTimeout(() => toast.remove(), 300);
         }, 4500);
       };
-
-      const savedTheme = localStorage.getItem("theme") || "neon";
-      document.body.classList.remove("theme-dark", "theme-light", "theme-neon", "theme-neon-red");
-      document.body.classList.add(`theme-${savedTheme}`);
 
       const saveEditorPath = "/pages/save-editor/index.html";
 

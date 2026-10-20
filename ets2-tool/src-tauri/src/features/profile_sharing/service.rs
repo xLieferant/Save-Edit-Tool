@@ -6,7 +6,7 @@ use crate::dev_log;
 use crate::shared::decrypt::decrypt_if_needed;
 use crate::shared::extract::extract_profile_name;
 use crate::shared::hex_float::{decode_hex_folder_name, text_to_hex};
-use crate::shared::paths::get_base_path;
+use crate::shared::paths::{get_base_path, profiles_directory_path};
 use crate::state::AppProfileState;
 use chrono::Local;
 use std::fs::{self, File};
@@ -78,8 +78,11 @@ pub fn pick_shared_profile_import_archive(
     let mut dialog = app
         .dialog()
         .file()
-        .add_filter("ZIP Archive", &["zip"])
-        .set_title("ZIP archive");
+        .add_filter(
+            crate::features::language::translator::t("ui.dialog_zip"),
+            &["zip"],
+        )
+        .set_title(crate::features::language::translator::t("ui.dialog_zip"));
 
     if let Some(start_dir) = resolve_import_archive_start_dir(&selected_game) {
         dialog = dialog.set_directory(start_dir);
@@ -96,7 +99,12 @@ pub fn pick_shared_profile_export_directory(
     profile_state: &AppProfileState,
 ) -> Result<Option<String>, String> {
     let selected_game = selected_game(profile_state)?;
-    let mut dialog = app.dialog().file().set_title("Export folder");
+    let mut dialog = app
+        .dialog()
+        .file()
+        .set_title(crate::features::language::translator::t(
+            "ui.dialog_export_folder",
+        ));
 
     if let Ok(default_export_dir) = resolve_export_dir(&selected_game) {
         dialog = dialog.set_directory(default_export_dir);
@@ -386,9 +394,8 @@ fn resolve_requested_export_dir(
 }
 
 fn resolve_import_root(selected_game: &str) -> Result<PathBuf, String> {
-    let base_path = get_base_path(selected_game)
-        .ok_or("Das Spielbasisverzeichnis konnte nicht aufgeloest werden.".to_string())?;
-    Ok(base_path.join("profiles"))
+    profiles_directory_path(selected_game)
+        .ok_or("Das Spielbasisverzeichnis konnte nicht aufgeloest werden.".to_string())
 }
 
 fn resolve_import_archive_start_dir(selected_game: &str) -> Option<PathBuf> {

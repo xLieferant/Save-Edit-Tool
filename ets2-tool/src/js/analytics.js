@@ -492,7 +492,7 @@ export function createAnalyticsController(options = {}) {
         showToast(state.copy.exportCanceled, "warning");
         return;
       }
-      showToast(`${state.copy.exportSuccess} ${path}`, "success");
+      showToast(await t("ui.export_path", { path }), "success");
     } catch (error) {
       console.error("analytics export failed", error);
       showToast(state.copy.exportFailed, "error");

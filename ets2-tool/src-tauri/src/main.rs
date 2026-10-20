@@ -189,6 +189,10 @@ fn main() {
             commands::ets2data_list_cities,
             // Apply Settings
             features::settings::apply_settings::apply_setting,
+            features::settings::ets2_paths::get_ets2_data_location,
+            features::settings::ets2_paths::choose_ets2_data_location,
+            features::settings::ets2_paths::set_ets2_data_location_mode,
+            features::settings::ets2_paths::reset_ets2_data_location,
             // Read Base and Save Config.cfg
             features::settings::game_config::read_base_config,
             features::settings::game_config::read_save_config,
@@ -396,6 +400,10 @@ fn main() {
             features::companies::commands::company_get_for_user,
             // Garages
             features::garages::commands::get_all_garages,
+            features::garages::commands::get_ai_driver_management,
+            features::garages::commands::generate_ai_drivers,
+            features::garages::commands::update_ai_driver_truck,
+            features::garages::commands::remove_ai_drivers,
             features::garages::commands::purchase_garage,
             features::garages::commands::upgrade_owned_garage,
             features::garages::commands::update_garage,

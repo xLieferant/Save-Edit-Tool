@@ -1,15 +1,11 @@
+import { selectWorkspace } from "../shared/workspace.js";
+
 window.__ETS2_STANDALONE_EDITOR__ = true;
 
-const tauriInvoke = window.__TAURI__?.core?.invoke;
 const GITHUB_PUBLIC_LOCK = true; // TEMP_GITHUB_BUILD
 
 async function setHubMode(mode) {
-  if (!tauriInvoke) return;
-  try {
-    await tauriInvoke("hub_set_mode", { mode });
-  } catch (error) {
-    console.warn("[save-standalone] hub_set_mode failed", error);
-  }
+  await selectWorkspace(mode);
 }
 
 function interceptNavigation(element, targetPath, mode, options = {}) {
@@ -25,17 +21,24 @@ function interceptNavigation(element, targetPath, mode, options = {}) {
       }
       event.preventDefault();
       event.stopImmediatePropagation();
-      if (mode) {
-        await setHubMode(mode);
+      try {
+        if (mode) await setHubMode(mode);
+        window.location.href = targetPath;
+      } catch (error) {
+        console.error("[save-standalone] workspace navigation failed", error);
+        window.showToast?.("ui_refinement.workspace_failed", "error");
       }
-      window.location.href = targetPath;
     },
     true
   );
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  interceptNavigation(document.getElementById("hubHomeBtn"), "/index.html");
+  void selectWorkspace("editor").catch((error) => {
+    console.error("[save-standalone] workspace persistence failed", error);
+    window.showToast?.("ui_refinement.workspace_failed", "error");
+  });
+  interceptNavigation(document.getElementById("hubHomeBtn"), "/index.html?choose=1");
   interceptNavigation(
     document.getElementById("careerModeBtn"),
     "/pages/career/index.html",

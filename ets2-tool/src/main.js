@@ -1,3 +1,5 @@
+import { openThemeSettings } from "./modules/shared/theme_settings.js";
+import { localizeError, translateDocument } from "./modules/shared/i18n.js";
 import { loadTools, activeTab, openCloneProfileModal, openModalMulti, openModalText } from "./app.js";
 import { updateToolImagesForGame } from "./tools.js";
 import { getLevelForXp, getLevelProgress, loadLevelTable } from "./js/level-system.js";
@@ -57,8 +59,9 @@ const SAVE_MUTATION_COMMANDS = new Set([
 ]);
 
 let lastSelectedGame = null;
-const CAREER_LOAD_ERROR = "Career Mode failed to load";
-const isStandaloneEditorPage = Boolean(window.__ETS2_STANDALONE_EDITOR__);
+const CAREER_LOAD_ERROR = "ui.career_load_failed";
+const isStandaloneEditorPage = Boolean(window.__ETS2_STANDALONE_EDITOR__)
+  || window.location.pathname === "/pages/save-editor/index.html";
 const GITHUB_PUBLIC_LOCK = true; // TEMP_GITHUB_BUILD
 
 function ensureUiErrorBanner() {
@@ -88,16 +91,17 @@ function showCareerLoadFailure(error) {
   console.error("[career] fallback activated", error);
   const banner = ensureUiErrorBanner();
   if (banner) {
-    banner.textContent = CAREER_LOAD_ERROR;
+    banner.dataset.translate = CAREER_LOAD_ERROR;
+    void t(CAREER_LOAD_ERROR).then((text) => { banner.textContent = text; });
     banner.style.display = "block";
   }
   document.body?.classList.remove("mode-career");
   document.body?.classList.add("mode-editor");
   document.getElementById("hubScreen")?.classList.add("is-hidden");
   const profileStatus = document.getElementById("profile-status");
-  if (profileStatus) profileStatus.textContent = CAREER_LOAD_ERROR;
+  if (profileStatus) void t(CAREER_LOAD_ERROR).then((text) => { profileStatus.textContent = text; });
   const careerConnectionNote = document.getElementById("careerConnectionNote");
-  if (careerConnectionNote) careerConnectionNote.textContent = CAREER_LOAD_ERROR;
+  if (careerConnectionNote) void t(CAREER_LOAD_ERROR).then((text) => { careerConnectionNote.textContent = text; });
 }
 
 function clearCareerLoadFailure() {
@@ -106,11 +110,11 @@ function clearCareerLoadFailure() {
     banner.style.display = "none";
   }
   const profileStatus = document.getElementById("profile-status");
-  if (profileStatus?.textContent === CAREER_LOAD_ERROR) {
+  if (profileStatus?.textContent === banner?.textContent) {
     profileStatus.textContent = "";
   }
   const careerConnectionNote = document.getElementById("careerConnectionNote");
-  if (careerConnectionNote?.textContent === CAREER_LOAD_ERROR) {
+  if (careerConnectionNote?.textContent === banner?.textContent) {
     careerConnectionNote.textContent = "";
   }
 }
@@ -365,37 +369,7 @@ async function t(key, params = {}) {
 }
 
 async function translateUI() {
-  console.log("[i18n] loading language for save editor");
-  const elements = document.querySelectorAll("[data-translate]");
-  for (const el of elements) {
-    const key = el.getAttribute("data-translate");
-    const translated = await t(key);
-    if (translated === key) {
-      console.warn("[i18n] missing translation", key);
-    }
-    el.textContent = translated;
-  }
-
-  const placeholders = document.querySelectorAll("[data-translate-placeholder]");
-  for (const el of placeholders) {
-    const key = el.getAttribute("data-translate-placeholder");
-    const translated = await t(key);
-    if (translated === key) {
-      console.warn("[i18n] missing placeholder translation", key);
-    }
-    el.setAttribute("placeholder", translated);
-  }
-
-  const ariaLabels = document.querySelectorAll("[data-translate-aria-label]");
-  for (const el of ariaLabels) {
-    const key = el.getAttribute("data-translate-aria-label");
-    const translated = await t(key);
-    if (translated === key) {
-      console.warn("[i18n] missing aria translation", key);
-    }
-    el.setAttribute("aria-label", translated);
-  }
-  console.log("[i18n] loaded language for save editor");
+  await translateDocument(document);
 }
 
 window.t = t;
@@ -507,6 +481,26 @@ document.addEventListener("DOMContentLoaded", async () => {
     undoLastChangeBtn: document.getElementById("undoLastChangeBtn"),
     modalSafeValueReset: document.getElementById("modalSafeValueReset"),
     modalSafeValueResetClose: document.getElementById("modalSafeValueResetClose"),
+    modalEts2DataLocation: document.getElementById("modalEts2DataLocation"),
+    modalEts2DataLocationClose: document.getElementById("modalEts2DataLocationClose"),
+    ets2DataLocationStatusPill: document.getElementById("ets2DataLocationStatusPill"),
+    ets2DataLocationDefaultBtn: document.getElementById("ets2DataLocationDefaultBtn"),
+    ets2DataLocationCustomBtn: document.getElementById("ets2DataLocationCustomBtn"),
+    ets2DataLocationBrowseBtn: document.getElementById("ets2DataLocationBrowseBtn"),
+    ets2DataLocationResetBtn: document.getElementById("ets2DataLocationResetBtn"),
+    ets2DataLocationRefreshBtn: document.getElementById("ets2DataLocationRefreshBtn"),
+    ets2DataLocationValidation: document.getElementById("ets2DataLocationValidation"),
+    ets2DataLocationHomedir: document.getElementById("ets2DataLocationHomedir"),
+    ets2DataLocationGameDir: document.getElementById("ets2DataLocationGameDir"),
+    ets2DataLocationProfilesCount: document.getElementById("ets2DataLocationProfilesCount"),
+    ets2DataLocationProfilesPath: document.getElementById("ets2DataLocationProfilesPath"),
+    ets2DataLocationSteamProfilesCount: document.getElementById("ets2DataLocationSteamProfilesCount"),
+    ets2DataLocationSteamProfilesPath: document.getElementById("ets2DataLocationSteamProfilesPath"),
+    ets2DataLocationLocalModsCount: document.getElementById("ets2DataLocationLocalModsCount"),
+    ets2DataLocationLocalModsPath: document.getElementById("ets2DataLocationLocalModsPath"),
+    ets2DataLocationConfigPath: document.getElementById("ets2DataLocationConfigPath"),
+    ets2DataLocationLogPath: document.getElementById("ets2DataLocationLogPath"),
+    ets2DataLocationCrashPath: document.getElementById("ets2DataLocationCrashPath"),
     modalUserLogs: document.getElementById("modalUserLogs"),
     modalUserLogsClose: document.getElementById("modalUserLogsClose"),
     userLogsStatusPill: document.getElementById("userLogsStatusPill"),
@@ -748,6 +742,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     userLogsLoading: await t("modals.user_logs.status.loading"),
     userLogsEmpty: await t("modals.user_logs.empty"),
     userLogsClearConfirm: await t("modals.user_logs.confirm_clear"),
+    ets2DataLocationReady: await t("modals.ets2_data_location.status.ready"),
+    ets2DataLocationLoading: await t("modals.ets2_data_location.status.loading"),
+    ets2DataLocationSaving: await t("modals.ets2_data_location.status.saving"),
+    ets2DataLocationRescanning: await t("modals.ets2_data_location.status.rescanning"),
+    ets2DataLocationUnknown: await t("modals.ets2_data_location.validation.unresolved"),
+    ets2DataLocationLoadError: await t("toasts.ets2_data_location_load_error"),
   };
   const careerUi = {
     noActiveTrip: await t("career.dashboard.no_active_trip"),
@@ -795,6 +795,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   let userLogsExporting = false;
   let userLogsClearing = false;
   let activeUserLogsFilter = "all";
+  let ets2DataLocationLoading = false;
+  let ets2DataLocationChanging = false;
+  let activeEts2DataLocation = null;
   let activeUndoStatus = {
     canUndo: false,
     lastUndoLabel: null,
@@ -1658,7 +1661,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           `
             <div class="detail-grid three-up">
               <article class="plan-card"><span>${await t("career.insurance.basic")}</span><strong>EUR 280 / month</strong><p>${await t("career.insurance.feature_damage")}</p></article>
-              <article class="plan-card featured"><span>${await t("career.insurance.basic_pro")}</span><strong>EUR 520 / month</strong><p>${await t("career.insurance.feature_repair")}</p></article>
+              <article class="plan-card featured"><span>${await t("career.insurance.basic_pro")}</span><strong>${await t("ui.monthly_price", { amount: 520 })}</strong><p>${await t("career.insurance.feature_repair")}</p></article>
               <article class="plan-card"><span>${await t("career.insurance.supporter")}</span><strong>Invite only</strong><p>${await t("career.insurance.feature_bonus")}</p></article>
             </div>
           `
@@ -1703,10 +1706,10 @@ document.addEventListener("DOMContentLoaded", async () => {
           "career.store.title",
           "career.store.summary",
           buildDetailCards([
-            { label: await t("career.store.phone"), value: "Dispatch sync", copy: await t("career.store.efficiency_bonus") },
-            { label: await t("career.store.care"), value: "Cabin care pack", copy: await t("career.store.comfort_bonus") },
-            { label: await t("career.store.food"), value: "Meal stock", copy: await t("career.store.fatigue_bonus") },
-            { label: await t("career.store.accessories"), value: "Driver setup", copy: await t("career.store.efficiency_bonus") },
+            { label: await t("career.store.phone"), value: await t("ui.store_phone"), copy: await t("career.store.efficiency_bonus") },
+            { label: await t("career.store.care"), value: await t("ui.store_care"), copy: await t("career.store.comfort_bonus") },
+            { label: await t("career.store.food"), value: await t("ui.store_food"), copy: await t("career.store.fatigue_bonus") },
+            { label: await t("career.store.accessories"), value: await t("ui.store_accessories"), copy: await t("career.store.efficiency_bonus") },
           ], "four-up")
         );
       case "plugin":
@@ -1775,7 +1778,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                         <span>${escapeHtml(createdAt)}</span>
                         <span>${escapeHtml(lastUsedAt)}</span>
                         <span>${escapeHtml(expiresAt)}</span>
-                        <span>${isCurrent ? "✓" : ""}</span>
+                        <span>${isCurrent ? "âœ“" : ""}</span>
                       </div>
                     `;
                   }).join("")}
@@ -1897,7 +1900,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                   ${users.map((user) => {
                     const createdAt = formatDateTime(user.createdAt);
                     const lastLogin = user.lastLoginAt ? formatDateTime(user.lastLoginAt) : "-";
-                    const sessionLabel = user.hasActiveSession ? "✓" : "";
+                    const sessionLabel = user.hasActiveSession ? "âœ“" : "";
                     return `
                       <div class="table-row">
                         <span>${escapeHtml(String(user.id))}</span>
@@ -1936,7 +1939,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           "career.settings.title",
           "career.settings.summary",
           buildDetailCards([
-            { label: await t("career.settings.theme"), value: localStorage.getItem("theme") || "neon-red" },
+            { label: await t("career.settings.theme"), value: localStorage.getItem("theme") || "dark" },
             { label: await t("career.settings.language"), value: careerUi.systemControlled },
             { label: await t("career.settings.modules"), value: careerUi.modulesValue },
           ])
@@ -1955,6 +1958,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   let activeCareerPanel = "dashboard";
 
   const setHubVisibility = (visible) => {
+    if (isStandaloneEditorPage && visible) {
+      window.location.href = "/index.html?choose=1";
+      return;
+    }
+    if (refs.hubScreen) refs.hubScreen.hidden = !visible;
     refs.hubScreen?.classList.toggle("is-hidden", !visible);
   };
 
@@ -2430,6 +2438,118 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   };
 
+
+  const formatEts2PathValue = (value) => String(value || "-");
+
+  const setEts2DataLocationStatus = (state, label) => {
+    setModalStatus(refs.ets2DataLocationStatusPill, state, label);
+  };
+
+  const syncEts2DataLocationControls = () => {
+    const busy = ets2DataLocationLoading || ets2DataLocationChanging;
+    const mode = activeEts2DataLocation?.mode || "default";
+    refs.ets2DataLocationDefaultBtn?.classList.toggle("is-active", mode === "default");
+    refs.ets2DataLocationCustomBtn?.classList.toggle("is-active", mode === "custom");
+    [
+      refs.ets2DataLocationDefaultBtn,
+      refs.ets2DataLocationCustomBtn,
+      refs.ets2DataLocationBrowseBtn,
+      refs.ets2DataLocationResetBtn,
+      refs.ets2DataLocationRefreshBtn,
+    ].forEach((button) => {
+      if (button) button.disabled = busy;
+    });
+    if (busy) {
+      setEts2DataLocationStatus("loading", uiText.ets2DataLocationLoading);
+    }
+  };
+
+  const renderEts2DataLocation = async (data) => {
+    activeEts2DataLocation = data || null;
+    const validation = data?.validation || {};
+    const validationLabel = validation.messageKey
+      ? await t(validation.messageKey)
+      : uiText.ets2DataLocationUnknown;
+
+    if (refs.ets2DataLocationValidation) refs.ets2DataLocationValidation.textContent = validationLabel;
+    if (refs.ets2DataLocationHomedir) refs.ets2DataLocationHomedir.textContent = formatEts2PathValue(data?.homedirRoot);
+    if (refs.ets2DataLocationGameDir) refs.ets2DataLocationGameDir.textContent = formatEts2PathValue(data?.gameDataDir);
+    if (refs.ets2DataLocationProfilesCount) refs.ets2DataLocationProfilesCount.textContent = String(validation.profilesCount ?? 0);
+    if (refs.ets2DataLocationProfilesPath) refs.ets2DataLocationProfilesPath.textContent = formatEts2PathValue(data?.profilesDir);
+    if (refs.ets2DataLocationSteamProfilesCount) refs.ets2DataLocationSteamProfilesCount.textContent = String(validation.steamProfilesCount ?? 0);
+    if (refs.ets2DataLocationSteamProfilesPath) refs.ets2DataLocationSteamProfilesPath.textContent = formatEts2PathValue(data?.steamProfilesDir);
+    if (refs.ets2DataLocationLocalModsCount) refs.ets2DataLocationLocalModsCount.textContent = String(validation.localModsCount ?? 0);
+    if (refs.ets2DataLocationLocalModsPath) refs.ets2DataLocationLocalModsPath.textContent = formatEts2PathValue(data?.localModDir);
+    if (refs.ets2DataLocationConfigPath) refs.ets2DataLocationConfigPath.textContent = formatEts2PathValue(data?.configFile);
+    if (refs.ets2DataLocationLogPath) refs.ets2DataLocationLogPath.textContent = formatEts2PathValue(data?.gameLogFile);
+    if (refs.ets2DataLocationCrashPath) refs.ets2DataLocationCrashPath.textContent = formatEts2PathValue(data?.gameCrashFile);
+
+    const statusState = validation.status === "ok"
+      ? "success"
+      : validation.status === "unresolved"
+        ? "error"
+        : "warning";
+    setEts2DataLocationStatus(statusState, validationLabel);
+    syncEts2DataLocationControls();
+  };
+
+  const refreshEts2DataLocation = async () => {
+    if (ets2DataLocationLoading) return;
+    ets2DataLocationLoading = true;
+    syncEts2DataLocationControls();
+    try {
+      const data = await invoke("get_ets2_data_location");
+      await renderEts2DataLocation(data);
+    } catch (error) {
+      console.error("ETS2 data location load failed:", error);
+      setEts2DataLocationStatus("error", uiText.ets2DataLocationLoadError);
+      window.showToast("toasts.ets2_data_location_load_error", {}, "error");
+    } finally {
+      ets2DataLocationLoading = false;
+      syncEts2DataLocationControls();
+    }
+  };
+
+  const refreshEditorAfterEts2DataLocationChange = async () => {
+    setEts2DataLocationStatus("loading", uiText.ets2DataLocationRescanning);
+    if (typeof window.refreshAfterEts2DataLocationChange === "function") {
+      await window.refreshAfterEts2DataLocationChange();
+    }
+    if (refs.modalModProfileManager && window.getComputedStyle(refs.modalModProfileManager).display !== "none") {
+      await window.loadSandboxPresetsIntoModal?.({ refreshSteamMods: false });
+    }
+  };
+
+  const applyEts2DataLocationChange = async (action) => {
+    if (ets2DataLocationChanging) return;
+    ets2DataLocationChanging = true;
+    setEts2DataLocationStatus("loading", uiText.ets2DataLocationSaving);
+    syncEts2DataLocationControls();
+    try {
+      const data = await action();
+      if (!data) return;
+      await renderEts2DataLocation(data);
+      await refreshEditorAfterEts2DataLocationChange();
+      await refreshEts2DataLocation();
+      window.showToast("toasts.ets2_data_location_updated", {}, "success");
+    } catch (error) {
+      console.error("ETS2 data location update failed:", error);
+      window.showToast("toasts.ets2_data_location_update_error", { error: await localizeError(error) }, "error");
+    } finally {
+      ets2DataLocationChanging = false;
+      syncEts2DataLocationControls();
+    }
+  };
+
+  const closeEts2DataLocationModal = () => {
+    if (refs.modalEts2DataLocation) refs.modalEts2DataLocation.style.display = "none";
+  };
+
+  const openEts2DataLocationModal = async () => {
+    closeNavDrawer();
+    if (refs.modalEts2DataLocation) refs.modalEts2DataLocation.style.display = "flex";
+    await refreshEts2DataLocation();
+  };
   const parseOptionalIntegerInput = (element, errorMessage, { min = null } = {}) => {
     const raw = String(element?.value ?? "").trim();
     if (!raw) return null;
@@ -2885,7 +3005,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         console.error("Save safety refresh failed:", error);
         setStatusDotTone(refs.saveHealthStatusDot, "broken");
         if (refs.saveHealthStatusText) refs.saveHealthStatusText.textContent = await t("editor.safety.status.broken");
-        if (refs.saveHealthSummary) refs.saveHealthSummary.textContent = error?.toString?.() || "Save safety refresh failed.";
+        if (refs.saveHealthSummary) refs.saveHealthSummary.textContent = await t("ui.save_safety_failed");
         await syncRecoveryPresentation();
       } finally {
         recoveryLoading = false;
@@ -3025,42 +3145,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     localStorage.setItem("ets2_editor_mode", isAdvanced ? "advanced" : "safe");
   };
 
-  const openColorSchemeModal = async () => {
-    try {
-      const currentTheme = localStorage.getItem("theme") || "neon-red";
-      const themeMap = {
-        "label.label_color_theme_dark": "dark",
-        "label.label_color_theme_light": "light",
-        "label.label_color_theme_neon": "neon",
-        "label.label_color_theme_neon_red": "neon-red",
-      };
-      const currentKey =
-        Object.keys(themeMap).find((key) => themeMap[key] === currentTheme) || "label.label_color_theme_dark";
-      const res = await openModalMulti("tools.settings.color_theme.modalTextTitle", [
-        {
-          type: "dropdown",
-          id: "theme",
-          label: "label.label_theme",
-          value: currentKey,
-          options: Object.keys(themeMap),
-        },
-      ]);
-      if (!res) return;
-      const newTheme = themeMap[res.theme];
-      if (newTheme) {
-        document.body.classList.remove("theme-dark", "theme-light", "theme-neon", "theme-neon-red");
-        document.body.classList.add(`theme-${newTheme}`);
-        localStorage.setItem("theme", newTheme);
-        window.showToast("toasts.color_theme_success", { newTheme }, "success");
-      } else {
-        console.error("Unknown theme selected:", res.theme);
-        window.showToast("toasts.color_theme_error", "error");
-      }
-    } catch (error) {
-      console.error("Theme change error:", error);
-      window.showToast("toasts.color_theme_error", "error");
-    }
-  };
+  const openColorSchemeModal = () => openThemeSettings(openModalMulti);
 
   const renderTelemetry = (data) => {
     const speed = Number(data?.speed ?? data?.speed_kph ?? 0);
@@ -3592,7 +3677,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     await updateUserMenu();
   } else {
     applyHubMode("editor");
-    setHubVisibility(true);
+    setHubVisibility(!isStandaloneEditorPage);
     window.careerAuthUser = null;
     await updateUserMenu();
   }
@@ -3646,7 +3731,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       localStorage.setItem("ets2_force_profile_picker_open", "1");
       location.reload();
     } catch (error) {
-      showToast("toasts.generic_error_prefix", { error: error.toString() }, "error");
+      showToast("toasts.generic_error_prefix", { error: await localizeError(error) }, "error");
     }
   };
 
@@ -4087,6 +4172,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   window.openRecoveryCenterModal = openRecoveryCenterModal;
   window.openSafeValueResetModal = openSafeValueResetModal;
   window.openUserLogsModal = openUserLogsModal;
+  window.openEts2DataLocationModal = openEts2DataLocationModal;
   syncSafeResetCard();
   syncUserLogsControls();
 
@@ -4282,7 +4368,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const matched = profiles.find((profile) => profile.path === last && profile.success);
         if (matched) {
           window.selectedProfilePath = matched.path;
-          refs.profileNameDisplay.textContent = matched.name ?? "Unknown";
+          refs.profileNameDisplay.textContent = matched.name ?? await t("ui.unknown_profile");
           updateDropdownSelectionState(refs.profileDropdownList, matched.path);
           await loadSelectedProfile();
           return;
@@ -4298,6 +4384,46 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   };
 
+
+  window.refreshAfterEts2DataLocationChange = async function () {
+    localStorage.removeItem("ets2_profiles_cache");
+    localStorage.removeItem("ets2_last_profile");
+    window.selectedProfilePath = null;
+    window.selectedSavePath = null;
+    window.currentSavePath = null;
+    window.currentProfileData = {};
+    window.currentQuicksaveData = {};
+    window.readSaveGameConfig = {};
+    window.baseConfig = {};
+    window.allTrucks = [];
+    window.playerTruck = null;
+    window.allTrailers = [];
+    window.playerTrailer = null;
+    window.playerTrailerHasActiveJob = false;
+    window.playerTrailerJobCargoMass = null;
+    window.playerTrailerLoadError = null;
+    window.selectedProfileHasAvatar = false;
+
+    refs.profileDropdownList.innerHTML = "";
+    refs.saveDropdownList.innerHTML = "";
+    refs.profileNameDisplay.textContent = uiText.noProfile;
+    refs.saveNameDisplay.textContent = uiText.noSave;
+    refs.openSaveModalBtn.disabled = true;
+
+    clearSafeResetInputs();
+    activeUndoStatus = {
+      canUndo: false,
+      lastUndoLabel: null,
+      lastUndoTimestamp: null,
+    };
+    syncSafeResetCard();
+    recoveryDataDirty = true;
+    recoveryHasLoaded = false;
+    await resetSaveSafetyUi();
+    await updateOperationalOverview();
+    await scanProfiles({ saveToBackend: true, showToasts: false });
+    loadTools(activeTab);
+  };
   refs.applyResetValuesBtn?.addEventListener("click", async () => {
     await applySafeResetValues();
   });
@@ -4322,6 +4448,44 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
+
+  refs.modalEts2DataLocationClose?.addEventListener("click", closeEts2DataLocationModal);
+
+  refs.modalEts2DataLocation?.addEventListener("click", (event) => {
+    if (event.target === refs.modalEts2DataLocation) {
+      closeEts2DataLocationModal();
+    }
+  });
+
+  refs.ets2DataLocationRefreshBtn?.addEventListener("click", refreshEts2DataLocation);
+
+  refs.ets2DataLocationDefaultBtn?.addEventListener("click", async () => {
+    await applyEts2DataLocationChange(() => invoke("set_ets2_data_location_mode", {
+      mode: "default",
+      customHomedir: null,
+    }));
+  });
+
+  refs.ets2DataLocationCustomBtn?.addEventListener("click", async () => {
+    if (!activeEts2DataLocation?.customHomedir) {
+      const dialogTitle = await t("modals.ets2_data_location.dialog_title");
+      await applyEts2DataLocationChange(() => invoke("choose_ets2_data_location", { dialogTitle }));
+      return;
+    }
+    await applyEts2DataLocationChange(() => invoke("set_ets2_data_location_mode", {
+      mode: "custom",
+      customHomedir: activeEts2DataLocation.customHomedir,
+    }));
+  });
+
+  refs.ets2DataLocationBrowseBtn?.addEventListener("click", async () => {
+    const dialogTitle = await t("modals.ets2_data_location.dialog_title");
+    await applyEts2DataLocationChange(() => invoke("choose_ets2_data_location", { dialogTitle }));
+  });
+
+  refs.ets2DataLocationResetBtn?.addEventListener("click", async () => {
+    await applyEts2DataLocationChange(() => invoke("reset_ets2_data_location"));
+  });
   refs.modalUserLogsClose?.addEventListener("click", closeUserLogsModal);
 
   refs.modalUserLogs?.addEventListener("click", (event) => {
@@ -4447,17 +4611,18 @@ document.addEventListener("DOMContentLoaded", async () => {
       showToast("toasts.no_profile_selected", {}, "warning");
       return;
     }
-    const choice = await openModalMulti("Manage Profile", [{
+    const choice = await openModalMulti("ui.manage_profile", [{
       type: "dropdown",
       id: "action",
-      label: "Action",
+      label: "ui.action",
       value: "Duplicate",
       options: ["Duplicate", "Rename"],
+      optionLabels: { Duplicate: await t("ui.duplicate"), Rename: await t("ui.rename") },
     }]);
     if (!choice) return;
     if (choice.action === "Duplicate") return openCloneProfileModal();
     const currentName = refs.profileNameDisplay.textContent;
-    const newName = await openModalText("Rename Profile", "New Name", currentName);
+    const newName = await openModalText("ui.rename_profile", "ui.new_name", currentName);
     if (newName && newName.trim() !== "" && newName !== currentName) {
       try {
         window.selectedProfilePath = await invoke("profile_rename", { newName: newName.trim() });
@@ -4466,7 +4631,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         await scanProfiles({ saveToBackend: true, showToasts: false });
         await loadSelectedProfile();
       } catch (error) {
-        showToast("toasts.profile_rename_error", { error: error.toString() }, "error");
+        showToast("toasts.profile_rename_error", { error: await localizeError(error) }, "error");
       }
     }
   });
@@ -4482,10 +4647,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       showToast("toasts.no_other_profiles", {}, "warning");
       return;
     }
-    const result = await openModalMulti("Copy Controls", [{
+    const result = await openModalMulti("ui.copy_controls", [{
       type: "dropdown",
       id: "target",
-      label: "Target Profile",
+      label: "ui.target_profile",
       value: `${targets[0].name} [${targets[0].path}]`,
       options: targets.map((profile) => `${profile.name} [${profile.path}]`),
     }]);
@@ -4510,10 +4675,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       showToast("toasts.no_other_valid_profiles", {}, "warning");
       return;
     }
-    const result = await openModalMulti("Move Mods", [{
+    const result = await openModalMulti("ui.move_mods", [{
       type: "dropdown",
       id: "target",
-      label: "Target Profile",
+      label: "ui.target_profile",
       value: `${targets[0].name} [${targets[0].path}]`,
       options: targets.map((profile) => `${profile.name} [${profile.path}]`),
     }]);
@@ -4531,7 +4696,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const currentLanguage = await invoke("get_current_language_command");
 
       if (!languages?.length) {
-        showToast("toasts.load_languages_error", { error: "No languages available" }, "error");
+        showToast("ui.no_languages", {}, "error");
         return;
       }
 
@@ -4560,7 +4725,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       location.reload();
     } catch (error) {
       console.error("Language picker failed:", error);
-      showToast("toasts.load_languages_error", { error: error.toString() }, "error");
+      showToast("toasts.load_languages_error", { error: await localizeError(error) }, "error");
     }
   };
 
@@ -4600,4 +4765,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     showCareerLoadFailure(error);
   }
 });
+
+
+
+
+
+
 

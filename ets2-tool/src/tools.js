@@ -1,4 +1,5 @@
-import {
+import { openThemeSettings } from "./modules/shared/theme_settings.js";
+﻿import {
   openModalNumber,
   openModalText,
   openModalSlider,
@@ -529,7 +530,7 @@ export const tools = {
 
             const moneyDisplay = document.querySelector("#moneyShow");
             if (moneyDisplay) {
-              moneyDisplay.textContent = `Geld: ${newValue.toLocaleString()} €`;
+              moneyDisplay.textContent = `Geld: ${newValue.toLocaleString()} â‚¬`;
             }
 
             showToast("toasts.change_money_success", { newValue }, "success");
@@ -746,53 +747,19 @@ export const tools = {
       disabled: false,
     },
     {
+      title: "tools.settings.ets2_data_location.title",
+      desc: "tools.settings.ets2_data_location.desc",
+      img: "images/dev.jpg",
+      action: async () => {
+        await window.openEts2DataLocationModal?.();
+      },
+      disabled: false,
+    },
+    {
       title: "tools.settings.color_theme.title",
       desc: "tools.settings.color_theme.desc",
       img: "images/themeChooser.png",
-      action: async () => {
-        try {
-          const currentTheme = localStorage.getItem("theme") || "neon-red";
-          
-          // Internal values map
-          const themeMap = {
-            "label.label_color_theme_dark": "dark",
-            "label.label_color_theme_light": "light",
-            "label.label_color_theme_neon": "neon",
-            "label.label_color_theme_neon_red": "neon-red"
-          };
-          
-          // Reverse map to find key for current theme
-          const currentKey = Object.keys(themeMap).find(key => themeMap[key] === currentTheme) || "label.label_color_theme_dark";
-
-          const res = await openModalMulti("tools.settings.color_theme.modalTextTitle", [
-            {
-              type: "dropdown",
-              id: "theme",
-              label: "label.label_theme",
-              value: currentKey,
-              options: Object.keys(themeMap),
-            },
-          ]);
-
-          if (!res) return;
-
-          // Lookup internal value from selected key
-          const newTheme = themeMap[res.theme];
-
-          if (newTheme) {
-            document.body.classList.remove("theme-dark", "theme-light", "theme-neon", "theme-neon-red");
-            document.body.classList.add(`theme-${newTheme}`);
-            localStorage.setItem("theme", newTheme);
-            showToast("toasts.color_theme_success", { newTheme }, "success");
-          } else {
-             console.error("Unknown theme selected:", res.theme);
-             showToast("toasts.color_theme_error", "error");
-          }
-        } catch (err) {
-          console.error("Theme change error:", err);
-          showToast("toasts.color_theme_error", "error");
-        }
-      },
+      action: () => openThemeSettings(openModalMulti),
       disabled: false,
     },
     {
@@ -828,7 +795,7 @@ export const tools = {
           const currentLang = await invoke("get_current_language_command");
 
           if (!languages || languages.length === 0) {
-            showToast("No languages available!", "error");
+            showToast("ui.no_languages", "error");
             return;
           }
 
@@ -855,7 +822,7 @@ export const tools = {
           if (!res || !res.language) return;
 
           if (res.language === currentLang) {
-            showToast("Language already active.", "info");
+            showToast("ui.language_active", "info");
             return;
           }
 
@@ -864,9 +831,9 @@ export const tools = {
             language: res.language,
           });
 
-          showToast(message, "success");
+          showToast("toasts.language_updated", "success");
 
-          // OPTIONAL (empfohlen, wenn UI statisch übersetzt ist)
+          // OPTIONAL (empfohlen, wenn UI statisch Ã¼bersetzt ist)
           location.reload();
 
         } catch (err) {
@@ -889,7 +856,7 @@ export const tools = {
 
           const numericValue = Number(newValue);
           if (Number.isNaN(numericValue)) {
-            showToast("Invalid value!", "warning");
+            showToast("ui.invalid_value", "warning");
             return;
           }
 
@@ -917,7 +884,7 @@ export const tools = {
           if (newValue !== null) {
             await invoke("edit_parking_doubles_value", { value: newValue });
             await loadProfileSaveConfig();
-            showToast("toasts.parking_doubles_success", { newValue: newValue ? "enabled" : "disabled" }, "success");
+            showToast("toasts.parking_doubles_success", { newValue: await window.t(newValue ? "ui.enabled" : "ui.disabled") }, "success");
           }
         } catch (err) {
           console.error("Parking doubles error:", err);
@@ -971,3 +938,8 @@ export function updateToolImagesForGame(game) {
     });
   });
 }
+
+
+
+
+

@@ -556,7 +556,9 @@ pub fn export_csv(
         .dialog()
         .file()
         .add_filter("CSV file", &["csv"])
-        .set_title("Export analytics CSV")
+        .set_title(crate::features::language::translator::t(
+            "ui.dialog_export_analytics",
+        ))
         .set_file_name(&default_file_name)
         .blocking_save_file();
 

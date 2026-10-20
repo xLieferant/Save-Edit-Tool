@@ -15,15 +15,18 @@ pub fn export_report(
         "errors.txt"
     };
     let title = if formatted {
-        "Export crash-report.txt"
+        crate::features::language::translator::t("ui.dialog_export_crash")
     } else {
-        "Export errors.txt"
+        crate::features::language::translator::t("ui.dialog_export_errors")
     };
 
     let file_path = app
         .dialog()
         .file()
-        .add_filter("Text file", &["txt"])
+        .add_filter(
+            crate::features::language::translator::t("ui.dialog_text_file"),
+            &["txt"],
+        )
         .set_title(title)
         .set_file_name(default_file_name)
         .blocking_save_file();

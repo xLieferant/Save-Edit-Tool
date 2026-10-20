@@ -100,3 +100,40 @@ Regular commits do **not** create update notifications.
 ## Contributing
 Feel free to open issues for ideas, bugs, or feature requests.  
 Pull requests are welcome, especially for translations and new features.
+
+
+## UI and localization checks
+
+The shared desktop design tokens are defined in `ets2-tool/src/styles/design_system.css`.
+All module pages load this stylesheet after their layout styles. The default theme
+uses neutral dark surfaces, subtle glass panels and visible keyboard focus states.
+Existing theme choices remain available.
+
+Run these checks from `ets2-tool/` with Node.js:
+
+```powershell
+node scripts/check_i18n.mjs
+node scripts/check_i18n.mjs --json
+node scripts/check_ui.mjs
+```
+
+The localization check validates German key coverage, literal source references,
+translation markers and interpolation placeholders. Its JSON report includes keys
+without detected references and missing entries in other languages. Dynamic key
+families require review; an unassigned candidate is not proof of unused text.
+Other languages continue to use the existing English fallback.
+
+The UI check uses an installed Chromium browser, set with `CHROME_PATH` when needed.
+It checks seven pages in German and English at 900 x 640, 1210 x 800 and 1600 x 1000,
+including translation switching, placeholder interpolation, hidden states, page
+overflow and enabled-button text contrast. It uses read-only Tauri fixtures and
+writes screenshots to a temporary directory. Native file dialogs and real savegame
+writes require separate desktop testing.
+
+The implementation report and file list are in [UI_REVIEW.md](ets2-tool/UI_REVIEW.md).
+
+The UI check also covers independent Dark/Light and green accent preferences,
+switch and checkbox interaction, garage lists with up to 125 entries, sidebar
+accessibility and workspace selection. Run `node scripts/check_ui.mjs --refinement-only`
+from `ets2-tool/` for these targeted workflows. See
+[UI_REFINEMENT_REVIEW.md](ets2-tool/UI_REFINEMENT_REVIEW.md) for results and limitations.

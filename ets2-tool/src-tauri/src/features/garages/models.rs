@@ -179,3 +179,100 @@ pub struct GarageRelinquishEmptyResult {
     pub save_hash: String,
     pub warnings: Vec<String>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct AiDriverSkills {
+    pub adr: u32,
+    pub long_dist: u32,
+    pub heavy: u32,
+    pub fragile: u32,
+    pub urgent: u32,
+    pub mechanical: u32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct AiDriverInfo {
+    pub driver_id: String,
+    pub display_name: Option<String>,
+    pub experience_points: Option<u64>,
+    pub level: Option<u32>,
+    pub skills: Option<AiDriverSkills>,
+    pub state: Option<i32>,
+    pub training_policy: Option<i32>,
+    pub garage_id: String,
+    pub garage_name: Option<String>,
+    pub garage_slot_index: usize,
+    pub truck_id: Option<String>,
+    pub active_job: bool,
+    pub removable: bool,
+    pub warnings: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct AiDriverTruckInfo {
+    pub truck_id: String,
+    pub garage_id: String,
+    pub garage_name: Option<String>,
+    pub garage_slot_index: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct AiDriverManagementResult {
+    pub game: String,
+    pub save_hash: String,
+    pub drivers: Vec<AiDriverInfo>,
+    pub available_driver_count: usize,
+    pub available_trucks: Vec<AiDriverTruckInfo>,
+    pub warnings: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct AiDriverGenerateRequest {
+    pub garage_id: String,
+    pub expected_save_hash: String,
+    pub count: usize,
+    #[serde(default)]
+    pub assign_trucks: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct AiDriverTruckAssignmentRequest {
+    pub driver_id: String,
+    pub expected_save_hash: String,
+    pub truck_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct AiDriverRemoveRequest {
+    pub driver_ids: Vec<String>,
+    pub expected_save_hash: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum AiDriverMutationOperation {
+    Generate,
+    AssignTruck,
+    UnassignTruck,
+    Remove,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct AiDriverMutationResult {
+    pub operation: AiDriverMutationOperation,
+    pub affected_driver_ids: Vec<String>,
+    pub backup_id: String,
+    pub backup_created: bool,
+    pub verified: bool,
+    pub save_hash: String,
+    pub management: AiDriverManagementResult,
+    pub warnings: Vec<String>,
+}
