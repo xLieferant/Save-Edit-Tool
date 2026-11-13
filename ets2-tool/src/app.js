@@ -266,6 +266,9 @@ const levelSystemTargetLevelMeta = document.getElementById("levelSystemTargetLev
 const levelSystemTargetXpMeta = document.getElementById("levelSystemTargetXpMeta");
 const modalLevelSystemApply = document.getElementById("modalLevelSystemApply");
 const modalLevelSystemClose = document.getElementById("modalLevelSystemClose");
+const modalLevelSystemKicker = document.getElementById("modalLevelSystemKicker");
+const modalLevelSystemTitle = document.getElementById("modalLevelSystemTitle");
+const modalLevelSystemDescription = document.getElementById("modalLevelSystemDescription");
 const modalConflictDiagnostics = document.getElementById("modalConflictDiagnostics");
 const modalConflictDiagnosticsConfidence = document.getElementById("modalConflictDiagnosticsConfidence");
 const modalConflictDiagnosticsHealth = document.getElementById("modalConflictDiagnosticsHealth");
@@ -604,6 +607,34 @@ function setLevelSystemHint(message = "") {
   if (!levelSystemHint) return;
   levelSystemHint.textContent = message;
   levelSystemHint.hidden = !message;
+}
+
+const LEVEL_SYSTEM_HEADER_KEYS = {
+  truck: {
+    kicker: "modals.level_system.kicker",
+    title: "modals.level_system.title",
+    description: "modals.level_system.description",
+  },
+  bus: {
+    kicker: "modals.level_system.bus_kicker",
+    title: "modals.level_system.bus_title",
+    description: "modals.level_system.bus_description",
+  },
+};
+
+async function setLevelSystemHeader(career) {
+  const keys = LEVEL_SYSTEM_HEADER_KEYS[career] || LEVEL_SYSTEM_HEADER_KEYS.truck;
+  const entries = [
+    [modalLevelSystemKicker, keys.kicker],
+    [modalLevelSystemTitle, keys.title],
+    [modalLevelSystemDescription, keys.description],
+  ];
+
+  for (const [element, key] of entries) {
+    if (!element) continue;
+    element.setAttribute("data-translate", key);
+    element.textContent = await window.t(key);
+  }
 }
 
 function setDiagnosticsActionState(disabled) {
@@ -1600,8 +1631,12 @@ export async function openCloneProfileModal() {
 /* --------------------------------------------------------------
    LEVEL / XP MODAL
 -------------------------------------------------------------- */
-export async function openLevelSystemModal() {
+export async function openLevelSystemModal({ career = "truck" } = {}) {
   if (!modalLevelSystem) return;
+
+  // "truck" edits experience_points, "bus" edits bus_experience_points (Coaches DLC).
+  const isBus = career === "bus";
+  const xpKey = isBus ? "bus_xp" : "xp";
 
   if (!window.selectedProfilePath) {
     window.showToast("toasts.profile_not_selected", "warning");
@@ -1613,7 +1648,7 @@ export async function openLevelSystemModal() {
     return;
   }
 
-  if ((!window.currentProfileData || window.currentProfileData.xp === undefined) && typeof window.loadProfileData === "function") {
+  if ((!window.currentProfileData || window.currentProfileData[xpKey] === undefined) && typeof window.loadProfileData === "function") {
     try {
       await window.loadProfileData();
     } catch (error) {
@@ -1621,6 +1656,11 @@ export async function openLevelSystemModal() {
       window.showToast("toasts.level_system_missing_data", "error");
       return;
     }
+  }
+
+  if (isBus && (window.currentProfileData?.bus_xp === undefined || window.currentProfileData?.bus_xp === null)) {
+    window.showToast("toasts.bus_level_system_missing_data", "warning");
+    return;
   }
 
   const table = await loadLevelTable();
@@ -1653,7 +1693,7 @@ export async function openLevelSystemModal() {
 
   const maxLevel = getMaxLevel(table);
   const maxXp = getXpForLevel(maxLevel, table);
-  const currentRawXp = Math.max(0, Math.floor(Number(window.currentProfileData?.xp ?? 0)));
+  const currentRawXp = Math.max(0, Math.floor(Number(window.currentProfileData?.[xpKey] ?? 0)));
   const currentXp = Number.isFinite(currentRawXp) ? currentRawXp : 0;
   const currentLevel = getLevelForXp(currentXp, table);
   const currentLevelXp = getXpForLevel(currentLevel, table);
@@ -1821,6 +1861,7 @@ export async function openLevelSystemModal() {
     setLevelSystemHint(state.hint);
   };
 
+  await setLevelSystemHeader(isBus ? "bus" : "truck");
   modalLevelSystem.style.display = "flex";
 
   function cleanup() {
@@ -1889,26 +1930,27 @@ export async function openLevelSystemModal() {
     render();
 
     try {
-      await window.invoke("edit_level", { xp: state.targetXp });
+      await window.invoke(isBus ? "edit_bus_xp" : "edit_level", { xp: state.targetXp });
       if (typeof window.loadProfileData === "function") {
         await window.loadProfileData();
       }
       if (window.currentProfileData) {
-        window.currentProfileData.xp = state.targetXp;
+        window.currentProfileData[xpKey] = state.targetXp;
       }
       if (typeof window.refreshOperationalOverview === "function") {
         await window.refreshOperationalOverview();
       }
-      window.showToast("toasts.level_system_apply_success", {
+      window.showToast(isBus ? "toasts.bus_level_system_apply_success" : "toasts.level_system_apply_success", {
         level: state.targetLevel,
         xp: formatMetric(state.targetXp, 0),
       }, "success");
       cleanup();
     } catch (error) {
+      const applyErrorKey = isBus ? "toasts.bus_level_system_apply_error" : "toasts.level_system_apply_error";
       console.error("Level system apply failed:", error);
-      window.showToast("toasts.level_system_apply_error", "error");
+      window.showToast(applyErrorKey, "error");
       state.applying = false;
-      state.hint = await localizeError(error, "toasts.level_system_apply_error");
+      state.hint = await localizeError(error, applyErrorKey);
       render();
     }
   }

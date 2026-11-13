@@ -36,6 +36,7 @@ const SAVE_MUTATION_COMMANDS = new Set([
   "edit_console_value",
   "edit_convoy_value",
   "edit_developer_value",
+  "edit_bus_xp",
   "edit_level",
   "edit_money",
   "edit_parking_doubles_value",

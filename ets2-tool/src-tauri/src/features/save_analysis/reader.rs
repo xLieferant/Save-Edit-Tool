@@ -167,6 +167,9 @@ fn read_all_save_data_from_path(
             r"(?m)^\s*experience_points:\s*(\d+)",
             r"info_players_experience:\s*(\d+)",
         ),
+        bus_xp: re(r"(?m)^\s*bus_experience_points:\s*(\d+)")
+            .captures(&content)
+            .and_then(|c| c[1].parse().ok()),
         recruitments: re(r"info_unlocked_recruitments:\s*(\d+)")
             .captures(&content)
             .and_then(|c| c[1].parse().ok()),

@@ -4,6 +4,8 @@ use serde::Serialize;
 pub struct SaveGameData {
     pub money: Option<i64>,
     pub xp: Option<i64>,
+    /// Bus career XP (Coaches DLC). `None` when the save has no bus career data.
+    pub bus_xp: Option<i64>,
     pub recruitments: Option<i64>,
     pub dealers: Option<i64>,
     pub visited_cities: Option<i64>,
