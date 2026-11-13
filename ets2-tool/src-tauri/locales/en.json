@@ -2994,6 +2994,7 @@
       "ui": {
             "no_languages": "No languages available.",
             "language_active": "This language is already selected.",
+            "change_language": "Change language",
             "invalid_value": "Enter a valid value.",
             "enabled": "Enabled",
             "disabled": "Disabled",

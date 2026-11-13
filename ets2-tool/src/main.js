@@ -553,6 +553,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     statusGameRunning: document.getElementById("statusGameRunning"),
     statusPluginInstalled: document.getElementById("statusPluginInstalled"),
     statusSdkConnected: document.getElementById("statusSdkConnected"),
+    languageMenuBtn: document.getElementById("languageMenuBtn"),
+    languageMenuLabel: document.getElementById("languageMenuLabel"),
     userMenuBtn: document.getElementById("userMenuBtn"),
     userMenuLabel: document.getElementById("userMenuLabel"),
     userMenuDropdown: document.getElementById("userMenuDropdown"),
@@ -4059,6 +4061,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     event.stopPropagation();
     toggleUserMenu();
   });
+
+  refs.languageMenuBtn?.addEventListener("click", async (event) => {
+    event.stopPropagation();
+    setUserMenuOpen(false);
+    closeDropdowns();
+    if (typeof window.showLanguagePicker === "function") {
+      await window.showLanguagePicker();
+    }
+  });
+
+  if (refs.languageMenuLabel) {
+    invoke("get_current_language_command")
+      .then((code) => {
+        if (code) refs.languageMenuLabel.textContent = String(code).toUpperCase();
+      })
+      .catch((error) => console.warn("Current language lookup failed:", error));
+  }
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
