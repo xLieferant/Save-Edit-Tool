@@ -1334,6 +1334,9 @@
             "level_system_load_error": "Falha ao carregar a tabela de níveis.",
             "level_system_apply_success": "Nível {level} com {xp} XP aplicado.",
             "level_system_apply_error": "Falha ao aplicar o nível selecionado.",
+            "bus_level_system_missing_data": "Este save não tem dados da carreira de ônibus (DLC Coaches).",
+            "bus_level_system_apply_success": "Nível de ônibus {level} com {xp} XP aplicado.",
+            "bus_level_system_apply_error": "Falha ao aplicar o nível de ônibus selecionado.",
             "safety_report_copied": "Relatório de suporte copiado.",
             "safety_logs_exported": "Logs exportados para {path}.",
             "safety_logs_export_failed": "Falha ao exportar os logs.",
@@ -1422,6 +1425,10 @@
                   "level_system": {
                         "title": "Sistema de nível e XP",
                         "desc": "Defina um nível-alvo visualmente com a tabela real de XP e pré-visualização ao vivo."
+                  },
+                  "bus_level_system": {
+                        "title": "Nível e XP do ônibus",
+                        "desc": "Defina o nível da carreira de ônibus (DLC Coaches) com a tabela real de XP e pré-visualização ao vivo."
                   },
                   "change_money": {
                         "title": "Editor de dinheiro",
@@ -1985,6 +1992,9 @@
                   "kicker": "Progressão do perfil",
                   "title": "Nível e XP",
                   "description": "Defina a progressão do seu perfil por nível ou por XP exato.",
+                  "bus_kicker": "Progressão da carreira de ônibus",
+                  "bus_title": "Nível e XP do ônibus",
+                  "bus_description": "Defina a progressão da sua carreira de ônibus (DLC Coaches) por nível ou por XP exato.",
                   "mode_level": "Definir por nível",
                   "mode_level_desc": "Digite um nível e veja o XP calculado.",
                   "mode_xp": "Definir por XP",
