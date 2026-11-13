@@ -1341,6 +1341,9 @@
             "level_system_load_error": "Failed to load the level table.",
             "level_system_apply_success": "Level {level} with {xp} XP applied.",
             "level_system_apply_error": "Failed to apply the selected level.",
+            "bus_level_system_missing_data": "This save has no bus career data (Coaches DLC).",
+            "bus_level_system_apply_success": "Bus level {level} with {xp} XP applied.",
+            "bus_level_system_apply_error": "Failed to apply the selected bus level.",
             "safety_report_copied": "Support report copied.",
             "safety_logs_exported": "Logs exported to {path}.",
             "safety_logs_export_failed": "Log export failed.",
@@ -1429,6 +1432,10 @@
                   "level_system": {
                         "title": "Level & XP System",
                         "desc": "Set a target level visually with the real XP table and live preview."
+                  },
+                  "bus_level_system": {
+                        "title": "Bus Level & XP",
+                        "desc": "Set the bus career level (Coaches DLC) with the real XP table and live preview."
                   },
                   "change_money": {
                         "title": "Money Editor",
@@ -1992,6 +1999,9 @@
                   "kicker": "Profile progression",
                   "title": "Level & XP",
                   "description": "Set your profile progression by level or exact XP.",
+                  "bus_kicker": "Bus career progression",
+                  "bus_title": "Bus Level & XP",
+                  "bus_description": "Set your bus career (Coaches DLC) progression by level or exact XP.",
                   "mode_level": "Set by Level",
                   "mode_level_desc": "Enter a level and preview the calculated XP.",
                   "mode_xp": "Set by XP",

@@ -1324,6 +1324,9 @@
     "level_system_load_error": "Level-Tabelle konnte nicht geladen werden.",
     "level_system_apply_success": "Level {level} mit {xp} EP angewendet.",
     "level_system_apply_error": "Das ausgewählte Level konnte nicht angewendet werden.",
+    "bus_level_system_missing_data": "Dieser Speicherstand enthält keine Bus-Karriere (Coaches-DLC).",
+    "bus_level_system_apply_success": "Bus-Level {level} mit {xp} EP angewendet.",
+    "bus_level_system_apply_error": "Das ausgewählte Bus-Level konnte nicht angewendet werden.",
     "safety_report_copied": "Support-Bericht kopiert.",
     "safety_logs_exported": "Logs nach {path} exportiert.",
     "safety_logs_export_failed": "Log-Export fehlgeschlagen.",
@@ -1412,6 +1415,10 @@
       "level_system": {
         "title": "Level- & XP-System",
         "desc": "Setze ein Ziel-Level visuell mit echter EP-Tabelle und Live-Vorschau."
+      },
+      "bus_level_system": {
+        "title": "Bus-Level & XP",
+        "desc": "Setze das Level der Bus-Karriere (Coaches-DLC) visuell mit echter EP-Tabelle und Live-Vorschau."
       },
       "change_money": {
         "title": "Geld-Editor",
@@ -1975,6 +1982,9 @@
       "kicker": "Profilfortschritt",
       "title": "Level & XP",
       "description": "Setze deinen Profilfortschritt per Level oder exakter XP.",
+      "bus_kicker": "Bus-Karrierefortschritt",
+      "bus_title": "Bus-Level & XP",
+      "bus_description": "Setze den Fortschritt deiner Bus-Karriere (Coaches-DLC) per Level oder exakter XP.",
       "mode_level": "Nach Level setzen",
       "mode_level_desc": "Gib ein Level ein und sieh dir die berechnete XP-Vorschau an.",
       "mode_xp": "Nach XP setzen",

@@ -698,6 +698,14 @@ export const tools = {
       },
     },
     {
+      title: "tools.profile.bus_level_system.title",
+      desc: "tools.profile.bus_level_system.desc",
+      img: "images/xp.jpg",
+      action: async () => {
+        await openLevelSystemModal({ career: "bus" });
+      },
+    },
+    {
       title: "tools.profile.mod_conflict_diagnostics.title",
       desc: "tools.profile.mod_conflict_diagnostics.desc",
       img: "images/dev.jpg",

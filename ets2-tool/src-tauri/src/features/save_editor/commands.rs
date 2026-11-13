@@ -782,6 +782,63 @@ pub fn edit_level(
     Ok(())
 }
 
+/// Reads the bus career XP (Coaches DLC) from game.sii of the active save.
+/// Returns `None` when the save has no bus career data. The value only exists
+/// in game.sii (not in info.sii), so it is read on demand instead of in
+/// `read_all_save_data`.
+#[command]
+pub fn read_bus_xp(profile_state: State<'_, AppProfileState>) -> Result<Option<i64>, String> {
+    let path = get_active_save_path(profile_state.inner()).map_err(|error| error.user_message)?;
+    let content = decrypt_if_needed(&path)?;
+
+    let re_bus = Regex::new(r"(?m)^\s*bus_experience_points:\s*(\d+)")
+        .map_err(|error| format!("Bus-XP-Regel ungültig: {}", error))?;
+    Ok(re_bus
+        .captures(&content)
+        .and_then(|caps| caps[1].parse::<i64>().ok()))
+}
+
+/// Sets the bus career XP (Coaches DLC) stored as `bus_experience_points`
+/// in the economy unit of game.sii. The truck career XP is left untouched.
+#[command]
+pub fn edit_bus_xp(
+    xp: i64,
+    profile_state: State<'_, AppProfileState>,
+    profile_cache: State<'_, ProfileCache>,
+    decrypt_cache: State<'_, DecryptCache>,
+) -> Result<(), String> {
+    if xp < 0 {
+        return Err("Bus XP must not be negative".into());
+    }
+
+    let path = get_active_save_path(profile_state.inner()).map_err(|error| error.user_message)?;
+    let content = decrypt_if_needed(&path)?;
+
+    let re_bus = Regex::new(r"(?m)^(\s*)bus_experience_points:\s*\d+")
+        .map_err(|error| format!("Bus-XP-Regel ungültig: {}", error))?;
+    if !re_bus.is_match(&content) {
+        return Err("bus_experience_points not found (Coaches DLC career missing in this save)".into());
+    }
+    let content = re_bus
+        .replace(&content, format!("${{1}}bus_experience_points: {}", xp))
+        .to_string();
+
+    write_text_with_auto_backup(
+        profile_state.inner(),
+        &path,
+        "edit_bus_xp",
+        "before bus xp edit",
+        "Bus career XP was updated for the active save.",
+        &content,
+        |_| Ok(()),
+    )
+    .map_err(|error| error.user_message)?;
+    decrypt_cache.invalidate_path(&path);
+    profile_cache.invalidate_save_data();
+    dev_log!("Bus-XP geändert: {}", xp);
+    Ok(())
+}
+
 #[derive(Deserialize)]
 pub struct EditValuePayload {
     value: String,
