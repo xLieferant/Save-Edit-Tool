@@ -1636,7 +1636,6 @@ export async function openLevelSystemModal({ career = "truck" } = {}) {
 
   // "truck" edits experience_points, "bus" edits bus_experience_points (Coaches DLC).
   const isBus = career === "bus";
-  const xpKey = isBus ? "bus_xp" : "xp";
 
   if (!window.selectedProfilePath) {
     window.showToast("toasts.profile_not_selected", "warning");
@@ -1648,7 +1647,7 @@ export async function openLevelSystemModal({ career = "truck" } = {}) {
     return;
   }
 
-  if ((!window.currentProfileData || window.currentProfileData[xpKey] === undefined) && typeof window.loadProfileData === "function") {
+  if ((!window.currentProfileData || window.currentProfileData.xp === undefined) && typeof window.loadProfileData === "function") {
     try {
       await window.loadProfileData();
     } catch (error) {
@@ -1658,9 +1657,18 @@ export async function openLevelSystemModal({ career = "truck" } = {}) {
     }
   }
 
-  if (isBus && (window.currentProfileData?.bus_xp === undefined || window.currentProfileData?.bus_xp === null)) {
-    window.showToast("toasts.bus_level_system_missing_data", "warning");
-    return;
+  // Bus XP only exists in game.sii, so it is read on demand.
+  let busXp = null;
+  if (isBus) {
+    try {
+      busXp = await window.invoke("read_bus_xp");
+    } catch (error) {
+      console.error("Bus level system data load failed:", error);
+    }
+    if (busXp === null || busXp === undefined) {
+      window.showToast("toasts.bus_level_system_missing_data", "warning");
+      return;
+    }
   }
 
   const table = await loadLevelTable();
@@ -1693,7 +1701,7 @@ export async function openLevelSystemModal({ career = "truck" } = {}) {
 
   const maxLevel = getMaxLevel(table);
   const maxXp = getXpForLevel(maxLevel, table);
-  const currentRawXp = Math.max(0, Math.floor(Number(window.currentProfileData?.[xpKey] ?? 0)));
+  const currentRawXp = Math.max(0, Math.floor(Number((isBus ? busXp : window.currentProfileData?.xp) ?? 0)));
   const currentXp = Number.isFinite(currentRawXp) ? currentRawXp : 0;
   const currentLevel = getLevelForXp(currentXp, table);
   const currentLevelXp = getXpForLevel(currentLevel, table);
@@ -1934,8 +1942,8 @@ export async function openLevelSystemModal({ career = "truck" } = {}) {
       if (typeof window.loadProfileData === "function") {
         await window.loadProfileData();
       }
-      if (window.currentProfileData) {
-        window.currentProfileData[xpKey] = state.targetXp;
+      if (window.currentProfileData && !isBus) {
+        window.currentProfileData.xp = state.targetXp;
       }
       if (typeof window.refreshOperationalOverview === "function") {
         await window.refreshOperationalOverview();

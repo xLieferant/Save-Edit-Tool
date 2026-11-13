@@ -213,6 +213,7 @@ fn main() {
             features::save_editor::commands::edit_money,
             features::save_editor::commands::edit_xp,
             features::save_editor::commands::edit_level,
+            features::save_editor::commands::read_bus_xp,
             features::save_editor::commands::edit_bus_xp,
             features::save_editor::commands::edit_config_value,
             features::save_editor::commands::edit_save_config_value,

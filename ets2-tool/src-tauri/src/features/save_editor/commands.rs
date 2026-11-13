@@ -782,6 +782,22 @@ pub fn edit_level(
     Ok(())
 }
 
+/// Reads the bus career XP (Coaches DLC) from game.sii of the active save.
+/// Returns `None` when the save has no bus career data. The value only exists
+/// in game.sii (not in info.sii), so it is read on demand instead of in
+/// `read_all_save_data`.
+#[command]
+pub fn read_bus_xp(profile_state: State<'_, AppProfileState>) -> Result<Option<i64>, String> {
+    let path = get_active_save_path(profile_state.inner()).map_err(|error| error.user_message)?;
+    let content = decrypt_if_needed(&path)?;
+
+    let re_bus = Regex::new(r"(?m)^\s*bus_experience_points:\s*(\d+)")
+        .map_err(|error| format!("Bus-XP-Regel ungültig: {}", error))?;
+    Ok(re_bus
+        .captures(&content)
+        .and_then(|caps| caps[1].parse::<i64>().ok()))
+}
+
 /// Sets the bus career XP (Coaches DLC) stored as `bus_experience_points`
 /// in the economy unit of game.sii. The truck career XP is left untouched.
 #[command]
