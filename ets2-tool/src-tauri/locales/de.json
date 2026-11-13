@@ -2977,6 +2977,7 @@
   "ui": {
     "no_languages": "Keine Sprachen verfügbar.",
     "language_active": "Diese Sprache ist bereits ausgewählt.",
+    "change_language": "Sprache ändern",
     "invalid_value": "Gib einen gültigen Wert ein.",
     "enabled": "Aktiviert",
     "disabled": "Deaktiviert",

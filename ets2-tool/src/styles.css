@@ -14463,3 +14463,41 @@ body.mode-editor .picker-backdrop {
     flex: 1 1 100%;
   }
 }
+
+/* Language switch at the end of the editor tab row */
+.language-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  flex: 0 0 auto;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle, var(--card-border));
+  background: var(--bg-elevated);
+  color: var(--text-soft);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.language-menu-btn:hover {
+  border-color: rgba(var(--accent-rgb), 0.35);
+  color: var(--text);
+}
+
+/* Longer translations: let status pills shrink instead of overlapping the mode switch */
+body.mode-editor .status-cluster .status-pill {
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+body.mode-editor .status-cluster .status-text {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
