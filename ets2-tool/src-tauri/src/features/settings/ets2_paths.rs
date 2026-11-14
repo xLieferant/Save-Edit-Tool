@@ -55,6 +55,7 @@ pub fn set_ets2_data_location_mode(
     decrypt_cache: State<'_, DecryptCache>,
     profile_cache: State<'_, ProfileCache>,
 ) -> Result<Ets2DataLocationDto, String> {
+    crate::shared::logs::diagnostic::with_operation("profile_paths", "set_ets2_data_location_mode", || {
     match mode.trim().to_ascii_lowercase().as_str() {
         "default" => save_ets2_path_settings(&Ets2PathSettings::default())?,
         "custom" => {
@@ -77,6 +78,7 @@ pub fn set_ets2_data_location_mode(
         profile_cache.inner(),
     )?;
     Ok(ets2_data_location_dto())
+    })
 }
 
 #[tauri::command]
@@ -86,6 +88,7 @@ pub fn reset_ets2_data_location(
     decrypt_cache: State<'_, DecryptCache>,
     profile_cache: State<'_, ProfileCache>,
 ) -> Result<Ets2DataLocationDto, String> {
+    crate::shared::logs::diagnostic::with_operation("profile_paths", "reset_ets2_data_location", || {
     save_ets2_path_settings(&Ets2PathSettings::default())?;
     reset_runtime_after_location_change(
         &app,
@@ -94,6 +97,7 @@ pub fn reset_ets2_data_location(
         profile_cache.inner(),
     )?;
     Ok(ets2_data_location_dto())
+    })
 }
 
 fn save_custom_location(custom_homedir: PathBuf) -> Result<(), String> {

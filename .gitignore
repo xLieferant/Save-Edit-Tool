@@ -7,3 +7,11 @@ ets2-tool/latest.json
 .codex
 
 node_modules/
+
+# Runtime diagnostics must never be committed or shipped as source assets.
+*.log
+*.log.*
+*.jsonl
+
+**/logs/archive/application-*.txt
+**/logs/archive/emergency-*.txt

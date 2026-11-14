@@ -365,6 +365,14 @@ pub fn find_ets2_profiles(state: State<'_, AppProfileState>) -> Vec<ProfileInfo>
             found_profiles.len()
         ),
     );
+    if found_profiles.is_empty() {
+        if let Some(runtime) = crate::shared::logs::diagnostic::active() {
+            let mut event = crate::shared::logs::diagnostic::DiagnosticEvent::new(
+                "WARN", "profiles", "find_ets2_profiles", "No game profiles were found in the configured locations.");
+            event.error_kind = Some("configuration_or_user_input".to_string());
+            runtime.record(event);
+        }
+    }
     found_profiles
 }
 
@@ -376,6 +384,7 @@ pub fn load_profile(
     cache: State<'_, DecryptCache>,
     profile_cache: State<'_, ProfileCache>,
 ) -> Result<String, String> {
+    crate::shared::logs::diagnostic::with_operation("profiles", "load_profile", || {
     let mut trace = TraceScope::with_fields("load_profile", &[("path", profile_path.clone())]);
     let save_path_str = save_path.ok_or_else(|| "Kein Save angegeben".to_string())?;
     let save_to_load = PathBuf::from(save_path_str);
@@ -409,6 +418,7 @@ pub fn load_profile(
     );
     trace.finish_ok();
     Ok("Profil geladen".into())
+    })
 }
 
 fn scan_profile_saves(profile_path: &str) -> Result<Vec<SaveInfo>, String> {

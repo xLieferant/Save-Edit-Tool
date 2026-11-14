@@ -19,6 +19,86 @@ use tauri::command;
 type CommandResult<T> = Result<T, CommandFailure>;
 const UNDO_SNAPSHOT_LABEL: &str = "Before last edit";
 
+#[command]
+pub fn read_project_coaches(
+    profile_state: State<'_, AppProfileState>,
+) -> Result<super::coaches::CoachesSnapshot, String> {
+    let path = get_active_save_path(profile_state.inner())
+        .map_err(|error| error.user_message)?
+        .with_file_name("game.sii");
+    let content = decrypt_if_needed(&path)?;
+    let mut snapshot = super::coaches::read_snapshot(&content)?;
+    snapshot.save_hash = career_save_hash(&path, &content);
+    Ok(snapshot)
+}
+
+#[command]
+pub fn edit_career_xp(
+    xp: i64,
+    career: super::coaches::Career,
+    expected_save_hash: String,
+    profile_state: State<'_, AppProfileState>,
+    profile_cache: State<'_, ProfileCache>,
+    decrypt_cache: State<'_, DecryptCache>,
+) -> Result<(), String> {
+    write_career_xp(
+        xp,
+        career,
+        Some(&expected_save_hash),
+        profile_state.inner(),
+        profile_cache.inner(),
+        decrypt_cache.inner(),
+    )
+}
+
+fn write_career_xp(
+    xp: i64,
+    career: super::coaches::Career,
+    expected_save_hash: Option<&str>,
+    profile_state: &AppProfileState,
+    profile_cache: &ProfileCache,
+    decrypt_cache: &DecryptCache,
+) -> Result<(), String> {
+    let path = get_active_save_path(profile_state)
+        .map_err(|error| error.user_message)?
+        .with_file_name("game.sii");
+    let original = decrypt_if_needed(&path)?;
+    if expected_save_hash.is_some_and(|hash| hash != career_save_hash(&path, &original)) {
+        return Err("coaches.save_changed".to_string());
+    }
+    let content = super::coaches::patch_xp(&original, career, xp)?;
+    if content == original {
+        return Ok(());
+    }
+    let result = write_text_with_auto_backup(
+        profile_state,
+        &path,
+        "edit_career_xp",
+        "before career xp edit",
+        "Career XP was updated for the active save.",
+        &content,
+        |written_path| {
+            let written = fs::read_to_string(written_path)
+                .map_err(|error| failure("coaches.verify_failed", error.to_string()))?;
+            if written != content {
+                return Err(failure(
+                    "coaches.verify_failed",
+                    "Save readback differs from the prepared content.",
+                ));
+            }
+            super::coaches::verify_xp(&written, career, xp)
+                .map_err(|error| failure("coaches.verify_failed", error))
+        },
+    );
+    decrypt_cache.invalidate_path(&path);
+    profile_cache.invalidate_save_data();
+    result.map_err(|error| error.user_message)
+}
+
+fn career_save_hash(path: &Path, content: &str) -> String {
+    super::coaches::save_hash(&format!("{}\0{}", path.display(), content))
+}
+
 #[derive(Debug)]
 struct CommandFailure {
     user_message: String,
@@ -330,13 +410,8 @@ fn update_game_save_content(
                 format!("XP value {} exceeds i64 range for game.sii", xp),
             )
         })?;
-        updated = replace_numeric_fields(
-            &updated,
-            &["experience_points", "info_players_experience"],
-            xp_value,
-            "Could not read save file",
-            "game.sii xp replacement",
-        )?;
+        updated = super::coaches::patch_xp(&updated, super::coaches::Career::Truck, xp_value)
+            .map_err(|error| failure("Could not read save file", error))?;
     }
 
     Ok(updated)
@@ -709,37 +784,14 @@ pub fn edit_xp(
     profile_cache: State<'_, ProfileCache>,
     decrypt_cache: State<'_, DecryptCache>,
 ) -> Result<(), String> {
-    let path = get_active_save_path(profile_state.inner()).map_err(|error| error.user_message)?;
-    let content = decrypt_if_needed(&path)?;
-
-    // 1. Info-Wert ersetzen
-    let re_info = Regex::new(r"info_players_experience:\s*\d+")
-        .map_err(|error| format!("XP-Regel ungültig: {}", error))?;
-    let content = re_info
-        .replace(&content, format!("info_players_experience: {}", xp))
-        .to_string();
-
-    // 2. Echten Wert ersetzen
-    let re_main = Regex::new(r"(?m)^(\s*)experience_points:\s*\d+")
-        .map_err(|error| format!("XP-Regel ungültig: {}", error))?;
-    let content = re_main
-        .replace(&content, format!("${{1}}experience_points: {}", xp))
-        .to_string();
-
-    write_text_with_auto_backup(
+    write_career_xp(
+        xp,
+        super::coaches::Career::Truck,
+        None,
         profile_state.inner(),
-        &path,
-        "edit_xp",
-        "before xp edit",
-        "XP values were updated for the active save.",
-        &content,
-        |_| Ok(()),
+        profile_cache.inner(),
+        decrypt_cache.inner(),
     )
-    .map_err(|error| error.user_message)?;
-    decrypt_cache.invalidate_path(&path);
-    profile_cache.invalidate_save_data();
-    dev_log!("XP geändert: {}", xp);
-    Ok(())
 }
 
 #[command]
@@ -749,37 +801,14 @@ pub fn edit_level(
     profile_cache: State<'_, ProfileCache>,
     decrypt_cache: State<'_, DecryptCache>,
 ) -> Result<(), String> {
-    let path = get_active_save_path(profile_state.inner()).map_err(|error| error.user_message)?;
-    let content = decrypt_if_needed(&path)?;
-
-    // 1. Info-Wert ersetzen
-    let re_info = Regex::new(r"info_players_experience:\s*\d+")
-        .map_err(|error| format!("Level-Regel ungültig: {}", error))?;
-    let content = re_info
-        .replace(&content, format!("info_players_experience: {}", xp))
-        .to_string();
-
-    // 2. Echten Wert ersetzen
-    let re_main = Regex::new(r"(?m)^(\s*)experience_points:\s*\d+")
-        .map_err(|error| format!("Level-Regel ungültig: {}", error))?;
-    let content = re_main
-        .replace(&content, format!("${{1}}experience_points: {}", xp))
-        .to_string();
-
-    write_text_with_auto_backup(
+    write_career_xp(
+        xp,
+        super::coaches::Career::Truck,
+        None,
         profile_state.inner(),
-        &path,
-        "edit_level",
-        "before level edit",
-        "Level-related XP values were updated for the active save.",
-        &content,
-        |_| Ok(()),
+        profile_cache.inner(),
+        decrypt_cache.inner(),
     )
-    .map_err(|error| error.user_message)?;
-    decrypt_cache.invalidate_path(&path);
-    profile_cache.invalidate_save_data();
-    dev_log!("XP (via edit_level) geändert: {}", xp);
-    Ok(())
 }
 
 #[derive(Deserialize)]
@@ -834,37 +863,14 @@ pub fn edit_player_experience(
     profile_cache: State<'_, ProfileCache>,
     decrypt_cache: State<'_, DecryptCache>,
 ) -> Result<(), String> {
-    dev_log!("--- edit_player_experience START ---");
-
-    // ✅ Use the helper - respects current_save if set
-    let path = get_active_save_path(profile_state.inner()).map_err(|error| error.user_message)?;
-    let content = decrypt_if_needed(&path)?;
-
-    let re_experience = Regex::new(r"experience_points:\s*(\d+)").map_err(|e| e.to_string())?;
-
-    if !re_experience.is_match(&content) {
-        return Err("experience_points: nicht gefunden".into());
-    }
-
-    let new_content = re_experience.replace(&content, format!("experience_points: {}", value));
-
-    write_text_with_auto_backup(
+    write_career_xp(
+        value,
+        super::coaches::Career::Truck,
+        None,
         profile_state.inner(),
-        &path,
-        "edit_player_experience",
-        "before player experience edit",
-        "Player experience was updated for the active save.",
-        new_content.as_ref(),
-        |_| Ok(()),
+        profile_cache.inner(),
+        decrypt_cache.inner(),
     )
-    .map_err(|error| error.user_message)?;
-    decrypt_cache.invalidate_path(&path);
-    profile_cache.invalidate_save_data();
-
-    dev_log!("Experience erfolgreich geändert auf {}", value);
-    dev_log!("--- edit_player_experience END ---");
-
-    Ok(())
 }
 
 #[command]

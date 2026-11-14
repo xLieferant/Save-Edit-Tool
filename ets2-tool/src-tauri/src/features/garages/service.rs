@@ -263,6 +263,7 @@ pub fn generate_ai_drivers(
     sqlite_path: &Path,
     request: &AiDriverGenerateRequest,
 ) -> Result<AiDriverMutationResult, String> {
+    crate::shared::logs::diagnostic::with_operation("garages", "generate_ai_drivers", || {
     if request.garage_id.trim().is_empty() {
         return Err("garage_not_found".to_string());
     }
@@ -290,6 +291,7 @@ pub fn generate_ai_drivers(
             )
         },
     )
+    })
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -304,6 +306,7 @@ pub fn update_ai_driver_truck(
     sqlite_path: &Path,
     request: &AiDriverTruckAssignmentRequest,
 ) -> Result<AiDriverMutationResult, String> {
+    crate::shared::logs::diagnostic::with_operation("garages", "update_ai_driver_truck", || {
     if request.driver_id.trim().is_empty() {
         return Err("ai_driver_not_hired".to_string());
     }
@@ -332,6 +335,7 @@ pub fn update_ai_driver_truck(
             apply_ai_driver_truck_update(content, &request.driver_id, request.truck_id.as_deref())
         },
     )
+    })
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -346,6 +350,7 @@ pub fn remove_ai_drivers(
     sqlite_path: &Path,
     request: &AiDriverRemoveRequest,
 ) -> Result<AiDriverMutationResult, String> {
+    crate::shared::logs::diagnostic::with_operation("garages", "remove_ai_drivers", || {
     if request.driver_ids.is_empty() {
         return Err("ai_driver_selection_empty".to_string());
     }
@@ -363,6 +368,7 @@ pub fn remove_ai_drivers(
         "remove",
         |content| apply_ai_driver_removal(content, &request.driver_ids),
     )
+    })
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -508,6 +514,7 @@ fn mutate_ai_drivers(
     let save_hash = sha256_hex_bytes(reloaded.as_bytes());
     let mut management = parse_ai_driver_management_from_sii(&reloaded, selected_game, &save_hash)?;
     enrich_ai_driver_city_data(&reloaded, &mut management, sqlite_path);
+    crate::shared::logs::diagnostic::verified_write("ai_drivers", action, Some(backup.backup_id.clone()), true, false);
     Ok(AiDriverMutationResult {
         operation,
         affected_driver_ids: plan.affected_driver_ids,
@@ -531,6 +538,7 @@ pub fn purchase_garage(
     sqlite_path: &Path,
     request: &GarageMutationRequest,
 ) -> Result<GarageMutationResult, String> {
+    crate::shared::logs::diagnostic::with_operation("garages", "purchase_garage", || {
     mutate_garage(
         selection,
         selected_game,
@@ -546,6 +554,7 @@ pub fn purchase_garage(
         Some(GarageSize::Large),
         false,
     )
+    })
 }
 
 pub fn buy_all_garages(
@@ -559,6 +568,7 @@ pub fn buy_all_garages(
     _sqlite_path: &Path,
     request: &GarageBuyAllRequest,
 ) -> Result<GarageBuyAllResult, String> {
+    crate::shared::logs::diagnostic::with_operation("garages", "buy_all_garages", || {
     if !selected_game.eq_ignore_ascii_case("ets2") {
         return Err(format!(
             "garage_update_not_supported:{}",
@@ -749,6 +759,7 @@ pub fn buy_all_garages(
         save_hash: sha256_hex_bytes(reloaded.as_bytes()),
         warnings: vec!["garage_purchase_all_without_financial_transaction".to_string()],
     })
+    })
 }
 
 pub fn relinquish_empty_garages(
@@ -762,6 +773,7 @@ pub fn relinquish_empty_garages(
     _sqlite_path: &Path,
     request: &GarageRelinquishEmptyRequest,
 ) -> Result<GarageRelinquishEmptyResult, String> {
+    crate::shared::logs::diagnostic::with_operation("garages", "relinquish_empty_garages", || {
     if !selected_game.eq_ignore_ascii_case("ets2") {
         return Err(format!(
             "garage_update_not_supported:{}",
@@ -958,6 +970,7 @@ pub fn relinquish_empty_garages(
         save_hash: sha256_hex_bytes(reloaded.as_bytes()),
         warnings: vec!["garage_relinquish_empty_without_financial_transaction".to_string()],
     })
+    })
 }
 
 pub fn upgrade_owned_garage(
@@ -971,6 +984,7 @@ pub fn upgrade_owned_garage(
     sqlite_path: &Path,
     request: &GarageMutationRequest,
 ) -> Result<GarageMutationResult, String> {
+    crate::shared::logs::diagnostic::with_operation("garages", "upgrade_owned_garage", || {
     mutate_garage(
         selection,
         selected_game,
@@ -986,6 +1000,7 @@ pub fn upgrade_owned_garage(
         Some(GarageSize::Large),
         false,
     )
+    })
 }
 
 pub fn relinquish_garage_ownership(
@@ -999,6 +1014,7 @@ pub fn relinquish_garage_ownership(
     sqlite_path: &Path,
     request: &GarageMutationRequest,
 ) -> Result<GarageMutationResult, String> {
+    crate::shared::logs::diagnostic::with_operation("garages", "relinquish_garage_ownership", || {
     mutate_garage(
         selection,
         selected_game,
@@ -1014,6 +1030,7 @@ pub fn relinquish_garage_ownership(
         Some(GarageSize::Unowned),
         false,
     )
+    })
 }
 
 pub fn update_garage(
@@ -1027,6 +1044,7 @@ pub fn update_garage(
     sqlite_path: &Path,
     request: &GarageUpdateRequest,
 ) -> Result<GarageMutationResult, String> {
+    crate::shared::logs::diagnostic::with_operation("garages", "update_garage", || {
     mutate_garage(
         selection,
         selected_game,
@@ -1042,6 +1060,7 @@ pub fn update_garage(
         request.target_size,
         request.set_as_headquarters,
     )
+    })
 }
 
 pub fn assign_random_garage_resources(
@@ -1055,6 +1074,7 @@ pub fn assign_random_garage_resources(
     sqlite_path: &Path,
     request: &GarageResourceAssignmentRequest,
 ) -> Result<GarageMutationResult, String> {
+    crate::shared::logs::diagnostic::with_operation("garages", "assign_random_garage_resources", || {
     if !selected_game.eq_ignore_ascii_case("ets2") {
         return Err(format!(
             "garage_update_not_supported:{}",
@@ -1257,6 +1277,7 @@ pub fn assign_random_garage_resources(
         assigned_driver_slot_index: plan.assigned_driver_slot_index,
         assigned_truck_slot_index: plan.assigned_truck_slot_index,
         warnings: Vec::new(),
+    })
     })
 }
 
@@ -1884,6 +1905,7 @@ fn rollback_after_failure<T>(
                     "Garage rollback verified: profile={profile_id}, save={save_id}, garage={garage_id}, action={action}, result=restored, actual={restored_state}"
                 ),
             );
+            crate::shared::logs::diagnostic::verified_write("garages", action, Some(backup_id.to_string()), false, true);
             Err(format!("{failure_code}:rolled_back:{failure_detail}"))
         }
         Err(_) => {

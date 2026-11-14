@@ -333,7 +333,6 @@ fn get_locales_dir<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, String> {
 
 fn log_language(message: impl AsRef<str>) {
     let line = format!("[language] {}", message.as_ref());
-    println!("{}", line);
     crate::dev_log!("{}", line);
 }
 

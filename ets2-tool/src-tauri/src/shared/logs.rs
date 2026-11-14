@@ -5,9 +5,12 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
+#[path = "../features/logging/diagnostic_runtime.rs"]
+pub mod diagnostic;
+
 pub const MAX_LOG_SIZE_BYTES: u64 = 5 * 1024 * 1024;
 pub const MAX_LOG_ARCHIVES: usize = 3;
-const DEBUG_LOG_FILE_NAME: &str = "ets2_tool_debug.log";
+const DEBUG_LOG_FILE_NAME: &str = "application.log.txt";
 
 static LOG_WRITE_LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 
@@ -19,9 +22,13 @@ macro_rules! dev_log {
 }
 
 fn default_log_root() -> PathBuf {
+    if let Some(runtime) = diagnostic::active() {
+        return runtime.root.join("logs");
+    }
     dirs::data_local_dir()
-        .unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")))
-        .join("SimNexusHub")
+        .unwrap_or_else(std::env::temp_dir)
+        .join("com.xlieferant.saveedittool")
+        .join("support")
         .join("logs")
 }
 
@@ -71,7 +78,7 @@ fn archived_log_path(path: &Path, index: usize) -> PathBuf {
     let file_name = path
         .file_name()
         .and_then(|value| value.to_str())
-        .map(|value| format!("{}.{}", value, index))
+        .map(|value| format!("{}.{}.txt", value.trim_end_matches(".txt"), index))
         .unwrap_or_else(|| format!("log.{}", index));
 
     path.with_file_name(file_name)
@@ -155,13 +162,18 @@ pub fn append_log_line(path: &Path, entry: &str) -> Result<(), String> {
 }
 
 pub fn write_log(msg: String) {
-    let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S");
-    let entry = format!("[{}] [DEBUG] [Technical] {}\n", timestamp, msg);
-
-    let path = technical_log_path();
-    if let Err(error) = append_log_line(&path, &entry) {
-        eprintln!("[logging] {}", error);
+    if let Some(runtime) = diagnostic::active() {
+        runtime.legacy("DEBUG", "backend", &msg);
+        return;
     }
-
-    println!("{}", entry.trim_end());
+    // Before logger initialization, preserve real errors without flooding startup with trace data.
+    if !msg.starts_with("[trace] ERROR") {
+        return;
+    }
+    let entry = format!(
+        "[{}] [ERROR] [backend] {}\n",
+        Local::now().format("%Y-%m-%d %H:%M:%S"),
+        diagnostic::sanitize(&msg)
+    );
+    let _ = append_log_line(&technical_log_path(), &entry);
 }

@@ -6,6 +6,8 @@ use std::sync::{Arc, Condvar, Mutex, RwLock};
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 
+pub struct DiagnosticsState(pub Arc<crate::shared::logs::diagnostic::DiagnosticRuntime>);
+
 use crate::models::global_config_info::BaseGameConfig;
 use crate::models::quicksave_game_info::{CurrentTruckSummary, GameDataQuicksave};
 use crate::models::save_game_config::SaveGameConfig;

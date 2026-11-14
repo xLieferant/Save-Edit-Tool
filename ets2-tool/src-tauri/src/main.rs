@@ -18,11 +18,13 @@ mod state; // ehemals commands (aufgeteilt)
 mod xp;
 
 fn main() {
-    std::panic::set_hook(Box::new(|info| {
-        crate::shared::logs::write_log(format!("[panic] {}", info));
-        let _ =
-            crate::shared::user_log::user_log_error("App", format!("Application panic: {}", info));
-    }));
+    crate::shared::logs::diagnostic::install_panic_hook();
+    let context = tauri::generate_context!();
+    // Cover failures during database initialization, before Tauri setup is entered.
+    let diagnostic_root = dirs::data_local_dir().unwrap_or_else(std::env::temp_dir)
+        .join(&context.config().identifier).join("support");
+    let diagnostic_runtime = shared::logs::diagnostic::DiagnosticRuntime::start(
+        diagnostic_root, env!("CARGO_PKG_VERSION").to_string());
     crate::dev_log!("[app] starting");
     let _ = crate::shared::user_log::user_log_info("App", "Application start");
 
@@ -55,8 +57,16 @@ fn main() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
-        .setup(|app| {
+        .setup(move |app| {
             let handle = app.handle().clone();
+            let diagnostics = match app.path().app_local_data_dir() {
+                Ok(root) if root.join("support") != diagnostic_runtime.root => {
+                    diagnostic_runtime.shutdown();
+                    shared::logs::diagnostic::DiagnosticRuntime::start(root.join("support"), app.package_info().version.to_string())
+                }
+                _ => diagnostic_runtime.clone(),
+            };
+            app.manage(state::DiagnosticsState(diagnostics));
             let career = app.state::<CareerState>();
             let runtime = career.runtime.clone();
             let auth = app.state::<AuthState>();
@@ -172,7 +182,20 @@ fn main() {
             let _ = crate::shared::user_log::user_log_info("App", "App setup completed");
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![
+        .invoke_handler(|invoke: tauri::ipc::Invoke| {
+            let operation_id = match invoke.message.payload() {
+                tauri::ipc::InvokeBody::Json(args) => args.get("_diagnosticOperationId").and_then(|value| value.as_str())
+                    .filter(|id| id.starts_with("OP-") && id.len() <= 80 && id.chars().all(|c| c.is_ascii_alphanumeric() || c == '-')).map(str::to_owned),
+                _ => None,
+            };
+            let _context = shared::logs::diagnostic::OperationContext::enter(operation_id);
+            let handler: fn(tauri::ipc::Invoke) -> bool = tauri::generate_handler![
+            features::logging::diagnostics::diagnostics_record,
+            features::logging::diagnostics::get_log_preview,
+            features::logging::diagnostics::diagnostics_user_logs,
+            features::logging::diagnostics::export_log_file,
+            features::logging::diagnostics::diagnostics_cleanup_preview,
+            features::logging::diagnostics::diagnostics_cleanup,
             commands::ets_get_last_quicksave,
             commands::ets_prepare_job_link,
             commands::ets_write_job_to_quicksave,
@@ -210,6 +233,8 @@ fn main() {
             features::profile_manager::commands::set_selected_game,
             features::profile_manager::commands::get_selected_game,
             // Profile Editing
+            features::save_editor::commands::read_project_coaches,
+            features::save_editor::commands::edit_career_xp,
             features::save_editor::commands::edit_money,
             features::save_editor::commands::edit_xp,
             features::save_editor::commands::edit_level,
@@ -433,7 +458,14 @@ fn main() {
             features::vtc::commands::update_career_settings,
             // Onboarding
             features::career_onboarding::commands::career_get_onboarding_state,
-        ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+            ];
+            handler(invoke)
+        })
+        .build(context)
+        .expect("error while building tauri application")
+        .run(|app, event| {
+            if matches!(event, tauri::RunEvent::Exit) {
+                if let Some(state) = app.try_state::<state::DiagnosticsState>() { state.0.shutdown(); }
+            }
+        });
 }
