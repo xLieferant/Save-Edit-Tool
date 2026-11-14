@@ -79,6 +79,7 @@ pub fn create_backup_for_targets_with_type(
     action_reason: &str,
     target_files: &[PathBuf],
 ) -> Result<BackupCreateResultDto, String> {
+    crate::shared::logs::diagnostic::with_operation("backup", "create_backup_for_targets_with_type", || {
     let context = logging_service::resolve_active_context(profile_state);
     let resolved = snapshot_resolved_save_context(profile_state).ok();
     let normalized_targets = normalize_existing_targets(target_files);
@@ -211,6 +212,7 @@ pub fn create_backup_for_targets_with_type(
         backup_id,
         created_at_utc,
         backup_type: backup_type.to_string(),
+    })
     })
 }
 
@@ -388,6 +390,7 @@ pub fn restore_backup(
     backup_id: &str,
     confirmed: bool,
 ) -> Result<RestoreExecution, String> {
+    crate::shared::logs::diagnostic::with_operation("backup", "restore_backup", || {
     if !confirmed {
         return Err("Restore requires explicit confirmation.".to_string());
     }
@@ -447,6 +450,7 @@ pub fn restore_backup(
             safety_backup_id: safety_backup.map(|item| item.backup_id),
         },
         touched_paths,
+    })
     })
 }
 

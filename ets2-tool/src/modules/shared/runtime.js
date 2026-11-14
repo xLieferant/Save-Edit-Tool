@@ -1,8 +1,10 @@
+import { diagnosticInvoke } from "./diagnostics_runtime.js";
+
 const tauri = window.__TAURI__;
 
 export const hasTauri = Boolean(tauri?.core?.invoke);
 export const invoke = hasTauri
-  ? tauri.core.invoke
+  ? diagnosticInvoke
   : async () => {
     throw new Error("Tauri API not available");
   };

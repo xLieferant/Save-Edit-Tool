@@ -5,6 +5,7 @@ import {
   clampLevel,
   clampXp,
   getLevelForXp,
+  getLevelProgress,
   getMaxLevel,
   getXpForLevel,
   loadLevelTable,
@@ -60,6 +61,7 @@ export async function loadTools(tab) {
     trailer: "editor.tab.trailer",
     profile: "editor.tab.profile",
     garages: "editor.tab.garages",
+    coaches: "coaches.title",
     settings: "editor.tab.settings",
   };
 
@@ -67,6 +69,11 @@ export async function loadTools(tab) {
 
   if (tab === "garages") {
     await mountGarageManager(container);
+    return;
+  }
+
+  if (tab === "coaches") {
+    await mountProjectCoaches(container);
     return;
   }
 
@@ -1600,7 +1607,98 @@ export async function openCloneProfileModal() {
 /* --------------------------------------------------------------
    LEVEL / XP MODAL
 -------------------------------------------------------------- */
-export async function openLevelSystemModal() {
+async function mountProjectCoaches(root) {
+  const profile = window.selectedProfilePath;
+  const save = window.selectedSavePath;
+  const current = () => activeTab === "coaches" && window.selectedProfilePath === profile && window.selectedSavePath === save;
+  const element = (tag, className, text) => {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  };
+  const panel = element("section", "coaches-panel");
+  root.append(panel);
+  panel.append(element("h2", "", await window.t("coaches.title")));
+  if (!profile || !save) {
+    panel.append(element("p", "modal-description", await window.t("coaches.select_save")));
+    return;
+  }
+  const loading = element("p", "modal-description", await window.t("coaches.loading"));
+  panel.append(loading);
+  try {
+    const data = await window.invoke("read_project_coaches");
+    if (!current()) return;
+    const copy = {};
+    for (const key of ["raw_values", "xp_missing", "edit_xp", "refresh", "statistics", "stops", "discovered", "undiscovered", "unknown", "unresolved", "missing", "vehicles", "buses", "active_job", "no_job", "job_logs", "no_logs", "version", "entries", "my_vehicles_mode", "assigned_vehicles_mode", "stop_count"]) {
+      copy[key] = await window.t(`coaches.${key}`);
+    }
+    if (!current()) return;
+    loading.remove();
+    panel.append(element("p", "modal-description", copy.raw_values));
+    if (data.busXp === null) panel.append(element("p", "level-system-hint", copy.xp_missing));
+    const actions = element("div", "coaches-actions");
+    const edit = element("button", "apply", copy.edit_xp);
+    edit.type = "button";
+    edit.disabled = data.busXp === null;
+    edit.addEventListener("click", () => openLevelSystemModal("bus"));
+    const refresh = element("button", "secondary-action", copy.refresh);
+    refresh.type = "button";
+    refresh.addEventListener("click", () => loadTools("coaches"));
+    actions.append(edit, refresh);
+    panel.append(actions);
+    for (const warning of data.warnings) panel.append(element("p", "level-system-hint", await window.t(warning)));
+
+    panel.append(element("h3", "", copy.statistics));
+    const grid = element("div", "coaches-stats");
+    for (const [field, value] of Object.entries(data.statistics)) {
+      const card = element("article", "detail-card");
+      card.append(element("span", "detail-card-label", await window.t(`coaches.fields.${field}`)));
+      card.append(element("strong", "detail-card-value", value ?? copy.missing));
+      grid.append(card);
+    }
+    panel.append(grid);
+
+    panel.append(element("h3", "", copy.stops));
+    const counts = element("p", "modal-description", `${copy.discovered}: ${data.discoveredStops} / ${data.stops.length}`);
+    counts.dataset.coachesStopCounts = "";
+    panel.append(counts);
+    if (data.declaredStopCount !== null) panel.append(element("p", "modal-description", `${copy.stop_count}: ${data.declaredStopCount}`));
+    const stopList = element("ul", "coaches-reference-list");
+    stopList.dataset.coachesStops = "";
+    for (const stop of data.stops) {
+      const status = !stop.resolved ? copy.unresolved : stop.discovered === true ? copy.discovered : stop.discovered === false ? copy.undiscovered : copy.unknown;
+      stopList.append(element("li", "", `${stop.id} — ${status}`));
+    }
+    panel.append(stopList);
+
+    panel.append(element("h3", "", copy.vehicles));
+    const vehicleCard = element("div", "detail-card coaches-vehicle-card");
+    for (const [label, value] of [[copy.buses, data.buses], [copy.my_vehicles_mode, data.myVehiclesMode], [copy.assigned_vehicles_mode, data.assignedVehiclesMode]]) {
+      vehicleCard.append(element("p", "", `${label}: ${value ?? copy.missing}`));
+    }
+    for (const bus of data.busReferences) {
+      vehicleCard.append(element("p", "", `${bus.id}${bus.resolved ? "" : ` — ${copy.unresolved}`}`));
+    }
+    const job = data.currentBusJob === null ? copy.missing
+      : data.currentBusJob === "null" || data.currentBusJob === "nil" ? copy.no_job
+      : `${data.currentBusJob}${data.currentBusJobResolved ? "" : ` — ${copy.unresolved}`}`;
+    vehicleCard.append(element("p", "", `${copy.active_job}: ${job}`));
+    panel.append(vehicleCard);
+
+    panel.append(element("h3", "", copy.job_logs));
+    if (!data.jobLogs.length) panel.append(element("p", "modal-description", copy.no_logs));
+    for (const log of data.jobLogs) {
+      panel.append(element("p", "detail-card", `${log.id} — ${copy.version}: ${log.version ?? copy.missing}; ${copy.entries}: ${log.entries ?? copy.missing}`));
+    }
+  } catch (error) {
+    if (!current()) return;
+    console.error("Project Coaches data load failed:", error);
+    loading.textContent = await window.t("coaches.load_failed");
+  }
+}
+
+export async function openLevelSystemModal(initialCareer = "truck") {
   if (!modalLevelSystem) return;
 
   if (!window.selectedProfilePath) {
@@ -1623,6 +1721,19 @@ export async function openLevelSystemModal() {
     }
   }
 
+  const selectedSave = window.selectedSavePath;
+  const selectedProfile = window.selectedProfilePath;
+  let progression;
+  try {
+    progression = await window.invoke("read_project_coaches");
+  } catch (error) {
+    console.error("Career XP data load failed:", error);
+    window.showToast("coaches.load_failed", "error");
+    return;
+  }
+  const careerTruck = document.getElementById("levelSystemCareerTruck");
+  const careerBus = document.getElementById("levelSystemCareerBus");
+  const careerNotice = document.getElementById("levelSystemCareerNotice");
   const table = await loadLevelTable();
   if (!table.length) {
     window.showToast("toasts.level_system_load_error", "error");
@@ -1649,27 +1760,76 @@ export async function openLevelSystemModal() {
     feedbackInvalid: await window.t("modals.level_system.feedback.invalid"),
     feedbackUnchanged: await window.t("modals.level_system.feedback.unchanged"),
     feedbackApplyError: await window.t("modals.level_system.feedback.apply_error"),
+    missingCareer: await window.t("coaches.xp_missing"),
+    busHelp: await window.t("coaches.bus_xp_help"),
+    editor: {},
+    statistics: {},
   };
+  for (const key of ["truck_badge", "bus_badge", "truck_description", "bus_description", "current_truck_xp", "current_bus_xp", "target_truck_xp", "target_bus_xp", "new_truck_xp", "new_bus_xp", "save_truck", "save_bus", "unsaved", "saved", "xp_unit"]) {
+    copy.editor[key] = await window.t(`coaches.editor.${key}`);
+  }
+  for (const field of Object.keys(progression.statistics)) {
+    copy.statistics[field] = await window.t(`coaches.fields.${field}`);
+  }
+  const maxProgressLabel = await window.t("modals.level_system.progress.max");
+  const skillsButton = document.getElementById("levelSystemSkills");
+  let skillsOpened = false;
+
+  function renderBusStatistics() {
+    const grid = document.getElementById("levelSystemBusStatsGrid");
+    grid.replaceChildren();
+    for (const [field, value] of Object.entries(progression.statistics)) {
+      if (field === "bus_experience_points" || value === null) continue;
+      const card = document.createElement("article");
+      card.className = "detail-card";
+      const label = document.createElement("span");
+      label.className = "detail-card-label";
+      label.textContent = copy.statistics[field];
+      const metric = document.createElement("strong");
+      metric.className = "detail-card-value";
+      metric.textContent = value;
+      card.append(label, metric);
+      grid.append(card);
+    }
+  }
+  renderBusStatistics();
 
   const maxLevel = getMaxLevel(table);
   const maxXp = getXpForLevel(maxLevel, table);
-  const currentRawXp = Math.max(0, Math.floor(Number(window.currentProfileData?.xp ?? 0)));
+  const currentRawXp = Math.max(0, Math.floor(Number(progression.truckXp ?? 0)));
   const currentXp = Number.isFinite(currentRawXp) ? currentRawXp : 0;
   const currentLevel = getLevelForXp(currentXp, table);
   const currentLevelXp = getXpForLevel(currentLevel, table);
   const initialMode = currentXp === currentLevelXp ? "level" : "xp";
-  const state = {
-    mode: initialMode,
-    currentXp,
-    currentLevel,
-    targetLevel: currentLevel,
-    targetXp: currentXp,
-    levelInput: String(currentLevel),
-    xpInput: String(currentXp),
-    valid: true,
-    applying: false,
-    hint: "",
+  const careerStates = {
+    truck: {
+      career: "truck",
+      mode: initialMode,
+      currentXp,
+      currentLevel,
+      targetLevel: currentLevel,
+      targetXp: currentXp,
+      levelInput: String(currentLevel),
+      xpInput: String(currentXp),
+      valid: Number.isSafeInteger(progression.truckXp),
+      applying: false,
+      hint: "",
+    },
+    bus: {
+      career: "bus",
+      mode: "xp",
+      currentXp: progression.busXp ?? 0,
+      currentLevel: null,
+      targetLevel: null,
+      targetXp: progression.busXp ?? 0,
+      levelInput: "",
+      xpInput: String(progression.busXp ?? 0),
+      valid: Number.isSafeInteger(progression.busXp),
+      applying: false,
+      hint: "",
+    },
   };
+  let state = careerStates.truck;
 
   const parseIntegerInput = (value) => {
     const raw = String(value ?? "").trim();
@@ -1678,16 +1838,27 @@ export async function openLevelSystemModal() {
     }
 
     const numeric = Number(raw);
-    if (!Number.isFinite(numeric)) {
+    if (!Number.isSafeInteger(numeric)) {
       return { valid: false, reason: "invalid", value: 0 };
     }
 
-    return { valid: true, value: Math.floor(numeric) };
+    return { valid: true, value: numeric };
   };
 
-  const hasTargetChange = () => state.targetLevel !== state.currentLevel || state.targetXp !== state.currentXp;
+  const hasTargetChange = (draft = state) => draft.targetLevel !== draft.currentLevel || draft.targetXp !== draft.currentXp;
+  const isDirty = (draft) => hasTargetChange(draft) || draft.xpInput !== String(draft.currentXp)
+    || (draft.career === "truck" && draft.levelInput !== String(draft.currentLevel));
+  const careerAvailable = () => Number.isSafeInteger(state.career === "bus" ? progression.busXp : progression.truckXp);
+  const busMaxXp = Number.MAX_SAFE_INTEGER;
+
+  function selectCareer(career) {
+    if (state.applying) return;
+    state = career === "bus" ? careerStates.bus : careerStates.truck;
+    render();
+  }
 
   const setMode = (mode) => {
+    if (state.applying || state.career === "bus") return;
     state.mode = mode === "xp" ? "xp" : "level";
     if (state.mode === "level") {
       state.targetLevel = clampLevel(state.targetLevel, table);
@@ -1703,6 +1874,7 @@ export async function openLevelSystemModal() {
   };
 
   const updateFromLevel = (value, { inputOrigin = false } = {}) => {
+    if (state.applying || state.career === "bus" || !careerAvailable()) return;
     state.mode = "level";
     state.levelInput = String(value ?? "");
     const parsed = parseIntegerInput(value);
@@ -1725,35 +1897,81 @@ export async function openLevelSystemModal() {
   };
 
   const updateFromXp = (value, { inputOrigin = false } = {}) => {
+    if (state.applying || !careerAvailable()) return;
     state.mode = "xp";
     state.xpInput = String(value ?? "");
     const parsed = parseIntegerInput(value);
-    if (!parsed.valid) {
+    if (!parsed.valid || (state.career === "bus" && parsed.value < 0)) {
       state.valid = false;
       state.hint = parsed.reason === "required" ? copy.feedbackRequired : copy.feedbackInvalid;
       render();
       return;
     }
 
-    const clampedTargetXp = clampXp(parsed.value, table);
+    const clampedTargetXp = state.career === "bus"
+      ? Math.max(0, Math.min(busMaxXp, parsed.value))
+      : clampXp(parsed.value, table);
     state.valid = true;
     state.targetXp = clampedTargetXp;
-    state.targetLevel = getLevelForXp(clampedTargetXp, table);
-    state.levelInput = String(state.targetLevel);
+    state.targetLevel = state.career === "bus" ? null : getLevelForXp(clampedTargetXp, table);
+    state.levelInput = state.career === "bus" ? "" : String(state.targetLevel);
     state.hint = inputOrigin && clampedTargetXp !== parsed.value
-      ? copy.feedbackXpClamped
+      ? state.career === "bus" ? copy.feedbackInvalid : copy.feedbackXpClamped
       : "";
     render();
   };
 
   const render = () => {
+    const isBus = state.career === "bus";
+    const available = careerAvailable();
+    modalLevelSystem.dataset.career = state.career;
+    const setText = (id, key) => {
+      const node = document.getElementById(id);
+      node.dataset.translate = `coaches.editor.${key}`;
+      node.textContent = copy.editor[key];
+    };
+    setText("levelSystemCareerBadge", isBus ? "bus_badge" : "truck_badge");
+    setText("levelSystemCareerDescription", isBus ? "bus_description" : "truck_description");
+    setText("levelSystemCurrentXpLabel", isBus ? "current_bus_xp" : "current_truck_xp");
+    setText("levelSystemTargetXpLabel", isBus ? "target_bus_xp" : "target_truck_xp");
+    setText("levelSystemInputXpLabel", isBus ? "new_bus_xp" : "new_truck_xp");
+    document.getElementById("levelSystemCareerContent").setAttribute("aria-labelledby", isBus ? "levelSystemCareerBus" : "levelSystemCareerTruck");
+    document.getElementById("levelSystemTruckProgress").hidden = isBus;
+    document.getElementById("levelSystemBusStats").hidden = !isBus || !document.getElementById("levelSystemBusStatsGrid").childElementCount;
+    if (!isBus) {
+      const progress = getLevelProgress(state.currentXp, table);
+      document.getElementById("levelSystemProgressBar").value = progress.progressPercent;
+      document.getElementById("levelSystemProgressValue").textContent = available ? `${progress.progressPercent} %` : "-";
+      document.getElementById("levelSystemProgressAmount").textContent = !available ? "-" : progress.isMaxLevel ? maxProgressLabel
+        : `${formatMetric(progress.xpIntoLevel, 0)} / ${formatMetric(progress.xpNeededForNextLevel, 0)} ${copy.editor.xp_unit}`;
+    }
+    if (skillsButton) skillsButton.disabled = state.applying;
+    if (modalLevelSystemClose) modalLevelSystemClose.disabled = state.applying;
+    for (const [button, career] of [[careerTruck, "truck"], [careerBus, "bus"]]) {
+      button?.setAttribute("aria-pressed", String(state.career === career));
+      button?.setAttribute("aria-selected", String(state.career === career));
+      if (button) button.tabIndex = state.career === career ? 0 : -1;
+      const dirty = isDirty(careerStates[career]);
+      button?.setAttribute("data-dirty", String(dirty));
+      const dirtyLabel = button?.querySelector(".coaches-career-dirty");
+      if (dirtyLabel) dirtyLabel.hidden = !dirty;
+      if (button) button.disabled = state.applying;
+    }
+    if (careerNotice) {
+      careerNotice.textContent = available ? "" : copy.missingCareer;
+      careerNotice.hidden = available;
+    }
+    modalLevelSystem.querySelector(".level-system-mode-grid").hidden = isBus;
+    for (const id of ["levelSystemCurrentBadge", "levelSystemTargetBadge"]) {
+      document.getElementById(id)?.closest(".level-system-value-tile")?.toggleAttribute("hidden", isBus);
+    }
+    if (levelSystemXpField?.querySelector("small")) levelSystemXpField.querySelector("small").hidden = isBus;
+    if (levelSystemTargetXpMeta) levelSystemTargetXpMeta.hidden = isBus;
     const changed = hasTargetChange();
     const statusState = state.applying ? "loading" : state.valid ? "success" : "error";
     const statusText = state.applying
       ? copy.statusApplying
-      : state.mode === "level"
-        ? copy.modeLevel
-        : copy.modeXp;
+      : isDirty(state) ? copy.editor.unsaved : copy.editor.saved;
 
     setModalPillState(
       modalLevelSystemModePill,
@@ -1764,10 +1982,10 @@ export async function openLevelSystemModal() {
     if (levelSystemCurrentStatus) levelSystemCurrentStatus.textContent = copy.statusCurrent;
     if (levelSystemTargetStatus) levelSystemTargetStatus.textContent = copy.statusTarget;
 
-    if (levelSystemCurrentBadge) levelSystemCurrentBadge.textContent = formatLevelBadge(state.currentLevel);
-    if (levelSystemCurrentXp) levelSystemCurrentXp.textContent = formatMetric(state.currentXp, 0);
+    if (levelSystemCurrentBadge) levelSystemCurrentBadge.textContent = !isBus && available ? formatLevelBadge(state.currentLevel) : "-";
+    if (levelSystemCurrentXp) levelSystemCurrentXp.textContent = available ? formatMetric(state.currentXp, 0) : "-";
 
-    if (levelSystemTargetBadge) levelSystemTargetBadge.textContent = state.valid ? formatLevelBadge(state.targetLevel) : "-";
+    if (levelSystemTargetBadge) levelSystemTargetBadge.textContent = !isBus && state.valid ? formatLevelBadge(state.targetLevel) : "-";
     if (levelSystemTargetXp) levelSystemTargetXp.textContent = state.valid ? formatMetric(state.targetXp, 0) : "-";
     if (levelSystemTargetLevelMeta) {
       levelSystemTargetLevelMeta.textContent = state.mode === "xp" ? copy.previewCalculated : copy.previewEntered;
@@ -1781,14 +1999,16 @@ export async function openLevelSystemModal() {
     if (levelSystemModeLevel) {
       levelSystemModeLevel.classList.toggle("is-active", state.mode === "level");
       levelSystemModeLevel.setAttribute("aria-pressed", state.mode === "level" ? "true" : "false");
+      levelSystemModeLevel.disabled = state.applying || !available;
     }
     if (levelSystemModeXp) {
       levelSystemModeXp.classList.toggle("is-active", state.mode === "xp");
       levelSystemModeXp.setAttribute("aria-pressed", state.mode === "xp" ? "true" : "false");
+      levelSystemModeXp.disabled = state.applying || !available;
     }
 
     if (levelSystemLevelField) {
-      levelSystemLevelField.hidden = false;
+      levelSystemLevelField.hidden = isBus;
       levelSystemLevelField.classList.toggle("is-active", state.mode === "level");
     }
     if (levelSystemXpField) {
@@ -1800,17 +2020,18 @@ export async function openLevelSystemModal() {
       levelSystemLevelInput.value = state.levelInput;
       levelSystemLevelInput.min = "0";
       levelSystemLevelInput.max = String(maxLevel);
-      levelSystemLevelInput.disabled = state.applying;
+      levelSystemLevelInput.disabled = state.applying || !available || isBus;
     }
     if (levelSystemXpInput) {
       levelSystemXpInput.value = state.xpInput;
       levelSystemXpInput.min = "0";
-      levelSystemXpInput.max = String(maxXp);
-      levelSystemXpInput.disabled = state.applying;
+      levelSystemXpInput.max = String(isBus ? busMaxXp : maxXp);
+      levelSystemXpInput.disabled = state.applying || !available;
     }
 
     if (modalLevelSystemApply) {
-      modalLevelSystemApply.disabled = state.applying || !state.valid || !changed;
+      modalLevelSystemApply.disabled = state.applying || !available || !state.valid || !changed;
+      setText("modalLevelSystemApply", isBus ? "save_bus" : "save_truck");
     }
 
     if (!state.hint && !changed) {
@@ -1821,9 +2042,18 @@ export async function openLevelSystemModal() {
     setLevelSystemHint(state.hint);
   };
 
+  if (window.selectedSavePath !== selectedSave || window.selectedProfilePath !== selectedProfile) return;
   modalLevelSystem.style.display = "flex";
 
   function cleanup() {
+    if (state.applying) return;
+    careerTruck?.removeEventListener("click", handleCareerTruck);
+    careerBus?.removeEventListener("click", handleCareerBus);
+    careerTruck?.removeEventListener("keydown", handleCareerKeyboard);
+    careerBus?.removeEventListener("keydown", handleCareerKeyboard);
+    skillsButton?.removeEventListener("click", handleSkills);
+    skilltreeModalClose?.removeEventListener("click", handleSkillsClosed);
+    skilltreeModal?.removeEventListener("click", handleSkillsClosed);
     modalLevelSystemClose?.removeEventListener("click", cleanup);
     modalLevelSystem?.removeEventListener("click", handleBackdropClick);
     levelSystemModeLevel?.removeEventListener("click", handleModeLevel);
@@ -1847,6 +2077,45 @@ export async function openLevelSystemModal() {
     setMode("level");
     state.hint = "";
     render();
+  }
+
+  function handleCareerTruck() { selectCareer("truck"); }
+  function handleCareerBus() { selectCareer("bus"); }
+
+  function handleCareerKeyboard(event) {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key) || state.applying) return;
+    event.preventDefault();
+    const career = event.key === "Home" ? "truck" : event.key === "End" ? "bus" : state.career === "truck" ? "bus" : "truck";
+    selectCareer(career);
+    (career === "truck" ? careerTruck : careerBus)?.focus();
+  }
+
+  async function handleSkills() {
+    if (state.career !== "truck" || state.applying) return;
+    skillsOpened = true;
+    await openSkilltreeModal();
+  }
+
+  async function handleSkillsClosed(event) {
+    if (!skillsOpened || (event.currentTarget === skilltreeModal && event.target !== skilltreeModal)) return;
+    skillsOpened = false;
+    state.applying = true;
+    render();
+    try {
+      const refreshed = await window.invoke("read_project_coaches");
+      if (window.selectedSavePath !== selectedSave || window.selectedProfilePath !== selectedProfile
+        || refreshed.truckXp !== progression.truckXp || refreshed.busXp !== progression.busXp) {
+        throw new Error("coaches.save_changed");
+      }
+      progression = refreshed;
+      renderBusStatistics();
+    } catch (error) {
+      state.hint = await window.t("coaches.save_changed");
+      console.error("Career refresh after skills failed:", error);
+    } finally {
+      state.applying = false;
+      render();
+    }
   }
 
   function handleModeXp() {
@@ -1878,7 +2147,7 @@ export async function openLevelSystemModal() {
   }
 
   async function handleApply() {
-    if (!state.valid || !hasTargetChange()) {
+    if (state.applying || !careerAvailable() || !state.valid || !hasTargetChange()) {
       state.hint = state.valid ? copy.feedbackUnchanged : copy.feedbackInvalid;
       render();
       return;
@@ -1889,26 +2158,52 @@ export async function openLevelSystemModal() {
     render();
 
     try {
-      await window.invoke("edit_level", { xp: state.targetXp });
+      if (window.selectedSavePath !== selectedSave || window.selectedProfilePath !== selectedProfile) {
+        throw new Error("coaches.save_changed");
+      }
+      await window.invoke("edit_career_xp", {
+        xp: state.targetXp,
+        career: state.career,
+        expectedSaveHash: progression.saveHash,
+      });
+      const refreshed = await window.invoke("read_project_coaches");
+      const savedXp = state.career === "bus" ? refreshed.busXp : refreshed.truckXp;
+      const otherUnchanged = state.career === "bus" ? refreshed.truckXp === progression.truckXp : refreshed.busXp === progression.busXp;
+      if (savedXp !== state.targetXp || !otherUnchanged || window.selectedSavePath !== selectedSave || window.selectedProfilePath !== selectedProfile) {
+        throw new Error("coaches.verify_failed");
+      }
+      progression = refreshed;
       if (typeof window.loadProfileData === "function") {
         await window.loadProfileData();
       }
-      if (window.currentProfileData) {
-        window.currentProfileData.xp = state.targetXp;
+      if (window.currentProfileData && progression.truckXp !== null) {
+        window.currentProfileData.xp = progression.truckXp;
       }
       if (typeof window.refreshOperationalOverview === "function") {
         await window.refreshOperationalOverview();
       }
-      window.showToast("toasts.level_system_apply_success", {
+      window.showToast(state.career === "bus" ? "coaches.editor.saved_bus" : "coaches.editor.saved_truck", {
         level: state.targetLevel,
         xp: formatMetric(state.targetXp, 0),
       }, "success");
-      cleanup();
+      state.currentXp = savedXp;
+      state.currentLevel = state.career === "truck" ? getLevelForXp(savedXp, table) : null;
+      state.targetLevel = state.currentLevel;
+      state.xpInput = String(savedXp);
+      state.levelInput = state.career === "truck" ? String(state.currentLevel) : "";
+      state.applying = false;
+      state.hint = "";
+      renderBusStatistics();
+      render();
+      if (activeTab === "coaches") await loadTools("coaches");
     } catch (error) {
       console.error("Level system apply failed:", error);
-      window.showToast("toasts.level_system_apply_error", "error");
+      window.showToast("coaches.editor.save_failed", "error");
       state.applying = false;
-      state.hint = await localizeError(error, "toasts.level_system_apply_error");
+      const errorKey = String(error?.message || error);
+      state.hint = errorKey.startsWith("coaches.")
+        ? await window.t(errorKey)
+        : await localizeError(error, "toasts.level_system_apply_error");
       render();
     }
   }
@@ -1922,8 +2217,15 @@ export async function openLevelSystemModal() {
   levelSystemLevelInput?.addEventListener("input", handleLevelInputChange);
   levelSystemXpInput?.addEventListener("input", handleXpInputChange);
   modalLevelSystemApply?.addEventListener("click", handleApply);
+  careerTruck?.addEventListener("click", handleCareerTruck);
+  careerBus?.addEventListener("click", handleCareerBus);
+  careerTruck?.addEventListener("keydown", handleCareerKeyboard);
+  careerBus?.addEventListener("keydown", handleCareerKeyboard);
+  skillsButton?.addEventListener("click", handleSkills);
+  skilltreeModalClose?.addEventListener("click", handleSkillsClosed);
+  skilltreeModal?.addEventListener("click", handleSkillsClosed);
 
-  render();
+  selectCareer(initialCareer);
   requestAnimationFrame(() => {
     modalLevelSystem.querySelector(".level-system-scroll")?.scrollTo({ top: 0, left: 0 });
   });

@@ -150,6 +150,7 @@
             <button class="nav-btn" data-tab="trailer" type="button" data-translate="editor.tab.trailer">Trailer</button>
             <button class="nav-btn active" data-tab="profile" type="button" data-translate="editor.tab.profile">Profile</button>
             <button class="nav-btn" data-tab="garages" type="button" data-translate="editor.tab.garages">Garages</button>
+            <button class="nav-btn" data-tab="coaches" type="button" data-translate="coaches.title"></button>
             <button class="nav-btn" data-tab="settings" type="button" data-translate="editor.tab.settings">Settings</button>
           </div>
         </nav>
@@ -1769,20 +1770,32 @@
       </div>
     </div>
 
-    <div class="modal-backdrop" id="modalLevelSystem">
-      <div class="modal-box modal-box--xl modal-box--sheet modal-box--level">
+    <div class="modal-backdrop" id="modalLevelSystem" data-career="truck">
+      <div class="modal-box modal-box--xl modal-box--sheet modal-box--level" role="dialog" aria-modal="true" aria-labelledby="levelSystemTitle">
         <div class="detail-modal-head">
           <div>
-            <span class="modal-kicker" data-translate="modals.level_system.kicker">Profile progression</span>
-            <h2 data-translate="modals.level_system.title">Level &amp; XP</h2>
-            <p class="modal-description" data-translate="modals.level_system.description">
-              Set your profile progression by level or exact XP.
-            </p>
+            <span id="levelSystemCareerBadge" class="modal-kicker" data-translate="coaches.editor.truck_badge"></span>
+            <h2 id="levelSystemTitle" data-translate="modals.level_system.title">Level &amp; XP</h2>
+            <p id="levelSystemCareerDescription" class="modal-description" data-translate="coaches.editor.truck_description"></p>
           </div>
           <div id="modalLevelSystemModePill" class="modal-status-pill" data-state="neutral">-</div>
         </div>
 
         <div class="modal-body level-system-scroll">
+          <div class="coaches-career-switch" role="tablist" data-translate-aria-label="coaches.career">
+            <button id="levelSystemCareerTruck" class="coaches-career-tab" type="button" role="tab" aria-selected="true" aria-controls="levelSystemCareerContent" aria-pressed="true">
+              <svg class="coaches-career-icon" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 7h16v16H3zM19 13h6l4 5v5H19M22 13v6h7"/><circle cx="9" cy="24" r="3"/><circle cx="24" cy="24" r="3"/></svg>
+              <span class="coaches-career-copy"><strong data-translate="coaches.editor.truck_title"></strong><small data-translate="coaches.editor.truck_subtitle"></small></span>
+              <span class="coaches-career-dirty" data-translate="coaches.editor.unsaved" hidden></span>
+            </button>
+            <button id="levelSystemCareerBus" class="coaches-career-tab" type="button" role="tab" aria-selected="false" aria-controls="levelSystemCareerContent" aria-pressed="false" tabindex="-1">
+              <svg class="coaches-career-icon" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="4" y="5" width="24" height="20" rx="3"/><path d="M4 15h24M12 5v10M20 5v10M8 20h3M21 20h3"/><path d="M8 25v3M24 25v3"/></svg>
+              <span class="coaches-career-copy"><strong data-translate="coaches.title"></strong><small data-translate="coaches.editor.bus_subtitle"></small></span>
+              <span class="coaches-career-dirty" data-translate="coaches.editor.unsaved" hidden></span>
+            </button>
+          </div>
+          <div id="levelSystemCareerContent" class="level-system-career-content" role="tabpanel" aria-labelledby="levelSystemCareerTruck">
+          <p id="levelSystemCareerNotice" class="level-system-hint" hidden></p>
           <section class="level-system-mode-grid" role="group" aria-label="" data-translate-aria-label="ui.aria_level_edit_mode">
             <button id="levelSystemModeLevel" class="level-system-mode-btn level-system-mode-card" type="button" aria-pressed="true">
               <span data-translate="modals.level_system.mode_level">Set by Level</span>
@@ -1807,7 +1820,7 @@
                   <strong id="levelSystemCurrentBadge" class="level-system-badge">L0</strong>
                 </div>
                 <div class="level-system-value-tile">
-                  <span class="detail-card-label" data-translate="modals.level_system.current_stats.total_xp">Current XP</span>
+                  <span id="levelSystemCurrentXpLabel" class="detail-card-label" data-translate="coaches.editor.current_truck_xp"></span>
                   <strong id="levelSystemCurrentXp" class="detail-card-value">0</strong>
                 </div>
               </div>
@@ -1826,12 +1839,24 @@
                   <em id="levelSystemTargetLevelMeta" class="level-system-value-tag">-</em>
                 </div>
                 <div class="level-system-value-tile">
-                  <span class="detail-card-label" data-translate="modals.level_system.preview.target_xp">Target XP</span>
+                  <span id="levelSystemTargetXpLabel" class="detail-card-label" data-translate="coaches.editor.target_truck_xp"></span>
                   <strong id="levelSystemTargetXp" class="detail-card-value">0</strong>
                   <em id="levelSystemTargetXpMeta" class="level-system-value-tag">-</em>
                 </div>
               </div>
             </article>
+          </section>
+
+          <section id="levelSystemTruckProgress" class="detail-card level-system-panel level-system-truck-progress">
+            <div class="level-system-progress-head">
+              <span class="detail-card-label" data-translate="coaches.editor.next_level"></span>
+              <strong id="levelSystemProgressValue"></strong>
+            </div>
+            <progress id="levelSystemProgressBar" max="100" value="0" data-translate-aria-label="coaches.editor.next_level"></progress>
+            <div class="level-system-progress-head">
+              <span id="levelSystemProgressAmount" class="modal-description"></span>
+              <button id="levelSystemSkills" class="secondary-action" type="button" data-translate="editor.skilltree.launch_action"></button>
+            </div>
           </section>
 
           <section class="detail-card level-system-panel level-system-input-panel">
@@ -1848,18 +1873,25 @@
             </label>
 
             <label id="levelSystemXpField" class="level-system-input-card">
-              <span class="modal-label" data-translate="modals.level_system.controls.xp_input">XP</span>
+              <span id="levelSystemInputXpLabel" class="modal-label" data-translate="coaches.editor.new_truck_xp"></span>
               <input id="levelSystemXpInput" type="number" min="0" step="1" placeholder="Enter XP" data-translate-placeholder="modals.level_system.controls.xp_placeholder" />
               <small data-translate="modals.level_system.controls.xp_help">Level will be calculated from the shared level table.</small>
             </label>
 
             <p id="levelSystemHint" class="level-system-hint" hidden></p>
           </section>
+          <section id="levelSystemBusStats" class="level-system-bus-stats" hidden>
+            <h3 data-translate="coaches.statistics"></h3>
+            <p class="modal-description" data-translate="coaches.editor.statistics_hint"></p>
+            <div id="levelSystemBusStatsGrid" class="coaches-stats"></div>
+          </section>
+          <p class="level-system-draft-notice" data-translate="coaches.editor.draft_hint"></p>
+          </div>
         </div>
 
         <div class="modal-actions modal-actions--end">
           <button id="modalLevelSystemClose" type="button" data-translate="modals.close">Close</button>
-          <button id="modalLevelSystemApply" class="apply" type="button" data-translate="modals.level_system.actions.apply">Set Level &amp; XP</button>
+          <button id="modalLevelSystemApply" class="apply" type="button" data-translate="coaches.editor.save_truck"></button>
         </div>
       </div>
     </div>

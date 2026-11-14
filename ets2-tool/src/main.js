@@ -1,3 +1,4 @@
+import { diagnosticInvoke } from "./modules/shared/diagnostics_runtime.js";
 import { openThemeSettings } from "./modules/shared/theme_settings.js";
 import { localizeError, translateDocument } from "./modules/shared/i18n.js";
 import { loadTools, activeTab, openCloneProfileModal, openModalMulti, openModalText } from "./app.js";
@@ -11,7 +12,7 @@ const hasTauri = Boolean(tauri?.core?.invoke);
 
 const app = hasTauri ? tauri.app : null;
 const openUrl = hasTauri ? tauri.opener.openUrl : async () => {};
-const tauriInvoke = hasTauri ? tauri.core.invoke : async () => {
+const tauriInvoke = hasTauri ? diagnosticInvoke : async () => {
   throw new Error("Tauri API not available");
 };
 const convertFileSrc = hasTauri ? tauri.core.convertFileSrc : (path) => path;
@@ -24,6 +25,7 @@ let scheduleSaveSafetyRefresh = () => {};
 const UPDATE_START_DELAY_MS = 2500;
 
 const SAVE_MUTATION_COMMANDS = new Set([
+  "edit_career_xp",
   "apply_custom_reset_values",
   "apply_active_truck_switch",
   "apply_save_health_fix",
@@ -127,42 +129,13 @@ async function safeInvoke(command, args = {}, options = {}) {
   } = options;
 
   try {
-    const shouldRedact = ["auth_login", "auth_register", "auth_reset_password_with_recovery_code"].includes(command);
-    const shouldRedactTrailerPlate = command === "set_player_trailer_license_plate";
-    if (shouldRedact || shouldRedactTrailerPlate) {
-      const safeArgs = { ...(args || {}) };
-      for (const key of ["password", "passwordConfirm", "password_confirm"]) {
-        if (key in safeArgs) safeArgs[key] = "[REDACTED]";
-      }
-      if ("plate" in safeArgs) safeArgs.plate = "[REDACTED]";
-      console.log("[invoke:start]", command, safeArgs);
-    } else {
-      console.log("[invoke:start]", command, args);
-    }
     const result = await tauriInvoke(command, args);
-    if (command === "get_player_trailer" && result && typeof result === "object") {
-      console.log("[invoke:ok]", command, {
-        success: result.success,
-        hasTrailer: result.has_trailer,
-        hasActiveJob: result.has_active_job,
-        hasActiveJobCargoMass: result.active_job_cargo_mass !== null
-          && result.active_job_cargo_mass !== undefined,
-      });
-    } else {
-      console.log("[invoke:ok]", command, result);
-    }
     if (SAVE_MUTATION_COMMANDS.has(command)) {
       scheduleSaveSafetyRefresh(command, result);
     }
     return result;
   } catch (error) {
     console.error("[invoke:fail]", command, error);
-    if (hasTauri && command !== "log_user_action") {
-      tauriInvoke("log_user_action", {
-        action: `tauri_command_${command}`,
-        stage: "error",
-      }).catch(() => {});
-    }
     if (!silent && ["hub_get_mode", "career_get_status", "career_get_overview"].includes(command)) {
       showCareerLoadFailure(error);
     }
@@ -177,19 +150,6 @@ const invoke = (command, args = {}) =>
     rethrow: true,
     silent: !["hub_get_mode", "career_get_status", "career_get_overview"].includes(command),
   });
-
-window.addEventListener("error", (event) => {
-  const error = event.error || (typeof event.message === "string" && event.message ? event.message : null);
-  console.error("[ui:error]", error || event);
-  if (error) {
-    showCareerLoadFailure(error);
-  }
-});
-
-window.addEventListener("unhandledrejection", (event) => {
-  console.error("[ui:rejection]", event.reason);
-  showCareerLoadFailure(event.reason);
-});
 
 window.invoke = invoke;
 window.applySetting = (...args) => applySetting(...args);
@@ -815,6 +775,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   let lastStableActiveJobAt = 0;
   const ACTIVE_JOB_EMPTY_DEBOUNCE_MS = 1500;
   const editorStageMeta = {
+    coaches: {
+      title: "coaches.title",
+      summary: "coaches.raw_values",
+    },
     truck: {
       title: "editor.stage.truck",
       summary: "editor.stage.truck_desc",
@@ -4109,6 +4073,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const loadProfileData = async () => {
     window.currentProfileData = await invoke("read_all_save_data");
+    if (window.selectedSavePath) {
+      try {
+        const progression = await invoke("read_project_coaches");
+        if (window.currentProfileData && Number.isSafeInteger(progression?.truckXp)) {
+          window.currentProfileData.xp = progression.truckXp;
+        }
+      } catch (error) {
+        console.warn("Career XP could not be read from game.sii:", error);
+      }
+    }
   };
   const loadQuicksave = async () => {
     window.currentQuicksaveData = await invoke("quicksave_game_info");
@@ -4171,7 +4145,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   window.refreshOperationalOverview = updateOperationalOverview;
   window.openRecoveryCenterModal = openRecoveryCenterModal;
   window.openSafeValueResetModal = openSafeValueResetModal;
-  window.openUserLogsModal = openUserLogsModal;
+  window.openUserLogsModal = async () => {
+    const { openLogFile } = await import("./modules/shared/diagnostics_ui.js");
+    await openLogFile();
+  };
   window.openEts2DataLocationModal = openEts2DataLocationModal;
   syncSafeResetCard();
   syncUserLogsControls();

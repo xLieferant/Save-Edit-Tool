@@ -224,6 +224,7 @@ pub fn apply_active_trailer_switch_transaction(
     decrypt_cache: &DecryptCache,
     trailer_change_cache: &TrailerChangeSessionCache,
 ) -> Result<ApplyTrailerChangeResult, String> {
+    crate::shared::logs::diagnostic::with_operation("trailer_editor", "apply_active_trailer_switch_transaction", || {
     let started_at = Instant::now();
     let profile_id = current_profile_id(profile_state)?;
     let game_path = resolve_game_sii_path(save_path_arg, profile_state)?;
@@ -314,6 +315,8 @@ pub fn apply_active_trailer_switch_transaction(
         ],
     );
 
+    crate::shared::logs::diagnostic::verified_write("trailer_editor", "apply_active_trailer_switch_transaction",
+        backup_result.as_ref().map(|backup| backup.backup_id.clone()), actual_hash != file_hash_after, false);
     Ok(ApplyTrailerChangeResult {
         success: true,
         backup_id: backup_result
@@ -328,6 +331,7 @@ pub fn apply_active_trailer_switch_transaction(
         file_hash_after,
         validation,
         refreshed_session,
+    })
     })
 }
 

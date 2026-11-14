@@ -1,0 +1,79 @@
+.log-file-dialog {
+  box-sizing: border-box;
+  width: min(1020px, calc(100vw - 32px));
+  height: min(820px, calc(100dvh - 40px));
+  max-height: calc(100dvh - 40px);
+  padding: 20px;
+  border: 1px solid var(--panel-border, #363e4b);
+  border-radius: 12px;
+  background: var(--bg-card, #1b202a);
+  color: var(--text-main, #eef0f5);
+  font-family: var(--font-ui, sans-serif);
+  overflow: hidden;
+  min-width: 0;
+}
+.log-file-dialog[open] { display: grid; grid-template-rows: auto auto auto auto minmax(80px, 1fr) auto; gap: 14px; }
+.log-file-dialog::backdrop { background: rgb(0 0 0 / 55%); }
+.log-file-dialog h2 { margin: 0 0 8px; font-size: 22px; }
+.log-file-dialog p { margin: 0; font-size: 13px; line-height: 1.5; }
+.log-file-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 20px; }
+.log-file-head p { max-width: 76ch; color: var(--text-muted); }
+.log-file-status { padding: 6px 10px; border: 1px solid var(--panel-border); border-radius: 999px; font-size: 11px; white-space: nowrap; color: var(--text-muted); }
+.log-file-status[data-state="error"] { color: var(--danger); }
+.log-file-metadata { display: grid; grid-template-columns: minmax(0, 2.2fr) repeat(3, minmax(0, 1fr)); gap: 10px; }
+.log-file-meta-card { display: grid; align-content: start; gap: 8px; min-width: 0; padding: 12px; border: 1px solid var(--panel-border); border-radius: 10px; background: var(--bg-elevated); }
+.log-file-meta-label { color: var(--text-muted); font-size: 12px; }
+.log-file-meta-card strong { min-width: 0; font-size: 18px; font-variant-numeric: tabular-nums; }
+.log-file-meta-card .log-file-path { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; font-size: 12px; font-weight: 500; line-height: 1.45; }
+.log-file-updated { color: var(--text-muted); }
+.log-file-filters { display: flex; flex-wrap: wrap; gap: 6px; }
+.log-file-filters button { min-height: 32px; padding: 6px 12px; border-radius: 8px; background: transparent; border: 1px solid var(--panel-border); color: var(--text-muted); }
+.log-file-filters button[aria-selected="true"] { background: var(--accent-soft); border-color: var(--accent-border); color: var(--text-main); }
+.log-file-preview {
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: 6px 12px;
+  border: 1px solid var(--panel-border, #363e4b);
+  border-radius: 6px;
+  background: rgb(0 0 0 / 12%);
+}
+.log-file-entry { margin: 0; min-width: 0; padding: 10px 0; border-bottom: 1px solid var(--card-border); white-space: pre-wrap; overflow-wrap: anywhere; font: 12px/1.55 var(--font-mono, ui-monospace, monospace); color: var(--text-main); }
+.log-file-entry:last-child { border-bottom: 0; }
+.log-file-entry:is([data-level="WARN"], [data-level="WARNING"]) { color: var(--warning); }
+.log-file-entry:is([data-level="ERROR"], [data-level="FATAL"]) { color: var(--danger); }
+.log-file-empty { padding: 20px 0; color: var(--text-muted); }
+.log-file-footer { display: grid; gap: 8px; min-width: 0; border-top: 1px solid var(--panel-border); padding-top: 12px; }
+.log-file-feedback { min-height: 1.5em; color: var(--text-muted); overflow-wrap: anywhere; }
+.log-file-feedback[data-state="error"] { color: var(--danger); }
+.log-file-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
+.log-file-actions button {
+  padding: 9px 15px;
+  border: 1px solid var(--panel-border, #465164);
+  border-radius: 6px;
+  background: var(--bg-card, #252e3d);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.log-file-actions button:disabled { opacity: .55; cursor: wait; }
+.log-file-dialog :focus-visible { outline: 2px solid var(--accent, #8ba9ff); outline-offset: 3px; }
+
+@media (max-width: 760px) {
+  .log-file-dialog { padding: 14px; width: calc(100vw - 20px); height: calc(100dvh - 20px); max-height: calc(100dvh - 20px); }
+  .log-file-dialog[open] { gap: 10px; }
+  .log-file-metadata { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .log-file-head { gap: 10px; }
+}
+
+@media (max-width: 480px) {
+  .log-file-head { grid-template-columns: minmax(0, 1fr); }
+  .log-file-status { justify-self: start; }
+  .log-file-meta-card { padding: 8px; gap: 4px; }
+  .log-file-meta-card .log-file-path { -webkit-line-clamp: 2; }
+  .log-file-actions { display: grid; grid-template-columns: minmax(0, 1fr); }
+}

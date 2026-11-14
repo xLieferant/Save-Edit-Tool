@@ -1,5 +1,51 @@
 # ETS2 Save Edit Tool
 
+## Project Coaches
+
+The save editor provides separate Truck and Project Coaches careers in the
+existing XP dialog, with muted blue truck and sage bus tabs. Each career retains
+its own unsaved input and validation state when switching tabs. Saving updates
+only the selected career and keeps the dialog open; closing discards remaining
+drafts. Truck progression includes the existing level calculations, next-level
+progress and access to the skill editor. Bus XP never use the truck level table
+or alter truck skills; available bus statistics remain read-only in the dialog.
+The Project Coaches tab reads bus statistics, referenced stops and discovery
+counts, bus references, the active bus-job reference and bus trip logs.
+Statistics other than XP and all references remain read-only. Distance and time
+values are displayed without conversion because their units are not verified.
+
+XP edits target the unique economy unit, use the existing automatic backup
+mechanism and verify the saved content by reading it again. Unknown units,
+fields and arrays remain in the save. Missing or invalid career XP fields are
+not added; saves without Coaches fields continue to support truck XP.
+The editor rejects saves changed since loading. No bus, route or job objects
+are generated. Stop discovery remains read-only pending validated examples.
+
+Checks: `cargo test --manifest-path src-tauri/Cargo.toml --bin ets2-tool`,
+`node src-tauri/src/features/save_editor/frontend_tests.mjs`,
+`node scripts/check_i18n.mjs` and `node scripts/check_ui.mjs`.
+Browser checks require a local Chrome installation or `CHROME_PATH`.
+
+## Application logs
+
+Settings provides **User logs** with file metadata, level filters and a scrolling
+viewer showing the newest entries first. The dialog loads automatically and
+checks for changes while visible. **Export user logs** writes the complete
+current log as a UTF-8 `.log` report with diagnostic header to Downloads,
+independently of the selected filter. A native Save dialog is the fallback when
+Downloads cannot be written. Filenames include local date/time and seconds;
+collisions create a new name. Existing logs are never overwritten. **Clear
+cache** only removes files in the dedicated temporary application cache.
+
+Rust and JavaScript errors are recorded locally in
+`<Tauri local application data>/support/logs/application.log.txt`. Entries append
+across restarts, include operation identifiers and redact private paths and known
+secret formats. The background writer rotates at 5 MiB; managed TXT archives
+expire after 14 days and the total managed log size is limited to 20 MiB.
+No reports are uploaded automatically. Existing legacy reports remain untouched.
+
+Implementation and tests: [Logging](src-tauri/src/features/logging/README.md).
+
 ## ETS2 Data Location
 
 The Settings tools include an ETS2 Data Location modal for switching between the default Documents folder and a custom `-homedir` root. Changing the location refreshes profile and save discovery and uses the selected folder for profiles, Steam profiles, local mods, config files and logs.

@@ -494,6 +494,7 @@ pub fn apply_active_truck_switch_transaction(
     decrypt_cache: &DecryptCache,
     truck_change_cache: &TruckChangeSessionCache,
 ) -> Result<ApplyTruckChangeResult, String> {
+    crate::shared::logs::diagnostic::with_operation("truck_editor", "apply_active_truck_switch_transaction", || {
     let started_at = Instant::now();
     let profile_id = current_profile_id(profile_state)?;
     let game_path = resolve_game_sii_path(save_path_arg, profile_state)?;
@@ -898,6 +899,7 @@ pub fn apply_active_truck_switch_transaction(
             }
         }
     }
+    })
 }
 
 pub struct SwitchApplyPlan {

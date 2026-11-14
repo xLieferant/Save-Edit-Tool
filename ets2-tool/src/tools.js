@@ -738,11 +738,21 @@ export const tools = {
       disabled: false,
     },
     {
-      title: "tools.settings.user_logs.title",
-      desc: "tools.settings.user_logs.desc",
+      title: "simple_logging.show",
+      desc: "simple_logging.summary",
       img: "images/dev.jpg",
       action: async () => {
         await window.openUserLogsModal?.();
+      },
+      disabled: false,
+    },
+    {
+      title: "simple_logging.clear_cache",
+      desc: "simple_logging.cache_summary",
+      img: "images/dev.jpg",
+      action: async () => {
+        const { clearTemporaryCache } = await import("./modules/shared/diagnostics_ui.js");
+        await clearTemporaryCache();
       },
       disabled: false,
     },

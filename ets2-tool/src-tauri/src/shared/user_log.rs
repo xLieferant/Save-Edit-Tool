@@ -6,8 +6,8 @@ use std::time::SystemTime;
 
 use crate::shared::logs;
 
-const USER_LOG_FILE_NAME: &str = "ets2_tool_user.log";
-const ERROR_LOG_FILE_NAME: &str = "ets2_tool_errors.log";
+const USER_LOG_FILE_NAME: &str = "application.log.txt";
+const ERROR_LOG_FILE_NAME: &str = "application.log.txt";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -69,21 +69,20 @@ fn format_entry(level: &str, module: &str, message: &str) -> String {
 }
 
 fn write_entry(level: &str, module: &str, message: &str) -> Result<(), String> {
+    if let Some(runtime) = logs::diagnostic::active() {
+        runtime.legacy(level, module, message);
+        return Ok(());
+    }
     logs::ensure_log_directory()?;
     let normalized_level = normalize_level(level);
-    let entry = format_entry(&normalized_level, module, message);
+    let entry = format_entry(
+        &normalized_level,
+        module,
+        &logs::diagnostic::sanitize(message),
+    );
 
-    match normalized_level.as_str() {
-        "DEBUG" => {
-            logs::append_log_line(&debug_log_path(), &entry)?;
-        }
-        "ERROR" => {
-            logs::append_log_line(&user_log_path(), &entry)?;
-            logs::append_log_line(&error_log_path(), &entry)?;
-        }
-        _ => {
-            logs::append_log_line(&user_log_path(), &entry)?;
-        }
+    if normalized_level != "DEBUG" {
+        logs::append_log_line(&user_log_path(), &entry)?;
     }
 
     Ok(())
@@ -168,6 +167,40 @@ pub fn get_user_logs(
     level_filter: Option<&str>,
     max_lines: Option<u32>,
 ) -> Result<Vec<UserLogEntry>, String> {
+    if let Some(runtime) = logs::diagnostic::active() {
+        let filter = level_filter.map(normalize_level);
+        return runtime
+            .recent
+            .lock()
+            .map_err(|_| "Diagnostic history unavailable".to_string())
+            .map(|events| {
+                events
+                    .iter()
+                    .rev()
+                    .filter(|event| {
+                        filter
+                            .as_ref()
+                            .map(|level| level == &event.level)
+                            .unwrap_or(true)
+                    })
+                    .take(max_lines.unwrap_or(400).min(1500) as usize)
+                    .map(|event| UserLogEntry {
+                        timestamp: event.timestamp.clone(),
+                        level: event.level.clone(),
+                        module: event.module.clone(),
+                        message: event.message.clone(),
+                        raw_line: format!(
+                            "[{}] [{}] [{}] {} {}",
+                            event.timestamp,
+                            event.level,
+                            event.module,
+                            event.message,
+                            event.error_id.as_deref().unwrap_or("")
+                        ),
+                    })
+                    .collect()
+            });
+    }
     logs::ensure_log_file(&user_log_path())?;
     let content = fs::read_to_string(user_log_path()).unwrap_or_default();
     let normalized_filter = level_filter.map(normalize_level);
@@ -198,6 +231,29 @@ fn modified_to_utc(value: SystemTime) -> String {
 }
 
 pub fn get_log_status() -> Result<UserLogStatus, String> {
+    if let Some(runtime) = logs::diagnostic::active() {
+        let path = runtime.root.join(logs::diagnostic::LOG_FILE);
+        let entries = get_user_logs(None, Some(1500))?;
+        let metadata = fs::metadata(&path).ok();
+        return Ok(UserLogStatus {
+            log_file_path: path.display().to_string(),
+            debug_log_path: path.display().to_string(),
+            error_log_path: runtime
+                .root
+                .join(logs::diagnostic::LOG_FILE)
+                .display()
+                .to_string(),
+            log_size_bytes: metadata.as_ref().map(|m| m.len()).unwrap_or(0),
+            last_modified_utc: metadata
+                .and_then(|m| m.modified().ok())
+                .map(modified_to_utc),
+            warning_count: entries.iter().filter(|e| e.level == "WARN").count() as u32,
+            error_count: entries
+                .iter()
+                .filter(|e| e.level == "ERROR" || e.level == "FATAL")
+                .count() as u32,
+        });
+    }
     logs::ensure_log_file(&user_log_path())?;
     logs::ensure_log_file(&debug_log_path())?;
     logs::ensure_log_file(&error_log_path())?;
@@ -241,6 +297,10 @@ fn clear_single_log(path: &Path) -> Result<(), String> {
 }
 
 pub fn clear_user_logs() -> Result<Option<String>, String> {
+    if logs::diagnostic::active().is_some() {
+        // Legacy command has no confirmation argument. Use the preview/confirm diagnostic API.
+        return Err("diagnostics.errors.confirmation_required".into());
+    }
     logs::ensure_log_directory()?;
     let user_path = user_log_path();
     let debug_path = debug_log_path();

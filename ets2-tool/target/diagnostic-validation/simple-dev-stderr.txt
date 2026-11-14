@@ -1,0 +1,1830 @@
+     Running DevCommand (`cargo  run --no-default-features --color always --`)
+       Error Found version mismatched Tauri packages. Make sure the NPM package and Rust crate versions are on the same major/minor releases:
+tauri-plugin-fs (v2.5.1) : @tauri-apps/plugin-fs (v2.4.4)
+tauri-plugin-updater (v2.10.1) : @tauri-apps/plugin-updater (v2.9.0)
+[1m[92m   Compiling[0m ets2-tool v0.9.8 (E:\Coding Projects\Save Edit Tool\ets2-tool\src-tauri)
+[1m[96m    Building[0m [=======================> ] 620/623: ets2-to…[1m[96m    Building[0m [=======================> ] 621/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: linker stdout: Bibliothek "E:\Coding Projects\Save Edit Tool\ets2-tool\src-tauri\target\debug\deps\ets2_tool_lib.dll.lib" und Objekt "E:\Coding Projects\Save Edit Tool\ets2-tool\src-tauri\target\debug\deps\ets2_tool_lib.dll.exp" werden erstellt.[0m
+  [1m[96m|[0m
+  [1m[96m= [0m[1m[97mnote[0m: `#[warn(linker_messages)]` on by default
+
+[1m[96m    Building[0m [=======================> ] 621/623: ets2-to…                                                            [1m[93mwarning[0m: `ets2-tool` (lib) generated 1 warning
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: unused imports: `start_frontend_telemetry_bridge` and `start_terminal_telemetry_loop`[0m
+   [1m[96m--> [0msrc\features\career\scs_sdk_telemetry.rs:429:20
+    [1m[96m|[0m
+[1m[96m429[0m [1m[96m|[0m pub use platform::{start_frontend_telemetry_bridge, start_terminal_telemetry_loop};
+    [1m[96m|[0m                    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m  [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+    [1m[96m|[0m
+    [1m[96m= [0m[1m[97mnote[0m: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: unused import: `platform::start_telemetry_debug_thread`[0m
+   [1m[96m--> [0msrc\features\career\telemetry_debug.rs:201:9
+    [1m[96m|[0m
+[1m[96m201[0m [1m[96m|[0m pub use platform::start_telemetry_debug_thread;
+    [1m[96m|[0m         [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: unused import: `Path`[0m
+ [1m[96m--> [0msrc\features\logging\service.rs:2:17
+  [1m[96m|[0m
+[1m[96m2[0m [1m[96m|[0m use std::path::{Path, PathBuf};
+  [1m[96m|[0m                 [1m[93m^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: unused import: `serde::Serialize`[0m
+ [1m[96m--> [0msrc\features\mod_profile_manager\workshop_api.rs:5:5
+  [1m[96m|[0m
+[1m[96m5[0m [1m[96m|[0m use serde::Serialize;
+  [1m[96m|[0m     [1m[93m^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: unused import: `fs_extra::dir::copy`[0m
+ [1m[96m--> [0msrc\features\profile_controls\commands.rs:2:5
+  [1m[96m|[0m
+[1m[96m2[0m [1m[96m|[0m use fs_extra::dir::copy;
+  [1m[96m|[0m     [1m[93m^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: unused import: `crate::shared::current_profile::set_current_profile`[0m
+ [1m[96m--> [0msrc\features\profile_manager\commands.rs:6:5
+  [1m[96m|[0m
+[1m[96m6[0m [1m[96m|[0m use crate::shared::current_profile::set_current_profile;
+  [1m[96m|[0m     [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: unused imports: `Deserialize` and `Serialize`[0m
+  [1m[96m--> [0msrc\features\profile_manager\commands.rs:15:13
+   [1m[96m|[0m
+[1m[96m15[0m [1m[96m|[0m use serde::{Deserialize, Serialize};
+   [1m[96m|[0m             [1m[93m^^^^^^^^^^^[0m  [1m[93m^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: unused import: `std::io::Write`[0m
+  [1m[96m--> [0msrc\features\profile_manager\commands.rs:21:5
+   [1m[96m|[0m
+[1m[96m21[0m [1m[96m|[0m use std::io::Write;
+   [1m[96m|[0m     [1m[93m^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: unused import: `PathBuf`[0m
+   [1m[96m--> [0msrc\features\profile_manager\commands.rs:188:27
+    [1m[96m|[0m
+[1m[96m188[0m [1m[96m|[0m     use std::path::{Path, PathBuf};
+    [1m[96m|[0m                           [1m[93m^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: unused import: `crate::shared::regex_helper::cragex`[0m
+  [1m[96m--> [0msrc\features\vehicles\editor.rs:13:5
+   [1m[96m|[0m
+[1m[96m13[0m [1m[96m|[0m use crate::shared::regex_helper::cragex;
+   [1m[96m|[0m     [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: unreachable statement[0m
+   [1m[96m--> [0msrc\features\profile_manager\commands.rs:190:5
+    [1m[96m|[0m
+[1m[96m185[0m [1m[96m|[0m     return result;
+    [1m[96m|[0m     [1m[96m-------------[0m [1m[96many code following this expression is unreachable[0m
+[1m[96m...[0m
+[1m[96m190[0m [1m[96m|[0m     let save_root = Path::new(&profile_path).join("save");
+    [1m[96m|[0m     [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1m[93munreachable statement[0m
+    [1m[96m|[0m
+    [1m[96m= [0m[1m[97mnote[0m: `#[warn(unreachable_code)]` (part of `#[warn(unused)]`) on by default
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: unreachable statement[0m
+   [1m[96m--> [0msrc\features\vehicles\trailers.rs:154:5
+    [1m[96m|[0m
+[1m[96m150[0m [1m[96m|[0m [1m[96m/[0m     return Ok(PlayerTrailerResult::some(player_trailer)
+[1m[96m151[0m [1m[96m|[0m [1m[96m|[0m         .with_active_job(has_active_job)
+[1m[96m152[0m [1m[96m|[0m [1m[96m|[0m         .with_active_job_cargo_mass(active_job_cargo_mass));
+    [1m[96m|[0m [1m[96m|___________________________________________________________-[0m [1m[96many code following this expression is unreachable[0m
+[1m[96m153[0m [1m[96m|[0m
+[1m[96m154[0m [1m[96m|[0m       let (content, path_key) = load_save_content(profile_state, decrypt_cache)?;
+    [1m[96m|[0m       [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1m[93munreachable statement[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: unreachable statement[0m
+   [1m[96m--> [0msrc\features\vehicles\trailers.rs:324:5
+    [1m[96m|[0m
+[1m[96m322[0m [1m[96m|[0m     return Ok(parsed_trailers);
+    [1m[96m|[0m     [1m[96m--------------------------[0m [1m[96many code following this expression is unreachable[0m
+[1m[96m323[0m [1m[96m|[0m
+[1m[96m324[0m [1m[96m|[0m     let (content, path_key) = load_save_content(profile_state, decrypt_cache)?;
+    [1m[96m|[0m     [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1m[93munreachable statement[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: value assigned to `assign_result` is never read[0m
+   [1m[96m--> [0msrc\features\career\commands.rs:796:29
+    [1m[96m|[0m
+[1m[96m796[0m [1m[96m|[0m     let mut assign_result = "pending".to_string();
+    [1m[96m|[0m                             [1m[93m^^^^^^^^^^^^^^^^^^^^^[0m [1m[93mthis value is reassigned later and never used[0m
+[1m[96m...[0m
+[1m[96m824[0m [1m[96m|[0m                 assign_result = "assigned".to_string();
+    [1m[96m|[0m                 [1m[96m-------------[0m [1m[96m`assign_result` is overwritten here before the previous value is read[0m
+    [1m[96m|[0m
+    [1m[96m= [0m[1m[97mnote[0m: `#[warn(unused_assignments)]` (part of `#[warn(unused)]`) on by default
+
+[1m[93mwarning[0m[1m[97m: value assigned to `prepare_result` is never read[0m
+   [1m[96m--> [0msrc\features\career\commands.rs:797:30
+    [1m[96m|[0m
+[1m[96m797[0m [1m[96m|[0m     let mut prepare_result = "pending".to_string();
+    [1m[96m|[0m                              [1m[93m^^^^^^^^^^^^^^^^^^^^^[0m [1m[93mthis value is reassigned later and never used[0m
+[1m[96m...[0m
+[1m[96m898[0m [1m[96m|[0m         prepare_result = "already_prepared_or_written".to_string();
+    [1m[96m|[0m         [1m[96m--------------[0m [1m[96m`prepare_result` is overwritten here before the previous value is read[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: function `revoke_session` is never used[0m
+   [1m[96m--> [0msrc\features\auth\repo.rs:239:8
+    [1m[96m|[0m
+[1m[96m239[0m [1m[96m|[0m pub fn revoke_session(conn: &Connection, session_id: i64, revoked_at: &str) -> Result<(), String> {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^[0m
+    [1m[96m|[0m
+    [1m[96m= [0m[1m[97mnote[0m: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+[1m[93mwarning[0m[1m[97m: constant `BACKUP_TYPE_MANUAL` is never used[0m
+  [1m[96m--> [0msrc\features\backup\service.rs:25:11
+   [1m[96m|[0m
+[1m[96m25[0m [1m[96m|[0m pub const BACKUP_TYPE_MANUAL: &str = "Manual";
+   [1m[96m|[0m           [1m[93m^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `list_backups_for_active_save` is never used[0m
+   [1m[96m--> [0msrc\features\backup\service.rs:219:8
+    [1m[96m|[0m
+[1m[96m219[0m [1m[96m|[0m pub fn list_backups_for_active_save(
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: field `reputation_required` is never read[0m
+   [1m[96m--> [0msrc\features\career\dispatcher.rs:678:5
+    [1m[96m|[0m
+[1m[96m661[0m [1m[96m|[0m struct DispatcherTemplate {
+    [1m[96m|[0m        [1m[96m------------------[0m [1m[96mfield in this struct[0m
+[1m[96m...[0m
+[1m[96m678[0m [1m[96m|[0m     reputation_required: u16,
+    [1m[96m|[0m     [1m[93m^^^^^^^^^^^^^^^^^^^[0m
+    [1m[96m|[0m
+    [1m[96m= [0m[1m[97mnote[0m: `DispatcherTemplate` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: field `updated_at_utc` is never read[0m
+   [1m[96m--> [0msrc\features\career\dispatcher\models.rs:304:9
+    [1m[96m|[0m
+[1m[96m255[0m [1m[96m|[0m pub(super) struct DispatcherJobRow {
+    [1m[96m|[0m                   [1m[96m----------------[0m [1m[96mfield in this struct[0m
+[1m[96m...[0m
+[1m[96m304[0m [1m[96m|[0m     pub updated_at_utc: String,
+    [1m[96m|[0m         [1m[93m^^^^^^^^^^^^^^[0m
+    [1m[96m|[0m
+    [1m[96m= [0m[1m[97mnote[0m: `DispatcherJobRow` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: constant `SHARED_MEMORY_NAME` is never used[0m
+  [1m[96m--> [0msrc\features\career\scs_sdk_telemetry.rs:17:11
+   [1m[96m|[0m
+[1m[96m17[0m [1m[96m|[0m     const SHARED_MEMORY_NAME: &str = "Local\\SCSTelemetry";
+   [1m[96m|[0m           [1m[93m^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: constant `SHARED_MEMORY_SIZE` is never used[0m
+  [1m[96m--> [0msrc\features\career\scs_sdk_telemetry.rs:18:11
+   [1m[96m|[0m
+[1m[96m18[0m [1m[96m|[0m     const SHARED_MEMORY_SIZE: usize = 32 * 1024;
+   [1m[96m|[0m           [1m[93m^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: constant `POLL_INTERVAL` is never used[0m
+  [1m[96m--> [0msrc\features\career\scs_sdk_telemetry.rs:19:11
+   [1m[96m|[0m
+[1m[96m19[0m [1m[96m|[0m     const POLL_INTERVAL: Duration = Duration::from_millis(150);
+   [1m[96m|[0m           [1m[93m^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: constant `RECONNECT_INTERVAL` is never used[0m
+  [1m[96m--> [0msrc\features\career\scs_sdk_telemetry.rs:20:11
+   [1m[96m|[0m
+[1m[96m20[0m [1m[96m|[0m     const RECONNECT_INTERVAL: Duration = Duration::from_millis(1000);
+   [1m[96m|[0m           [1m[93m^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: constant `ZONE1_OFFSET` is never used[0m
+  [1m[96m--> [0msrc\features\career\scs_sdk_telemetry.rs:21:11
+   [1m[96m|[0m
+[1m[96m21[0m [1m[96m|[0m     const ZONE1_OFFSET: usize = 0;
+   [1m[96m|[0m           [1m[93m^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: constant `ZONE3_OFFSET` is never used[0m
+  [1m[96m--> [0msrc\features\career\scs_sdk_telemetry.rs:22:11
+   [1m[96m|[0m
+[1m[96m22[0m [1m[96m|[0m     const ZONE3_OFFSET: usize = 500;
+   [1m[96m|[0m           [1m[93m^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: constant `ZONE4_OFFSET` is never used[0m
+  [1m[96m--> [0msrc\features\career\scs_sdk_telemetry.rs:23:11
+   [1m[96m|[0m
+[1m[96m23[0m [1m[96m|[0m     const ZONE4_OFFSET: usize = 700;
+   [1m[96m|[0m           [1m[93m^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: constant `ZONE5_OFFSET` is never used[0m
+  [1m[96m--> [0msrc\features\career\scs_sdk_telemetry.rs:24:11
+   [1m[96m|[0m
+[1m[96m24[0m [1m[96m|[0m     const ZONE5_OFFSET: usize = 1500;
+   [1m[96m|[0m           [1m[93m^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: constant `NOT_AVAILABLE_MESSAGE` is never used[0m
+  [1m[96m--> [0msrc\features\career\scs_sdk_telemetry.rs:25:11
+   [1m[96m|[0m
+[1m[96m25[0m [1m[96m|[0m     const NOT_AVAILABLE_MESSAGE: &str = "Telemetry not available. Is ETS2 running with the plugin?";
+   [1m[96m|[0m           [1m[93m^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: struct `Zone1` is never constructed[0m
+  [1m[96m--> [0msrc\features\career\scs_sdk_telemetry.rs:29:12
+   [1m[96m|[0m
+[1m[96m29[0m [1m[96m|[0m     struct Zone1 {
+   [1m[96m|[0m            [1m[93m^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: struct `Zone3` is never constructed[0m
+  [1m[96m--> [0msrc\features\career\scs_sdk_telemetry.rs:42:12
+   [1m[96m|[0m
+[1m[96m42[0m [1m[96m|[0m     struct Zone3 {
+   [1m[96m|[0m            [1m[93m^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: struct `Zone4` is never constructed[0m
+  [1m[96m--> [0msrc\features\career\scs_sdk_telemetry.rs:52:12
+   [1m[96m|[0m
+[1m[96m52[0m [1m[96m|[0m     struct Zone4 {
+   [1m[96m|[0m            [1m[93m^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: struct `Zone5` is never constructed[0m
+  [1m[96m--> [0msrc\features\career\scs_sdk_telemetry.rs:69:12
+   [1m[96m|[0m
+[1m[96m69[0m [1m[96m|[0m     struct Zone5 {
+   [1m[96m|[0m            [1m[93m^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: struct `FrontendTelemetryPayload` is never constructed[0m
+  [1m[96m--> [0msrc\features\career\scs_sdk_telemetry.rs:91:12
+   [1m[96m|[0m
+[1m[96m91[0m [1m[96m|[0m     struct FrontendTelemetryPayload {
+   [1m[96m|[0m            [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: methods `format_line` and `into_frontend_payload` are never used[0m
+   [1m[96m--> [0msrc\features\career\scs_sdk_telemetry.rs:105:12
+    [1m[96m|[0m
+[1m[96m104[0m [1m[96m|[0m     impl TelemetrySample {
+    [1m[96m|[0m     [1m[96m--------------------[0m [1m[96mmethods in this implementation[0m
+[1m[96m105[0m [1m[96m|[0m         fn format_line(self) -> String {
+    [1m[96m|[0m            [1m[93m^^^^^^^^^^^[0m
+[1m[96m...[0m
+[1m[96m116[0m [1m[96m|[0m         fn into_frontend_payload(
+    [1m[96m|[0m            [1m[93m^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: struct `SharedTelemetryMap` is never constructed[0m
+   [1m[96m--> [0msrc\features\career\scs_sdk_telemetry.rs:136:12
+    [1m[96m|[0m
+[1m[96m136[0m [1m[96m|[0m     struct SharedTelemetryMap {
+    [1m[96m|[0m            [1m[93m^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: associated items `connect`, `read_snapshot`, and `read_zone` are never used[0m
+   [1m[96m--> [0msrc\features\career\scs_sdk_telemetry.rs:142:12
+    [1m[96m|[0m
+[1m[96m141[0m [1m[96m|[0m     impl SharedTelemetryMap {
+    [1m[96m|[0m     [1m[96m-----------------------[0m [1m[96massociated items in this implementation[0m
+[1m[96m142[0m [1m[96m|[0m         fn connect() -> Result<Self, String> {
+    [1m[96m|[0m            [1m[93m^^^^^^^[0m
+[1m[96m...[0m
+[1m[96m160[0m [1m[96m|[0m         fn read_snapshot(&self) -> Result<Option<TelemetrySample>, String> {
+    [1m[96m|[0m            [1m[93m^^^^^^^^^^^^^[0m
+[1m[96m...[0m
+[1m[96m199[0m [1m[96m|[0m         unsafe fn read_zone<T: Copy>(&self, offset: usize) -> T {
+    [1m[96m|[0m                   [1m[93m^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `start_terminal_telemetry_loop` is never used[0m
+   [1m[96m--> [0msrc\features\career\scs_sdk_telemetry.rs:217:12
+    [1m[96m|[0m
+[1m[96m217[0m [1m[96m|[0m     pub fn start_terminal_telemetry_loop() {
+    [1m[96m|[0m            [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `start_frontend_telemetry_bridge` is never used[0m
+   [1m[96m--> [0msrc\features\career\scs_sdk_telemetry.rs:230:12
+    [1m[96m|[0m
+[1m[96m230[0m [1m[96m|[0m     pub fn start_frontend_telemetry_bridge(app: AppHandle, runtime: Arc<CareerRuntime>) {
+    [1m[96m|[0m            [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `telemetry_loop` is never used[0m
+   [1m[96m--> [0msrc\features\career\scs_sdk_telemetry.rs:243:8
+    [1m[96m|[0m
+[1m[96m243[0m [1m[96m|[0m     fn telemetry_loop() {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: function `frontend_telemetry_loop` is never used[0m
+   [1m[96m--> [0msrc\features\career\scs_sdk_telemetry.rs:296:8
+    [1m[96m|[0m
+[1m[96m296[0m [1m[96m|[0m     fn frontend_telemetry_loop(app: AppHandle, runtime: Arc<CareerRuntime>) {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `emit_frontend_payload` is never used[0m
+   [1m[96m--> [0msrc\features\career\scs_sdk_telemetry.rs:392:8
+    [1m[96m|[0m
+[1m[96m392[0m [1m[96m|[0m     fn emit_frontend_payload(
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `change_token` is never used[0m
+   [1m[96m--> [0msrc\features\career\scs_sdk_telemetry.rs:405:8
+    [1m[96m|[0m
+[1m[96m405[0m [1m[96m|[0m     fn change_token(zone: Zone1) -> u64 {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `format_gear` is never used[0m
+   [1m[96m--> [0msrc\features\career\scs_sdk_telemetry.rs:415:8
+    [1m[96m|[0m
+[1m[96m415[0m [1m[96m|[0m     fn format_gear(gear: i32) -> String {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: function `wide_null` is never used[0m
+   [1m[96m--> [0msrc\features\career\scs_sdk_telemetry.rs:423:8
+    [1m[96m|[0m
+[1m[96m423[0m [1m[96m|[0m     fn wide_null(value: &str) -> Vec<u16> {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: constant `SHARED_MEMORY_NAME` is never used[0m
+  [1m[96m--> [0msrc\features\career\telemetry_debug.rs:12:11
+   [1m[96m|[0m
+[1m[96m12[0m [1m[96m|[0m     const SHARED_MEMORY_NAME: &str = "Local\\SCSTelemetry";
+   [1m[96m|[0m           [1m[93m^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: constant `SHARED_MEMORY_SIZE` is never used[0m
+  [1m[96m--> [0msrc\features\career\telemetry_debug.rs:13:11
+   [1m[96m|[0m
+[1m[96m13[0m [1m[96m|[0m     const SHARED_MEMORY_SIZE: usize = 32 * 1024;
+   [1m[96m|[0m           [1m[93m^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: constant `RAW_READ_SIZE` is never used[0m
+  [1m[96m--> [0msrc\features\career\telemetry_debug.rs:14:11
+   [1m[96m|[0m
+[1m[96m14[0m [1m[96m|[0m     const RAW_READ_SIZE: usize = 128;
+   [1m[96m|[0m           [1m[93m^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: constant `TIMESTAMP_OFFSET` is never used[0m
+  [1m[96m--> [0msrc\features\career\telemetry_debug.rs:15:11
+   [1m[96m|[0m
+[1m[96m15[0m [1m[96m|[0m     const TIMESTAMP_OFFSET: usize = 8;
+   [1m[96m|[0m           [1m[93m^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: constant `SIMULATION_TIMESTAMP_OFFSET` is never used[0m
+  [1m[96m--> [0msrc\features\career\telemetry_debug.rs:16:11
+   [1m[96m|[0m
+[1m[96m16[0m [1m[96m|[0m     const SIMULATION_TIMESTAMP_OFFSET: usize = 16;
+   [1m[96m|[0m           [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: constant `RENDER_TIMESTAMP_OFFSET` is never used[0m
+  [1m[96m--> [0msrc\features\career\telemetry_debug.rs:17:11
+   [1m[96m|[0m
+[1m[96m17[0m [1m[96m|[0m     const RENDER_TIMESTAMP_OFFSET: usize = 24;
+   [1m[96m|[0m           [1m[93m^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: constant `POLL_INTERVAL` is never used[0m
+  [1m[96m--> [0msrc\features\career\telemetry_debug.rs:18:11
+   [1m[96m|[0m
+[1m[96m18[0m [1m[96m|[0m     const POLL_INTERVAL: Duration = Duration::from_millis(500);
+   [1m[96m|[0m           [1m[93m^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: constant `RECONNECT_INTERVAL` is never used[0m
+  [1m[96m--> [0msrc\features\career\telemetry_debug.rs:19:11
+   [1m[96m|[0m
+[1m[96m19[0m [1m[96m|[0m     const RECONNECT_INTERVAL: Duration = Duration::from_millis(1000);
+   [1m[96m|[0m           [1m[93m^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: constant `STATIC_READ_THRESHOLD` is never used[0m
+  [1m[96m--> [0msrc\features\career\telemetry_debug.rs:20:11
+   [1m[96m|[0m
+[1m[96m20[0m [1m[96m|[0m     const STATIC_READ_THRESHOLD: u32 = 3;
+   [1m[96m|[0m           [1m[93m^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: constant `NOT_AVAILABLE_MESSAGE` is never used[0m
+  [1m[96m--> [0msrc\features\career\telemetry_debug.rs:21:11
+   [1m[96m|[0m
+[1m[96m21[0m [1m[96m|[0m     const NOT_AVAILABLE_MESSAGE: &str = "Telemetry not available. Is ETS2 running with the plugin?";
+   [1m[96m|[0m           [1m[93m^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: struct `DebugSample` is never constructed[0m
+  [1m[96m--> [0msrc\features\career\telemetry_debug.rs:24:12
+   [1m[96m|[0m
+[1m[96m24[0m [1m[96m|[0m     struct DebugSample {
+   [1m[96m|[0m            [1m[93m^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: struct `SharedMemoryDebugMap` is never constructed[0m
+  [1m[96m--> [0msrc\features\career\telemetry_debug.rs:32:12
+   [1m[96m|[0m
+[1m[96m32[0m [1m[96m|[0m     struct SharedMemoryDebugMap {
+   [1m[96m|[0m            [1m[93m^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: associated items `connect` and `read_sample` are never used[0m
+  [1m[96m--> [0msrc\features\career\telemetry_debug.rs:38:12
+   [1m[96m|[0m
+[1m[96m37[0m [1m[96m|[0m     impl SharedMemoryDebugMap {
+   [1m[96m|[0m     [1m[96m-------------------------[0m [1m[96massociated items in this implementation[0m
+[1m[96m38[0m [1m[96m|[0m         fn connect() -> Result<Self, String> {
+   [1m[96m|[0m            [1m[93m^^^^^^^[0m
+[1m[96m...[0m
+[1m[96m56[0m [1m[96m|[0m         fn read_sample(&self) -> DebugSample {
+   [1m[96m|[0m            [1m[93m^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: function `start_telemetry_debug_thread` is never used[0m
+  [1m[96m--> [0msrc\features\career\telemetry_debug.rs:95:12
+   [1m[96m|[0m
+[1m[96m95[0m [1m[96m|[0m     pub fn start_telemetry_debug_thread() {
+   [1m[96m|[0m            [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `debug_loop` is never used[0m
+   [1m[96m--> [0msrc\features\career\telemetry_debug.rs:104:8
+    [1m[96m|[0m
+[1m[96m104[0m [1m[96m|[0m     fn debug_loop() {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `active_timestamp` is never used[0m
+   [1m[96m--> [0msrc\features\career\telemetry_debug.rs:174:8
+    [1m[96m|[0m
+[1m[96m174[0m [1m[96m|[0m     fn active_timestamp(timestamp: u64, simulation_timestamp: u64, render_timestamp: u64) -> u64 {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `read_u64_le` is never used[0m
+   [1m[96m--> [0msrc\features\career\telemetry_debug.rs:184:8
+    [1m[96m|[0m
+[1m[96m184[0m [1m[96m|[0m     fn read_u64_le(bytes: &[u8; RAW_READ_SIZE], offset: usize) -> u64 {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: function `wide_null` is never used[0m
+   [1m[96m--> [0msrc\features\career\telemetry_debug.rs:190:8
+    [1m[96m|[0m
+[1m[96m190[0m [1m[96m|[0m     fn wide_null(value: &str) -> Vec<u16> {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: function `estimate_trip_revenue` is never used[0m
+   [1m[96m--> [0msrc\features\economy\mod.rs:224:8
+    [1m[96m|[0m
+[1m[96m224[0m [1m[96m|[0m pub fn estimate_trip_revenue(
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: fields `id`, `range`, `assigned_truck`, `assigned_trailer`, `my_truck`, and `my_trailer` are never read[0m
+  [1m[96m--> [0msrc\features\ets2save\dispatcher.rs:21:9
+   [1m[96m|[0m
+[1m[96m20[0m [1m[96m|[0m pub struct PlayerBlockData {
+   [1m[96m|[0m            [1m[96m---------------[0m [1m[96mfields in this struct[0m
+[1m[96m21[0m [1m[96m|[0m     pub id: String,
+   [1m[96m|[0m         [1m[93m^^[0m
+[1m[96m22[0m [1m[96m|[0m     pub range: UnitRange,
+   [1m[96m|[0m         [1m[93m^^^^^[0m
+[1m[96m23[0m [1m[96m|[0m     pub assigned_truck: Option<String>,
+   [1m[96m|[0m         [1m[93m^^^^^^^^^^^^^^[0m
+[1m[96m24[0m [1m[96m|[0m     pub assigned_trailer: Option<String>,
+   [1m[96m|[0m         [1m[93m^^^^^^^^^^^^^^^^[0m
+[1m[96m25[0m [1m[96m|[0m     pub my_truck: Option<String>,
+   [1m[96m|[0m         [1m[93m^^^^^^^^[0m
+[1m[96m26[0m [1m[96m|[0m     pub my_trailer: Option<String>,
+   [1m[96m|[0m         [1m[93m^^^^^^^^^^[0m
+   [1m[96m|[0m
+   [1m[96m= [0m[1m[97mnote[0m: `PlayerBlockData` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+[1m[93mwarning[0m[1m[97m: fields `player_block` and `job_state` are never read[0m
+  [1m[96m--> [0msrc\features\ets2save\dispatcher.rs:33:9
+   [1m[96m|[0m
+[1m[96m32[0m [1m[96m|[0m pub struct PlayerJobRefState {
+   [1m[96m|[0m            [1m[96m-----------------[0m [1m[96mfields in this struct[0m
+[1m[96m33[0m [1m[96m|[0m     pub player_block: PlayerBlockData,
+   [1m[96m|[0m         [1m[93m^^^^^^^^^^^^[0m
+[1m[96m...[0m
+[1m[96m36[0m [1m[96m|[0m     pub job_state: Ets2JobState,
+   [1m[96m|[0m         [1m[93m^^^^^^^^^[0m
+   [1m[96m|[0m
+   [1m[96m= [0m[1m[97mnote[0m: `PlayerJobRefState` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+[1m[93mwarning[0m[1m[97m: method `quick_assessment` is never used[0m
+  [1m[96m--> [0msrc\features\ets2save\dispatcher.rs:40:12
+   [1m[96m|[0m
+[1m[96m39[0m [1m[96m|[0m impl PlayerJobRefState {
+   [1m[96m|[0m [1m[96m----------------------[0m [1m[96mmethod in this implementation[0m
+[1m[96m40[0m [1m[96m|[0m     pub fn quick_assessment(&self) -> &'static str {
+   [1m[96m|[0m            [1m[93m^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: enum `ValidationMode` is never used[0m
+  [1m[96m--> [0msrc\features\ets2save\dispatcher.rs:50:10
+   [1m[96m|[0m
+[1m[96m50[0m [1m[96m|[0m pub enum ValidationMode {
+   [1m[96m|[0m          [1m[93m^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: enum `DispatcherJobKind` is never used[0m
+  [1m[96m--> [0msrc\features\ets2save\dispatcher.rs:56:10
+   [1m[96m|[0m
+[1m[96m56[0m [1m[96m|[0m pub enum DispatcherJobKind {
+   [1m[96m|[0m          [1m[93m^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: struct `DispatcherJobDraft` is never constructed[0m
+  [1m[96m--> [0msrc\features\ets2save\dispatcher.rs:63:12
+   [1m[96m|[0m
+[1m[96m63[0m [1m[96m|[0m pub struct DispatcherJobDraft {
+   [1m[96m|[0m            [1m[93m^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: methods `job_info_pointer`, `player_job_pointer`, and `validate` are never used[0m
+  [1m[96m--> [0msrc\features\ets2save\dispatcher.rs:89:12
+   [1m[96m|[0m
+[1m[96m88[0m [1m[96m|[0m impl DispatcherJobDraft {
+   [1m[96m|[0m [1m[96m-----------------------[0m [1m[96mmethods in this implementation[0m
+[1m[96m89[0m [1m[96m|[0m     pub fn job_info_pointer(&self) -> String {
+   [1m[96m|[0m            [1m[93m^^^^^^^^^^^^^^^^[0m
+[1m[96m...[0m
+[1m[96m93[0m [1m[96m|[0m     pub fn player_job_pointer(&self) -> String {
+   [1m[96m|[0m            [1m[93m^^^^^^^^^^^^^^^^^^[0m
+[1m[96m...[0m
+[1m[96m97[0m [1m[96m|[0m     pub fn validate(
+   [1m[96m|[0m            [1m[93m^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `block_exists` is never used[0m
+   [1m[96m--> [0msrc\features\ets2save\dispatcher.rs:157:4
+    [1m[96m|[0m
+[1m[96m157[0m [1m[96m|[0m fn block_exists(lines: &[String], block_type: &str, pointer: &str) -> bool {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `create_job_info_block` is never used[0m
+   [1m[96m--> [0msrc\features\ets2save\dispatcher.rs:283:8
+    [1m[96m|[0m
+[1m[96m283[0m [1m[96m|[0m pub fn create_job_info_block(pointer: &str, draft: &DispatcherJobDraft) -> Vec<String> {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `create_player_job_block` is never used[0m
+   [1m[96m--> [0msrc\features\ets2save\dispatcher.rs:323:8
+    [1m[96m|[0m
+[1m[96m323[0m [1m[96m|[0m pub fn create_player_job_block(
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `upsert_job_info_block` is never used[0m
+   [1m[96m--> [0msrc\features\ets2save\dispatcher.rs:381:8
+    [1m[96m|[0m
+[1m[96m381[0m [1m[96m|[0m pub fn upsert_job_info_block(lines: &mut Vec<String>, pointer: &str, block: &[String]) {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `upsert_player_job_block` is never used[0m
+   [1m[96m--> [0msrc\features\ets2save\dispatcher.rs:385:8
+    [1m[96m|[0m
+[1m[96m385[0m [1m[96m|[0m pub fn upsert_player_job_block(lines: &mut Vec<String>, pointer: &str, block: &[String]) {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `upsert_block` is never used[0m
+   [1m[96m--> [0msrc\features\ets2save\dispatcher.rs:389:4
+    [1m[96m|[0m
+[1m[96m389[0m [1m[96m|[0m fn upsert_block(lines: &mut Vec<String>, block_type: &str, pointer: &str, block: &[String]) {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `set_player_selected_job` is never used[0m
+   [1m[96m--> [0msrc\features\ets2save\dispatcher.rs:399:8
+    [1m[96m|[0m
+[1m[96m399[0m [1m[96m|[0m pub fn set_player_selected_job(lines: &mut Vec<String>, pointer: &str) -> Result<()> {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: function `set_player_current_job` is never used[0m
+   [1m[96m--> [0msrc\features\ets2save\dispatcher.rs:403:8
+    [1m[96m|[0m
+[1m[96m403[0m [1m[96m|[0m pub fn set_player_current_job(lines: &mut Vec<String>, pointer: &str) -> Result<()> {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `clear_player_selected_job` is never used[0m
+   [1m[96m--> [0msrc\features\ets2save\dispatcher.rs:407:8
+    [1m[96m|[0m
+[1m[96m407[0m [1m[96m|[0m pub fn clear_player_selected_job(lines: &mut Vec<String>) -> Result<()> {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `clear_player_current_job` is never used[0m
+   [1m[96m--> [0msrc\features\ets2save\dispatcher.rs:411:8
+    [1m[96m|[0m
+[1m[96m411[0m [1m[96m|[0m pub fn clear_player_current_job(lines: &mut Vec<String>) -> Result<()> {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: function `update_player_field` is never used[0m
+   [1m[96m--> [0msrc\features\ets2save\dispatcher.rs:415:4
+    [1m[96m|[0m
+[1m[96m415[0m [1m[96m|[0m fn update_player_field(lines: &mut Vec<String>, field: &str, value: &str) -> Result<()> {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `debug_dump_job_state` is never used[0m
+   [1m[96m--> [0msrc\features\ets2save\dispatcher.rs:483:8
+    [1m[96m|[0m
+[1m[96m483[0m [1m[96m|[0m pub fn debug_dump_job_state(game_sii: &str) -> Result<String> {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: variants `PostWriteValidationFailed`, `BackupFailed`, and `TelemetryUnavailable` are never constructed[0m
+  [1m[96m--> [0msrc\features\ets2save\errors.rs:12:5
+   [1m[96m|[0m
+[1m[96m 5[0m [1m[96m|[0m pub enum AppErrorCode {
+   [1m[96m|[0m          [1m[96m------------[0m [1m[96mvariants in this enum[0m
+[1m[96m...[0m
+[1m[96m12[0m [1m[96m|[0m     PostWriteValidationFailed,
+   [1m[96m|[0m     [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[1m[96m...[0m
+[1m[96m15[0m [1m[96m|[0m     BackupFailed,
+   [1m[96m|[0m     [1m[93m^^^^^^^^^^^^[0m
+[1m[96m16[0m [1m[96m|[0m     LockTimeout,
+[1m[96m17[0m [1m[96m|[0m     TelemetryUnavailable,
+   [1m[96m|[0m     [1m[93m^^^^^^^^^^^^^^^^^^^^[0m
+   [1m[96m|[0m
+   [1m[96m= [0m[1m[97mnote[0m: `AppErrorCode` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+[1m[93mwarning[0m[1m[97m: function `preview_offer_pointers` is never used[0m
+  [1m[96m--> [0msrc\features\ets2save\injector.rs:66:8
+   [1m[96m|[0m
+[1m[96m66[0m [1m[96m|[0m pub fn preview_offer_pointers(
+   [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: constant `RUNTIME_MIGRATIONS` is never used[0m
+  [1m[96m--> [0msrc\features\ets2save\link_service.rs:35:7
+   [1m[96m|[0m
+[1m[96m35[0m [1m[96m|[0m const RUNTIME_MIGRATIONS: [(&str, &str); 10] = [
+   [1m[96m|[0m       [1m[93m^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `create_pool` is never used[0m
+  [1m[96m--> [0msrc\features\ets2save\link_service.rs:78:14
+   [1m[96m|[0m
+[1m[96m78[0m [1m[96m|[0m pub async fn create_pool(db_path: &std::path::Path) -> Result<SqlitePool, AppError> {
+   [1m[96m|[0m              [1m[93m^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `run_runtime_migrations` is never used[0m
+  [1m[96m--> [0msrc\features\ets2save\link_service.rs:92:4
+   [1m[96m|[0m
+[1m[96m92[0m [1m[96m|[0m fn run_runtime_migrations(db_path: &Path) -> Result<(), AppError> {
+   [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: function `ensure_runtime_columns` is never used[0m
+   [1m[96m--> [0msrc\features\ets2save\link_service.rs:177:4
+    [1m[96m|[0m
+[1m[96m177[0m [1m[96m|[0m fn ensure_runtime_columns(conn: &RusqliteConnection) -> Result<(), AppError> {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: field `candidate_cities` is never read[0m
+   [1m[96m--> [0msrc\features\ets2save\link_service.rs:931:5
+    [1m[96m|[0m
+[1m[96m925[0m [1m[96m|[0m struct PrepareSaveMapping {
+    [1m[96m|[0m        [1m[96m------------------[0m [1m[96mfield in this struct[0m
+[1m[96m...[0m
+[1m[96m931[0m [1m[96m|[0m     candidate_cities: Vec<String>,
+    [1m[96m|[0m     [1m[93m^^^^^^^^^^^^^^^^[0m
+    [1m[96m|[0m
+    [1m[96m= [0m[1m[97mnote[0m: `PrepareSaveMapping` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+[1m[93mwarning[0m[1m[97m: function `list_save_company_blocks` is never used[0m
+    [1m[96m--> [0msrc\features\ets2save\link_service.rs:1307:4
+     [1m[96m|[0m
+[1m[96m1307[0m [1m[96m|[0m fn list_save_company_blocks(lines: &[String]) -> Vec<SaveCompanyBlock> {
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `verify_assignment_unit_changes` is never used[0m
+   [1m[96m--> [0msrc\features\garages\validator.rs:654:4
+    [1m[96m|[0m
+[1m[96m654[0m [1m[96m|[0m fn verify_assignment_unit_changes(
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `verify_target_assignment_slots` is never used[0m
+   [1m[96m--> [0msrc\features\garages\validator.rs:684:4
+    [1m[96m|[0m
+[1m[96m684[0m [1m[96m|[0m fn verify_target_assignment_slots(
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `verify_assignment_objects` is never used[0m
+   [1m[96m--> [0msrc\features\garages\validator.rs:734:4
+    [1m[96m|[0m
+[1m[96m734[0m [1m[96m|[0m fn verify_assignment_objects(
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: function `player_array_contains` is never used[0m
+   [1m[96m--> [0msrc\features\garages\validator.rs:781:4
+    [1m[96m|[0m
+[1m[96m781[0m [1m[96m|[0m fn player_array_contains(
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `ensure_reference_was_unassigned_before` is never used[0m
+   [1m[96m--> [0msrc\features\garages\validator.rs:808:4
+    [1m[96m|[0m
+[1m[96m808[0m [1m[96m|[0m fn ensure_reference_was_unassigned_before(
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `parse_array_count` is never used[0m
+   [1m[96m--> [0msrc\features\garages\writer.rs:916:4
+    [1m[96m|[0m
+[1m[96m916[0m [1m[96m|[0m fn parse_array_count(block: &UnitBlock, field: &str) -> Result<usize, String> {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: function `array_map` is never used[0m
+   [1m[96m--> [0msrc\features\garages\writer.rs:923:4
+    [1m[96m|[0m
+[1m[96m923[0m [1m[96m|[0m fn array_map(
+    [1m[96m|[0m    [1m[93m^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `available_owned_truck_ids` is never used[0m
+   [1m[96m--> [0msrc\features\garages\writer.rs:939:4
+    [1m[96m|[0m
+[1m[96m939[0m [1m[96m|[0m fn available_owned_truck_ids(unit_blocks: &[UnitBlock]) -> Result<Vec<String>, String> {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `available_ai_driver_ids` is never used[0m
+   [1m[96m--> [0msrc\features\garages\writer.rs:966:4
+    [1m[96m|[0m
+[1m[96m966[0m [1m[96m|[0m fn available_ai_driver_ids(unit_blocks: &[UnitBlock]) -> Result<Vec<String>, String> {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: function `used_truck_ids` is never used[0m
+   [1m[96m--> [0msrc\features\garages\writer.rs:989:4
+    [1m[96m|[0m
+[1m[96m989[0m [1m[96m|[0m fn used_truck_ids(unit_blocks: &[UnitBlock]) -> HashSet<String> {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `used_driver_ids` is never used[0m
+    [1m[96m--> [0msrc\features\garages\writer.rs:1024:4
+     [1m[96m|[0m
+[1m[96m1024[0m [1m[96m|[0m fn used_driver_ids(unit_blocks: &[UnitBlock]) -> HashSet<String> {
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `choose_random_string` is never used[0m
+    [1m[96m--> [0msrc\features\garages\writer.rs:1089:4
+     [1m[96m|[0m
+[1m[96m1089[0m [1m[96m|[0m fn choose_random_string(values: &[String]) -> String {
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `replace_array_value` is never used[0m
+    [1m[96m--> [0msrc\features\garages\writer.rs:1286:4
+     [1m[96m|[0m
+[1m[96m1286[0m [1m[96m|[0m fn replace_array_value(
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: function `analyze_active_save_health` is never used[0m
+   [1m[96m--> [0msrc\features\health_monitor\service.rs:131:8
+    [1m[96m|[0m
+[1m[96m131[0m [1m[96m|[0m pub fn analyze_active_save_health(
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: struct `RuntimeReportEntry` is never constructed[0m
+  [1m[96m--> [0msrc\features\logging\models.rs:18:12
+   [1m[96m|[0m
+[1m[96m18[0m [1m[96m|[0m pub struct RuntimeReportEntry {
+   [1m[96m|[0m            [1m[93m^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: function `recent_entries` is never used[0m
+  [1m[96m--> [0msrc\features\logging\service.rs:92:8
+   [1m[96m|[0m
+[1m[96m92[0m [1m[96m|[0m pub fn recent_entries(limit: usize) -> Result<Vec<RuntimeReportEntry>, String> {
+   [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `open_runtime_connection` is never used[0m
+   [1m[96m--> [0msrc\features\logging\service.rs:223:4
+    [1m[96m|[0m
+[1m[96m223[0m [1m[96m|[0m fn open_runtime_connection() -> Result<Connection, String> {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: function `open_protocol_url` is never used[0m
+  [1m[96m--> [0msrc\features\mod_profile_manager\launcher.rs:33:8
+   [1m[96m|[0m
+[1m[96m33[0m [1m[96m|[0m pub fn open_protocol_url(url: &str) -> Result<(), String> {
+   [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: field `compatible_versions` is never read[0m
+  [1m[96m--> [0msrc\features\mod_profile_manager\manifest_reader.rs:13:9
+   [1m[96m|[0m
+[1m[96m 6[0m [1m[96m|[0m pub struct ManifestMetadata {
+   [1m[96m|[0m            [1m[96m----------------[0m [1m[96mfield in this struct[0m
+[1m[96m...[0m
+[1m[96m13[0m [1m[96m|[0m     pub compatible_versions: Vec<String>,
+   [1m[96m|[0m         [1m[93m^^^^^^^^^^^^^^^^^^^[0m
+   [1m[96m|[0m
+   [1m[96m= [0m[1m[97mnote[0m: `ManifestMetadata` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: method `display_name` is never used[0m
+  [1m[96m--> [0msrc\features\mod_profile_manager\models.rs:31:12
+   [1m[96m|[0m
+[1m[96m16[0m [1m[96m|[0m impl GameType {
+   [1m[96m|[0m [1m[96m-------------[0m [1m[96mmethod in this implementation[0m
+[1m[96m...[0m
+[1m[96m31[0m [1m[96m|[0m     pub fn display_name(self) -> &'static str {
+   [1m[96m|[0m            [1m[93m^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `update_sandbox` is never used[0m
+  [1m[96m--> [0msrc\features\mod_profile_manager\sandbox.rs:94:8
+   [1m[96m|[0m
+[1m[96m94[0m [1m[96m|[0m pub fn update_sandbox(
+   [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: function `apply_sandbox_to_active_profile` is never used[0m
+   [1m[96m--> [0msrc\features\mod_profile_manager\sandbox.rs:232:8
+    [1m[96m|[0m
+[1m[96m232[0m [1m[96m|[0m pub fn apply_sandbox_to_active_profile(
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `derive_save_name_from_path` is never used[0m
+    [1m[96m--> [0msrc\features\mod_profile_manager\sandbox.rs:2276:4
+     [1m[96m|[0m
+[1m[96m2276[0m [1m[96m|[0m fn derive_save_name_from_path(path: &str) -> Option<String> {
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: function `overwrite_active_mods_in_text` is never used[0m
+  [1m[96m--> [0msrc\features\mod_profile_manager\sii_mods.rs:39:8
+   [1m[96m|[0m
+[1m[96m39[0m [1m[96m|[0m pub fn overwrite_active_mods_in_text(text: &str, mod_ids: &[u64]) -> Result<String, String> {
+   [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `replace_active_workshop_mods_in_game_sii` is never used[0m
+  [1m[96m--> [0msrc\features\mod_profile_manager\sii_mods.rs:67:8
+   [1m[96m|[0m
+[1m[96m67[0m [1m[96m|[0m pub fn replace_active_workshop_mods_in_game_sii(
+   [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `workshop_id_to_sii_mod_ref` is never used[0m
+   [1m[96m--> [0msrc\features\mod_profile_manager\sii_mods.rs:452:8
+    [1m[96m|[0m
+[1m[96m452[0m [1m[96m|[0m pub fn workshop_id_to_sii_mod_ref(id: &str) -> Result<String, String> {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `overwrite_active_mods` is never used[0m
+   [1m[96m--> [0msrc\features\mod_profile_manager\sii_mods.rs:675:8
+    [1m[96m|[0m
+[1m[96m675[0m [1m[96m|[0m pub fn overwrite_active_mods(path: &Path, mod_ids: &[u64]) -> Result<PathBuf, String> {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `overwrite_active_workshop_mods` is never used[0m
+   [1m[96m--> [0msrc\features\mod_profile_manager\sii_mods.rs:680:8
+    [1m[96m|[0m
+[1m[96m680[0m [1m[96m|[0m pub fn overwrite_active_workshop_mods(
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `write_active_preset_mods_atomic` is never used[0m
+   [1m[96m--> [0msrc\features\mod_profile_manager\sii_mods.rs:709:8
+    [1m[96m|[0m
+[1m[96m709[0m [1m[96m|[0m pub fn write_active_preset_mods_atomic(
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: field `steam_root` is never read[0m
+  [1m[96m--> [0msrc\features\mod_profile_manager\steam_paths.rs:14:9
+   [1m[96m|[0m
+[1m[96m12[0m [1m[96m|[0m pub struct SteamDiscovery {
+   [1m[96m|[0m            [1m[96m--------------[0m [1m[96mfield in this struct[0m
+[1m[96m13[0m [1m[96m|[0m     pub steam_install_found: bool,
+[1m[96m14[0m [1m[96m|[0m     pub steam_root: Option<PathBuf>,
+   [1m[96m|[0m         [1m[93m^^^^^^^^^^[0m
+   [1m[96m|[0m
+   [1m[96m= [0m[1m[97mnote[0m: `SteamDiscovery` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+[1m[93mwarning[0m[1m[97m: function `discover_ets2_workshop_libraries` is never used[0m
+   [1m[96m--> [0msrc\features\mod_profile_manager\workshop_api.rs:513:8
+    [1m[96m|[0m
+[1m[96m513[0m [1m[96m|[0m pub fn discover_ets2_workshop_libraries() -> Result<Vec<String>, String> {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: struct `HeuristicMatch` is never constructed[0m
+ [1m[96m--> [0msrc\features\save_analysis\heuristics.rs:2:12
+  [1m[96m|[0m
+[1m[96m2[0m [1m[96m|[0m pub struct HeuristicMatch {
+  [1m[96m|[0m            [1m[93m^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `match_log_line` is never used[0m
+  [1m[96m--> [0msrc\features\save_analysis\heuristics.rs:12:8
+   [1m[96m|[0m
+[1m[96m12[0m [1m[96m|[0m pub fn match_log_line(line: &str) -> Option<HeuristicMatch> {
+   [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: function `classify_mod_category` is never used[0m
+   [1m[96m--> [0msrc\features\save_analysis\heuristics.rs:244:8
+    [1m[96m|[0m
+[1m[96m244[0m [1m[96m|[0m pub fn classify_mod_category(text: &str) -> String {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `category_bias_matches` is never used[0m
+   [1m[96m--> [0msrc\features\save_analysis\heuristics.rs:295:8
+    [1m[96m|[0m
+[1m[96m295[0m [1m[96m|[0m pub fn category_bias_matches(mod_category: &str, preferred: &[&str]) -> bool {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `confidence_from_score` is never used[0m
+   [1m[96m--> [0msrc\features\save_analysis\heuristics.rs:304:8
+    [1m[96m|[0m
+[1m[96m304[0m [1m[96m|[0m pub fn confidence_from_score(score: u32, confirmed: bool) -> String {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: function `suspicion_level_from_score` is never used[0m
+   [1m[96m--> [0msrc\features\save_analysis\heuristics.rs:317:8
+    [1m[96m|[0m
+[1m[96m317[0m [1m[96m|[0m pub fn suspicion_level_from_score(score: u32) -> String {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `save_health_from_score` is never used[0m
+   [1m[96m--> [0msrc\features\save_analysis\heuristics.rs:327:8
+    [1m[96m|[0m
+[1m[96m327[0m [1m[96m|[0m pub fn save_health_from_score(score: u32) -> String {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `contains_any` is never used[0m
+   [1m[96m--> [0msrc\features\save_analysis\heuristics.rs:337:8
+    [1m[96m|[0m
+[1m[96m337[0m [1m[96m|[0m pub fn contains_any(value: &str, needles: &[&str]) -> bool {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: fields `file_size`, `modified_at`, `file_extension`, and `path_set` are never read[0m
+   [1m[96m--> [0msrc\features\save_analysis\service.rs:123:5
+    [1m[96m|[0m
+[1m[96m119[0m [1m[96m|[0m struct IndexedMod {
+    [1m[96m|[0m        [1m[96m----------[0m [1m[96mfields in this struct[0m
+[1m[96m...[0m
+[1m[96m123[0m [1m[96m|[0m     file_size: Option<u64>,
+    [1m[96m|[0m     [1m[93m^^^^^^^^^[0m
+[1m[96m124[0m [1m[96m|[0m     modified_at: Option<String>,
+    [1m[96m|[0m     [1m[93m^^^^^^^^^^^[0m
+[1m[96m125[0m [1m[96m|[0m     file_extension: Option<String>,
+    [1m[96m|[0m     [1m[93m^^^^^^^^^^^^^^[0m
+[1m[96m...[0m
+[1m[96m131[0m [1m[96m|[0m     path_set: HashSet<String>,
+    [1m[96m|[0m     [1m[93m^^^^^^^^[0m
+    [1m[96m|[0m
+    [1m[96m= [0m[1m[97mnote[0m: `IndexedMod` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+[1m[93mwarning[0m[1m[97m: field `exact_path_match` is never read[0m
+   [1m[96m--> [0msrc\features\save_analysis\service.rs:157:5
+    [1m[96m|[0m
+[1m[96m155[0m [1m[96m|[0m struct CandidateScore {
+    [1m[96m|[0m        [1m[96m--------------[0m [1m[96mfield in this struct[0m
+[1m[96m156[0m [1m[96m|[0m     score: i32,
+[1m[96m157[0m [1m[96m|[0m     exact_path_match: bool,
+    [1m[96m|[0m     [1m[93m^^^^^^^^^^^^^^^^[0m
+    [1m[96m|[0m
+    [1m[96m= [0m[1m[97mnote[0m: `CandidateScore` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+[1m[93mwarning[0m[1m[97m: function `compile_regex` is never used[0m
+   [1m[96m--> [0msrc\features\save_analysis\service.rs:215:4
+    [1m[96m|[0m
+[1m[96m215[0m [1m[96m|[0m fn compile_regex(pattern: &str, context: &str) -> Option<Regex> {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `analyze_mod_conflict_diagnostics` is never used[0m
+   [1m[96m--> [0msrc\features\save_analysis\service.rs:436:8
+    [1m[96m|[0m
+[1m[96m436[0m [1m[96m|[0m pub fn analyze_mod_conflict_diagnostics(
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: function `analyze_mod_conflict_diagnostics_deep` is never used[0m
+   [1m[96m--> [0msrc\features\save_analysis\service.rs:456:8
+    [1m[96m|[0m
+[1m[96m456[0m [1m[96m|[0m pub fn analyze_mod_conflict_diagnostics_deep(
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `trailing_segment_overlap` is never used[0m
+    [1m[96m--> [0msrc\features\save_analysis\service.rs:2398:4
+     [1m[96m|[0m
+[1m[96m2398[0m [1m[96m|[0m fn trailing_segment_overlap(left: &str, right: &str) -> usize {
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: struct `EditValuePayload` is never constructed[0m
+   [1m[96m--> [0msrc\features\save_editor\commands.rs:786:12
+    [1m[96m|[0m
+[1m[96m786[0m [1m[96m|[0m pub struct EditValuePayload {
+    [1m[96m|[0m            [1m[93m^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: field `current_trailer_diagnostics` is never read[0m
+  [1m[96m--> [0msrc\features\trailer_change\parser.rs:23:9
+   [1m[96m|[0m
+[1m[96m20[0m [1m[96m|[0m pub struct ParsedTrailerSave {
+   [1m[96m|[0m            [1m[96m-----------------[0m [1m[96mfield in this struct[0m
+[1m[96m...[0m
+[1m[96m23[0m [1m[96m|[0m     pub current_trailer_diagnostics: CurrentTrailerPointerDiagnostics,
+   [1m[96m|[0m         [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+   [1m[96m|[0m
+   [1m[96m= [0m[1m[97mnote[0m: `ParsedTrailerSave` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+[1m[93mwarning[0m[1m[97m: function `rewrite_graph_block_references` is never used[0m
+  [1m[96m--> [0msrc\features\truck_change\graph.rs:94:8
+   [1m[96m|[0m
+[1m[96m94[0m [1m[96m|[0m pub fn rewrite_graph_block_references(raw_block: &str, remap: &HashMap<String, String>) -> String {
+   [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `target_free_slots` is never used[0m
+   [1m[96m--> [0msrc\features\truck_change\graph.rs:179:8
+    [1m[96m|[0m
+[1m[96m179[0m [1m[96m|[0m pub fn target_free_slots(garages: &[GarageCapacity]) -> usize {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: enum `DriverAssignmentSource` is never used[0m
+  [1m[96m--> [0msrc\features\truck_change\models.rs:69:10
+   [1m[96m|[0m
+[1m[96m69[0m [1m[96m|[0m pub enum DriverAssignmentSource {
+   [1m[96m|[0m          [1m[93m^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: struct `DriverAssignmentEvidence` is never constructed[0m
+  [1m[96m--> [0msrc\features\truck_change\models.rs:84:12
+   [1m[96m|[0m
+[1m[96m84[0m [1m[96m|[0m pub struct DriverAssignmentEvidence {
+   [1m[96m|[0m            [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: struct `ResolvedDriverAssignment` is never constructed[0m
+  [1m[96m--> [0msrc\features\truck_change\models.rs:95:12
+   [1m[96m|[0m
+[1m[96m95[0m [1m[96m|[0m pub struct ResolvedDriverAssignment {
+   [1m[96m|[0m            [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: enum `DriverResolutionError` is never used[0m
+   [1m[96m--> [0msrc\features\truck_change\models.rs:159:10
+    [1m[96m|[0m
+[1m[96m159[0m [1m[96m|[0m pub enum DriverResolutionError {
+    [1m[96m|[0m          [1m[93m^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: method `code` is never used[0m
+   [1m[96m--> [0msrc\features\truck_change\models.rs:167:12
+    [1m[96m|[0m
+[1m[96m166[0m [1m[96m|[0m impl DriverResolutionError {
+    [1m[96m|[0m [1m[96m--------------------------[0m [1m[96mmethod in this implementation[0m
+[1m[96m167[0m [1m[96m|[0m     pub fn code(&self) -> &'static str {
+    [1m[96m|[0m            [1m[93m^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: fields `driver_diagnostics` and `truck_assignments` are never read[0m
+  [1m[96m--> [0msrc\features\truck_change\parser.rs:38:9
+   [1m[96m|[0m
+[1m[96m25[0m [1m[96m|[0m pub struct ParsedTruckSave {
+   [1m[96m|[0m            [1m[96m---------------[0m [1m[96mfields in this struct[0m
+[1m[96m...[0m
+[1m[96m38[0m [1m[96m|[0m     pub driver_diagnostics: DriverParserDiagnostics,
+   [1m[96m|[0m         [1m[93m^^^^^^^^^^^^^^^^^^[0m
+[1m[96m39[0m [1m[96m|[0m     pub truck_assignments: HashMap<String, TruckAssignment>,
+   [1m[96m|[0m         [1m[93m^^^^^^^^^^^^^^^^^[0m
+   [1m[96m|[0m
+   [1m[96m= [0m[1m[97mnote[0m: `ParsedTruckSave` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+[1m[93mwarning[0m[1m[97m: function `is_valid_garage_driver_ref` is never used[0m
+   [1m[96m--> [0msrc\features\truck_change\parser.rs:520:8
+    [1m[96m|[0m
+[1m[96m520[0m [1m[96m|[0m pub fn is_valid_garage_driver_ref(value: &str) -> bool {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: function `garage_driver_ref_is_unique` is never used[0m
+   [1m[96m--> [0msrc\features\truck_change\parser.rs:538:8
+    [1m[96m|[0m
+[1m[96m538[0m [1m[96m|[0m pub fn garage_driver_ref_is_unique(
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `collect_owned_player_truck_ids_from_save` is never used[0m
+    [1m[96m--> [0msrc\features\truck_change\parser.rs:1115:8
+     [1m[96m|[0m
+[1m[96m1115[0m [1m[96m|[0m pub fn collect_owned_player_truck_ids_from_save(parsed: &ParsedTruckSave) -> OwnedTruckDiagnostics {
+     [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: struct `ResolvedGarageDriverSlot` is never constructed[0m
+   [1m[96m--> [0msrc\features\truck_change\service.rs:926:8
+    [1m[96m|[0m
+[1m[96m926[0m [1m[96m|[0m struct ResolvedGarageDriverSlot {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: struct `DriverSwapGaragePlan` is never constructed[0m
+   [1m[96m--> [0msrc\features\truck_change\service.rs:933:8
+    [1m[96m|[0m
+[1m[96m933[0m [1m[96m|[0m struct DriverSwapGaragePlan {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `driver_resolution_warning_code` is never used[0m
+    [1m[96m--> [0msrc\features\truck_change\service.rs:1516:4
+     [1m[96m|[0m
+[1m[96m1516[0m [1m[96m|[0m fn driver_resolution_warning_code(error: &DriverResolutionError) -> &'static str {
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: function `driver_resolution_apply_error_code` is never used[0m
+    [1m[96m--> [0msrc\features\truck_change\service.rs:1524:4
+     [1m[96m|[0m
+[1m[96m1524[0m [1m[96m|[0m fn driver_resolution_apply_error_code(error: &DriverResolutionError) -> &'static str {
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `driver_swap_plan_warning_code` is never used[0m
+    [1m[96m--> [0msrc\features\truck_change\service.rs:1532:4
+     [1m[96m|[0m
+[1m[96m1532[0m [1m[96m|[0m fn driver_swap_plan_warning_code(reason: &str) -> &'static str {
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `resolve_target_driver` is never used[0m
+    [1m[96m--> [0msrc\features\truck_change\service.rs:1977:4
+     [1m[96m|[0m
+[1m[96m1977[0m [1m[96m|[0m fn resolve_target_driver(
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `resolved_driver_assignment` is never used[0m
+    [1m[96m--> [0msrc\features\truck_change\service.rs:2089:4
+     [1m[96m|[0m
+[1m[96m2089[0m [1m[96m|[0m fn resolved_driver_assignment(
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: function `drivers_pointing_to_target_truck` is never used[0m
+    [1m[96m--> [0msrc\features\truck_change\service.rs:2106:4
+     [1m[96m|[0m
+[1m[96m2106[0m [1m[96m|[0m fn drivers_pointing_to_target_truck(
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `driver_resolution_diagnostics` is never used[0m
+    [1m[96m--> [0msrc\features\truck_change\service.rs:2126:4
+     [1m[96m|[0m
+[1m[96m2126[0m [1m[96m|[0m fn driver_resolution_diagnostics(
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `driver_resolution_checked_sources` is never used[0m
+    [1m[96m--> [0msrc\features\truck_change\service.rs:2325:4
+     [1m[96m|[0m
+[1m[96m2325[0m [1m[96m|[0m fn driver_resolution_checked_sources(
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `find_similar_driver_ids` is never used[0m
+    [1m[96m--> [0msrc\features\truck_change\service.rs:2368:4
+     [1m[96m|[0m
+[1m[96m2368[0m [1m[96m|[0m fn find_similar_driver_ids<'a>(
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `resolve_driver_swap_garage_plan` is never used[0m
+    [1m[96m--> [0msrc\features\truck_change\service.rs:2401:4
+     [1m[96m|[0m
+[1m[96m2401[0m [1m[96m|[0m fn resolve_driver_swap_garage_plan(
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: function `garage_slot_matches` is never used[0m
+    [1m[96m--> [0msrc\features\truck_change\service.rs:2463:4
+     [1m[96m|[0m
+[1m[96m2463[0m [1m[96m|[0m fn garage_slot_matches(left: &GarageSlotAssignment, right: &TruckGarageSlotReference) -> bool {
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `resolve_previous_driver_slot` is never used[0m
+    [1m[96m--> [0msrc\features\truck_change\service.rs:2468:4
+     [1m[96m|[0m
+[1m[96m2468[0m [1m[96m|[0m fn resolve_previous_driver_slot(
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `validate_previous_driver_slot` is never used[0m
+    [1m[96m--> [0msrc\features\truck_change\service.rs:2489:4
+     [1m[96m|[0m
+[1m[96m2489[0m [1m[96m|[0m fn validate_previous_driver_slot(
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: function `resolve_previous_driver_slot_from_assigned_garage` is never used[0m
+    [1m[96m--> [0msrc\features\truck_change\service.rs:2514:4
+     [1m[96m|[0m
+[1m[96m2514[0m [1m[96m|[0m fn resolve_previous_driver_slot_from_assigned_garage(
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `duplicate_driver_or_truck_assignments` is never used[0m
+    [1m[96m--> [0msrc\features\truck_change\service.rs:2622:4
+     [1m[96m|[0m
+[1m[96m2622[0m [1m[96m|[0m fn duplicate_driver_or_truck_assignments(parsed: &super::parser::ParsedTruckSave) -> Vec<String> {
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `inspect_assignment_references` is never used[0m
+    [1m[96m--> [0msrc\features\truck_change\service.rs:2658:4
+     [1m[96m|[0m
+[1m[96m2658[0m [1m[96m|[0m fn inspect_assignment_references(content: &str, target_truck_id: &str) -> Vec<String> {
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: function `unsupported_player_job` is never used[0m
+    [1m[96m--> [0msrc\features\truck_change\service.rs:2684:4
+     [1m[96m|[0m
+[1m[96m2684[0m [1m[96m|[0m fn unsupported_player_job(content: &str, player_id: &str, previous_truck_id: &str) -> bool {
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `is_player_driver_ref` is never used[0m
+   [1m[96m--> [0msrc\features\truck_change\validator.rs:145:4
+    [1m[96m|[0m
+[1m[96m145[0m [1m[96m|[0m fn is_player_driver_ref(parsed: &super::parser::ParsedTruckSave, driver_id: &str) -> bool {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `garage_driver_references_unresolved` is never used[0m
+   [1m[96m--> [0msrc\features\truck_change\validator.rs:177:4
+    [1m[96m|[0m
+[1m[96m177[0m [1m[96m|[0m fn garage_driver_references_unresolved(parsed: &super::parser::ParsedTruckSave) -> bool {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: function `garage_drivers_without_trucks` is never used[0m
+   [1m[96m--> [0msrc\features\truck_change\validator.rs:197:4
+    [1m[96m|[0m
+[1m[96m197[0m [1m[96m|[0m fn garage_drivers_without_trucks(parsed: &super::parser::ParsedTruckSave) -> bool {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `set_unit_array_value` is never used[0m
+  [1m[96m--> [0msrc\features\truck_change\writer.rs:43:8
+   [1m[96m|[0m
+[1m[96m43[0m [1m[96m|[0m pub fn set_unit_array_value(
+   [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: constant `AVAILABLE_ROLE_KEYS` is never used[0m
+ [1m[96m--> [0msrc\features\vtc\db.rs:7:11
+  [1m[96m|[0m
+[1m[96m7[0m [1m[96m|[0m pub const AVAILABLE_ROLE_KEYS: [&str; 8] = [
+  [1m[96m|[0m           [1m[93m^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: struct `Profile` is never constructed[0m
+ [1m[96m--> [0msrc\models\clone_profiles_info.rs:5:12
+  [1m[96m|[0m
+[1m[96m5[0m [1m[96m|[0m pub struct Profile {
+  [1m[96m|[0m            [1m[93m^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: field `source_name` is never read[0m
+   [1m[96m--> [0msrc\models\trailers.rs:112:9
+    [1m[96m|[0m
+[1m[96m104[0m [1m[96m|[0m pub struct TrailerDefData {
+    [1m[96m|[0m            [1m[96m--------------[0m [1m[96mfield in this struct[0m
+[1m[96m...[0m
+[1m[96m112[0m [1m[96m|[0m     pub source_name: Option<String>,
+    [1m[96m|[0m         [1m[93m^^^^^^^^^^^[0m
+    [1m[96m|[0m
+    [1m[96m= [0m[1m[97mnote[0m: `TrailerDefData` has derived impls for the traits `Clone` and `Debug`, but these are intentionally ignored during dead code analysis
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: function `set_current_profile` is never used[0m
+  [1m[96m--> [0msrc\shared\current_profile.rs:17:8
+   [1m[96m|[0m
+[1m[96m17[0m [1m[96m|[0m pub fn set_current_profile(state: State<'_, AppProfileState>, path: String) {
+   [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `clear_current_profile` is never used[0m
+  [1m[96m--> [0msrc\shared\current_profile.rs:21:8
+   [1m[96m|[0m
+[1m[96m21[0m [1m[96m|[0m pub fn clear_current_profile(state: State<'_, AppProfileState>) {
+   [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `detect_signature` is never used[0m
+  [1m[96m--> [0msrc\shared\decrypt.rs:83:8
+   [1m[96m|[0m
+[1m[96m83[0m [1m[96m|[0m pub fn detect_signature(bytes: &[u8]) -> DecodeProbe {
+   [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: function `decode_bytes` is never used[0m
+  [1m[96m--> [0msrc\shared\decrypt.rs:87:8
+   [1m[96m|[0m
+[1m[96m87[0m [1m[96m|[0m pub fn decode_bytes(bytes: &[u8], source: &str) -> Result<Vec<u8>, String> {
+   [1m[96m|[0m        [1m[93m^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `backup_file` is never used[0m
+   [1m[96m--> [0msrc\shared\decrypt.rs:182:8
+    [1m[96m|[0m
+[1m[96m182[0m [1m[96m|[0m pub fn backup_file(path: &Path) -> Result<(), String> {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `modify_block` is never used[0m
+   [1m[96m--> [0msrc\shared\decrypt.rs:359:8
+    [1m[96m|[0m
+[1m[96m359[0m [1m[96m|[0m pub fn modify_block(
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: struct `SourceInput` is never constructed[0m
+  [1m[96m--> [0msrc\shared\ets2data\mod.rs:31:8
+   [1m[96m|[0m
+[1m[96m31[0m [1m[96m|[0m struct SourceInput {
+   [1m[96m|[0m        [1m[93m^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: struct `SiiUnit` is never constructed[0m
+  [1m[96m--> [0msrc\shared\ets2data\mod.rs:43:8
+   [1m[96m|[0m
+[1m[96m43[0m [1m[96m|[0m struct SiiUnit {
+   [1m[96m|[0m        [1m[93m^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: struct `CountryDraft` is never constructed[0m
+  [1m[96m--> [0msrc\shared\ets2data\mod.rs:50:8
+   [1m[96m|[0m
+[1m[96m50[0m [1m[96m|[0m struct CountryDraft {
+   [1m[96m|[0m        [1m[93m^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: struct `CityDraft` is never constructed[0m
+  [1m[96m--> [0msrc\shared\ets2data\mod.rs:56:8
+   [1m[96m|[0m
+[1m[96m56[0m [1m[96m|[0m struct CityDraft {
+   [1m[96m|[0m        [1m[93m^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: struct `CompanyDraft` is never constructed[0m
+  [1m[96m--> [0msrc\shared\ets2data\mod.rs:63:8
+   [1m[96m|[0m
+[1m[96m63[0m [1m[96m|[0m struct CompanyDraft {
+   [1m[96m|[0m        [1m[93m^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `build_datasets` is never used[0m
+  [1m[96m--> [0msrc\shared\ets2data\mod.rs:75:8
+   [1m[96m|[0m
+[1m[96m75[0m [1m[96m|[0m pub fn build_datasets(repo_root: &Path) -> Result<DatasetBuildSummary, String> {
+   [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `discover_sources` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\mod.rs:247:4
+    [1m[96m|[0m
+[1m[96m247[0m [1m[96m|[0m fn discover_sources() -> Result<Vec<SourceInput>, String> {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `build_source` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\mod.rs:354:4
+    [1m[96m|[0m
+[1m[96m354[0m [1m[96m|[0m fn build_source(
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `discover_game_dir` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\mod.rs:382:4
+    [1m[96m|[0m
+[1m[96m382[0m [1m[96m|[0m fn discover_game_dir() -> Option<PathBuf> {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `read_steam_library_game_dir` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\mod.rs:398:4
+    [1m[96m|[0m
+[1m[96m398[0m [1m[96m|[0m fn read_steam_library_game_dir() -> Option<PathBuf> {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: function `default_game_dir_hint` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\mod.rs:420:4
+    [1m[96m|[0m
+[1m[96m420[0m [1m[96m|[0m fn default_game_dir_hint() -> PathBuf {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `archive_is_zip_readable` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\mod.rs:424:4
+    [1m[96m|[0m
+[1m[96m424[0m [1m[96m|[0m fn archive_is_zip_readable(path: &Path) -> bool {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `detect_source_version` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\mod.rs:432:4
+    [1m[96m|[0m
+[1m[96m432[0m [1m[96m|[0m fn detect_source_version(path: &Path) -> String {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: function `is_relevant_map_dlc_archive` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\mod.rs:450:4
+    [1m[96m|[0m
+[1m[96m450[0m [1m[96m|[0m fn is_relevant_map_dlc_archive(file_name: &str) -> bool {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `is_relevant_promods_archive` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\mod.rs:466:4
+    [1m[96m|[0m
+[1m[96m466[0m [1m[96m|[0m fn is_relevant_promods_archive(file_name: &str) -> bool {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `load_relevant_text_files` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\mod.rs:473:4
+    [1m[96m|[0m
+[1m[96m473[0m [1m[96m|[0m fn load_relevant_text_files(source: &SourceInput) -> Result<Vec<(String, String)>, String> {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: function `is_relevant_archive_path` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\mod.rs:499:4
+    [1m[96m|[0m
+[1m[96m499[0m [1m[96m|[0m fn is_relevant_archive_path(path: &str) -> bool {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `build_localization_map` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\mod.rs:510:4
+    [1m[96m|[0m
+[1m[96m510[0m [1m[96m|[0m fn build_localization_map(files: &[(String, String)]) -> HashMap<String, String> {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `parse_localization_line` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\mod.rs:532:4
+    [1m[96m|[0m
+[1m[96m532[0m [1m[96m|[0m fn parse_localization_line(line: &str) -> Option<(String, String)> {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `parse_sii_units` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\mod.rs:549:4
+    [1m[96m|[0m
+[1m[96m549[0m [1m[96m|[0m fn parse_sii_units(content: &str) -> Vec<SiiUnit> {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: function `strip_comments` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\mod.rs:623:4
+    [1m[96m|[0m
+[1m[96m623[0m [1m[96m|[0m fn strip_comments(content: &str) -> String {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `parse_field_line` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\mod.rs:670:4
+    [1m[96m|[0m
+[1m[96m670[0m [1m[96m|[0m fn parse_field_line(line: &str) -> Option<(String, String)> {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `unquote` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\mod.rs:681:4
+    [1m[96m|[0m
+[1m[96m681[0m [1m[96m|[0m fn unquote(value: &str) -> String {
+    [1m[96m|[0m    [1m[93m^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `merge_country_units` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\mod.rs:690:4
+    [1m[96m|[0m
+[1m[96m690[0m [1m[96m|[0m fn merge_country_units(
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `merge_city_units` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\mod.rs:791:4
+    [1m[96m|[0m
+[1m[96m791[0m [1m[96m|[0m fn merge_city_units(
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `merge_company_units` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\mod.rs:883:4
+    [1m[96m|[0m
+[1m[96m883[0m [1m[96m|[0m fn merge_company_units(
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `finalize_countries` is never used[0m
+    [1m[96m--> [0msrc\shared\ets2data\mod.rs:1032:4
+     [1m[96m|[0m
+[1m[96m1032[0m [1m[96m|[0m fn finalize_countries(
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `finalize_cities` is never used[0m
+    [1m[96m--> [0msrc\shared\ets2data\mod.rs:1052:4
+     [1m[96m|[0m
+[1m[96m1052[0m [1m[96m|[0m fn finalize_cities(
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `finalize_companies` is never used[0m
+    [1m[96m--> [0msrc\shared\ets2data\mod.rs:1086:4
+     [1m[96m|[0m
+[1m[96m1086[0m [1m[96m|[0m fn finalize_companies(
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `collect_city_review_items` is never used[0m
+    [1m[96m--> [0msrc\shared\ets2data\mod.rs:1129:4
+     [1m[96m|[0m
+[1m[96m1129[0m [1m[96m|[0m fn collect_city_review_items(cities: &[CityRecord]) -> Vec<ManualReviewItem> {
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `merge_record_name` is never used[0m
+    [1m[96m--> [0msrc\shared\ets2data\mod.rs:1153:4
+     [1m[96m|[0m
+[1m[96m1153[0m [1m[96m|[0m fn merge_record_name<T>(
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: trait `NameCarrier` is never used[0m
+    [1m[96m--> [0msrc\shared\ets2data\mod.rs:1186:7
+     [1m[96m|[0m
+[1m[96m1186[0m [1m[96m|[0m trait NameCarrier {
+     [1m[96m|[0m       [1m[93m^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `merge_aliases` is never used[0m
+    [1m[96m--> [0msrc\shared\ets2data\mod.rs:1208:4
+     [1m[96m|[0m
+[1m[96m1208[0m [1m[96m|[0m fn merge_aliases(target: &mut Vec<String>, source: &[String]) {
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `first_field` is never used[0m
+    [1m[96m--> [0msrc\shared\ets2data\mod.rs:1214:4
+     [1m[96m|[0m
+[1m[96m1214[0m [1m[96m|[0m fn first_field(unit: &SiiUnit, key: &str) -> Option<String> {
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `resolve_localized` is never used[0m
+    [1m[96m--> [0msrc\shared\ets2data\mod.rs:1221:4
+     [1m[96m|[0m
+[1m[96m1221[0m [1m[96m|[0m fn resolve_localized(
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `derive_iso2` is never used[0m
+    [1m[96m--> [0msrc\shared\ets2data\mod.rs:1241:4
+     [1m[96m|[0m
+[1m[96m1241[0m [1m[96m|[0m fn derive_iso2(
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `iso3_to_iso2` is never used[0m
+    [1m[96m--> [0msrc\shared\ets2data\mod.rs:1268:4
+     [1m[96m|[0m
+[1m[96m1268[0m [1m[96m|[0m fn iso3_to_iso2(value: &str) -> Option<&'static str> {
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `canonical_id_component` is never used[0m
+    [1m[96m--> [0msrc\shared\ets2data\mod.rs:1321:4
+     [1m[96m|[0m
+[1m[96m1321[0m [1m[96m|[0m fn canonical_id_component(value: &str) -> String {
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `title_case` is never used[0m
+    [1m[96m--> [0msrc\shared\ets2data\mod.rs:1352:4
+     [1m[96m|[0m
+[1m[96m1352[0m [1m[96m|[0m fn title_case(value: &str) -> String {
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `normalize_path` is never used[0m
+    [1m[96m--> [0msrc\shared\ets2data\mod.rs:1367:4
+     [1m[96m|[0m
+[1m[96m1367[0m [1m[96m|[0m fn normalize_path(path: &Path) -> String {
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `load_optional_json` is never used[0m
+    [1m[96m--> [0msrc\shared\ets2data\mod.rs:1371:4
+     [1m[96m|[0m
+[1m[96m1371[0m [1m[96m|[0m fn load_optional_json<T: DeserializeOwned>(path: &Path, default: T) -> Result<T, String> {
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `write_dataset` is never used[0m
+    [1m[96m--> [0msrc\shared\ets2data\mod.rs:1382:4
+     [1m[96m|[0m
+[1m[96m1382[0m [1m[96m|[0m fn write_dataset<T: serde::Serialize>(path: &Path, dataset: &DatasetFile<T>) -> Result<(), String> {
+     [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: enum `FuzzyDisposition` is never used[0m
+ [1m[96m--> [0msrc\shared\ets2data\fuzzy.rs:2:10
+  [1m[96m|[0m
+[1m[96m2[0m [1m[96m|[0m pub enum FuzzyDisposition {
+  [1m[96m|[0m          [1m[93m^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `levenshtein_distance` is never used[0m
+ [1m[96m--> [0msrc\shared\ets2data\fuzzy.rs:9:8
+  [1m[96m|[0m
+[1m[96m9[0m [1m[96m|[0m pub fn levenshtein_distance(left: &str, right: &str) -> usize {
+  [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `levenshtein_similarity` is never used[0m
+  [1m[96m--> [0msrc\shared\ets2data\fuzzy.rs:39:8
+   [1m[96m|[0m
+[1m[96m39[0m [1m[96m|[0m pub fn levenshtein_similarity(left: &str, right: &str) -> f64 {
+   [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `fuzzy_disposition` is never used[0m
+  [1m[96m--> [0msrc\shared\ets2data\fuzzy.rs:53:8
+   [1m[96m|[0m
+[1m[96m53[0m [1m[96m|[0m pub fn fuzzy_disposition(similarity: f64) -> FuzzyDisposition {
+   [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `find_city_with_fallback` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\import.rs:286:8
+    [1m[96m|[0m
+[1m[96m286[0m [1m[96m|[0m pub fn find_city_with_fallback(
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: constant `DATASET_VERSION` is never used[0m
+ [1m[96m--> [0msrc\shared\ets2data\models.rs:3:11
+  [1m[96m|[0m
+[1m[96m3[0m [1m[96m|[0m pub const DATASET_VERSION: &str = "1.0.0";
+  [1m[96m|[0m           [1m[93m^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: constant `DEFAULT_PAYMENT_TIER` is never used[0m
+ [1m[96m--> [0msrc\shared\ets2data\models.rs:4:11
+  [1m[96m|[0m
+[1m[96m4[0m [1m[96m|[0m pub const DEFAULT_PAYMENT_TIER: &str = "standard";
+  [1m[96m|[0m           [1m[93m^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: constant `DEFAULT_PAYMENT_MULTIPLIER` is never used[0m
+ [1m[96m--> [0msrc\shared\ets2data\models.rs:5:11
+  [1m[96m|[0m
+[1m[96m5[0m [1m[96m|[0m pub const DEFAULT_PAYMENT_MULTIPLIER: f64 = 1.0;
+  [1m[96m|[0m           [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: constant `DEFAULT_COUNTRY_PAYMENT_MULTIPLIER` is never used[0m
+ [1m[96m--> [0msrc\shared\ets2data\models.rs:6:11
+  [1m[96m|[0m
+[1m[96m6[0m [1m[96m|[0m pub const DEFAULT_COUNTRY_PAYMENT_MULTIPLIER: f64 = 1.0;
+  [1m[96m|[0m           [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: struct `CountryOverride` is never constructed[0m
+   [1m[96m--> [0msrc\shared\ets2data\models.rs:130:12
+    [1m[96m|[0m
+[1m[96m130[0m [1m[96m|[0m pub struct CountryOverride {
+    [1m[96m|[0m            [1m[93m^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: struct `CompanyOverride` is never constructed[0m
+   [1m[96m--> [0msrc\shared\ets2data\models.rs:137:12
+    [1m[96m|[0m
+[1m[96m137[0m [1m[96m|[0m pub struct CompanyOverride {
+    [1m[96m|[0m            [1m[93m^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: struct `DatasetBuildSummary` is never constructed[0m
+   [1m[96m--> [0msrc\shared\ets2data\models.rs:145:12
+    [1m[96m|[0m
+[1m[96m145[0m [1m[96m|[0m pub struct DatasetBuildSummary {
+    [1m[96m|[0m            [1m[93m^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: struct `PowertrainBuildSummary` is never constructed[0m
+  [1m[96m--> [0msrc\shared\ets2data\powertrain.rs:16:12
+   [1m[96m|[0m
+[1m[96m16[0m [1m[96m|[0m pub struct PowertrainBuildSummary {
+   [1m[96m|[0m            [1m[93m^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: struct `PowertrainCatalogFile` is never constructed[0m
+  [1m[96m--> [0msrc\shared\ets2data\powertrain.rs:25:8
+   [1m[96m|[0m
+[1m[96m25[0m [1m[96m|[0m struct PowertrainCatalogFile {
+   [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: struct `PowertrainEngineFile` is never constructed[0m
+  [1m[96m--> [0msrc\shared\ets2data\powertrain.rs:37:8
+   [1m[96m|[0m
+[1m[96m37[0m [1m[96m|[0m struct PowertrainEngineFile {
+   [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: struct `PowertrainTransmissionFile` is never constructed[0m
+  [1m[96m--> [0msrc\shared\ets2data\powertrain.rs:55:8
+   [1m[96m|[0m
+[1m[96m55[0m [1m[96m|[0m struct PowertrainTransmissionFile {
+   [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `build_powertrain_catalog` is never used[0m
+  [1m[96m--> [0msrc\shared\ets2data\powertrain.rs:70:8
+   [1m[96m|[0m
+[1m[96m70[0m [1m[96m|[0m pub fn build_powertrain_catalog(
+   [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `validate_official_source_path` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\powertrain.rs:152:8
+    [1m[96m|[0m
+[1m[96m152[0m [1m[96m|[0m pub fn validate_official_source_path(path: &Path) -> Result<(), String> {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `load_powertrain_files` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\powertrain.rs:185:4
+    [1m[96m|[0m
+[1m[96m185[0m [1m[96m|[0m fn load_powertrain_files(source_path: &Path) -> Result<HashMap<String, String>, String> {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `load_powertrain_files_from_dir` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\powertrain.rs:193:4
+    [1m[96m|[0m
+[1m[96m193[0m [1m[96m|[0m fn load_powertrain_files_from_dir(source_path: &Path) -> Result<HashMap<String, String>, String> {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `load_powertrain_files_from_archive` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\powertrain.rs:213:4
+    [1m[96m|[0m
+[1m[96m213[0m [1m[96m|[0m fn load_powertrain_files_from_archive(
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `is_powertrain_rel_path` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\powertrain.rs:239:4
+    [1m[96m|[0m
+[1m[96m239[0m [1m[96m|[0m fn is_powertrain_rel_path(path: &str) -> bool {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `resolve_includes` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\powertrain.rs:246:4
+    [1m[96m|[0m
+[1m[96m246[0m [1m[96m|[0m fn resolve_includes(path: &str, files: &HashMap<String, String>) -> Result<String, String> {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `resolve_includes_inner` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\powertrain.rs:252:4
+    [1m[96m|[0m
+[1m[96m252[0m [1m[96m|[0m fn resolve_includes_inner(
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `resolve_include_path` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\powertrain.rs:287:4
+    [1m[96m|[0m
+[1m[96m287[0m [1m[96m|[0m fn resolve_include_path(current_path: &str, include_path: &str) -> String {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `brand_model_from_powertrain_path` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\powertrain.rs:299:4
+    [1m[96m|[0m
+[1m[96m299[0m [1m[96m|[0m fn brand_model_from_powertrain_path(path: &str) -> Option<(String, String)> {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `parse_engine_file` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\powertrain.rs:311:4
+    [1m[96m|[0m
+[1m[96m311[0m [1m[96m|[0m fn parse_engine_file(
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `parse_transmission_file` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\powertrain.rs:334:4
+    [1m[96m|[0m
+[1m[96m334[0m [1m[96m|[0m fn parse_transmission_file(
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `unit_id_or_file_stem` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\powertrain.rs:360:4
+    [1m[96m|[0m
+[1m[96m360[0m [1m[96m|[0m fn unit_id_or_file_stem(path: &str, content: &str) -> String {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `field_value` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\powertrain.rs:368:4
+    [1m[96m|[0m
+[1m[96m368[0m [1m[96m|[0m fn field_value(content: &str, field: &str) -> Option<String> {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `field_f64` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\powertrain.rs:382:4
+    [1m[96m|[0m
+[1m[96m382[0m [1m[96m|[0m fn field_f64(content: &str, field: &str) -> Option<f64> {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `field_u32` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\powertrain.rs:386:4
+    [1m[96m|[0m
+[1m[96m386[0m [1m[96m|[0m fn field_u32(content: &str, field: &str) -> Option<u32> {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `array_f64` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\powertrain.rs:390:4
+    [1m[96m|[0m
+[1m[96m390[0m [1m[96m|[0m fn array_f64(content: &str, field: &str) -> Vec<f64> {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `clean_value` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\powertrain.rs:417:4
+    [1m[96m|[0m
+[1m[96m417[0m [1m[96m|[0m fn clean_value(value: &str) -> String {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `file_stem` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\powertrain.rs:426:4
+    [1m[96m|[0m
+[1m[96m426[0m [1m[96m|[0m fn file_stem(path: &str) -> String {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `normalize_rel_path` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\powertrain.rs:434:4
+    [1m[96m|[0m
+[1m[96m434[0m [1m[96m|[0m fn normalize_rel_path(path: &str) -> String {
+    [1m[96m|[0m    [1m[93m^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `sha256_hex` is never used[0m
+  [1m[96m--> [0msrc\shared\ets2data\validate.rs:38:8
+   [1m[96m|[0m
+[1m[96m38[0m [1m[96m|[0m pub fn sha256_hex<T: Serialize>(value: &T) -> Result<String, String> {
+   [1m[96m|[0m        [1m[93m^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `checksum_dataset` is never used[0m
+  [1m[96m--> [0msrc\shared\ets2data\validate.rs:66:8
+   [1m[96m|[0m
+[1m[96m66[0m [1m[96m|[0m pub fn checksum_dataset<T: Serialize + Clone>(dataset: &DatasetFile<T>) -> Result<String, String> {
+   [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `finalize_dataset_meta` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\validate.rs:165:8
+    [1m[96m|[0m
+[1m[96m165[0m [1m[96m|[0m pub fn finalize_dataset_meta<T: Serialize + Clone>(
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `default_payment_tier_if_empty` is never used[0m
+   [1m[96m--> [0msrc\shared\ets2data\validate.rs:190:8
+    [1m[96m|[0m
+[1m[96m190[0m [1m[96m|[0m pub fn default_payment_tier_if_empty(value: &str) -> String {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `load_game_sii` is never used[0m
+ [1m[96m--> [0msrc\shared\game_loader.rs:6:8
+  [1m[96m|[0m
+[1m[96m6[0m [1m[96m|[0m pub fn load_game_sii(profile_path: &str) -> Result<String, String> {
+  [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: struct `ProfileIdentity` is never constructed[0m
+ [1m[96m--> [0msrc\shared\models\profile.rs:9:12
+  [1m[96m|[0m
+[1m[96m9[0m [1m[96m|[0m pub struct ProfileIdentity {
+  [1m[96m|[0m            [1m[93m^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: struct `ProfileLoadState` is never constructed[0m
+  [1m[96m--> [0msrc\shared\models\profile.rs:17:12
+   [1m[96m|[0m
+[1m[96m17[0m [1m[96m|[0m pub struct ProfileLoadState {
+   [1m[96m|[0m            [1m[93m^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: method `is_ready` is never used[0m
+  [1m[96m--> [0msrc\shared\models\profile.rs:30:12
+   [1m[96m|[0m
+[1m[96m29[0m [1m[96m|[0m impl ActiveSaveSelection {
+   [1m[96m|[0m [1m[96m------------------------[0m [1m[96mmethod in this implementation[0m
+[1m[96m30[0m [1m[96m|[0m     pub fn is_ready(&self) -> bool {
+   [1m[96m|[0m            [1m[93m^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `ets2_base_path` is never used[0m
+   [1m[96m--> [0msrc\shared\paths.rs:169:8
+    [1m[96m|[0m
+[1m[96m169[0m [1m[96m|[0m pub fn ets2_base_path() -> Option<PathBuf> {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `ats_base_path` is never used[0m
+   [1m[96m--> [0msrc\shared\paths.rs:173:8
+    [1m[96m|[0m
+[1m[96m173[0m [1m[96m|[0m pub fn ats_base_path() -> Option<PathBuf> {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `steam_profiles_directory_path` is never used[0m
+   [1m[96m--> [0msrc\shared\paths.rs:293:8
+    [1m[96m|[0m
+[1m[96m293[0m [1m[96m|[0m pub fn steam_profiles_directory_path(game: &str) -> Option<PathBuf> {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `profiles_backup_directory_path` is never used[0m
+   [1m[96m--> [0msrc\shared\paths.rs:297:8
+    [1m[96m|[0m
+[1m[96m297[0m [1m[96m|[0m pub fn profiles_backup_directory_path(game: &str) -> Option<PathBuf> {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `autosave_path_current` is never used[0m
+   [1m[96m--> [0msrc\shared\paths.rs:515:8
+    [1m[96m|[0m
+[1m[96m515[0m [1m[96m|[0m pub fn autosave_path_current() -> Result<PathBuf, String> {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `base_config_path` is never used[0m
+   [1m[96m--> [0msrc\shared\paths.rs:521:8
+    [1m[96m|[0m
+[1m[96m521[0m [1m[96m|[0m pub fn base_config_path() -> Result<PathBuf, String> {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `extract_string` is never used[0m
+  [1m[96m--> [0msrc\shared\sii_parser.rs:80:8
+   [1m[96m|[0m
+[1m[96m80[0m [1m[96m|[0m pub fn extract_string(block: &str, key: &str) -> Option<String> {
+   [1m[96m|[0m        [1m[93m^^^^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `extract_i64` is never used[0m
+   [1m[96m--> [0msrc\shared\sii_parser.rs:103:8
+    [1m[96m|[0m
+[1m[96m103[0m [1m[96m|[0m pub fn extract_i64(block: &str, key: &str) -> Option<i64> {
+    [1m[96m|[0m        [1m[93m^^^^^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: enum `JobType` is never used[0m
+ [1m[96m--> [0msrc\xp\command.rs:5:10
+  [1m[96m|[0m
+[1m[96m5[0m [1m[96m|[0m pub enum JobType {
+  [1m[96m|[0m          [1m[93m^^^^^^^[0m
+
+[1m[93mwarning[0m[1m[97m: function `calculate_xp` is never used[0m
+  [1m[96m--> [0msrc\xp\command.rs:43:8
+   [1m[96m|[0m
+[1m[96m43[0m [1m[96m|[0m pub fn calculate_xp(distance_km: u32, job_type: JobType, reverse_parked: bool) -> u32 {
+   [1m[96m|[0m        [1m[93m^^^^^^^^^^^^[0m
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m[1m[97m: linker stdout: Bibliothek "E:\Coding Projects\Save Edit Tool\ets2-tool\src-tauri\target\debug\deps\ets2_tool.lib" und Objekt "E:\Coding Projects\Save Edit Tool\ets2-tool\src-tauri\target\debug\deps\ets2_tool.exp" werden erstellt.[0m
+  [1m[96m|[0m
+  [1m[96m= [0m[1m[97mnote[0m: `#[warn(linker_messages)]` on by default
+
+[1m[96m    Building[0m [=======================> ] 622/623: ets2-to…                                                            [1m[93mwarning[0m: `ets2-tool` (bin "ets2-tool") generated 278 warnings (run `cargo fix --bin "ets2-tool" -p ets2-tool` to apply 10 suggestions)
+[1m[92m    Finished[0m `dev` profile [unoptimized + debuginfo] target(s) in 27.37s
+[1m[92m     Running[0m `target\debug\ets2-tool.exe`
