@@ -19,6 +19,7 @@ fn language_name_registry() -> HashMap<&'static str, &'static str> {
         ("fr", "Français"),
         ("it", "Italiano"),
         ("pl", "Polski"),
+        ("pt-BR", "Português (Brasil)"),
     ])
 }
 
