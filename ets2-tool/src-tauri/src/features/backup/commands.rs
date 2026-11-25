@@ -62,7 +62,8 @@ pub fn preview_backup_restore(
     Ok(preview)
 }
 
-#[command]
+#[cfg_attr(not(test), command(async))]
+#[cfg_attr(test, command)]
 pub fn restore_backup(
     backup_id: String,
     confirmed: bool,
@@ -70,6 +71,7 @@ pub fn restore_backup(
     profile_cache: State<'_, ProfileCache>,
     decrypt_cache: State<'_, DecryptCache>,
 ) -> Result<BackupRestoreResultDto, String> {
+    let _mutation = crate::features::save_editor::safety::mutation_lock()?;
     let execution = service::restore_backup(profile_state.inner(), &backup_id, confirmed)?;
     for path in &execution.touched_paths {
         decrypt_cache.invalidate_path(path);

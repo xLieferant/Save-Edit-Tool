@@ -1,12 +1,19 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicBool, AtomicU64};
 use std::sync::{Arc, Condvar, Mutex, RwLock};
 
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
 
 pub struct DiagnosticsState(pub Arc<crate::shared::logs::diagnostic::DiagnosticRuntime>);
+
+#[derive(Default)]
+pub struct SaveSyncState {
+    pub refresh_lock: Mutex<()>,
+    pub stop: Arc<AtomicBool>,
+    pub worker: Mutex<Option<std::thread::JoinHandle<()>>>,
+}
 
 use crate::models::global_config_info::BaseGameConfig;
 use crate::models::quicksave_game_info::{CurrentTruckSummary, GameDataQuicksave};
@@ -20,6 +27,27 @@ pub struct DecryptCache {
     pub files: Arc<Mutex<HashMap<PathBuf, String>>>,
     pub inflight: Arc<Mutex<HashMap<PathBuf, Arc<InFlightDecrypt>>>>,
     pub generations: Arc<Mutex<HashMap<PathBuf, u64>>>,
+    pub epoch: Arc<AtomicU64>,
+    pub fingerprints: Arc<Mutex<HashMap<PathBuf, FileFingerprint>>>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct FileFingerprint {
+    pub size: u64,
+    pub modified: Option<std::time::SystemTime>,
+    pub hash: String,
+}
+
+impl FileFingerprint {
+    pub fn read(path: &Path) -> Result<Self, String> {
+        let metadata = std::fs::metadata(path).map_err(|error| error.to_string())?;
+        let raw = crate::shared::decrypt::read_file_retry(path)?;
+        Ok(Self {
+            size: metadata.len(),
+            modified: metadata.modified().ok(),
+            hash: crate::shared::ets2data::validate::sha256_hex_bytes(&raw),
+        })
+    }
 }
 
 #[derive(Default)]
@@ -42,6 +70,7 @@ impl DecryptCache {
         let generation = generations.entry(path.to_path_buf()).or_insert(0);
         *generation = generation.saturating_add(1);
         self.files.lock().unwrap().remove(path);
+        self.fingerprints.lock().unwrap().remove(path);
         self.inflight.lock().unwrap().remove(path);
     }
 }
@@ -50,6 +79,8 @@ impl DecryptCache {
 struct CachedProfileData {
     profile_path: Option<String>,
     save_path: Option<String>,
+    save_fingerprint: Option<FileFingerprint>,
+    info_fingerprint: Option<FileFingerprint>,
     base_config: Option<BaseGameConfig>,
     save_config: Option<SaveGameConfig>,
     save_game_data: Option<SaveGameData>,
@@ -76,12 +107,21 @@ impl Default for ProfileCache {
 impl ProfileCache {
     fn matches_save_path(data: &CachedProfileData, path: &str) -> bool {
         data.save_path.as_deref() == Some(path)
+            && data.save_fingerprint.is_some()
+            && FileFingerprint::read(&crate::shared::paths::game_sii_from_save(Path::new(path)))
+                .ok()
+                == data.save_fingerprint
+            && FileFingerprint::read(&crate::shared::paths::info_sii_from_save(Path::new(path)))
+                .ok()
+                == data.info_fingerprint
     }
 
     pub fn reset_profile(&self, profile_path: Option<String>) {
         let mut guard = self.data.lock().unwrap();
         guard.profile_path = profile_path;
         guard.save_path = None;
+        guard.save_fingerprint = None;
+        guard.info_fingerprint = None;
         guard.base_config = None;
         guard.save_config = None;
         guard.save_game_data = None;
@@ -95,6 +135,12 @@ impl ProfileCache {
 
     pub fn set_save_path(&self, save_path: Option<String>) {
         let mut guard = self.data.lock().unwrap();
+        guard.save_fingerprint = save_path.as_ref().and_then(|path| {
+            FileFingerprint::read(&crate::shared::paths::game_sii_from_save(Path::new(path))).ok()
+        });
+        guard.info_fingerprint = save_path.as_ref().and_then(|path| {
+            FileFingerprint::read(&crate::shared::paths::info_sii_from_save(Path::new(path))).ok()
+        });
         guard.save_path = save_path;
         guard.save_game_data = None;
         guard.quicksave_data = None;
@@ -257,6 +303,7 @@ pub struct AppProfileState {
     pub current_profile: Mutex<Option<String>>,
     pub current_save: Mutex<Option<String>>,
     pub selected_game: Mutex<String>,
+    pub save_baseline: Mutex<Option<(PathBuf, String)>>,
 }
 
 impl Default for AppProfileState {
@@ -265,6 +312,7 @@ impl Default for AppProfileState {
             current_profile: Mutex::new(None),
             current_save: Mutex::new(None),
             selected_game: Mutex::new("ets2".to_string()),
+            save_baseline: Mutex::new(None),
         }
     }
 }

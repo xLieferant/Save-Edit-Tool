@@ -5,7 +5,6 @@ use crate::features::truck_change::parser::{
     UnitBlock, extract_array_entries, extract_field_value, is_null_ref, normalize_sii_unit_id,
     parse_unit_blocks,
 };
-use crate::features::truck_change::writer::set_unit_field_value;
 
 pub const BUS_STAT_FIELDS: [&str; 8] = [
     "bus_experience_points",
@@ -246,15 +245,8 @@ pub fn patch_xp(content: &str, career: Career, value: i64) -> Result<String, Str
     if occurrences != 1 {
         return Err("coaches.xp_invalid".to_string());
     }
-    let (mut updated, changed) =
-        set_unit_field_value(content, &economy.id, field, &value.to_string())?;
-    if !changed {
-        return Err("coaches.xp_missing".to_string());
-    }
-    // Preserve the original CRLF convention after the existing line-based writer.
-    if content.contains("\r\n") && !content.replace("\r\n", "").contains('\n') {
-        updated = updated.replace('\n', "\r\n");
-    }
+    let document = super::document::Document::parse(content)?;
+    let updated = document.patch(document.unique("economy")?, field, &value.to_string())?;
     verify_xp(&updated, career, value)?;
     Ok(updated)
 }

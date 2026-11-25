@@ -37,6 +37,10 @@ pub async fn get_player_trailer(
         .display()
         .to_string();
 
+    let read_revision = crate::features::save_editor::safety::read_revision(
+        profile_state.inner(),
+        std::path::Path::new(&path_key),
+    )?;
     let decrypt_cache_cloned = decrypt_cache.inner().clone();
     let worker_result = tauri::async_runtime::spawn_blocking(move || {
         let (content, _) = load_save_content_from_save_path(&save_path, &decrypt_cache_cloned)?;
@@ -95,6 +99,11 @@ pub async fn get_player_trailer(
     })
     .await
     .map_err(|error| format!("get_player_trailer join failed: {}", error))??;
+    let _publication = crate::features::save_editor::safety::mutation_lock()?;
+    crate::features::save_editor::safety::ensure_read_current(
+        profile_state.inner(),
+        &read_revision,
+    )?;
 
     let (
         parsed_trailers,
@@ -299,6 +308,10 @@ pub async fn get_all_trailers(
         return Ok(cached);
     }
 
+    let read_revision = crate::features::save_editor::safety::read_revision(
+        profile_state.inner(),
+        std::path::Path::new(&path_key),
+    )?;
     let decrypt_cache_cloned = decrypt_cache.inner().clone();
     let parsed_trailers = tauri::async_runtime::spawn_blocking(move || {
         let (content, _) = load_save_content_from_save_path(&save_path, &decrypt_cache_cloned)?;
@@ -313,6 +326,11 @@ pub async fn get_all_trailers(
     })
     .await
     .map_err(|error| format!("get_all_trailers join failed: {}", error))??;
+    let _publication = crate::features::save_editor::safety::mutation_lock()?;
+    crate::features::save_editor::safety::ensure_read_current(
+        profile_state.inner(),
+        &read_revision,
+    )?;
 
     let player_trailer = profile_cache.get_cached_player_trailer(&path_key).flatten();
     profile_cache.cache_trailers(path_key.clone(), parsed_trailers.clone(), player_trailer);

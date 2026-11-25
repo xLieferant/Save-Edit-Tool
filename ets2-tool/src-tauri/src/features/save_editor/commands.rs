@@ -3,13 +3,10 @@ use crate::features::backup::models::BackupRestoreResultDto;
 use crate::features::backup::service as backup_service;
 use crate::features::logging::service as logging_service;
 use crate::shared::decrypt::decrypt_if_needed;
-use crate::shared::paths::{
-    autosave_path, ets2_base_config_path, game_sii_from_save, quicksave_config_path,
-};
+use crate::shared::paths::{game_sii_from_save, quicksave_config_path};
 use crate::shared::trace::TraceScope;
 use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 use crate::xp::command::{calculate_level, total_xp_to_reach_level, xp_required_for_level};
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -32,7 +29,8 @@ pub fn read_project_coaches(
     Ok(snapshot)
 }
 
-#[command]
+#[cfg_attr(not(test), command(async))]
+#[cfg_attr(test, command)]
 pub fn edit_career_xp(
     xp: i64,
     career: super::coaches::Career,
@@ -62,7 +60,8 @@ fn write_career_xp(
     let path = get_active_save_path(profile_state)
         .map_err(|error| error.user_message)?
         .with_file_name("game.sii");
-    let original = decrypt_if_needed(&path)?;
+    let raw = super::safety::read_source(profile_state, &path)?;
+    let original = crate::shared::decrypt::decode_text_bytes(&raw, "career_edit", &[])?;
     if expected_save_hash.is_some_and(|hash| hash != career_save_hash(&path, &original)) {
         return Err("coaches.save_changed".to_string());
     }
@@ -77,6 +76,7 @@ fn write_career_xp(
         "before career xp edit",
         "Career XP was updated for the active save.",
         &content,
+        &original,
         |written_path| {
             let written = fs::read_to_string(written_path)
                 .map_err(|error| failure("coaches.verify_failed", error.to_string()))?;
@@ -136,22 +136,7 @@ fn current_profile_path(profile_state: &AppProfileState) -> CommandResult<String
 }
 
 fn get_active_save_path(profile_state: &AppProfileState) -> CommandResult<PathBuf> {
-    let current_save = profile_state
-        .current_save
-        .lock()
-        .map_err(|_| {
-            failure(
-                "Savestatus konnte nicht gelesen werden.",
-                "current_save lock poisoned",
-            )
-        })?
-        .clone();
-    if let Some(save) = current_save {
-        return Ok(game_sii_from_save(Path::new(&save)));
-    }
-
-    let profile = current_profile_path(profile_state)?;
-    Ok(autosave_path(&profile))
+    super::safety::active_save(profile_state).map_err(|error| failure(error.clone(), error))
 }
 
 fn write_text_with_auto_backup<F>(
@@ -161,11 +146,22 @@ fn write_text_with_auto_backup<F>(
     action_reason: &str,
     success_message: &str,
     content: &str,
+    original: &str,
     verify_write: F,
 ) -> CommandResult<()>
 where
-    F: FnOnce(&Path) -> CommandResult<()>,
+    F: Fn(&Path) -> CommandResult<()>,
 {
+    let _mutation = super::safety::mutation_lock().map_err(|e| failure(e.clone(), e))?;
+    let raw = super::safety::read_source(profile_state, path).map_err(|e| failure(e.clone(), e))?;
+    let decoded = crate::shared::decrypt::decode_text_bytes(&raw, "active_save", &[])
+        .map_err(|e| failure(e.clone(), e))?;
+    if decoded != original {
+        return Err(failure(
+            "save_changed_since_load",
+            "Prepared edit source no longer matches disk.",
+        ));
+    }
     let mut context = logging_service::resolve_active_context(profile_state);
     context.extra.insert(
         "target".to_string(),
@@ -187,7 +183,7 @@ where
     ) {
         Ok(backup) => backup,
         Err(error) => {
-            let user_message = "Automatisches Backup konnte nicht erstellt werden.";
+            let user_message = "save_errors.backup_failed";
             let _ = logging_service::record_error(
                 action,
                 Some("auto_backup_failed"),
@@ -203,28 +199,17 @@ where
         .extra
         .insert("backupId".to_string(), backup.backup_id.clone());
 
-    if let Err(error) = fs::write(path, content.as_bytes()) {
-        let technical = error.to_string();
-        let user_message = "Datei konnte nicht geschrieben werden.";
-        let _ = logging_service::record_error(
-            action,
-            Some("write_failed"),
-            user_message,
-            Some(&technical),
-            &context,
-        );
-        return Err(failure(user_message, technical));
-    }
-
-    if let Err(error) = verify_write(path) {
-        let _ = logging_service::record_error(
-            action,
-            Some("write_verification_failed"),
-            &error.user_message,
-            Some(&error.technical_details),
-            &context,
-        );
-        return Err(error);
+    super::safety::write_atomic_checked(path, &raw, content, |temporary| {
+        verify_write(temporary).map_err(|error| error.technical_details)?;
+        if super::safety::read_source(profile_state, path)? != raw {
+            return Err("save_changed_since_load".into());
+        }
+        Ok(())
+    })
+    .map_err(|error| failure(error.clone(), error))?;
+    verify_write(path)?;
+    if path.file_name().is_some_and(|name| name == "game.sii") {
+        super::safety::remember_save(profile_state, path).map_err(|e| failure(e.clone(), e))?;
     }
 
     let _ = logging_service::record_info(action, success_message, &context);
@@ -282,14 +267,11 @@ struct ResolvedCustomResetValues {
 fn active_selected_save_targets(
     profile_state: &AppProfileState,
 ) -> CommandResult<ActiveSaveTargets> {
-    let _profile = current_profile_path(profile_state)?;
-    let save_dir = profile_state
-        .current_save
-        .lock()
-        .map_err(|_| failure("No active save selected", "current_save lock poisoned"))?
-        .clone()
-        .ok_or_else(|| failure("No active save selected", "No current save is selected."))?;
-    let save_dir = PathBuf::from(save_dir);
+    let game_path = get_active_save_path(profile_state)?;
+    let save_dir = game_path
+        .parent()
+        .ok_or_else(|| failure("save_path_invalid", "Save has no parent"))?
+        .to_path_buf();
 
     Ok(ActiveSaveTargets {
         game_sii_path: game_sii_from_save(&save_dir),
@@ -350,43 +332,6 @@ fn resolve_custom_reset_values(
     })
 }
 
-fn replace_numeric_fields(
-    content: &str,
-    fields: &[&str],
-    value: i64,
-    user_message: &str,
-    technical_context: &str,
-) -> CommandResult<String> {
-    let mut replaced = false;
-    let mut updated = content.to_string();
-
-    for field in fields {
-        let pattern = Regex::new(&format!(r"(?m)^(\s*){}:\s*-?\d+", regex::escape(field)))
-            .map_err(|error| {
-                failure(user_message, format!("{} regex invalid: {}", field, error))
-            })?;
-        if pattern.is_match(&updated) {
-            updated = pattern
-                .replace_all(&updated, format!("${{1}}{}: {}", field, value))
-                .to_string();
-            replaced = true;
-        }
-    }
-
-    if !replaced {
-        return Err(failure(
-            user_message,
-            format!(
-                "{} missing expected fields: {}",
-                technical_context,
-                fields.join(", ")
-            ),
-        ));
-    }
-
-    Ok(updated)
-}
-
 fn update_game_save_content(
     content: &str,
     values: ResolvedCustomResetValues,
@@ -394,13 +339,8 @@ fn update_game_save_content(
     let mut updated = content.to_string();
 
     if let Some(money) = values.money {
-        updated = replace_numeric_fields(
-            &updated,
-            &["money_account", "info_money_account"],
-            money,
-            "Could not read save file",
-            "game.sii money replacement",
-        )?;
+        updated = super::document::patch_money(&updated, money)
+            .map_err(|error| failure("Could not read save file", error))?;
     }
 
     if let Some(xp) = values.xp {
@@ -422,43 +362,27 @@ fn update_info_save_content(
     values: ResolvedCustomResetValues,
 ) -> CommandResult<String> {
     let mut updated = content.to_string();
-
-    if let Some(money) = values.money {
-        updated = replace_numeric_fields(
-            &updated,
-            &["info_money_account", "money_account"],
-            money,
-            "Could not read save file",
-            "info.sii money replacement",
-        )?;
+    for (key, value) in [
+        ("info_money_account", values.money),
+        (
+            "info_players_experience",
+            values.xp.and_then(|xp| i64::try_from(xp).ok()),
+        ),
+    ] {
+        if let Some(value) = value {
+            let doc =
+                super::document::Document::parse(&updated).map_err(|e| failure(e.clone(), e))?;
+            updated = doc
+                .patch(
+                    doc.unique("save_container")
+                        .map_err(|e| failure(e.clone(), e))?,
+                    key,
+                    &value.to_string(),
+                )
+                .map_err(|e| failure(e.clone(), e))?;
+        }
     }
-
-    if let Some(xp) = values.xp {
-        let xp_value = i64::try_from(xp).map_err(|_| {
-            failure(
-                "Invalid level value",
-                format!("XP value {} exceeds i64 range for info.sii", xp),
-            )
-        })?;
-        updated = replace_numeric_fields(
-            &updated,
-            &["info_players_experience", "experience_points"],
-            xp_value,
-            "Could not read save file",
-            "info.sii xp replacement",
-        )?;
-    }
-
     Ok(updated)
-}
-
-fn write_save_text(path: &Path, content: &str) -> CommandResult<()> {
-    fs::write(path, content.as_bytes()).map_err(|error| {
-        failure(
-            "Could not write save file",
-            format!("{}: {}", path.display(), error),
-        )
-    })
 }
 
 fn invalidate_custom_reset_caches(
@@ -508,7 +432,8 @@ pub fn get_undo_status(profile_state: State<'_, AppProfileState>) -> Result<Undo
     })
 }
 
-#[command]
+#[cfg_attr(not(test), command(async))]
+#[cfg_attr(test, command)]
 pub fn apply_custom_reset_values(
     level: Option<u32>,
     xp: Option<u64>,
@@ -517,6 +442,7 @@ pub fn apply_custom_reset_values(
     profile_cache: State<'_, ProfileCache>,
     decrypt_cache: State<'_, DecryptCache>,
 ) -> Result<ApplyCustomResetValuesResultDto, String> {
+    let _mutation = super::safety::mutation_lock()?;
     let mut trace = TraceScope::new("apply_custom_reset_values");
     let mut context = logging_service::resolve_active_context(profile_state.inner());
     let targets = active_selected_save_targets(profile_state.inner()).map_err(|error| {
@@ -530,6 +456,10 @@ pub fn apply_custom_reset_values(
         trace.finish_error(&error.user_message);
         error.user_message
     })?;
+    let original_game_bytes =
+        super::safety::read_source(profile_state.inner(), &targets.game_sii_path)?;
+    let original_info_bytes =
+        super::safety::read_source(profile_state.inner(), &targets.info_sii_path)?;
     let values = resolve_custom_reset_values(level, xp, money).map_err(|error| {
         let _ = logging_service::record_error(
             "safe_value_reset",
@@ -566,28 +496,32 @@ pub fn apply_custom_reset_values(
         .extra
         .insert("undoBackupId".to_string(), undo_backup.backup_id.clone());
 
-    let game_content = decrypt_if_needed(&targets.game_sii_path).map_err(|error| {
-        let _ = logging_service::record_error(
-            "safe_value_reset",
-            Some("read_game_sii_failed"),
-            "Could not read save file",
-            Some(&error.to_string()),
-            &context,
-        );
-        trace.finish_error(format!("Could not read save file: {}", error));
-        "Could not read save file".to_string()
-    })?;
-    let info_content = decrypt_if_needed(&targets.info_sii_path).map_err(|error| {
-        let _ = logging_service::record_error(
-            "safe_value_reset",
-            Some("read_info_sii_failed"),
-            "Could not read save file",
-            Some(&error.to_string()),
-            &context,
-        );
-        trace.finish_error(format!("Could not read save file: {}", error));
-        "Could not read save file".to_string()
-    })?;
+    let game_content =
+        crate::shared::decrypt::decode_text_bytes(&original_game_bytes, "reset_game", &[])
+            .map_err(|error| {
+                let _ = logging_service::record_error(
+                    "safe_value_reset",
+                    Some("read_game_sii_failed"),
+                    "Could not read save file",
+                    Some(&error.to_string()),
+                    &context,
+                );
+                trace.finish_error(format!("Could not read save file: {}", error));
+                "Could not read save file".to_string()
+            })?;
+    let info_content =
+        crate::shared::decrypt::decode_text_bytes(&original_info_bytes, "reset_info", &[])
+            .map_err(|error| {
+                let _ = logging_service::record_error(
+                    "safe_value_reset",
+                    Some("read_info_sii_failed"),
+                    "Could not read save file",
+                    Some(&error.to_string()),
+                    &context,
+                );
+                trace.finish_error(format!("Could not read save file: {}", error));
+                "Could not read save file".to_string()
+            })?;
 
     if let Some(value) = values.money {
         dev_log!("[trace] APPLY_VALUE money={}", value);
@@ -615,19 +549,38 @@ pub fn apply_custom_reset_values(
         "[trace] WRITE_SAVE_FILE path={}",
         targets.game_sii_path.display()
     );
-    write_save_text(&targets.game_sii_path, &updated_game).map_err(|error| {
-        trace.finish_error(&error.user_message);
-        error.user_message
-    })?;
-
-    dev_log!(
-        "[trace] WRITE_SAVE_FILE path={}",
-        targets.info_sii_path.display()
+    let result = super::safety::write_save_pair(
+        &targets.game_sii_path,
+        &original_game_bytes,
+        &updated_game,
+        &targets.info_sii_path,
+        &original_info_bytes,
+        &updated_info,
+        |candidate| {
+            let written =
+                fs::read_to_string(candidate).map_err(|_| "save_errors.verification_failed")?;
+            if update_info_save_content(&written, values)
+                .map_err(|_| "save_errors.verification_failed")?
+                != written
+            {
+                return Err("save_errors.verification_failed".into());
+            }
+            let game = fs::read_to_string(&targets.game_sii_path)
+                .map_err(|_| "save_errors.verification_failed")?;
+            if update_game_save_content(&game, values)
+                .map_err(|_| "save_errors.verification_failed")?
+                != game
+            {
+                return Err("save_errors.verification_failed".into());
+            }
+            Ok(())
+        },
     );
-    write_save_text(&targets.info_sii_path, &updated_info).map_err(|error| {
-        trace.finish_error(&error.user_message);
-        error.user_message
-    })?;
+    if let Err(error) = result {
+        invalidate_custom_reset_caches(profile_cache.inner(), decrypt_cache.inner(), &targets);
+        return Err(error);
+    }
+    super::safety::remember_save(profile_state.inner(), &targets.game_sii_path)?;
 
     dev_log!(
         "[trace] INVALIDATE_CACHE save={}",
@@ -649,12 +602,14 @@ pub fn apply_custom_reset_values(
     })
 }
 
-#[command]
+#[cfg_attr(not(test), command(async))]
+#[cfg_attr(test, command)]
 pub fn undo_last_save_change(
     profile_state: State<'_, AppProfileState>,
     profile_cache: State<'_, ProfileCache>,
     decrypt_cache: State<'_, DecryptCache>,
 ) -> Result<BackupRestoreResultDto, String> {
+    let _mutation = super::safety::mutation_lock()?;
     let mut trace = TraceScope::new("undo_last_save_change");
     let mut context = logging_service::resolve_active_context(profile_state.inner());
     let targets = active_selected_save_targets(profile_state.inner()).map_err(|error| {
@@ -737,47 +692,19 @@ pub fn undo_last_save_change(
     Ok(execution.result)
 }
 
-#[command]
+#[cfg_attr(not(test), command(async))]
+#[cfg_attr(test, command)]
 pub fn edit_money(
     amount: i64,
     profile_state: State<'_, AppProfileState>,
     profile_cache: State<'_, ProfileCache>,
     decrypt_cache: State<'_, DecryptCache>,
 ) -> Result<(), String> {
-    let path = get_active_save_path(profile_state.inner()).map_err(|error| error.user_message)?;
-    let content = decrypt_if_needed(&path)?;
-
-    // 1. Info-Wert ersetzen
-    let re_info = Regex::new(r"info_money_account:\s*\d+")
-        .map_err(|error| format!("Money-Regel ungültig: {}", error))?;
-    let content = re_info
-        .replace(&content, format!("info_money_account: {}", amount))
-        .to_string();
-
-    // 2. Echten Wert ersetzen (unter Beibehaltung der Einrückung)
-    let re_main = Regex::new(r"(?m)^(\s*)money_account:\s*\d+")
-        .map_err(|error| format!("Money-Regel ungültig: {}", error))?;
-    let content = re_main
-        .replace(&content, format!("${{1}}money_account: {}", amount))
-        .to_string();
-
-    write_text_with_auto_backup(
-        profile_state.inner(),
-        &path,
-        "edit_money",
-        "before money edit",
-        "Money values were updated for the active save.",
-        &content,
-        |_| Ok(()),
-    )
-    .map_err(|error| error.user_message)?;
-    decrypt_cache.invalidate_path(&path);
-    profile_cache.invalidate_save_data();
-    dev_log!("Geld geändert: {}", amount);
-    Ok(())
+    edit_player_money(amount, profile_state, profile_cache, decrypt_cache)
 }
 
-#[command]
+#[cfg_attr(not(test), command(async))]
+#[cfg_attr(test, command)]
 pub fn edit_xp(
     xp: i64,
     profile_state: State<'_, AppProfileState>,
@@ -794,7 +721,8 @@ pub fn edit_xp(
     )
 }
 
-#[command]
+#[cfg_attr(not(test), command(async))]
+#[cfg_attr(test, command)]
 pub fn edit_level(
     xp: i64,
     profile_state: State<'_, AppProfileState>,
@@ -816,7 +744,8 @@ pub struct EditValuePayload {
     value: String,
 }
 
-#[command]
+#[cfg_attr(not(test), command(async))]
+#[cfg_attr(test, command)]
 pub fn edit_player_money(
     value: i64,
     profile_state: State<'_, AppProfileState>,
@@ -827,15 +756,10 @@ pub fn edit_player_money(
 
     // ✅ Use the helper - respects current_save if set
     let path = get_active_save_path(profile_state.inner()).map_err(|error| error.user_message)?;
-    let content = decrypt_if_needed(&path)?;
+    let raw = super::safety::read_source(profile_state.inner(), &path)?;
+    let content = crate::shared::decrypt::decode_text_bytes(&raw, "save_edit", &[])?;
 
-    let re_money = Regex::new(r"money_account:\s*(\d+)").map_err(|e| e.to_string())?;
-
-    if !re_money.is_match(&content) {
-        return Err("money_account nicht gefunden".into());
-    }
-
-    let new_content = re_money.replace(&content, format!("money_account: {}", value));
+    let new_content = super::document::patch_money(&content, value)?;
 
     write_text_with_auto_backup(
         profile_state.inner(),
@@ -844,7 +768,26 @@ pub fn edit_player_money(
         "before player money edit",
         "Player money was updated for the active save.",
         new_content.as_ref(),
-        |_| Ok(()),
+        &content,
+        |written_path| {
+            let written = decrypt_if_needed(written_path)
+                .map_err(|error| failure("save_verification_failed", error))?;
+            let document = super::document::Document::parse(&written)
+                .map_err(|error| failure("save_verification_failed", error))?;
+            let unit = document
+                .bank()
+                .map_err(|error| failure("save_verification_failed", error))?;
+            let actual = document
+                .field(unit, "money_account")
+                .map_err(|error| failure("save_verification_failed", error))?;
+            if actual.parse::<i64>().ok() != Some(value) {
+                return Err(failure(
+                    "save_verification_failed",
+                    "The persisted profile value differs from the requested value.",
+                ));
+            }
+            Ok(())
+        },
     )
     .map_err(|error| error.user_message)?;
     decrypt_cache.invalidate_path(&path);
@@ -856,7 +799,8 @@ pub fn edit_player_money(
     Ok(())
 }
 
-#[command]
+#[cfg_attr(not(test), command(async))]
+#[cfg_attr(test, command)]
 pub fn edit_player_experience(
     value: i64,
     profile_state: State<'_, AppProfileState>,
@@ -873,7 +817,8 @@ pub fn edit_player_experience(
     )
 }
 
-#[command]
+#[cfg_attr(not(test), command(async))]
+#[cfg_attr(test, command)]
 pub fn edit_skill_value(
     skill: String,
     value: i64,
@@ -886,17 +831,10 @@ pub fn edit_skill_value(
 
     // ✅ Use the helper - respects current_save if set
     let path = get_active_save_path(profile_state.inner()).map_err(|error| error.user_message)?;
-    let content = decrypt_if_needed(&path)?;
+    let raw = super::safety::read_source(profile_state.inner(), &path)?;
+    let content = crate::shared::decrypt::decode_text_bytes(&raw, "save_edit", &[])?;
 
-    // Regex dynamisch je Skill
-    let re = Regex::new(&format!(r"\b{}\s*:\s*\d+", regex::escape(&skill)))
-        .map_err(|e| e.to_string())?;
-
-    if !re.is_match(&content) {
-        return Err(format!("Skill '{}' nicht gefunden", skill));
-    }
-
-    let new_content = re.replace(&content, format!("{}: {}", skill, value));
+    let new_content = super::document::patch_skill(&content, &skill, value)?;
 
     write_text_with_auto_backup(
         profile_state.inner(),
@@ -905,7 +843,26 @@ pub fn edit_skill_value(
         &format!("before skill edit {}", skill),
         "A player skill value was updated for the active save.",
         new_content.as_ref(),
-        |_| Ok(()),
+        &content,
+        |written_path| {
+            let written = decrypt_if_needed(written_path)
+                .map_err(|error| failure("save_verification_failed", error))?;
+            let document = super::document::Document::parse(&written)
+                .map_err(|error| failure("save_verification_failed", error))?;
+            let unit = document
+                .unique("economy")
+                .map_err(|error| failure("save_verification_failed", error))?;
+            let actual = document
+                .field(unit, &skill)
+                .map_err(|error| failure("save_verification_failed", error))?;
+            if actual.parse::<i64>().ok() != Some(value) {
+                return Err(failure(
+                    "save_verification_failed",
+                    "The persisted profile value differs from the requested value.",
+                ));
+            }
+            Ok(())
+        },
     )
     .map_err(|error| error.user_message)?;
     decrypt_cache.invalidate_path(&path);
@@ -917,27 +874,25 @@ pub fn edit_skill_value(
     Ok(())
 }
 
-#[command]
+#[cfg_attr(not(test), command(async))]
+#[cfg_attr(test, command)]
 pub fn edit_developer_value(
     value: i64,
     profile_state: State<'_, AppProfileState>,
     profile_cache: State<'_, ProfileCache>,
     decrypt_cache: State<'_, DecryptCache>,
 ) -> Result<(), String> {
-    let path = ets2_base_config_path().ok_or("Globaler Config-Pfad nicht gefunden".to_string())?;
+    let path = super::safety::config_path(profile_state.inner())?;
 
     dev_log!("Schreibe Developer Value in: {}", path.display());
 
     let content = fs::read_to_string(&path).map_err(|e| e.to_string())?;
 
-    let re = Regex::new(r#"uset g_developer\s+"[^"]+""#)
-        .map_err(|error| format!("Developer-Regel ungültig: {}", error))?;
-
-    if !re.is_match(&content) {
-        return Err("g_developer nicht in config.cfg gefunden".into());
-    }
-
-    let new_content = re.replace(&content, format!(r#"uset g_developer "{}""#, value));
+    let new_content = crate::features::settings::game_config::patch_config_value(
+        &content,
+        "g_developer",
+        &value.to_string(),
+    )?;
     let expected = format!(r#"uset g_developer "{}""#, value);
 
     write_text_with_auto_backup(
@@ -947,6 +902,7 @@ pub fn edit_developer_value(
         "before developer config edit",
         "The global developer config value was updated.",
         new_content.as_ref(),
+        &content,
         |written_path| {
             verify_contains(
                 written_path,
@@ -963,27 +919,25 @@ pub fn edit_developer_value(
     Ok(())
 }
 
-#[command]
+#[cfg_attr(not(test), command(async))]
+#[cfg_attr(test, command)]
 pub fn edit_console_value(
     value: i64,
     profile_state: State<'_, AppProfileState>,
     profile_cache: State<'_, ProfileCache>,
     decrypt_cache: State<'_, DecryptCache>,
 ) -> Result<(), String> {
-    let path = ets2_base_config_path().ok_or("Globaler Config-Pfad nicht gefunden".to_string())?;
+    let path = super::safety::config_path(profile_state.inner())?;
 
     dev_log!("Schreibe Console Value in: {}", path.display());
 
     let content = fs::read_to_string(&path).map_err(|e| e.to_string())?;
 
-    let re = Regex::new(r#"uset g_console\s+"[^"]+""#)
-        .map_err(|error| format!("Console-Regel ungültig: {}", error))?;
-
-    if !re.is_match(&content) {
-        return Err("g_console nicht in config.cfg gefunden".into());
-    }
-
-    let new_content = re.replace(&content, format!(r#"uset g_console "{}""#, value));
+    let new_content = crate::features::settings::game_config::patch_config_value(
+        &content,
+        "g_console",
+        &value.to_string(),
+    )?;
     let expected = format!(r#"uset g_console "{}""#, value);
 
     write_text_with_auto_backup(
@@ -993,6 +947,7 @@ pub fn edit_console_value(
         "before console config edit",
         "The global console config value was updated.",
         new_content.as_ref(),
+        &content,
         |written_path| {
             verify_contains(
                 written_path,
@@ -1009,27 +964,25 @@ pub fn edit_console_value(
     Ok(())
 }
 
-#[command]
+#[cfg_attr(not(test), command(async))]
+#[cfg_attr(test, command)]
 pub fn edit_convoy_value(
     value: i64,
     profile_state: State<'_, AppProfileState>,
     profile_cache: State<'_, ProfileCache>,
     decrypt_cache: State<'_, DecryptCache>,
 ) -> Result<(), String> {
-    let path = ets2_base_config_path().ok_or("Globaler Config-Pfad nicht gefunden".to_string())?;
+    let path = super::safety::config_path(profile_state.inner())?;
 
     dev_log!("Schreibe Convoy in: {}", path.display());
 
     let content = fs::read_to_string(&path).map_err(|e| e.to_string())?;
 
-    let re = Regex::new(r#"uset g_max_convoy_size\s+"[^"]+""#)
-        .map_err(|error| format!("Convoy-Regel ungültig: {}", error))?;
-
-    if !re.is_match(&content) {
-        return Err("g_max_convoy_size nicht in config.cfg gefunden".into());
-    }
-
-    let new_content = re.replace(&content, format!(r#"uset g_max_convoy_size "{}""#, value));
+    let new_content = crate::features::settings::game_config::patch_config_value(
+        &content,
+        "g_max_convoy_size",
+        &value.to_string(),
+    )?;
     let expected = format!(r#"uset g_max_convoy_size "{}""#, value);
 
     write_text_with_auto_backup(
@@ -1039,6 +992,7 @@ pub fn edit_convoy_value(
         "before convoy config edit",
         "The global convoy config value was updated.",
         new_content.as_ref(),
+        &content,
         |written_path| {
             verify_contains(
                 written_path,
@@ -1055,7 +1009,8 @@ pub fn edit_convoy_value(
     Ok(())
 }
 
-#[command]
+#[cfg_attr(not(test), command(async))]
+#[cfg_attr(test, command)]
 pub fn edit_traffic_value(
     value: i64,
     profile_state: State<'_, AppProfileState>,
@@ -1065,20 +1020,17 @@ pub fn edit_traffic_value(
     // 🔒 Clamping: garantiert 0–10
     let value = value.clamp(0, 10);
 
-    let path = ets2_base_config_path().ok_or("Globaler Config-Pfad nicht gefunden".to_string())?;
+    let path = super::safety::config_path(profile_state.inner())?;
 
     dev_log!("Schreibe Traffic in: {} (Wert: {})", path.display(), value);
 
     let content = fs::read_to_string(&path).map_err(|e| e.to_string())?;
 
-    let re = Regex::new(r#"uset g_traffic\s+"[^"]+""#).map_err(|e| e.to_string())?;
-
-    if !re.is_match(&content) {
-        return Err("g_traffic nicht in config.cfg gefunden".into());
-    }
-
-    let new_content = re.replace(&content, format!(r#"uset g_traffic "{}""#, value));
-
+    let new_content = crate::features::settings::game_config::patch_config_value(
+        &content,
+        "g_traffic",
+        &value.to_string(),
+    )?;
     write_text_with_auto_backup(
         profile_state.inner(),
         &path,
@@ -1086,6 +1038,7 @@ pub fn edit_traffic_value(
         "before traffic config edit",
         "The global traffic config value was updated.",
         new_content.as_ref(),
+        &content,
         |_| Ok(()),
     )
     .map_err(|error| error.user_message)?;
@@ -1096,7 +1049,8 @@ pub fn edit_traffic_value(
     Ok(())
 }
 
-#[command]
+#[cfg_attr(not(test), command(async))]
+#[cfg_attr(test, command)]
 pub fn edit_parking_doubles_value(
     value: i64,
     profile_state: State<'_, AppProfileState>,
@@ -1112,17 +1066,11 @@ pub fn edit_parking_doubles_value(
 
     let content = fs::read_to_string(&path).map_err(|e| e.to_string())?;
 
-    let re = Regex::new(r#"uset g_simple_parking_doubles\s+"[^"]+""#)
-        .map_err(|error| format!("Parking-Regel ungültig: {}", error))?;
-
-    if !re.is_match(&content) {
-        return Err("uset g_simple_parking_doubles nicht in player/config.cfg gefunden".into());
-    }
-
-    let new_content = re.replace(
+    let new_content = crate::features::settings::game_config::patch_config_value(
         &content,
-        format!(r#"uset g_simple_parking_doubles "{}""#, value),
-    );
+        "g_simple_parking_doubles",
+        &value.to_string(),
+    )?;
     let expected = format!(r#"uset g_simple_parking_doubles "{}""#, value);
 
     write_text_with_auto_backup(
@@ -1132,6 +1080,7 @@ pub fn edit_parking_doubles_value(
         "before parking doubles edit",
         "The profile parking doubles config value was updated.",
         new_content.as_ref(),
+        &content,
         |written_path| {
             verify_contains(
                 written_path,
@@ -1154,21 +1103,21 @@ pub struct KeyValuePayload {
     value: String,
 }
 
-#[command]
+#[cfg_attr(not(test), command(async))]
+#[cfg_attr(test, command)]
 pub fn edit_config_value(
     payload: KeyValuePayload,
     profile_state: State<'_, AppProfileState>,
     profile_cache: State<'_, ProfileCache>,
     decrypt_cache: State<'_, DecryptCache>,
 ) -> Result<(), String> {
-    let path = ets2_base_config_path().ok_or("Globaler Config-Pfad nicht gefunden".to_string())?;
+    let path = super::safety::config_path(profile_state.inner())?;
     let content = fs::read_to_string(&path).map_err(|e| e.to_string())?;
-    let re = Regex::new(&format!(r#"uset {}\s*"?.*"?"#, payload.key))
-        .map_err(|error| format!("Config-Regel ungültig: {}", error))?;
-    let new_content = re.replace(
+    let new_content = crate::features::settings::game_config::patch_config_value(
         &content,
-        format!(r#"uset {} "{}""#, payload.key, payload.value),
-    );
+        &payload.key,
+        &payload.value,
+    )?;
     write_text_with_auto_backup(
         profile_state.inner(),
         &path,
@@ -1176,6 +1125,7 @@ pub fn edit_config_value(
         &format!("before global config edit {}", payload.key),
         "A global config value was updated.",
         new_content.as_ref(),
+        &content,
         |_| Ok(()),
     )
     .map_err(|error| error.user_message)?;
@@ -1189,7 +1139,8 @@ pub fn edit_config_value(
     Ok(())
 }
 
-#[command]
+#[cfg_attr(not(test), command(async))]
+#[cfg_attr(test, command)]
 pub fn edit_save_config_value(
     payload: KeyValuePayload,
     profile_state: State<'_, AppProfileState>,
@@ -1200,12 +1151,11 @@ pub fn edit_save_config_value(
         current_profile_path(profile_state.inner()).map_err(|error| error.user_message)?;
     let path = quicksave_config_path(&profile);
     let content = fs::read_to_string(&path).map_err(|e| e.to_string())?;
-    let re = Regex::new(&format!(r#"uset {}\s*"?.*"?"#, payload.key))
-        .map_err(|error| format!("Save-Config-Regel ungültig: {}", error))?;
-    let new_content = re.replace(
+    let new_content = crate::features::settings::game_config::patch_config_value(
         &content,
-        format!(r#"uset {} "{}""#, payload.key, payload.value),
-    );
+        &payload.key,
+        &payload.value,
+    )?;
     write_text_with_auto_backup(
         profile_state.inner(),
         &path,
@@ -1213,6 +1163,7 @@ pub fn edit_save_config_value(
         &format!("before save config edit {}", payload.key),
         "A profile save config value was updated.",
         new_content.as_ref(),
+        &content,
         |_| Ok(()),
     )
     .map_err(|error| error.user_message)?;

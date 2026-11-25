@@ -2,11 +2,12 @@ use crate::dev_log;
 use crate::shared::trace::{
     TraceScope, lock_mutex, log_lock_acquired, log_lock_released, log_lock_wait,
 };
-use crate::state::{DecryptCache, InFlightDecrypt, InFlightState};
+use crate::state::{DecryptCache, FileFingerprint, InFlightDecrypt, InFlightState};
 use decrypt_truck::decrypt_bin_file;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::sync::atomic::Ordering;
 use std::sync::mpsc;
 use std::time::Duration;
 use tauri::State;
@@ -18,6 +19,45 @@ const SIG_3NK: u32 = 21720627;
 const DECRYPT_TIMEOUT_SECS: u64 = 20;
 const INFLIGHT_WAIT_TIMEOUT_SECS: u64 = 20;
 const MAX_DECRYPT_FILE_BYTES: u64 = 64 * 1024 * 1024;
+
+/// Shared by decrypt workers and save transactions, including library builds.
+pub(crate) fn read_file_retry(path: &Path) -> Result<Vec<u8>, String> {
+    for attempt in 0..5 {
+        match fs::read(path) {
+            Ok(bytes) => return Ok(bytes),
+            Err(error) => {
+                let locked = matches!(error.raw_os_error(), Some(32 | 33))
+                    || matches!(
+                        error.kind(),
+                        std::io::ErrorKind::PermissionDenied
+                            | std::io::ErrorKind::WouldBlock
+                            | std::io::ErrorKind::Interrupted
+                    );
+                let detail = format!(
+                    "operation=read path={} attempt={} os_code={:?} error={error}",
+                    path.display(),
+                    attempt + 1,
+                    error.raw_os_error()
+                );
+                if locked && attempt < 4 {
+                    let _ = crate::shared::user_log::user_log_warn("SaveRead", detail);
+                    std::thread::sleep(Duration::from_millis(40 << attempt));
+                    continue;
+                }
+                let _ = crate::shared::user_log::user_log_error("SaveRead", detail);
+                return Err(if error.kind() == std::io::ErrorKind::NotFound {
+                    "save_errors.not_found"
+                } else if locked {
+                    "save_errors.locked"
+                } else {
+                    "save_errors.write_failed"
+                }
+                .into());
+            }
+        }
+    }
+    unreachable!()
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DecodeProbe {
@@ -149,16 +189,39 @@ pub fn decrypt_cached(path: &Path, cache: &State<DecryptCache>) -> Result<String
 }
 
 pub fn decrypt_cached_with_cache(path: &Path, cache: &DecryptCache) -> Result<String, String> {
-    if let Some(value) = cached_content(cache, path)? {
-        return Ok(value);
+    let fingerprint = FileFingerprint::read(path)?;
+    let fingerprint_matches = lock_mutex("decrypt_cache.fingerprints", &cache.fingerprints)?
+        .get(path)
+        == Some(&fingerprint);
+    if fingerprint_matches {
+        if let Some(value) = cached_content(cache, path)? {
+            return Ok(value);
+        }
+    } else {
+        cache.invalidate_path(path);
     }
 
     let path_buf = path.to_path_buf();
     let entry = acquire_inflight_entry(cache, &path_buf)?;
     match entry {
-        InflightRole::Follower(entry) => wait_for_inflight_result(&path_buf, &entry),
+        InflightRole::Follower(entry) => {
+            let result = wait_for_inflight_result(&path_buf, &entry)?;
+            if current_generation(cache, path)? != entry.generation
+                || FileFingerprint::read(path)? != fingerprint
+            {
+                return Err("save_changed_during_read".into());
+            }
+            Ok(result)
+        }
         InflightRole::Leader(entry) => {
-            let result = decrypt_if_needed(path);
+            let result = decrypt_if_needed(path).and_then(|text| {
+                if FileFingerprint::read(path)? != fingerprint
+                    || current_generation(cache, path)? != entry.generation
+                {
+                    return Err("save_changed_during_read".into());
+                }
+                Ok(text)
+            });
             if let Ok(content) = result.as_ref() {
                 insert_cached_content_if_current(
                     cache,
@@ -166,16 +229,37 @@ pub fn decrypt_cached_with_cache(path: &Path, cache: &DecryptCache) -> Result<St
                     content.clone(),
                     entry.generation,
                 )?;
+                let generations = lock_mutex("decrypt_cache.generations", &cache.generations)?;
+                let current = generations
+                    .get(path)
+                    .copied()
+                    .unwrap_or(0)
+                    .saturating_add(cache.epoch.load(Ordering::SeqCst));
+                if current == entry.generation {
+                    lock_mutex("decrypt_cache.fingerprints", &cache.fingerprints)?
+                        .insert(path.to_path_buf(), fingerprint.clone());
+                }
             }
             complete_inflight(cache, &path_buf, &entry, result.clone())?;
+            if result.is_ok()
+                && (current_generation(cache, path)? != entry.generation
+                    || FileFingerprint::read(path)? != fingerprint)
+            {
+                return Err("save_changed_during_read".into());
+            }
             result
         }
     }
 }
 
 pub fn clear_decrypt_cache(cache: &DecryptCache) -> Result<(), String> {
-    let mut guard = lock_mutex("decrypt_cache.files", &cache.files)?;
-    guard.clear();
+    // Invalidate even a worker that sampled its generation immediately before
+    // clearing and has not registered its in-flight entry yet.
+    let _generations = lock_mutex("decrypt_cache.generations", &cache.generations)?;
+    cache.epoch.fetch_add(1, Ordering::SeqCst);
+    lock_mutex("decrypt_cache.files", &cache.files)?.clear();
+    lock_mutex("decrypt_cache.fingerprints", &cache.fingerprints)?.clear();
+    lock_mutex("decrypt_cache.inflight", &cache.inflight)?.clear();
     Ok(())
 }
 
@@ -238,14 +322,17 @@ fn run_decrypt_with_timeout(path: PathBuf) -> Result<String, String> {
 }
 
 fn decrypt_path(path: &Path) -> Result<String, String> {
-    let bytes = fs::read(path).map_err(|error| {
-        format!(
-            "decode_failed | source={} | reason=read_failed: {}",
-            path.display(),
-            error
-        )
-    })?;
-    decode_text_bytes(&bytes, &path.display().to_string(), &[])
+    let before = fs::metadata(path).map_err(|error| format!("save_metadata_failed: {error}"))?;
+    let bytes = read_file_retry(path)?;
+    let content = decode_text_bytes(&bytes, &path.display().to_string(), &[])?;
+    let after = fs::metadata(path).map_err(|error| format!("save_metadata_failed: {error}"))?;
+    if before.len() != after.len()
+        || before.modified().ok() != after.modified().ok()
+        || bytes.len() as u64 != after.len()
+    {
+        return Err("save_changed_during_read".into());
+    }
+    Ok(content)
 }
 
 fn cached_content(cache: &DecryptCache, path: &Path) -> Result<Option<String>, String> {
@@ -260,7 +347,12 @@ fn insert_cached_content_if_current(
     generation: u64,
 ) -> Result<(), String> {
     let generations = lock_mutex("decrypt_cache.generations", &cache.generations)?;
-    if generations.get(path).copied().unwrap_or(0) != generation {
+    let current = generations
+        .get(path)
+        .copied()
+        .unwrap_or(0)
+        .saturating_add(cache.epoch.load(Ordering::SeqCst));
+    if current != generation {
         return Ok(());
     }
     let mut files = lock_mutex("decrypt_cache.files", &cache.files)?;
@@ -270,7 +362,11 @@ fn insert_cached_content_if_current(
 
 fn current_generation(cache: &DecryptCache, path: &Path) -> Result<u64, String> {
     let generations = lock_mutex("decrypt_cache.generations", &cache.generations)?;
-    Ok(generations.get(path).copied().unwrap_or(0))
+    Ok(generations
+        .get(path)
+        .copied()
+        .unwrap_or(0)
+        .saturating_add(cache.epoch.load(Ordering::SeqCst)))
 }
 
 fn acquire_inflight_entry(cache: &DecryptCache, path: &PathBuf) -> Result<InflightRole, String> {
@@ -426,6 +522,22 @@ mod tests {
         assert_eq!(cached_content(&cache, &path).unwrap(), None);
 
         insert_cached_content_if_current(&cache, &path, "fresh".to_string(), 1).unwrap();
+        assert_eq!(
+            cached_content(&cache, &path).unwrap().as_deref(),
+            Some("fresh")
+        );
+    }
+
+    #[test]
+    fn global_clear_invalidates_a_worker_not_yet_registered_in_the_cache() {
+        let cache = DecryptCache::default();
+        let path = PathBuf::from("not-yet-registered.sii");
+        let generation = super::current_generation(&cache, &path).unwrap();
+        super::clear_decrypt_cache(&cache).unwrap();
+        insert_cached_content_if_current(&cache, &path, "stale".into(), generation).unwrap();
+        assert!(cached_content(&cache, &path).unwrap().is_none());
+        let generation = super::current_generation(&cache, &path).unwrap();
+        insert_cached_content_if_current(&cache, &path, "fresh".into(), generation).unwrap();
         assert_eq!(
             cached_content(&cache, &path).unwrap().as_deref(),
             Some("fresh")

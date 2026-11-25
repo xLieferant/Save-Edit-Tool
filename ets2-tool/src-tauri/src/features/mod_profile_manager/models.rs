@@ -4,49 +4,7 @@ fn default_load_order_unknown() -> String {
     "unknown".to_string()
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
-pub enum GameType {
-    #[default]
-    #[serde(rename = "ets2")]
-    Ets2,
-    #[serde(rename = "ats")]
-    Ats,
-}
-
-impl GameType {
-    pub fn as_str(self) -> &'static str {
-        match self {
-            Self::Ets2 => "ets2",
-            Self::Ats => "ats",
-        }
-    }
-
-    pub fn app_id(self) -> &'static str {
-        match self {
-            Self::Ets2 => "227300",
-            Self::Ats => "270880",
-        }
-    }
-
-    pub fn display_name(self) -> &'static str {
-        match self {
-            Self::Ets2 => "ETS2",
-            Self::Ats => "ATS",
-        }
-    }
-}
-
-impl TryFrom<&str> for GameType {
-    type Error = String;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        match value.trim().to_ascii_lowercase().as_str() {
-            "ets2" => Ok(Self::Ets2),
-            "ats" => Ok(Self::Ats),
-            other => Err(format!("Unsupported game: {}", other)),
-        }
-    }
-}
+pub use crate::shared::game::GameType;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum ModSource {

@@ -1,6 +1,5 @@
 use std::collections::{BTreeMap, HashMap, HashSet};
-use std::fs::{self, OpenOptions};
-use std::io::Write;
+use std::fs;
 use std::path::{Path, PathBuf};
 
 use uuid::Uuid;
@@ -209,7 +208,7 @@ pub fn apply_ai_driver_generation(
     let player = player_block_from_blocks(&blocks)?
         .ok_or_else(|| "garage_block_invalid:player_missing".to_string())?;
     let mut garages = garage_assignment_states(&blocks)?;
-    let active_player_trucks = active_player_truck_ids(&player);
+    let active_player_trucks = active_player_truck_ids(&player, &blocks);
     let target = garages
         .get(garage_id)
         .ok_or_else(|| format!("garage_not_found:{garage_id}"))?;
@@ -373,10 +372,17 @@ pub fn apply_ai_driver_truck_update(
     {
         return Err(format!("ai_driver_not_hired:{driver_id}"));
     }
+    let driver = blocks
+        .iter()
+        .find(|block| block.unit_type == "driver_ai" && block.id.eq_ignore_ascii_case(driver_id))
+        .ok_or("ai_driver_block_missing")?;
+    if super::parser::driver_has_active_job(driver, &blocks) {
+        return Err(format!("ai_driver_active_job:{driver_id}"));
+    }
     let mut garages = garage_assignment_states(&blocks)?;
     let (driver_garage_id, driver_slot) = unique_driver_location(&garages, driver_id)?;
     let current_truck = garages[&driver_garage_id].vehicles[driver_slot].clone();
-    let active_player_trucks = active_player_truck_ids(&player);
+    let active_player_trucks = active_player_truck_ids(&player, &blocks);
     let mut changed_garages = HashSet::from([driver_garage_id.clone()]);
 
     if let Some(truck_id) = truck_id.filter(|value| !value.trim().is_empty()) {
@@ -561,7 +567,7 @@ fn move_random_available_truck(
     let player = player_block_from_blocks(&blocks)?
         .ok_or_else(|| "garage_block_invalid:player_missing".to_string())?;
     let mut garages = garage_assignment_states(&blocks)?;
-    let active_player_trucks = active_player_truck_ids(&player);
+    let active_player_trucks = active_player_truck_ids(&player, &blocks);
     let target = garages
         .get(garage_id)
         .ok_or_else(|| format!("garage_not_found:{garage_id}"))?;
@@ -638,14 +644,28 @@ fn garage_assignment_states(
     Ok(states)
 }
 
-fn active_player_truck_ids(player: &UnitBlock) -> HashSet<String> {
-    ["assigned_truck", "my_truck"]
+fn active_player_truck_ids(player: &UnitBlock, blocks: &[UnitBlock]) -> HashSet<String> {
+    let mut ids = ["assigned_truck", "my_truck"]
         .into_iter()
         .filter_map(|field| extract_field_value(&player.raw_block, field))
         .filter(|value| !is_null_ref(value))
-        .map(|value| normalize_sii_unit_id(&value))
-        .filter(|value| !value.is_empty())
-        .collect()
+        .map(|id| normalize_sii_unit_id(&id))
+        .collect::<HashSet<_>>();
+    if let Some(slot_id) =
+        extract_field_value(&player.raw_block, "assigned_vehicles").filter(|id| !is_null_ref(id))
+    {
+        for slot in blocks
+            .iter()
+            .filter(|block| block.unit_type == "player_vehicles" && block.id == slot_id)
+        {
+            if let Some(id) =
+                extract_field_value(&slot.raw_block, "vehicle").filter(|id| !is_null_ref(id))
+            {
+                ids.insert(normalize_sii_unit_id(&id));
+            }
+        }
+    }
+    ids
 }
 
 fn free_truck_locations(
@@ -882,35 +902,40 @@ pub fn write_verified_content(
     verify_candidate: impl Fn(&str) -> Result<(), String>,
 ) -> Result<(), String> {
     verify_candidate(content)?;
-    let temporary_path = temporary_path_for(target_path);
+    let before = crate::features::save_editor::safety::read_stable_bytes(target_path)?;
+    crate::features::save_editor::safety::write_atomic_checked(
+        target_path,
+        &before,
+        content,
+        |temporary| {
+            let candidate =
+                fs::read_to_string(temporary).map_err(|_| "save_temporary_read_failed")?;
+            verify_candidate(&candidate)
+        },
+    )
+}
 
-    let write_result = (|| {
-        let mut temporary_file = OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(&temporary_path)
-            .map_err(|_| "save_write_failed:temporary_create".to_string())?;
-        temporary_file
-            .write_all(content.as_bytes())
-            .map_err(|_| "save_write_failed:temporary_write".to_string())?;
-        temporary_file
-            .flush()
-            .map_err(|_| "save_write_failed:temporary_flush".to_string())?;
-        temporary_file
-            .sync_all()
-            .map_err(|_| "save_write_failed:temporary_sync".to_string())?;
-        drop(temporary_file);
-        let temporary_content = fs::read_to_string(&temporary_path)
-            .map_err(|_| "save_write_failed:temporary_readback".to_string())?;
-        verify_candidate(&temporary_content)?;
-        replace_file_atomic(&temporary_path, target_path)
-            .map_err(|_| "save_write_failed:atomic_replace".to_string())
-    })();
-
-    if write_result.is_err() && temporary_path.exists() {
-        let _ = fs::remove_file(&temporary_path);
+pub(crate) fn write_verified_content_if_current(
+    target_path: &Path,
+    original: &str,
+    content: &str,
+    verify_candidate: impl Fn(&str) -> Result<(), String>,
+) -> Result<(), String> {
+    let before = crate::features::save_editor::safety::read_stable_bytes(target_path)?;
+    if crate::shared::decrypt::decode_text_bytes(&before, "garage_save", &[])? != original {
+        return Err("save_changed_since_load".into());
     }
-    write_result
+    verify_candidate(content)?;
+    crate::features::save_editor::safety::write_atomic_checked(
+        target_path,
+        &before,
+        content,
+        |temporary| {
+            let candidate =
+                fs::read_to_string(temporary).map_err(|_| "save_verification_failed")?;
+            verify_candidate(&candidate)
+        },
+    )
 }
 
 fn parse_array_count(block: &UnitBlock, field: &str) -> Result<usize, String> {
@@ -1331,18 +1356,21 @@ fn replace_unit_block(
     block: &UnitBlock,
     rewritten_block: &str,
 ) -> Result<String, String> {
-    let mut lines = content.lines().map(str::to_string).collect::<Vec<_>>();
-    if block.end_line >= lines.len() || block.start_line > block.end_line {
-        return Err("garage_block_invalid:block_range".to_string());
+    let units = crate::shared::sii_document::scan_units(content, false)?;
+    let mut matches = units
+        .iter()
+        .filter(|unit| unit.kind == block.unit_type && unit.id == block.id);
+    let unit = matches.next().ok_or("garage_block_invalid:block_range")?;
+    if matches.next().is_some() {
+        return Err("garage_reference_ambiguous:block_range".into());
     }
-    lines.splice(
-        block.start_line..=block.end_line,
-        rewritten_block.lines().map(str::to_string),
-    );
-    let mut updated = join_lines(&lines);
-    if content.ends_with(LINE_FEED) {
-        updated.push(LINE_FEED);
-    }
+    let mut updated = content.to_string();
+    let rewritten = if content.contains("\r\n") && !content.replace("\r\n", "").contains('\n') {
+        rewritten_block.replace("\r\n", "\n").replace('\n', "\r\n")
+    } else {
+        rewritten_block.to_string()
+    };
+    updated.replace_range(unit.span.clone(), &rewritten);
     Ok(updated)
 }
 

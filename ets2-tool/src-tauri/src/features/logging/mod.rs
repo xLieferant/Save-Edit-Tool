@@ -1,5 +1,5 @@
 pub mod commands;
-pub mod models;
-pub mod service;
 pub mod diagnostics;
+pub mod models;
 pub mod report;
+pub mod service;

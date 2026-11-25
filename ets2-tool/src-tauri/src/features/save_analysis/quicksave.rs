@@ -36,6 +36,8 @@ pub async fn quicksave_game_info(
         return Ok(cached);
     }
 
+    let read_revision =
+        crate::features::save_editor::safety::read_revision(profile_state.inner(), &path)?;
     let decrypt_cache = decrypt_cache.inner().clone();
     let path_for_worker = path.clone();
     let (result, truck_summary) = tauri::async_runtime::spawn_blocking(move || {
@@ -43,6 +45,11 @@ pub async fn quicksave_game_info(
     })
     .await
     .map_err(|error| format!("quicksave_game_info join failed: {}", error))??;
+    let _publication = crate::features::save_editor::safety::mutation_lock()?;
+    crate::features::save_editor::safety::ensure_read_current(
+        profile_state.inner(),
+        &read_revision,
+    )?;
 
     profile_cache.cache_current_truck_summary(path_key.clone(), truck_summary);
     dev_log!("quicksave_game_info parsed");
@@ -96,6 +103,8 @@ pub async fn get_current_truck_summary(
         return Ok(None);
     }
 
+    let read_revision =
+        crate::features::save_editor::safety::read_revision(profile_state.inner(), &path)?;
     let decrypt_cache = decrypt_cache.inner().clone();
     let path_for_worker = path.clone();
     let summary = tauri::async_runtime::spawn_blocking(move || {
@@ -103,6 +112,11 @@ pub async fn get_current_truck_summary(
     })
     .await
     .map_err(|error| format!("get_current_truck_summary join failed: {}", error))??;
+    let _publication = crate::features::save_editor::safety::mutation_lock()?;
+    crate::features::save_editor::safety::ensure_read_current(
+        profile_state.inner(),
+        &read_revision,
+    )?;
 
     dev_log!("truck_summary parsed successfully");
     profile_cache.cache_current_truck_summary(path_key, summary.clone());
@@ -145,14 +159,26 @@ fn summary_from_quicksave(data: &GameDataQuicksave) -> Option<CurrentTruckSummar
 fn parse_current_truck_summary_from_content(
     content: &str,
 ) -> Result<Option<CurrentTruckSummary>, String> {
-    let (_, player_block) = match extract_first_block(content, "player")? {
-        Some(value) => value,
-        None => return Ok(None),
-    };
-
-    let truck_id = match extract_reference_value(&player_block, "my_truck") {
-        Some(value) => value,
-        None => return Ok(None),
+    let document = crate::features::save_editor::document::Document::parse(content)?;
+    let economy = document.unique("economy")?;
+    let player = document.resolve(document.field(economy, "player")?, "player")?;
+    let player_block = &content[player.span.clone()];
+    let truck_id = document
+        .field(player, "my_truck")
+        .ok()
+        .filter(|id| !crate::features::truck_change::parser::is_null_ref(id))
+        .map(str::to_string)
+        .or_else(|| {
+            let assigned = document.field(player, "assigned_vehicles").ok()?;
+            let slot = document.resolve(assigned, "player_vehicles").ok()?;
+            document
+                .field(slot, "vehicle")
+                .ok()
+                .filter(|id| !crate::features::truck_change::parser::is_null_ref(id))
+                .map(str::to_string)
+        });
+    let Some(truck_id) = truck_id else {
+        return Ok(None);
     };
 
     let vehicle_block = match extract_named_block(content, "vehicle", &truck_id)? {
@@ -479,13 +505,19 @@ fn build_quicksave_game_info_from_path(
         &[("path", path.display().to_string())],
     );
 
-    let (player_id, player_block) = extract_first_block(&content, "player")?
-        .ok_or_else(|| "Player block not found".to_string())?;
-    let player_my_truck = extract_reference_value(&player_block, "my_truck");
-    let player_my_trailer = extract_reference_value(&player_block, "my_trailer");
-    let player_xp = extract_integer_field(&content, "experience_points");
-    let bank_id = extract_first_block(&content, "bank")?.map(|(id, _)| id);
-    let skill = |name: &str| -> Option<i64> { extract_integer_field(&content, name) };
+    let document = crate::features::save_editor::document::Document::parse(&content)?;
+    let economy = document.unique("economy")?;
+    let player = document.resolve(document.field(economy, "player")?, "player")?;
+    let player_id = player.id.clone();
+    let player_block = &content[player.span.clone()];
+    let player_my_truck = extract_reference_value(player_block, "my_truck");
+    let player_my_trailer = extract_reference_value(player_block, "my_trailer");
+    let player_xp = document
+        .field(economy, "experience_points")
+        .ok()
+        .and_then(|value| value.parse().ok());
+    let bank_id = document.bank().ok().map(|unit| unit.id.clone());
+    let skill = |name: &str| -> Option<i64> { document.field(economy, name).ok()?.parse().ok() };
     let truck_summary = parse_current_truck_summary_from_content(&content)?;
 
     let result = GameDataQuicksave {

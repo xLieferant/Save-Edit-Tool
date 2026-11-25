@@ -1,11 +1,8 @@
 use crate::dev_log;
 use crate::features::backup::service as backup_service;
 use crate::features::logging::service as logging_service;
-use crate::shared::current_profile::require_current_profile;
 use crate::shared::decrypt::decrypt_if_needed;
-use crate::shared::paths::{autosave_path, ets2_base_config_path};
 use crate::state::{AppProfileState, ProfileCache};
-use regex::Regex;
 use serde::Deserialize;
 use serde_json::Value;
 use std::path::Path;
@@ -43,7 +40,13 @@ fn write_text_with_auto_backup(
     action_reason: &str,
     success_message: &str,
     content: &str,
+    before: &str,
 ) -> Result<(), String> {
+    let _mutation = crate::features::save_editor::safety::mutation_lock()?;
+    let raw = crate::features::save_editor::safety::read_source(profile_state, path)?;
+    if crate::shared::decrypt::decode_text_bytes(&raw, "active_setting", &[])? != before {
+        return Err("save_changed_since_load".into());
+    }
     let mut context = logging_service::resolve_active_context(profile_state);
     context.extra.insert(
         "target".to_string(),
@@ -73,23 +76,17 @@ fn write_text_with_auto_backup(
     context
         .extra
         .insert("backupId".to_string(), backup.backup_id);
-    fs::write(path, content.as_bytes()).map_err(|error| {
-        let technical = error.to_string();
-        let _ = logging_service::record_error(
-            action,
-            Some("write_failed"),
-            "The setting change could not be written.",
-            Some(&technical),
-            &context,
-        );
-        "Einstellungsänderung konnte nicht gespeichert werden.".to_string()
-    })?;
+    crate::features::save_editor::safety::write_atomic_checked(path, &raw, content, |_| Ok(()))?;
+    if path.file_name().is_some_and(|name| name == "game.sii") {
+        crate::features::save_editor::safety::remember_save(profile_state, path)?;
+    }
 
     let _ = logging_service::record_info(action, success_message, &context);
     Ok(())
 }
 
-#[command]
+#[cfg_attr(not(test), command(async))]
+#[cfg_attr(test, command)]
 pub fn apply_setting(
     payload: ApplyPayload,
     profile_state: State<'_, AppProfileState>,
@@ -118,8 +115,7 @@ pub fn apply_setting(
             };
 
             // 1. Pfad ermitteln
-            let path = ets2_base_config_path()
-                .ok_or("Konnte Pfad zur globalen config.cfg nicht finden.")?;
+            let path = crate::features::save_editor::safety::config_path(profile_state.inner())?;
 
             if !path.exists() {
                 return Err(format!("Datei nicht gefunden: {:?}", path));
@@ -129,21 +125,8 @@ pub fn apply_setting(
             let content = fs::read_to_string(&path)
                 .map_err(|e| format!("Fehler beim Lesen der Config: {}", e))?;
 
-            // 3. Regex: Sucht nach 'uset KEY "WERT"'
-            // Wir bauen den Regex dynamisch basierend auf dem Key
-            let re_str = format!(r#"(uset {}\s*)"?[\d\.]+"?"#, regex::escape(config_key));
-            let re = Regex::new(&re_str).map_err(|e| e.to_string())?;
-
-            if !re.is_match(&content) {
-                return Err(format!(
-                    "Eintrag '{}' in config.cfg nicht gefunden.",
-                    config_key
-                ));
-            }
-
-            // 4. Ersetzen
-            let replacement = format!(r#"${{1}}"{}"#, val_str);
-            let new_content = re.replace(&content, replacement).to_string();
+            let new_content =
+                super::game_config::patch_config_value(&content, config_key, &val_str)?;
 
             // 5. Schreiben
             write_text_with_auto_backup(
@@ -153,6 +136,7 @@ pub fn apply_setting(
                 &format!("before apply setting {}", config_key),
                 "A global config setting was updated.",
                 &new_content,
+                &content,
             )?;
 
             profile_cache.invalidate_base_config();
@@ -167,36 +151,22 @@ pub fn apply_setting(
         // SAVE GAME (game.sii) - Money, XP
         // ---------------------------------------------------------------------
         "money" | "xp" => {
-            // 1. Profil prüfen
-            let profile = require_current_profile(profile_state.clone())?;
-
-            let path = autosave_path(&profile);
-
-            // 2. Datei entschlüsseln & lesen
-            let content = decrypt_if_needed(&path)?;
-
-            // 3. Regex Muster auswählen
-            let (regex_str, replacement_prefix) = match payload.key.as_str() {
-                "money" => (r"info_money_account:\s*\d+", "info_money_account: "),
-                "xp" => (
-                    r"info_players_experience:\s*\d+",
-                    "info_players_experience: ",
-                ),
-                _ => unreachable!(),
+            let path = crate::features::save_editor::safety::active_save(profile_state.inner())?;
+            let raw =
+                crate::features::save_editor::safety::read_source(profile_state.inner(), &path)?;
+            let content = crate::shared::decrypt::decode_text_bytes(&raw, "setting_edit", &[])?;
+            let value = val_str
+                .parse::<i64>()
+                .map_err(|_| "setting_value_invalid")?;
+            let new_content = if payload.key == "money" {
+                crate::features::save_editor::document::patch_money(&content, value)?
+            } else {
+                crate::features::save_editor::coaches::patch_xp(
+                    &content,
+                    crate::features::save_editor::coaches::Career::Truck,
+                    value,
+                )?
             };
-
-            let re = Regex::new(regex_str)
-                .map_err(|e| format!("Fehler beim Vorbereiten der Save-Regel: {}", e))?;
-            if !re.is_match(&content) {
-                return Err(format!(
-                    "Eintrag für '{}' in game.sii nicht gefunden.",
-                    payload.key
-                ));
-            }
-
-            // 4. Ersetzen
-            let replacement = format!("{}{}", replacement_prefix, val_str);
-            let new_content = re.replace(&content, replacement).to_string();
 
             // 5. Schreiben
             write_text_with_auto_backup(
@@ -206,6 +176,7 @@ pub fn apply_setting(
                 &format!("before apply setting {}", payload.key),
                 "A save setting was updated.",
                 &new_content,
+                &content,
             )?;
 
             profile_cache.invalidate_save_data();

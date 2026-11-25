@@ -1,5 +1,5 @@
 import { SETTINGS_MAP } from "./settings.map.js";
-const { invoke } = window.__TAURI__.core;
+import { diagnosticInvoke as invoke } from "../modules/shared/diagnostics_runtime.js";
 
 export async function applySetting(settingId, rawValue) {
   const cfg = SETTINGS_MAP[settingId];
@@ -30,9 +30,7 @@ export async function applySetting(settingId, rawValue) {
   }
 
   await invoke("apply_setting", {
-    key: cfg.key,
-    value: String(value),
-    fileType: cfg.file
+    payload: { key: cfg.key, value: String(value) }
   });
 
   await autoReload(cfg.reload);

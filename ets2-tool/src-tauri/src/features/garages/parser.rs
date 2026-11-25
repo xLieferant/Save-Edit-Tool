@@ -121,6 +121,20 @@ pub fn parse_ai_driver_management_from_sii(
         .filter(|value| !is_null_ref(value))
         .map(|value| normalize_reference(&value))
         .collect::<HashSet<_>>();
+    let mut active_player_trucks = active_player_trucks;
+    if let Some(slot_id) =
+        extract_field_value(&player.raw_block, "assigned_vehicles").filter(|id| !is_null_ref(id))
+    {
+        if let Some(slot) = optional_unique_typed_block(&blocks, "player_vehicles", &slot_id)? {
+            if let Some(id) =
+                extract_field_value(&slot.raw_block, "vehicle").filter(|id| !is_null_ref(id))
+            {
+                active_player_trucks.insert(normalize_reference(&id));
+            }
+        } else {
+            return Err("ai_driver_player_vehicle_unresolved".into());
+        }
+    }
     let mut available_trucks = Vec::new();
     for garage in garages
         .iter()
@@ -678,7 +692,7 @@ fn driver_display_name(block: &UnitBlock) -> Option<String> {
     (!combined.is_empty()).then_some(combined)
 }
 
-fn driver_has_active_job(driver: &UnitBlock, blocks: &[UnitBlock]) -> bool {
+pub(crate) fn driver_has_active_job(driver: &UnitBlock, blocks: &[UnitBlock]) -> bool {
     if optional_i32_field(driver, "state").is_some_and(|state| state == 2) {
         return true;
     }
@@ -688,14 +702,17 @@ fn driver_has_active_job(driver: &UnitBlock, blocks: &[UnitBlock]) -> bool {
     if is_null_ref(&job_id) {
         return false;
     }
-    blocks
+    let matching = blocks
         .iter()
-        .find(|block| block.unit_type == "job_info" && block.id == job_id)
-        .is_some_and(|job| {
-            ["cargo", "source_company", "target_company"]
-                .into_iter()
-                .filter_map(|field| extract_field_value(&job.raw_block, field))
-                .any(|value| !is_null_ref(&value))
+        .filter(|block| block.unit_type == "job_info" && block.id == job_id)
+        .collect::<Vec<_>>();
+    let [job] = matching.as_slice() else {
+        return true;
+    };
+    ["cargo", "source_company", "target_company"]
+        .into_iter()
+        .any(|field| {
+            extract_field_value(&job.raw_block, field).is_none_or(|value| !is_null_ref(&value))
         })
 }
 

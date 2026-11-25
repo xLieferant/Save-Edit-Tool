@@ -620,17 +620,15 @@ fn apply_sync_player_xp_level_fix(
     profile_cache: &ProfileCache,
     decrypt_cache: &DecryptCache,
 ) -> Result<SaveHealthFixResultDto, String> {
-    let resolved = snapshot_resolved_save_context(profile_state)
-        .map_err(|error| format!("Failed to resolve active save context: {}", error))?;
-    let save_reference = resolved
-        .context
-        .save_reference
-        .ok_or_else(|| "No active save was available for the safe fix.".to_string())?;
-    let save_path = game_sii_from_save(Path::new(&save_reference));
-    let content = decrypt_if_needed(&save_path)?;
-    let xp_main = capture_number(&content, r"(?m)^\s*experience_points:\s*(\d+)")
-        .or_else(|| capture_number(&content, r"info_players_experience:\s*(\d+)"))
-        .ok_or_else(|| "The player XP fields could not be found in the active save.".to_string())?;
+    let _mutation = crate::features::save_editor::safety::mutation_lock()?;
+    let save_path = crate::features::save_editor::safety::active_save(profile_state)?;
+    let raw = crate::features::save_editor::safety::read_source(profile_state, &save_path)?;
+    let content = crate::shared::decrypt::decode_text_bytes(&raw, "health_fix", &[])?;
+    let document = crate::shared::sii_document::Document::parse(&content)?;
+    let xp_main = document
+        .field(document.unique("economy")?, "experience_points")?
+        .parse::<i64>()
+        .map_err(|_| "xp_invalid")?;
     let derived_level = level_from_xp(xp_main);
 
     let backup_targets = backup_service::recommended_targets(&save_path);
@@ -649,7 +647,25 @@ fn apply_sync_player_xp_level_fix(
         )
         .to_string();
 
-    fs::write(&save_path, new_content.as_bytes()).map_err(|error| error.to_string())?;
+    crate::features::save_editor::safety::write_atomic_checked(
+        &save_path,
+        &raw,
+        &new_content,
+        |candidate| {
+            let written = fs::read_to_string(candidate).map_err(|_| "save_verification_failed")?;
+            let document = crate::shared::sii_document::Document::parse(&written)?;
+            if document
+                .field(document.unique("economy")?, "experience_points")?
+                .parse::<i64>()
+                .ok()
+                != Some(xp_main)
+            {
+                return Err("save_verification_failed".into());
+            }
+            Ok(())
+        },
+    )?;
+    crate::features::save_editor::safety::remember_save(profile_state, &save_path)?;
     decrypt_cache.invalidate_path(&save_path);
     profile_cache.invalidate_save_data();
     profile_cache.invalidate_vehicle_data();

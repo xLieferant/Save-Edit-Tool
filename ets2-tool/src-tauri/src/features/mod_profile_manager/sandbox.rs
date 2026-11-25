@@ -1120,6 +1120,24 @@ pub fn activate_sandbox_mod_preset_profile_sii(
         .filter(|value| !value.trim().is_empty())
         .map(|value| value.trim().to_ascii_lowercase())
         .unwrap_or_else(|| game_key_from_app_id(resolved_app_id).to_string());
+    let selected_game = crate::features::save_editor::safety::selected_game(profile_state)?;
+    let requested_game = crate::shared::game::GameType::try_from(resolved_game.as_str())?;
+    if selected_game != requested_game
+        || requested_game.app_id() != resolved_app_id.to_string()
+        || preset
+            .game
+            .as_deref()
+            .is_some_and(|game| !game.eq_ignore_ascii_case(requested_game.as_str()))
+        || preset
+            .app_id
+            .is_some_and(|app_id| app_id != resolved_app_id)
+        || preset
+            .mods
+            .iter()
+            .any(|entry| entry.app_id != resolved_app_id)
+    {
+        return Err("preset_game_mismatch".into());
+    }
     let mut progress_log = vec![
         "Preset geladen".to_string(),
         format!("Loading preset {}.", preset.id),
@@ -1205,6 +1223,10 @@ pub fn activate_sandbox_mod_preset_profile_sii(
             ));
         }
     };
+    crate::features::save_editor::safety::validate_profile_game(
+        Path::new(&active_profile_path),
+        selected_game,
+    )?;
     if is_game_process_running_for_app_id(resolved_app_id) {
         return Ok(profile_activation_failure_result(
             &preset.id,

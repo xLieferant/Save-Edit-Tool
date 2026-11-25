@@ -25,17 +25,20 @@ const placeholders = (text) => [...String(text).matchAll(/\{([A-Za-z_][\w]*)\}/g
 for (const [language, entries] of Object.entries(locales)) {
   for (const [key, english] of Object.entries(master)) {
     if (!(key in entries)) {
-      (language === "de" ? errors : warnings).push(`${language}: missing ${key} (English fallback)`);
+      errors.push(`${language}: missing ${key} (English fallback)`);
     } else if (typeof entries[key] !== "string" || !entries[key].trim()) {
       errors.push(`${language}: empty or non-string value for ${key}`);
     } else if (placeholders(english) !== placeholders(entries[key])) {
       errors.push(`${language}: placeholder mismatch for ${key}`);
     }
-    if (language === "de" && /\[NEEDS TRANSLATION\]/i.test(entries[key] || "")) {
-      errors.push(`de: untranslated marker for ${key}`);
-    }
   }
   for (const key of Object.keys(entries)) {
+    if (/NEEDS TRANSLATION|TODO TRANSLATION/i.test(String(entries[key]))) {
+      errors.push(`${language}: untranslated marker for ${key}`);
+    }
+    if (typeof entries[key] !== "string" || !entries[key].trim()) {
+      if (!(key in master)) errors.push(`${language}: empty or non-string value for ${key}`);
+    }
     if (!(key in master)) warnings.push(`${language}: key without English entry: ${key}`);
   }
 }
@@ -68,6 +71,8 @@ const report = {
   locales: Object.keys(locales), englishKeys: Object.keys(master).length,
   germanKeys: Object.keys(locales.de).length, literalReferences: referenced.size,
   errors, warnings, unassignedCandidates: unused,
+  localeKeys: Object.fromEntries(Object.entries(locales).map(([language, entries]) => [language, Object.keys(entries).length])),
+  untranslatedMarkers: Object.values(locales).reduce((count, entries) => count + Object.values(entries).filter((value) => /NEEDS TRANSLATION|TODO TRANSLATION/i.test(String(value))).length, 0),
   note: "Unassigned candidates may be used by dynamic keys. This check does not prove that all UI text is localized.",
 };
 if (process.argv.includes("--json")) console.log(JSON.stringify(report, null, 2));

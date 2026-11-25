@@ -55,30 +55,34 @@ pub fn set_ets2_data_location_mode(
     decrypt_cache: State<'_, DecryptCache>,
     profile_cache: State<'_, ProfileCache>,
 ) -> Result<Ets2DataLocationDto, String> {
-    crate::shared::logs::diagnostic::with_operation("profile_paths", "set_ets2_data_location_mode", || {
-    match mode.trim().to_ascii_lowercase().as_str() {
-        "default" => save_ets2_path_settings(&Ets2PathSettings::default())?,
-        "custom" => {
-            let existing = read_ets2_path_settings();
-            let raw_path = custom_homedir
-                .filter(|value| !value.trim().is_empty())
-                .or(existing.custom_homedir)
-                .ok_or_else(|| "Select a custom ETS2 data location first.".to_string())?;
-            let custom_path = normalize_user_path_input(&raw_path)
-                .ok_or_else(|| "The custom ETS2 data location is empty.".to_string())?;
-            save_custom_location(custom_path)?;
-        }
-        _ => return Err("Invalid ETS2 data location mode.".to_string()),
-    }
+    crate::shared::logs::diagnostic::with_operation(
+        "profile_paths",
+        "set_ets2_data_location_mode",
+        || {
+            match mode.trim().to_ascii_lowercase().as_str() {
+                "default" => save_ets2_path_settings(&Ets2PathSettings::default())?,
+                "custom" => {
+                    let existing = read_ets2_path_settings();
+                    let raw_path = custom_homedir
+                        .filter(|value| !value.trim().is_empty())
+                        .or(existing.custom_homedir)
+                        .ok_or_else(|| "Select a custom ETS2 data location first.".to_string())?;
+                    let custom_path = normalize_user_path_input(&raw_path)
+                        .ok_or_else(|| "The custom ETS2 data location is empty.".to_string())?;
+                    save_custom_location(custom_path)?;
+                }
+                _ => return Err("Invalid ETS2 data location mode.".to_string()),
+            }
 
-    reset_runtime_after_location_change(
-        &app,
-        profile_state.inner(),
-        decrypt_cache.inner(),
-        profile_cache.inner(),
-    )?;
-    Ok(ets2_data_location_dto())
-    })
+            reset_runtime_after_location_change(
+                &app,
+                profile_state.inner(),
+                decrypt_cache.inner(),
+                profile_cache.inner(),
+            )?;
+            Ok(ets2_data_location_dto())
+        },
+    )
 }
 
 #[tauri::command]
@@ -88,16 +92,20 @@ pub fn reset_ets2_data_location(
     decrypt_cache: State<'_, DecryptCache>,
     profile_cache: State<'_, ProfileCache>,
 ) -> Result<Ets2DataLocationDto, String> {
-    crate::shared::logs::diagnostic::with_operation("profile_paths", "reset_ets2_data_location", || {
-    save_ets2_path_settings(&Ets2PathSettings::default())?;
-    reset_runtime_after_location_change(
-        &app,
-        profile_state.inner(),
-        decrypt_cache.inner(),
-        profile_cache.inner(),
-    )?;
-    Ok(ets2_data_location_dto())
-    })
+    crate::shared::logs::diagnostic::with_operation(
+        "profile_paths",
+        "reset_ets2_data_location",
+        || {
+            save_ets2_path_settings(&Ets2PathSettings::default())?;
+            reset_runtime_after_location_change(
+                &app,
+                profile_state.inner(),
+                decrypt_cache.inner(),
+                profile_cache.inner(),
+            )?;
+            Ok(ets2_data_location_dto())
+        },
+    )
 }
 
 fn save_custom_location(custom_homedir: PathBuf) -> Result<(), String> {

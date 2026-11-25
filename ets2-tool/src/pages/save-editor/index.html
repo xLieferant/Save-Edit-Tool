@@ -168,6 +168,7 @@
                 <span class="editor-section-label" data-translate="editor.status_label">Workspace Status</span>
               </div>
               <p id="profile-status" class="profile-status"></p>
+              <p id="saveFormatStatus" class="save-format-status" role="status" aria-live="polite" data-translate="save_format.checking"></p>
 
               <div class="editor-session-grid">
                 <div class="game-switch">
@@ -202,6 +203,7 @@
                     </button>
                     <div id="profileDropdownList" class="custom-dropdown-list dropdown-menu picker-menu picker-menu--profile" role="listbox"></div>
                   </div>
+                  <p class="local-profile-hint" data-translate="save_format.local_profile_hint"></p>
 
                   <div class="save-picker editor-picker editor-picker--save" tabindex="0" role="button" aria-haspopup="listbox" aria-expanded="false">
                     <div class="picker-copy">
@@ -218,7 +220,7 @@
                 </div>
 
                 <div class="editor-picker-actions">
-                  <button id="refreshBtn" class="nav-action editor-picker-action" type="button" data-translate="editor.refresh_button">Scan Profiles</button>
+                  <button id="refreshBtn" class="nav-action editor-picker-action" type="button" data-translate="editor.refresh_button" data-translate-title="desktop.refresh_hint">Scan Profiles</button>
                 </div>
               </div>
             </section>
@@ -982,8 +984,16 @@
                   <span data-translate="modals.wiki.sections.shortcuts.f3">Open the Profile section.</span>
                 </div>
                 <div class="wiki-shortcut-item" role="listitem">
-                  <kbd>F4</kbd>
-                  <span data-translate="modals.wiki.sections.shortcuts.f4">Open the Settings section.</span>
+                  <kbd>F6</kbd>
+                  <span data-translate="desktop.settings_hint"></span>
+                </div>
+                <div class="wiki-shortcut-item" role="listitem">
+                  <kbd>F5 / Ctrl+R</kbd>
+                  <span data-translate="desktop.refresh_hint"></span>
+                </div>
+                <div class="wiki-shortcut-item" role="listitem">
+                  <kbd>Ctrl+S</kbd>
+                  <span data-translate="desktop.save_hint"></span>
                 </div>
                 <div class="wiki-shortcut-item" role="listitem">
                   <kbd>ESC</kbd>

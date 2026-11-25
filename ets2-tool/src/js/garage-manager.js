@@ -733,6 +733,10 @@ export async function mountGarageManager(container) {
     resetFiltersButton.disabled = count === 0;
   }
 
+  function garageWritesSupported() {
+    return state.result?.writeSupported ?? state.result?.game === "ets2";
+  }
+
   function renderSummary() {
     if (state.loading && !state.result) {
       summaryElement.innerHTML = Array.from(
@@ -802,7 +806,7 @@ export async function mountGarageManager(container) {
   }
 
   function renderNotice() {
-    const isReadOnly = state.result && state.result.game !== "ets2";
+    const isReadOnly = state.result && !garageWritesSupported();
     const notices = [];
     if (isReadOnly) {
       notices.push("<p>" + escapeHtml(copy.atsReadOnly) + "</p>");
@@ -918,7 +922,7 @@ export async function mountGarageManager(container) {
 
   function renderGarageCard(garage) {
     const owned = garage.ownership === "owned";
-    const readOnly = state.result?.game !== "ets2";
+    const readOnly = !garageWritesSupported();
     const blocked = garageIsBlocked(garage);
     const canMutate = !readOnly && !blocked && !state.mutationPending;
     const badges = (garage.isHeadquarters
@@ -1015,18 +1019,18 @@ export async function mountGarageManager(container) {
     aiDriversButton.disabled = state.loading
       || state.mutationPending
       || !state.result
-      || state.result.game !== "ets2";
+      || !(state.result.aiDriversSupported ?? state.result.game === "ets2");
     sellEmptyButton.disabled = state.loading
       || state.mutationPending
       || !state.result
-      || state.result.game !== "ets2";
+      || !garageWritesSupported();
     sellEmptyButton.textContent = state.bulkMutationOperation === "relinquish_empty"
       ? copy.relinquishingEmpty
       : copy.relinquishEmpty;
     buyAllButton.disabled = state.loading
       || state.mutationPending
       || !state.result
-      || state.result.game !== "ets2";
+      || !garageWritesSupported();
     buyAllButton.textContent = state.bulkMutationOperation === "purchase_all"
       ? copy.purchasingAll
       : copy.purchaseAll;
@@ -1056,7 +1060,7 @@ export async function mountGarageManager(container) {
       }
       state.result = result;
       try {
-        state.aiDrivers = result.game === "ets2"
+        state.aiDrivers = (result.aiDriversSupported ?? result.game === "ets2")
           ? await window.invoke("get_ai_driver_management")
           : null;
         state.aiDriverError = null;
@@ -1203,7 +1207,7 @@ export async function mountGarageManager(container) {
     renderList();
     const driverIds = (garage.slots || []).map((slot) => slot.driverId).filter(Boolean);
     const truckIds = (garage.slots || []).map((slot) => slot.truckId).filter(Boolean);
-    const readOnly = state.result?.game !== "ets2";
+    const readOnly = !garageWritesSupported();
     const blocked = garageIsBlocked(garage);
     const lastResult = state.lastMutationResult?.garageId === garage.garageId
       ? state.lastMutationResult
@@ -1379,7 +1383,7 @@ export async function mountGarageManager(container) {
   }
 
   function openSellEmptyDialog() {
-    if (!state.result || state.result.game !== "ets2" || state.mutationPending) return;
+    if (!state.result || !garageWritesSupported() || state.mutationPending) return;
     const relinquishCount = allGarages().filter(canRelinquishGarage).length;
     const configuration = {
       failureTitle: copy.relinquishEmptyFailureTitle,
@@ -1466,7 +1470,7 @@ export async function mountGarageManager(container) {
     });
   }
   function openBuyAllDialog() {
-    if (!state.result || state.result.game !== "ets2" || state.mutationPending) return;
+    if (!state.result || !garageWritesSupported() || state.mutationPending) return;
     const purchaseCount = allGarages()
       .filter((garage) => garage.ownership === "not_owned")
       .length;
@@ -1732,7 +1736,7 @@ export async function mountGarageManager(container) {
   }
 
   function openAiDriverManager() {
-    if (!state.result || state.result.game !== "ets2" || state.mutationPending) return;
+    if (!state.result || !garageWritesSupported() || state.mutationPending) return;
     if (state.aiDriverError || !state.aiDrivers) {
       const body = stateCard(
         copy.aiDriverLoadFailure,
@@ -1934,7 +1938,7 @@ export async function mountGarageManager(container) {
 
   function openAssignmentDialog(garageId, returnFocus = null) {
     const garage = findGarage(garageId);
-    if (!garage || state.result?.game !== "ets2" || garageIsBlocked(garage)) return;
+    if (!garage || !garageWritesSupported() || garageIsBlocked(garage)) return;
     const configuration = {
       failureTitle: copy.assignResourcesFailureTitle,
       command: "assign_random_garage_resources",
@@ -2049,7 +2053,7 @@ export async function mountGarageManager(container) {
   }
   function openActionDialog(garageId, operation, returnFocus = null) {
     const garage = findGarage(garageId);
-    if (!garage || state.result?.game !== "ets2" || garageIsBlocked(garage)) return;
+    if (!garage || !garageWritesSupported() || garageIsBlocked(garage)) return;
     const configuration = operationConfiguration(garage, operation);
     if (!configuration) return;
     const comparison = "<div class='garage-state-comparison'><article><span>"

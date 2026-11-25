@@ -224,115 +224,150 @@ pub fn apply_active_trailer_switch_transaction(
     decrypt_cache: &DecryptCache,
     trailer_change_cache: &TrailerChangeSessionCache,
 ) -> Result<ApplyTrailerChangeResult, String> {
-    crate::shared::logs::diagnostic::with_operation("trailer_editor", "apply_active_trailer_switch_transaction", || {
-    let started_at = Instant::now();
-    let profile_id = current_profile_id(profile_state)?;
-    let game_path = resolve_game_sii_path(save_path_arg, profile_state)?;
-    decrypt_cache.invalidate_path(&game_path);
-    let content = decrypt_cached_with_cache(&game_path, decrypt_cache)?;
-    let actual_hash = sha256_hex(content.as_bytes());
-    if actual_hash != expected_file_hash {
-        return Err("save_changed_since_preview".to_string());
-    }
+    crate::shared::logs::diagnostic::with_operation(
+        "trailer_editor",
+        "apply_active_trailer_switch_transaction",
+        || {
+            let _mutation = crate::features::save_editor::safety::mutation_lock()?;
+            // Persistent backups are mandatory for save mutations, including legacy callers.
+            let _ = create_persistent_backup;
+            let create_persistent_backup = true;
+            let started_at = Instant::now();
+            let profile_id = current_profile_id(profile_state)?;
+            let game_path = resolve_game_sii_path(save_path_arg, profile_state)?;
+            let selected = crate::features::save_editor::safety::active_save(profile_state)?;
+            if std::fs::canonicalize(&game_path).map_err(|_| "save_path_invalid")? != selected {
+                return Err("save_selection_changed".into());
+            }
+            let original_raw =
+                crate::features::save_editor::safety::read_source(profile_state, &selected)?;
 
-    let parsed_before = parse_trailer_save(&content);
-    let current_pointer = resolve_current_trailer_pointer(&parsed_before)?;
-    let preview = preview_active_trailer_switch_from_content(
-        &game_path,
-        &content,
-        &target_trailer_id,
-        &expected_file_hash,
-    );
-    if !preview.can_apply {
-        return Err(preview
-            .error_code
-            .unwrap_or_else(|| "preview_blocked".to_string()));
-    }
+            decrypt_cache.invalidate_path(&game_path);
+            let content =
+                crate::shared::decrypt::decode_text_bytes(&original_raw, "switch_source", &[])?;
+            let actual_hash = sha256_hex(content.as_bytes());
+            if actual_hash != expected_file_hash {
+                return Err("save_changed_since_preview".to_string());
+            }
 
-    let mut rollback = TemporaryRollbackSnapshot::create(&game_path)?;
-    let backup_result = if create_persistent_backup {
-        backup_service::create_backup_for_targets(
-            profile_state,
-            "change trailer on the road",
-            &backup_service::recommended_targets(&game_path),
-        )
-        .map(Some)
-        .map_err(|error| format!("backup_failed:{}", error))?
-    } else {
-        None
-    };
+            let parsed_before = parse_trailer_save(&content);
+            let current_pointer = resolve_current_trailer_pointer(&parsed_before)?;
+            let preview = preview_active_trailer_switch_from_content(
+                &game_path,
+                &content,
+                &target_trailer_id,
+                &expected_file_hash,
+            );
+            if !preview.can_apply {
+                return Err(preview
+                    .error_code
+                    .unwrap_or_else(|| "preview_blocked".to_string()));
+            }
 
-    let apply_plan = apply_switch_to_content(
-        &content,
-        &parsed_before,
-        &current_pointer,
-        &target_trailer_id,
-    )?;
-    let previous_trailer_id = apply_plan.previous_trailer_id.clone();
-    let expected_target = target_trailer_id.clone();
-    let verify_before_write = |candidate: &str| {
-        let validation = validate_trailer_switch_content(candidate, &expected_target);
-        if validation.success {
-            Ok(())
-        } else {
-            Err(format!(
-                "write_verification_failed:{}",
-                validation.errors.join(",")
-            ))
-        }
-    };
-    if let Err(error) = write_verified_content(&game_path, &apply_plan.content, verify_before_write)
-    {
-        let _ = rollback.restore();
-        return Err(format!("write_failed:{}", error));
-    }
+            let mut rollback =
+                TemporaryRollbackSnapshot::create_if_current(&game_path, &original_raw)?;
+            let backup_result = if create_persistent_backup {
+                backup_service::create_backup_for_targets(
+                    profile_state,
+                    "change trailer on the road",
+                    &backup_service::recommended_targets(&game_path),
+                )
+                .map(Some)
+                .map_err(|error| format!("backup_failed:{}", error))?
+            } else {
+                None
+            };
 
-    decrypt_cache.invalidate_path(&game_path);
-    let refreshed_content = decrypt_cached_with_cache(&game_path, decrypt_cache)?;
-    let validation = validate_trailer_switch_content(&refreshed_content, &target_trailer_id);
-    if !validation.success {
-        let _ = rollback.restore();
-        return Err("verification_failed".to_string());
-    }
+            let apply_plan = apply_switch_to_content(
+                &content,
+                &parsed_before,
+                &current_pointer,
+                &target_trailer_id,
+            )?;
+            let previous_trailer_id = apply_plan.previous_trailer_id.clone();
+            let expected_target = target_trailer_id.clone();
+            let verify_before_write = |candidate: &str| {
+                let validation = validate_trailer_switch_content(candidate, &expected_target);
+                if validation.success {
+                    Ok(())
+                } else {
+                    Err(format!(
+                        "write_verification_failed:{}",
+                        validation.errors.join(",")
+                    ))
+                }
+            };
+            if crate::features::save_editor::safety::active_save(profile_state)? != selected
+                || std::fs::read(&game_path).map_err(|_| "save_read_failed")? != original_raw
+            {
+                return Err("save_changed_since_preview".into());
+            }
+            if let Err(error) = super::writer::write_verified_content_if_current(
+                &game_path,
+                &original_raw,
+                &apply_plan.content,
+                verify_before_write,
+            ) {
+                let _ = rollback.restore_if_current(apply_plan.content.as_bytes());
+                return Err(format!("write_failed:{}", error));
+            }
 
-    invalidate_after_write(&game_path, profile_cache, decrypt_cache);
-    trailer_change_cache.invalidate_save(&profile_id, &game_path);
-    let refreshed_session = initialize_trailer_change_session_from_content(
-        &profile_id,
-        &game_path,
-        &refreshed_content,
-        trailer_change_cache,
-    )?;
-    rollback.cleanup()?;
-    let file_hash_after = sha256_hex(refreshed_content.as_bytes());
-    write_trailer_change_log(
-        "info",
-        vec![
-            "Action: Apply trailer change completed".to_string(),
-            format!("Previous trailer: {}", previous_trailer_id),
-            format!("Active trailer: {}", target_trailer_id),
-            format!("Duration ms: {}", started_at.elapsed().as_millis()),
-        ],
-    );
+            decrypt_cache.invalidate_path(&game_path);
+            let refreshed_content = decrypt_cached_with_cache(&game_path, decrypt_cache)?;
+            let validation =
+                validate_trailer_switch_content(&refreshed_content, &target_trailer_id);
+            if !validation.success {
+                let _ = rollback.restore_if_current(apply_plan.content.as_bytes());
+                return Err("verification_failed".to_string());
+            }
 
-    crate::shared::logs::diagnostic::verified_write("trailer_editor", "apply_active_trailer_switch_transaction",
-        backup_result.as_ref().map(|backup| backup.backup_id.clone()), actual_hash != file_hash_after, false);
-    Ok(ApplyTrailerChangeResult {
-        success: true,
-        backup_id: backup_result
-            .as_ref()
-            .map(|backup| backup.backup_id.clone()),
-        persistent_backup_created: backup_result.is_some(),
-        temporary_rollback_used: true,
-        temporary_rollback_cleaned: rollback.cleaned(),
-        previous_trailer_id,
-        active_trailer_id: target_trailer_id,
-        file_hash_before: actual_hash,
-        file_hash_after,
-        validation,
-        refreshed_session,
-    })
-    })
+            crate::features::save_editor::safety::remember_save(profile_state, &selected)?;
+            invalidate_after_write(&game_path, profile_cache, decrypt_cache);
+            trailer_change_cache.invalidate_save(&profile_id, &game_path);
+            let refreshed_session = initialize_trailer_change_session_from_content(
+                &profile_id,
+                &game_path,
+                &refreshed_content,
+                trailer_change_cache,
+            )?;
+            rollback.cleanup()?;
+            let file_hash_after = sha256_hex(refreshed_content.as_bytes());
+            write_trailer_change_log(
+                "info",
+                vec![
+                    "Action: Apply trailer change completed".to_string(),
+                    format!("Previous trailer: {}", previous_trailer_id),
+                    format!("Active trailer: {}", target_trailer_id),
+                    format!("Duration ms: {}", started_at.elapsed().as_millis()),
+                ],
+            );
+
+            crate::shared::logs::diagnostic::verified_write(
+                "trailer_editor",
+                "apply_active_trailer_switch_transaction",
+                backup_result
+                    .as_ref()
+                    .map(|backup| backup.backup_id.clone()),
+                actual_hash != file_hash_after,
+                false,
+            );
+            Ok(ApplyTrailerChangeResult {
+                success: true,
+                backup_id: backup_result
+                    .as_ref()
+                    .map(|backup| backup.backup_id.clone()),
+                persistent_backup_created: backup_result.is_some(),
+                temporary_rollback_used: true,
+                temporary_rollback_cleaned: rollback.cleaned(),
+                previous_trailer_id,
+                active_trailer_id: target_trailer_id,
+                file_hash_before: actual_hash,
+                file_hash_after,
+                validation,
+                refreshed_session,
+            })
+        },
+    )
 }
 
 struct TrailerSwitchWritePlan {

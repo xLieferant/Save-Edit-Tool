@@ -182,53 +182,31 @@ pub fn parse_truck_save(content: &str) -> ParsedTruckSave {
 }
 
 pub fn parse_unit_blocks(content: &str) -> Vec<UnitBlock> {
-    let header_re = Regex::new(r"^([A-Za-z0-9_]+)\s*:\s*([^\s{]+)\s*\{").expect("valid unit regex");
-    let lines = content.lines().collect::<Vec<_>>();
-    let mut blocks = Vec::new();
-    let mut index = 0usize;
-
-    while index < lines.len() {
-        let trimmed = lines[index].trim();
-        let Some(captures) = header_re.captures(trimmed) else {
-            index += 1;
-            continue;
-        };
-
-        let unit_type = captures
-            .get(1)
-            .map(|value| value.as_str().to_string())
-            .unwrap_or_default();
-        let id = captures
-            .get(2)
-            .map(|value| value.as_str().trim_end_matches('{').to_string())
-            .unwrap_or_default();
-        if unit_type.is_empty() || id.is_empty() {
-            index += 1;
-            continue;
-        }
-
-        let start = index;
-        let mut end = index;
-        let mut depth =
-            lines[index].matches('{').count() as i32 - lines[index].matches('}').count() as i32;
-        while end + 1 < lines.len() && depth > 0 {
-            end += 1;
-            depth += lines[end].matches('{').count() as i32;
-            depth -= lines[end].matches('}').count() as i32;
-        }
-
-        let raw_block = lines[start..=end].join("\n");
-        blocks.push(UnitBlock {
-            unit_type,
-            id,
-            start_line: start,
-            end_line: end,
-            raw_block,
-        });
-        index = end + 1;
-    }
-
-    blocks
+    let Ok(units) = crate::features::save_editor::document::scan_units(content, false) else {
+        return Vec::new();
+    };
+    let mut line = 0;
+    let mut previous_end = 0;
+    units
+        .into_iter()
+        .map(|unit| {
+            line += content[previous_end..unit.span.start]
+                .bytes()
+                .filter(|b| *b == b'\n')
+                .count();
+            let start_line = line;
+            let raw = &content[unit.span.clone()];
+            line += raw.bytes().filter(|b| *b == b'\n').count();
+            previous_end = unit.span.end;
+            UnitBlock {
+                unit_type: unit.kind,
+                id: unit.id,
+                start_line,
+                end_line: line,
+                raw_block: raw.replace("\r\n", "\n"),
+            }
+        })
+        .collect()
 }
 
 pub fn extract_field_value(raw_block: &str, field: &str) -> Option<String> {

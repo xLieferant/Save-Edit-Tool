@@ -19,7 +19,7 @@ export async function protectSettingsForms(root = document) {
     const panel = input?.closest("#panel-settings, #panel-company");
     if (!input || !panel || input.disabled) return;
     if (["cmSettingAutoRefresh", "cmSettingMockFallback"].includes(input.id)) return;
-    if (!/^cm(?:User|Company|Career)/.test(input.id) || input.id === "cmUserUsernameInput") return;
+    if (!/^cm(?:User|Company|Career)/.test(input.id)) return;
     input.dataset.dirty = "true";
     updatePending(panel);
   };
