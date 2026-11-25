@@ -5,8 +5,8 @@
   --font-mono: "Cascadia Mono", "Consolas", monospace;
   --bg-main: #17191c;
   --bg-elevated: #1e2125;
-  --bg-panel: rgba(34, 37, 41, 0.88);
-  --bg-panel-strong: rgba(29, 32, 36, 0.96);
+  --bg-panel: #1e2125;
+  --bg-panel-strong: #1b1e22;
   --bg-card: #22252a;
   --bg-card-soft: rgba(255, 255, 255, 0.025);
   --bg-soft: var(--bg-card-soft);
@@ -52,17 +52,17 @@
   --status-glow: none;
   --status-glow-soft: none;
   --focus-ring: 0 0 0 2px var(--bg-main), 0 0 0 4px var(--accent);
-  --radius-xl: 12px;
-  --radius-lg: 10px;
-  --radius-md: 8px;
-  --radius-sm: 6px;
+  --radius-xl: 6px;
+  --radius-lg: 5px;
+  --radius-md: 4px;
+  --radius-sm: 3px;
   --space-xs: 4px;
   --space-sm: 8px;
   --space-md: 16px;
   --space-lg: 24px;
   --space-xl: 32px;
-  --title-lg: 22px;
-  --title-xl: 28px;
+  --title-lg: 18px;
+  --title-xl: 24px;
   --body-md: 13px;
   --body-lg: 14px;
   --dropdown-surface: #272b30;
@@ -102,8 +102,8 @@ body.theme-light {
   color-scheme: light;
   --bg-main: #eef0f2;
   --bg-elevated: #f8f9fa;
-  --bg-panel: rgba(255, 255, 255, 0.88);
-  --bg-panel-strong: rgba(255, 255, 255, 0.97);
+  --bg-panel: #ffffff;
+  --bg-panel-strong: #f8f9fa;
   --bg-card: #ffffff;
   --bg-card-soft: rgba(0, 0, 0, 0.025);
   --text-main: #242930;
@@ -213,8 +213,8 @@ tbody tr:hover { background: var(--accent-surface); }
   border-color: var(--panel-border) !important;
   border-radius: var(--radius-lg);
   box-shadow: var(--surface-shadow);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 body.mode-editor :is(.command-header, .editor-sidebar, .sidebar-card, .editor-intro,
     .overview-card, .tool-stage-shell, .modal-box),
@@ -558,4 +558,204 @@ button[aria-busy="true"] { cursor: progress; }
 button[aria-busy="true"]::after { content: " …"; }
 @media (prefers-reduced-motion: reduce) {
   .toggle-switch > .toggle-switch__slider::before { transition: none; }
+}
+
+/* Desktop chrome: solid surfaces, compact controls and quiet separators. */
+:root { --statusbar-height: 28px; --control-height: 32px; --sidebar-width: 252px; }
+body.mode-editor .app-shell { height: calc(100dvh - var(--statusbar-height)); }
+body.career-page { padding-bottom: calc(var(--statusbar-height) + 12px); }
+body.mode-editor :is(.command-header, .editor-sidebar, .save-hero, .save-stage-head),
+body.career-page :is(.career-topbar, .career-sidebar, .career-panel),
+.launcher-hero, .launcher-card {
+  background-image: none !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+body.mode-editor .command-header { padding: 6px 12px; }
+body.mode-editor .logo img { width: 32px; height: 32px; border-radius: 0; }
+body.mode-editor .logo-title { font-size: 15px; letter-spacing: .03em; }
+body.mode-editor .logo-subtitle { font-size: 9px; color: var(--text-muted); }
+body.mode-editor :is(.mode-btn, .nav-btn, .user-menu-btn, .nav-action) {
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: normal;
+}
+body.mode-editor .editor-module-nav .nav-btn { min-height: 32px; height: auto; padding: 6px 14px; font-size: 13px; }
+body.mode-editor .mode-switch { gap: 2px; }
+body.mode-editor .status-pill { padding: 4px 8px; min-height: 28px; border-color: transparent; }
+body.mode-editor .status-text { font-size: 11px; font-weight: 400; letter-spacing: normal; }
+body.mode-editor .workspace-shell { grid-template-columns: var(--sidebar-width) minmax(0, 1fr); gap: 12px; }
+body.mode-editor .editor-sidebar {
+  --editor-sidebar-width: var(--sidebar-width);
+  min-width: 0;
+  max-width: var(--sidebar-width);
+  border-radius: var(--radius-md);
+}
+body.mode-editor .editor-sidebar-scroll { padding: 0; gap: 0; }
+body.mode-editor .editor-sidebar-block {
+  padding: 14px 12px;
+  border: 0;
+  border-bottom: 1px solid var(--card-border);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+body.mode-editor .editor-section-label { font-size: 11px; font-weight: 600; letter-spacing: .04em; color: var(--text-muted); }
+body.mode-editor .profile-status { padding: 0; background: transparent; border: 0; min-height: 0; font-size: 12px; }
+body.mode-editor .editor-picker { min-height: 52px; padding: 8px 10px; border-radius: var(--radius-sm); }
+body.mode-editor .picker-value { font-size: 13px; font-weight: 500; }
+body.mode-editor .picker-label { font-size: 10px; font-weight: 500; }
+body.mode-editor .game-switch button { min-height: 34px; font-weight: 500; }
+body.mode-editor .editor-quick-actions { gap: 4px; }
+body.mode-editor .editor-quick-actions .nav-action { min-height: 32px; padding: 6px 10px; text-align: left; }
+body.mode-editor .save-hero { padding: 16px; gap: 16px; border: 0; border-bottom: 1px solid var(--card-border); }
+body.mode-editor .save-hero h1 { font-size: 20px; }
+body.mode-editor .save-warning-card { padding: 10px 12px; max-width: 30ch; }
+body.mode-editor .save-warning-card h2 { font-size: 12px; font-weight: 500; }
+body.mode-editor .save-warning-card p { font-size: 11px; }
+body.mode-editor .save-stage-head { padding: 12px 0; background: transparent !important; border: 0; }
+body.mode-editor .save-stage-head h2 { font-size: 15px; }
+body.mode-editor .save-tool-stage { padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+body.mode-editor .tool-content { padding: 12px 14px; }
+body.mode-editor .tool-content h3 { font-size: 14px; font-weight: 500; }
+body.mode-editor .tool-content button { font-size: 12px; min-height: 30px; padding: 5px 12px; font-weight: 500; }
+body.mode-editor .overview-value { font-size: 16px; font-weight: 600; }
+body.mode-editor .save-overview-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+body.mode-editor .overview-label { letter-spacing: .03em; font-size: 10px; }
+:is(.modal-box, .garage-modal-box, .cm-modal-box, .detail-card, .garage-card, .career-card) {
+  border-radius: var(--radius-md) !important;
+  background-image: none !important;
+}
+:is(.modal-box, .garage-modal-box, .cm-modal-box) { background: var(--bg-elevated) !important; }
+.modal-box h2 { font-size: 18px; }
+.modal-box :is(.detail-card, .settings-section, .detail-modal-section) { box-shadow: none; }
+body.career-page .career-topbar { padding: 10px 14px; }
+body.career-page .career-brand h1 { font-size: 18px; }
+body.career-page .career-brand-kicker { display: none; }
+body.career-page .career-nav { gap: 3px; }
+body.career-page .career-nav-btn { min-height: 32px; padding: 7px 10px; font-weight: 500; border-color: transparent; }
+body.career-page :is(.career-status-card, .career-metric-card) { padding: 10px 12px; }
+body.career-page .career-widget { padding: 14px; }
+body.career-page .career-panel h2 { font-size: 18px; }
+body.career-page :is(.career-live-status, .career-vtc-context) {
+  gap: 0;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  overflow: hidden;
+}
+body.career-page :is(.career-live-status, .career-vtc-context) > .career-status-card {
+  border: 0 !important;
+  border-right: 1px solid var(--card-border) !important;
+  border-radius: 0;
+  min-height: 54px;
+  gap: 4px;
+  background: transparent !important;
+}
+body.career-page :is(.career-live-status, .career-vtc-context) .career-status-card strong { font-size: 14px; }
+body.career-page .career-widget h3 { font-size: 14px; }
+:is(.career-table-wrap, .analytics-table-wrap) { overflow-x: auto; }
+thead th { position: sticky; top: 0; z-index: 1; white-space: normal; }
+th, td { padding: 8px 10px; }
+button { transition: border-color 100ms ease; }
+button:not(:disabled):hover { transform: none !important; box-shadow: none !important; }
+input:invalid:not(:placeholder-shown):focus { border-color: var(--danger); }
+
+.desktop-statusbar {
+  position: fixed;
+  inset: auto 0 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: var(--statusbar-height);
+  box-sizing: border-box;
+  padding: 4px 12px;
+  background: var(--bg-elevated);
+  border-top: 1px solid var(--panel-border);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.desktop-statusbar > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.desktop-statusbar > span:last-child { flex-shrink: 0; max-width: 55%; }
+.desktop-table-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 8px 0; }
+.desktop-table-tools input { flex: 1 1 180px; min-width: 100px; max-width: 360px; min-height: 30px; padding: 5px 8px; }
+.desktop-table-tools > span { color: var(--text-muted); font-size: 11px; margin-left: auto; }
+button.desktop-sort { padding: 0; min-height: 24px; border: 0; border-radius: 0 !important; background: transparent !important; color: var(--text-muted) !important; font-size: inherit; text-align: left; font-weight: 600; }
+th[aria-sort="ascending"] .desktop-sort::after { content: " ↑"; }
+th[aria-sort="descending"] .desktop-sort::after { content: " ↓"; }
+.tool-search { width: min(360px, 100%); min-height: 32px; margin: 0 0 10px; }
+.picker-menu > input[type="search"] { display: block; position: sticky; top: 0; width: calc(100% - 16px); margin: 8px; z-index: 2; }
+
+/* A single flow layout stacks variable-height news and notifications. */
+.notification-stack {
+  position: fixed;
+  right: 16px;
+  bottom: calc(var(--statusbar-height) + 12px);
+  z-index: 20000;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 8px;
+  width: min(400px, calc(100vw - 32px));
+  max-height: calc(100dvh - var(--statusbar-height) - 32px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  pointer-events: none;
+  scrollbar-width: thin;
+}
+.notification-stack .desktop-notification {
+  position: static;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: flex-start;
+  gap: 10px;
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--panel-border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-md);
+  background: var(--dropdown-surface);
+  color: var(--text-main);
+  font: 13px/1.5 var(--font-ui);
+  box-shadow: var(--surface-shadow-soft);
+  opacity: 1;
+  transform: none;
+  animation: notification-enter 100ms ease-out;
+  pointer-events: auto;
+}
+.notification-stack .toast-error { border-left-color: var(--danger); }
+.notification-stack .toast-warning { border-left-color: var(--warning); }
+.notification-stack .toast-success { border-left-color: var(--success); }
+.notification-copy { min-width: 0; flex: 1; overflow-wrap: anywhere; }
+.notification-count { margin-inline-start: 8px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.notification-stack .notification-close { flex: 0 0 26px; min-height: 26px; padding: 0; font-size: 20px; line-height: 1; }
+.notification-copy details { margin-top: 8px; }
+.notification-copy summary { cursor: pointer; color: var(--text-muted); }
+.notification-copy pre { max-height: 160px; overflow: auto; white-space: pre-wrap; font-size: 11px; user-select: text; }
+.notification-copy details button { min-height: 28px; padding: 4px 8px; font-size: 12px; }
+@keyframes notification-enter { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+@media (max-width: 1080px) {
+  body.mode-editor .workspace-shell { grid-template-columns: 230px minmax(0, 1fr); }
+  body.mode-editor .header-row-top { flex-wrap: wrap; }
+  body.mode-editor .header-right { flex: 1 1 auto; }
+  body.mode-editor .save-overview-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  body.mode-editor .workspace-shell { grid-template-columns: minmax(0, 1fr); }
+  body.mode-editor .save-hero { flex-wrap: wrap; }
+  body.mode-editor .save-warning-card { max-width: none; }
+  .desktop-statusbar { gap: 8px; padding-inline: 8px; }
+  .desktop-statusbar > span:last-child { max-width: 45%; }
+  .notification-stack { right: 8px; width: calc(100vw - 16px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
