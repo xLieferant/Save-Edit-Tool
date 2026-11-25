@@ -152,6 +152,8 @@
     </div>
 
     <script type="module">
+      import { showToast } from "/modules/shared/notifications.js";
+      import "/modules/shared/desktop.js";
       import { t, translateDocument } from "/modules/shared/i18n.js";
       const tauri = window.__TAURI__;
       const invokeRaw = tauri?.core?.invoke;
@@ -176,21 +178,7 @@
         }
       };
 
-      window.showToast = async function (messageOrKey, options = {}, type = "info") {
-        const resolvedOptions = typeof options === "string" ? {} : options;
-        const resolvedType = typeof options === "string" ? options : type;
-        const message = await t(messageOrKey, resolvedOptions);
-        const toast = document.createElement("div");
-        toast.className = `toast toast-${resolvedType}`;
-        toast.innerHTML = `<span class="toast-icon">${resolvedType === "success" ? "OK" : resolvedType === "error" ? "ER" : resolvedType === "warning" ? "!" : "i"}</span><span class="toast-text"></span>`;
-        toast.querySelector(".toast-text").textContent = message;
-        document.body.appendChild(toast);
-        requestAnimationFrame(() => toast.classList.add("show"));
-        setTimeout(() => {
-          toast.classList.remove("show");
-          setTimeout(() => toast.remove(), 300);
-        }, 4500);
-      };
+      window.showToast = showToast;
 
       const saveEditorPath = "/pages/save-editor/index.html";
 

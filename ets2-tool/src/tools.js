@@ -1,3 +1,4 @@
+import { activeGame, distanceUnit, displayDistance, storedDistance, formatGameMoney } from "./modules/shared/game_units.js";
 import { openThemeSettings } from "./modules/shared/theme_settings.js";
 ﻿import {
   openModalNumber,
@@ -16,6 +17,17 @@ import { openThemeSettings } from "./modules/shared/theme_settings.js";
 
 const TRAILER_LICENSE_PLATE_MAX_LENGTH = 32;
 const JOB_WEIGHT_MAX_KG = 1000000;
+
+function selectedSaveContext() {
+  if (!window.selectedProfilePath || !window.selectedSavePath) throw new Error("save_not_loaded");
+  return { game: activeGame(), profile: window.selectedProfilePath, save: window.selectedSavePath };
+}
+
+function assertSelectedSave(context) {
+  if (context.game !== activeGame() || context.profile !== window.selectedProfilePath || context.save !== window.selectedSavePath) {
+    throw new Error("save_selection_changed");
+  }
+}
 
 function extractTrailerPlateText(plate) {
   if (!plate) return "";
@@ -307,13 +319,13 @@ export const tools = {
       action: async () => {
         try {
           const newValue = await openModalNumber(
-            "tools.truck.truck_mileage.modalNumberText",
-            window.playerTruck?.odometer || 0
+            (distanceUnit() === "mi" ? "game_units.odometer_mi" : "tools.truck.truck_mileage.modalNumberText"),
+            Math.round(displayDistance(window.playerTruck?.odometer || 0))
           );
           if (newValue !== null) {
-            await invoke("edit_truck_odometer", { value: newValue });
+            await invoke("edit_truck_odometer", { value: Math.round(storedDistance(newValue)) });
             await loadAllTrucks();
-            showToast("toasts.truck_mileage_success", { newValue }, "success");
+            showToast("game_units.odometer_saved", { value: newValue, unit: distanceUnit() }, "success");
           }
         } catch (err) {
           console.error("Odometer error:", err);
@@ -489,20 +501,24 @@ export const tools = {
       hidden: true,
       action: async () => {
         try {
+          const context = selectedSaveContext();
           const newValue = await openModalNumber(
             "tools.profile.change_xp.modalNumberText",
             window.currentProfileData?.xp || 0
           );
 
           if (newValue !== null) {
+            assertSelectedSave(context);
             await invoke("edit_player_experience", { value: newValue });
 
-            window.currentProfileData.xp = newValue;
-
-            const xpDisplay = document.querySelector("#xpShow");
-            if (xpDisplay) {
-              xpDisplay.textContent = `XP: ${newValue.toLocaleString()}`;
+            await window.loadProfileData();
+            const persisted = Number(window.currentProfileData?.xp);
+            if (!Number.isSafeInteger(persisted) || persisted !== Number(newValue)) {
+              throw new Error("save_verification_failed");
             }
+            const xpDisplay = document.querySelector("#xpShow");
+            if (xpDisplay) xpDisplay.textContent = `XP: ${persisted.toLocaleString()}`;
+            await window.refreshOperationalOverview?.();
 
             showToast("toasts.change_xp_success", { newValue }, "success");
           }
@@ -518,22 +534,26 @@ export const tools = {
       img: "images/money.jpg",
       action: async () => {
         try {
+          const context = selectedSaveContext();
           const newValue = await openModalNumber(
             "tools.profile.change_money.modalNumberText",
             window.currentProfileData?.money || 0
           );
 
           if (newValue !== null) {
+            assertSelectedSave(context);
             await invoke("edit_player_money", { value: newValue });
 
-            window.currentProfileData.money = newValue;
-
-            const moneyDisplay = document.querySelector("#moneyShow");
-            if (moneyDisplay) {
-              moneyDisplay.textContent = `Geld: ${newValue.toLocaleString()} â‚¬`;
+            await window.loadProfileData();
+            const persisted = Number(window.currentProfileData?.money);
+            if (!Number.isSafeInteger(persisted) || persisted !== Number(newValue)) {
+              throw new Error("save_verification_failed");
             }
+            const moneyDisplay = document.querySelector("#moneyShow");
+            if (moneyDisplay) moneyDisplay.textContent = formatGameMoney(persisted);
+            await window.refreshOperationalOverview?.();
 
-            showToast("toasts.change_money_success", { newValue }, "success");
+            showToast("game_units.money_saved", { value: formatGameMoney(newValue) }, "success");
           }
         } catch (err) {
           console.error("Money change error:", err);
@@ -548,6 +568,7 @@ export const tools = {
       hidden: true,
       action: async () => {
         try {
+          const context = selectedSaveContext();
           const res = await openModalMulti("tools.profile.change_skill_points.modalTextTitle", [
             {
               type: "adr",
@@ -588,11 +609,17 @@ export const tools = {
           ]);
 
           if (res) {
+            assertSelectedSave(context);
             await invoke("edit_skill_value", { skill: "adr", value: res.skill_adr });
+            assertSelectedSave(context);
             await invoke("edit_skill_value", { skill: "long_dist", value: res.skill_long });
+            assertSelectedSave(context);
             await invoke("edit_skill_value", { skill: "heavy", value: res.skill_heavy });
+            assertSelectedSave(context);
             await invoke("edit_skill_value", { skill: "fragile", value: res.skill_fragile });
+            assertSelectedSave(context);
             await invoke("edit_skill_value", { skill: "urgent", value: res.skill_urgent });
+            assertSelectedSave(context);
             await invoke("edit_skill_value", { skill: "mechanical", value: res.skill_eco });
 
             await loadQuicksave();
@@ -606,6 +633,7 @@ export const tools = {
     },
     {
       title: "tools.profile.profile_stats.title",
+      get disabled() { return activeGame() === "ats"; },
       desc: "tools.profile.profile_stats.desc",
       img: "images/skillPoint.jpg",
       action: async () => {

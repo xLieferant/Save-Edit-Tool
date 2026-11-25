@@ -1,10 +1,27 @@
 import { hasTauri, invoke } from "./runtime.js";
 
+const translations = new Map();
+let language = null;
+let generation = 0;
+
+export function invalidateTranslations() {
+  generation++;
+  translations.clear();
+}
+
 export async function t(key, params = {}) {
   let text = String(key || "");
   if (hasTauri) {
     try {
-      text = await invoke("translate_command", { key });
+      if (!translations.has(key)) {
+        const version = generation;
+        const pending = invoke("translate_command", { key }).catch((error) => {
+          if (version === generation) translations.delete(key);
+          throw error;
+        });
+        translations.set(key, pending);
+      }
+      text = await translations.get(key);
     } catch (error) {
       console.error("[i18n] translate failed", key, error);
     }
@@ -32,30 +49,35 @@ export async function translateDocument(root = document) {
   console.log("[i18n] loading language for document");
   if (hasTauri) {
     try {
-      document.documentElement.lang = await invoke("get_current_language_command");
+      const currentLanguage = await invoke("get_current_language_command");
+      if (currentLanguage !== language) {
+        language = currentLanguage;
+        invalidateTranslations();
+      }
+      document.documentElement.lang = currentLanguage;
     } catch (error) {
       console.error("[i18n] language lookup failed", error);
     }
   }
   const translatableNodes = root.querySelectorAll("[data-translate]");
-  for (const node of translatableNodes) {
+  await Promise.all([...translatableNodes].map(async (node) => {
     const key = node.getAttribute("data-translate");
     const translated = await t(key);
     if (translated === key) {
       console.warn("[i18n] missing translation", key);
     }
     node.textContent = translated;
-  }
+  }));
 
   const placeholderNodes = root.querySelectorAll("[data-translate-placeholder]");
-  for (const node of placeholderNodes) {
+  await Promise.all([...placeholderNodes].map(async (node) => {
     const key = node.getAttribute("data-translate-placeholder");
     const translated = await t(key);
     if (translated === key) {
       console.warn("[i18n] missing placeholder translation", key);
     }
     node.setAttribute("placeholder", translated);
-  }
+  }));
   for (const attribute of ["title", "aria-label"]) {
     for (const node of root.querySelectorAll(`[data-translate-${attribute}]`)) {
       const key = node.getAttribute(`data-translate-${attribute}`);

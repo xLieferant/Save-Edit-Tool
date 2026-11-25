@@ -1,7 +1,12 @@
+import { currencyCode, distanceUnit, displayDistance, formatGameMoney } from "./modules/shared/game_units.js";
 import { diagnosticInvoke } from "./modules/shared/diagnostics_runtime.js";
 import { openThemeSettings } from "./modules/shared/theme_settings.js";
-import { localizeError, translateDocument } from "./modules/shared/i18n.js";
-import { loadTools, activeTab, openCloneProfileModal, openModalMulti, openModalText } from "./app.js";
+import { t, localizeError, translateDocument, invalidateTranslations } from "./modules/shared/i18n.js";
+import { notify } from "./modules/shared/notifications.js";
+import { frontendState, readPreference, savePreference } from "./modules/shared/frontend_state.js";
+import "./modules/shared/desktop.js";
+import { addPickerSearch } from "./modules/shared/picker_search.js";
+import { loadTools, refreshSaveTools, activeTab, openCloneProfileModal, openModalMulti, openModalText } from "./app.js";
 import { updateToolImagesForGame } from "./tools.js";
 import { getLevelForXp, getLevelProgress, loadLevelTable } from "./js/level-system.js";
 
@@ -28,6 +33,13 @@ const SAVE_MUTATION_COMMANDS = new Set([
   "edit_career_xp",
   "apply_custom_reset_values",
   "apply_active_truck_switch",
+  "apply_active_trailer_switch",
+  "generate_ai_drivers",
+  "update_ai_driver_truck",
+  "remove_ai_drivers",
+  "relinquish_empty_garages",
+  "relinquish_garage_ownership",
+  "assign_random_garage_resources",
   "apply_save_health_fix",
   "purchase_garage",
   "buy_all_garages",
@@ -128,7 +140,15 @@ async function safeInvoke(command, args = {}, options = {}) {
     silent = false,
   } = options;
 
+  let trackedMutation = false;
   try {
+    if (SAVE_MUTATION_COMMANDS.has(command) && (window.saveSync?.accepting || window.saveSync?.blockWrites)) {
+      throw "save_sync.conflict";
+    }
+    if (SAVE_MUTATION_COMMANDS.has(command) && window.saveSync) {
+      window.saveSync.mutations++;
+      trackedMutation = true;
+    }
     const result = await tauriInvoke(command, args);
     if (SAVE_MUTATION_COMMANDS.has(command)) {
       scheduleSaveSafetyRefresh(command, result);
@@ -141,6 +161,8 @@ async function safeInvoke(command, args = {}, options = {}) {
     }
     if (rethrow) throw error;
     return fallback;
+  } finally {
+    if (trackedMutation && window.saveSync) window.saveSync.mutations = Math.max(0, window.saveSync.mutations - 1);
   }
 }
 
@@ -162,15 +184,15 @@ function formatTelemetryNumber(value, digits = 0) {
 }
 
 function formatCurrency(value) {
-  return `EUR ${formatTelemetryNumber(value ?? 0, 0)}`;
+  return formatGameMoney(value ?? 0);
 }
 
 function formatDistance(value) {
-  return `${formatTelemetryNumber(value ?? 0, 1)} km`;
+  return `${formatTelemetryNumber(displayDistance(value ?? 0), 1)} ${distanceUnit()}`;
 }
 
 function formatRatePerKm(value) {
-  return `EUR ${formatTelemetryNumber(value ?? 0, 2)}/km`;
+  return `${currencyCode()} ${formatTelemetryNumber(Number(value ?? 0) * (distanceUnit() === "mi" ? 1.609344 : 1), 2)}/${distanceUnit()}`;
 }
 
 function formatMultiplier(value) {
@@ -308,26 +330,6 @@ new MutationObserver(updateAllProfileIcons).observe(document.body, {
   attributeFilter: ["class"],
 });
 
-async function t(key, params = {}) {
-  if (!hasTauri) {
-    let text = String(key ?? "");
-    for (const [k, v] of Object.entries(params)) {
-      text = text.replaceAll(`{${k}}`, String(v));
-    }
-    return text;
-  }
-  try {
-    let text = await tauriInvoke("translate_command", { key });
-    for (const [k, v] of Object.entries(params)) {
-      text = text.replaceAll(`{${k}}`, String(v));
-    }
-    return text;
-  } catch (error) {
-    console.error("Translation error:", error);
-    return key;
-  }
-}
-
 async function translateUI() {
   await translateDocument(document);
 }
@@ -339,16 +341,7 @@ window.showToast = async function (messageOrKey, options = {}, type = "info") {
   const resolvedOptions = typeof options === "string" ? {} : options;
   const resolvedType = typeof options === "string" ? options : type;
   const message = await t(messageOrKey, resolvedOptions);
-  const toast = document.createElement("div");
-  toast.className = `toast toast-${resolvedType}`;
-  toast.innerHTML = `<span class="toast-icon">${resolvedType === "success" ? "OK" : resolvedType === "error" ? "ER" : resolvedType === "warning" ? "!" : "i"}</span><span class="toast-text"></span>`;
-  toast.querySelector(".toast-text").textContent = message;
-  document.body.appendChild(toast);
-  requestAnimationFrame(() => toast.classList.add("show"));
-  setTimeout(() => {
-    toast.classList.remove("show");
-    setTimeout(() => toast.remove(), 300);
-  }, 4500);
+  return notify(message, { ...resolvedOptions, type: resolvedType });
 };
 
 async function appVersion() {
@@ -1913,6 +1906,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const setLamp = (element, active) => element?.classList.toggle("is-active", Boolean(active));
   const setCareerGame = (game) => {
+    window.selectedGame = game === "ats" ? "ats" : "ets2";
+    window.dispatchEvent(new Event("desktop-state-changed"));
     const label = (game || "ets2").toUpperCase();
     if (refs.careerHeroTitle) refs.careerHeroTitle.textContent = label;
     if (refs.careerGameLabel) {
@@ -3646,11 +3641,62 @@ document.addEventListener("DOMContentLoaded", async () => {
     await updateUserMenu();
   }
 
+  const saveFormatStatus = document.getElementById("saveFormatStatus");
+  const renderSaveFormatStatus = async (status, game) => {
+    const key = `save_format.${status}`;
+    const copy = await t(key);
+    if (!saveFormatStatus || game !== lastSelectedGame) return;
+    saveFormatStatus.dataset.translate = key;
+    saveFormatStatus.dataset.status = status;
+    saveFormatStatus.textContent = copy;
+  };
+  const checkSaveFormat = () => {
+    if (!hasTauri || !saveFormatStatus || !lastSelectedGame) return Promise.resolve();
+    if (window.saveFormatCheck) return window.saveFormatCheck;
+    const game = lastSelectedGame;
+    window.saveFormatCheck = (async () => {
+      try {
+        const result = await invoke("check_save_format", { game });
+        if (game !== lastSelectedGame) return;
+        await renderSaveFormatStatus(result.status, game);
+        if (!["incorrect", "missing_entry"].includes(result.status)) return;
+        const prompt = await t("save_format.confirm");
+        const restart = await t("save_format.restart_hint");
+        if (game !== lastSelectedGame || !window.confirm(`${prompt}\n\n${restart}`)) return;
+        try {
+          const updated = await invoke("configure_save_format", {
+            game, revision: result.revision, confirmed: true,
+          });
+          await renderSaveFormatStatus(updated.status, game);
+          if (game === lastSelectedGame) window.showToast("save_format.updated", {}, "success");
+        } catch (error) {
+          console.error("[save-format] update failed", error);
+          const current = await invoke("check_save_format", { game }).catch(() => null);
+          await renderSaveFormatStatus(current?.status || "unavailable", game);
+          if (game === lastSelectedGame) {
+            window.showToast("toasts.generic_error_prefix", {
+              error: await localizeError(error, "save_format.write_failed"),
+            }, "error");
+          }
+        }
+      } catch (error) {
+        console.warn("[save-format] check failed", error);
+        await renderSaveFormatStatus(String(error) === "save_format.invalid" ? "invalid" : "unavailable", game);
+      }
+    })().finally(() => { window.saveFormatCheck = null; });
+    return window.saveFormatCheck;
+  };
+
   try {
+    const rememberedGame = readPreference("game");
+    if (["ets2", "ats"].includes(rememberedGame) && rememberedGame !== await invoke("get_selected_game")) {
+      await invoke("set_selected_game", { game: rememberedGame });
+    }
     const selectedGame = await invoke("get_selected_game");
     careerState.activeGame = selectedGame;
     setCareerGame(selectedGame);
     lastSelectedGame = selectedGame;
+    void checkSaveFormat();
     console.log("[ui] selected game", selectedGame);
   } catch (error) {
     console.warn("[ui] selected game load failed", error);
@@ -3690,12 +3736,21 @@ document.addEventListener("DOMContentLoaded", async () => {
   refs.githubBtn?.addEventListener("click", () => openUrl("https://github.com/xLieferant/Save-Edit-Tool"));
 
   const switchGame = async (game) => {
+    if (frontendState.selectionBusy) return;
+    if (hasPendingEdits()) {
+      window.showToast("ui_refinement.unsaved_changes", "warning");
+      return;
+    }
+    frontendState.selectionBusy = true;
     try {
       await invoke("set_selected_game", { game });
+      savePreference("game", game);
       localStorage.setItem("ets2_force_profile_picker_open", "1");
       location.reload();
     } catch (error) {
       showToast("toasts.generic_error_prefix", { error: await localizeError(error) }, "error");
+    } finally {
+      frontendState.selectionBusy = false;
     }
   };
 
@@ -3846,11 +3901,26 @@ document.addEventListener("DOMContentLoaded", async () => {
   const bindDropdownItem = (item, onSelect) => {
     item.tabIndex = 0;
     item.setAttribute("role", "option");
-    item.addEventListener("click", onSelect);
+    const select = async () => {
+      if (frontendState.selectionBusy) return;
+      if (hasPendingEdits()) {
+        window.showToast("ui_refinement.unsaved_changes", "warning");
+        return;
+      }
+      frontendState.selectionBusy = true;
+      item.setAttribute("aria-busy", "true");
+      try { await onSelect(); }
+      finally {
+        frontendState.selectionBusy = false;
+        item.removeAttribute("aria-busy");
+        window.dispatchEvent(new Event("desktop-state-changed"));
+      }
+    };
+    item.addEventListener("click", select);
     item.addEventListener("keydown", (event) => {
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
-        onSelect();
+        void select();
       }
     });
   };
@@ -3926,6 +3996,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       closeNavDrawer();
       updateDropdownSelectionState(refs.profileDropdownList, profile.path);
       localStorage.setItem("ets2_last_profile", profile.path);
+      savePreference(`profile:${lastSelectedGame}`, profile.path);
       try {
         await invoke("save_last_profile", { profilePath: profile.path });
       } catch {}
@@ -3980,14 +4051,34 @@ document.addEventListener("DOMContentLoaded", async () => {
     item.appendChild(status);
 
     bindDropdownItem(item, async () => {
-      window.selectedSavePath = save.path;
-      window.currentSavePath = save.path;
-      refs.saveNameDisplay.textContent = titleText;
+      const profilePath = window.selectedProfilePath;
       closeDropdowns();
       closeNavDrawer();
-      updateDropdownSelectionState(refs.saveDropdownList, save.path);
-      await invoke("load_profile", { profilePath: window.selectedProfilePath, savePath: save.path });
-      await loadSelectedSave();
+      try {
+        await invoke("load_profile", { profilePath, savePath: save.path });
+        if (window.selectedProfilePath !== profilePath) return;
+        window.selectedSavePath = save.path;
+        window.currentSavePath = save.path;
+        savePreference(`save:${lastSelectedGame}:${profilePath}`, save.path);
+        refs.saveNameDisplay.textContent = titleText;
+        updateDropdownSelectionState(refs.saveDropdownList, save.path);
+        await loadSelectedSave();
+      } catch (error) {
+        console.error("Save selection failed:", error);
+        if (window.selectedProfilePath !== profilePath) return;
+        window.selectedSavePath = null;
+        window.currentSavePath = null;
+        window.currentProfileData = {};
+        window.currentQuicksaveData = {};
+        refs.saveNameDisplay.textContent = uiText.noSave;
+        refs.profileStatus.textContent = uiText.profileError;
+        updateDropdownSelectionState(refs.saveDropdownList, null);
+        try { await invoke("set_active_profile", { profilePath }); } catch (resetError) {
+          console.error("Save selection reset failed:", resetError);
+        }
+        window.showToast("toasts.save_load_error", {}, "error");
+        await loadTools(activeTab);
+      }
     });
 
     item.classList.toggle("is-selected", window.selectedSavePath === save.path);
@@ -4175,6 +4266,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
 
   const loadSelectedSave = async () => {
+    if (window.saveSync) { window.saveSync.blockWrites = false; window.saveSync.retries = 0; }
     window.logUserAction("load_save", "start");
     saveEditorLoadInProgress = true;
     try {
@@ -4201,6 +4293,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       await updateOperationalOverview();
       await showCareerPanel(activeCareerPanel);
       refs.profileStatus.textContent = uiText.saveLoaded;
+      if (window.saveSync) window.saveSync.lastSuccess = Date.now();
+      window.dispatchEvent(new Event("desktop-state-changed"));
       window.showToast("toasts.save_loaded_success", {}, "success");
       loadTools(activeTab);
       window.logUserAction("load_save", "success");
@@ -4213,11 +4307,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   };
 
-  const scanSavesForProfile = async () => {
+  const successfulSavesByProfile = new Map();
+  const scanSavesForProfile = async ({ quiet = false } = {}) => {
     if (!window.selectedProfilePath) return;
-    refs.saveDropdownList.innerHTML = "";
+    const profilePath = window.selectedProfilePath;
     try {
-      const saves = (await invoke("find_profile_saves", { profilePath: window.selectedProfilePath }))
+      const found = await invoke("find_profile_saves", { profilePath });
+      if (window.selectedProfilePath !== profilePath) return;
+      const previous = successfulSavesByProfile.get(profilePath) || [];
+      const candidates = quiet ? found.map((save) => save.success ? save : previous.find((old) => old.path === save.path) || save) : found;
+      const saves = candidates
         .filter((save) => save.success && save.kind !== "Invalid")
         .sort((a, b) => {
           const priority = (folder) => folder === "quicksave" ? 0 : folder === "autosave" ? 1 : 2;
@@ -4225,6 +4324,9 @@ document.addEventListener("DOMContentLoaded", async () => {
           const pB = priority(b.folder.toLowerCase());
           return pA !== pB ? pA - pB : b.folder.localeCompare(a.folder, undefined, { numeric: true });
         });
+      successfulSavesByProfile.set(profilePath, saves);
+      const pickerScroll = refs.saveDropdownList.scrollTop;
+      refs.saveDropdownList.replaceChildren();
       refs.openSaveModalBtn.disabled = saves.length === 0;
 
       if (!saves.length) {
@@ -4250,13 +4352,19 @@ document.addEventListener("DOMContentLoaded", async () => {
       appendSaveSection(humanizeToken("autosave"), autosaveEntries);
       appendSaveSection("", manualEntries);
       updateDropdownSelectionState(refs.saveDropdownList, window.selectedSavePath);
+      const selected = saves.find((save) => save.path === window.selectedSavePath);
+      if (selected) refs.saveNameDisplay.textContent = selected.name || humanizeToken(selected.folder);
+      await addPickerSearch(refs.saveDropdownList, "desktop.search_saves");
+      refs.saveDropdownList.scrollTop = pickerScroll;
     } catch (error) {
+      if (quiet) throw error;
       console.error(error);
       showToast("toasts.scan_saves_error", {}, "error");
     }
   };
 
   const loadSelectedProfile = async () => {
+    if (window.saveSync) { window.saveSync.blockWrites = false; window.saveSync.retries = 0; }
     if (!window.selectedProfilePath) return;
     window.logUserAction("load_profile", "start");
     try {
@@ -4307,6 +4415,21 @@ document.addEventListener("DOMContentLoaded", async () => {
       window.showToast("toasts.profile_loaded_select_save", {}, "info");
       loadTools(activeTab);
       window.logUserAction("load_profile", "success");
+      const rememberedSave = readPreference(`save:${lastSelectedGame}:${window.selectedProfilePath}`);
+      const savedItem = [...refs.saveDropdownList.querySelectorAll("[data-dropdown-value]")]
+        .find((item) => item.dataset.dropdownValue === rememberedSave);
+      if (savedItem) {
+        // Programmatic restoration uses the same existing load command; it never
+        // writes the save and only runs for a path returned by the fresh scan.
+        const profilePath = window.selectedProfilePath;
+        await invoke("load_profile", { profilePath, savePath: rememberedSave });
+        if (window.selectedProfilePath !== profilePath) return;
+        window.selectedSavePath = rememberedSave;
+        window.currentSavePath = rememberedSave;
+        refs.saveNameDisplay.textContent = savedItem.querySelector(".dropdown-item-title").textContent;
+        updateDropdownSelectionState(refs.saveDropdownList, rememberedSave);
+        await loadSelectedSave();
+      }
     } catch (error) {
       console.error(error);
       refs.profileStatus.textContent = uiText.profileError;
@@ -4315,18 +4438,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   };
 
-  const scanProfiles = async ({ saveToBackend = true, showToasts = true } = {}) => {
-    refs.profileStatus.textContent = uiText.scanningProfiles;
-    refs.profileDropdownList.innerHTML = "";
+  const scanProfiles = async ({ saveToBackend = true, showToasts = true, preserveSelection = false } = {}) => {
+    const selectedProfile = window.selectedProfilePath;
+    const selectedGame = lastSelectedGame;
+    if (!preserveSelection) refs.profileStatus.textContent = uiText.scanningProfiles;
     window.logUserAction("scan_profiles", "start");
     try {
       await syncSelectedGameUi();
       const profiles = await invoke("find_ets2_profiles");
-      refs.profileStatus.textContent = await t("status_text.profiles_found", { count: profiles.length });
+      if (preserveSelection && (selectedGame !== lastSelectedGame || selectedProfile !== window.selectedProfilePath)) return;
+      const pickerScroll = refs.profileDropdownList.scrollTop;
+      refs.profileDropdownList.replaceChildren();
+      if (!preserveSelection) refs.profileStatus.textContent = await t("status_text.profiles_found", { count: profiles.length });
       if (showToasts) window.showToast("toasts.profiles_found", {}, "success");
       profiles.filter((profile) => profile.success).forEach((profile) => {
         refs.profileDropdownList.appendChild(createProfileDropdownItem(profile));
       });
+      await addPickerSearch(refs.profileDropdownList, "desktop.search_profiles");
       localStorage.setItem("ets2_profiles_cache", JSON.stringify(profiles));
       if (saveToBackend) {
         await invoke("save_profiles_cache", {
@@ -4339,8 +4467,15 @@ document.addEventListener("DOMContentLoaded", async () => {
           })),
         });
       }
+      if (preserveSelection) {
+        refs.profileDropdownList.scrollTop = pickerScroll;
+        updateDropdownSelectionState(refs.profileDropdownList, selectedProfile);
+        const selected = profiles.find((profile) => profile.path === selectedProfile && profile.success);
+        if (selected) refs.profileNameDisplay.textContent = selected.name ?? uiText.noProfile;
+        return;
+      }
       const remoteLast = await invoke("read_last_profile").catch(() => null);
-      const last = remoteLast || localStorage.getItem("ets2_last_profile");
+      const last = readPreference(`profile:${lastSelectedGame}`) || remoteLast || localStorage.getItem("ets2_last_profile");
       if (last) {
         const matched = profiles.find((profile) => profile.path === last && profile.success);
         if (matched) {
@@ -4354,6 +4489,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       await updateOperationalOverview();
       window.logUserAction("scan_profiles", "success");
     } catch (error) {
+      if (preserveSelection) throw error;
       console.error(error);
       refs.profileStatus.textContent = uiText.scanFailed;
       window.showToast("toasts.no_profiles_found", {}, "error");
@@ -4361,6 +4497,202 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   };
 
+  window.saveSync = {
+    running: null, pending: false, manual: false, retries: 0, accepting: false,
+    blockWrites: false, mutations: 0, reads: 0, editVersion: 0, revision: null, lastSuccess: null,
+  };
+  const saveSync = window.saveSync;
+  const dirtyInputs = new Map();
+  const syncStatus = document.createElement("small");
+  syncStatus.id = "saveSyncStatus";
+  syncStatus.setAttribute("role", "status");
+  syncStatus.setAttribute("aria-live", "polite");
+  syncStatus.style.cssText = "display:block;font-size:11px;opacity:.75";
+  refs.profileStatus?.parentElement?.appendChild(syncStatus);
+  const setSyncStatus = async (status) => {
+    syncStatus.dataset.state = status;
+    syncStatus.dataset.translate = `save_sync.${status}`;
+    const copy = await t(`save_sync.${status}`);
+    if (syncStatus.dataset.state === status) syncStatus.textContent = copy;
+    window.dispatchEvent(new Event("desktop-state-changed"));
+  };
+  void setSyncStatus("waiting");
+  const syncContext = () => ({ game: lastSelectedGame || "ets2", profilePath: window.selectedProfilePath, savePath: window.selectedSavePath });
+  const sameSyncContext = (context) => {
+    const current = syncContext();
+    return current.game === context.game && current.profilePath === context.profilePath && current.savePath === context.savePath;
+  };
+  const visible = (element) => element?.isConnected && element.getClientRects().length > 0;
+  const filterInput = (element) => element.matches("input[type='search'], [data-garage-search], [data-garage-filter]");
+  const inputValue = (element) => element.isContentEditable ? element.textContent
+    : element.type === "checkbox" || element.type === "radio" ? String(element.checked) : element.value;
+  const hasPendingEdits = () => {
+    for (const [element, original] of dirtyInputs) {
+      if (!visible(element) || inputValue(element) === original) dirtyInputs.delete(element);
+    }
+    return dirtyInputs.size > 0 || Array.from(document.querySelectorAll(".modal, .modal-backdrop, [role='dialog']"))
+      .some((element) => visible(element) && window.getComputedStyle(element).visibility !== "hidden");
+  };
+  document.addEventListener("focusin", (event) => {
+    const element = event.target;
+    if (element.matches("input, select, textarea, [contenteditable='true']") && !filterInput(element) && !dirtyInputs.has(element)) {
+      element.dataset.syncOriginal = inputValue(element);
+    }
+  });
+  const trackSaveInput = (event) => {
+    const element = event.target;
+    if (!element.matches("input, select, textarea, [contenteditable='true']") || filterInput(element)) return;
+    saveSync.editVersion++;
+    if (!dirtyInputs.has(element)) dirtyInputs.set(element, element.dataset.syncOriginal ?? element.defaultValue ?? "");
+  };
+  document.addEventListener("input", trackSaveInput, true);
+  document.addEventListener("change", trackSaveInput, true);
+  let syncTimer = null;
+  let conflictNotified = false;
+  const scheduleSyncRetry = (delay = 2000) => {
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(() => { syncTimer = null; void requestSaveRefresh(); }, delay);
+  };
+  const deferSaveRefresh = () => {
+    saveSync.pending = true;
+    void setSyncStatus("changed");
+    if (!conflictNotified) {
+      conflictNotified = true;
+      window.showToast("save_sync.conflict", {}, "warning");
+      window.logUserAction("save_sync_conflict", "deferred");
+    }
+    // Resume on input/close activity instead of polling a dirty form.
+  };
+  const performSaveRefresh = async () => {
+    const context = syncContext();
+    const editVersion = saveSync.editVersion;
+    const manual = saveSync.manual;
+    saveSync.manual = false;
+    saveSync.pending = false;
+    if (hasPendingEdits() || saveEditorLoadInProgress || saveSync.mutations || saveSync.reads) {
+      saveSync.manual ||= manual;
+      if (saveEditorLoadInProgress || saveSync.mutations || saveSync.reads) { saveSync.pending = true; scheduleSyncRetry(500); }
+      else deferSaveRefresh();
+      return;
+    }
+    await setSyncStatus("synchronizing");
+    const stillSafe = () => sameSyncContext(context) && editVersion === saveSync.editVersion && !hasPendingEdits() && !saveSync.mutations && !saveSync.reads;
+    try {
+      await scanProfiles({ saveToBackend: manual, showToasts: false, preserveSelection: true });
+      if (!sameSyncContext(context)) return;
+      if (context.profilePath) await scanSavesForProfile({ quiet: true });
+      if (!stillSafe()) { if (sameSyncContext(context)) deferSaveRefresh(); return; }
+      const snapshot = await invoke("refresh_savegame", { ...context, force: manual });
+      if (!sameSyncContext(context)) return;
+      if (!snapshot) throw new Error("save_refresh_empty");
+      if (!stillSafe()) { deferSaveRefresh(); return; }
+      if (!context.savePath || !snapshot.data) {
+        saveSync.retries = 0;
+        frontendState.lastChecked = Date.now();
+        await setSyncStatus("waiting");
+        return;
+      }
+      // Read into local variables; a failed command must not clear the last good UI.
+      const quicksave = await invoke("quicksave_game_info");
+      const trucks = await invoke("get_all_trucks", { profilePath: context.profilePath });
+      const truck = await invoke("get_player_truck", { profilePath: context.profilePath }).catch((error) => {
+        if (String(error).includes("assigned_vehicles/player_vehicles.vehicle nicht gefunden") || String(error).includes("Player Truck mit ID")) return null;
+        throw error;
+      });
+      const trailerResponse = await invoke("get_player_trailer", { profilePath: context.profilePath });
+      const baseConfig = manual ? await invoke("read_base_config").catch(() => window.baseConfig) : window.baseConfig;
+      const saveConfig = manual ? await invoke("read_save_config", { profilePath: context.profilePath }).catch(() => window.readSaveGameConfig) : window.readSaveGameConfig;
+      if (!stillSafe()) { if (sameSyncContext(context)) deferSaveRefresh(); return; }
+      const trailer = trailerResponse && typeof trailerResponse === "object" && "has_trailer" in trailerResponse
+        ? trailerResponse.trailer : trailerResponse;
+      saveSync.accepting = true;
+      try {
+        await invoke("accept_savegame_refresh", { ...context, revision: snapshot.revision });
+      } finally { saveSync.accepting = false; }
+      if (!stillSafe()) {
+        // Input can arrive while the hash acknowledgement is in flight.
+        saveSync.blockWrites = sameSyncContext(context);
+        if (sameSyncContext(context)) deferSaveRefresh();
+        return;
+      }
+      window.currentProfileData = snapshot.data;
+      window.currentQuicksaveData = quicksave;
+      window.allTrucks = trucks || [];
+      window.playerTruck = truck;
+      window.playerTrailer = trailer || null;
+      window.allTrailers = trailer ? [trailer] : [];
+      window.playerTrailerHasActiveJob = Boolean(trailerResponse?.has_active_job);
+      window.playerTrailerJobCargoMass = trailerResponse?.active_job_cargo_mass ?? null;
+      window.playerTrailerLoadError = null;
+      window.baseConfig = baseConfig;
+      window.readSaveGameConfig = saveConfig;
+      saveSync.blockWrites = false;
+      saveSync.revision = snapshot.revision;
+      saveSync.lastSuccess = Date.now();
+      saveSync.retries = 0;
+      conflictNotified = false;
+      recoveryDataDirty = true;
+      recoveryHasLoaded = false;
+      await updateOperationalOverview();
+      if (stillSafe()) await refreshSaveTools();
+      if (!sameSyncContext(context)) return;
+      document.dispatchEvent(new CustomEvent("savegame-synchronized", { detail: { ...context, revision: snapshot.revision } }));
+      await setSyncStatus("synchronized");
+    } catch (error) {
+      if (!sameSyncContext(context)) return;
+      saveSync.pending = true;
+      saveSync.retries++;
+      window.logUserAction("save_sync", "temporarily_unavailable");
+      await setSyncStatus(String(error).includes("not_found") || String(error).includes("missing") ? "waiting" : "unavailable");
+      if (manual) void notify(await t("desktop.refresh_failed"), { type: "error", details: String(error) });
+      if (saveSync.retries < 3) scheduleSyncRetry();
+    }
+  };
+  const requestSaveRefresh = ({ manual = false, changed = false } = {}) => {
+    if (manual) void checkSaveFormat();
+    if (manual || changed) saveSync.retries = 0;
+    saveSync.manual ||= manual;
+    if (saveSync.running) {
+      if (manual || changed) saveSync.pending = true;
+      return saveSync.running;
+    }
+    clearTimeout(syncTimer);
+    syncTimer = null;
+    refs.refreshBtn?.setAttribute("aria-busy", "true");
+    if (refs.refreshBtn) refs.refreshBtn.disabled = true;
+    saveSync.running = performSaveRefresh().finally(() => {
+      saveSync.running = null;
+      refs.refreshBtn?.removeAttribute("aria-busy");
+      if (refs.refreshBtn) refs.refreshBtn.disabled = false;
+      window.dispatchEvent(new Event("desktop-state-changed"));
+      if (saveSync.pending && !syncTimer && saveSync.retries < 3 && !hasPendingEdits()) scheduleSyncRetry(500);
+    });
+    return saveSync.running;
+  };
+  window.refreshSavegame = requestSaveRefresh;
+  frontendState.refresh = requestSaveRefresh;
+  const resumePendingRefresh = () => {
+    if (saveSync.pending && !hasPendingEdits()) scheduleSyncRetry(150);
+  };
+  document.addEventListener("focusout", resumePendingRefresh);
+  document.addEventListener("click", () => {
+    if (saveSync.pending) scheduleSyncRetry(150);
+  });
+  const pendingDialogObserver = new MutationObserver((changes) => {
+    if (!saveSync.pending) return;
+    const dialogChanged = changes.some((change) => change.target.matches?.(".modal, .modal-backdrop, [role='dialog']")
+      || [...change.removedNodes].some((node) => node.matches?.(".modal, .modal-backdrop, [role='dialog']")));
+    if (dialogChanged) resumePendingRefresh();
+  });
+  pendingDialogObserver.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["style", "class", "hidden"] });
+  window.addEventListener("savegame-modified", () => {
+    saveSync.pending = true;
+    scheduleSyncRetry(250);
+  });
+  const unlistenSync = await listen("savegame://changed", ({ payload }) => {
+    if (payload && sameSyncContext(payload)) void requestSaveRefresh({ changed: true });
+  }).catch((error) => { console.error("Save synchronization listener failed:", error); return () => {}; });
+  window.addEventListener("beforeunload", () => { clearTimeout(syncTimer); pendingDialogObserver.disconnect(); unlistenSync(); });
 
   window.refreshAfterEts2DataLocationChange = async function () {
     localStorage.removeItem("ets2_profiles_cache");
@@ -4581,7 +4913,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  refs.refreshBtn?.addEventListener("click", () => scanProfiles({ saveToBackend: true, showToasts: true }));
+  refs.refreshBtn?.addEventListener("click", () => requestSaveRefresh({ manual: true }));
 
   refs.cloneBtn?.addEventListener("click", async () => {
     if (!window.selectedProfilePath) {
@@ -4698,6 +5030,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       await invoke("set_language_command", { language: result.language });
+      invalidateTranslations();
       showToast("toasts.language_updated", {}, "success");
       location.reload();
     } catch (error) {
@@ -4705,14 +5038,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       showToast("toasts.load_languages_error", { error: await localizeError(error) }, "error");
     }
   };
-
-  setInterval(async () => {
-    if (!window.selectedSavePath) return;
-    try {
-      await loadQuicksave();
-      updateUIWithCurrentQuicksave();
-    } catch {}
-  }, 300000);
 
   try {
     const cached = await invoke("read_profiles_cache");

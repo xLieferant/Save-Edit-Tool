@@ -4,6 +4,9 @@ import { selectWorkspace } from "../shared/workspace.js";
 import { attachI18nToWindow, t, translateDocument } from "../shared/i18n.js";
 import { hasTauri, invoke, listen, safeInvoke } from "../shared/runtime.js";
 import { createAnalyticsController } from "../../js/analytics.js";
+import { notify } from "../shared/notifications.js";
+import { frontendState, singleFlight, readPreference, savePreference } from "../shared/frontend_state.js";
+import "../shared/desktop.js";
 
 const state = {
   overview: null,
@@ -415,14 +418,7 @@ function getInputChecked(id) {
 }
 
 function showToast(message, type = "info") {
-  const toast = document.createElement("div");
-  toast.className = "career-toast";
-  toast.dataset.type = type;
-  toast.textContent = message;
-  document.body.appendChild(toast);
-  setTimeout(() => {
-    toast.remove();
-  }, 3500);
+  return notify(message, { type });
 }
 
 function normalizeErrorCode(rawError) {
@@ -1038,7 +1034,7 @@ function renderDispatcherMarket() {
         <td>${formatCurrency(job.totalReward || 0)}</td>
         <td>
           <div class="dispatcher-row-primary">${dispatcherStatusMarkup(job.status)}</div>
-          <div class="dispatcher-row-secondary">${formatRelativeTime(job.expiresAtUtc)}</div>
+          <div class="dispatcher-row-secondary" data-dispatcher-expiry="${job.id}">${formatRelativeTime(job.expiresAtUtc)}</div>
         </td>
       </tr>
     `;
@@ -2169,6 +2165,8 @@ function renderCareerSettings() {
 }
 
 function switchPanel(panel) {
+  if (!document.getElementById(`panel-${panel}`)) return;
+  savePreference("career-panel", panel);
   document.querySelectorAll(".career-nav-btn").forEach((button) => {
     button.classList.toggle("is-active", button.dataset.panel === panel);
   });
@@ -2264,7 +2262,7 @@ function startRefreshLoop() {
   stopRefreshLoop();
   refreshTimer = setInterval(() => {
     const enabled = getInputChecked("cmSettingAutoRefresh");
-    if (enabled) {
+    if (enabled && !document.hidden && !state.dispatcher.actionBusy) {
       void refreshAllData();
     }
   }, 12000);
@@ -2273,9 +2271,15 @@ function startRefreshLoop() {
 function startDispatcherClock() {
   if (dispatcherClockTimer) return;
   dispatcherClockTimer = setInterval(() => {
-    renderDispatcherOverview();
-    renderDispatcherMarket();
-    renderDispatcherDetails();
+    if (document.hidden || !document.getElementById("panel-dispatcher")?.classList.contains("is-active") || state.dispatcher.actionBusy) return;
+    const generation = state.dispatcher.generation;
+    setCellText("cmDispatcherNextGeneration", generation?.saveLinkActive ? formatRelativeTime(generation.nextGenerationAtUtc) : uiText.noData);
+    if (state.dispatcher.selectedJob) setCellText("cmDispatcherDetailExpiry", formatRelativeTime(state.dispatcher.selectedJob.expiresAtUtc));
+    const jobs = new Map(state.dispatcher.marketJobs.map((job) => [String(job.id), job]));
+    for (const node of document.querySelectorAll("[data-dispatcher-expiry]")) {
+      const job = jobs.get(node.dataset.dispatcherExpiry);
+      if (job) node.textContent = formatRelativeTime(job.expiresAtUtc);
+    }
   }, 1000);
 }
 
@@ -2536,25 +2540,36 @@ function renderAll() {
   renderCareerSettings();
 }
 
-async function refreshAllData() {
-  await refreshCareerTelemetryData();
-  await refreshManagementData();
-  await refreshDispatcherData();
-  renderAll();
-  if (analyticsController) {
-    await analyticsController.refresh();
+const refreshAllData = singleFlight(async () => {
+  const button = document.getElementById("refreshCareerBtn");
+  if (button) { button.disabled = true; button.setAttribute("aria-busy", "true"); }
+  try {
+    await refreshCareerTelemetryData();
+    await refreshManagementData();
+    await refreshDispatcherData();
+    renderAll();
+    if (analyticsController && document.getElementById("panel-analytics")?.classList.contains("is-active")) await analyticsController.refresh();
+    frontendState.lastChecked = Date.now();
+  } finally {
+    if (button) { button.disabled = false; button.removeAttribute("aria-busy"); }
+    window.dispatchEvent(new Event("desktop-state-changed"));
   }
-}
+});
 
 async function handleUpdateUsername() {
+  const username = getInputValue("cmUserUsernameInput").trim();
+  if (!username) return;
+  const submission = beginSettingsSave("cmUpdateUsernameBtn", ["cmUserUsernameInput"], renderUserSettings);
+  if (!submission) return;
   try {
-    const username = getInputValue("cmUserUsernameInput").trim();
-    if (!username) return;
     await invokeStrict("update_username", { username });
+    submission.commit();
     await refreshAllData();
     showToast(await t("career_mode.user_saved"), "success");
   } catch (error) {
     showToast(await resolveErrorMessage(error), "error");
+  } finally {
+    submission.finish();
   }
 }
 
@@ -2752,7 +2767,7 @@ async function initNavigation() {
   });
 
   refreshButton?.addEventListener("click", () => {
-    window.location.reload();
+    void refreshAllData();
   });
 }
 
@@ -2900,6 +2915,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   await selectWorkspace("career").catch((error) => console.error("[career] workspace persistence failed", error));
 
   applyNavHandlers();
+  switchPanel(readPreference("career-panel", "dashboard"));
+  frontendState.refresh = refreshAllData;
   applyDispatcherHandlers();
   switchDispatcherTab("market");
   applySettingsHandlers();
@@ -2914,4 +2931,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   await refreshAllData();
   startRefreshLoop();
   startDispatcherClock();
+});
+
+window.addEventListener("pagehide", () => {
+  stopRefreshLoop();
+  clearInterval(dispatcherClockTimer);
+  clearInterval(userMenuAutoHide.timerId);
 });

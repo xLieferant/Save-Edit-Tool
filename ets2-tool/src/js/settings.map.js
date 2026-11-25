@@ -1,13 +1,13 @@
 export const SETTINGS_MAP = {
   money: {
-    key: "info_money_account",
+    key: "money",
     file: "save",
     type: "number",
     reload: ["profile"]
   },
 
   xp: {
-    key: "info_players_experience",
+    key: "xp",
     file: "save",
     type: "number",
     reload: ["profile"]
