@@ -1,4 +1,29 @@
 {
+  "save_format": {
+    "checking": "Checking save format…",
+    "correct": "Save format: 2 · configured",
+    "incorrect": "Save format: adjustment needed",
+    "missing_entry": "Save format: entry missing",
+    "missing_file": "Save format: config.cfg not found",
+    "unavailable": "Save format: cannot check right now",
+    "invalid": "Save format: config.cfg contains an invalid or ambiguous entry",
+    "confirm": "Your save format is not configured correctly. Would you like to change it to 2 automatically?",
+    "restart_hint": "You may need to restart the game and save again.",
+    "local_profile_hint": "Please use a local game profile with Steam Cloud synchronization disabled.",
+    "updated": "Save format set to 2. A config.cfg backup was created beside the original file. You may need to restart the game and save again.",
+    "confirmation_required": "Changing the save format requires your confirmation.",
+    "changed": "The game selection or config.cfg changed. Refresh and confirm again.",
+    "backup_failed": "The config.cfg backup could not be created. The config was not changed.",
+    "write_failed": "The save format could not be changed or verified. Check config.cfg and its backup before trying again."
+  },
+  "save_sync": {
+    "synchronized": "Savegame synchronized",
+    "synchronizing": "Synchronizing savegame...",
+    "waiting": "Waiting for savegame...",
+    "changed": "Savegame changed",
+    "unavailable": "Synchronization temporarily unavailable",
+    "conflict": "The savegame changed. Close open dialogs or finish your unsaved edits before synchronizing."
+  },
   "coaches": {
     "title": "Project Coaches",
     "career": "Career",
@@ -3299,5 +3324,43 @@
       "cache_failed": "The cache could not be cleared. Please try again.",
       "txt_only": "Choose a .txt file."
     }
+  },
+  "game_units": {
+    "odometer_mi": "Set odometer value in miles",
+    "odometer_saved": "Truck odometer set to {value} {unit}.",
+    "money_saved": "Money changed to {value}."
+},
+  "save_errors": {
+    "writing": "The game is currently writing this savegame. Wait for saving to finish and try again.",
+    "changed": "The selected savegame changed. Refresh it before applying your changes.",
+    "temporary_lock": "The savegame is temporarily locked. The operation will retry shortly.",
+    "locked": "The savegame is still locked after several attempts. Wait for the game to finish saving and try again.",
+    "backup_failed": "The automatic backup failed. No edit was applied. Check the application log.",
+    "decrypt_failed": "The savegame could not be decrypted. Refresh the savegame and try again.",
+    "write_failed": "The savegame could not be written. Check the application log and the automatic backup.",
+    "verification_failed": "The written savegame could not be verified. Check the savegame and its automatic backup before continuing.",
+    "not_found": "The selected savegame was not found. Refresh the save list and select it again.",
+    "busy": "Another save operation is in progress. Wait for it to finish and try again.",
+    "success": "Savegame successfully modified. Reload the modified savegame in your game to apply the changes."
+  },
+  "desktop": {
+    "notifications": "Notifications",
+    "technical_details": "Technical details",
+    "copy_details": "Copy details",
+    "copied": "Copied",
+    "search_table": "Search this table…",
+    "row_count": "{shown} of {total} rows",
+    "sort_column": "Sort by {column}",
+    "checked_at": "Checked at {time}",
+    "game_running": "Game running",
+    "game_stopped": "Game stopped",
+    "refresh_failed": "Refresh failed. Previous data is retained.",
+    "refresh_hint": "Refresh data (F5 / Ctrl+R)",
+    "search_tools": "Search tools…",
+    "no_tools": "No matching tools.",
+    "search_profiles": "Search profiles…",
+    "search_saves": "Search saves…",
+    "save_hint": "Save (Ctrl+S)",
+    "settings_hint": "Settings (F6)"
   }
 }

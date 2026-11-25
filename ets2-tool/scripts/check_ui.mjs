@@ -123,6 +123,8 @@ try {
       window.__TAURI__ = {
         core: { convertFileSrc: (path) => path, invoke: async (command, args = {}) => {
           window.__fixtureCalls.push(command);
+          if (window.__fixtureDelay?.[command]) await new Promise(resolve => setTimeout(resolve, window.__fixtureDelay[command]));
+          if (window.__fixtureResponses && Object.hasOwn(window.__fixtureResponses, command)) return structuredClone(window.__fixtureResponses[command]);
           if (command === window.__fixtureFailCommand) {
             await new Promise(resolve => setTimeout(resolve, 180));
             throw new Error("not_allowed");
@@ -217,7 +219,7 @@ try {
               assert.equal(appearance.background, theme === "dark" ? "rgb(23, 25, 28)" : "rgb(238, 240, 242)");
               assert.equal(appearance.text, theme === "dark" ? "rgb(230, 232, 235)" : "rgb(36, 41, 48)");
               if (page.includes("save-editor") || page.includes("/career/")) {
-                assert.equal(appearance.credit, "Created by xLieferant");
+                assert.equal(appearance.credit, locales[language].ui_refinement.creator_credit);
                 assert.ok(appearance.creditHeight > 0, `${page}: creator credit is visible`);
                 const shot = await call("Page.captureScreenshot", { format: "png" });
                 fs.writeFileSync(path.join(artifacts, `${language}-${page.split("/").at(-2)}-${theme}-${accent}.png`), Buffer.from(shot.data, "base64"));
@@ -387,6 +389,94 @@ try {
     assert.equal(await evaluate('window.__fixtureCareerSettings.telemetryEnabled'), true);
     assert.equal(await evaluate('document.getElementById("cmCareerTelemetryEnabledInput").dataset.dirty'), undefined);
 
+    // Shared notifications: mixed heights, FIFO queue, deduplication and read news.
+    await evaluate(`(async () => {
+      window.notificationManager.clear();
+      await window.notificationManager.notify('Persistent fixture error', {type:'error',id:'critical'});
+      for (let index = 1; index <= 5; index++) await window.notificationManager.notify('Fixture ' + index + ' — '.repeat(index * 30), {id:'fixture-' + index,duration:0});
+    })()`);
+    assert.deepEqual(await evaluate('({visible:window.notificationManager.size,queued:window.notificationManager.queued})'), { visible: 4, queued: 2 });
+    await evaluate("window.notificationManager.notify('Persistent fixture error', {type:'error',id:'critical'})");
+    assert.equal(await evaluate('document.querySelector(".notification-count").textContent'), '×2');
+    for (const scale of [1, 1.25, 1.5, 2]) {
+      await call("Emulation.setDeviceMetricsOverride", { width: 900, height: 640, deviceScaleFactor: scale, mobile: false });
+      const stack = await evaluate(`(() => {
+        const boxes = [...document.querySelectorAll('.desktop-notification')].map(node => node.getBoundingClientRect());
+        return { overlap:boxes.some((box,index) => index && boxes[index-1].bottom > box.top), overflow:boxes.some(box => box.right > innerWidth || box.left < 0), order:[...document.querySelectorAll('.notification-copy > span')].map(node => node.textContent) };
+      })()`);
+      assert.equal(stack.overlap, false);
+      assert.equal(stack.overflow, false);
+      assert.ok(stack.order[0].startsWith('Persistent'));
+      assert.ok(stack.order.at(-1).startsWith('Fixture 3'));
+    }
+    await evaluate('document.querySelector(".notification-close").click()');
+    assert.deepEqual(await evaluate('({visible:window.notificationManager.size,queued:window.notificationManager.queued})'), { visible: 4, queued: 1 });
+    assert.ok(await evaluate('[...document.querySelectorAll(".notification-copy > span")].at(-1).textContent.startsWith("Fixture 4")'));
+    await evaluate(`(async () => {
+      window.notificationManager.clear();
+      localStorage.removeItem('ets2_read_news_v1');
+      const key = await window.notificationManager.notify('News fixture', {newsId:'news-regression',duration:0});
+      window.notificationManager.dismiss(key);
+      await window.notificationManager.notify('News fixture', {newsId:'news-regression'});
+    })()`);
+    assert.equal(await evaluate('window.notificationManager.size'), 0, "read news must stay dismissed");
+    await evaluate("window.notificationManager.notify('Short fixture', {duration:80})");
+    await waitFor('window.notificationManager.size === 0');
+
+    // Career refresh reads data without replacing the document or losing a draft.
+    await evaluate(`(() => {
+      window.__documentToken = 'retained';
+      const input = document.getElementById('cmUserUsernameInput');
+      input.value = 'Unsaved draft'; input.dispatchEvent(new Event('input',{bubbles:true}));
+      window.__fixtureCalls = [];
+      window.__fixtureDelay = {career_get_status:120};
+    })()`);
+    await evaluate('Promise.all([window.frontendState.refresh(),window.frontendState.refresh(),window.frontendState.refresh()])');
+    assert.equal(await evaluate('window.__fixtureCalls.filter(command => command === "career_get_status").length'), 1, "concurrent refreshes share reads");
+    await click('#refreshCareerBtn');
+    await waitFor('!document.getElementById("refreshCareerBtn").disabled');
+    assert.equal(await evaluate('window.__documentToken'), 'retained');
+    assert.equal(await evaluate('document.getElementById("cmUserUsernameInput").value'), 'Unsaved draft');
+    await evaluate('window.__fixtureDelay = {}');
+
+    // Search and sorting remain attached when a management table gets new rows.
+    await evaluate(`localStorage.removeItem('desktop:table:/pages/career/index.html:regressionTable'); document.querySelector('.career-panel.is-active').insertAdjacentHTML('beforeend','<div id="tableFixture"><table id="regressionTable"><thead><tr><th>Name</th><th>Value</th></tr></thead><tbody><tr><td>Beta</td><td>10</td></tr><tr><td>Alpha</td><td>2</td></tr></tbody></table></div>')`);
+    await waitFor('Boolean(document.querySelector("#tableFixture input[type=search]"))');
+    await evaluate('document.querySelector("#regressionTable th button").click()');
+    assert.equal(await evaluate('document.querySelector("#regressionTable tbody tr td").textContent'), 'Alpha');
+    await evaluate(`(() => { const input = document.querySelector('#tableFixture input'); input.value = 'Beta'; input.dispatchEvent(new Event('input')); })()`);
+    await waitFor('document.querySelectorAll("#regressionTable tbody tr:not([hidden])").length === 1');
+    assert.equal(await evaluate('document.querySelector("#regressionTable tbody tr:not([hidden]) td").textContent'), 'Beta');
+    await evaluate('document.querySelector("#regressionTable tbody").innerHTML = "<tr><td>Gamma</td><td>1</td></tr><tr><td>Beta</td><td>3</td></tr>"');
+    await waitFor('document.querySelectorAll("#regressionTable tbody tr:not([hidden])").length === 1');
+    assert.equal(await evaluate('document.querySelector("#tableFixture input").value'), 'Beta');
+    await evaluate('document.getElementById("tableFixture").remove()');
+
+    // Editor tool navigation, focus and user queries survive a data refresh.
+    await navigate('/pages/save-editor/index.html');
+    await waitFor('typeof window.refreshSavegame === "function"');
+    await evaluate(`(async () => {
+      document.querySelector('[data-tab=profile]').click();
+      await new Promise(resolve => setTimeout(resolve,80));
+      const search = document.querySelector('.tool-search'); search.value = 'unlikely-fixture'; search.dispatchEvent(new Event('input',{bubbles:true}));
+      document.querySelector('[data-tab=truck]').click();
+      await new Promise(resolve => setTimeout(resolve,80));
+      document.querySelector('[data-tab=profile]').click();
+    })()`);
+    await waitFor('document.querySelector(".tool-search").value === "unlikely-fixture"');
+    assert.equal(await evaluate('document.querySelector(".tool-search-empty").hidden'), false);
+    const selectedTab = await evaluate('document.querySelector(".editor-tabs .nav-btn.active").dataset.tab');
+    await evaluate(`window.__fixtureResponses = {refresh_savegame:{data:null,status:'waiting'}}; window.__fixtureCalls=[]; document.dispatchEvent(new KeyboardEvent('keydown',{key:'F5',bubbles:true,cancelable:true}))`);
+    await waitFor('!window.saveSync.running && window.__fixtureCalls.includes("refresh_savegame")');
+    assert.equal(await evaluate('document.querySelector(".editor-tabs .nav-btn.active").dataset.tab'), selectedTab, 'F5 must refresh instead of navigating');
+    await evaluate(`window.__fixtureCalls=[]; window.dispatchEvent(new Event('focus')); document.dispatchEvent(new Event('visibilitychange'))`);
+    await waitFor('window.__fixtureCalls.includes("refresh_savegame") && !window.saveSync.running');
+    assert.equal(await evaluate('window.__fixtureCalls.filter(command => command === "refresh_savegame").length'), 1);
+    assert.equal(await evaluate('document.querySelector(".tool-search").value'), 'unlikely-fixture');
+    await evaluate('window.__fixtureResponses = {}; window.notificationManager.clear()');
+    const desktopShot = await call("Page.captureScreenshot", { format: "png" });
+    fs.writeFileSync(path.join(artifacts, `${language}-desktop-regressions.png`), Buffer.from(desktopShot.data, "base64"));
+
     // Legacy theme migration and persistence across full module initialization.
     for (const [legacy, theme, accent] of [["neon", "dark", "green"], ["neon-red", "dark", "default"], ["unsupported", "dark", "default"], ["light", "light", "default"]]) {
       await evaluate(`localStorage.setItem('theme', ${JSON.stringify(legacy)}); localStorage.removeItem('accent')`);
@@ -426,6 +516,7 @@ try {
   else console.log("Baseline page checks skipped (--refinement-only).");
   console.log(`${appearanceChecks} theme/accent checks and ${garageChecks} garage volume/window checks passed.`);
   console.log("Switch/checkbox mouse and keyboard states, save failure rollback, theme migration and workspace resume/switch checks passed in both languages.");
+  console.log("Desktop regressions passed in both languages: notification layout/queue/dedup/news/duration at four scales, shared refresh/draft preservation, table search/sort, tool navigation and F5/focus refresh.");
   console.log(`Screenshots: ${artifacts}`);
   console.log("Native file dialogs, profile scanning, save writes and real game data are not covered by this fixture.");
 } finally {

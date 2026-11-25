@@ -1,4 +1,29 @@
 {
+  "save_format": {
+    "checking": "Speicherformat wird geprüft…",
+    "correct": "Speicherformat: 2 · korrekt konfiguriert",
+    "incorrect": "Speicherformat: Anpassung erforderlich",
+    "missing_entry": "Speicherformat: Eintrag fehlt",
+    "missing_file": "Speicherformat: config.cfg nicht gefunden",
+    "unavailable": "Speicherformat: Prüfung derzeit nicht möglich",
+    "invalid": "Speicherformat: config.cfg enthält einen ungültigen oder mehrdeutigen Eintrag",
+    "confirm": "Dein Speicherformat ist nicht korrekt konfiguriert. Möchtest du es automatisch auf 2 ändern?",
+    "restart_hint": "Gegebenenfalls sind ein Spielneustart und erneutes Speichern erforderlich.",
+    "local_profile_hint": "Bitte verwende ein lokales Spielprofil, bei dem die Steam-Cloud-Synchronisierung deaktiviert ist.",
+    "updated": "Speicherformat auf 2 gesetzt. Ein Backup der config.cfg wurde neben der Originaldatei erstellt. Gegebenenfalls sind ein Spielneustart und erneutes Speichern erforderlich.",
+    "confirmation_required": "Die Änderung des Speicherformats erfordert deine Zustimmung.",
+    "changed": "Die Spielauswahl oder config.cfg hat sich geändert. Bitte aktualisieren und erneut bestätigen.",
+    "backup_failed": "Das Backup der config.cfg konnte nicht erstellt werden. Die Config wurde nicht geändert.",
+    "write_failed": "Das Speicherformat konnte nicht geändert oder überprüft werden. Prüfe die config.cfg und ihr Backup vor einem erneuten Versuch."
+  },
+  "save_sync": {
+    "synchronized": "Speicherstand synchronisiert",
+    "synchronizing": "Speicherstand wird synchronisiert...",
+    "waiting": "Warte auf Speicherstand...",
+    "changed": "Speicherstand geändert",
+    "unavailable": "Synchronisierung vorübergehend nicht verfügbar",
+    "conflict": "Der Speicherstand wurde geändert. Schließe offene Dialoge oder beende deine ungespeicherten Bearbeitungen vor der Synchronisierung."
+  },
   "coaches": {
     "title": "Project Coaches",
     "career": "Karriere",
@@ -116,7 +141,7 @@
     "career_tag": "Firmenverwaltung",
     "editor_tag": "Spielstandbearbeitung",
     "launch": "Öffnen",
-    "mode_editor_full": "Spielstand-Editor",
+    "mode_editor_full": "Speicherstand-Editor",
     "mode_career_full": "Karrieremodus",
     "career_desc": "Verwalte Mitglieder, Aufträge, Finanzen und Fahrzeuge deiner Spedition.",
     "editor_desc": "Bearbeite Profilwerte, Fahrzeuge, Fahrer und Garagen.",
@@ -131,8 +156,8 @@
     "summary": "Werkzeuge für Euro Truck Simulator 2 und American Truck Simulator.",
     "open": "Öffnen",
     "editor": {
-      "tag": "Save Editor",
-      "title": "Spielstand-Editor",
+      "tag": "Speicherstand-Editor",
+      "title": "Speicherstand-Editor",
       "desc": "Profile suchen und Spielstände, Fahrzeuge, Fahrer und Garagen bearbeiten."
     },
     "career": {
@@ -142,7 +167,7 @@
     }
   },
   "update": {
-    "window_title": "SimNexusHub Update",
+    "window_title": "SimNexusHub-Update",
     "title": "Neues Update verfügbar",
     "available": "Eine neue Version steht zum Herunterladen und Installieren bereit.",
     "current_version": "Aktuelle Version",
@@ -334,7 +359,7 @@
         "penalties": "Strafen",
         "profit": "Gewinn",
         "xp": "XP",
-        "level": "Level",
+        "level": "Stufe",
         "truck": "LKW",
         "trailer": "Auflieger",
         "driven_with_truck": "Mit Truck gefahren",
@@ -603,13 +628,13 @@
     "portal": {
       "role_owner": "Besitzer",
       "role_member": "Mitglied",
-      "level_label": "Level",
+      "level_label": "Stufe",
       "xp_label": "XP",
       "progress_next": "Nächstes Level",
       "tag_realtime": "Echtzeit",
       "tag_dispatch": "Disposition",
       "tag_community": "Gemeinschaft",
-      "banner_eyebrow": "SimNexus Portal",
+      "banner_eyebrow": "SimNexus-Portal",
       "banner_tagline": "Spedition, Aufträge, Fuhrpark und Finanzen."
     },
     "auth": {
@@ -909,7 +934,7 @@
       "summary": "Wähle die Balance zwischen Kostenkontrolle, Reparaturgeschwindigkeit und mitgliedsspezifischen Boni.",
       "basic": "Basic",
       "basic_pro": "Basic Pro",
-      "supporter": "Supporter",
+      "supporter": "Unterstützer",
       "feature_damage": "Schadensreduzierung für Standardfälle.",
       "feature_repair": "Schnellere Reparaturabwicklung und verbesserte Werkstattpriorität.",
       "feature_bonus": "Zugriff auf Mitglieder-Bonusmechaniken und erweiterte Support-Bedingungen."
@@ -931,7 +956,7 @@
     "achievements": {
       "title": "XP und Ruf",
       "summary": "Verfolge Level-Fortschritt, Ruf und erreichte Meilensteine während deiner Firmenreise.",
-      "level": "Level",
+      "level": "Stufe",
       "xp": "XP",
       "reputation": "Ruf"
     },
@@ -1032,7 +1057,7 @@
     "save_card": "Aktiver Speicherstand",
     "balance_card": "Kontostand",
     "xp_card": "EP",
-    "level_card": "Level",
+    "level_card": "Stufe",
     "fleet_card": "Fuhrpark",
     "clone_button": "Profil klonen",
     "refresh_button": "Profile scannen",
@@ -1086,7 +1111,7 @@
       "peak_none": "Keine Fähigkeit vergeben",
       "level_zero": "Nicht vergeben",
       "level_max": "Maximales Level",
-      "level_value": "Level {level} / {max}",
+      "level_value": "Ebene {level} / {max}",
       "actions": {
         "apply": "Skill-Änderungen anwenden",
         "reset": "Entwurf zurücksetzen",
@@ -1126,7 +1151,7 @@
       "undo_confirm": "Möchtest du wirklich den Speicherstand vor der letzten änderung wiederherstellen?",
       "fields": {
         "money": "Geld",
-        "level": "Level",
+        "level": "Stufe",
         "xp": "XP"
       },
       "placeholders": {
@@ -1620,7 +1645,7 @@
           "esc": "Schließt offene Modals oder Fenster, wenn möglich."
         },
         "save_editor": {
-          "title": "Save Edit Tool",
+          "title": "Bearbeitungstool speichern",
           "item_truck": "Bearbeite Truck-Werte wie Verschleiß, Kraftstoff, Kilometerstand und Kennzeichen.",
           "item_trailer": "Bearbeite Trailer-Werte wie Zustand, Frachtmasse und Trailer-Kennzeichen.",
           "item_profile": "Bearbeite Profilwerte wie Geld, XP, Level und zugehörige Skills.",
@@ -1659,7 +1684,7 @@
           "item_levels": "Wenn beide verfügbar sind, konzentrieren sich Benutzerprotokolle auf Arbeitsabläufe, während Entwicklerprotokolle tiefere technische Spuren enthalten."
         },
         "updates": {
-          "title": "Updates",
+          "title": "Aktualisierungen",
           "item_check": "Prüfe auf Updates direkt in der App, wenn die Update-Funktion verfügbar ist.",
           "item_download": "Lade das Update-Paket herunter, bevor die Installation startet.",
           "item_install": "Installiere Updates mit dem integrierten Ablauf, statt Dateien manuell zu ersetzen.",
@@ -1972,7 +1997,7 @@
         "no_garage": "Unbekannt / Keine Garage",
         "no_plate": "Kein Kennzeichen",
         "unreadable_plate": "Kennzeichen nicht lesbar",
-        "unknown_trailer": "Trailer",
+        "unknown_trailer": "Auflieger",
         "owned_count": "Im Besitz",
         "current_trailer": "Aktueller Trailer",
         "selected_trailer": "Ausgewählter Trailer",
@@ -1985,7 +2010,7 @@
         "applying": "Wende an...",
         "refresh": "Aktualisieren",
         "verified": "Der Spielstand wurde neu geladen und der neue aktive Trailer wurde bestätigt.",
-        "backup": "Backup",
+        "backup": "Sicherung",
         "backup_label": "Backup erstellen vor Änderung",
         "technical_details": "Technische Details",
         "error_code": "Fehlercode",
@@ -2084,13 +2109,13 @@
       "controls": {
         "title": "Eingabe",
         "level_slider": "Level-Regler",
-        "level_input": "Level",
+        "level_input": "Stufe",
         "level_placeholder": "Level eingeben",
         "level_help": "Die XP werden aus der gemeinsamen Leveltabelle berechnet.",
         "xp_input": "XP",
         "xp_placeholder": "XP eingeben",
         "xp_help": "Das Level wird aus der gemeinsamen Leveltabelle berechnet.",
-        "level_preset": "Level {level}",
+        "level_preset": "Ebene {level}",
         "reset_current": "Auf aktuell zurücksetzen",
         "max_level": "Max. Level"
       },
@@ -2243,7 +2268,7 @@
         "last_context": "Letzter Kontext"
       },
       "exports": {
-        "title": "Export / Logs",
+        "title": "Export / Protokolle",
         "technical_log": "Technisches Log",
         "user_log": "Benutzer-Log",
         "log_folder": "Log-Ordner"
@@ -2342,7 +2367,7 @@
       "sections": {
         "sources": "Quellenzusammenfassung",
         "mods": "Mod-Liste",
-        "presets": "Presets",
+        "presets": "Voreinstellungen",
         "compare": "Vergleichsansicht",
         "actions": "Aktionen",
         "composer": "Aktuelles Setup als Voreinstellung speichern"
@@ -2521,7 +2546,7 @@
         },
         "details": {
           "kicker": "Preset-Details",
-          "title": "Preset: {title}"
+          "title": "Voreinstellung: {title}"
         },
         "hints": {
           "progress": "Der letzte Sandbox-Preset-Vorgang wird hier protokolliert.",
@@ -2598,7 +2623,7 @@
         "ui": "UI",
         "graphics": "Grafik",
         "tuning": "Tuning",
-        "skin": "Skin",
+        "skin": "Lackierungen",
         "other": "Andere",
         "unknown": "Unbekannt"
       },
@@ -2639,7 +2664,7 @@
       "experimental_copy": "Import und Export befinden sich aktuell in einer Testphase. Bitte prüfe erstellte Archive vor dem Teilen.",
       "mode_hint_import": "Das ausgewählte ZIP-Archiv wird zuerst validiert und dann in den ermittelten Spiel-Profilpfad importiert.",
       "mode_hint_export": "Das ausgewählte Profil wird im gewählten Zielordner als ZIP-Archiv verpackt.",
-      "export_label": "Export",
+      "export_label": "Exportieren",
       "export_title": "ZIP-Archiv erstellen",
       "export_body": "Bereite das ausgewählte Profil als sauberes Archiv für Discord oder direktes Teilen vor.",
       "source_profile": "Ausgewähltes Profil",
@@ -3039,12 +3064,12 @@
     "label_theme": "Thema",
     "label_color_theme_dark": "dunkel",
     "label_color_theme_light": "hell",
-    "label_color_theme_neon": "neon",
+    "label_color_theme_neon": "Neon",
     "label_color_theme_neon_red": "Neon-Rot",
     "label_language": "Sprache",
     "label_developer": "Entwickler",
     "label_console": "Konsole",
-    "label_toggle_on": "On",
+    "label_toggle_on": "Ein",
     "label_toggle_off": "Aus",
     "toggle_on": "Ein",
     "toggle_off": "Aus"
@@ -3234,7 +3259,7 @@
     "accent_green": "Grün",
     "appearance_saved": "Darstellung gespeichert.",
     "workspace_failed": "Der Arbeitsbereich konnte nicht geöffnet werden. Bitte versuche es erneut.",
-    "creator_credit": "Created by xLieferant",
+    "creator_credit": "Erstellt von xLieferant",
     "unsaved_changes": "Änderungen wurden noch nicht gespeichert."
   },
   "user_log_report": {
@@ -3282,5 +3307,43 @@
       "cache_failed": "Der Cache konnte nicht geleert werden. Bitte versuche es erneut.",
       "txt_only": "Wähle eine .txt-Datei."
     }
+  },
+  "game_units": {
+    "odometer_mi": "Kilometerstand in Meilen festlegen",
+    "odometer_saved": "Kilometerstand des Trucks auf {value} {unit} gesetzt.",
+    "money_saved": "Geldbetrag auf {value} geändert."
+},
+  "save_errors": {
+    "writing": "Der Speicherstand wird gerade vom Spiel geschrieben. Warte, bis der Speichervorgang abgeschlossen ist, und versuche es erneut.",
+    "changed": "Der ausgewählte Speicherstand wurde zwischenzeitlich geändert. Aktualisiere ihn, bevor du deine Änderungen anwendest.",
+    "temporary_lock": "Der Speicherstand ist vorübergehend gesperrt. Der Vorgang wird in Kürze erneut versucht.",
+    "locked": "Der Speicherstand ist nach mehreren Versuchen weiterhin gesperrt. Warte, bis das Spiel fertig gespeichert hat, und versuche es erneut.",
+    "backup_failed": "Das automatische Backup ist fehlgeschlagen. Es wurde keine Bearbeitung angewendet. Prüfe das Anwendungsprotokoll.",
+    "decrypt_failed": "Der Speicherstand konnte nicht entschlüsselt werden. Aktualisiere ihn und versuche es erneut.",
+    "write_failed": "Der Speicherstand konnte nicht geschrieben werden. Prüfe das Anwendungsprotokoll und das automatische Backup.",
+    "verification_failed": "Der geschriebene Speicherstand konnte nicht verifiziert werden. Prüfe den Speicherstand und das automatische Backup, bevor du fortfährst.",
+    "not_found": "Der ausgewählte Speicherstand wurde nicht gefunden. Aktualisiere die Save-Liste und wähle ihn erneut aus.",
+    "busy": "Ein anderer Speichervorgang läuft bereits. Warte, bis er abgeschlossen ist, und versuche es erneut.",
+    "success": "Speicherstand erfolgreich geändert. Lade den bearbeiteten Speicherstand im Spiel neu, um die Änderungen zu übernehmen."
+  },
+  "desktop": {
+    "notifications": "Benachrichtigungen",
+    "technical_details": "Technische Details",
+    "copy_details": "Details kopieren",
+    "copied": "Kopiert",
+    "search_table": "Tabelle durchsuchen…",
+    "row_count": "{shown} von {total} Zeilen",
+    "sort_column": "Nach {column} sortieren",
+    "checked_at": "Abgeglichen um {time}",
+    "game_running": "Spiel läuft",
+    "game_stopped": "Spiel beendet",
+    "refresh_failed": "Aktualisierung fehlgeschlagen. Die bisherigen Daten bleiben erhalten.",
+    "refresh_hint": "Daten aktualisieren (F5 / Strg+R)",
+    "search_tools": "Werkzeuge durchsuchen…",
+    "no_tools": "Keine passenden Werkzeuge.",
+    "search_profiles": "Profile durchsuchen…",
+    "search_saves": "Spielstände durchsuchen…",
+    "save_hint": "Speichern (Strg+S)",
+    "settings_hint": "Einstellungen (F6)"
   }
 }
