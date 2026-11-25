@@ -20,7 +20,10 @@ fn compile_regex(pattern: &str, context: &str) -> Option<Regex> {
 }
 
 fn extract_numeric_value_auto(block: &str, key: &str) -> f32 {
-    let pattern = format!(r"{}\s*:\s*(&[0-9a-fA-F]+|[0-9\.\-]+)", regex::escape(key));
+    let pattern = format!(
+        r"(?m)^[ \t]*{}[ \t]*:[ \t]*(&[0-9a-fA-F]+|[0-9.eE+\-]+)",
+        regex::escape(key)
+    );
     let Some(regex) = compile_regex(&pattern, "extract_numeric_value_auto") else {
         return 0.0;
     };
@@ -46,28 +49,6 @@ fn extract_numeric_array_auto(block: &str, key: &str) -> Vec<f32> {
         .filter_map(|captures| captures.get(1))
         .filter_map(|value| parse_value_auto(value.as_str()).ok())
         .collect()
-}
-
-fn find_matching_block_end(content: &str, start_pos: usize) -> Option<usize> {
-    let bytes = content.as_bytes();
-    let mut brace_count = 1usize;
-    let mut index = start_pos;
-
-    while index < bytes.len() {
-        match bytes[index] {
-            b'{' => brace_count += 1,
-            b'}' => {
-                brace_count = brace_count.saturating_sub(1);
-                if brace_count == 0 {
-                    return Some(index);
-                }
-            }
-            _ => {}
-        }
-        index += 1;
-    }
-
-    None
 }
 
 /// Hilfsfunktionen jetzt alle public
@@ -108,7 +89,10 @@ pub fn extract_i64(block: &str, key: &str) -> Option<i64> {
 }
 
 pub fn extract_f32(block: &str, key: &str) -> Option<f32> {
-    let re = compile_regex(&format!(r#"{}\s*:\s*([0-9\.\-]+)"#, key), "extract_f32")?;
+    let re = compile_regex(
+        &format!(r#"(?m)^[ \t]*{}[ \t]*:[ \t]*([0-9.eE+\-]+)"#, key),
+        "extract_f32",
+    )?;
     re.captures(block)
         .and_then(|c| c.get(1))
         .and_then(|m| m.as_str().parse::<f32>().ok())
@@ -128,52 +112,27 @@ fn extract_combined_float(block: &str, key_base: &str) -> f32 {
 
 // Helper function to extract blocks with proper brace matching
 fn extract_blocks_with_braces(content: &str, block_type: &str) -> Vec<(String, String)> {
-    let mut blocks = Vec::new();
-    let start_pattern = format!(r"{}\s*:\s*([a-zA-Z0-9._]+)\s*\{{", block_type);
-    let Some(re_start) = compile_regex(&start_pattern, "extract_blocks_with_braces") else {
-        return blocks;
-    };
-
-    for cap in re_start.captures_iter(content) {
-        let Some(id_match) = cap.get(1) else {
-            continue;
-        };
-        let Some(block_match) = cap.get(0) else {
-            continue;
-        };
-        let start_pos = block_match.end();
-        let Some(end_pos) = find_matching_block_end(content, start_pos) else {
-            dev_log!(
-                "[sii_parser] unmatched braces while extracting {} block {}",
-                block_type,
-                id_match.as_str()
-            );
-            continue;
-        };
-
-        blocks.push((
-            id_match.as_str().to_string(),
-            content[start_pos..end_pos].to_string(),
-        ));
-    }
-
-    blocks
+    crate::shared::sii_document::scan_units(content, false)
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|unit| unit.kind == block_type)
+        .map(|unit| (unit.id, content[unit.body].to_string()))
+        .collect()
 }
 
 /// Extrahiert einen einzelnen, namentlich referenzierten Block (z.B. "player : _nameless.xyz { ... }")
 /// mittels korrektem Brace-Matching. Nötig, weil einzelne Blöcke (player, player_vehicles, vehicle)
 /// gezielt über ihre ID aufgelöst werden müssen, statt nur "irgendein Block dieses Typs".
 fn extract_named_block<'a>(content: &'a str, block_type: &str, id: &str) -> Option<&'a str> {
-    let start_pattern = format!(
-        r"{}\s*:\s*{}\s*\{{",
-        regex::escape(block_type),
-        regex::escape(id)
-    );
-    let re_start = compile_regex(&start_pattern, "extract_named_block")?;
-    let block_match = re_start.find(content)?;
-    let start_pos = block_match.end();
-    let end_pos = find_matching_block_end(content, start_pos)?;
-    Some(&content[start_pos..end_pos])
+    let units = crate::shared::sii_document::scan_units(content, false).ok()?;
+    let mut matches = units
+        .iter()
+        .filter(|unit| unit.kind == block_type && unit.id == id);
+    let unit = matches.next()?;
+    if matches.next().is_some() {
+        return None;
+    }
+    Some(&content[unit.body.clone()])
 }
 
 /// Liest den Wert eines simplen "key: value"-Feldes direkt im übergebenen Block
@@ -250,12 +209,14 @@ pub fn parse_trucks_from_sii(content: &str) -> Vec<ParsedTruck> {
         let mut model = String::new();
         for acc in &accessories {
             if let Some(path) = accessory_map.get(acc) {
-                let parts: Vec<&str> = path.split('/').collect();
-                if parts.len() >= 5 {
-                    let truck_info = parts[4];
-                    let parts2: Vec<&str> = truck_info.split('.').collect();
-                    brand = parts2.get(0).unwrap_or(&"").to_string();
-                    model = parts2[1..].join(".");
+                if let Some(truck_info) = path
+                    .strip_prefix("/def/vehicle/truck/")
+                    .and_then(|rest| rest.split('/').next())
+                {
+                    let (brand_token, model_token) =
+                        truck_info.split_once('.').unwrap_or((truck_info, ""));
+                    brand = brand_token.to_string();
+                    model = model_token.to_string();
                     break;
                 }
             }
@@ -451,20 +412,13 @@ pub fn parse_trailers_from_sii(text: &str) -> Vec<TrailerData> {
 }
 
 pub fn get_player_id(content: &str) -> Option<String> {
-    let mut in_economy = false;
-    for line in content.lines() {
-        let trimmed = line.trim();
-        if trimmed.starts_with("economy :") {
-            in_economy = true;
-        }
-        if in_economy && trimmed.starts_with("player:") {
-            return trimmed.split_whitespace().nth(1).map(|s| s.to_string());
-        }
-        if in_economy && trimmed.starts_with('}') {
-            in_economy = false;
-        }
+    let units = crate::shared::sii_document::scan_units(content, false).ok()?;
+    let mut economies = units.iter().filter(|unit| unit.kind == "economy");
+    let economy = economies.next()?;
+    if economies.next().is_some() {
+        return None;
     }
-    None
+    extract_field_value(&content[economy.body.clone()], "player")
 }
 
 /// Löst Truck- und Trailer-ID des Spielers auf.
@@ -482,18 +436,16 @@ pub fn get_vehicle_ids(content: &str, player_id: &str) -> (Option<String>, Optio
 
     let assigned_vehicles_ref = extract_field_value(player_block, "assigned_vehicles");
 
+    let direct_truck = extract_field_value(player_block, "my_truck");
+    let direct_trailer = extract_field_value(player_block, "my_trailer");
     let Some(pv_id) = assigned_vehicles_ref else {
-        dev_log!("[sii_parser] player {} has no assigned_vehicles", player_id);
-        return (None, None);
+        return (direct_truck, direct_trailer);
     };
-
     let Some(pv_block) = extract_named_block(content, "player_vehicles", &pv_id) else {
-        dev_log!("[sii_parser] player_vehicles block {} not found", pv_id);
         return (None, None);
     };
-
-    let truck_id = extract_field_value(pv_block, "vehicle");
-    let trailer_id = extract_field_value(pv_block, "trailer");
+    let truck_id = extract_field_value(pv_block, "vehicle").or(direct_truck);
+    let trailer_id = extract_field_value(pv_block, "trailer").or(direct_trailer);
 
     (truck_id, trailer_id)
 }

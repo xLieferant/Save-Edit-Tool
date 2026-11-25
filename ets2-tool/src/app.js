@@ -1,5 +1,7 @@
+import { distanceUnit, displayDistance } from "./modules/shared/game_units.js";
 import { bindSwitch, booleanValue } from "./modules/shared/controls.js";
-import { localizeError } from "./modules/shared/i18n.js";
+import { localizeError, t as translate } from "./modules/shared/i18n.js";
+import { captureView, restoreView, frontendState, readPreference, savePreference } from "./modules/shared/frontend_state.js";
 ﻿import { tools } from "./tools.js";
 import {
   clampLevel,
@@ -28,7 +30,7 @@ const editorTabShortcuts = {
   F2: "trailer",
   F3: "profile",
   F4: "garages",
-  F5: "settings",
+  F6: "settings",
 };
 
 function setActiveEditorTabButton(tab) {
@@ -46,7 +48,56 @@ async function activateEditorTab(tab) {
   await loadTools(nextButton.dataset.tab);
 }
 
+let mountedViewKey = null;
+const toolQueries = new Map();
+const toolSearch = document.createElement("input");
+toolSearch.type = "search";
+toolSearch.className = "tool-search";
+toolSearch.dataset.translatePlaceholder = "desktop.search_tools";
+toolSearch.dataset.translateAriaLabel = "desktop.search_tools";
+const noTools = document.createElement("p");
+noTools.className = "tool-search-empty";
+noTools.dataset.translate = "desktop.no_tools";
+noTools.setAttribute("role", "status");
+noTools.hidden = true;
+if (container) container.before(toolSearch, noTools);
+const filterTools = () => {
+  if (!container || toolSearch.hidden) return;
+  const query = toolSearch.value.trim().toLocaleLowerCase();
+  let count = 0;
+  for (const row of container.querySelectorAll(".tool-card")) {
+    row.hidden = !row.textContent.toLocaleLowerCase().includes(query);
+    if (!row.hidden) count++;
+  }
+  noTools.hidden = !query || count > 0;
+};
+toolSearch.addEventListener("input", filterTools);
+void Promise.all([translate("desktop.search_tools"), translate("desktop.no_tools")]).then(([search, empty]) => {
+  toolSearch.placeholder = search;
+  toolSearch.setAttribute("aria-label", search);
+  noTools.textContent = empty;
+});
+
 export async function loadTools(tab) {
+  const key = [frontendState.game, frontendState.profilePath, frontendState.savePath, tab].join("|");
+  if (mountedViewKey && container) frontendState.views.set(mountedViewKey, captureView(container));
+  if (mountedViewKey) toolQueries.set(mountedViewKey, toolSearch.value);
+  // A bounded in-memory cache retains edits during tab changes, without writing
+  // savegame contents or input values into persistent browser storage.
+  if (frontendState.views.size > 30) frontendState.views.delete(frontendState.views.keys().next().value);
+  const renderId = loadToolsRenderId + 1;
+  await renderTools(tab);
+  if (renderId !== loadToolsRenderId || activeTab !== tab || !container) return;
+  mountedViewKey = key;
+  toolSearch.hidden = ["garages", "coaches"].includes(tab);
+  noTools.hidden = true;
+  toolSearch.value = toolQueries.get(key) || "";
+  filterTools();
+  restoreView(container, frontendState.views.get(key));
+  savePreference("editor-tab", tab);
+}
+
+async function renderTools(tab) {
   console.log(`[app.js] Lade Tools fÃ¼r Tab: ${tab}`);
 
   activeTab = tab;
@@ -132,6 +183,11 @@ export async function loadTools(tab) {
   }
 }
 
+// Refresh only the active view, retaining its filters and scroll positions.
+export async function refreshSaveTools() {
+  await loadTools(activeTab);
+}
+
 async function createSkilltreeLauncherCard() {
   const card = document.createElement("div");
   card.className = "tool-card skilltree-launch-card";
@@ -186,7 +242,9 @@ navButtons.forEach((btn) => {
 });
 
 // Default Tab
-const defaultTabBtn = document.querySelector(".editor-tabs .nav-btn.active");
+const rememberedTab = readPreference("editor-tab", "profile");
+const defaultTabBtn = [...navButtons].find((button) => button.dataset.tab === rememberedTab)
+  || document.querySelector(".editor-tabs .nav-btn.active");
 if (defaultTabBtn) {
   if (typeof window.t === "function") {
     void activateEditorTab(defaultTabBtn.dataset.tab);
@@ -559,7 +617,8 @@ function formatMetric(value, digits = 0) {
 function formatDistance(value) {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return "-";
-  return `${formatMetric(numeric, numeric % 1 === 0 ? 0 : 1)} km`;
+  const displayed = displayDistance(numeric);
+  return `${formatMetric(displayed, displayed % 1 === 0 ? 0 : 1)} ${distanceUnit()}`;
 }
 
 function formatLevelBadge(level) {
@@ -2977,7 +3036,7 @@ export async function openTruckChangeModal() {
         <h3>${escapeHtml(copy.backup)}</h3>
         <p>${escapeHtml(backupState)}</p>
         <label class="truck-change-backup-toggle">
-          <input type="checkbox" class="truck-change-backup-checkbox" ${state.createPersistentBackup ? "checked" : ""} />
+          <input type="checkbox" class="truck-change-backup-checkbox" checked disabled />
           <span>${escapeHtml(copy.backupLabel)}</span>
         </label>
       </section>
@@ -3673,7 +3732,7 @@ export async function openTrailerChangeModal() {
         <h3>${escapeHtml(copy.backup)}</h3>
         <p>${escapeHtml(backupState)}</p>
         <label class="truck-change-backup-toggle">
-          <input type="checkbox" class="truck-change-backup-checkbox" ${state.createPersistentBackup ? "checked" : ""} />
+          <input type="checkbox" class="truck-change-backup-checkbox" checked disabled />
           <span>${escapeHtml(copy.backupLabel)}</span>
         </label>
       </section>

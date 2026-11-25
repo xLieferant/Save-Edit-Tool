@@ -70,6 +70,8 @@ pub struct GarageParseDiagnostics {
 #[serde(rename_all = "camelCase")]
 pub struct GarageListResult {
     pub game: String,
+    pub write_supported: bool,
+    pub ai_drivers_supported: bool,
     pub save_hash: String,
     pub headquarters_garage_id: Option<String>,
     pub garages: Vec<GarageInfo>,

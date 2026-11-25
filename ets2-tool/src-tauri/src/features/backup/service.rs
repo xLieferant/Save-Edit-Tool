@@ -57,6 +57,19 @@ pub fn recommended_targets(primary_path: &Path) -> Vec<PathBuf> {
         }
     }
 
+    if file_name == "game.sii" || file_name == "info.sii" {
+        if let Some(directory) = primary_path.parent() {
+            if let Ok(entries) = fs::read_dir(directory) {
+                for entry in entries.flatten() {
+                    if entry.file_type().is_ok_and(|kind| kind.is_file())
+                        && !entry.file_name().to_string_lossy().ends_with(".tmp")
+                    {
+                        targets.push(entry.path());
+                    }
+                }
+            }
+        }
+    }
     dedupe_paths(targets)
 }
 
@@ -79,141 +92,144 @@ pub fn create_backup_for_targets_with_type(
     action_reason: &str,
     target_files: &[PathBuf],
 ) -> Result<BackupCreateResultDto, String> {
-    crate::shared::logs::diagnostic::with_operation("backup", "create_backup_for_targets_with_type", || {
-    let context = logging_service::resolve_active_context(profile_state);
-    let resolved = snapshot_resolved_save_context(profile_state).ok();
-    let normalized_targets = normalize_existing_targets(target_files);
-    if normalized_targets.is_empty() {
-        return Err("No existing files were available for backup.".to_string());
-    }
+    crate::shared::logs::diagnostic::with_operation(
+        "backup",
+        "create_backup_for_targets_with_type",
+        || {
+            let context = logging_service::resolve_active_context(profile_state);
+            let resolved = snapshot_resolved_save_context(profile_state).ok();
+            let normalized_targets = normalize_existing_targets(target_files);
+            if normalized_targets.is_empty() {
+                return Err("No existing files were available for backup.".to_string());
+            }
 
-    let created_at_utc = Utc::now().to_rfc3339();
-    let backup_id = format!("backup-{}", Uuid::new_v4());
-    let save_session_id = resolved
-        .as_ref()
-        .and_then(|item| item.context.save_session_id.clone())
-        .or_else(|| Some(format!("manual-{}", Uuid::new_v4())));
-    let storage_dir = backup_root_dir()
-        .join(save_session_id.as_deref().unwrap_or("manual"))
-        .join(&backup_id);
-    fs::create_dir_all(&storage_dir).map_err(|error| error.to_string())?;
-
-    let mut files = Vec::new();
-    for live_path in normalized_targets {
-        let bytes = fs::read(&live_path)
-            .map_err(|error| format!("Backup could not read {}: {}", live_path.display(), error))?;
-        let relative_path = relative_label_for_target(
-            &live_path,
-            resolved
+            let created_at_utc = Utc::now().to_rfc3339();
+            let backup_id = format!("backup-{}", Uuid::new_v4());
+            let save_session_id = resolved
                 .as_ref()
-                .and_then(|item| item.context.profile_reference.as_deref()),
-            resolved
-                .as_ref()
-                .and_then(|item| item.context.save_reference.as_deref()),
-        );
-        let stored_path = PathBuf::from("files").join(&relative_path);
-        let absolute_stored_path = storage_dir.join(&stored_path);
-        if let Some(parent) = absolute_stored_path.parent() {
-            fs::create_dir_all(parent).map_err(|error| error.to_string())?;
-        }
-        fs::write(&absolute_stored_path, &bytes).map_err(|error| {
-            format!(
-                "Backup could not write {}: {}",
-                absolute_stored_path.display(),
-                error
-            )
-        })?;
+                .and_then(|item| item.context.save_session_id.clone())
+                .or_else(|| Some(format!("manual-{}", Uuid::new_v4())));
+            let storage_dir = backup_root_dir()
+                .join(save_session_id.as_deref().unwrap_or("manual"))
+                .join(&backup_id);
+            fs::create_dir_all(&storage_dir).map_err(|error| error.to_string())?;
 
-        files.push(BackupFileRecord {
-            relative_path,
-            live_path: live_path.display().to_string(),
-            stored_path: stored_path.to_string_lossy().replace('\\', "/"),
-            size_bytes: bytes.len() as u64,
-            checksum: sha256_hex(&bytes),
-        });
-    }
+            let mut files = Vec::new();
+            for live_path in normalized_targets {
+                let bytes = crate::features::save_editor::safety::read_stable_bytes(&live_path)?;
+                let relative_path = relative_label_for_target(
+                    &live_path,
+                    resolved
+                        .as_ref()
+                        .and_then(|item| item.context.profile_reference.as_deref()),
+                    resolved
+                        .as_ref()
+                        .and_then(|item| item.context.save_reference.as_deref()),
+                );
+                let stored_path = PathBuf::from("files").join(&relative_path);
+                let absolute_stored_path = storage_dir.join(&stored_path);
+                if let Some(parent) = absolute_stored_path.parent() {
+                    fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+                }
+                fs::write(&absolute_stored_path, &bytes).map_err(|error| {
+                    format!(
+                        "Backup could not write {}: {}",
+                        absolute_stored_path.display(),
+                        error
+                    )
+                })?;
 
-    let metadata = BackupMetadataFile {
-        backup_id: backup_id.clone(),
-        save_session_id: save_session_id.clone(),
-        profile_reference: resolved
-            .as_ref()
-            .and_then(|item| item.context.profile_reference.clone()),
-        save_reference: resolved
-            .as_ref()
-            .and_then(|item| item.context.save_reference.clone()),
-        profile_name: context.profile_name.clone(),
-        save_name: context.save_name.clone(),
-        action_reason: action_reason.to_string(),
-        backup_type: backup_type.to_string(),
-        created_at_utc: created_at_utc.clone(),
-        files: files.clone(),
-    };
+                files.push(BackupFileRecord {
+                    relative_path,
+                    live_path: live_path.display().to_string(),
+                    stored_path: stored_path.to_string_lossy().replace('\\', "/"),
+                    size_bytes: bytes.len() as u64,
+                    checksum: sha256_hex(&bytes),
+                });
+            }
 
-    let metadata_json =
-        serde_json::to_string_pretty(&metadata).map_err(|error| error.to_string())?;
-    fs::write(storage_dir.join(BACKUP_METADATA_FILE), metadata_json).map_err(|error| {
-        format!(
-            "Backup metadata could not be written to {}: {}",
-            storage_dir.display(),
-            error
-        )
-    })?;
+            let metadata = BackupMetadataFile {
+                backup_id: backup_id.clone(),
+                save_session_id: save_session_id.clone(),
+                profile_reference: resolved
+                    .as_ref()
+                    .and_then(|item| item.context.profile_reference.clone()),
+                save_reference: resolved
+                    .as_ref()
+                    .and_then(|item| item.context.save_reference.clone()),
+                profile_name: context.profile_name.clone(),
+                save_name: context.save_name.clone(),
+                action_reason: action_reason.to_string(),
+                backup_type: backup_type.to_string(),
+                created_at_utc: created_at_utc.clone(),
+                files: files.clone(),
+            };
 
-    let conn = open_runtime_connection()?;
-    conn.execute(
-        r#"
+            let metadata_json =
+                serde_json::to_string_pretty(&metadata).map_err(|error| error.to_string())?;
+            fs::write(storage_dir.join(BACKUP_METADATA_FILE), metadata_json).map_err(|error| {
+                format!(
+                    "Backup metadata could not be written to {}: {}",
+                    storage_dir.display(),
+                    error
+                )
+            })?;
+
+            let conn = open_runtime_connection()?;
+            conn.execute(
+                r#"
         INSERT INTO ets_save_backups (
             backup_id, save_session_id, profile_reference, save_reference, profile_name, save_name,
             action_reason, backup_type, created_at_utc, storage_dir, files_json, file_count
         )
         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)
         "#,
-        params![
-            metadata.backup_id,
-            metadata.save_session_id,
-            metadata.profile_reference,
-            metadata.save_reference,
-            metadata.profile_name,
-            metadata.save_name,
-            metadata.action_reason,
-            metadata.backup_type,
-            metadata.created_at_utc,
-            storage_dir.display().to_string(),
-            serde_json::to_string(&files).map_err(|error| error.to_string())?,
-            files.len() as i64
-        ],
+                params![
+                    metadata.backup_id,
+                    metadata.save_session_id,
+                    metadata.profile_reference,
+                    metadata.save_reference,
+                    metadata.profile_name,
+                    metadata.save_name,
+                    metadata.action_reason,
+                    metadata.backup_type,
+                    metadata.created_at_utc,
+                    storage_dir.display().to_string(),
+                    serde_json::to_string(&files).map_err(|error| error.to_string())?,
+                    files.len() as i64
+                ],
+            )
+            .map_err(|error| error.to_string())?;
+
+            let mut log_context = context;
+            log_context
+                .extra
+                .insert("backupId".to_string(), backup_id.clone());
+            log_context
+                .extra
+                .insert("backupType".to_string(), backup_type.to_string());
+            log_context
+                .extra
+                .insert("fileCount".to_string(), files.len().to_string());
+            let log_action = if backup_type == BACKUP_TYPE_UNDO_BEFORE_EDIT {
+                "undo_snapshot_created"
+            } else {
+                "auto_backup_created"
+            };
+            let log_message = if backup_type == BACKUP_TYPE_UNDO_BEFORE_EDIT {
+                format!("Undo snapshot created: {}.", action_reason)
+            } else {
+                format!("Automatic backup created before {}.", action_reason)
+            };
+            let _ = logging_service::record_info(log_action, &log_message, &log_context);
+
+            Ok(BackupCreateResultDto {
+                backup_id,
+                created_at_utc,
+                backup_type: backup_type.to_string(),
+            })
+        },
     )
-    .map_err(|error| error.to_string())?;
-
-    let mut log_context = context;
-    log_context
-        .extra
-        .insert("backupId".to_string(), backup_id.clone());
-    log_context
-        .extra
-        .insert("backupType".to_string(), backup_type.to_string());
-    log_context
-        .extra
-        .insert("fileCount".to_string(), files.len().to_string());
-    let log_action = if backup_type == BACKUP_TYPE_UNDO_BEFORE_EDIT {
-        "undo_snapshot_created"
-    } else {
-        "auto_backup_created"
-    };
-    let log_message = if backup_type == BACKUP_TYPE_UNDO_BEFORE_EDIT {
-        format!("Undo snapshot created: {}.", action_reason)
-    } else {
-        format!("Automatic backup created before {}.", action_reason)
-    };
-    let _ = logging_service::record_info(log_action, &log_message, &log_context);
-
-    Ok(BackupCreateResultDto {
-        backup_id,
-        created_at_utc,
-        backup_type: backup_type.to_string(),
-    })
-    })
 }
 
 pub fn list_backups_for_active_save(
@@ -390,68 +406,236 @@ pub fn restore_backup(
     backup_id: &str,
     confirmed: bool,
 ) -> Result<RestoreExecution, String> {
+    restore_backup_with_baseline(profile_state, backup_id, confirmed, None)
+}
+
+pub(crate) fn restore_backup_if_current(
+    profile_state: &AppProfileState,
+    backup_id: &str,
+    target: &Path,
+    expected: &[u8],
+) -> Result<RestoreExecution, String> {
+    restore_backup_with_baseline(profile_state, backup_id, true, Some((target, expected)))
+}
+
+fn restore_backup_with_baseline(
+    profile_state: &AppProfileState,
+    backup_id: &str,
+    confirmed: bool,
+    baseline: Option<(&Path, &[u8])>,
+) -> Result<RestoreExecution, String> {
     crate::shared::logs::diagnostic::with_operation("backup", "restore_backup", || {
-    if !confirmed {
-        return Err("Restore requires explicit confirmation.".to_string());
-    }
-
-    let loaded = load_backup(backup_id)?;
-    let metadata = loaded.metadata;
-    let live_targets = metadata
-        .files
-        .iter()
-        .map(|file| PathBuf::from(&file.live_path))
-        .collect::<Vec<_>>();
-    let safety_backup = create_backup_for_targets(
-        profile_state,
-        &format!("before restore {}", metadata.action_reason),
-        &live_targets,
-    )
-    .ok();
-
-    let mut touched_paths = Vec::new();
-    for file in &metadata.files {
-        let source = loaded.storage_dir.join(&file.stored_path);
-        let target = PathBuf::from(&file.live_path);
-        if let Some(parent) = target.parent() {
-            fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+        if !confirmed {
+            return Err("Restore requires explicit confirmation.".to_string());
         }
-        fs::copy(&source, &target).map_err(|error| {
-            format!(
-                "Restore could not copy {} to {}: {}",
-                source.display(),
-                target.display(),
-                error
-            )
-        })?;
-        touched_paths.push(target);
-    }
 
-    let mut context = logging_service::resolve_active_context(profile_state);
-    context
-        .extra
-        .insert("backupId".to_string(), backup_id.to_string());
-    if let Some(safety_backup) = safety_backup.as_ref() {
-        context.extra.insert(
-            "safetyBackupId".to_string(),
-            safety_backup.backup_id.clone(),
+        let game = crate::features::save_editor::safety::selected_game(profile_state)?;
+        let selection =
+            crate::shared::current_profile::snapshot_active_save_selection(profile_state)?;
+        let profile = PathBuf::from(selection.profile_path.ok_or("profile_not_loaded")?);
+        crate::features::save_editor::safety::validate_profile_game(&profile, game)?;
+        let profile = fs::canonicalize(profile).map_err(|_| "profile_path_invalid")?;
+        let save = PathBuf::from(selection.save_path.ok_or("save_not_loaded")?);
+        let directory = if save.extension().is_some_and(|ext| ext == "sii") {
+            save.parent().ok_or("save_path_invalid")?.to_path_buf()
+        } else {
+            save
+        };
+        let directory = fs::canonicalize(directory).map_err(|_| "save_path_invalid")?;
+        let root = fs::canonicalize(profile.join("save")).map_err(|_| "save_path_invalid")?;
+        if directory.parent() != Some(root.as_path()) {
+            return Err("save_outside_loaded_profile".into());
+        }
+        let global = crate::features::save_editor::safety::config_path(profile_state)?;
+
+        let loaded = load_backup(backup_id)?;
+        let metadata = loaded.metadata;
+        let mut replacements = Vec::new();
+        for file in &metadata.files {
+            let target = PathBuf::from(&file.live_path);
+            if let Some((selected, _)) = baseline {
+                if fs::canonicalize(&target).ok() != fs::canonicalize(selected).ok() {
+                    continue;
+                }
+            }
+            let parent = fs::canonicalize(target.parent().ok_or("restore_target_invalid")?)
+                .map_err(|_| "restore_target_invalid")?;
+            let is_config = target.file_name().is_some_and(|name| name == "config.cfg");
+            if is_config {
+                crate::features::save_editor::safety::ensure_game_closed(game)?;
+            }
+            let is_global = is_config
+                && fs::canonicalize(&global).ok() == fs::canonicalize(&target).ok()
+                && global.exists();
+            if parent != directory && !(is_config && parent == profile) && !is_global {
+                return Err("restore_target_outside_active_save".into());
+            }
+            let bytes = fs::read(loaded.storage_dir.join(&file.stored_path))
+                .map_err(|_| "backup_read_failed")?;
+            if sha256_hex(&bytes) != file.checksum {
+                return Err("backup_checksum_mismatch".into());
+            }
+            if target.extension().is_some_and(|ext| ext == "sii") {
+                crate::shared::sii_document::Document::parse(&decode_text_bytes(
+                    &bytes,
+                    "backup",
+                    &[],
+                )?)?;
+            }
+            let before = match fs::read(&target) {
+                Ok(bytes) => Some(bytes),
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+                Err(_) => return Err("restore_target_unreadable".into()),
+            };
+            if let Some((_, expected)) = baseline {
+                if before.as_deref() != Some(expected) {
+                    return Err("save_changed_since_load".into());
+                }
+            }
+            replacements.push((target, before, bytes));
+        }
+        if replacements.is_empty() {
+            return Err("save_errors.not_found".into());
+        }
+        let restored_file_count = replacements.len();
+        let live_targets = replacements
+            .iter()
+            .map(|(path, _, _)| path.clone())
+            .collect::<Vec<_>>();
+        let safety_backup = create_backup_for_targets(
+            profile_state,
+            &format!("before restore {}", metadata.action_reason),
+            &live_targets,
+        )?;
+
+        restore_files_atomically(&replacements)?;
+        let touched_paths = replacements
+            .iter()
+            .map(|(path, _, _)| path.clone())
+            .collect();
+        if directory.join("game.sii").is_file() {
+            crate::features::save_editor::safety::remember_save(
+                profile_state,
+                &fs::canonicalize(directory.join("game.sii")).map_err(|_| "save_path_invalid")?,
+            )?;
+        }
+
+        let mut context = logging_service::resolve_active_context(profile_state);
+        context
+            .extra
+            .insert("backupId".to_string(), backup_id.to_string());
+        {
+            context.extra.insert(
+                "safetyBackupId".to_string(),
+                safety_backup.backup_id.clone(),
+            );
+        }
+        let _ = logging_service::record_info(
+            "backup_restore",
+            "Backup restored after explicit confirmation.",
+            &context,
         );
-    }
-    let _ = logging_service::record_info(
-        "backup_restore",
-        "Backup restored after explicit confirmation.",
-        &context,
-    );
 
-    Ok(RestoreExecution {
-        result: BackupRestoreResultDto {
-            backup_id: backup_id.to_string(),
-            restored_file_count: metadata.files.len(),
-            safety_backup_id: safety_backup.map(|item| item.backup_id),
-        },
-        touched_paths,
+        Ok(RestoreExecution {
+            result: BackupRestoreResultDto {
+                backup_id: backup_id.to_string(),
+                restored_file_count,
+                safety_backup_id: Some(safety_backup.backup_id),
+            },
+            touched_paths,
+        })
     })
-    })
+}
+
+pub(crate) fn restore_files_atomically(
+    files: &[(PathBuf, Option<Vec<u8>>, Vec<u8>)],
+) -> Result<(), String> {
+    use crate::features::ets2save::sii_codec::replace_file_atomic;
+    use std::io::Write;
+    let mut staged = Vec::new();
+    let mut committed = Vec::new();
+    let result = (|| {
+        for (target, _, bytes) in files {
+            let temporary = target.with_file_name(format!(".restore-{}.tmp", Uuid::new_v4()));
+            staged.push(temporary.clone());
+            let mut file = fs::OpenOptions::new()
+                .create_new(true)
+                .write(true)
+                .open(&temporary)
+                .map_err(|_| "restore_temporary_failed")?;
+            file.write_all(bytes)
+                .map_err(|_| "restore_temporary_failed")?;
+            file.sync_all().map_err(|_| "restore_temporary_failed")?;
+            drop(file);
+            if fs::read(&temporary).map_err(|_| "restore_temporary_failed")? != *bytes {
+                return Err("restore_verification_failed");
+            }
+        }
+        for (index, (target, before, after)) in files.iter().enumerate() {
+            let actual = match fs::read(target) {
+                Ok(bytes) => Some(bytes),
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+                Err(_) => return Err("restore_target_unreadable"),
+            };
+            if actual != *before {
+                return Err("save_changed_since_load");
+            }
+            crate::features::save_editor::safety::replace_checked(
+                &staged[index],
+                target,
+                before.as_deref(),
+            )
+            .map_err(|error| match error.as_str() {
+                "save_changed_since_load" => "save_changed_since_load",
+                "save_errors.locked" => "save_errors.locked",
+                _ => "restore_replace_failed",
+            })?;
+            committed.push(index);
+            if fs::read(target).map_err(|_| "restore_verification_failed")? != *after {
+                return Err("restore_verification_failed");
+            }
+        }
+        Ok(())
+    })();
+    if result.is_err() {
+        for index in committed.into_iter().rev() {
+            let (target, before, after) = &files[index];
+            // Preserve an external change instead of overwriting it during rollback.
+            if fs::read(target).ok().as_deref() != Some(after.as_slice()) {
+                return Err("restore_rollback_failed:external_change".into());
+            }
+            if let Some(bytes) = before {
+                let rollback =
+                    target.with_file_name(format!(".restore-rollback-{}.tmp", Uuid::new_v4()));
+                let mut file = fs::OpenOptions::new()
+                    .create_new(true)
+                    .write(true)
+                    .open(&rollback)
+                    .map_err(|_| "restore_rollback_failed")?;
+                file.write_all(bytes)
+                    .map_err(|_| "restore_rollback_failed")?;
+                file.sync_all().map_err(|_| "restore_rollback_failed")?;
+                drop(file);
+                crate::features::save_editor::safety::replace_checked(
+                    &rollback,
+                    target,
+                    Some(after),
+                )
+                .map_err(|_| "restore_rollback_failed")?;
+                if fs::read(target).map_err(|_| "restore_rollback_failed")? != *bytes {
+                    return Err("restore_rollback_failed".into());
+                }
+            } else {
+                fs::remove_file(target).map_err(|_| "restore_rollback_failed")?;
+            }
+        }
+    }
+    for temporary in staged {
+        if temporary.exists() {
+            let _ = fs::remove_file(temporary);
+        }
+    }
+    result.map_err(str::to_string)
 }
 
 fn load_backup(backup_id: &str) -> Result<LoadedBackup, String> {
@@ -563,10 +747,10 @@ fn relative_label_for_target(
         }
     }
 
-    if ets2_base_config_path()
-        .as_ref()
-        .map(|path| path == target)
-        .unwrap_or(false)
+    if ["ets2", "ats"]
+        .iter()
+        .filter_map(|game| crate::shared::paths::resolve_game_user_paths(game))
+        .any(|paths| paths.config_file == target)
     {
         return "global/config.cfg".to_string();
     }
@@ -655,7 +839,7 @@ fn extract_key_values(text: &str) -> BTreeMap<String, String> {
 }
 
 fn open_runtime_connection() -> Result<Connection, String> {
-    let db_path = sqlite::app_db_path();
+    let db_path = storage_db_path();
     let conn = Connection::open(db_path).map_err(|error| error.to_string())?;
     conn.busy_timeout(Duration::from_secs(5))
         .map_err(|error| error.to_string())?;
@@ -663,10 +847,49 @@ fn open_runtime_connection() -> Result<Connection, String> {
 }
 
 fn backup_root_dir() -> PathBuf {
-    sqlite::app_db_path()
+    storage_db_path()
         .parent()
         .map(|path| path.join("save_backups"))
         .unwrap_or_else(|| PathBuf::from("save_backups"))
+}
+
+fn storage_db_path() -> PathBuf {
+    #[cfg(test)]
+    if let Some(path) = TEST_STORAGE.with(|storage| storage.borrow().clone()) {
+        return path.join("backups.sqlite");
+    }
+    sqlite::app_db_path()
+}
+
+#[cfg(test)]
+thread_local! {
+    static TEST_STORAGE: std::cell::RefCell<Option<PathBuf>> = const { std::cell::RefCell::new(None) };
+}
+
+/// Isolate real command backups without changing process-wide paths or user data.
+#[cfg(test)]
+pub(crate) fn with_test_storage<T>(path: &Path, operation: impl FnOnce() -> T) -> T {
+    struct Reset(Option<PathBuf>);
+    impl Drop for Reset {
+        fn drop(&mut self) {
+            TEST_STORAGE.with(|storage| *storage.borrow_mut() = self.0.take());
+        }
+    }
+    fs::create_dir_all(path).unwrap();
+    let connection = Connection::open(path.join("backups.sqlite")).unwrap();
+    connection
+        .execute_batch(include_str!(
+            "../../db/migrations/2026-05-06_create_ets_save_backups.sql"
+        ))
+        .unwrap();
+    connection
+        .execute_batch(include_str!(
+            "../../db/migrations/2026-05-10_add_backup_type_to_ets_save_backups.sql"
+        ))
+        .unwrap();
+    drop(connection);
+    let _reset = Reset(TEST_STORAGE.with(|storage| storage.replace(Some(path.to_path_buf()))));
+    operation()
 }
 
 fn sha256_hex(bytes: &[u8]) -> String {

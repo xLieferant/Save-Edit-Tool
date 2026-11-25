@@ -13,3 +13,6 @@ pub mod sii_parser;
 pub mod sqlite_schema;
 pub mod trace;
 pub mod user_log;
+
+pub mod game;
+pub mod sii_document;

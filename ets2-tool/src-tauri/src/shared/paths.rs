@@ -179,11 +179,8 @@ pub fn get_base_path(game: &str) -> Option<PathBuf> {
 }
 
 pub fn resolve_game_user_paths(game: &str) -> Option<GameUserPaths> {
-    let normalized_game = if game.eq_ignore_ascii_case("ats") {
-        "ats"
-    } else {
-        "ets2"
-    };
+    let game_type = crate::shared::game::GameType::try_from(game).ok()?;
+    let normalized_game = game_type.as_str();
 
     if normalized_game == "ats" {
         let homedir_root = ats_default_homedir_root()?;
@@ -283,6 +280,22 @@ pub fn profile_search_roots(game: &str) -> Vec<PathBuf> {
     push_unique_path(&mut roots, paths.steam_profiles_dir);
     push_unique_path(&mut roots, paths.profiles_backup_dir);
     push_unique_path(&mut roots, paths.game_data_dir);
+    if let (Ok(game), Some(steam)) = (
+        crate::shared::game::GameType::try_from(game),
+        crate::shared::game::steam_install_dir(),
+    ) {
+        if let Ok(accounts) = fs::read_dir(steam.join("userdata")) {
+            for account in accounts.flatten() {
+                let remote = account.path().join(game.app_id()).join("remote");
+                for name in ["profiles", "steam_profiles"] {
+                    let root = remote.join(name);
+                    if root.is_dir() {
+                        push_unique_path(&mut roots, root);
+                    }
+                }
+            }
+        }
+    }
     roots
 }
 

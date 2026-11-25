@@ -68,7 +68,8 @@ pub async fn get_ai_driver_management(
     .map_err(|error| format!("garage_block_invalid:task_failed:{error}"))?
 }
 
-#[tauri::command]
+#[cfg_attr(not(test), tauri::command(async))]
+#[cfg_attr(test, tauri::command)]
 pub fn generate_ai_drivers(
     request: AiDriverGenerateRequest,
     profile_state: State<'_, AppProfileState>,
@@ -78,6 +79,7 @@ pub fn generate_ai_drivers(
     trailer_change_cache: State<'_, TrailerChangeSessionCache>,
     app_state: State<'_, AppState>,
 ) -> Result<AiDriverMutationResult, String> {
+    let _save_guard = crate::features::save_editor::safety::mutation_lock()?;
     let _mutation_guard = acquire_mutation_lock(&app_state.garage_mutation_lock)?;
     let selection = snapshot_active_save_selection(profile_state.inner())
         .map_err(|_| "garage_block_invalid:profile_state_unavailable".to_string())?;
@@ -86,7 +88,7 @@ pub fn generate_ai_drivers(
         .lock()
         .map_err(|_| "garage_block_invalid:selected_game_unavailable".to_string())?
         .clone();
-    service::generate_ai_drivers(
+    let result = service::generate_ai_drivers(
         &selection,
         &selected_game,
         profile_state.inner(),
@@ -96,10 +98,16 @@ pub fn generate_ai_drivers(
         trailer_change_cache.inner(),
         &app_state.sqlite_path,
         &request,
-    )
+    );
+    if result.is_ok() {
+        let path = crate::features::save_editor::safety::active_save(profile_state.inner())?;
+        crate::features::save_editor::safety::remember_save(profile_state.inner(), &path)?;
+    }
+    result
 }
 
-#[tauri::command]
+#[cfg_attr(not(test), tauri::command(async))]
+#[cfg_attr(test, tauri::command)]
 pub fn update_ai_driver_truck(
     request: AiDriverTruckAssignmentRequest,
     profile_state: State<'_, AppProfileState>,
@@ -109,6 +117,7 @@ pub fn update_ai_driver_truck(
     trailer_change_cache: State<'_, TrailerChangeSessionCache>,
     app_state: State<'_, AppState>,
 ) -> Result<AiDriverMutationResult, String> {
+    let _save_guard = crate::features::save_editor::safety::mutation_lock()?;
     let _mutation_guard = acquire_mutation_lock(&app_state.garage_mutation_lock)?;
     let selection = snapshot_active_save_selection(profile_state.inner())
         .map_err(|_| "garage_block_invalid:profile_state_unavailable".to_string())?;
@@ -117,7 +126,7 @@ pub fn update_ai_driver_truck(
         .lock()
         .map_err(|_| "garage_block_invalid:selected_game_unavailable".to_string())?
         .clone();
-    service::update_ai_driver_truck(
+    let result = service::update_ai_driver_truck(
         &selection,
         &selected_game,
         profile_state.inner(),
@@ -127,10 +136,16 @@ pub fn update_ai_driver_truck(
         trailer_change_cache.inner(),
         &app_state.sqlite_path,
         &request,
-    )
+    );
+    if result.is_ok() {
+        let path = crate::features::save_editor::safety::active_save(profile_state.inner())?;
+        crate::features::save_editor::safety::remember_save(profile_state.inner(), &path)?;
+    }
+    result
 }
 
-#[tauri::command]
+#[cfg_attr(not(test), tauri::command(async))]
+#[cfg_attr(test, tauri::command)]
 pub fn remove_ai_drivers(
     request: AiDriverRemoveRequest,
     profile_state: State<'_, AppProfileState>,
@@ -140,6 +155,7 @@ pub fn remove_ai_drivers(
     trailer_change_cache: State<'_, TrailerChangeSessionCache>,
     app_state: State<'_, AppState>,
 ) -> Result<AiDriverMutationResult, String> {
+    let _save_guard = crate::features::save_editor::safety::mutation_lock()?;
     let _mutation_guard = acquire_mutation_lock(&app_state.garage_mutation_lock)?;
     let selection = snapshot_active_save_selection(profile_state.inner())
         .map_err(|_| "garage_block_invalid:profile_state_unavailable".to_string())?;
@@ -148,7 +164,7 @@ pub fn remove_ai_drivers(
         .lock()
         .map_err(|_| "garage_block_invalid:selected_game_unavailable".to_string())?
         .clone();
-    service::remove_ai_drivers(
+    let result = service::remove_ai_drivers(
         &selection,
         &selected_game,
         profile_state.inner(),
@@ -158,10 +174,16 @@ pub fn remove_ai_drivers(
         trailer_change_cache.inner(),
         &app_state.sqlite_path,
         &request,
-    )
+    );
+    if result.is_ok() {
+        let path = crate::features::save_editor::safety::active_save(profile_state.inner())?;
+        crate::features::save_editor::safety::remember_save(profile_state.inner(), &path)?;
+    }
+    result
 }
 
-#[tauri::command]
+#[cfg_attr(not(test), tauri::command(async))]
+#[cfg_attr(test, tauri::command)]
 pub fn purchase_garage(
     request: GarageMutationRequest,
     profile_state: State<'_, AppProfileState>,
@@ -171,6 +193,7 @@ pub fn purchase_garage(
     trailer_change_cache: State<'_, TrailerChangeSessionCache>,
     app_state: State<'_, AppState>,
 ) -> Result<GarageMutationResult, String> {
+    let _save_guard = crate::features::save_editor::safety::mutation_lock()?;
     let _mutation_guard = acquire_mutation_lock(&app_state.garage_mutation_lock)?;
     let selection = snapshot_active_save_selection(profile_state.inner())
         .map_err(|_| "garage_block_invalid:profile_state_unavailable".to_string())?;
@@ -179,7 +202,7 @@ pub fn purchase_garage(
         .lock()
         .map_err(|_| "garage_block_invalid:selected_game_unavailable".to_string())?
         .clone();
-    service::purchase_garage(
+    let result = service::purchase_garage(
         &selection,
         &selected_game,
         profile_state.inner(),
@@ -189,10 +212,16 @@ pub fn purchase_garage(
         trailer_change_cache.inner(),
         &app_state.sqlite_path,
         &request,
-    )
+    );
+    if result.is_ok() {
+        let path = crate::features::save_editor::safety::active_save(profile_state.inner())?;
+        crate::features::save_editor::safety::remember_save(profile_state.inner(), &path)?;
+    }
+    result
 }
 
-#[tauri::command]
+#[cfg_attr(not(test), tauri::command(async))]
+#[cfg_attr(test, tauri::command)]
 pub fn upgrade_owned_garage(
     request: GarageMutationRequest,
     profile_state: State<'_, AppProfileState>,
@@ -202,6 +231,7 @@ pub fn upgrade_owned_garage(
     trailer_change_cache: State<'_, TrailerChangeSessionCache>,
     app_state: State<'_, AppState>,
 ) -> Result<GarageMutationResult, String> {
+    let _save_guard = crate::features::save_editor::safety::mutation_lock()?;
     let _mutation_guard = acquire_mutation_lock(&app_state.garage_mutation_lock)?;
     let selection = snapshot_active_save_selection(profile_state.inner())
         .map_err(|_| "garage_block_invalid:profile_state_unavailable".to_string())?;
@@ -210,7 +240,7 @@ pub fn upgrade_owned_garage(
         .lock()
         .map_err(|_| "garage_block_invalid:selected_game_unavailable".to_string())?
         .clone();
-    service::upgrade_owned_garage(
+    let result = service::upgrade_owned_garage(
         &selection,
         &selected_game,
         profile_state.inner(),
@@ -220,10 +250,16 @@ pub fn upgrade_owned_garage(
         trailer_change_cache.inner(),
         &app_state.sqlite_path,
         &request,
-    )
+    );
+    if result.is_ok() {
+        let path = crate::features::save_editor::safety::active_save(profile_state.inner())?;
+        crate::features::save_editor::safety::remember_save(profile_state.inner(), &path)?;
+    }
+    result
 }
 
-#[tauri::command]
+#[cfg_attr(not(test), tauri::command(async))]
+#[cfg_attr(test, tauri::command)]
 pub fn update_garage(
     request: GarageUpdateRequest,
     profile_state: State<'_, AppProfileState>,
@@ -233,6 +269,7 @@ pub fn update_garage(
     trailer_change_cache: State<'_, TrailerChangeSessionCache>,
     app_state: State<'_, AppState>,
 ) -> Result<GarageMutationResult, String> {
+    let _save_guard = crate::features::save_editor::safety::mutation_lock()?;
     let _mutation_guard = acquire_mutation_lock(&app_state.garage_mutation_lock)?;
     let selection = snapshot_active_save_selection(profile_state.inner())
         .map_err(|_| "garage_block_invalid:profile_state_unavailable".to_string())?;
@@ -241,7 +278,7 @@ pub fn update_garage(
         .lock()
         .map_err(|_| "garage_block_invalid:selected_game_unavailable".to_string())?
         .clone();
-    service::update_garage(
+    let result = service::update_garage(
         &selection,
         &selected_game,
         profile_state.inner(),
@@ -251,10 +288,16 @@ pub fn update_garage(
         trailer_change_cache.inner(),
         &app_state.sqlite_path,
         &request,
-    )
+    );
+    if result.is_ok() {
+        let path = crate::features::save_editor::safety::active_save(profile_state.inner())?;
+        crate::features::save_editor::safety::remember_save(profile_state.inner(), &path)?;
+    }
+    result
 }
 
-#[tauri::command]
+#[cfg_attr(not(test), tauri::command(async))]
+#[cfg_attr(test, tauri::command)]
 pub fn buy_all_garages(
     request: GarageBuyAllRequest,
     profile_state: State<'_, AppProfileState>,
@@ -264,6 +307,7 @@ pub fn buy_all_garages(
     trailer_change_cache: State<'_, TrailerChangeSessionCache>,
     app_state: State<'_, AppState>,
 ) -> Result<GarageBuyAllResult, String> {
+    let _save_guard = crate::features::save_editor::safety::mutation_lock()?;
     let _mutation_guard = acquire_mutation_lock(&app_state.garage_mutation_lock)?;
     let selection = snapshot_active_save_selection(profile_state.inner())
         .map_err(|_| "garage_block_invalid:profile_state_unavailable".to_string())?;
@@ -272,7 +316,7 @@ pub fn buy_all_garages(
         .lock()
         .map_err(|_| "garage_block_invalid:selected_game_unavailable".to_string())?
         .clone();
-    service::buy_all_garages(
+    let result = service::buy_all_garages(
         &selection,
         &selected_game,
         profile_state.inner(),
@@ -282,10 +326,16 @@ pub fn buy_all_garages(
         trailer_change_cache.inner(),
         &app_state.sqlite_path,
         &request,
-    )
+    );
+    if result.is_ok() {
+        let path = crate::features::save_editor::safety::active_save(profile_state.inner())?;
+        crate::features::save_editor::safety::remember_save(profile_state.inner(), &path)?;
+    }
+    result
 }
 
-#[tauri::command]
+#[cfg_attr(not(test), tauri::command(async))]
+#[cfg_attr(test, tauri::command)]
 pub fn relinquish_empty_garages(
     request: GarageRelinquishEmptyRequest,
     profile_state: State<'_, AppProfileState>,
@@ -295,6 +345,7 @@ pub fn relinquish_empty_garages(
     trailer_change_cache: State<'_, TrailerChangeSessionCache>,
     app_state: State<'_, AppState>,
 ) -> Result<GarageRelinquishEmptyResult, String> {
+    let _save_guard = crate::features::save_editor::safety::mutation_lock()?;
     let _mutation_guard = acquire_mutation_lock(&app_state.garage_mutation_lock)?;
     let selection = snapshot_active_save_selection(profile_state.inner())
         .map_err(|_| "garage_block_invalid:profile_state_unavailable".to_string())?;
@@ -303,7 +354,7 @@ pub fn relinquish_empty_garages(
         .lock()
         .map_err(|_| "garage_block_invalid:selected_game_unavailable".to_string())?
         .clone();
-    service::relinquish_empty_garages(
+    let result = service::relinquish_empty_garages(
         &selection,
         &selected_game,
         profile_state.inner(),
@@ -313,10 +364,16 @@ pub fn relinquish_empty_garages(
         trailer_change_cache.inner(),
         &app_state.sqlite_path,
         &request,
-    )
+    );
+    if result.is_ok() {
+        let path = crate::features::save_editor::safety::active_save(profile_state.inner())?;
+        crate::features::save_editor::safety::remember_save(profile_state.inner(), &path)?;
+    }
+    result
 }
 
-#[tauri::command]
+#[cfg_attr(not(test), tauri::command(async))]
+#[cfg_attr(test, tauri::command)]
 pub fn assign_random_garage_resources(
     request: GarageResourceAssignmentRequest,
     profile_state: State<'_, AppProfileState>,
@@ -326,6 +383,7 @@ pub fn assign_random_garage_resources(
     trailer_change_cache: State<'_, TrailerChangeSessionCache>,
     app_state: State<'_, AppState>,
 ) -> Result<GarageMutationResult, String> {
+    let _save_guard = crate::features::save_editor::safety::mutation_lock()?;
     let _mutation_guard = acquire_mutation_lock(&app_state.garage_mutation_lock)?;
     let selection = snapshot_active_save_selection(profile_state.inner())
         .map_err(|_| "garage_block_invalid:profile_state_unavailable".to_string())?;
@@ -334,7 +392,7 @@ pub fn assign_random_garage_resources(
         .lock()
         .map_err(|_| "garage_block_invalid:selected_game_unavailable".to_string())?
         .clone();
-    service::assign_random_garage_resources(
+    let result = service::assign_random_garage_resources(
         &selection,
         &selected_game,
         profile_state.inner(),
@@ -344,10 +402,16 @@ pub fn assign_random_garage_resources(
         trailer_change_cache.inner(),
         &app_state.sqlite_path,
         &request,
-    )
+    );
+    if result.is_ok() {
+        let path = crate::features::save_editor::safety::active_save(profile_state.inner())?;
+        crate::features::save_editor::safety::remember_save(profile_state.inner(), &path)?;
+    }
+    result
 }
 
-#[tauri::command]
+#[cfg_attr(not(test), tauri::command(async))]
+#[cfg_attr(test, tauri::command)]
 pub fn relinquish_garage_ownership(
     request: GarageMutationRequest,
     profile_state: State<'_, AppProfileState>,
@@ -357,6 +421,7 @@ pub fn relinquish_garage_ownership(
     trailer_change_cache: State<'_, TrailerChangeSessionCache>,
     app_state: State<'_, AppState>,
 ) -> Result<GarageMutationResult, String> {
+    let _save_guard = crate::features::save_editor::safety::mutation_lock()?;
     let _mutation_guard = acquire_mutation_lock(&app_state.garage_mutation_lock)?;
     let selection = snapshot_active_save_selection(profile_state.inner())
         .map_err(|_| "garage_block_invalid:profile_state_unavailable".to_string())?;
@@ -365,7 +430,7 @@ pub fn relinquish_garage_ownership(
         .lock()
         .map_err(|_| "garage_block_invalid:selected_game_unavailable".to_string())?
         .clone();
-    service::relinquish_garage_ownership(
+    let result = service::relinquish_garage_ownership(
         &selection,
         &selected_game,
         profile_state.inner(),
@@ -375,7 +440,12 @@ pub fn relinquish_garage_ownership(
         trailer_change_cache.inner(),
         &app_state.sqlite_path,
         &request,
-    )
+    );
+    if result.is_ok() {
+        let path = crate::features::save_editor::safety::active_save(profile_state.inner())?;
+        crate::features::save_editor::safety::remember_save(profile_state.inner(), &path)?;
+    }
+    result
 }
 
 #[cfg(test)]

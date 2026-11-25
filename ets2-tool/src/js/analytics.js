@@ -1,6 +1,9 @@
 import { attachI18nToWindow, t, translateDocument } from "../modules/shared/i18n.js";
 import { hasTauri, invoke, safeInvoke } from "../modules/shared/runtime.js";
 import { exportAnalyticsCsv } from "./analytics-export.js";
+import { notify } from "../modules/shared/notifications.js";
+import { frontendState, singleFlight } from "../modules/shared/frontend_state.js";
+import "../modules/shared/desktop.js";
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -54,14 +57,7 @@ function showToast(message, type = "info") {
     return;
   }
 
-  const toast = document.createElement("div");
-  toast.className = "career-toast";
-  toast.dataset.type = type;
-  toast.textContent = message;
-  document.body.appendChild(toast);
-  setTimeout(() => {
-    toast.remove();
-  }, 3500);
+  return notify(message, { type });
 }
 
 async function loadCopy() {
@@ -384,7 +380,7 @@ export function createAnalyticsController(options = {}) {
     careerSettings: null,
   };
 
-  async function refresh() {
+  const refresh = singleFlight(async () => {
     if (!hasTauri) {
       showState(elements, "error");
       if (elements.errorText) {
@@ -402,6 +398,13 @@ export function createAnalyticsController(options = {}) {
       safeInvoke("career_get_analytics_job_history", { filters }, { fallback: null, silent: true }),
       safeInvoke("get_career_settings", {}, { fallback: null, silent: true }),
     ]);
+
+    // A filter may change while an IPC response is in flight. Discard that
+    // response; singleFlight schedules the latest filter combination next.
+    if (JSON.stringify(filters) !== JSON.stringify(readFilters(elements))) {
+      setBusy(elements, false);
+      return;
+    }
 
     if (!summary || !history) {
       showState(elements, "error");
@@ -434,7 +437,7 @@ export function createAnalyticsController(options = {}) {
 
     showState(elements, history.totalFilteredJobs > 0 ? "content" : "empty");
     setBusy(elements, false);
-  }
+  }, () => JSON.stringify(readFilters(elements)));
 
   async function handleScan() {
     setBusy(elements, true);
@@ -541,5 +544,6 @@ export async function initStandaloneAnalyticsPage() {
   attachI18nToWindow();
   await translateDocument(document);
   const controller = createAnalyticsController();
+  frontendState.refresh = controller.refresh;
   await controller.init();
 }

@@ -44,11 +44,21 @@ pub fn write_lines_atomic(path: &Path, lines: &[String]) -> Result<(), AppError>
 }
 
 pub fn replace_file_atomic(tmp_path: &Path, target_path: &Path) -> Result<(), AppError> {
-    replace_file_impl(tmp_path, target_path)
+    replace_file_atomic_io(tmp_path, target_path).map_err(|error| {
+        AppError::new(
+            AppErrorCode::WriteFailed,
+            format!(
+                "Atomic replace failed for {}: {} (os_code={:?})",
+                target_path.display(),
+                error,
+                error.raw_os_error()
+            ),
+        )
+    })
 }
 
 #[cfg(target_os = "windows")]
-fn replace_file_impl(tmp_path: &Path, target_path: &Path) -> Result<(), AppError> {
+pub(crate) fn replace_file_atomic_io(tmp_path: &Path, target_path: &Path) -> std::io::Result<()> {
     use windows_sys::Win32::Storage::FileSystem::{
         MOVEFILE_REPLACE_EXISTING, MOVEFILE_WRITE_THROUGH, MoveFileExW,
     };
@@ -73,30 +83,18 @@ fn replace_file_impl(tmp_path: &Path, target_path: &Path) -> Result<(), AppError
     };
 
     if moved == 0 {
-        return Err(AppError::new(
-            AppErrorCode::WriteFailed,
-            format!("Atomic replace failed for {}", target_path.display()),
-        ));
+        return Err(std::io::Error::last_os_error());
     }
 
     Ok(())
 }
 
 #[cfg(not(target_os = "windows"))]
-fn replace_file_impl(tmp_path: &Path, target_path: &Path) -> Result<(), AppError> {
+pub(crate) fn replace_file_atomic_io(tmp_path: &Path, target_path: &Path) -> std::io::Result<()> {
     // Both paths are created in the same directory. On Unix-like targets,
     // rename replaces an existing file atomically; removing it first creates
     // a data-loss window and must therefore be avoided.
-    fs::rename(tmp_path, target_path).map_err(|error| {
-        AppError::new(
-            AppErrorCode::WriteFailed,
-            format!(
-                "Atomic rename failed for {}: {}",
-                target_path.display(),
-                error
-            ),
-        )
-    })
+    fs::rename(tmp_path, target_path)
 }
 
 #[cfg(test)]

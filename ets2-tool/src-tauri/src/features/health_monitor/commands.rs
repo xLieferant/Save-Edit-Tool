@@ -69,7 +69,8 @@ pub async fn get_active_save_health(
     result
 }
 
-#[command]
+#[cfg_attr(not(test), command(async))]
+#[cfg_attr(test, command)]
 pub fn apply_save_health_fix(
     fix_id: String,
     confirmed: bool,
