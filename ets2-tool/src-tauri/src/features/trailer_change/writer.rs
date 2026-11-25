@@ -3,7 +3,6 @@ use std::path::{Path, PathBuf};
 
 use crate::features::ets2save::errors::{AppError, AppErrorCode};
 use crate::features::ets2save::sii_codec::replace_file_atomic;
-use crate::features::truck_change::parser::parse_unit_blocks;
 
 pub fn set_unit_field_value(
     content: &str,
@@ -11,32 +10,19 @@ pub fn set_unit_field_value(
     field: &str,
     value: &str,
 ) -> Result<(String, bool), String> {
-    let blocks = parse_unit_blocks(content);
-    let block = blocks
+    let document = crate::shared::sii_document::Document::parse(content)?;
+    let unit = document
+        .units
         .iter()
-        .find(|block| block.id.eq_ignore_ascii_case(unit_id))
-        .ok_or_else(|| format!("unit_not_found:{}", unit_id))?;
-    let mut lines = content
-        .lines()
-        .map(|line| line.to_string())
-        .collect::<Vec<_>>();
-    let prefix = format!("{}:", field);
-
-    for index in block.start_line..=block.end_line {
-        let Some(line) = lines.get(index) else {
-            continue;
-        };
-        let trimmed = line.trim_start();
-        if !trimmed.starts_with(&prefix) {
-            continue;
+        .find(|unit| unit.id.eq_ignore_ascii_case(unit_id))
+        .ok_or_else(|| format!("unit_not_found:{unit_id}"))?;
+    match document.patch(unit, field, value) {
+        Ok(updated) => Ok((updated, true)),
+        Err(error) if error == format!("sii_field_missing:{field}") => {
+            Ok((content.to_string(), false))
         }
-        let indent_len = line.len() - trimmed.len();
-        let indent = &line[..indent_len];
-        lines[index] = format!("{}{}: {}", indent, field, value);
-        return Ok((join_content_lines(lines, content.ends_with('\n')), true));
+        Err(error) => Err(error),
     }
-
-    Ok((content.to_string(), false))
 }
 
 pub fn write_verified_content(
@@ -45,19 +31,27 @@ pub fn write_verified_content(
     verify_temp: impl Fn(&str) -> Result<(), String>,
 ) -> Result<(), String> {
     verify_temp(content)?;
+    let before = crate::features::save_editor::safety::read_stable_bytes(target_path)?;
+    write_verified_content_if_current(target_path, &before, content, verify_temp)
+}
 
-    let tmp_path = temp_path_for(target_path);
-    fs::write(&tmp_path, content)
-        .map_err(|error| format!("temporary_write_failed:{}:{}", target_path.display(), error))?;
-
-    let temp_content = fs::read_to_string(&tmp_path)
-        .map_err(|error| format!("temporary_readback_failed:{}:{}", tmp_path.display(), error))?;
-    if let Err(error) = verify_temp(&temp_content) {
-        let _ = fs::remove_file(&tmp_path);
-        return Err(error);
-    }
-
-    replace_file_atomic(&tmp_path, target_path).map_err(format_app_error)
+pub(crate) fn write_verified_content_if_current(
+    target_path: &Path,
+    before: &[u8],
+    content: &str,
+    verify_temp: impl Fn(&str) -> Result<(), String>,
+) -> Result<(), String> {
+    verify_temp(content)?;
+    crate::features::save_editor::safety::write_atomic_checked(
+        target_path,
+        before,
+        content,
+        |temporary| {
+            let candidate =
+                fs::read_to_string(temporary).map_err(|_| "save_temporary_read_failed")?;
+            verify_temp(&candidate)
+        },
+    )
 }
 
 #[derive(Debug)]
@@ -91,14 +85,49 @@ impl TemporaryRollbackSnapshot {
         })
     }
 
+    pub(crate) fn create_if_current(target_path: &Path, expected: &[u8]) -> Result<Self, String> {
+        let mut snapshot = Self::create(target_path)?;
+        if fs::read(&snapshot.snapshot_path).map_err(|_| "temporary_rollback_read_failed")?
+            != expected
+        {
+            snapshot.cleanup()?;
+            return Err("save_changed_since_load".into());
+        }
+        Ok(snapshot)
+    }
+
     pub fn restore(&self) -> Result<(), String> {
-        fs::copy(&self.snapshot_path, &self.target_path).map_err(|error| {
-            format!(
-                "temporary_rollback_restore_failed:{}:{}",
-                self.target_path.display(),
-                error
-            )
-        })?;
+        let expected = crate::features::save_editor::safety::read_stable_bytes(&self.target_path)?;
+        self.restore_if_current(&expected)
+    }
+
+    pub(crate) fn restore_if_current(&self, expected: &[u8]) -> Result<(), String> {
+        use std::io::Write;
+        let bytes = fs::read(&self.snapshot_path).map_err(|_| "temporary_rollback_read_failed")?;
+        let temporary = self
+            .target_path
+            .with_file_name(format!(".switch-rollback-{}.tmp", uuid::Uuid::new_v4()));
+        let mut file = fs::OpenOptions::new()
+            .create_new(true)
+            .write(true)
+            .open(&temporary)
+            .map_err(|_| "temporary_rollback_create_failed")?;
+        file.write_all(&bytes)
+            .map_err(|_| "temporary_rollback_write_failed")?;
+        file.sync_all()
+            .map_err(|_| "temporary_rollback_sync_failed")?;
+        drop(file);
+        if let Err(error) = crate::features::save_editor::safety::replace_checked(
+            &temporary,
+            &self.target_path,
+            Some(expected),
+        ) {
+            let _ = fs::remove_file(&temporary);
+            return Err(error);
+        }
+        if fs::read(&self.target_path).map_err(|_| "temporary_rollback_read_failed")? != bytes {
+            return Err("temporary_rollback_verification_failed".into());
+        }
         Ok(())
     }
 
@@ -121,28 +150,12 @@ impl TemporaryRollbackSnapshot {
     }
 }
 
-fn temp_path_for(target_path: &Path) -> PathBuf {
-    let file_name = target_path
-        .file_name()
-        .and_then(|value| value.to_str())
-        .unwrap_or("game.sii");
-    target_path.with_file_name(format!("{}.trailer_change.tmp", file_name))
-}
-
 fn rollback_path_for(target_path: &Path) -> PathBuf {
     let file_name = target_path
         .file_name()
         .and_then(|value| value.to_str())
         .unwrap_or("game.sii");
     target_path.with_file_name(format!("{}.trailer_change.rollback.tmp", file_name))
-}
-
-fn join_content_lines(lines: Vec<String>, trailing_newline: bool) -> String {
-    let mut content = lines.join("\n");
-    if trailing_newline {
-        content.push('\n');
-    }
-    content
 }
 
 fn format_app_error(error: AppError) -> String {

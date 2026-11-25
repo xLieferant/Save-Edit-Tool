@@ -39,10 +39,34 @@ fn app_cache_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
 pub fn set_selected_game(
     game: String,
     state: State<'_, AppProfileState>,
+    cache: State<'_, DecryptCache>,
+    profile_cache: State<'_, ProfileCache>,
 ) -> Result<String, String> {
-    let mut g = state.selected_game.lock().unwrap();
-    *g = game.clone();
-    dev_log!("Game changed to: {}", game);
+    let _mutation = crate::features::save_editor::safety::mutation_lock()?;
+    let game = crate::shared::game::GameType::try_from(game.as_str())?
+        .as_str()
+        .to_string();
+    let mut selected = state
+        .selected_game
+        .lock()
+        .map_err(|_| "game_state_unavailable")?;
+    if *selected != game {
+        *state
+            .current_profile
+            .lock()
+            .map_err(|_| "profile_state_unavailable")? = None;
+        *state
+            .current_save
+            .lock()
+            .map_err(|_| "save_state_unavailable")? = None;
+        *state
+            .save_baseline
+            .lock()
+            .map_err(|_| "save_state_unavailable")? = None;
+        clear_decrypt_cache(cache.inner())?;
+        profile_cache.reset_profile(None);
+        *selected = game.clone();
+    }
     Ok(game)
 }
 
@@ -56,9 +80,15 @@ pub fn get_selected_game(state: State<'_, AppProfileState>) -> Result<String, St
 pub fn save_profiles_cache(
     app: tauri::AppHandle,
     profiles: Vec<CachedProfile>,
+    profile_state: State<'_, AppProfileState>,
 ) -> Result<String, String> {
     let dir = app_cache_dir(&app)?;
-    let file = dir.join("profiles_cache.json");
+    let game = crate::features::save_editor::safety::selected_game(profile_state.inner())?;
+    let file = dir.join(if game == crate::shared::game::GameType::Ats {
+        "profiles_cache_ats.json"
+    } else {
+        "profiles_cache.json"
+    });
     let json =
         serde_json::to_string_pretty(&profiles).map_err(|e| format!("Serialize error: {}", e))?;
     fs::write(&file, json).map_err(|e| format!("Write error: {}", e))?;
@@ -66,9 +96,17 @@ pub fn save_profiles_cache(
 }
 
 #[command]
-pub fn read_profiles_cache(app: tauri::AppHandle) -> Result<Vec<CachedProfile>, String> {
+pub fn read_profiles_cache(
+    app: tauri::AppHandle,
+    profile_state: State<'_, AppProfileState>,
+) -> Result<Vec<CachedProfile>, String> {
     let dir = app_cache_dir(&app)?;
-    let file = dir.join("profiles_cache.json");
+    let game = crate::features::save_editor::safety::selected_game(profile_state.inner())?;
+    let file = dir.join(if game == crate::shared::game::GameType::Ats {
+        "profiles_cache_ats.json"
+    } else {
+        "profiles_cache.json"
+    });
     if !file.exists() {
         return Ok(vec![]);
     }
@@ -79,9 +117,18 @@ pub fn read_profiles_cache(app: tauri::AppHandle) -> Result<Vec<CachedProfile>, 
 }
 
 #[command]
-pub fn save_last_profile(app: tauri::AppHandle, profile_path: String) -> Result<String, String> {
+pub fn save_last_profile(
+    app: tauri::AppHandle,
+    profile_path: String,
+    profile_state: State<'_, AppProfileState>,
+) -> Result<String, String> {
     let dir = app_cache_dir(&app)?;
-    let file = dir.join("last_profile.json");
+    let game = crate::features::save_editor::safety::selected_game(profile_state.inner())?;
+    let file = dir.join(if game == crate::shared::game::GameType::Ats {
+        "last_profile_ats.json"
+    } else {
+        "last_profile.json"
+    });
     let obj = serde_json::json!({ "last_profile": profile_path });
     let json = serde_json::to_string_pretty(&obj).map_err(|e| format!("Serialize err: {}", e))?;
     fs::write(&file, json).map_err(|e| format!("Write err: {}", e))?;
@@ -89,9 +136,17 @@ pub fn save_last_profile(app: tauri::AppHandle, profile_path: String) -> Result<
 }
 
 #[command]
-pub fn read_last_profile(app: tauri::AppHandle) -> Result<Option<String>, String> {
+pub fn read_last_profile(
+    app: tauri::AppHandle,
+    profile_state: State<'_, AppProfileState>,
+) -> Result<Option<String>, String> {
     let dir = app_cache_dir(&app)?;
-    let file = dir.join("last_profile.json");
+    let game = crate::features::save_editor::safety::selected_game(profile_state.inner())?;
+    let file = dir.join(if game == crate::shared::game::GameType::Ats {
+        "last_profile_ats.json"
+    } else {
+        "last_profile.json"
+    });
     if !file.exists() {
         return Ok(None);
     }
@@ -112,8 +167,21 @@ pub fn set_active_profile(
     cache: State<'_, DecryptCache>,
     profile_cache: State<'_, ProfileCache>,
 ) -> Result<(), String> {
+    let _mutation = crate::features::save_editor::safety::mutation_lock()?;
     let mut trace =
         TraceScope::with_fields("set_active_profile", &[("path", profile_path.clone())]);
+    crate::features::save_editor::safety::validate_profile_game(
+        std::path::Path::new(&profile_path),
+        crate::features::save_editor::safety::selected_game(profile_state.inner())?,
+    )?;
+    *profile_state
+        .current_save
+        .lock()
+        .map_err(|_| "save_state_unavailable")? = None;
+    *profile_state
+        .save_baseline
+        .lock()
+        .map_err(|_| "save_state_unavailable")? = None;
     *lock_mutex(
         "profile_state.current_profile",
         &profile_state.current_profile,
@@ -142,7 +210,23 @@ pub fn set_current_save(
     cache: State<'_, DecryptCache>,
     profile_cache: State<'_, ProfileCache>,
 ) -> Result<(), String> {
+    let _mutation = crate::features::save_editor::safety::mutation_lock()?;
     let mut trace = TraceScope::with_fields("set_current_save", &[("path", save_path.clone())]);
+    let profile = state
+        .current_profile
+        .lock()
+        .map_err(|_| "profile_state_unavailable")?
+        .clone()
+        .ok_or("profile_not_loaded")?;
+    let path = crate::features::save_editor::safety::resolve_save(
+        std::path::Path::new(&profile),
+        std::path::Path::new(&save_path),
+    )?;
+    let save = crate::features::save_editor::synchronization::read_stable_save(&path)?;
+    *state
+        .save_baseline
+        .lock()
+        .map_err(|_| "save_state_unavailable")? = Some((path.clone(), save.hash.clone()));
     *lock_mutex("profile_state.current_save", &state.current_save)? = Some(save_path.clone());
     clear_decrypt_cache(cache.inner())?;
     profile_cache.set_save_path(Some(save_path.clone()));
@@ -261,6 +345,7 @@ pub async fn find_profile_saves(profile_path: String) -> Result<Vec<SaveInfo>, S
 fn classify_save_folder(folder: &str) -> SaveKind {
     match folder.to_lowercase().as_str() {
         "quicksave" | "autosave" => SaveKind::Autosave,
+        value if value.starts_with("autosave_") => SaveKind::Autosave,
         _ if folder.chars().all(|c| c.is_ascii_digit()) => SaveKind::Manual,
         _ => SaveKind::Invalid,
     }
@@ -368,11 +453,18 @@ pub fn find_ets2_profiles(state: State<'_, AppProfileState>) -> Vec<ProfileInfo>
     if found_profiles.is_empty() {
         if let Some(runtime) = crate::shared::logs::diagnostic::active() {
             let mut event = crate::shared::logs::diagnostic::DiagnosticEvent::new(
-                "WARN", "profiles", "find_ets2_profiles", "No game profiles were found in the configured locations.");
+                "WARN",
+                "profiles",
+                "find_ets2_profiles",
+                "No game profiles were found in the configured locations.",
+            );
             event.error_kind = Some("configuration_or_user_input".to_string());
             runtime.record(event);
         }
     }
+    let mut seen = std::collections::HashSet::new();
+    found_profiles
+        .retain(|profile| seen.insert(profile.path.replace('\\', "/").to_ascii_lowercase()));
     found_profiles
 }
 
@@ -385,39 +477,39 @@ pub fn load_profile(
     profile_cache: State<'_, ProfileCache>,
 ) -> Result<String, String> {
     crate::shared::logs::diagnostic::with_operation("profiles", "load_profile", || {
-    let mut trace = TraceScope::with_fields("load_profile", &[("path", profile_path.clone())]);
-    let save_path_str = save_path.ok_or_else(|| "Kein Save angegeben".to_string())?;
-    let save_to_load = PathBuf::from(save_path_str);
+        let mut trace = TraceScope::with_fields("load_profile", &[("path", profile_path.clone())]);
+        let save_path_str = save_path.ok_or_else(|| "Kein Save angegeben".to_string())?;
+        let save_to_load = PathBuf::from(save_path_str);
 
-    if !save_to_load.exists() {
-        let error = format!("Save nicht gefunden: {}", save_to_load.display());
-        trace.finish_error(&error);
-        return Err(error);
-    }
+        if !save_to_load.exists() {
+            let error = format!("Save nicht gefunden: {}", save_to_load.display());
+            trace.finish_error(&error);
+            return Err(error);
+        }
 
-    // Profil setzen
-    set_active_profile(
-        profile_path.clone(),
-        profile_state.clone(),
-        cache.clone(),
-        profile_cache.clone(),
-    )?;
+        // Profil setzen
+        set_active_profile(
+            profile_path.clone(),
+            profile_state.clone(),
+            cache.clone(),
+            profile_cache.clone(),
+        )?;
 
-    // ðŸ”¥ SAVE SETZEN (Entweder Ã¼bergeben oder Autosave)
-    set_current_save(
-        save_to_load.to_string_lossy().to_string(),
-        profile_state,
-        cache,
-        profile_cache,
-    )?;
+        // ðŸ”¥ SAVE SETZEN (Entweder Ã¼bergeben oder Autosave)
+        set_current_save(
+            save_to_load.to_string_lossy().to_string(),
+            profile_state,
+            cache,
+            profile_cache,
+        )?;
 
-    dev_log!(
-        "Profil geladen: {} | Save: {}",
-        profile_path,
-        save_to_load.display()
-    );
-    trace.finish_ok();
-    Ok("Profil geladen".into())
+        dev_log!(
+            "Profil geladen: {} | Save: {}",
+            profile_path,
+            save_to_load.display()
+        );
+        trace.finish_ok();
+        Ok("Profil geladen".into())
     })
 }
 

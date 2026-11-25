@@ -42,15 +42,32 @@ pub async fn get_all_trucks(
         return Ok(cached);
     }
 
+    let read_revision = crate::features::save_editor::safety::read_revision(
+        profile_state.inner(),
+        std::path::Path::new(&path_key),
+    )?;
     let decrypt_cache_cloned = decrypt_cache.inner().clone();
     let (trucks, player_truck) = tauri::async_runtime::spawn_blocking(move || {
         let (content, _) = load_save_content_from_save_path(&save_path, &decrypt_cache_cloned)?;
-        let trucks = parse_trucks_from_sii(&content);
+        let owned = crate::features::truck_change::parser::parse_truck_save(&content)
+            .trucks
+            .into_iter()
+            .map(|truck| truck.truck_id)
+            .collect::<std::collections::HashSet<_>>();
+        let trucks = parse_trucks_from_sii(&content)
+            .into_iter()
+            .filter(|truck| owned.contains(&truck.truck_id))
+            .collect::<Vec<_>>();
         let player_truck = player_truck_from_content(&content, &trucks);
         Ok::<(Vec<ParsedTruck>, Option<ParsedTruck>), String>((trucks, player_truck))
     })
     .await
     .map_err(|error| format!("get_all_trucks join failed: {}", error))??;
+    let _publication = crate::features::save_editor::safety::mutation_lock()?;
+    crate::features::save_editor::safety::ensure_read_current(
+        profile_state.inner(),
+        &read_revision,
+    )?;
 
     profile_cache.cache_trucks(path_key.clone(), trucks.clone(), player_truck.clone());
     dev_log!("{} Trucks gefunden", trucks.len());
@@ -82,10 +99,22 @@ pub async fn get_player_truck(
         return Ok(cached);
     }
 
+    let read_revision = crate::features::save_editor::safety::read_revision(
+        profile_state.inner(),
+        std::path::Path::new(&path_key),
+    )?;
     let decrypt_cache_cloned = decrypt_cache.inner().clone();
     let (trucks, base_truck) = tauri::async_runtime::spawn_blocking(move || {
         let (content, _) = load_save_content_from_save_path(&save_path, &decrypt_cache_cloned)?;
-        let trucks = parse_trucks_from_sii(&content);
+        let owned = crate::features::truck_change::parser::parse_truck_save(&content)
+            .trucks
+            .into_iter()
+            .map(|truck| truck.truck_id)
+            .collect::<std::collections::HashSet<_>>();
+        let trucks = parse_trucks_from_sii(&content)
+            .into_iter()
+            .filter(|truck| owned.contains(&truck.truck_id))
+            .collect::<Vec<_>>();
         let player_id = get_player_id(&content)
             .ok_or("Player ID nicht im economy block gefunden".to_string())?;
         let (player_truck_id_opt, _) = get_vehicle_ids(&content, &player_id);
@@ -101,6 +130,11 @@ pub async fn get_player_truck(
     })
     .await
     .map_err(|error| format!("get_player_truck join failed: {}", error))??;
+    let _publication = crate::features::save_editor::safety::mutation_lock()?;
+    crate::features::save_editor::safety::ensure_read_current(
+        profile_state.inner(),
+        &read_revision,
+    )?;
 
     profile_cache.cache_trucks(path_key.clone(), trucks, Some(base_truck.clone()));
     trace.finish_ok();

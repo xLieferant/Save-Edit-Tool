@@ -6,11 +6,8 @@ use crate::features::trailer_change::parser::{
     resolve_current_trailer_pointer,
 };
 use crate::features::truck_change::parser::{extract_field_value, is_null_ref};
-use crate::shared::current_profile::{require_current_profile, require_current_save};
 use crate::shared::decrypt::decrypt_cached;
 use crate::shared::hex_float::float_to_hex;
-use crate::shared::paths::game_sii_from_save;
-use crate::shared::regex_helper::cragex;
 use crate::state::{AppProfileState, DecryptCache, ProfileCache};
 use regex::{Captures, Regex};
 use std::fs;
@@ -28,11 +25,8 @@ fn read_save_content(
     profile_state: tauri::State<'_, AppProfileState>,
     decrypt_cache: tauri::State<'_, DecryptCache>,
 ) -> Result<(String, String), String> {
-    let save_path_str = require_current_save(profile_state.clone()).or_else(|_| {
-        let profile = require_current_profile(profile_state)?;
-        Ok::<String, String>(format!("{}/save/quicksave", profile))
-    })?;
-    let path = game_sii_from_save(Path::new(&save_path_str));
+    let path = crate::features::save_editor::safety::active_save(profile_state.inner())?;
+    decrypt_cache.invalidate_path(&path);
     let content = decrypt_cached(&path, &decrypt_cache)?;
     Ok((content, path.display().to_string()))
 }
@@ -41,11 +35,17 @@ fn write_save_content(
     profile_state: &AppProfileState,
     path: &str,
     content: &str,
+    original: &str,
     action: &str,
     action_reason: &str,
     success_message: &str,
 ) -> Result<(), String> {
     let path_buf = PathBuf::from(path);
+    let _mutation = crate::features::save_editor::safety::mutation_lock()?;
+    let raw = crate::features::save_editor::safety::read_source(profile_state, &path_buf)?;
+    if crate::shared::decrypt::decode_text_bytes(&raw, "vehicle_save", &[])? != original {
+        return Err("save_changed_since_load".into());
+    }
     let mut context = logging_service::resolve_active_context(profile_state);
     context.extra.insert(
         "target".to_string(),
@@ -74,17 +74,10 @@ fn write_save_content(
     context
         .extra
         .insert("backupId".to_string(), backup.backup_id);
-    fs::write(&path_buf, content.as_bytes()).map_err(|error| {
-        let technical = error.to_string();
-        let _ = logging_service::record_error(
-            action,
-            Some("write_failed"),
-            "The vehicle save could not be written.",
-            Some(&technical),
-            &context,
-        );
-        "Fahrzeugänderung konnte nicht gespeichert werden.".to_string()
+    crate::features::save_editor::safety::write_atomic_checked(&path_buf, &raw, content, |_| {
+        Ok(())
     })?;
+    crate::features::save_editor::safety::remember_save(profile_state, &path_buf)?;
 
     let _ = logging_service::record_info(action, success_message, &context);
     Ok(())
@@ -237,9 +230,25 @@ fn get_player_vehicle_id(content: &str, player_field: &str) -> Result<String, St
         .map_err(|_| "player_block_not_found".to_string())?;
     let player_block = &content[player_start..player_end];
 
-    let assigned_vehicles_id = extract_field_value(player_block, "assigned_vehicles")
-        .filter(|value| !is_null_ref(value))
-        .ok_or_else(|| "assigned_vehicles_not_found".to_string())?;
+    if extract_field_value(player_block, "assigned_vehicles_mode")
+        .is_some_and(|mode| mode != "truck")
+    {
+        return Err("vehicle_mode_not_supported".into());
+    }
+    let assigned_vehicles_id =
+        extract_field_value(player_block, "assigned_vehicles").filter(|id| !is_null_ref(id));
+    let Some(assigned_vehicles_id) = assigned_vehicles_id else {
+        let id = extract_field_value(player_block, player_field)
+            .filter(|id| !is_null_ref(id))
+            .ok_or("assigned_vehicles_not_found")?;
+        let kind = if target_key == "vehicle" {
+            "vehicle"
+        } else {
+            "trailer"
+        };
+        extract_vehicle_block(content, kind, &id)?;
+        return Ok(id);
+    };
 
     let (pv_start, pv_end) =
         extract_vehicle_block(content, "player_vehicles", &assigned_vehicles_id)
@@ -258,42 +267,17 @@ fn extract_vehicle_block(
     block_type: &str,
     vehicle_id: &str,
 ) -> Result<(usize, usize), String> {
-    let start_pattern = format!(r"{}\s*:\s*{}\s*\{{", block_type, regex::escape(vehicle_id));
-    let re_start = Regex::new(&start_pattern).map_err(|e| e.to_string())?;
-
-    let cap = re_start
-        .captures(content)
-        .ok_or(format!("{} block for {} not found", block_type, vehicle_id))?;
-
-    let full_match = cap.get(0).ok_or_else(|| {
-        format!(
-            "{} block start for {} could not be resolved",
-            block_type, vehicle_id
-        )
-    })?;
-    let start_pos = full_match.end();
-
-    // Count braces to find the matching closing brace
-    let mut brace_count = 1;
-    let mut end_pos = start_pos;
-    for (byte_offset, ch) in content[start_pos..].char_indices() {
-        if ch == '{' {
-            brace_count += 1;
-        } else if ch == '}' {
-            brace_count -= 1;
-            if brace_count == 0 {
-                end_pos = start_pos + byte_offset;
-                break;
-            }
-        }
+    let units = crate::features::save_editor::document::scan_units(content, false)?;
+    let mut units = units
+        .iter()
+        .filter(|unit| unit.kind == block_type && unit.id == vehicle_id);
+    let unit = units
+        .next()
+        .ok_or_else(|| format!("vehicle_reference_missing:{block_type}"))?;
+    if units.next().is_some() {
+        return Err("vehicle_reference_ambiguous".into());
     }
-
-    if brace_count != 0 {
-        return Err(format!("Unmatched braces in {} block", block_type));
-    }
-
-    // Return positions INCLUDING the opening brace position
-    Ok((full_match.start(), end_pos + 1))
+    Ok((unit.span.start, unit.span.end))
 }
 
 // #[x] : Function needs to find and delete something inside the regex
@@ -319,34 +303,18 @@ where
     let (content, path) = read_save_content(profile_state.clone(), decrypt_cache.clone())?;
     let vehicle_id = get_player_vehicle_id(&content, player_vehicle_key)?;
 
-    let (block_start, block_end) = extract_vehicle_block(&content, unit_type, &vehicle_id)?;
-    let block = &content[block_start..block_end];
-
-    // Search for attribute within this specific block
-    let regex_str = format!(r"({}:\s*)([^\r\n]+)", attribute_key);
-    let re = Regex::new(&regex_str).map_err(|e| e.to_string())?;
-
-    if !re.is_match(block) {
-        return Err(format!(
-            "Attribut '{}' im {}-Block für {} nicht gefunden",
-            attribute_key, unit_type, vehicle_id
-        ));
-    }
-
-    let new_block = re.replace(block, |caps: &Captures| {
-        format!("{}{}", &caps[1], value_setter(caps))
-    });
-
-    let new_content = format!(
-        "{}{}{}",
-        &content[..block_start],
-        new_block,
-        &content[block_end..]
-    );
+    let document = crate::shared::sii_document::Document::parse(&content)?;
+    let unit = document.resolve(&vehicle_id, unit_type)?;
+    let old = document.field(unit, attribute_key)?;
+    let expression = format!("{attribute_key}: {old}");
+    let regex = Regex::new(r"^([^:]+:[ \t]*)(.*)$").map_err(|error| error.to_string())?;
+    let captures = regex.captures(&expression).ok_or("vehicle_field_invalid")?;
+    let new_content = document.patch(unit, attribute_key, &value_setter(&captures))?;
     write_save_content(
         profile_state.inner(),
         &path,
         &new_content,
+        &content,
         action,
         action_reason,
         success_message,
@@ -375,28 +343,18 @@ where
 {
     let (content, path) = read_save_content(profile_state.clone(), decrypt_cache.clone())?;
     let trailer_id = resolve_trailer_id(&content)?;
-    let (block_start, block_end) = extract_vehicle_block(&content, "trailer", &trailer_id)?;
-    let block = &content[block_start..block_end];
-    let regex_str = format!(r"({}:\s*)([^\r\n]+)", attribute_key);
-    let re = Regex::new(&regex_str).map_err(|error| error.to_string())?;
-
-    if !re.is_match(block) {
-        return Err(format!("trailer_attribute_not_found:{}", attribute_key));
-    }
-
-    let new_block = re.replace(block, |captures: &Captures| {
-        format!("{}{}", &captures[1], value_setter(captures))
-    });
-    let new_content = format!(
-        "{}{}{}",
-        &content[..block_start],
-        new_block,
-        &content[block_end..]
-    );
+    let document = crate::shared::sii_document::Document::parse(&content)?;
+    let unit = document.resolve(&trailer_id, "trailer")?;
+    let old = document.field(unit, attribute_key)?;
+    let expression = format!("{attribute_key}: {old}");
+    let regex = Regex::new(r"^([^:]+:[ \t]*)(.*)$").map_err(|error| error.to_string())?;
+    let captures = regex.captures(&expression).ok_or("vehicle_field_invalid")?;
+    let new_content = document.patch(unit, attribute_key, &value_setter(&captures))?;
     write_save_content(
         profile_state.inner(),
         &path,
         &new_content,
+        &content,
         action,
         action_reason,
         success_message,
@@ -410,6 +368,58 @@ where
     Ok(())
 }
 
+fn repair_unit(content: &str, kind: &str, id: &str, fields: &[&str]) -> Result<String, String> {
+    let document = crate::shared::sii_document::Document::parse(content)?;
+    let unit = document.resolve(id, kind)?;
+    let mut spans = Vec::new();
+    for field in fields {
+        match document.field_span(unit, field) {
+            Ok(span) => {
+                crate::shared::hex_float::parse_value_auto(&content[span.clone()])?;
+                spans.push(span);
+            }
+            Err(error) if error == format!("sii_field_missing:{field}") => {}
+            Err(error) => return Err(error),
+        }
+    }
+    match document.field(unit, "wheels_wear") {
+        Ok(count) => {
+            let count = count
+                .parse::<usize>()
+                .map_err(|_| "vehicle_wheel_array_invalid")?;
+            if count > 128 {
+                return Err("vehicle_wheel_array_invalid".into());
+            }
+            let raw = &content[unit.span.clone()];
+            let entries =
+                crate::features::truck_change::parser::extract_array_entries(raw, "wheels_wear");
+            if entries.len() != count
+                || entries
+                    .iter()
+                    .enumerate()
+                    .any(|(index, (actual, _))| index != *actual)
+            {
+                return Err("vehicle_wheel_array_invalid".into());
+            }
+            for index in 0..count {
+                spans.push(document.field_span(unit, &format!("wheels_wear[{index}]"))?);
+            }
+        }
+        Err(error) if error == "sii_field_missing:wheels_wear" => {}
+        Err(error) => return Err(error),
+    }
+    if spans.is_empty() {
+        return Err("vehicle_repair_fields_missing".into());
+    }
+    spans.sort_by_key(|span| std::cmp::Reverse(span.start));
+    let mut updated = content.to_string();
+    for span in spans {
+        updated.replace_range(span, &float_to_hex(0.0));
+    }
+    crate::shared::sii_document::Document::parse(&updated)?;
+    Ok(updated)
+}
+
 // ---------------------
 // Truck Commands
 // ---------------------
@@ -421,7 +431,7 @@ pub async fn set_player_truck_license_plate(
     decrypt_cache: tauri::State<'_, DecryptCache>,
     profile_cache: tauri::State<'_, ProfileCache>,
 ) -> Result<(), String> {
-    dev_log!("Setting truck license plate to: {}", plate);
+    let plate = validate_trailer_license_plate(&plate)?;
     generic_vehicle_attribute_edit(
         profile_state,
         decrypt_cache,
@@ -455,45 +465,22 @@ pub async fn repair_player_truck(
     let (content, path) = read_save_content(profile_state.clone(), decrypt_cache.clone())?;
     let truck_id = get_player_vehicle_id(&content, "my_truck")?;
 
-    let (block_start, block_end) = extract_vehicle_block(&content, "vehicle", &truck_id)?;
-    let mut block = content[block_start..block_end].to_string();
-
-    let wear_attributes = [
-        "engine_wear",
-        "transmission_wear",
-        "cabin_wear",
-        "chassis_wear",
-    ];
-
-    for attr in &wear_attributes {
-        let regex_str = format!(r"({}:\s*)([^ \r\n]+)", attr);
-        let re = Regex::new(&regex_str).map_err(|e| e.to_string())?;
-        if re.is_match(&block) {
-            block = re
-                .replace(&block, format!("$1{}", float_to_hex(0.0)))
-                .to_string();
-        }
-    }
-
-    // Fix wheels_wear array
-    let re_wheels =
-        Regex::new(r"wheels_wear\[\d+\]:\s*[^ \r\n]+").map_err(|error| error.to_string())?;
-    block = re_wheels
-        .replace_all(&block, |_: &Captures| {
-            format!("wheels_wear[0]: {}", float_to_hex(0.0))
-        })
-        .to_string();
-
-    let new_content = format!(
-        "{}{}{}",
-        &content[..block_start],
-        block,
-        &content[block_end..]
-    );
+    let new_content = repair_unit(
+        &content,
+        "vehicle",
+        &truck_id,
+        &[
+            "engine_wear",
+            "transmission_wear",
+            "cabin_wear",
+            "chassis_wear",
+        ],
+    )?;
     write_save_content(
         profile_state.inner(),
         &path,
         &new_content,
+        &content,
         "repair_player_truck",
         "before truck repair",
         "The player truck wear values were repaired.",
@@ -534,6 +521,9 @@ pub async fn set_player_truck_fuel(
     profile_cache: tauri::State<'_, ProfileCache>,
     level: f32,
 ) -> Result<(), String> {
+    if !level.is_finite() || !(0.0..=1.0).contains(&level) {
+        return Err("vehicle_value_invalid".into());
+    }
     dev_log!("Set Fuel player truck");
     generic_vehicle_attribute_edit(
         profile_state,
@@ -557,6 +547,18 @@ pub async fn set_player_truck_wear(
     wear_type: String,
     level: f32,
 ) -> Result<(), String> {
+    if !level.is_finite()
+        || !(0.0..=1.0).contains(&level)
+        || ![
+            "engine_wear",
+            "transmission_wear",
+            "cabin_wear",
+            "chassis_wear",
+        ]
+        .contains(&wear_type.as_str())
+    {
+        return Err("vehicle_value_invalid".into());
+    }
     dev_log!("Set wear for player truck: {} = {}", wear_type, level);
     generic_vehicle_attribute_edit(
         profile_state,
@@ -617,6 +619,9 @@ pub async fn edit_truck_odometer(
     decrypt_cache: tauri::State<'_, DecryptCache>,
     profile_cache: tauri::State<'_, ProfileCache>,
 ) -> Result<(), String> {
+    if !(0..=9_007_199_254_740_991).contains(&value) {
+        return Err("vehicle_value_invalid".into());
+    }
     dev_log!("Setting truck odometer to: {}", value);
     generic_vehicle_attribute_edit(
         profile_state,
@@ -644,64 +649,17 @@ pub async fn repair_player_trailer(
 
     dev_log!("Found trailer ID: {}", trailer_id);
 
-    let (block_start, block_end) = extract_vehicle_block(&content, "trailer", &trailer_id)?;
-    let mut block = content[block_start..block_end].to_string();
-
-    dev_log!("Extracted trailer block length: {}", block.len());
-
-    // Note: In SII files, trailer body wear is called "trailer_body_wear", not just "body_wear"
-    let wear_attributes = [
-        "chassis_wear",
-        "trailer_body_wear", // ← IMPORTANT: Correct attribute name!
-    ];
-    let mut repaired_any = false;
-
-    for attr in &wear_attributes {
-        let regex_str = format!(r"({}:\s*)([^ \r\n]+)", attr);
-        let re = Regex::new(&regex_str).map_err(|e| e.to_string())?;
-
-        if re.is_match(&block) {
-            repaired_any = true;
-            dev_log!("Repairing {} to 0.0", attr);
-            block = re
-                .replace(&block, format!("$1{}", float_to_hex(0.0)))
-                .to_string();
-        } else {
-            dev_log!("Warning: {} not found in trailer block", attr);
-        }
-    }
-
-    // Fix wheels_wear array - match each individual wheel
-    let re_wheels =
-        Regex::new(r"(wheels_wear\[\d+\]:\s*)([^ \r\n]+)").map_err(|error| error.to_string())?;
-    if re_wheels.is_match(&block) {
-        repaired_any = true;
-        dev_log!("Repairing trailer wheels");
-        block = re_wheels
-            .replace_all(&block, |caps: &Captures| {
-                format!("{}{}", &caps[1], float_to_hex(0.0))
-            })
-            .to_string();
-    } else {
-        dev_log!("Warning: wheels_wear not found in trailer block");
-    }
-
-    if !repaired_any {
-        return Err("trailer_repair_fields_not_found".to_string());
-    }
-
-    let new_content = format!(
-        "{}{}{}",
-        &content[..block_start],
-        block,
-        &content[block_end..]
-    );
-
-    dev_log!("Writing repaired trailer back to file");
+    let new_content = repair_unit(
+        &content,
+        "trailer",
+        &trailer_id,
+        &["chassis_wear", "trailer_body_wear"],
+    )?;
     write_save_content(
         profile_state.inner(),
         &path,
         &new_content,
+        &content,
         "repair_player_trailer",
         "before trailer repair",
         "The player trailer wear values were repaired.",
@@ -745,6 +703,33 @@ pub async fn set_player_trailer_cargo_mass(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn ats_repair_keeps_wheel_indices_unknown_fields_and_other_units() {
+        let original = crate::features::save_editor::ats_tests::fixture().replace('\n', "\r\n");
+        let repaired = repair_unit(
+            &original,
+            "vehicle",
+            "truck.main",
+            &[
+                "engine_wear",
+                "transmission_wear",
+                "cabin_wear",
+                "chassis_wear",
+            ],
+        )
+        .unwrap();
+        let doc = crate::shared::sii_document::Document::parse(&repaired).unwrap();
+        let truck = doc.resolve("truck.main", "vehicle").unwrap();
+        assert_eq!(doc.field(truck, "wheels_wear").unwrap(), "2");
+        assert_eq!(doc.field(truck, "wheels_wear[0]").unwrap(), "&00000000");
+        assert_eq!(doc.field(truck, "wheels_wear[1]").unwrap(), "&00000000");
+        assert_eq!(doc.field(truck, "fuel_relative").unwrap(), "&3f000000");
+        assert_eq!(doc.field(truck, "odometer").unwrap(), "574021");
+        assert!(repaired.contains("bus_experience_points: 12\r\n"));
+        let broken = original.replace("wheels_wear[1]", "wheels_wear[0]");
+        assert!(repair_unit(&broken, "vehicle", "truck.main", &["engine_wear"]).is_err());
+    }
 
     fn trailer_fixture() -> &'static str {
         r#"SiiNunit

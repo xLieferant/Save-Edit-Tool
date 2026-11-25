@@ -83,6 +83,8 @@ try {
     const { identifier } = await call("Page.addScriptToEvaluateOnNewDocument", { source: `
       window.__coachesLocales = ${JSON.stringify(locales)};
       window.__coachesLanguage = ${JSON.stringify(language)};
+      window.__coachesReady = false;
+      window.addEventListener('translations-ready', () => { window.__coachesReady = true; });
       window.__coachesTranslate = async (key, values = {}) => {
         let text = key.split('.').reduce((value, part) => value?.[part], window.__coachesLocales[window.__coachesLanguage]) ?? key;
         for (const [name, value] of Object.entries(values)) text = text.replaceAll('{' + name + '}', value);
@@ -90,6 +92,8 @@ try {
       };
       window.__TAURI__ = {
         core: { convertFileSrc: path => path, invoke: async (command, args = {}) => {
+          if (window.__syncInvoke && ['refresh_savegame','accept_savegame_refresh','get_selected_game','find_ets2_profiles','find_profile_saves','save_profiles_cache','quicksave_game_info','get_all_trucks','get_player_truck','get_player_trailer'].includes(command)) return window.__syncInvoke(command,args);
+          if (window.__saveSelectionStub && ['refresh_savegame','get_selected_game','find_ets2_profiles','find_profile_saves','read_last_profile','save_profiles_cache','set_active_profile','load_profile'].includes(command)) return window.__saveSelectionStub(command,args);
           if (window.__coachesInvoke && ['read_all_save_data', 'read_project_coaches', 'edit_career_xp'].includes(command)) return window.__coachesInvoke(command, args);
           if (command === 'translate_command') return window.__coachesTranslate(args.key, args.args);
           if (command === 'get_current_language_command') return window.__coachesLanguage;
@@ -99,12 +103,16 @@ try {
           if (/^(find_|list_|scan_|get_available_|get_user_logs|get_user_sessions)/.test(command)) return [];
           return null;
         }},
-        event: { listen: async () => () => {} },
+        event: { listen: async (name, callback) => {
+          window.__eventCallbacks ||= {};
+          window.__eventCallbacks[name] = callback;
+          return () => { delete window.__eventCallbacks[name]; };
+        } },
         app: { getVersion: async () => '0.9.9' }, opener: { openUrl: async () => {} },
       };
     ` });
     await call("Page.navigate", { url: `http://127.0.0.1:${server.address().port}/pages/save-editor/index.html` });
-    await waitFor("document.readyState === 'complete' && typeof window.invoke === 'function' && typeof window.t === 'function'");
+    await waitFor("document.readyState === 'complete' && window.__coachesReady && typeof window.invoke === 'function' && typeof window.t === 'function'");
     await evaluate(`(async () => {
       window.__coachesApp = await import('/app.js');
       window.selectedProfilePath = '/synthetic/profile';
@@ -181,6 +189,14 @@ try {
           await evaluate(`document.getElementById(${JSON.stringify(career === "truck" ? "levelSystemCareerTruck" : "levelSystemCareerBus")}).click()`);
           const expectedBackground = career === "truck" ? "rgb(124, 159, 195)" : "rgb(143, 175, 159)";
           await waitFor(`getComputedStyle(document.getElementById('modalLevelSystemApply')).backgroundColor === ${JSON.stringify(expectedBackground)}`);
+          // The apply button settles before the tab/card color transitions.
+          // Measure their final contrast after those finite transitions finish.
+          await evaluate(`(async () => {
+            await new Promise(requestAnimationFrame);
+            await Promise.all(document.getElementById('modalLevelSystem').getAnimations({subtree:true})
+              .filter(animation => animation.effect?.getTiming().iterations !== Infinity)
+              .map(animation => animation.finished.catch(() => {})));
+          })()`);
           assert.equal(await evaluate("document.documentElement.scrollWidth > innerWidth + 1"), false);
           assert.equal(await evaluate("document.querySelector('#modalLevelSystem .level-system-scroll').scrollWidth > document.querySelector('#modalLevelSystem .level-system-scroll').clientWidth + 1"), false, "modal must not overflow horizontally");
           assert.equal(await evaluate("document.querySelector('#modalLevelSystem .modal-box').getBoundingClientRect().bottom <= innerHeight + 1"), true, "footer must stay inside the window");
@@ -258,11 +274,207 @@ try {
     }
     await evaluate("window.__coachesData.stops[0].id = '<img src=x onerror=alert(1)>'; window.__coachesApp.loadTools('coaches')");
     assert.equal(await evaluate("document.querySelector('[data-coaches-stops] img') === null"), true, "save IDs must be rendered as text");
+    await evaluate(`(async () => {
+      window.__moneyTools = await import('/tools.js');
+      window.__moneyTool = window.__moneyTools.tools.profile.find(tool => tool.title === 'tools.profile.change_money.title');
+      window.__moneyOriginalInvoke = window.invoke;
+      window.__moneyOriginalBridge = window.__coachesInvoke;
+      window.__moneyPersisted = 1000;
+      window.__moneyMode = 'persist';
+      window.__moneyCalls = [];
+      window.invoke = async (command, args = {}) => {
+        if (command === 'edit_player_money') {
+          window.__moneyCalls.push('write');
+          if (window.__moneyMode === 'reject') throw new Error('save_path_invalid');
+          if (window.__moneyMode === 'persist') window.__moneyPersisted = args.value;
+          return;
+        }
+        if (command === 'read_all_save_data') {
+          window.__moneyCalls.push('read');
+          return {money:window.__moneyPersisted,xp:window.__coachesData.truckXp};
+        }
+        return window.__moneyOriginalInvoke(command,args);
+      };
+      window.__coachesInvoke = window.invoke;
+      window.currentProfileData = {money:1000,xp:window.__coachesData.truckXp};
+      void window.__moneyTool.action();
+    })()`);
+    await waitFor("document.getElementById('modalNumber').style.display === 'flex'");
+    await evaluate("document.getElementById('modalNumberInput').value = '1234567'; document.getElementById('modalNumberApply').click()");
+    await waitFor("window.__coachesToasts.at(-1)?.[0] === 'game_units.money_saved'");
+    assert.equal(await evaluate("window.currentProfileData.money"),1234567);
+    assert.deepEqual(await evaluate("window.__moneyCalls"),['write','read']);
+    for (const mode of ['mismatch','reject']) {
+      await evaluate(`window.__moneyMode = ${JSON.stringify(mode)}; window.__moneyCalls = []; void window.__moneyTool.action()`);
+      await waitFor("document.getElementById('modalNumber').style.display === 'flex'");
+      await evaluate("document.getElementById('modalNumberInput').value = '7654321'; document.getElementById('modalNumberApply').click()");
+      await waitFor("window.__coachesToasts.at(-1)?.[0] === 'toasts.change_money_error'");
+      assert.equal(await evaluate("window.currentProfileData.money"),1234567, 'failed persistence must never assign the requested value');
+      assert.deepEqual(await evaluate("window.__moneyCalls"),mode === 'reject' ? ['write'] : ['write','read']);
+    }
+    await evaluate("window.invoke = window.__moneyOriginalInvoke; window.__coachesInvoke = window.__moneyOriginalBridge");
+    await evaluate(`(async () => {
+      window.__atsUnits = await import('/modules/shared/game_units.js');
+      window.selectedGame = 'ats';
+      window.readSaveGameConfig = {use_miles:true};
+    })()`);
+    assert.equal(await evaluate("window.__atsUnits.currencyCode()"), "USD");
+    assert.equal(await evaluate("window.__atsUnits.distanceUnit()"), "mi");
+    assert.equal(await evaluate("window.__atsUnits.displayDistance(1.609344)"), 1);
+    assert.equal(await evaluate("window.__atsUnits.storedDistance(1)"), 1.609344);
+    await evaluate("window.readSaveGameConfig.use_miles = false");
+    assert.equal(await evaluate("window.__atsUnits.displayDistance(6500)"), 6500, "ATS metric setting must retain stored kilometers");
+    await evaluate(`(async () => {
+      window.__atsOriginalInvoke = window.invoke;
+      window.__atsWritable = true;
+      window.__atsGarageCalls = [];
+      window.invoke = async (command, args = {}) => {
+        window.__atsGarageCalls.push(command);
+        if (command === 'get_all_garages') return {game:'ats', writeSupported:window.__atsWritable, aiDriversSupported:true, saveHash:'ats-fixture', diagnostics:{warnings:[]}, garages:[{
+          garageId:'garage.los_angeles', cityToken:'los_angeles', cityName:'Los Angeles', ownership:'not_owned', size:'unowned', status:0,
+          vehicleSlotCount:0,driverSlotCount:0,trailerSlotCount:0,maximumSlotCount:0,occupiedSlots:0,availableSlots:0,
+          assignedDriverCount:0,assignedTruckCount:0,assignedTrailerCount:0,slots:[],trailerIds:[],isHeadquarters:false,capacityConsistent:true,warnings:[],
+        }]};
+        if (command === 'get_ai_driver_management') return {game:'ats',saveHash:'ats-fixture',drivers:[],availableTrucks:[],availableDriverCount:0,warnings:[]};
+        return window.__atsOriginalInvoke(command,args);
+      };
+      await window.__coachesApp.loadTools('garages');
+    })()`);
+    await waitFor("document.querySelector('[data-garage-action=purchase]') && !document.querySelector('[data-garage-action=purchase]').disabled");
+    assert.equal(await evaluate("window.__atsGarageCalls.includes('get_ai_driver_management')"), true, "ATS AI inventory must load");
+    await evaluate("window.__atsWritable = false; window.__coachesApp.loadTools('garages')");
+    await waitFor("document.querySelector('[data-garage-action=purchase]')?.disabled");
+    await evaluate("window.invoke = window.__atsOriginalInvoke; window.selectedGame = 'ets2'; window.readSaveGameConfig = {use_miles:false}");
+    assert.equal(await evaluate("window.__atsUnits.currencyCode()"), "EUR");
+    assert.equal(await evaluate("window.__atsUnits.displayDistance(6500)"), 6500);
+    await evaluate(`(() => {
+      window.__selectionBackendSave = '/synthetic/profile/save/old';
+      window.__saveSelectionStub = async (command,args) => {
+        if (command === 'refresh_savegame') return {...args,status:'waiting',data:null};
+        if (command === 'get_selected_game') return 'ets2';
+        if (command === 'find_ets2_profiles') return [{path:'/synthetic/profile',name:'Synthetic',success:true}];
+        if (command === 'read_last_profile') return '/synthetic/profile';
+        if (command === 'find_profile_saves') return [{path:'/synthetic/profile/save/missing',folder:'7',name:'Missing slot',success:true,kind:'Manual'}];
+        if (command === 'set_active_profile') { window.__selectionBackendSave = null; return; }
+        if (command === 'load_profile') throw new Error('game_sii_not_found');
+        return;
+      };
+      document.getElementById('refreshBtn').click();
+    })()`);
+    await waitFor("document.querySelector('[data-dropdown-value=\"/synthetic/profile/save/missing\"]')");
+    await evaluate(`window.selectedSavePath = '/synthetic/profile/save/old'; window.currentSavePath = window.selectedSavePath; window.__selectionBackendSave = window.selectedSavePath;
+      document.querySelector('[data-dropdown-value="/synthetic/profile/save/missing"]').click()`);
+    await waitFor("window.__coachesToasts.at(-1)?.[0] === 'toasts.save_load_error'");
+    assert.equal(await evaluate("window.selectedSavePath"),null, 'failed selection must not become active in the UI');
+    assert.equal(await evaluate("window.currentSavePath"),null);
+    assert.equal(await evaluate("window.__selectionBackendSave"),null, 'failed selection must not leave the previous save writable');
+    await evaluate("window.__moneyTool.action()");
+    assert.equal(await evaluate("window.__coachesToasts.at(-1)?.[0]"),'toasts.change_money_error', 'a cleared save selection must never allow another write');
+    assert.equal(await evaluate("document.getElementById('modalNumber').style.display"),'none');
+    await evaluate("delete window.__saveSelectionStub");
+    await evaluate(`(async () => {
+      window.selectedProfilePath = '/synthetic/live';
+      window.selectedSavePath = '/synthetic/live/save/7';
+      window.currentSavePath = window.selectedSavePath;
+      window.currentProfileData = {money:6500,xp:100};
+      window.__eventCallbacks['career://game_running']({payload:true});
+      window.__eventCallbacks['career://bridge_connected']({payload:false});
+      window.__syncCalls = [];
+      window.__syncMoney = 12000;
+      window.__syncFail = false;
+      window.__syncDelay = 0;
+      window.__syncInvoke = async (command,args) => {
+        window.__syncCalls.push(command);
+        if (command === 'get_selected_game') return 'ets2';
+        if (command === 'find_ets2_profiles') return [{path:'/synthetic/live',name:'Live',success:true}];
+        if (command === 'find_profile_saves') return [{path:'/synthetic/live/save/7',folder:'7',name:'Live slot',success:true,kind:'Manual'},
+          {path:'/synthetic/live/save/autosave',folder:'autosave',name:'New autosave',success:true,kind:'Autosave'}];
+        if (command === 'refresh_savegame') {
+          if (window.__syncDelay) await new Promise(resolve => setTimeout(resolve,window.__syncDelay));
+          if (window.__syncFail) throw new Error('save_read_failed: sharing violation');
+          return {...args,revision:'live-v' + window.__syncMoney,data:{money:window.__syncMoney,xp:200},status:'synchronized'};
+        }
+        if (command === 'quicksave_game_info') return {adr:1,long_dist:2};
+        if (command === 'get_all_trucks') return [{truck_id:'live-truck'}];
+        if (command === 'get_player_truck') return {truck_id:'live-truck'};
+        if (command === 'get_player_trailer') return {has_trailer:true,trailer:{trailer_id:'live-trailer'},has_active_job:true};
+        return null;
+      };
+      await window.__coachesApp.loadTools('profile');
+      await window.refreshSavegame({manual:true});
+    })()`);
+    assert.equal(await evaluate("window.currentProfileData.money"),12000);
+    assert.equal(await evaluate("document.getElementById('statusGameRunning').classList.contains('is-active')"),true,'game status stays active while refresh succeeds');
+    assert.equal(await evaluate("document.getElementById('statusSdkConnected').classList.contains('is-active')"),false,'refresh does not require an SDK connection');
+    assert.equal(await evaluate("window.currentQuicksaveData.long_dist"),2);
+    assert.equal(await evaluate("window.playerTruck.truck_id"),'live-truck');
+    assert.equal(await evaluate("window.playerTrailer.trailer_id"),'live-trailer');
+    assert.equal(await evaluate("window.playerTrailerHasActiveJob"),true);
+    assert.equal(await evaluate("window.selectedSavePath"),'/synthetic/live/save/7');
+    assert.equal(await evaluate("document.getElementById('saveSyncStatus').dataset.state"),'synchronized');
+    assert.equal(await evaluate("window.__coachesApp.activeTab"),'profile');
+    assert.equal(await evaluate("!!document.querySelector('[data-dropdown-value=\"/synthetic/live/save/autosave\"]')"),true);
+    // An external change while a modal contains a draft must not read or accept it.
+    await evaluate(`(() => {
+      window.__syncMoney = 18000;
+      const modal = document.getElementById('modalNumber');
+      modal.style.display = 'flex';
+      const input = modal.querySelector('input');
+      input.value = '98765'; input.dispatchEvent(new Event('input',{bubbles:true}));
+      window.__syncBefore = window.__syncCalls.filter(command => command === 'refresh_savegame').length;
+      window.__eventCallbacks['savegame://changed']({payload:{game:'ets2',profilePath:window.selectedProfilePath,savePath:window.selectedSavePath}});
+    })()`);
+    await waitFor("!window.saveSync.running && document.getElementById('saveSyncStatus').dataset.state === 'changed'");
+    assert.equal(await evaluate("window.currentProfileData.money"),12000);
+    assert.equal(await evaluate("document.getElementById('modalNumber').querySelector('input').value"),'98765');
+    assert.equal(await evaluate("window.__syncCalls.filter(command => command === 'refresh_savegame').length === window.__syncBefore"),true);
+    await evaluate("document.getElementById('modalNumber').style.display = 'none'");
+    await waitFor("window.currentProfileData.money === 18000 && !window.saveSync.running");
+    // Bursts share a single in-flight service call and preserve the selected slot.
+    await evaluate("window.__syncMoney = 20000; window.__syncDelay = 100; window.__syncPromises = [window.refreshSavegame(),window.refreshSavegame(),window.refreshSavegame()]");
+    assert.equal(await evaluate("window.__syncPromises.every(promise => promise === window.__syncPromises[0])"),true);
+    await waitFor("window.currentProfileData.money === 20000 && !window.saveSync.running");
+    await evaluate("window.__syncDelay = 0; window.__syncFail = true; window.refreshSavegame({manual:true})");
+    await waitFor("!window.saveSync.running && document.getElementById('saveSyncStatus').dataset.state === 'unavailable'");
+    assert.equal(await evaluate("window.currentProfileData.money"),20000,'temporary errors retain last good data');
+    await waitFor("window.saveSync.retries === 3 && !window.saveSync.running");
+    assert.equal(await evaluate("window.currentProfileData.money"),20000,'bounded retries must retain the displayed snapshot');
+    await evaluate("window.__syncFail = false; window.__syncMoney = 23000; window.refreshSavegame({manual:true})");
+    await waitFor("window.currentProfileData.money === 23000 && !window.saveSync.running");
+    // A result for a different profile must never replace the newly selected UI.
+    await evaluate("window.__syncDelay = 300; window.__syncMoney = 99000; void window.refreshSavegame();");
+    await waitFor("window.saveSync.running && window.__syncCalls.at(-1) === 'refresh_savegame'");
+    await evaluate("window.selectedProfilePath = '/synthetic/other-profile'");
+    await waitFor("!window.saveSync.running");
+    assert.equal(await evaluate("window.currentProfileData.money"),23000);
+    await evaluate("window.selectedProfilePath = '/synthetic/live'; window.__syncDelay = 0; window.__syncMoney = 24000; window.refreshSavegame({manual:true})");
+    await waitFor("window.currentProfileData.money === 24000 && !window.saveSync.running");
+    // Search inputs and selected garage filters survive an active view refresh.
+    await evaluate(`(async () => {
+      window.__atsWritable = true;
+      window.__atsOriginalInvoke = window.invoke;
+      window.invoke = async (command,args) => {
+        if (command === 'get_all_garages') return {game:'ets2',writeSupported:true,aiDriversSupported:true,saveHash:'live',diagnostics:{warnings:[]},garages:[]};
+        if (command === 'get_ai_driver_management') return {game:'ets2',saveHash:'live',drivers:[],availableTrucks:[],availableDriverCount:0,warnings:[]};
+        return window.__atsOriginalInvoke(command,args);
+      };
+      await window.__coachesApp.loadTools('garages');
+      const search = document.querySelector('[data-garage-search=citySearch]');
+      search.value = 'Berlin'; search.dispatchEvent(new Event('input',{bubbles:true}));
+      const filter = document.querySelector('[data-garage-filter=ownership]');
+      filter.value = 'owned'; filter.dispatchEvent(new Event('change',{bubbles:true}));
+      await window.refreshSavegame({manual:true});
+    })()`);
+    assert.equal(await evaluate("window.__coachesApp.activeTab"),'garages');
+    assert.equal(await evaluate("document.querySelector('[data-garage-search=citySearch]').value"),'Berlin');
+    assert.equal(await evaluate("document.querySelector('[data-garage-filter=ownership]').value"),'owned');
+    await evaluate("window.invoke = window.__atsOriginalInvoke; delete window.__syncInvoke");
     assert.deepEqual(exceptions, [], "uncaught browser errors");
     await call("Page.removeScriptToEvaluateOnNewDocument", { identifier });
   }
-  console.log("Coaches browser tests passed in DE/EN: independent drafts and validation, keyboard tabs, career labels/accents, save/readback, legacy saves, 131/22 stops and responsive dark/light layouts.");
+  console.log("Money persistence/readback, rejected writes and mismatched reloads passed in DE/EN.\nATS currency, distance preferences, garage capabilities and AI inventory passed in DE/EN.\nCoaches browser tests passed in DE/EN: independent drafts and validation, keyboard tabs, career labels/accents, save/readback, legacy saves, 131/22 stops and responsive dark/light layouts.");
   console.log(`Screenshots: ${artifacts}`);
+  console.log("Live synchronization UI passed in DE/EN: shared manual/event refresh, values/vehicles/skills/job context, new saves, draft conflicts, burst serialization, temporary errors, profile isolation and preserved filters.");
 } finally {
   socket?.close();
   browser.kill();
